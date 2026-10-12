@@ -41,7 +41,9 @@ import { api } from "../api";
 import type { Home, Control } from "../types";
 import { entityState } from "../manage/entityWords";
 import { overview, reading, temperature, usable } from "./homeModel";
-import { CameraCard, Energy } from "./HomeMedia";
+import { CameraCard } from "./HomeMedia";
+import { Energy } from "./EnergyOverview";
+import { Scenes } from "./Scenes";
 import "./home.css";
 export type HomePreferences = {
   rooms: string[];
@@ -97,16 +99,6 @@ export function HomeOverview({
     queryKey: ["home-preferences"],
     queryFn: () => api<HomePreferences>("home/preferences"),
   });
-  const energySources = useQuery({
-    queryKey: ["home-energy-sources"],
-    queryFn: () =>
-      api<{ id: string; type: string; measurement: string }[]>(
-        "home/energy-sources",
-      ),
-    enabled: !offline,
-    staleTime: 300000,
-    retry: false,
-  });
   const activity = useQuery({
     queryKey: ["home-activity"],
     queryFn: () =>
@@ -138,8 +130,8 @@ export function HomeOverview({
   const roomList = pref?.rooms.length
     ? h.areas.filter((a) => pref.rooms.includes(a.area_id))
     : h.areas.slice(0, 4);
-  const favorites = model.controls.filter((c) =>
-    h.favorites.includes(c.entity_id),
+  const favorites = model.controls.filter(
+    (c) => c.domain !== "scene" && h.favorites.includes(c.entity_id),
   );
   const hour = clock.getHours();
   const greeting =
@@ -881,59 +873,12 @@ export function HomeOverview({
           </button>
         )}
       </section>
+      <Scenes home={h} offline={offline} admin={admin} lang={lang} />
       <div className="home-insights">
-        {!!energySources.data?.some((s) =>
-          h.controls.some((c) => c.id === s.id),
-        ) && (
-          <section className="home-panel">
-            <h2>
-              <Zap size={20} />
-              {t(
-                "Produksjon, lagring & forbrukere",
-                "Production, storage & consumers",
-              )}
-            </h2>
-            <small>
-              {t(
-                "Fra hjemmets energioppsett. Målerne vises hver for seg.",
-                "From your home's energy configuration. Meters are shown individually.",
-              )}
-            </small>
-            <ul className="home-signal-list">
-              {energySources.data.map((s, i) => {
-                const c = h.controls.find((c) => c.id === s.id);
-                if (!c) return null;
-                return (
-                  <li key={i}>
-                    <span>
-                      {c.name}
-                      <small>
-                        {s.type === "solar"
-                          ? t("Solproduksjon", "Solar production")
-                          : s.type === "battery"
-                            ? t("Batteri", "Battery")
-                            : t("Forbruker", "Consumer")}{" "}
-                        ·{" "}
-                        {s.measurement === "stat_soc"
-                          ? t("Ladenivå", "Charge level")
-                          : s.measurement === "stat_rate"
-                            ? t("Effekt", "Power")
-                            : s.measurement === "stat_energy_to"
-                              ? t("Energi inn", "Energy in")
-                              : t("Målerstand", "Meter reading")}
-                      </small>
-                    </span>
-                    <strong>{offline ? "—" : reading(c, lang)}</strong>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
         {model.meters.length > 0 && (
           <div id="home-energy">
             <Energy
+              controls={h.controls}
               meters={model.meters}
               selected={pref?.energy || null}
               onSelect={(id) => savePreference({ energy: id })}

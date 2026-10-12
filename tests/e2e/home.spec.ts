@@ -187,20 +187,19 @@ test("capability profiles, cameras on demand, missing data and large homes", asy
     page.getByRole("heading", { name: "Lading", exact: true }),
   ).toBeVisible();
   expect(cameraRequests).toBe(0);
-  await page
-    .getByRole("button", { name: "Vis bilde: Front", exact: true })
-    .click();
+  await page.locator(".home-cameras").scrollIntoViewIfNeeded();
   await expect(
-    page.getByText("Bildet kunne ikke lastes", { exact: true }),
+    page.getByText("Strømmen kunne ikke startes", { exact: true }),
   ).toBeVisible();
-  expect(cameraRequests).toBe(1);
+  // Live requests now use a POST handshake; no still-image polling is performed.
+  expect(cameraRequests).toBeGreaterThanOrEqual(1);
   profile = { ...profile, connected: false };
   await page.reload();
   await expect(page.locator(".home-welcome")).toContainText(
     "venter på ferske data",
   );
   await expect(
-    page.getByRole("button", { name: "Vis bilde: Front", exact: true }),
+    page.getByRole("button", { name: "Stopp live: Front", exact: true }),
   ).toBeDisabled();
   profile = {
     ...profile,

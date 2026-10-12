@@ -1,7 +1,9 @@
 import type { Control, Home } from "../types";
 export const usable = (c: Control) =>
   c.availability === "available" &&
-  !["unknown", "unavailable"].includes(c.state);
+  (c.domain === "scene"
+    ? c.state !== "unavailable"
+    : !["unknown", "unavailable"].includes(c.state));
 export function numeric(c: Control): number | null {
   if (!usable(c) || !c.state.trim()) return null;
   const value = Number(c.state);

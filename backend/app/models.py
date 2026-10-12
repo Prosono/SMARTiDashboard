@@ -129,7 +129,9 @@ def normalize(states, entities, devices):
                 state=raw,
                 attributes={k: v for k, v in a.items() if k not in {"access_token", "entity_picture"}},
                 capabilities=caps,
-                availability=raw if raw in {"unknown", "unavailable"} else "available",
+                availability=raw
+                if raw in {"unknown", "unavailable"} and not (domain == "scene" and raw == "unknown")
+                else "available",
                 updated_at=state.get("last_updated"),
                 integration=registry.get("platform"),
                 diagnostic=registry.get("entity_category") in {"diagnostic", "config"},

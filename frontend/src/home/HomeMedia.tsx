@@ -1,20 +1,10 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowUpRight,
-  Camera,
-  ChartNoAxesCombined,
-  Image,
-  RefreshCw,
-  X,
-  Zap,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Camera, Maximize, Play, Square, RefreshCw } from "lucide-react";
+import type Hls from "hls.js";
 import { api } from "../api";
 import type { Control } from "../types";
-import { reading, usable } from "./homeModel";
+import { usable } from "./homeModel";
 import "./homeMedia.css";
-
-const url = (p: string) => new URL(`api/home/${p}`, document.baseURI).href;
 
 export function CameraCard({
   c,
@@ -25,326 +15,219 @@ export function CameraCard({
   offline: boolean;
   lang: string;
 }) {
-  const [shown, show] = useState(false),
-    [failed, fail] = useState(false),
-    [stamp, refresh] = useState(0);
-  const [expanded, expand] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null);
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
-  const available = !offline && usable(c);
+  const container = useRef<HTMLElement>(null),
+    video = useRef<HTMLVideoElement>(null);
+  const [visible, setVisible] = useState(false),
+    [foreground, setForeground] = useState(!document.hidden);
+  const [paused, setPaused] = useState(false),
+    [attempt, retry] = useState(0);
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "playing" | "buffering" | "error" | "blocked"
+  >("idle");
+  const available = !offline && usable(c),
+    active = available && visible && foreground && !paused;
   useEffect(() => {
-    if (!available) {
-      show(false);
-      dialog.current?.close();
+    const observer = new IntersectionObserver(
+      ([e]) => setVisible(e.isIntersecting),
+      { threshold: 0.1 },
+    );
+    if (container.current) observer.observe(container.current);
+    const onVisibility = () => setForeground(!document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+  useEffect(() => {
+    const element = video.current;
+    if (!active || !element) {
+      setStatus("idle");
+      return;
     }
-  }, [available]);
-  const source = url(`camera/${encodeURIComponent(c.id)}?snapshot=${stamp}`);
-  const load = () => {
-    show(true);
-    fail(false);
-    refresh(Date.now());
-  };
+    let cancelled = false,
+      player: Hls | undefined,
+      session: string | undefined;
+    const stop = () => {
+      if (session)
+        void api(`home/camera-stream/${session}`, "DELETE").catch(() => {});
+      session = undefined;
+    };
+    setStatus("loading");
+    const fail = () => {
+      if (!cancelled) {
+        setStatus("error");
+        player?.destroy();
+        element.removeAttribute("src");
+        element.load();
+        stop();
+      }
+    };
+    void (async () => {
+      try {
+        const stream = await api<{ id: string; path: string }>(
+          `home/camera/${encodeURIComponent(c.id)}/live`,
+          "POST",
+        );
+        session = stream.id;
+        if (cancelled) {
+          stop();
+          return;
+        }
+        const src = new URL(`api/${stream.path}`, document.baseURI).href;
+        const play = () => {
+          void element.play().catch(() => {
+            if (!cancelled) setStatus("blocked");
+          });
+        };
+        if (element.canPlayType("application/vnd.apple.mpegurl")) {
+          element.src = src;
+          play();
+        } else {
+          const { default: Hls } = await import("hls.js");
+          if (cancelled) {
+            stop();
+            return;
+          }
+          if (!Hls.isSupported()) throw new Error("hls_unsupported");
+          player = new Hls({
+            enableWorker: false,
+            lowLatencyMode: true,
+            backBufferLength: 15,
+            maxBufferLength: 20,
+          });
+          player.on(Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal) fail();
+          });
+          player.on(Hls.Events.MANIFEST_PARSED, play);
+          player.loadSource(src);
+          player.attachMedia(element);
+        }
+      } catch {
+        fail();
+      }
+    })();
+    const onError = () => fail();
+    element.addEventListener("error", onError);
+    element.addEventListener("ended", onError);
+    return () => {
+      cancelled = true;
+      element.removeEventListener("error", onError);
+      element.removeEventListener("ended", onError);
+      player?.destroy();
+      element.pause();
+      element.removeAttribute("src");
+      element.load();
+      stop();
+    };
+  }, [active, c.id, attempt]);
+  const label = !available
+    ? t("Utilgjengelig", "Unavailable")
+    : status === "playing"
+      ? "LIVE"
+      : status === "loading" || status === "buffering"
+        ? t("Kobler til…", "Connecting…")
+        : status === "error"
+          ? t("Livevideo ikke tilgjengelig", "Live video unavailable")
+          : t("Pauset", "Paused");
   return (
     <article
-      className={`home-camera home-media-camera${shown && !failed ? " has-image" : ""}`}
+      ref={container}
+      className="home-camera home-media-camera camera-live-card"
     >
-      <button
-        className="camera-preview"
-        disabled={!available}
-        onClick={() => {
-          if (!shown || failed) load();
-          else {
-            expand(true);
-            dialog.current?.showModal();
-          }
-        }}
-        aria-label={`${t(shown && !failed ? "Forstørr" : "Vis bilde", shown && !failed ? "Enlarge" : "Show image")}: ${c.name}`}
-      >
-        {shown && !failed ? (
-          <img src={source} alt={c.name} onError={() => fail(true)} />
-        ) : (
-          <span className="camera-preview-prompt">
-            <span className="camera-lens">
-              <Camera size={25} strokeWidth={1.4} />
-            </span>
-            <span>
-              {failed
-                ? t("Bildet kunne ikke lastes", "Image unavailable")
-                : t("Vis stillbilde", "Show still image")}
-            </span>
-            <small>
-              {failed
-                ? t("Trykk for å prøve igjen", "Tap to try again")
-                : t("Hentes kun når du åpner", "Loaded only when you open")}
-            </small>
-          </span>
-        )}
+      <div className="camera-live-preview">
+        <video
+          ref={video}
+          muted
+          playsInline
+          autoPlay
+          controls={active}
+          aria-label={`${t("Livekamera", "Live camera")}: ${c.name}`}
+          onPlaying={() => setStatus("playing")}
+          onWaiting={() => setStatus("buffering")}
+          onStalled={() => setStatus("buffering")}
+          onPause={() => setStatus((s) => (s === "playing" ? "blocked" : s))}
+        />
         <span className="camera-state">
-          <i
-            className={available ? "available" : "unavailable"}
-            aria-hidden="true"
-          />
-          {available
-            ? t("Tilgjengelig", "Available")
-            : t("Utilgjengelig", "Unavailable")}
+          <i className={status === "playing" ? "available" : ""} />
+          {label}
         </span>
-        {shown && !failed && (
-          <span className="camera-expand" aria-hidden="true">
-            <ArrowUpRight size={17} />
-          </span>
+        {status !== "playing" && status !== "buffering" && (
+          <div className="camera-live-overlay">
+            <Camera size={26} />
+            <strong>
+              {status === "error"
+                ? t("Strømmen kunne ikke startes", "Stream could not start")
+                : status === "loading"
+                  ? t("Åpner livevideo…", "Opening live video…")
+                  : t("Live fra hjemmet", "Live from home")}
+            </strong>
+            {status === "error" && (
+              <small>
+                {t(
+                  "Kameraet må støtte HLS via Home Assistant. Prøv igjen når forbindelsen er klar.",
+                  "The camera needs HLS support through Home Assistant. Retry when connected.",
+                )}
+              </small>
+            )}
+            {status === "blocked" && (
+              <button
+                onClick={() =>
+                  void video.current?.play().catch(() => setStatus("error"))
+                }
+              >
+                <Play size={16} />
+                {t("Spill av", "Play")}
+              </button>
+            )}
+          </div>
         )}
-      </button>
+      </div>
       <div className="camera-caption">
         <div>
           <strong>{c.name}</strong>
           <small>
-            {!available
-              ? t("Utilgjengelig", "Unavailable")
-              : shown
-                ? t(
-                    "Stillbilde · oppdater ved behov",
-                    "Still image · refresh on demand",
-                  )
-                : t("Ingen strøm startet", "No stream started")}
+            {t("Livevideo · noe forsinkelse", "Live video · some delay")}
           </small>
         </div>
-        {shown && (
+        <div className="camera-live-actions">
           <button
             className="camera-refresh"
             disabled={!available}
-            onClick={load}
-            aria-label={t("Oppdater bilde", "Refresh image")}
-            title={t("Oppdater bilde", "Refresh image")}
+            aria-label={`${paused ? t("Start live", "Start live") : status === "error" ? t("Prøv live igjen", "Retry live") : t("Stopp live", "Stop live")}: ${c.name}`}
+            onClick={() => {
+              if (status === "error") {
+                retry((v) => v + 1);
+                setPaused(false);
+              } else setPaused(!paused);
+            }}
           >
-            <RefreshCw size={17} />
+            {paused ? (
+              <Play size={17} />
+            ) : status === "error" ? (
+              <RefreshCw size={17} />
+            ) : (
+              <Square size={15} />
+            )}
           </button>
-        )}
-      </div>
-      <dialog
-        ref={dialog}
-        className="home-photo-dialog"
-        aria-label={c.name}
-        onClose={() => expand(false)}
-      >
-        <button
-          autoFocus
-          aria-label={t("Lukk", "Close")}
-          onClick={() => dialog.current?.close()}
-        >
-          <X />
-        </button>
-        {expanded && shown && !failed && <img src={source} alt={c.name} />}
-        <p>
-          <Image size={15} aria-hidden="true" /> {c.name} ·{" "}
-          {t("Stillbilde", "Still image")}
-        </p>
-      </dialog>
-    </article>
-  );
-}
-
-export function Energy({
-  meters,
-  selected,
-  onSelect,
-  offline,
-  lang,
-}: {
-  meters: Control[];
-  selected: string | null;
-  onSelect: (id: string) => void;
-  offline: boolean;
-  lang: string;
-}) {
-  const c = meters.find((c) => c.id === selected) || meters[0];
-  const gradientId = useId().replaceAll(":", "");
-  const t = (nb: string, en: string) => (lang === "en" ? en : nb);
-  const locale = lang === "en" ? "en-GB" : "nb-NO";
-  const number = (value: number) =>
-    value.toLocaleString(locale, { maximumFractionDigits: 1 });
-  const time = (value: number) =>
-    new Date(value).toLocaleTimeString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  const history = useQuery({
-    queryKey: ["home-history", c.id],
-    queryFn: () =>
-      api<{ points: { time: string; value: number | null }[]; unit: string }>(
-        `home/history/${encodeURIComponent(c.id)}`,
-      ),
-    enabled: !offline,
-    staleTime: 300000,
-    retry: false,
-  });
-  const pts = history.data?.points || [];
-  const valid = pts.filter(
-    (p) =>
-      p.value !== null &&
-      Number.isFinite(p.value) &&
-      Number.isFinite(Date.parse(p.time)),
-  );
-  const values = valid.map((p) => p.value!);
-  const min = Math.min(...values),
-    max = Math.max(...values);
-  const start = valid.length ? Date.parse(valid[0].time) : 0,
-    end = valid.length ? Date.parse(valid[valid.length - 1].time) : 0;
-  const segments: { x: number; y: number }[][] = [];
-  let connected = false;
-  for (const p of pts) {
-    if (
-      p.value === null ||
-      !Number.isFinite(p.value) ||
-      !Number.isFinite(Date.parse(p.time))
-    ) {
-      connected = false;
-      continue;
-    }
-    const x =
-      12 + ((Date.parse(p.time) - start) / Math.max(1, end - start)) * 476;
-    const y = max === min ? 82 : 144 - ((p.value - min) / (max - min)) * 124;
-    if (!connected) segments.push([]);
-    segments[segments.length - 1].push({ x, y });
-    connected = true;
-  }
-  const last = segments.at(-1)?.at(-1);
-  const paths = segments.map((segment) =>
-    segment.map((p, i) => `${i ? "L" : "M"}${p.x} ${p.y}`).join(" "),
-  );
-  const power = ["W", "kW"].includes(String(c.attributes.unit_of_measurement));
-  const hasChart = valid.length > 1 && !offline;
-  return (
-    <section className="home-panel home-energy home-media-energy">
-      <header className="energy-header">
-        <div className="energy-title">
-          <span className="energy-symbol">
-            <Zap size={21} strokeWidth={1.8} aria-hidden="true" />
-          </span>
-          <div>
-            <span className="eyebrow">
-              {t("Energi & innsikt", "Energy & insight")}
-            </span>
-            <h2>{t("Følg med på energien", "Keep an eye on energy")}</h2>
-          </div>
-        </div>
-        <span className="energy-period">{t("Siste 24 t", "Last 24 h")}</span>
-      </header>
-      <div className="energy-reading">
-        <strong>{offline ? "—" : reading(c, lang)}</strong>
-        <span>
-          {power
-            ? t("Effekt akkurat nå", "Power right now")
-            : t(
-                "Målerstand · ikke beregnet dagsforbruk",
-                "Meter reading · not calculated daily consumption",
-              )}
-        </span>
-      </div>
-      <label className="energy-meter">
-        <span>{t("Måler", "Meter")}</span>
-        <select value={c.id} onChange={(e) => onSelect(e.target.value)}>
-          {meters.map((v) => (
-            <option value={v.id} key={v.id}>
-              {v.name} · {String(v.attributes.unit_of_measurement)}
-            </option>
-          ))}
-        </select>
-      </label>
-      {hasChart ? (
-        <div className="energy-visual">
-          <div className="energy-chart-scale">
-            <span>
-              {number(max)} {history.data?.unit}
-            </span>
-            <span>{t("Målt historikk", "Recorded history")}</span>
-          </div>
-          <svg
-            className="energy-chart"
-            viewBox="0 0 500 160"
-            role="img"
-            aria-label={t(
-              "Målerhistorikk siste 24 timer",
-              "Meter history over the last 24 hours",
-            )}
+          <button
+            className="camera-refresh"
+            disabled={status !== "playing"}
+            aria-label={`${t("Fullskjerm", "Fullscreen")}: ${c.name}`}
+            onClick={() => {
+              const el = video.current as
+                | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
+                | null;
+              if (el?.requestFullscreen)
+                void el.requestFullscreen().catch(() => {});
+              else el?.webkitEnterFullscreen?.();
+            }}
           >
-            <defs>
-              <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="currentColor" stopOpacity=".24" />
-                <stop
-                  offset="100%"
-                  stopColor="currentColor"
-                  stopOpacity=".015"
-                />
-              </linearGradient>
-            </defs>
-            {[20, 82, 144].map((y) => (
-              <path key={y} d={`M12 ${y}H488`} className="chart-axis" />
-            ))}
-            {segments.map((segment, i) => (
-              <g key={i}>
-                {segment.length > 1 && (
-                  <path
-                    d={`${paths[i]} L${segment[segment.length - 1].x} 144 L${segment[0].x} 144 Z`}
-                    fill={`url(#${gradientId})`}
-                  />
-                )}
-                <path d={paths[i]} className="energy-line" />
-                {segment.length === 1 && (
-                  <circle
-                    cx={segment[0].x}
-                    cy={segment[0].y}
-                    r="2.5"
-                    fill="currentColor"
-                  />
-                )}
-              </g>
-            ))}
-            {last && (
-              <circle className="energy-latest" cx={last.x} cy={last.y} r="4" />
-            )}
-          </svg>
-          <div className="chart-labels">
-            <span>{time(start)}</span>
-            <span>{time(end)}</span>
-          </div>
-          <div className="energy-range">
-            <span>
-              {t("Laveste", "Lowest")}{" "}
-              <strong>
-                {number(min)} {history.data?.unit}
-              </strong>
-            </span>
-            <span>
-              {t("Høyeste", "Highest")}{" "}
-              <strong>
-                {number(max)} {history.data?.unit}
-              </strong>
-            </span>
-          </div>
+            <Maximize size={17} />
+          </button>
         </div>
-      ) : (
-        <div className="energy-empty">
-          <ChartNoAxesCombined
-            size={27}
-            strokeWidth={1.35}
-            aria-hidden="true"
-          />
-          <p>
-            {!offline && history.isLoading
-              ? t("Henter historikk…", "Loading history…")
-              : t(
-                  "Historikk er ikke tilgjengelig nå.",
-                  "History is not available right now.",
-                )}
-          </p>
-        </div>
-      )}
-      <small className="energy-note">
-        {t(
-          "Én måler om gangen. Forbruk, produksjon og delmålere summeres ikke.",
-          "One meter at a time. Consumption, production and submeters are not added together.",
-        )}
-      </small>
-    </section>
+      </div>
+    </article>
   );
 }

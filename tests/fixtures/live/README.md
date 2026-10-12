@@ -1,0 +1,1 @@
+Synthetic HLS playback fixture, generated locally with FFmpeg testsrc2 (160x90, 10fps, 12s, H.264). No real camera footage. Used to verify the browser decodes video and releases the stream, independently of a physical HA camera.

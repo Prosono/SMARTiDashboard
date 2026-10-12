@@ -1,3 +1,11 @@
+# 0.5.0
+
+- Replace Home camera stills with authenticated HLS live video, automatic playback while visible, explicit stop/retry and fullscreen. HA credentials remain server-side; streams are scoped to the SMARTi login session. Requires an HA camera with HLS stream support; WebRTC-only cameras are not supported yet.
+- Add scene favorites and a three-step creator/editor for lights, switches and climate. Save persistent native HA scenes without activating devices; activation and deletion are explicit. Preserve advanced fields and unsupported devices when editing an existing scene.
+- Expand energy into a configurable overview with 24-hour, 7-day and 30-day periods, bar/line charts, previous-period comparisons and individual meter summaries. Use recorder statistics, retain missing-data gaps, and compare only complete periods. Personal choices control meters and visible sections; never sum overlapping meters or invent costs/savings.
+
+Prepared locally. Physical HA camera, recorder and native scene validation remains required.
+
 # 0.4.1
 
 Refresh the built-in Home screen with a photographic welcome area, decorative Scandinavian room images, compact controls, semantic status colors and refined light/dark themes. Personal room photos take precedence over clearly labelled decorative images; all artwork is bundled locally. Improve phone/tablet layouts, navigation, camera previews and real-data energy charts. Show configured routines as actions without implying an active home mode. No new dashboard editor or changes to physical automation execution. Validated locally; physical HA installation validation remains pending.

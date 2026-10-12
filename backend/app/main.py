@@ -11,13 +11,16 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .auth import Auth, hasher
+from .camera_stream import camera_router
 from .config import Settings
 from .demo import Demo
+from .energy import energy_router
 from .ha import HAError, HomeAssistant
 from .home_overview import home_router
 from .management import Management, management_router
 from .mobile import MobileAuth
 from .models import Command
+from .scenes import scenes_router
 from .setup import DeviceSetup
 from .storage import Store
 
@@ -131,7 +134,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "same-origin"
         response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; img-src 'self' data: https://www.zigbee2mqtt.io https://brands.home-assistant.io; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+            "default-src 'self'; img-src 'self' data: https://www.zigbee2mqtt.io https://brands.home-assistant.io; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; media-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
         )
         return response
 
@@ -152,6 +155,9 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     app.state.management = management
     app.include_router(management_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
+    app.include_router(camera_router(ha, user, settings))
+    app.include_router(scenes_router(ha, store, user, settings))
+    app.include_router(energy_router(ha, store, user, settings))
 
     @app.get("/healthz")
     async def health():
@@ -273,7 +279,11 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         }
 
     @app.api_route("/api/dashboards", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
-    @app.api_route("/api/dashboards/{retired_path:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
+    @app.api_route(
+        "/api/dashboards/{retired_path:path}",
+        methods=["GET", "POST", "PUT", "DELETE"],
+        include_in_schema=False,
+    )
     async def retired_dashboards(current=Depends(user)):
         raise HTTPException(410, "dashboard_builder_removed")
 

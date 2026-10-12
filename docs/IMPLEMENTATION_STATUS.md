@@ -1,6 +1,18 @@
 # Implementation status — 2026-10-12
 
-## 0.4.1 — photographic Home design (current)
+## 0.5.0 — live video, native scenes and configurable energy (current)
+
+Home camera cards now play HLS video using native browser support or lazily loaded hls.js. Visibility, tab state, explicit stop and unmount control player/session lifetime. SMARTi proxies bounded manifests and fragments through session-bound opaque resources; same-origin/path validation prevents arbitrary upstream requests, and HA credentials stay server-side. Four concurrent sessions per user, bounded lifetime and explicit retry limit resource use. Demo does not pretend to be live. WebRTC-only and MJPEG-only cameras are not covered. Native Safari and real HA video remain unverified.
+
+A scene strip provides favorites, confirmed activation and an admin three-step creator/editor for lights, switches and climate. Scenes use HA's persistent config API; saving never activates devices. Revision checks detect concurrent edits. Existing unsupported targets and advanced fields survive edits, while only editable safe state fields are exposed. Stateless scenes with no activation timestamp remain usable. Demo scenes persist separately and activation is simulated.
+
+Energy preferences are per-user: up to six individual meters, visible sections, period and chart style. Hourly recorder changes/means drive rolling completed-hour 24h/7d/30d windows. Graphs preserve gaps and partial totals disclose coverage; comparison percentages require both periods to be complete. Each meter remains separate, without inferred costs, savings or sums of overlapping meters. Current readings and HA-configured source readings are distinguished from historical consumption. Recorder statistics must exist; external statistics without entities remain unsupported.
+
+Validation: 108 backend tests, 31 frontend unit tests and all 48 desktop/mobile browser tests passed. HLS browser tests decode a synthetic fragmented-MP4 fixture, verify playback progression, and exercise stop/restart/offscreen cleanup; backend tests separately validate playlist rewriting, authentication, session isolation and URL boundaries. Scene tests cover durable save without activation, advanced-field preservation and revisions. Energy tests cover hourly units, gaps, comparisons and personal preferences. Responsive screenshots reviewed. TypeScript/Vite build and deterministic HA payload verification passed. No physical device or running HA installation was changed. Release 0.5.0 is prepared locally, not published.
+
+Sources: [HA camera stream API](https://github.com/home-assistant/core/blob/dev/homeassistant/components/camera/__init__.py), [HA scene config](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/scene.py), [HA recorder statistics](https://github.com/home-assistant/core/blob/dev/homeassistant/components/recorder/websocket_api.py), [hls.js](https://github.com/video-dev/hls.js).
+
+## 0.4.1 — photographic Home design
 
 The fixed Home overview now has a photographic welcome area, clearly labelled local decorative room imagery (overridden by personal photos), compact favorites, semantic status colors and polished camera/energy modules. The shared app shell uses a warmer light theme and deeper forest/charcoal dark theme. Configured modes are visibly actions, not inferred active states. Four optimized WebP images total about 309 KiB; their generation prompts and provenance are in `frontend/public/home/README.md`.
 
