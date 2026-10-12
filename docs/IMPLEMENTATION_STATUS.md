@@ -1,5 +1,11 @@
 # Implementation status — 2026-10-12
 
+## 0.2.2 — protocol inventory and removal
+
+Devices has All controls, Zigbee and Z-Wave tabs, with the pairing wizard available at the top. Physical inventories come from Zigbee2MQTT bridge/devices and each Z-Wave JS controller's network_status, including nodes without HA controls. Zigbee availability is unknown when not reported; last LQI is shown on a 0–255 scale with unknown age for retained samples. Z-Wave shows actual node status, including asleep, without inventing a signal-strength percentage.
+
+Read access is available to residents; removal requires admin and CSRF. Zigbee removal never forces deletion. Z-Wave uses guided physical exclusion (which can exclude a different device); matching node IDs determine success. No automatic replay, controller deletion or forced failed-node removal. Existing stop/timeouts and restart recovery cover exclusion too. Contract, authorization and desktop/mobile UI tests cover these paths. Real HA/radio tests remain pending.
+
 ## 0.2.1 — direct pairing, local changes
 
 Prioritized the user's installed Zigbee2MQTT and Z-Wave JS integrations. Replaced the static external-setup screen with capability detection, controller selection, pairing progress, stop, security approval and DSK PIN input. Zigbee2MQTT uses HA MQTT subscriptions and correlated permit_join responses; Z-Wave uses HA inclusion subscriptions. Admin/CSRF checks remain enforced. Timeouts do not replay starts, a persisted marker survives interrupted setup, and security codes are not persisted. Bluetooth, ZHA and Matter commissioning remain outside this release.

@@ -16,6 +16,7 @@ type Provider = {
   reason: string;
 };
 type Pairing = {
+  operation?: string;
   id: string;
   provider: string;
   status: string;
@@ -217,7 +218,22 @@ export function DeviceSetup({
           {error}
         </p>
       )}
-      {s && (
+      {s?.operation === "remove" && s.radio_open && (
+        <div className="pairing-progress" role="status">
+          <p>
+            {lang === "nb"
+              ? "En utmelding pågår. Stopp den før du legger til en ny enhet."
+              : "Device exclusion is active. Stop it before adding a device."}
+          </p>
+          <button
+            disabled={busy}
+            onClick={() => act(`setup/sessions/${s.id}/stop`)}
+          >
+            {lang === "nb" ? "Stopp utmelding" : "Stop exclusion"}
+          </button>
+        </div>
+      )}
+      {s && s.operation !== "remove" && (
         <div className="pairing-progress" aria-live="polite">
           <span className="eyebrow">
             {s.provider === "zigbee2mqtt" ? "Zigbee2MQTT" : "Z-Wave JS"}
@@ -296,7 +312,11 @@ export function DeviceSetup({
             <>
               <p className="muted">
                 {t.countdown}{" "}
-                {Math.min(120, Math.max(0, Math.ceil(s.expires_at - now / 1000)))} {t.seconds}.
+                {Math.min(
+                  120,
+                  Math.max(0, Math.ceil(s.expires_at - now / 1000)),
+                )}{" "}
+                {t.seconds}.
               </p>
               <button
                 className="text-button pairing-stop"

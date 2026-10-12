@@ -1,3 +1,7 @@
+# 0.2.2
+
+Add Zigbee and Z-Wave tabs under Devices with physical device inventories, status icons, search and refresh. Show Zigbee LQI when reported, explicitly mark unknown measurement age and distinguish sleeping Z-Wave battery devices from offline nodes. Admins can remove Zigbee devices with a correlated acknowledgement or start a two-minute, stoppable Z-Wave exclusion flow. Controller deletion is blocked. Exclusion recovery markers persist across restarts; a different excluded node is never reported as the selected device. Add new device opens the existing pairing wizard. Real hardware validation remains pending.
+
 # 0.2.1
 
 Add direct Zigbee2MQTT permit-join and Z-Wave JS inclusion from SMARTi, with capability detection, controller selection, bounded search, stop, progress, S2 security approval and PIN entry. Preserve an interrupted-session marker across restarts. Configure zigbee2mqtt_base_topic when using a custom MQTT base topic. Admin access is required. Bluetooth, ZHA and Matter commissioning are not implemented by this release. Real radio/hardware validation is pending; contract and browser tests cover the new flows.

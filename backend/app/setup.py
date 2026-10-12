@@ -9,6 +9,7 @@ import uuid
 from fastapi import HTTPException
 
 from .ha import HAError
+from .inventory import Inventory
 
 ACTIVE = {"starting", "searching", "interviewing", "security", "pin", "needs_stop"}
 
@@ -24,6 +25,7 @@ class DeviceSetup:
         self.mqtt_online = False
         self.mqtt_info = {}
         self.responses = {}
+        self.inventory = Inventory(self)
         self.timer = None
         self.zwave_subscription = None
         if store and store.get("pairing_active"):
@@ -35,7 +37,22 @@ class DeviceSetup:
             s = self.session
             self.store.set(
                 "pairing_active",
-                json.dumps({k: s[k] for k in ["id", "provider", "entry_id", "expires_at", "radio_open"]})
+                json.dumps(
+                    {
+                        k: s[k]
+                        for k in [
+                            "id",
+                            "provider",
+                            "entry_id",
+                            "expires_at",
+                            "radio_open",
+                            "operation",
+                            "device_name",
+                            "node_id",
+                        ]
+                        if k in s
+                    }
+                )
                 if s and s.get("radio_open")
                 else "",
             )
@@ -53,18 +70,37 @@ class DeviceSetup:
         if self.mqtt_epoch == self.ha.epoch:
             return
         self.mqtt_online, self.mqtt_info = False, {}
+        self.inventory.reset()
         for number in self.subscriptions:
             self.ha.callbacks.pop(number, None)
             with contextlib.suppress(HAError, TimeoutError):
                 await self.ha.request("unsubscribe_events", subscription=number)
         self.subscriptions = []
-        for suffix in ["state", "info", "event", "response/permit_join"]:
+        for suffix in ["state", "info", "event", "response/permit_join", "response/device/remove"]:
             number = await self.ha.request(
                 "mqtt/subscribe",
                 topic=f"{self.settings.zigbee2mqtt_base_topic}/bridge/{suffix}",
                 _callback=self.mqtt_event,
             )
             self.subscriptions.append(number)
+        self.subscriptions.append(
+            await self.ha.request(
+                "mqtt/subscribe",
+                topic=f"{self.settings.zigbee2mqtt_base_topic}/bridge/devices",
+                _callback=self.inventory.event,
+            )
+        )
+        for _ in range(10):
+            if self.inventory.devices is not None:
+                break
+            await asyncio.sleep(0.1)
+        self.subscriptions.append(
+            await self.ha.request(
+                "mqtt/subscribe",
+                topic=f"{self.settings.zigbee2mqtt_base_topic}/#",
+                _callback=self.inventory.event,
+            )
+        )
         self.mqtt_epoch = self.ha.epoch
         # Retained bridge state/info arrive asynchronously after subscription acknowledgement.
         for _ in range(10):
@@ -88,7 +124,9 @@ class DeviceSetup:
         elif topic.endswith("/bridge/info") and isinstance(data, dict):
             # Never retain or return the complete bridge config (can contain credentials).
             self.mqtt_info = {k: data.get(k) for k in ["version", "permit_join"]}
-        elif topic.endswith("/bridge/response/permit_join") and isinstance(data, dict):
+        elif topic.endswith(
+            ("/bridge/response/permit_join", "/bridge/response/device/remove")
+        ) and isinstance(data, dict):
             future = self.responses.get(data.get("transaction"))
             if future and not future.done():
                 future.set_result(data.get("status") == "ok")
@@ -122,6 +160,14 @@ class DeviceSetup:
         kind = event.get("event")
         if kind == "smarti disconnected":
             self.interrupted()
+        elif s.get("operation") == "remove":
+            if kind == "node removed":
+                s["removed_node_id"] = event.get("node", {}).get("node_id")
+                s["status"] = "removed" if s["removed_node_id"] == s.get("node_id") else "different_node"
+                self.schedule_stop()
+            elif kind in {"exclusion failed", "exclusion stopped"} and s["status"] in ACTIVE:
+                s["status"] = "failed" if kind == "exclusion failed" else "stopped"
+                self.schedule_stop()
         elif s["status"] in ACTIVE:
             if kind == "grant security classes":
                 grant = event.get("requested_grant", {})
@@ -208,7 +254,7 @@ class DeviceSetup:
             )
         return result
 
-    async def permit(self, seconds):
+    async def mqtt_command(self, command, payload, timeout=8):
         transaction = str(uuid.uuid4())
         future = asyncio.get_running_loop().create_future()
         self.responses[transaction] = future
@@ -218,16 +264,65 @@ class DeviceSetup:
                 domain="mqtt",
                 service="publish",
                 service_data={
-                    "topic": f"{self.settings.zigbee2mqtt_base_topic}/bridge/request/permit_join",
-                    "payload": json.dumps({"time": seconds, "transaction": transaction}),
+                    "topic": f"{self.settings.zigbee2mqtt_base_topic}/bridge/request/{command}",
+                    "payload": json.dumps(payload | {"transaction": transaction}),
                     "qos": 0,
                     "retain": False,
                 },
             )
-            if not await asyncio.wait_for(future, 8):
+            if not await asyncio.wait_for(future, timeout):
                 raise HAError("permit_rejected")
         finally:
             self.responses.pop(transaction, None)
+
+    async def permit(self, seconds):
+        await self.mqtt_command("permit_join", {"time": seconds})
+
+    async def remove(self, provider, device_id, user_id):
+        async with self.lock:
+            if self.session and (self.session["status"] in ACTIVE or self.session.get("radio_open")):
+                raise HTTPException(409, "pairing_already_active")
+            device = await self.inventory.require(provider, device_id)
+            if provider == "zigbee2mqtt":
+                if self.mqtt_info.get("permit_join"):
+                    raise HTTPException(409, "controller_busy")
+                try:
+                    await self.mqtt_command(
+                        "device/remove", {"id": device["id"], "force": False, "block": False}, 30
+                    )
+                except (HAError, TimeoutError):
+                    raise HTTPException(503, "removal_unconfirmed")
+                return {"status": "removed", "device_name": device["name"]}
+            entry_id = device["entry_id"]
+            network = await self.ha.request("zwave_js/network_status", entry_id=entry_id)
+            if network.get("client", {}).get("state") != "connected" or network.get("controller", {}).get(
+                "inclusion_state"
+            ) not in [0, 4]:
+                raise HTTPException(409, "controller_busy")
+            self.session = {
+                "id": str(uuid.uuid4()),
+                "provider": provider,
+                "operation": "remove",
+                "entry_id": entry_id,
+                "node_id": device["node_id"],
+                "device_name": device["name"],
+                "status": "starting",
+                "expires_at": time.time() + 120,
+                "radio_open": True,
+                "_user_id": user_id,
+                "_finish": False,
+            }
+            self.persist()
+            self.timer = asyncio.create_task(self.watch(self.session["id"]))
+            try:
+                self.zwave_subscription = await self.ha.request(
+                    "zwave_js/remove_node", entry_id=entry_id, strategy=2, _callback=self.zwave_event
+                )
+                if self.session["status"] == "starting":
+                    self.session["status"] = "searching"
+            except (HAError, TimeoutError):
+                self.session["status"], self.session["error"] = "needs_stop", "start_unconfirmed"
+            return self.snapshot()
 
     async def start(self, provider, entry_id, user_id):
         async with self.lock:
@@ -289,7 +384,12 @@ class DeviceSetup:
                 else:
                     if s["status"] in {"pin", "security"}:
                         await self.ha.request("zwave_js/cancel_secure_bootstrap_s2", entry_id=s["entry_id"])
-                    await self.ha.request("zwave_js/stop_inclusion", entry_id=s["entry_id"])
+                    await self.ha.request(
+                        "zwave_js/stop_exclusion"
+                        if s.get("operation") == "remove"
+                        else "zwave_js/stop_inclusion",
+                        entry_id=s["entry_id"],
+                    )
                     network = await self.ha.request("zwave_js/network_status", entry_id=s["entry_id"])
                     if network.get("controller", {}).get("inclusion_state") not in [0, 4]:
                         raise HAError("stop_unconfirmed")

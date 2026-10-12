@@ -1419,3 +1419,32 @@ footer span:last-child {
   .pairing-provider > button { grid-column: 2; justify-self: start; }
   .pairing-progress { padding: 20px; }
 }
+
+.protocol-intro { display: flex; align-items: center; gap: 1rem; margin: 1.8rem 0 .8rem; }
+.protocol-intro h2, .protocol-identity h3 { margin: 0; }
+.protocol-intro p, .protocol-identity p { margin: .3rem 0; color: var(--muted); }
+.protocol-note { color: var(--muted); max-width: 75ch; line-height: 1.6; }
+.protocol-list { border-top: 1px solid var(--line); }
+.protocol-row { display: flex; align-items: center; gap: 1rem; padding: 1.3rem .2rem; border-bottom: 1px solid var(--line); }
+.protocol-device-icon { color: var(--orange); padding: .8rem; background: var(--tint); border-radius: 14px; }
+.protocol-identity { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.protocol-identity h3 { font-size: 1rem; }
+.protocol-identity p, .protocol-identity span { font-size: .82rem; }
+.protocol-health { display: flex; flex-direction: column; gap: .4rem; font-size: .85rem; color: var(--muted); max-width: 20rem; }
+.protocol-health span, .protocol-identity span { display: flex; align-items: center; gap: .4rem; }
+.protocol-health small { font-size: .75rem; }
+.health-online, .health-awake { color: var(--text); }
+.health-offline { color: var(--orange); }
+.protocol-delete { display: flex; gap: .4rem; align-items: center; }
+.protocol-notice, .protocol-confirm { border: 1px solid var(--line); border-radius: 12px; padding: 1.2rem; background: var(--surface); margin: 1rem 0; }
+.protocol-confirm { border-color: var(--orange); }
+.protocol-confirm > div { display: flex; gap: .8rem; flex-wrap: wrap; }
+.protocol-confirm p { line-height: 1.6; }
+.protocol-devices .device-toolbar input { min-width: 0; flex: 1; }
+@media (max-width: 700px) {
+  .protocol-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: .7rem; }
+  .protocol-device-icon { padding: .5rem; }
+  .protocol-health { grid-column: 2 / 4; grid-row: 2; max-width: none; }
+  .protocol-delete span { display: none; }
+  .protocol-delete { grid-column: 3; grid-row: 1; min-width: 44px; min-height: 44px; }
+}

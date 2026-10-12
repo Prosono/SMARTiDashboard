@@ -17,3 +17,12 @@ Radio exclusion is not implemented. For user-initiated inclusion testing, use a 
 - Confirm that the actual device appears with the expected capabilities and room after HA registry import. Do not infer physical success from the test fixtures.
 
 Do not reset controllers or exclude existing devices as part of these tests.
+
+
+## Protocol tabs and removal (0.2.2)
+
+Use a disposable test network. Under Devices, verify each Zigbee2MQTT device and Z-Wave node appears once, including devices with multiple/no entities. Check custom base topics and multiple Z-Wave controllers. Verify sleeping battery nodes, disconnected integration, Zigbee availability disabled, retained LQI age and new live LQI samples.
+
+After explicit hardware-test authorization, remove a spare Zigbee device (awake, force=false) and verify the MQTT acknowledgement, registry removal and affected controls. For Z-Wave, confirm the warning, activate exclusion on only the spare selected node, verify node identity and stopped radio. Test cancel, timeout, disconnection and app restart during exclusion; no start should replay. Confirm controller delete is unavailable and a resident account cannot remove devices. A failed/dead device that cannot participate in ordinary removal still needs installer recovery; this UI does not force-delete it.
+
+Contracts: [Zigbee2MQTT MQTT API](https://www.zigbee2mqtt.io/guide/usage/mqtt_topics_and_messages.html), [HA Z-Wave JS API](https://github.com/home-assistant/core/blob/dev/homeassistant/components/zwave_js/api.py), [node statuses](https://github.com/home-assistant-libs/zwave-js-server-python/blob/master/zwave_js_server/const/__init__.py).

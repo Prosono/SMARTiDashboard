@@ -42,6 +42,7 @@ import "./style.css";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
+import { ProtocolDevices } from "./ProtocolDevices";
 import { DeviceSetup } from "./DeviceSetup";
 import { readPreference, writePreference } from "./preferences";
 const client = new QueryClient({
@@ -363,6 +364,7 @@ function Dashboard({
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [protocol, setProtocol] = useState("all");
   useEffect(() => {
     const stream = new EventSource(new URL("api/events", document.baseURI));
     stream.onopen = () => streamStatus(true);
@@ -625,71 +627,111 @@ function Dashboard({
                     onClick={() => setAdding(true)}
                   >
                     <Plus size={18} />
-                    {t.add}
+                    {page === "devices"
+                      ? lang === "nb"
+                        ? "Legg til ny enhet"
+                        : "Add new device"
+                      : t.add}
                   </button>
                 )}
               </div>
               <p>
                 {page === "rooms"
                   ? t.roomHint
-                  : `${regular.length} ${t.controls} · ${h.areas.length} ${t.rooms.toLowerCase()}`}
+                  : protocol !== "all"
+                    ? lang === "nb"
+                      ? "Enheter gruppert etter protokoll"
+                      : "Devices grouped by protocol"
+                    : `${regular.length} ${t.controls} · ${h.areas.length} ${t.rooms.toLowerCase()}`}
               </p>
             </div>
-            {page === "rooms" && (
-              <div className="tabs">
-                <button
-                  className={room === null ? "selected" : ""}
-                  onClick={() => setRoom(null)}
-                >
-                  {t.allRooms}
-                </button>
-                {rooms.map((a) => (
+            {page === "devices" && (
+              <div
+                className="tabs"
+                aria-label={lang === "nb" ? "Protokoller" : "Protocols"}
+              >
+                {[
+                  ["all", lang === "nb" ? "Alle kontroller" : "All controls"],
+                  ["zigbee2mqtt", "Zigbee"],
+                  ["zwave_js", "Z-Wave"],
+                ].map(([id, label]) => (
                   <button
-                    key={a.area_id}
-                    className={room === a.area_id ? "selected" : ""}
-                    onClick={() => setRoom(a.area_id)}
+                    key={id}
+                    aria-pressed={protocol === id}
+                    className={protocol === id ? "selected" : ""}
+                    onClick={() => setProtocol(id)}
                   >
-                    {a.name}
+                    {label}
                   </button>
                 ))}
               </div>
             )}
-            <div className="device-toolbar">
-              <label className="search">
-                <Search size={19} />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t.search}
-                  aria-label={t.search}
-                />
-              </label>
-              <select
-                aria-label={t.devices}
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-              >
-                {[
-                  ["all", t.all],
-                  ["light", t.lights],
-                  ["climate", t.climate],
-                  ["switch", t.switches],
-                  ["sensors", t.sensors],
-                ].map(([v, label]) => (
-                  <option key={v} value={v}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {regular.length ? (
-              selected.length ? (
-                cards(selected)
-              ) : (
-                <p className="empty">{t.noResults}</p>
-              )
+            {page === "devices" && protocol !== "all" ? (
+              <ProtocolDevices
+                key={protocol}
+                provider={protocol}
+                lang={lang === "en" ? "en" : "nb"}
+                admin={session.role === "admin"}
+              />
             ) : (
-              <Empty t={t} add={() => setAdding(true)} />
+              <>
+                {page === "rooms" && (
+                  <div className="tabs">
+                    <button
+                      className={room === null ? "selected" : ""}
+                      onClick={() => setRoom(null)}
+                    >
+                      {t.allRooms}
+                    </button>
+                    {rooms.map((a) => (
+                      <button
+                        key={a.area_id}
+                        className={room === a.area_id ? "selected" : ""}
+                        onClick={() => setRoom(a.area_id)}
+                      >
+                        {a.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="device-toolbar">
+                  <label className="search">
+                    <Search size={19} />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder={t.search}
+                      aria-label={t.search}
+                    />
+                  </label>
+                  <select
+                    aria-label={t.devices}
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                  >
+                    {[
+                      ["all", t.all],
+                      ["light", t.lights],
+                      ["climate", t.climate],
+                      ["switch", t.switches],
+                      ["sensors", t.sensors],
+                    ].map(([v, label]) => (
+                      <option key={v} value={v}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {regular.length ? (
+                  selected.length ? (
+                    cards(selected)
+                  ) : (
+                    <p className="empty">{t.noResults}</p>
+                  )
+                ) : (
+                  <Empty t={t} add={() => setAdding(true)} />
+                )}
+              </>
             )}
           </>
         ) : (

@@ -54,6 +54,11 @@ class PairingStart(BaseModel):
     entry_id: str | None = Field(default=None, max_length=100)
 
 
+class DeviceRemoval(BaseModel):
+    provider: Literal["zigbee2mqtt", "zwave_js"]
+    device_id: str = Field(min_length=1, max_length=200)
+
+
 class PairingAnswer(BaseModel):
     model_config = {"extra": "forbid"}
     action: Literal["grant", "pin"]
@@ -334,6 +339,17 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         return StreamingResponse(
             stream(), media_type="text/event-stream", headers={"X-Accel-Buffering": "no"}
         )
+
+    @app.get("/api/devices/{provider}")
+    async def protocol_devices(provider: Literal["zigbee2mqtt", "zwave_js"], current=Depends(user)):
+        return await setup.inventory.list(provider)
+
+    @app.post("/api/devices/remove")
+    async def remove_device(body: DeviceRemoval, current=Depends(admin)):
+        try:
+            return await setup.remove(body.provider, body.device_id, current["id"])
+        except (HAError, TimeoutError):
+            raise HTTPException(503, "removal_unconfirmed")
 
     @app.get("/api/setup/providers")
     async def providers(current=Depends(admin)):
