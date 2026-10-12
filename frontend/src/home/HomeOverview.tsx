@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   House,
@@ -15,6 +21,20 @@ import {
   Camera,
   Lightbulb,
   LayoutGrid,
+  Sofa,
+  CookingPot,
+  BedDouble,
+  Bath,
+  Trees,
+  Car,
+  ChevronRight,
+  MapPin,
+  Sun,
+  CloudSun,
+  CloudRain,
+  Cloud,
+  Snowflake,
+  Radio,
   AlertCircle,
 } from "lucide-react";
 import { api } from "../api";
@@ -36,6 +56,22 @@ const modes = [
   { id: "night", nb: "Natt", en: "Night", Icon: Moon },
   { id: "holiday", nb: "Ferie", en: "Holiday", Icon: Plane },
 ];
+// These are decorative room moods; personal room photos always take precedence.
+const homeAsset = (name: string) =>
+  new URL(`home/${name}.webp`, document.baseURI).href;
+function roomMood(name: string) {
+  const n = name.toLocaleLowerCase();
+  if (/kjøkken|kitchen/.test(n))
+    return { Icon: CookingPot, photo: "home-kitchen" };
+  if (/soverom|bedroom|gjesterom/.test(n))
+    return { Icon: BedDouble, photo: "home-bedroom" };
+  if (/baderom|bathroom|^bad$|^bad\s/.test(n))
+    return { Icon: Bath, photo: "home-bathroom" };
+  if (/stue|living|lounge/.test(n)) return { Icon: Sofa, photo: "home-living" };
+  if (/hage|garden|terrasse|ute/.test(n)) return { Icon: Trees, photo: null };
+  if (/garasje|garage/.test(n)) return { Icon: Car, photo: null };
+  return { Icon: LayoutGrid, photo: null };
+}
 export function HomeOverview({
   home: h,
   offline,
@@ -94,6 +130,11 @@ export function HomeOverview({
   }, []);
   const model = useMemo(() => overview(h), [h]);
   const pref = prefs.data;
+  const degrees = (value: number) =>
+    value.toLocaleString(lang === "en" ? "en-GB" : "nb-NO", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
   const roomList = pref?.rooms.length
     ? h.areas.filter((a) => pref.rooms.includes(a.area_id))
     : h.areas.slice(0, 4);
@@ -213,11 +254,53 @@ export function HomeOverview({
     snowy: t("Snø", "Snow"),
     "clear-night": t("Klar natt", "Clear night"),
   };
+  const WeatherIcon =
+    model.weather?.state === "sunny"
+      ? Sun
+      : model.weather?.state === "clear-night"
+        ? Moon
+        : model.weather?.state === "rainy"
+          ? CloudRain
+          : model.weather?.state === "snowy"
+            ? Snowflake
+            : model.weather?.state === "partlycloudy"
+              ? CloudSun
+              : Cloud;
   return (
     <div className="home-overview">
+      <div className="home-toolbar">
+        <div className="home-location">
+          <MapPin size={15} />
+          <span>{h.home_name}</span>
+          <span className="home-date">
+            {clock.toLocaleDateString(lang === "en" ? "en-GB" : "nb-NO", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}
+          </span>
+        </div>
+        <button
+          className="home-customize"
+          aria-expanded={configuring}
+          onClick={() => configure(!configuring)}
+        >
+          <Settings2 size={16} />
+          {t("Tilpass Hjem", "Personalize Home")}
+        </button>
+      </div>
       <header className="home-welcome">
-        <div>
-          <span className="eyebrow">{h.home_name}</span>
+        <img
+          className="home-hero-photo"
+          src={homeAsset("home-living")}
+          alt=""
+          fetchPriority="high"
+        />
+        <div className="home-welcome-content">
+          <span className="home-hero-eyebrow">
+            <span />
+            {t("Ditt hjem. Din hverdag.", "Your home. Your everyday.")}
+          </span>
           <h1>{greeting}.</h1>
           <p>
             {offline
@@ -241,29 +324,56 @@ export function HomeOverview({
                     )}
           </p>
         </div>
-        <div className="home-welcome-side">
-          {model.weather && !offline && (
-            <div className="home-weather">
-              <span>
-                {weatherLabels[model.weather.state] || model.weather.state}
-              </span>
-              <strong>
-                {typeof model.weather.attributes.temperature === "number"
-                  ? `${model.weather.attributes.temperature} ${model.weather.attributes.temperature_unit || "°"}`
-                  : "—"}
-              </strong>
-              <small>{model.weather.name}</small>
-            </div>
-          )}
-          <button
-            className="home-customize"
-            aria-expanded={configuring}
-            onClick={() => configure(!configuring)}
-          >
-            <Settings2 size={18} />
-            {t("Tilpass Hjem", "Personalize Home")}
-          </button>
-        </div>
+        {model.weather && !offline && (
+          <div className="home-weather">
+            <WeatherIcon size={37} strokeWidth={1.4} />
+            <strong>
+              {typeof model.weather.attributes.temperature === "number"
+                ? `${model.weather.attributes.temperature}${model.weather.attributes.temperature_unit || "°"}`
+                : "—"}
+            </strong>
+            <span>
+              {weatherLabels[model.weather.state] || model.weather.state}
+            </span>
+            <small>{model.weather.name}</small>
+          </div>
+        )}
+        <nav
+          className="home-modes"
+          aria-label={t("Hjemmemoduser", "Home modes")}
+        >
+          {modes.map((m) => {
+            const target = h.controls.find((c) => c.id === pref?.modes[m.id]);
+            return (
+              <button
+                key={m.id}
+                className={target ? "mode-configured" : "mode-unconfigured"}
+                title={
+                  target ? target.name : t("Velg rutine", "Choose routine")
+                }
+                disabled={
+                  busy || offline || (!!target && !usable(target)) || !pref
+                }
+                onClick={() =>
+                  target ? runMode(m.id, t(m.nb, m.en)) : configure(true)
+                }
+              >
+                <m.Icon size={19} />
+                <span>
+                  {t(m.nb, m.en)}
+                  <small>
+                    {target
+                      ? t("Kjør rutine", "Run routine")
+                      : t("Velg rutine", "Choose routine")}
+                  </small>
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+        <span className="home-hero-caption">
+          {t("Stemningsbilde", "Decorative image")}
+        </span>
       </header>
       {message && (
         <p className="notice" role="status">
@@ -498,30 +608,6 @@ export function HomeOverview({
           </button>
         </section>
       )}
-      <nav className="home-modes" aria-label={t("Hjemmemoduser", "Home modes")}>
-        {modes.map((m) => {
-          const target = h.controls.find((c) => c.id === pref?.modes[m.id]);
-          return (
-            <button
-              key={m.id}
-              disabled={
-                busy || offline || (!!target && !usable(target)) || !pref
-              }
-              onClick={() =>
-                target ? runMode(m.id, t(m.nb, m.en)) : configure(true)
-              }
-            >
-              <m.Icon size={19} />
-              <span>
-                {t(m.nb, m.en)}
-                <small>
-                  {target ? target.name : t("Velg rutine", "Choose routine")}
-                </small>
-              </span>
-            </button>
-          );
-        })}
-      </nav>
       <div className="home-status-grid">
         {model.security.length > 0 && (
           <a
@@ -583,7 +669,7 @@ export function HomeOverview({
             <span>
               {t("Innetemperatur", "Indoor temperature")}
               <strong>
-                {offline ? "—" : `${model.temperature.toFixed(1)} °C`}
+                {offline ? "—" : `${degrees(model.temperature)} °C`}
               </strong>
               <small>
                 {t("Utvalgte målere i", "Selected readings in")}{" "}
@@ -602,8 +688,7 @@ export function HomeOverview({
             </span>
           </a>
         )}
-        {!model.security.length &&
-          !model.meters.length &&
+        {!model.meters.length &&
           model.controls.some((c) => c.domain === "light") && (
             <button className="home-status status-energy" onClick={openDevices}>
               <Lightbulb />
@@ -622,6 +707,33 @@ export function HomeOverview({
               </span>
             </button>
           )}
+        {!model.air.length && model.controls.length > 0 && (
+          <button
+            className={
+              "home-status " +
+              (model.unavailable.length || offline
+                ? "status-warning"
+                : "status-connected")
+            }
+            onClick={openDevices}
+          >
+            <Radio />
+            <span>
+              {t("Tilkobling", "Connectivity")}
+              <strong>
+                {offline
+                  ? t("Venter på data", "Waiting for data")
+                  : model.unavailable.length
+                    ? `${model.unavailable.length} ${t("å sjekke", "to check")}`
+                    : t("Enhetene er tilgjengelige", "Devices are available")}
+              </strong>
+              <small>
+                {model.controls.length}{" "}
+                {t("enheter i hjemmet", "controls in your home")}
+              </small>
+            </span>
+          </button>
+        )}
       </div>
       {!model.controls.length && (
         <section className="home-panel">
@@ -650,7 +762,14 @@ export function HomeOverview({
               {t("Vis alle rom", "View all rooms")} <ArrowUpRight size={17} />
             </button>
           </header>
-          <div className="home-room-strip">
+          <div
+            className="home-room-strip"
+            style={
+              {
+                "--room-columns": Math.min(Math.max(roomList.length, 2), 4),
+              } as CSSProperties
+            }
+          >
             {roomList.map((a, i) => {
               const controls = model.byRoom.get(a.area_id) || [],
                 temp = controls.find(
@@ -659,39 +778,59 @@ export function HomeOverview({
                     (c.domain === "climate" ||
                       c.attributes.device_class === "temperature"),
                 );
+              const mood = roomMood(a.name);
+              const personalPhoto = !!pref?.images[a.area_id];
+              const photo = personalPhoto
+                ? new URL(
+                    `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
+                    document.baseURI,
+                  ).href
+                : mood.photo
+                  ? homeAsset(mood.photo)
+                  : null;
               return (
                 <button
                   className={`home-room-card room-tone-${i % 4}`}
                   key={a.area_id}
                   onClick={() => openRooms(a.area_id)}
                 >
-                  <div className="home-room-art">
-                    {pref?.images[a.area_id] ? (
+                  <div
+                    className={"home-room-art" + (photo ? " has-photo" : "")}
+                  >
+                    <mood.Icon
+                      className="room-fallback-icon"
+                      size={45}
+                      strokeWidth={1}
+                    />
+                    {photo && (
                       <img
-                        src={
-                          new URL(
-                            `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
-                            document.baseURI,
-                          ).href
-                        }
+                        key={photo}
+                        src={photo}
                         alt=""
                         loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.hidden = true;
+                        }}
                       />
-                    ) : (
-                      <>
-                        <LayoutGrid size={36} strokeWidth={1} />
-                        <span>{a.name.slice(0, 1)}</span>
-                      </>
+                    )}
+                    <span className="home-room-type">
+                      <mood.Icon size={17} strokeWidth={1.6} />
+                    </span>
+                    {photo && !personalPhoto && (
+                      <span className="home-room-mood">
+                        {t("Stemningsbilde", "Decorative image")}
+                      </span>
                     )}
                   </div>
                   <div className="home-room-caption">
                     <strong>{a.name}</strong>
+                    <ChevronRight className="home-room-arrow" size={17} />
                     <span>
                       {offline
                         ? t("Venter på data", "Waiting for data")
                         : temp
-                          ? `${temperature(temp)!.toFixed(1)} °C`
-                          : `${controls.length} ${t("enheter", "controls")}`}
+                          ? `${degrees(temperature(temp)!)} °C`
+                          : `${controls.length} ${controls.length === 1 ? t("enhet", "control") : t("enheter", "controls")}`}
                     </span>
                     <small>
                       <Lightbulb size={13} />
@@ -832,7 +971,10 @@ export function HomeOverview({
           </section>
         )}
         {model.security.length > 0 && (
-          <section id="home-security" className="home-panel">
+          <section
+            id="home-security"
+            className="home-panel home-security-panel"
+          >
             <header className="home-section-heading">
               <h2>
                 <Shield size={20} />
@@ -849,6 +991,18 @@ export function HomeOverview({
               {(allSecurity ? model.security : model.security.slice(0, 5)).map(
                 (c) => (
                   <li key={c.id}>
+                    <span
+                      className={
+                        "home-signal-icon " +
+                        (offline || model.alerts.includes(c)
+                          ? "signal-warning"
+                          : model.open.includes(c)
+                            ? "signal-open"
+                            : "signal-clear")
+                      }
+                    >
+                      <Shield size={16} />
+                    </span>
                     <span>
                       {c.name}
                       <small>
@@ -869,14 +1023,17 @@ export function HomeOverview({
         {(model.temperature !== null ||
           model.air.length > 0 ||
           model.controls.some((c) => c.domain === "climate")) && (
-          <section id="home-climate" className="home-panel">
-            <h2>
-              <Thermometer size={20} />
-              {t("Inneklima", "Indoor climate")}
-            </h2>
-            <button className="text-button" onClick={openDevices}>
-              {t("Vis enheter", "View devices")}
-            </button>
+          <section id="home-climate" className="home-panel home-climate-panel">
+            <header className="home-section-heading">
+              <h2>
+                <Thermometer size={20} />
+                {t("Inneklima", "Indoor climate")}
+              </h2>
+              <button className="text-button" onClick={openDevices}>
+                {t("Vis enheter", "View devices")}
+                <ArrowUpRight size={15} />
+              </button>
+            </header>
             {renderControls(
               model.controls
                 .filter(
@@ -895,13 +1052,21 @@ export function HomeOverview({
               ))}
             </ul>
             {model.temperature !== null && (
-              <p>
-                {offline ? "—" : `${model.temperature.toFixed(1)} °C`} ·{" "}
-                {t(
-                  "fra tilgjengelige rommålere",
-                  "from available room sensors",
-                )}
-              </p>
+              <div className="home-climate-reading">
+                <span className="home-climate-emblem">
+                  <Thermometer size={28} strokeWidth={1.4} />
+                </span>
+                <div>
+                  <strong>
+                    {offline ? "—" : `${degrees(model.temperature)}°`}
+                    <small>C</small>
+                  </strong>
+                  <p>
+                    {t("Gjennomsnitt i", "Average across")}{" "}
+                    {model.temperatureRooms} {t("rom", "rooms")}
+                  </p>
+                </div>
+              </div>
             )}
           </section>
         )}
@@ -960,8 +1125,12 @@ export function HomeOverview({
           <AlertCircle size={18} />
           {model.unavailable.length}{" "}
           {t(
-            "enheter har ukjent eller utilgjengelig status",
-            "controls have unknown or unavailable status",
+            model.unavailable.length === 1
+              ? "enhet har ukjent eller utilgjengelig status"
+              : "enheter har ukjent eller utilgjengelig status",
+            model.unavailable.length === 1
+              ? "control has unknown or unavailable status"
+              : "controls have unknown or unavailable status",
           )}
           <ArrowUpRight size={16} />
         </button>

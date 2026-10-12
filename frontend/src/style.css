@@ -1,19 +1,19 @@
 @import "tailwindcss";
 :root {
   font-family: "Bai Jamjuree", sans-serif;
-  color: #292d29;
-  background: #f5f5f0;
+  color: #26312c;
+  background: #f3f4f0;
   font-synthesis: none;
   font-weight: 400;
-  --bg: #f5f5f0;
+  --bg: #f3f4f0;
   --surface: #fdfdf9;
-  --text: #292d29;
-  --muted: #6c7169;
-  --line: #e0e2d9;
+  --text: #26312c;
+  --muted: #69746d;
+  --line: #e0e5de;
   --orange: #e66c22;
   --tint: #f9ece0;
-  --sidebar: #242823;
-  --soft: #eeefe7;
+  --sidebar: #1d2925;
+  --soft: #edf0e9;
   --accent: #a34a14;
 }
 * {
@@ -103,12 +103,13 @@ p {
   min-height: 100vh;
 }
 .sidebar {
-  width: 240px;
+  width: 216px;
   position: fixed;
   inset: 0 auto 0 0;
-  background: var(--sidebar);
-  color: #edf0e7;
-  padding: 36px 22px 22px;
+  background: linear-gradient(165deg, #253630 0%, var(--sidebar) 55%);
+  color: #edf2ec;
+  padding: 30px 16px 22px;
+  border-right: 1px solid #ffffff08;
   display: flex;
   flex-direction: column;
   z-index: 10;
@@ -120,13 +121,13 @@ p {
   white-space: nowrap;
 }
 .brand img {
-  width: 39px;
-  height: 43px;
+  width: 34px;
+  height: 38px;
   object-fit: contain;
 }
 .brand > span {
-  font-size: 29px;
-  letter-spacing: 4px;
+  font-size: 26px;
+  letter-spacing: 3px;
   font-weight: 500;
 }
 .orange {
@@ -138,31 +139,36 @@ p {
 .sidebar-label {
   font-size: 8px;
   letter-spacing: 1.7px;
-  margin: 14px 0 54px 10px;
-  color: #a7afa1;
+  margin: 13px 0 40px 10px;
+  color: #a8b7ad;
 }
 .sidebar nav {
   display: grid;
-  gap: 9px;
+  gap: 7px;
 }
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 15px 17px;
-  border-radius: 8px;
-  color: #bec6b8;
+  gap: 13px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  color: #bdcbc1;
   position: relative;
   text-align: left;
-  font-size: 15px;
-  min-height: 52px;
+  font-size: 14px;
+  min-height: 48px;
 }
 .nav-item:hover {
-  background: #30362e;
+  background: #ffffff09;
+  color: #f5f8f1;
 }
 .nav-item.active {
-  background: #394033;
-  color: #f7faf2;
+  background: #ffffff0e;
+  color: #f8f7ef;
+  box-shadow: inset 0 0 0 1px #ffffff08;
+}
+.nav-item.active > span:not(.nav-dot) {
+  font-weight: 600;
 }
 .nav-item.active svg {
   color: #ff933e;
@@ -176,8 +182,8 @@ p {
 }
 .sidebar-bottom {
   margin-top: auto;
-  border-top: 1px solid #42473d;
-  padding-top: 23px;
+  border-top: 1px solid #ffffff12;
+  padding-top: 19px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -187,13 +193,20 @@ p {
   place-items: center;
   width: 37px;
   height: 37px;
-  background: #46503b;
+  flex-shrink: 0;
+  background: #3d5146;
+  border: 1px solid #ffffff14;
   border-radius: 50%;
   font-size: 14px;
 }
+.sidebar-bottom > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
 .sidebar-bottom strong {
   display: block;
-  max-width: 102px;
+  max-width: 100%;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
@@ -201,22 +214,25 @@ p {
 }
 .sidebar-bottom small {
   font-size: 10px;
-  color: #b5bea9;
+  color: #aabbb0;
 }
 .sidebar-bottom .icon-button {
   margin-left: auto;
 }
 .workspace {
-  margin-left: 240px;
-  width: calc(100% - 240px);
+  margin-left: 216px;
+  width: calc(100% - 216px);
+  min-width: 0;
 }
 .topbar {
-  height: 87px;
+  height: 72px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 48px;
-  border-bottom: 1px solid var(--line);
+  padding: 0 36px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  background: color-mix(in srgb, var(--surface) 45%, var(--bg));
+  gap: 18px;
 }
 .breadcrumb {
   display: flex;
@@ -224,6 +240,17 @@ p {
   align-items: center;
   font-size: 13px;
   color: var(--muted);
+  min-width: 0;
+}
+.breadcrumb > span:first-of-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.breadcrumb > svg,
+.breadcrumb .separator,
+.breadcrumb span:last-child {
+  flex-shrink: 0;
 }
 .breadcrumb span:last-child {
   color: var(--text);
@@ -233,8 +260,16 @@ p {
 }
 .top-actions {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   align-items: center;
+  flex-shrink: 0;
+}
+.top-actions > .icon-button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.top-actions > .icon-button:hover {
+  background: var(--soft);
 }
 .connection {
   font-size: 11px;
@@ -246,7 +281,7 @@ p {
 .connection > span {
   width: 6px;
   height: 6px;
-  background: #789263;
+  background: #5f9479;
   border-radius: 50%;
 }
 .connection.warning > span {
@@ -265,12 +300,12 @@ p {
   background: var(--soft);
 }
 .sidebar .icon-button:hover {
-  background: #42473d;
+  background: #ffffff0c;
 }
 main {
   max-width: 1400px;
   margin: auto;
-  padding: 24px 48px 65px;
+  padding: 24px 36px 65px;
   min-height: calc(100vh - 160px);
 }
 .demo-strip {
@@ -279,7 +314,7 @@ main {
   gap: 10px;
   font-size: 11px;
   color: var(--muted);
-  margin-bottom: 29px;
+  margin-bottom: 21px;
 }
 .demo-strip > span {
   font-size: 9px;
@@ -1000,27 +1035,30 @@ footer span:last-child {
   width: 100%;
 }
 [data-theme="dark"] {
-  --bg: #20231f;
-  --surface: #292e27;
-  --text: #ebeee3;
-  --muted: #a7af9e;
-  --line: #42483b;
-  --soft: #353d2e;
-  --tint: #3f2c1c;
-  --accent: #f3aa73;
-  --sidebar: #191d18;
+  --bg: #121b1a;
+  --surface: #1b2725;
+  --text: #ecf1e9;
+  --muted: #a4b5ac;
+  --line: #2d3b37;
+  --soft: #253630;
+  --tint: #3a2c20;
+  --accent: #ffad70;
+  --sidebar: #101917;
   background: var(--bg);
   color: var(--text);
 }
+[data-theme="dark"] .sidebar {
+  background: linear-gradient(160deg, #1b2a24, var(--sidebar) 65%);
+}
 [data-theme="dark"] .sun-emblem {
-  background: #343d29;
-  color: #a3af83;
+  background: #2b3d30;
+  color: #b1c392;
 }
 [data-theme="dark"] .device.is-on {
-  border-color: #716044;
+  border-color: #6f573c;
 }
 [data-theme="dark"] .toggle:before {
-  background: #535d49;
+  background: #45574c;
 }
 [data-theme="dark"] .toggle[aria-checked="true"]:before {
   background: #dc823e;
@@ -1029,7 +1067,7 @@ footer span:last-child {
   color: #ffab98;
 }
 [data-theme="dark"] .tabs .selected {
-  background: #515e41;
+  background: #3c5547;
 }
 [data-theme="dark"] .starred svg {
   fill: #a36d35;
@@ -1042,7 +1080,7 @@ footer span:last-child {
 @media (max-width: 1150px) {
   .sidebar {
     width: 205px;
-    padding: 30px 16px 20px;
+    padding: 30px 14px 20px;
   }
   .workspace {
     margin-left: 205px;
@@ -1081,15 +1119,21 @@ footer span:last-child {
 }
 @media (max-width: 760px) {
   .sidebar {
-    width: 100%;
-    height: 74px;
+    width: auto;
+    height: 72px;
     inset: auto 0 0;
     padding: 0 12px;
+    border-right: 0;
+    box-shadow: 0 -8px 30px #17251c08;
     background: var(--surface);
     color: var(--text);
     border-top: 1px solid var(--line);
     padding-bottom: env(safe-area-inset-bottom);
     box-sizing: content-box;
+  }
+  [data-theme="dark"] .sidebar {
+    background: var(--surface);
+    box-shadow: 0 -8px 30px #070e0a30;
   }
   .sidebar > .brand,
   .sidebar-label,
@@ -1100,20 +1144,39 @@ footer span:last-child {
     display: flex;
     height: 100%;
     justify-content: space-around;
+    gap: 2px;
   }
   .nav-item {
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     padding: 12px 3px 8px;
     font-size: 10px;
     color: var(--muted);
-    border-radius: 0;
-    min-height: unset;
+    border-radius: 12px;
+    min-height: 64px;
+    isolation: isolate;
+  }
+  .nav-item::before {
+    content: "";
+    position: absolute;
+    width: 46px;
+    height: 30px;
+    top: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 11px;
+    background: transparent;
+    z-index: -1;
+    transition: background 0.18s;
   }
   .nav-item.active {
     background: none;
     color: var(--text);
+    box-shadow: none;
+  }
+  .nav-item.active::before {
+    background: var(--tint);
   }
   .nav-item.active svg {
     color: var(--accent);
@@ -1123,22 +1186,28 @@ footer span:last-child {
   }
   .nav-item:hover {
     background: var(--soft);
+    color: var(--text);
   }
   .workspace {
     width: 100%;
     margin: 0;
-    padding-bottom: 80px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
   .topbar {
-    height: 68px;
+    height: 64px;
     padding: 0 22px;
+    gap: 8px;
   }
   .breadcrumb {
     font-size: 12px;
     gap: 9px;
   }
   .top-actions {
-    gap: 6px;
+    gap: 8px;
+  }
+  .top-actions > .icon-button {
+    width: 36px;
+    height: 36px;
   }
   .connection {
     font-size: 10px;

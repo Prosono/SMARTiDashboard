@@ -1,6 +1,12 @@
 # Implementation status — 2026-10-12
 
-## 0.4.0 — automatic Home overview (current)
+## 0.4.1 — photographic Home design (current)
+
+The fixed Home overview now has a photographic welcome area, clearly labelled local decorative room imagery (overridden by personal photos), compact favorites, semantic status colors and polished camera/energy modules. The shared app shell uses a warmer light theme and deeper forest/charcoal dark theme. Configured modes are visibly actions, not inferred active states. Four optimized WebP images total about 309 KiB; their generation prompts and provenance are in `frontend/public/home/README.md`.
+
+Validation: 31 frontend tests, all 42 desktop/mobile browser tests, TypeScript/Vite build and deterministic HA payload verification passed. Local visual checks cover 320, 390, 834 and 1440 px in both themes, image delivery and browser errors. No backend logic, physical devices or running HA installation changed. Version 0.4.1 is prepared locally, not published.
+
+## 0.4.0 — automatic Home overview
 
 The separate custom dashboard editor and its grid library are removed. Its API returns 410 after authentication; existing database rows remain inert to avoid destroying customer data on upgrade. Hjem is now the fixed overview, composed from capability/registry-backed data. Existing rooms, devices, automations, integrations and updates remain in place.
 
