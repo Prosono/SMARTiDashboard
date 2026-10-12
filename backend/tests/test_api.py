@@ -180,11 +180,8 @@ def test_https_required(tmp_path):
 def test_session_expiry_and_setup_capabilities(client, app):
     login(client)
     providers = client.get("/api/setup/providers").json()
-    assert {p["id"] for p in providers} == {"zwave_js", "zha", "zigbee2mqtt", "matter"}
-    assert all(
-        p["status"] == "requires_external_flow" and p["operations"] == [] and p["verified_versions"] == []
-        for p in providers
-    )
+    assert {p["id"] for p in providers} == {"zwave_js", "zigbee2mqtt"}
+    assert all(p["status"] == "demo" for p in providers)
     with app.state.store.connect() as db:
         db.execute("UPDATE sessions SET expires=0")
     assert client.get("/api/home").status_code == 401

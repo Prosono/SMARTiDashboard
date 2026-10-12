@@ -13,8 +13,9 @@ from .auth import Auth, hasher
 from .config import Settings
 from .demo import Demo
 from .ha import HAError, HomeAssistant
+from .mobile import MobileAuth
 from .models import Command
-from .setup import PROVIDERS
+from .setup import DeviceSetup
 from .storage import Store
 
 
@@ -34,31 +35,79 @@ class NewUser(Credentials):
     role: Literal["admin", "user"] = "user"
 
 
-def create_app(settings=None, adapter=None):
+class MobileClaim(BaseModel):
+    model_config = {"extra": "forbid"}
+    installation_id: str = Field(min_length=36, max_length=36)
+    code: str = Field(min_length=32, max_length=128)
+    device_name: str = Field(min_length=1, max_length=80)
+
+
+class MobileRefresh(BaseModel):
+    model_config = {"extra": "forbid"}
+    installation_id: str = Field(min_length=36, max_length=36)
+    refresh_token: str = Field(min_length=32, max_length=128)
+
+
+class PairingStart(BaseModel):
+    model_config = {"extra": "forbid"}
+    provider: Literal["zigbee2mqtt", "zwave_js"]
+    entry_id: str | None = Field(default=None, max_length=100)
+
+
+class PairingAnswer(BaseModel):
+    model_config = {"extra": "forbid"}
+    action: Literal["grant", "pin"]
+    pin: str | None = Field(default=None, pattern=r"^\d{5}$", max_length=5)
+
+
+def create_app(settings=None, adapter=None, *, mobile_only=False):
     settings = settings or Settings()
     settings.validate_runtime()
     store = Store(settings.database)
     auth = Auth(store, settings)
+    mobile = MobileAuth(store)
     ha = adapter or (Demo() if settings.mode == "demo" else HomeAssistant(settings.ha_url, settings.ha_token))
+
+    setup = DeviceSetup(ha, settings, store)
 
     @asynccontextmanager
     async def lifespan(app):
         task = asyncio.create_task(ha.run())
-        yield
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+        try:
+            yield
+        finally:
+            try:
+                await setup.close()
+            finally:
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
 
     app = FastAPI(title="SMARTi", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.ha, app.state.auth, app.state.store = ha, auth, store
+    app.state.mobile = mobile
+    app.state.setup = setup
 
     @app.middleware("http")
     async def boundary(request, call_next):
-        if settings.ingress and (not request.client or request.client.host != settings.ingress_proxy):
+        if mobile_only:
+            if not settings.mobile_enabled or not request.url.path.startswith("/api/mobile/v1/"):
+                return JSONResponse({"detail": "not_found"}, status_code=404)
+            if request.url.scheme != "https" or request.headers.get("origin") is not None:
+                return JSONResponse(
+                    {"detail": "mobile_transport_rejected"},
+                    status_code=403,
+                    headers={"Cache-Control": "no-store"},
+                )
+        if (
+            not mobile_only
+            and settings.ingress
+            and (not request.client or request.client.host != settings.ingress_proxy)
+        ):
             return JSONResponse(
                 {"detail": "ingress_rejected"}, status_code=403, headers={"Cache-Control": "no-store"}
             )
-        if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        if not mobile_only and request.method not in {"GET", "HEAD", "OPTIONS"}:
             origin = request.headers.get("origin")
             if origin not in settings.allowed_origins:
                 return JSONResponse(
@@ -288,7 +337,84 @@ def create_app(settings=None, adapter=None):
 
     @app.get("/api/setup/providers")
     async def providers(current=Depends(admin)):
-        return [provider.support() for provider in PROVIDERS]
+        return await setup.providers()
+
+    @app.get("/api/setup/session")
+    async def pairing_status(current=Depends(admin)):
+        return setup.snapshot()
+
+    @app.post("/api/setup/sessions")
+    async def start_pairing(body: PairingStart, current=Depends(admin)):
+        try:
+            return await setup.start(body.provider, body.entry_id, current["id"])
+        except (HAError, TimeoutError):
+            raise HTTPException(503, "pairing_provider_unavailable")
+
+    @app.post("/api/setup/sessions/{session_id}/stop")
+    async def stop_pairing(session_id: str, current=Depends(admin)):
+        return await setup.stop(session_id)
+
+    @app.post("/api/setup/sessions/{session_id}/answer")
+    async def answer_pairing(session_id: str, body: PairingAnswer, current=Depends(admin)):
+        if body.pin is not None and int(body.pin) > 65535:
+            raise HTTPException(422, "invalid_pin")
+        return await setup.answer(session_id, body.action, body.pin)
+
+    def mobile_user(request: Request):
+        header = request.headers.get("authorization", "")
+        if not header.startswith("Bearer ") or len(header) > 256:
+            raise HTTPException(401, "mobile_authentication_required")
+        return mobile.session(header[7:])
+
+    if settings.mobile_enabled and not mobile_only:
+
+        @app.post("/api/mobile/pairings")
+        async def pairing(current=Depends(admin)):
+            auth.throttle("pairing_issue:" + str(current["id"]))
+            return mobile.issue_pairing(current["id"]) | {"url": settings.mobile_url}
+
+        @app.delete("/api/mobile/pairings")
+        async def cancel_pairing(current=Depends(admin)):
+            mobile.cancel_pairing(current["id"])
+            return {"status": "cancelled"}
+
+        @app.get("/api/mobile/devices")
+        async def devices(current=Depends(admin)):
+            return {"installation_id": mobile.installation_id, "devices": mobile.devices(current["id"])}
+
+        @app.delete("/api/mobile/devices/{device_id}")
+        async def revoke_device(device_id: str, current=Depends(admin)):
+            mobile.revoke(current["id"], device_id)
+            return {"status": "revoked"}
+
+    if settings.mobile_enabled and mobile_only:
+
+        @app.post("/api/mobile/v1/pair")
+        async def claim(body: MobileClaim, request: Request):
+            # Shared budget bounds the table even if clients supply arbitrary identifiers.
+            auth.throttle("mobile_pairing")
+            return mobile.claim(body.installation_id, body.code, body.device_name)
+
+        @app.post("/api/mobile/v1/refresh")
+        async def refresh(body: MobileRefresh):
+            return mobile.refresh(body.installation_id, body.refresh_token)
+
+        @app.get("/api/mobile/v1/session")
+        async def mobile_session(current=Depends(mobile_user)):
+            return current | {"installation_id": mobile.installation_id}
+
+        @app.get("/api/mobile/v1/home")
+        async def mobile_home(current=Depends(mobile_user)):
+            return snapshot(current)
+
+        @app.post("/api/mobile/v1/controls/{entity_id}/commands")
+        async def mobile_command(entity_id: str, body: Command, current=Depends(mobile_user)):
+            return await command(entity_id, body, current)
+
+        @app.post("/api/mobile/v1/logout")
+        async def mobile_logout(current=Depends(mobile_user)):
+            mobile.revoke(current["id"], current["device_id"])
+            return {"status": "revoked"}
 
     @app.get("/{path:path}")
     async def frontend(path: str):

@@ -16,4 +16,8 @@ with store.connect() as db:
         raise SystemExit('Administrator not found')
     db.execute('UPDATE users SET password=? WHERE id=?', (hasher.hash(password), user['id']))
     db.execute('DELETE FROM sessions')
+    db.execute('UPDATE mobile_devices SET revoked=1')
+    db.execute('DELETE FROM mobile_access')
+    db.execute('DELETE FROM mobile_refresh')
+    db.execute('DELETE FROM mobile_pairings')
 print('Password updated. All sessions revoked.')

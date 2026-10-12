@@ -1,5 +1,19 @@
 # Implementation status — 2026-10-12
 
+## 0.2.1 — direct pairing, local changes
+
+Prioritized the user's installed Zigbee2MQTT and Z-Wave JS integrations. Replaced the static external-setup screen with capability detection, controller selection, pairing progress, stop, security approval and DSK PIN input. Zigbee2MQTT uses HA MQTT subscriptions and correlated permit_join responses; Z-Wave uses HA inclusion subscriptions. Admin/CSRF checks remain enforced. Timeouts do not replay starts, a persisted marker survives interrupted setup, and security codes are not persisted. Bluetooth, ZHA and Matter commissioning remain outside this release.
+
+Verification: 50 backend tests, 8 frontend unit tests and 16 desktop/mobile browser tests passed, including real local WebSocket subscription timing, mocked radio contracts and the S2 UI. Actual radio pairing has not been tested. The separate remote-access pilot is deferred and remains opt-in/disabled; no further pilot work or public deployment is part of this change.
+
+
+## Unpublished 0.2.0 mobile and remote-access pilot
+
+Implemented persistent installation UUID, separate opt-in mobile HTTPS API, expiring one-use pairing, device token rotation/revocation and audit records. SQLite v3 migration retains existing accounts/sessions. Added a standalone non-root relay Docker image and fixed-destination outbound connector; nested TLS ends at the home API. The relay never receives the home TLS key or database. Docker Compose runs an isolated single-home demo with generated test credentials/certificates and a scripted pilot client.
+
+Verification: 43 backend tests, 8 frontend unit tests and 14 desktop/mobile browser tests passed (65 total). Lint and payload freshness checks passed. The relay image built for arm64 and amd64; the complete Docker journey ran on arm64 and the amd64 runtime import check passed. Actual Docker pilot client passed pairing, remote snapshot, simulated lamp command, direct local snapshot, refresh and remote denial after revocation. Real nested-TLS tests also verify certificate rejection and continued local access during a tunnel outage. No public deployment or existing HA installation was touched. Native iOS/Android apps, QR UI, cloud accounts, multi-home routing, automatic switching and production certificate lifecycle remain outstanding. See [pilot instructions](MOBILE_PILOT.md).
+
+
 ## Version 0.1.3 — setup diagnostics and multiple HA addresses
 
 Local changes support `additional_origins` alongside the existing `origin`, with explicit `allow_http_ingress` for local HTTP access through Supervisor. HTTPS cookies remain Secure; standalone HTTP is still rejected. Both entry points use the same database/accounts and independent browser sessions. Setup errors now distinguish address, secret, validation and network failures; successful owner creation followed by failed login returns to the login form.

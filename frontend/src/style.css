@@ -1400,3 +1400,22 @@ footer span:last-child {
     display: none;
   }
 }
+
+.device-setup { max-width: 920px; }
+.pairing-provider { display: grid; grid-template-columns: 28px 1fr auto; gap: 20px; align-items: center; padding: 28px 0; border-bottom: 1px solid var(--line); }
+.pairing-provider h2 { margin: 0; font-size: 24px; }
+.pairing-provider p { margin: 6px 0; max-width: 55ch; }
+.pairing-provider label, .pairing-progress label { display: grid; gap: 8px; margin: 16px 0; }
+.pairing-progress { padding: 28px; margin: 24px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.pairing-progress h2 { margin: 12px 0; }
+.pairing-progress p { max-width: 65ch; }
+.pairing-progress input { width: min(100%, 260px); }
+.pairing-dsk { display: block; overflow-wrap: anywhere; margin: 16px 0; }
+.pairing-stop { margin-top: 8px; text-decoration: underline; }
+.pairing-other { border-top: 1px solid var(--line); margin-top: 32px; padding-top: 20px; }
+.pairing-other summary { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+@media (max-width: 640px) {
+  .pairing-provider { grid-template-columns: 24px minmax(0, 1fr); gap: 12px; }
+  .pairing-provider > button { grid-column: 2; justify-self: start; }
+  .pairing-progress { padding: 20px; }
+}

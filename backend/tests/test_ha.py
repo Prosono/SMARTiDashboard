@@ -176,3 +176,72 @@ async def test_failed_registry_refresh_keeps_previous_data():
     with pytest.raises(HAError):
         await ha.registries()
     assert ha.areas["a"]["name"] == "Existing"
+
+
+@pytest.mark.asyncio
+async def test_mqtt_pairing_subscription_events_before_ack_and_correlated_response(tmp_path):
+    from app.config import Settings
+    from app.setup import DeviceSetup
+
+    mqtt_subs = {}
+
+    async def server(ws):
+        await ws.send(json.dumps({"type": "auth_required"}))
+        await ws.recv()
+        await ws.send(json.dumps({"type": "auth_ok", "ha_version": "pairing-fixture"}))
+        async for raw in ws:
+            msg = json.loads(raw)
+            result = None
+            kind = msg["type"]
+            if kind == "get_states" or kind.endswith("_registry/list") or kind == "config_entries/get":
+                result = []
+            if kind == "mqtt/subscribe":
+                topic = msg["topic"]
+                mqtt_subs[topic] = msg["id"]
+                if topic.endswith("/state") or topic.endswith("/info"):
+                    payload = (
+                        {"state": "online"}
+                        if topic.endswith("/state")
+                        else {"version": "fixture", "permit_join": False}
+                    )
+                    await ws.send(
+                        json.dumps(
+                            {
+                                "id": msg["id"],
+                                "type": "event",
+                                "event": {"topic": topic, "payload": json.dumps(payload), "retain": True},
+                            }
+                        )
+                    )
+            if kind == "call_service":
+                data = json.loads(msg["service_data"]["payload"])
+                topic = "zigbee2mqtt/bridge/response/permit_join"
+                await ws.send(
+                    json.dumps(
+                        {
+                            "id": mqtt_subs[topic],
+                            "type": "event",
+                            "event": {
+                                "topic": topic,
+                                "payload": json.dumps({"status": "ok", "transaction": data["transaction"]}),
+                            },
+                        }
+                    )
+                )
+            await ws.send(json.dumps({"id": msg["id"], "type": "result", "success": True, "result": result}))
+
+    async with websockets.serve(server, "127.0.0.1", 0) as server_socket:
+        port = server_socket.sockets[0].getsockname()[1]
+        ha = HomeAssistant(f"http://127.0.0.1:{port}", "fixture")
+        runner = asyncio.create_task(ha.run())
+        setup = DeviceSetup(ha, Settings(_env_file=None, mode="live", data_dir=tmp_path))
+        try:
+            await wait_until(lambda: ha.connected)
+            result = await setup.start("zigbee2mqtt", None, 1)
+            assert result["status"] == "searching"
+            assert (await setup.stop(result["id"]))["radio_open"] is False
+        finally:
+            await setup.close()
+            runner.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await runner

@@ -1,3 +1,11 @@
+# 0.2.1
+
+Add direct Zigbee2MQTT permit-join and Z-Wave JS inclusion from SMARTi, with capability detection, controller selection, bounded search, stop, progress, S2 security approval and PIN entry. Preserve an interrupted-session marker across restarts. Configure zigbee2mqtt_base_topic when using a custom MQTT base topic. Admin access is required. Bluetooth, ZHA and Matter commissioning are not implemented by this release. Real radio/hardware validation is pending; contract and browser tests cover the new flows.
+
+# 0.2.0 (local pilot, unpublished)
+
+Add opt-in mobile API foundations and persistent installation identity. Existing HA UI remains unchanged; mobile access is disabled by default. Add separate Docker relay/connector pilot with nested TLS, single-use pairing, rotating device credentials and revocation. This does not yet provide a native phone app, cloud accounts or a multi-home hosted service. SQLite migration preserves existing accounts/sessions.
+
 # 0.1.3
 
 Support multiple local/external addresses with additional_origins and explicit HTTP Ingress opt-in (HTTPS remains the default). Existing origin settings remain valid. Explain first-run failures separately: HA origin mismatch, setup secret, invalid fields, invalid timezone and network errors. Recover to login when owner creation has succeeded but automatic login fails. Keep origin and setup-secret checks enforced.

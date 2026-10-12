@@ -30,6 +30,8 @@ class HomeAssistant:
         self.token = token
         self.ws = None
         self.pending = {}
+        self.callbacks = {}
+        self.epoch = 0
         self.next_id = 0
         self.states, self.entities, self.devices, self.areas = {}, {}, {}, {}
         self.connected = False
@@ -48,16 +50,24 @@ class HomeAssistant:
     def controls(self):
         return normalize(self.states, self.entities, self.devices)
 
-    async def request(self, kind, **data):
+    async def request(self, kind, _callback=None, **data):
         if self.ws is None:
             raise HAError("disconnected")
         self.next_id += 1
         number = self.next_id
         future = asyncio.get_running_loop().create_future()
         self.pending[number] = future
+        if _callback:
+            self.callbacks[number] = _callback
         try:
             await self.ws.send(json.dumps({"id": number, "type": kind, **data}))
-            return await asyncio.wait_for(future, 12)
+            result = await asyncio.wait_for(future, 12)
+            if _callback and result is False:
+                raise HAError("ha_request_rejected")
+            return number if _callback else result
+        except BaseException:
+            self.callbacks.pop(number, None)
+            raise
         finally:
             self.pending.pop(number, None)
 
@@ -93,6 +103,10 @@ class HomeAssistant:
                         future.set_exception(HAError("ha_request_rejected"))
             elif msg.get("type") == "event":
                 event = msg["event"]
+                callback = self.callbacks.get(msg.get("id"))
+                if callback:
+                    callback(event)
+                    continue
                 if event.get("event_type") == "state_changed":
                     event["data"]["event_time"] = event.get("time_fired")
                     if self.syncing:
@@ -162,6 +176,7 @@ class HomeAssistant:
                     auth = json.loads(await asyncio.wait_for(ws.recv(), 10))
                     if auth.get("type") != "auth_ok":
                         raise HAError("authentication_rejected")
+                    self.epoch += 1
                     self.version = auth.get("ha_version")
                     reader = asyncio.create_task(self.receive())
                     await self.synchronize()
@@ -174,6 +189,9 @@ class HomeAssistant:
             finally:
                 self.connected = False
                 self.ws = None
+                for callback in list(self.callbacks.values()):
+                    callback({"event": "smarti disconnected"})
+                self.callbacks.clear()
                 for task in (reader, self.refresh_task):
                     if task:
                         task.cancel()

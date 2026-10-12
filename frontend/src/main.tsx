@@ -32,7 +32,6 @@ import {
   AlertCircle,
   LoaderCircle,
   Minus,
-  Radio,
   Zap,
 } from "lucide-react";
 import "@fontsource/bai-jamjuree/400.css";
@@ -43,6 +42,7 @@ import "./style.css";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
+import { DeviceSetup } from "./DeviceSetup";
 import { readPreference, writePreference } from "./preferences";
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } },
@@ -483,32 +483,7 @@ function Dashboard({
           </div>
         )}
         {adding ? (
-          <>
-            <button className="text-button" onClick={() => setAdding(false)}>
-              <ArrowLeft size={17} />
-              {t.back}
-            </button>
-            <div className="page-heading">
-              <span className="eyebrow">{t.add}</span>
-              <h1>{t.setupTitle}</h1>
-              <p>{t.setupHint}</p>
-            </div>
-            <div className="provider-list">
-              {["Z-Wave JS", "ZHA", "Zigbee2MQTT", "Matter / Thread"].map(
-                (p) => (
-                  <div key={p}>
-                    <Radio />
-                    <div>
-                      <h3>{p}</h3>
-                      <p>{t.external}</p>
-                    </div>
-                    <span>{t.readOnly}</span>
-                  </div>
-                ),
-              )}
-            </div>
-            <p className="muted">{t.notPaired}</p>
-          </>
+          <DeviceSetup lang={lang} onBack={() => setAdding(false)} />
         ) : page === "home" ? (
           <>
             <div className="page-heading home-heading">

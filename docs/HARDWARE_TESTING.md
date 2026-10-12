@@ -9,4 +9,11 @@ Not performed in this environment: no HA endpoint/token or radio hardware was su
 5. Verify HAOS Ingress at a dynamic prefix, regular and administrator SMARTi accounts, and rejected direct requests to the Ingress port. Verify LAN HTTPS trust on phone and desktop separately.
 6. Stop SMARTi and verify an already configured harmless HA test automation continues to execute. This does not test failure of HA, the hub or power.
 
-Radio pairing/exclusion is not implemented and must not be run by this suite. Future pairing tests require a spare device and controller, explicit owner approval, documented effects and an independent network-close timeout. Do not reset controllers or change an occupied network automatically.
+Radio exclusion is not implemented. For user-initiated inclusion testing, use a spare Zigbee2MQTT or Z-Wave JS device and record the integration versions. Verify the following manually:
+
+- Zigbee2MQTT: availability, custom base topic if relevant, 120-second permit window, interview success/failure and confirmed close.
+- Z-Wave JS: correct controller, S2 grant approval, DSK/PIN, failed interview and low-security warning.
+- Stop, timeout, HA disconnect and SMARTi restart: never show unconfirmed pairing/close as success; no repeated start. On forced termination, Z-Wave may need explicit stop after restart or in HA.
+- Confirm that the actual device appears with the expected capabilities and room after HA registry import. Do not infer physical success from the test fixtures.
+
+Do not reset controllers or exclude existing devices as part of these tests.

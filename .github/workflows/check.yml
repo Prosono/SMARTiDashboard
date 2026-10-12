@@ -26,3 +26,16 @@ jobs:
             docker build --platform "linux/$platform" --build-arg "BUILD_ARCH=$arch" -t "smarti:test-$arch" ha-app
             docker run --rm --platform "linux/$platform" --network none -v "$PWD/scripts/container_smoke.py:/tmp/container_smoke.py:ro" "smarti:test-$arch" python /tmp/container_smoke.py
           done
+
+      - name: Prepare isolated mobile pilot
+        run: python scripts/prepare_pilot.py "$RUNNER_TEMP/smarti-pilot"
+      - name: Test Docker remote-access pilot
+        run: |
+          docker compose --env-file "$RUNNER_TEMP/smarti-pilot/compose.env" -f pilot/compose.yaml up --build -d
+          .venv/bin/python scripts/pilot_client.py "$RUNNER_TEMP/smarti-pilot"
+      - name: Stop isolated mobile pilot
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/smarti-pilot/compose.env" ]; then
+            docker compose --env-file "$RUNNER_TEMP/smarti-pilot/compose.env" -f pilot/compose.yaml down --volumes
+          fi

@@ -1,5 +1,5 @@
 name: SMARTi
-version: "0.1.3"
+version: "0.2.1"
 slug: smarti
 url: https://github.com/Prosono/SMARTiDashboard
 # Build-tested architecture only; hardware/HAOS validation still required.
@@ -19,10 +19,12 @@ options:
   origin: "https://homeassistant.local:8123"
   additional_origins: []
   allow_http_ingress: false
+  zigbee2mqtt_base_topic: "zigbee2mqtt"
   bootstrap_secret: ""
 schema:
   origin: url
   additional_origins:
     - url
   allow_http_ingress: bool?
+  zigbee2mqtt_base_topic: str?
   bootstrap_secret: password

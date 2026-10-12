@@ -1,0 +1,78 @@
+name: smarti-pilot
+x-home: &home
+  image: smarti-home:pilot
+  build:
+    context: ../ha-app
+  environment: &home-env
+    SMARTI_MODE: demo
+    SMARTI_DATA_DIR: /data
+    SMARTI_ORIGIN: https://localhost:18443
+    SMARTI_MOBILE_ENABLED: "true"
+    SMARTI_MOBILE_URL: https://localhost:18444
+    SMARTI_TLS_CERT: /tls/server.crt
+    SMARTI_TLS_KEY: /tls/server.key
+  volumes: &home-volumes
+    - home-data:/data
+    - ${SMARTI_PILOT_DIR:?Run prepare_pilot.py}/home-tls/server.crt:/tls/server.crt:ro
+    - ${SMARTI_PILOT_DIR}/home-tls/server.key:/tls/server.key:ro
+  depends_on:
+    init:
+      condition: service_completed_successfully
+services:
+  init:
+    <<: *home
+    depends_on: []
+    command: [python, /tools/pilot_init.py]
+    volumes:
+      - home-data:/data
+      - ../scripts/pilot_init.py:/tools/pilot_init.py:ro
+      - ${SMARTI_PILOT_DIR}/public/home-id:/provision/home-id:ro
+      - ${SMARTI_PILOT_DIR}/secrets/owner.json:/secrets/owner.json:ro
+  web:
+    <<: *home
+    command: [python, -m, app.run]
+    ports: ["127.0.0.1:18443:8443"]
+  mobile:
+    <<: *home
+    command: [python, -m, app.mobile_run]
+    ports: ["127.0.0.1:18444:8444"]
+  relay:
+    image: smarti-relay:pilot
+    build:
+      context: ..
+      dockerfile: services/relay/Dockerfile
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      RELAY_HOME_ID_FILE: /provision/home-id
+      RELAY_TOKEN_FILE: /secrets/connector-token
+      RELAY_TLS_CERT: /tls/server.crt
+      RELAY_TLS_KEY: /tls/server.key
+    ports: ["127.0.0.1:19443:8443", "127.0.0.1:19444:9443"]
+    volumes:
+      - ${SMARTI_PILOT_DIR}/public/home-id:/provision/home-id:ro
+      - ${SMARTI_PILOT_DIR}/secrets/connector-token:/secrets/connector-token:ro
+      - ${SMARTI_PILOT_DIR}/relay-tls/server.crt:/tls/server.crt:ro
+      - ${SMARTI_PILOT_DIR}/relay-tls/server.key:/tls/server.key:ro
+  connector:
+    image: smarti-relay:pilot
+    pull_policy: never
+    command: [python, -m, app.connector]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on: [relay, mobile]
+    environment:
+      CONNECTOR_URL: wss://relay:9443/connector
+      CONNECTOR_HOME_ID_FILE: /provision/home-id
+      CONNECTOR_TOKEN_FILE: /secrets/connector-token
+      CONNECTOR_CA_FILE: /trust/relay.crt
+      CONNECTOR_TARGET_HOST: mobile
+      CONNECTOR_TARGET_PORT: "8444"
+    volumes:
+      - ${SMARTI_PILOT_DIR}/public/home-id:/provision/home-id:ro
+      - ${SMARTI_PILOT_DIR}/secrets/connector-token:/secrets/connector-token:ro
+      - ${SMARTI_PILOT_DIR}/public/relay.crt:/trust/relay.crt:ro
+volumes:
+  home-data:

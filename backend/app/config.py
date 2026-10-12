@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     ingress: bool = False
     ingress_proxy: str = "172.30.32.2"
     static_dir: Path = Path("frontend/dist")
+    zigbee2mqtt_base_topic: str = "zigbee2mqtt"
+    mobile_enabled: bool = False
+    mobile_url: str = ""
     session_hours: int = 12
     tls_cert: str | None = None
     tls_key: str | None = None
@@ -29,6 +32,10 @@ class Settings(BaseSettings):
 
     def validate_runtime(self):
         from urllib.parse import urlparse
+
+        topic = self.zigbee2mqtt_base_topic
+        if not topic or len(topic) > 200 or any(c in topic for c in "#+\x00") or topic.endswith("/"):
+            raise ValueError("Invalid Zigbee2MQTT base topic")
 
         for value in self.allowed_origins:
             origin = urlparse(value)

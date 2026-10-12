@@ -16,6 +16,18 @@ CREATE TABLE favorites (user_id INTEGER NOT NULL, entity_id TEXT NOT NULL,
 CREATE TABLE attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, reset REAL NOT NULL);
 """,
     "ALTER TABLE favorites ADD COLUMN control_id TEXT;",
+    """
+CREATE TABLE mobile_pairings (code TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires REAL NOT NULL);
+CREATE TABLE mobile_devices (id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, name TEXT NOT NULL,
+ created REAL NOT NULL, expires REAL NOT NULL, revoked INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE mobile_access (token TEXT PRIMARY KEY, device_id TEXT NOT NULL, expires REAL NOT NULL);
+CREATE TABLE mobile_refresh (token TEXT PRIMARY KEY, device_id TEXT NOT NULL,
+ expires REAL NOT NULL, used INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX mobile_access_device ON mobile_access(device_id);
+CREATE INDEX mobile_refresh_device ON mobile_refresh(device_id);
+CREATE TABLE mobile_audit (id INTEGER PRIMARY KEY, event TEXT NOT NULL, user_id INTEGER NOT NULL,
+ device_id TEXT, created REAL NOT NULL);
+""",
 ]
 
 

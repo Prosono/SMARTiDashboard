@@ -21,3 +21,7 @@ The console asks for an existing administrator name and a new password without e
 
 ## Limits
 This is a development foundation, not a production security certification. TLS trust must be provisioned on each client. Per-room restrictions, account deletion, role editing, MFA and recovery through the HA installer UI are not implemented. A privileged HA credential can access more than the allowlisted SMARTi operations: secure the host and its environment accordingly. Radio secrets are not collected by this release.
+
+## Mobile pilot
+
+The opt-in mobile pilot uses a separate TLS-only listener and bearer device credentials. Existing HA UI protections remain unchanged. See [the mobile pilot security boundaries and limitations](MOBILE_PILOT.md). SQLite schema v3 adds device credentials and pairing records; only token digests are persisted. Backups clone the installation UUID and device credentials: never run a restored clone concurrently as another home. Production enrollment, device key binding and certificate lifecycle are pending.
