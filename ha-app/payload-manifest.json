@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "92fa8af2a9230482fef43e01ae00ba0266e6e8a86e6cf0cbc99d8e12dea662ca",
+  "bundle_sha256": "0f26ee1d1619a32d577a3f88b0f056e9177cf1176238600c19c9fd51eec0993b",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/auth.py": "a1b5574b40832328d6d1162e8e6d4060315b668581d9bc077d89cb54bd21ead5",
@@ -54,12 +54,12 @@
     "frontend/dist/assets/bai-jamjuree-vietnamese-600-normal-TJTmiha_.woff": "77d17583af806042285e70b9b1046d3931c1ed916daa520f623b57e6494b013d",
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-B4ES4mUY.woff": "dd34fad57ed536134141ac3c4ad6697e8ce389aa1193d07ddabd2d1cb2fbaaa0",
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-Bt7Gqki8.woff2": "4900a39cfa8b2fe08bccd07eb2371519172b07ed9ce9765e5a4ad9097cb6759b",
-    "frontend/dist/assets/index-BuJetDXD.js": "ea10de6072e5b1fcc846d6787ea3c8d8a4aa8562ab1098552a9eddd45a1906a0",
-    "frontend/dist/assets/index-DXYSKoYW.css": "78f2c20c825c90177b428bec3df534c49bc40a65b595b8a34cf016e49c6280a7",
+    "frontend/dist/assets/index-C72vK6QB.css": "5ce6a5d8c5da17901ab0fbf5cb393eb2df7d103ca9eaf85f983303d248036313",
+    "frontend/dist/assets/index-D_dg8OFT.js": "2df7f9bf47cd131e6e30514468e969a97c2ae7adfd86c11f0df2ce6563e29aa5",
     "frontend/dist/brand/Bai-Jamjuree-OFL.txt": "74b7deafa632a5ed301dc322fcc2867ac200402e06b6d0b0b01faf09b8514e3e",
     "frontend/dist/brand/README.md": "7bce8f4c0331d16ac1279426991badcfff774ef0d4837acc01e511bb5c32af4e",
     "frontend/dist/brand/smarti-logo.png": "ae1207d5b3e40031220662a602d1ed4361585a33da405ad754829d0ab70b501b",
-    "frontend/dist/index.html": "fc8c6de8a31cc3e264e0fcd130029931df71ded030f6d894f6dd423aa8014848"
+    "frontend/dist/index.html": "a8ca293551185cac3e67d70469c7c5b8b31a65a150bee8a538eb506249498ee2"
   },
   "sources": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -100,13 +100,13 @@
     "frontend/src/i18n.ts": "ffccc86111f1d2a19ff2f3e023f294bd6351ab6dd977f4037107ebad125f4604",
     "frontend/src/main.tsx": "077f267d1037d9b3218d45b15a413b2a9993de55698928897cc32b5348102540",
     "frontend/src/manage/AutomationFlow.test.ts": "a0638c6972946f218110a2a8a6a01e6896ceb66b3c360aac901ca284362d0e8c",
-    "frontend/src/manage/AutomationFlow.tsx": "49e396167652fc55dec579cbae092b7f1801ae3f35d6da73946266e3347a7635",
+    "frontend/src/manage/AutomationFlow.tsx": "ce27d990e2894d13cf6f411bc23922407caac654cb4ae7ea6385366a724b83c0",
     "frontend/src/manage/AutomationGuide.test.ts": "ca5d446ec72169afd39fb7722f4b3562a990de1bff1ae29c1dbe7992d98899b0",
     "frontend/src/manage/AutomationGuide.tsx": "ae6ca4e5c2bc92e470eca88086772533fe9408595d7e672541035eaa9f7f6108",
     "frontend/src/manage/Automations.tsx": "a36659af88448ccc9749ee6b08e35f1ea3edf55445aa645569c3c6722e8324df",
     "frontend/src/manage/Dashboards.tsx": "54ea37bc4cd287f59633ebf10ea058b073ebb9e11badc4361c5c54caaeb05b5d",
     "frontend/src/manage/EntityPicker.tsx": "c0144d2628e51d0bb276b8f0acc8763bcddf7e9ed65762513d939cb715229d4d",
-    "frontend/src/manage/FlowCanvas.tsx": "4144f730853656a42f479eb102127cd57614a5a312d611be2fceb9c8f805ae91",
+    "frontend/src/manage/FlowCanvas.tsx": "c8be89a6a38e0957d373e21c1aeab579ed6543944cfa1202e5dd5aa39e842962",
     "frontend/src/manage/FlowInspector.tsx": "e15f0ad54033e66c8d7e28c2befe4c561cc515e83f63c617396cc6743be64bbc",
     "frontend/src/manage/FlowTree.tsx": "c3b7ac31738c459b7d2861f0b1168bac249c6a6a56d157ab14249bb784c96d11",
     "frontend/src/manage/Rooms.tsx": "ab050d1f787ec59ed64949dbbec761199486d405591bcd7196f14eb73013f5fb",
@@ -118,7 +118,7 @@
     "frontend/src/manage/flowStructure.ts": "bdbc1f30351c831260d945dd028c04d5488b4480a035c0eeb9dcc0bb37506bfe",
     "frontend/src/manage/grid.test.ts": "e5ab66df1dc9d66bad5a41328529c22057833c55b7b67add858adfe1aff98f15",
     "frontend/src/manage/grid.ts": "17e6b95ccccbbdc25c40a3c37ce19ebe753e302f6a03793fb8b9256f717fb1c8",
-    "frontend/src/manage/manage.css": "cdd44983eb7c74a7ed86a33b3991355904b2834e191a3732ca1391a883310e06",
+    "frontend/src/manage/manage.css": "d9ee0f10a5243c9019bf2d102fe8bbc56043cc2641e6f48a8bcde3d09819516b",
     "frontend/src/manage/shared.tsx": "5cf3da43a2e56df0996008e7d69f5035f46e863f2fc720a5bad94f8993df7f77",
     "frontend/src/preferences.test.ts": "fe85ef3a5d645105d11135978dae33ca08e7230d0d566cd589496772c0df8e7e",
     "frontend/src/preferences.ts": "b2d618156a01db504b0cfba775fa31ae7c23eddcf111c1d9df6e3a6e1f7913ef",

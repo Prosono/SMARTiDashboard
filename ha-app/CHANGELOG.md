@@ -1,3 +1,7 @@
+# 0.3.6
+
+Give flow cards distinct orange, blue and green headers with matching connections. Drag cards from their body or handle, pan by dragging the canvas background, toggle the grid and connection lines, and remove cards with confirmation. Moving cards and hiding lines do not alter execution order; removing a card changes the draft until saved. Card positions remain temporary. Validated with frontend unit tests and desktop/mobile browser interaction tests; not tested on physical HA.
+
 # 0.3.5
 
 Add a Homey-inspired automation workspace with connected cards, pointer/touch and keyboard movement, zoom, arrange/reset and a searchable card library. Select cards to edit or open advanced subflows. Preserve the structural and JSON editors. Connections are projected from HA execution order; position changes do not change the automation. Card positions are temporary and arbitrary connector wiring is not implemented. No physical automations were executed during validation.

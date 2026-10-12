@@ -1550,28 +1550,33 @@ textarea:focus-visible {
   position: absolute;
   width: 260px;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--orange);
+  --node-color: #a74513;
+  border-color: color-mix(in srgb, var(--node-color) 35%, var(--line));
   border-radius: 12px;
-  background: var(--surface);
-  box-shadow: 0 5px 15px #00000009;
+  background: color-mix(in srgb, var(--node-color) 7%, var(--surface));
+  box-shadow: 0 8px 24px #25251d12;
+  touch-action: none;
+  cursor: grab;
 }
 .canvas-conditions {
-  border-left-color: #8c7343;
+  --node-color: #316b91;
 }
 .canvas-actions {
-  border-left-color: #648270;
+  --node-color: #35715a;
 }
 .canvas-gate {
-  border-left-color: var(--muted);
+  --node-color: #626958;
 }
 .canvas-drag {
+  background: var(--node-color);
+  border-radius: 11px 11px 0 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
+  padding: 0.55rem 2.8rem 0.55rem 0.9rem;
   min-height: 40px;
   width: 100%;
-  color: var(--muted);
+  color: #fff9ef;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   touch-action: none;
@@ -1581,6 +1586,7 @@ textarea:focus-visible {
   cursor: grabbing;
 }
 .canvas-node-content {
+  cursor: grab;
   text-align: left;
   display: grid;
   gap: 0.6rem;
@@ -1615,7 +1621,7 @@ textarea:focus-visible {
   width: 9px;
   height: 9px;
   background: var(--surface);
-  border: 2px solid var(--muted);
+  border: 2px solid var(--node-color);
   border-radius: 50%;
 }
 .canvas-port.in {
@@ -1654,4 +1660,70 @@ textarea:focus-visible {
   background: var(--surface);
   border-radius: 12px;
   border-left: 3px solid var(--orange);
+}
+
+.canvas-toolbar .canvas-tools {
+  flex-wrap: wrap;
+}
+.canvas-tools button[aria-pressed="true"] {
+  background: var(--soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.canvas-viewport {
+  cursor: grab;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+.canvas-viewport:active,
+.canvas-node:active,
+.canvas-node-content:active {
+  cursor: grabbing;
+}
+.canvas-viewport.no-grid {
+  background-image: none;
+}
+.canvas-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  color: #fff9ef;
+  border-radius: 0 11px 0 0;
+}
+.canvas-delete:hover {
+  background: #1b211e40;
+}
+.canvas-node:focus-within {
+  outline: 2px solid var(--node-color);
+  outline-offset: 4px;
+}
+.canvas-legend span {
+  font-weight: 600;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+}
+.canvas-legend span:nth-child(1) {
+  background: #fbe5d5;
+  color: #963f11;
+}
+.canvas-legend span:nth-child(2) {
+  background: #dfedf6;
+  color: #285e80;
+}
+.canvas-legend span:nth-child(3) {
+  background: #e0eee5;
+  color: #2e654f;
+}
+.canvas-wire-triggers {
+  color: #b96330;
+}
+.canvas-wire-conditions {
+  color: #5487a9;
+}
+.canvas-wire-actions {
+  color: #568d72;
 }

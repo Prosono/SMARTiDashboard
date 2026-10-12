@@ -250,6 +250,14 @@ export function AutomationFlow({
             setSelected(null);
             setNested(null);
           }}
+          onRemove={(p) => {
+            const key = p[0] as FlowKey;
+            patch({
+              [key]: c[key].filter((_: unknown, i: number) => i !== p[1]),
+            });
+            setSelected(null);
+            setNested(null);
+          }}
           onSelect={(p) => {
             setView("structure");
             if (structureSummary(readFlowPath(c, p), lang)) {

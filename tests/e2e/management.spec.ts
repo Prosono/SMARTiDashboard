@@ -792,6 +792,33 @@ test("canvas moves cards with keyboard and pointer without changing automation l
   await page.mouse.move(box!.x + 50, box!.y + 50);
   await page.mouse.up();
   await expect(node).toHaveCSS("top", "130px");
+  const content = await node.locator(".canvas-node-content").boundingBox();
+  await page.mouse.move(content!.x + 30, content!.y + 20);
+  await page.mouse.down();
+  await page.mouse.move(content!.x + 30, content!.y + 60);
+  await page.mouse.up();
+  await expect(node).toHaveCSS("top", "180px");
+  await page.getByRole("button", { name: "Rutenett", exact: true }).click();
+  await expect(page.locator(".canvas-viewport")).toHaveCSS(
+    "background-image",
+    "none",
+  );
+  await page.getByRole("button", { name: "Linjer", exact: true }).click();
+  await expect(page.locator(".canvas-wires")).toHaveCount(0);
+  await page.getByRole("button", { name: "Linjer", exact: true }).click();
+  await expect(page.locator(".canvas-wires")).toHaveCount(1);
+  const viewport = page.locator(".canvas-viewport");
+  await viewport.scrollIntoViewIfNeeded();
+  const surface = await viewport.boundingBox();
+  await page.mouse.move(surface!.x + 180, surface!.y + 330);
+  await page.mouse.down();
+  await page.mouse.move(surface!.x + 60, surface!.y + 330);
+  await page.mouse.up();
+  expect(await viewport.evaluate((el) => el.scrollLeft)).toBeGreaterThan(50);
+  await viewport.evaluate((el) => {
+    el.scrollLeft = 0;
+  });
+
   await page.getByRole("button", { name: "Zoom ut", exact: true }).click();
   await expect(page.locator(".canvas-toolbar output")).toHaveText("70%");
   await page
@@ -804,6 +831,19 @@ test("canvas moves cards with keyboard and pointer without changing automation l
   await page
     .getByRole("button", { name: "Ferdig med steget", exact: true })
     .click();
+  await page
+    .getByRole("button", { name: "Legg til hendelse", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Klokkeslett", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", { name: /Fjern kort: Klokken/ })
+    .last()
+    .click();
+  await expect(page.locator(".canvas-triggers")).toHaveCount(1);
   await page.screenshot({
     path: `../artifacts/${test.info().project.name}-flow-canvas.png`,
     fullPage: true,
