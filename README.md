@@ -2,6 +2,14 @@
 
 Local home control with Home Assistant underneath. React/TypeScript frontend, FastAPI backend, real HA WebSocket adapter and an explicitly separate demo mode. Design follows SMARTi's orange/charcoal identity and uses the original logo from smarti.no.
 
+## Install in Home Assistant
+
+Add **https://github.com/Prosono/SMARTiDashboard** under **Settings → Apps → App store → menu → Repositories**, then install **SMARTi**.
+
+[Add repository in Home Assistant](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FProsono%2FSMARTiDashboard)
+
+Requires HAOS and an HTTPS HA origin. Configure the origin and a random owner setup secret in the app's Configuration tab. Home Assistant credentials are provided automatically by Supervisor. [Step-by-step setup](ha-app/DOCS.md).
+
 ## Start locally
 
 Requires Python 3.14 and Node 24:

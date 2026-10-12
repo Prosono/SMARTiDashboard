@@ -21,11 +21,17 @@ chmod 600 server.key
 Trust `ca.crt` on clients, transfer only `server.crt` and `server.key` to the hub, and renew before expiry. Installing a new CA is a device-owner action, not automated by this repository. No `smarti.local` name is assumed. Reserve the chosen hub IP in your router or configure DNS explicitly. TLS to HA is verified normally when using an HTTPS HA endpoint.
 
 ## Home Assistant OS app / Ingress
-`make package` stages only the application source, locked requirements and built frontend under `ha-app/`. Copy that entire staged directory into HA's local app directory (`/addons/smarti`), reload the app store and install the local SMARTi app. A raw clone of this repository is not an installable remote app repository until packaging has run; generated assets are intentionally not committed. No images/releases have been published.
 
-Configure `origin` as the exact HTTPS origin used to open Home Assistant (including a nonstandard port) and `bootstrap_secret` as a random installer-provided secret. Start the app, open its Ingress panel and create a SMARTi owner. Clear the bootstrap secret after setup.
+Install through the built-in app manager: Settings → Apps → App store → menu → Repositories. Add `https://github.com/Prosono/SMARTiDashboard`, find SMARTi and select Install. Older HA versions label apps as add-ons. See [the complete UI instructions](../ha-app/DOCS.md).
 
-The app uses `/data` for SQLite and Supervisor's HA proxy with `homeassistant_api`. It requests no host devices, privileged mode, Docker socket or write access to HA configuration. Its ingress listener is 8099 and is not published to LAN. A separate LAN entry point for this same HA app instance is planned; standalone HTTPS works now. No architectures beyond built/tested amd64 are advertised. HAOS end-to-end deployment still requires a real installation test.
+Configure `origin` as the exact HTTPS origin used to open HA (including a nonstandard port) and `bootstrap_secret` as a unique random secret of at least 24 characters from a password manager. Start, open the web UI and create a SMARTi owner. Clear the secret after setup. Supervisor provides HA authentication automatically.
+
+The app uses `/data` for SQLite and Supervisor's HA proxy with `homeassistant_api`. It requests no host devices, privileged mode, Docker socket or write access to HA configuration. Its ingress listener is 8099 and is not published to LAN. A separate LAN entry point for this same HA app instance is planned; standalone HTTPS works now. HAOS end-to-end deployment still requires a real installation test.
+
+### Maintainer packaging
+`make package` creates `ha-app/payload.tar.gz` and `payload-manifest.json`; both must be included in Git when application code changes. The deterministic archive includes only runtime backend source, locked Python requirements and compiled frontend assets. Source and payload SHA-256 hashes are recorded. `scripts/package.py --check` checks that the committed package matches a fresh build; CI enforces this. Docker uses only files inside ha-app/, exactly as Supervisor does. End users do not need to run these commands.
+
+The repository uses on-device Docker builds, not externally published images. Updating the app version in config.yaml makes a newly pushed version discoverable by HA's app manager. Local changes must be pushed to the repository before HA can fetch them.
 
 ## Backup
 Stop SMARTi before a filesystem backup, then copy `smarti-live.sqlite3` (or `smarti-demo.sqlite3`) from its data directory. Protect this file: it contains password hashes and sessions. Restore into the same path and mode with ownership restricted to the service. Revoke sessions using the recovery tool after restoring a backup. Keep HA backups and Z-Wave/Zigbee network backups separately; SMARTi metadata cannot restore radio networks. HA state/registry cache is rebuilt on connection.

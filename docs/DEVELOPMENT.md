@@ -22,4 +22,4 @@ make container
 
 `make e2e` starts an ephemeral demo server on localhost:8765, with an isolated known test account; those credentials are only in the test harness and never created by normal startup. Do not expose the harness outside loopback. Contract tests use a local WebSocket HA simulator; no tests contact the user's HA or radio hardware.
 
-Python exact resolved versions are in `backend/requirements.lock`; npm's full graph is in `frontend/package-lock.json`. Rebuild and rerun the suite after dependency updates. `make package` prepares a complete build context in ha-app. Generated files are ignored. CI runs lint, tests, browser tests and the container build.
+Python exact resolved versions are in `backend/requirements.lock`; npm's full graph is in `frontend/package-lock.json`. Rebuild and rerun the suite after dependency updates. `make package` creates the tracked ha-app/payload.tar.gz and payload-manifest.json. Include both in commits that change runtime code; CI verifies they match a clean frontend build. Intermediate local build folders remain ignored. CI runs lint, tests, browser tests and the container build.

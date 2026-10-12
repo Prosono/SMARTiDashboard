@@ -1,5 +1,10 @@
 # Implementation status — 2026-10-12
 
+## App-store packaging update (0.1.1)
+
+Prepared installation through the built-in HA app manager using https://github.com/Prosono/SMARTiDashboard. The repository includes a deterministic runtime archive and checksums, so HA can build directly from a clone without manual staging. Both linux/amd64 and linux/arm64 containers were built and smoke-tested with networking disabled. Actual HAOS/Ingress remains unverified. CI checks payload freshness and both architectures. These local changes must be pushed before HA can fetch version 0.1.1.
+
+
 ## Delivered
 First runnable iteration of milestone 1. React/TypeScript/Vite/Tailwind/TanStack Query UI and Python/FastAPI backend. Original SMARTi logo, locally bundled Bai Jamjuree, orange accents, light/dark themes, Norwegian/English, responsive desktop sidebar and four-entry mobile navigation.
 
@@ -24,7 +29,7 @@ First runnable iteration of milestone 1. React/TypeScript/Vite/Tailwind/TanStack
 | HA WebSocket contract | Actual local WebSocket transport; auth, snapshot/event ordering, newer-state protection, registry refresh races, command confirmation, rejection, reconnect and no replay |
 | HTTPS transport | Actual local TLS handshake with a temporary trusted test certificate, validation enabled, Secure session and unauthenticated rejection |
 | Security API tests | Bootstrap secret/reuse, roles, forged headers, CSRF, origin, rate limit, expiry/revocation, DB permissions, invalid capabilities/values |
-| Packaging | linux/amd64 image built; ran in network-isolated container; liveness, static UI, explicit demo and denied anonymous access passed |
+| Packaging | linux/amd64 and linux/arm64 images built; ran in network-isolated container; liveness, static UI, explicit demo and denied anonymous access passed |
 | Visual review | Desktop/mobile screenshots, light/dark layout, no horizontal overflow; keyboard activation of theme control, local browser walkthrough |
 | npm audit after dependency update | 0 known vulnerabilities at installation time |
 
