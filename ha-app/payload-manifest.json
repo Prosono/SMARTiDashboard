@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "bb8b51d813ab1c5e0c38b035a3bb04dfe032c98e32d9464d7f03188c1281017a",
+  "bundle_sha256": "a1d92c256a87cf6e7088961c214419efe55d6f5f6be28b83cc69f95f62f43012",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/auth.py": "a1b5574b40832328d6d1162e8e6d4060315b668581d9bc077d89cb54bd21ead5",
@@ -54,12 +54,12 @@
     "frontend/dist/assets/bai-jamjuree-vietnamese-600-normal-TJTmiha_.woff": "77d17583af806042285e70b9b1046d3931c1ed916daa520f623b57e6494b013d",
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-B4ES4mUY.woff": "dd34fad57ed536134141ac3c4ad6697e8ce389aa1193d07ddabd2d1cb2fbaaa0",
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-Bt7Gqki8.woff2": "4900a39cfa8b2fe08bccd07eb2371519172b07ed9ce9765e5a4ad9097cb6759b",
-    "frontend/dist/assets/index-BH4AIwYM.js": "3662cdbc3319f252909efbfdef8a06dca4779c23f42ccd7cb410c6b36849d27a",
-    "frontend/dist/assets/index-BptCSG22.css": "f2c88404eaa040507fcb3bdb4b2fbea9a6b3e1e2931b45c7200a3932d2435c3c",
+    "frontend/dist/assets/index-BQqCpVkH.css": "31f3876d3d1547fd87d342ba31910d411a15396fbeae87aead79e366ff9856b0",
+    "frontend/dist/assets/index-BzA74DBM.js": "2a839296f91895de5ece69ad65234714f702819fca4082a0b33891abf8486619",
     "frontend/dist/brand/Bai-Jamjuree-OFL.txt": "74b7deafa632a5ed301dc322fcc2867ac200402e06b6d0b0b01faf09b8514e3e",
     "frontend/dist/brand/README.md": "7bce8f4c0331d16ac1279426991badcfff774ef0d4837acc01e511bb5c32af4e",
     "frontend/dist/brand/smarti-logo.png": "ae1207d5b3e40031220662a602d1ed4361585a33da405ad754829d0ab70b501b",
-    "frontend/dist/index.html": "5d2a553364c372cc4e91a6ecbd57b709bc4eabe745a7412618a5c7a42ea4bf29"
+    "frontend/dist/index.html": "5a977492c5b0429d93c8ea0e352eeeef6bb214facb2dbeb5035b6a1ed2773199"
   },
   "sources": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -99,13 +99,15 @@
     "frontend/src/i18n.test.ts": "3204922b2a259f48b2a7c7d0efc3ec4f32a79380b0636124cbb67eba9282c2c1",
     "frontend/src/i18n.ts": "ffccc86111f1d2a19ff2f3e023f294bd6351ab6dd977f4037107ebad125f4604",
     "frontend/src/main.tsx": "077f267d1037d9b3218d45b15a413b2a9993de55698928897cc32b5348102540",
-    "frontend/src/manage/Automations.tsx": "876e82c8a807971a516a80e1bcbc583322a4c354072c21c769f310c32c3e3215",
+    "frontend/src/manage/AutomationGuide.test.ts": "ca5d446ec72169afd39fb7722f4b3562a990de1bff1ae29c1dbe7992d98899b0",
+    "frontend/src/manage/AutomationGuide.tsx": "9a7b47ba6f7c1fea4581871842a87516c74a390b45bce71adae9581ef37405d6",
+    "frontend/src/manage/Automations.tsx": "6667697765a3c49f660580fb0061865e81efb1b287816e13669e0b2ef88fce6a",
     "frontend/src/manage/Dashboards.tsx": "54ea37bc4cd287f59633ebf10ea058b073ebb9e11badc4361c5c54caaeb05b5d",
     "frontend/src/manage/Rooms.tsx": "ab050d1f787ec59ed64949dbbec761199486d405591bcd7196f14eb73013f5fb",
     "frontend/src/manage/System.tsx": "8f691bc6e4c347c7862a75b38c3a932422a3e26f3adedccd351170a3eda072c8",
     "frontend/src/manage/grid.test.ts": "e5ab66df1dc9d66bad5a41328529c22057833c55b7b67add858adfe1aff98f15",
     "frontend/src/manage/grid.ts": "17e6b95ccccbbdc25c40a3c37ce19ebe753e302f6a03793fb8b9256f717fb1c8",
-    "frontend/src/manage/manage.css": "533a9532c8438c784f0d8433d9945f01107036b3e95a45e5e7e43469243b663e",
+    "frontend/src/manage/manage.css": "e63a68b2e438b3c0efc7eaaf7d511795e7073edb4e04dd53d1e9bb8d2a9a7c9d",
     "frontend/src/manage/shared.tsx": "5cf3da43a2e56df0996008e7d69f5035f46e863f2fc720a5bad94f8993df7f77",
     "frontend/src/preferences.test.ts": "fe85ef3a5d645105d11135978dae33ca08e7230d0d566cd589496772c0df8e7e",
     "frontend/src/preferences.ts": "b2d618156a01db504b0cfba775fa31ae7c23eddcf111c1d9df6e3a6e1f7913ef",

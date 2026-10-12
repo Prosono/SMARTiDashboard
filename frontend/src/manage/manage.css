@@ -595,3 +595,193 @@ textarea:focus-visible {
     overflow-wrap: anywhere;
   }
 }
+
+/* A quiet, progressive editor for everyday routines. */
+.routine-steps {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  color: var(--muted);
+}
+.routine-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.routine-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+.routine-steps [aria-current] {
+  color: var(--text);
+  font-weight: 600;
+}
+.routine-steps [aria-current] > span {
+  background: var(--orange);
+  color: #171b17;
+  border-color: var(--orange);
+}
+.routine-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 3rem;
+  align-items: start;
+}
+.routine-main h2 {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.035em;
+}
+.routine-hint {
+  color: var(--muted);
+  display: block;
+  margin: 0 0 1.5rem;
+}
+.routine-choices,
+.routine-devices {
+  display: grid;
+  gap: 0.65rem;
+}
+.routine-choices button,
+.routine-devices button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 12px;
+}
+.routine-choices button > span,
+.routine-devices button > span {
+  flex: 1;
+}
+.routine-choices strong,
+.routine-devices strong,
+.routine-choices small,
+.routine-devices small {
+  display: block;
+}
+.routine-choices small,
+.routine-devices small {
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
+.routine-guide button[aria-pressed="true"] {
+  border-color: var(--orange);
+  background: var(--tint);
+  box-shadow: inset 3px 0 var(--orange);
+}
+.routine-field {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1.5rem 0;
+}
+.routine-field label {
+  display: grid;
+  gap: 0.5rem;
+}
+.routine-field small {
+  color: var(--muted);
+}
+.routine-preview {
+  border-left: 1px solid var(--line);
+  padding: 1.5rem;
+  background: var(--soft);
+  border-radius: 0 16px 16px 0;
+}
+.routine-preview .eyebrow {
+  display: block;
+  margin-bottom: 2rem;
+}
+.routine-dot {
+  color: var(--accent);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+.routine-preview p {
+  margin: 0.4rem 0 1.8rem;
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+.routine-preview small {
+  color: var(--muted);
+}
+.routine-navigation {
+  display: flex;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.routine-devices {
+  max-height: 350px;
+  overflow: auto;
+  margin-top: 1rem;
+}
+.routine-toggle {
+  border: 0;
+  padding: 0;
+  margin: 1.5rem 0;
+  display: flex;
+  gap: 0.7rem;
+}
+.routine-toggle legend {
+  margin-bottom: 0.6rem;
+}
+.routine-toggle button {
+  min-width: 110px;
+}
+.routine-review {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  background: var(--tint);
+  padding: 1.2rem;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+}
+.routine-review p {
+  margin: 0;
+  font-size: 1.2rem;
+}
+@media (max-width: 850px) {
+  .routine-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .routine-preview {
+    display: none;
+  }
+  .routine-steps {
+    gap: 1rem;
+    font-size: 0.9rem;
+  }
+}
+.guided-form .editor-footer {
+  position: static;
+  margin-top: 1rem;
+}
+@media (max-width: 600px) {
+  .management-page:has(.guided-form) .page-heading {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .routine-choices button {
+    padding: 0.9rem;
+  }
+}
+.routine-choices button,
+.routine-devices button {
+  transition: none;
+}
+.guided-form .editor-footer:empty {
+  display: none;
+}

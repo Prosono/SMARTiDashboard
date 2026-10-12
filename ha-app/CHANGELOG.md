@@ -1,3 +1,7 @@
+# 0.3.1
+
+Add a three-step automation guide: choose a time, sunrise/sunset or binary sensor event; select a light/socket by name and room; review a plain-language summary before saving. Supports backtracking, automatic name suggestions and validated selections. Simple compatible routines reopen in the guide. Complex configurations retain the full editor without hiding or discarding settings. Saving does not trigger a test run. HA remains the execution engine; physical installation testing is still required.
+
 # 0.3.0
 
 Add administrator room creation/rename/deletion, device placement and explicit entity area overrides. Add automation creation/editing/deletion, enable/disable and confirmed runs; a visual time/state/sun editor preserves advanced configuration through a full JSON editor. HA remains the execution engine and authority. Automations in separate YAML files that the HA config API cannot edit stay at their source.

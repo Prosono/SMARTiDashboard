@@ -1,5 +1,12 @@
 # Implementation status — 2026-10-12
 
+## 0.3.1 — guided everyday automations
+
+New routines start with When → Then → Review, using time, sunrise/sunset or explicit binary-sensor transitions and capability-backed light/socket actions. Choices use room/device names, searchable selection, a plain-language preview and automatic name suggestions. Compatible existing routines reopen in the guide; other configurations retain the complete editor. More devices, conditions and actions remain available under More options. No physical actions run during editing or review.
+
+Verification: 16 frontend unit tests, 10 desktop/mobile management browser tests, TypeScript/Vite build and deterministic payload validation passed. Browser screenshots reviewed on phone and desktop. No live HA installation or physical automation execution was tested. Version 0.3.1 is prepared locally, not published.
+
+
 ## 0.3.0 — administration and responsive dashboards
 
 Implemented HA-backed room CRUD and device/entity area assignment; automation CRUD with visual blocks and a lossless advanced JSON editor; integration overview, rename, enable/disable and reload; capability-checked update installation with explicit confirmation, supported backup and SMARTi display branding. New integration configuration flows are deferred by the user's choice. Separate YAML automation files remain outside HA's editable config API.

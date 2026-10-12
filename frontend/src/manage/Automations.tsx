@@ -9,6 +9,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
+import { AutomationGuide, canGuide } from "./AutomationGuide";
 import { api } from "../api";
 import type { Home } from "../types";
 import { Feedback, LoadError, useWork, words } from "./shared";
@@ -53,6 +54,8 @@ export function Automations({
     revision: string;
     config: Config;
   } | null>(null);
+  const [guided, setGuided] = useState(false);
+  const [guideReady, setGuideReady] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [raw, setRaw] = useState("");
   const [search, setSearch] = useState("");
@@ -487,6 +490,8 @@ export function Automations({
       });
       setRaw(JSON.stringify(v.config, null, 2));
       setAdvanced(!!v.config.use_blueprint);
+      setGuided(canGuide(normalizedConfig(v.config)));
+      setGuideReady(false);
       setConfirm(null);
     });
   }
@@ -507,9 +512,10 @@ export function Automations({
         </div>
         <Feedback message={w.message} />
         <form
+          className={guided ? "guided-form" : undefined}
           onSubmit={(e) => {
             e.preventDefault();
-            if (!usable) return;
+            if (!usable || (guided && !guideReady)) return;
             void w.run(
               () =>
                 api(
@@ -523,7 +529,17 @@ export function Automations({
             );
           }}
         >
-          {!advanced && (
+          {guided && (
+            <AutomationGuide
+              config={c}
+              home={home}
+              lang={lang}
+              patch={patch}
+              onReady={setGuideReady}
+              onAdvanced={() => setGuided(false)}
+            />
+          )}
+          {!advanced && !guided && (
             <>
               <div className="form-grid">
                 <label>
@@ -635,14 +651,21 @@ export function Automations({
             </div>
           )}
           <div className="editor-footer">
-            <button
-              className="primary compact"
-              disabled={w.busy || !usable || !String(usable.alias || "").trim()}
-            >
-              {w.busy
-                ? t("Lagrer …", "Saving …")
-                : t("Lagre automasjon", "Save automation")}
-            </button>
+            {(!guided || guideReady) && (
+              <button
+                className="primary compact"
+                disabled={
+                  w.busy ||
+                  !usable ||
+                  (guided && !guideReady) ||
+                  !String(usable.alias || "").trim()
+                }
+              >
+                {w.busy
+                  ? t("Lagrer …", "Saving …")
+                  : t("Lagre automasjon", "Save automation")}
+              </button>
+            )}
             {editing.id && (
               <button
                 type="button"
@@ -718,6 +741,8 @@ export function Automations({
                 },
               });
               setAdvanced(false);
+              setGuided(true);
+              setGuideReady(false);
               setConfirm(null);
             }}
           >
