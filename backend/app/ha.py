@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import json
+import re
 import random
 from datetime import UTC, datetime
 
@@ -91,6 +92,30 @@ class HomeAssistant:
             return response.json() if response.content else None
         except (httpx.HTTPError, ValueError):
             raise HAError("ha_request_unconfirmed") from None
+
+    async def brand_image(self, domain):
+        """Fetch a bounded PNG from the configured HA only; no token reaches the browser."""
+        if not re.fullmatch(r"[a-z0-9_]{1,100}", domain):
+            raise HAError("brand_unavailable")
+        try:
+            async with httpx.AsyncClient(timeout=10, follow_redirects=False, trust_env=False) as client:
+                async with client.stream(
+                    "GET",
+                    self.http_url + f"brands/integration/{domain}/icon.png?placeholder=no",
+                    headers={"Authorization": "Bearer " + self.token},
+                ) as response:
+                    if response.status_code != 200:
+                        raise HAError("brand_unavailable")
+                    data = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        data.extend(chunk)
+                        if len(data) > 2_000_000:
+                            raise HAError("brand_unavailable")
+            if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+                raise HAError("brand_unavailable")
+            return bytes(data)
+        except httpx.HTTPError:
+            raise HAError("brand_unavailable") from None
 
     def apply_state(self, data):
         entity_id, state = data["entity_id"], data.get("new_state")

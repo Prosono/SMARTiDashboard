@@ -9,7 +9,7 @@ import uuid
 from typing import Any, Literal
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, field_validator
 
 from .ha import HAError
@@ -107,6 +107,13 @@ class Management:
                         "release_summary": "Demodata. Ingen programvare blir installert.",
                     },
                 }
+        if self.demo:
+            for device in ha.devices.values():
+                if any(
+                    e.get("device_id") == device["id"] and eid.startswith("light.")
+                    for eid, e in ha.entities.items()
+                ):
+                    device["config_entries"] = ["demo_lights"]
         self.demo_entries = [
             {
                 "entry_id": "demo_lights",
@@ -191,18 +198,24 @@ class Management:
 
     async def integrations(self):
         entries = self.demo_entries if self.demo else await self.ws("config_entries/get")
-        return [
-            {k: e.get(k) for k in ["entry_id", "title", "domain", "state", "disabled_by"]}
-            | {
-                "devices": sum(
-                    1
-                    for d in self.ha.devices.values()
-                    if e["entry_id"] in d.get("config_entries", [])
-                    or e["entry_id"] == d.get("config_entry_id")
-                )
-            }
-            for e in entries
-        ]
+        result = []
+        for e in entries:
+            devices = [
+                {
+                    "id": d["id"],
+                    "name": d.get("name_by_user") or d.get("name") or d["id"],
+                    "model": d.get("model"),
+                    "area": self.ha.areas.get(d.get("area_id"), {}).get("name"),
+                }
+                for d in self.ha.devices.values()
+                if e["entry_id"] in (d.get("config_entries") or [])
+                or e["entry_id"] == d.get("config_entry_id")
+            ]
+            result.append(
+                {k: e.get(k) for k in ["entry_id", "title", "domain", "state", "disabled_by"]}
+                | {"devices": len(devices), "device_items": devices}
+            )
+        return result
 
     def updates(self):
         self.connected()
@@ -380,6 +393,16 @@ def management_router(service, admin):
     @router.get("/integrations")
     async def integrations():
         return await m.integrations()
+
+    @router.get("/integration-brands/{domain}")
+    async def integration_brand(domain: str):
+        if not re.fullmatch(r"[a-z0-9_]{1,100}", domain) or m.demo:
+            raise HTTPException(404, "brand_unavailable")
+        try:
+            content = await m.ha.brand_image(domain)
+        except (HAError, TimeoutError):
+            raise HTTPException(404, "brand_unavailable") from None
+        return Response(content, media_type="image/png", headers={"Cache-Control": "private, max-age=86400"})
 
     @router.post("/integrations/{id}")
     async def integration_action(id: str, body: IntegrationAction):

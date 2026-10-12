@@ -1,3 +1,7 @@
+# 0.3.3
+
+Render nested choose/default, if/then/else, repeat count/for_each/while/until, parallel/sequence, logical conditions and wait-trigger branches as expandable flows. Show delay, stop, variables, events and template conditions explicitly. Add targeted nested-step editing and branch additions/removal while preserving untouched configuration, templates and unknown fields. Give advanced action flows full width with quieter surfaces and connection rails. Unsupported fields and blueprints remain accessible through full configuration editing; templates are never evaluated in the browser. No real HA automations were executed during validation.
+
 # 0.3.2
 
 Add a responsive, editable When / And if / Then flow view for existing and newly saved automations, with card editing, additions, removal, ordering and switching to the standard editor without losing configuration. Advanced blocks and additional settings remain visible and preserved; blueprints use the full configuration editor. Replace entity dropdowns with a searchable room-filtered picker, device-type icons, available state labels and keyboard-accessible dialogs. Successful saves refresh the editing revision and keep the flow open. Physical HA validation remains pending.

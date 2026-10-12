@@ -1,3 +1,11 @@
+import { FlowTree } from "./FlowTree";
+import { FlowInspector } from "./FlowInspector";
+import {
+  structureSummary,
+  readFlowPath,
+  replaceFlowPath,
+  type FlowPath,
+} from "./flowStructure";
 import { entityState } from "./entityWords";
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import { Zap, Filter, Play, Plus, Pencil, ArrowRight, X } from "lucide-react";
@@ -107,13 +115,15 @@ export function AutomationFlow({
       index: number;
     } | null>(null),
     [adding, setAdding] = useState<FlowKey | null>(null);
+  const [nested, setNested] = useState<FlowPath | null>(null);
+  const [appendTarget, setAppendTarget] = useState<FlowPath | null>(null);
   const detail = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (selected || adding) {
+    if (selected || adding || nested) {
       detail.current?.scrollIntoView({ block: "nearest" });
       detail.current?.focus();
     }
-  }, [selected, adding]);
+  }, [selected, adding, nested]);
   const groups: {
     key: FlowKey;
     title: string;
@@ -154,10 +164,34 @@ export function AutomationFlow({
               entity_id: "",
               ...(kind === "state" ? { state: "on" } : { above: 0 }),
             }
-          : { action: kind, target: { entity_id: "" } };
+          : kind === "delay"
+            ? { delay: 60 }
+            : kind === "if"
+              ? { if: [], then: [], else: [] }
+              : kind === "choose"
+                ? { choose: [{ conditions: [], sequence: [] }], default: [] }
+                : kind === "repeat"
+                  ? { repeat: { count: 2, sequence: [] } }
+                  : kind === "parallel"
+                    ? { parallel: [] }
+                    : { action: kind, target: { entity_id: "" } };
+    if (appendTarget) {
+      const list = readFlowPath(c, appendTarget);
+      if (!Array.isArray(list)) return;
+      const next = replaceFlowPath(c, appendTarget, [...list, row]);
+      patch({ [appendTarget[0]]: next[appendTarget[0]] });
+      setNested([...appendTarget, list.length]);
+      setSelected(null);
+      setAdding(null);
+      setAppendTarget(null);
+      return;
+    }
     const index = c[adding].length;
     patch({ [adding]: [...c[adding], row] });
-    setSelected({ key: adding, index });
+    if (structureSummary(row, lang)) {
+      setNested([adding, index]);
+      setSelected(null);
+    } else setSelected({ key: adding, index });
     setAdding(null);
   }
   return (
@@ -182,7 +216,12 @@ export function AutomationFlow({
         </p>
       </div>
       <div
-        className="flow-board"
+        className={
+          "flow-board" +
+          (c.actions.some((r: any) => structureSummary(r, lang))
+            ? " has-advanced"
+            : "")
+        }
         aria-label={t("Automasjonsflyt", "Automation flow")}
       >
         {groups.map(({ key, title, hint, Icon }, g) => (
@@ -198,6 +237,28 @@ export function AutomationFlow({
             <div className="flow-cards">
               {c[key].map((row: any, index: number) => {
                 const summary = flowSummary(row, key, home, lang);
+                if (structureSummary(row, lang))
+                  return (
+                    <FlowTree
+                      key={index}
+                      row={row}
+                      path={[key, index]}
+                      kind={key}
+                      home={home}
+                      lang={lang}
+                      onAppend={(p, kind) => {
+                        setAppendTarget(p);
+                        setAdding(kind);
+                        setNested(null);
+                        setSelected(null);
+                      }}
+                      onSelect={(p) => {
+                        setNested(p);
+                        setSelected(null);
+                        setAdding(null);
+                      }}
+                    />
+                  );
                 return (
                   <button
                     className="flow-card"
@@ -209,6 +270,7 @@ export function AutomationFlow({
                     }
                     onClick={() => {
                       setSelected({ key, index });
+                      setNested(null);
                       setAdding(null);
                     }}
                   >
@@ -248,7 +310,9 @@ export function AutomationFlow({
               className="flow-add"
               onClick={() => {
                 setAdding(key);
+                setAppendTarget(null);
                 setSelected(null);
+                setNested(null);
               }}
             >
               <Plus size={17} />
@@ -281,6 +345,11 @@ export function AutomationFlow({
                     ["numeric_state", t("En måleverdi", "A measurement")],
                   ]
                 : [
+                    ["delay", t("Vent litt", "Wait")],
+                    ["if", t("Hvis / ellers", "If / otherwise")],
+                    ["choose", t("Velg en vei", "Choose a path")],
+                    ["repeat", t("Gjenta steg", "Repeat steps")],
+                    ["parallel", t("Kjør samtidig", "Run concurrently")],
                     ["light.turn_on", t("Slå på lys", "Turn on lights")],
                     ["light.turn_off", t("Slå av lys", "Turn off lights")],
                     [
@@ -306,6 +375,65 @@ export function AutomationFlow({
           <button type="button" onClick={() => setAdding(null)}>
             {t("Avbryt", "Cancel")}
           </button>
+        </section>
+      )}
+      {nested && readFlowPath(c, nested) !== undefined && (
+        <section
+          ref={detail}
+          tabIndex={-1}
+          className="flow-detail"
+          aria-label={t("Rediger nøstet steg", "Edit nested step")}
+        >
+          <div className="heading-row">
+            <h2>{t("Tilpass steget", "Customize step")}</h2>
+            <button
+              type="button"
+              aria-label={t("Lukk steg", "Close step")}
+              onClick={() => setNested(null)}
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <p className="flow-breadcrumb">
+            {nested
+              .map((k) => (typeof k === "number" ? String(k + 1) : k))
+              .join(" / ")}
+          </p>
+          <FlowInspector
+            key={JSON.stringify(nested)}
+            row={readFlowPath(c, nested)}
+            home={home}
+            lang={lang}
+            onAdvanced={onAdvanced}
+            onChange={(value) => {
+              const next = replaceFlowPath(c, nested, value);
+              patch({ [nested[0]]: next[nested[0]] });
+            }}
+          />
+          <button type="button" onClick={() => setNested(null)}>
+            {t("Ferdig med steget", "Done with step")}
+          </button>
+          {typeof nested[nested.length - 1] === "number" && (
+            <button
+              type="button"
+              onClick={() => {
+                const parent = nested.slice(0, -1),
+                  index = nested[nested.length - 1];
+                const list = readFlowPath(c, parent);
+                if (Array.isArray(list)) {
+                  const next = replaceFlowPath(
+                    c,
+                    parent,
+                    list.filter((_: any, i: number) => i !== index),
+                  );
+                  patch({ [nested[0]]: next[nested[0]] });
+                  setNested(null);
+                }
+              }}
+            >
+              {t("Fjern steget", "Remove step")}
+            </button>
+          )}
         </section>
       )}
       {selected && c[selected.key][selected.index] !== undefined && (

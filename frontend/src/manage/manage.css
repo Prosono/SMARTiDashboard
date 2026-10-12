@@ -1135,3 +1135,328 @@ textarea:focus-visible {
   padding: 1rem;
   background: var(--soft);
 }
+/* Structured flow: quiet rails, clear branching and a wider execution lane. */
+.flow-board {
+  grid-template-columns: minmax(180px, 0.8fr) minmax(180px, 0.8fr) minmax(
+      320px,
+      1.5fr
+    );
+  background: var(--soft);
+  border: 0;
+  padding: 1.5rem;
+  gap: 1.4rem;
+}
+.flow-cards {
+  position: relative;
+}
+.flow-card {
+  box-shadow: none;
+  border-top-width: 2px;
+}
+.flow-tree-node {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.flow-node-heading {
+  display: flex;
+  gap: 0.65rem;
+  align-items: start;
+  padding: 1rem;
+}
+.flow-node-heading > svg {
+  color: var(--accent);
+  margin-top: 0.65rem;
+  flex-shrink: 0;
+}
+.flow-node-heading > button:not(.flow-node-title) {
+  flex-shrink: 0;
+  min-height: 44px;
+  width: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+.flow-node-title {
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+}
+.flow-node-title strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.flow-node-title span {
+  display: block;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 0.3rem;
+  overflow-wrap: anywhere;
+}
+.flow-branches {
+  padding: 0 1rem 1rem 1.4rem;
+}
+.flow-branch {
+  border-left: 2px solid var(--line);
+  padding-left: 0.8rem;
+  position: relative;
+  margin-top: 0.8rem;
+}
+.flow-branch:before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: -2px;
+  width: 9px;
+  height: 2px;
+  background: var(--orange);
+}
+.flow-branch h4 {
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0.4rem 0 0.7rem;
+}
+.flow-branch > .flow-tree-node + .flow-tree-node {
+  margin-top: 0.6rem;
+}
+.flow-branch-empty {
+  font-size: 0.8rem;
+  padding: 0.5rem 0;
+  color: var(--muted);
+}
+.flow-node-note,
+.flow-node-notes {
+  display: block;
+  margin: 0 1rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.flow-node-notes p {
+  overflow-wrap: anywhere;
+}
+.flow-node-disabled {
+  border-style: dashed;
+}
+.flow-node-disabled > .flow-node-heading {
+  opacity: 0.65;
+}
+.flow-breadcrumb {
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.flow-inspector {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.flow-inspector label {
+  display: grid;
+  gap: 0.5rem;
+}
+.flow-inspector label.flow-enabled {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.flow-inspector .flow-enabled input {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+}
+.flow-inspector button {
+  min-height: 44px;
+}
+.flow-inspector summary {
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+@media (max-width: 1150px) {
+  .flow-board {
+    grid-template-columns: 1fr 1fr;
+  }
+  .flow-lane.flow-actions {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 700px) {
+  .flow-board {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+  .flow-lane.flow-actions {
+    grid-column: auto;
+  }
+  .flow-node-heading {
+    padding: 0.75rem;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .flow-node-title {
+    flex-basis: 60%;
+  }
+  .flow-branches {
+    padding-left: 0.7rem;
+    padding-right: 0.5rem;
+  }
+  .flow-branch {
+    padding-left: 0.5rem;
+  }
+}
+.flow-board.has-advanced {
+  grid-template-columns: 1fr 1fr;
+}
+.flow-board.has-advanced .flow-actions {
+  grid-column: 1/-1;
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+}
+.flow-branch-add {
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+.flow-branch-add:hover {
+  background: var(--tint);
+}
+.flow-branches .flow-tree-node {
+  border: 0;
+  border-radius: 8px;
+  background: var(--bg);
+}
+.flow-branches .flow-branches .flow-tree-node {
+  background: var(--surface);
+}
+.flow-node-heading {
+  align-items: start;
+  flex-wrap: nowrap;
+}
+.flow-node-title {
+  flex-basis: auto;
+}
+@media (max-width: 700px) {
+  .flow-board.has-advanced {
+    grid-template-columns: 1fr;
+  }
+  .flow-branches .flow-node-heading > svg {
+    display: none;
+  }
+  .flow-node-heading > button:not(.flow-node-title) {
+    width: 30px;
+  }
+}
+.integration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+.integration-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 1.25rem;
+  min-width: 0;
+}
+.integration-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.integration-logo {
+  width: 64px;
+  height: 64px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #292d29;
+}
+.integration-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.integration-card h2 {
+  font-size: 1.2rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.integration-card p {
+  color: var(--muted);
+  margin: 0.35rem 0;
+}
+.integration-card small {
+  color: var(--muted);
+}
+.integration-expand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 44px;
+  background: var(--soft);
+  border-radius: 8px;
+  margin-top: 1.2rem;
+}
+.integration-entries {
+  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+}
+.integration-entry {
+  padding-top: 1.2rem;
+}
+.integration-entry + .integration-entry {
+  margin-top: 1.2rem;
+  border-top: 1px solid var(--line);
+}
+.integration-entry h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.integration-devices {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+.integration-devices li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+}
+.integration-devices strong,
+.integration-devices small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.integration-devices strong {
+  font-weight: 500;
+}
+.integration-entry .row-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.integration-empty {
+  font-size: 0.85rem;
+  padding: 0.75rem 0;
+}
+.integration-card .inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

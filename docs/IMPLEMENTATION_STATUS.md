@@ -1,5 +1,12 @@
 # Implementation status — 2026-10-12
 
+## 0.3.3 — structured advanced flows
+
+Recursive source-path projection now renders choose/default, if/then/else, repeat variants, parallel/sequence, AND/OR/NOT and wait-trigger branches. Delay, stop, variables, scenes, events and template conditions have explicit summaries. Nested steps can be inspected and common fields edited, with branch additions and array-step removal. Immutable path replacement retains every untouched field; unknown fields remain available through source editing. Templates remain literal expressions; blueprints are still handled in the full editor. Deep branches collapse progressively and rendering is bounded at 12 levels, with access to complete source.
+
+Semantics checked against [HA script building blocks](https://www.home-assistant.io/docs/scripts/) and [conditions](https://www.home-assistant.io/docs/scripts/conditions/). Validation: 23 frontend unit tests, 14 desktop/mobile management browser tests, TypeScript/Vite build and deterministic HA payload validation. Tests cover nested edits, additions/removal, save/reopen equivalence, template and sibling preservation, invalid path rejection and existing management journeys. Screenshots inspected. Actual customer automations and physical HA execution were not available for validation. Version 0.3.3 prepared locally, not published.
+
+
 ## 0.3.2 — automation flows and room-based selection
 
 Automations now open as an editable When / And if / Then flow. New guided routines enter that flow after saving. Cards support adding, editing, ordering and removing blocks. The standard and JSON editors share the same draft. Unknown blocks, additional fields and conditions are retained; unsupported blocks use the JSON editor and blueprints stay in the full editor. Room-filtered searchable entity dialogs show real known metadata, appropriate icons and friendly state labels, retaining missing selections without silently replacing them. Action targets are filtered to their service domain. Save responses update the revision; clean saved editors no longer claim unsaved changes.

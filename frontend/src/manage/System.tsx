@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Plug, RefreshCw } from "lucide-react";
+import {
+  Download,
+  Plug,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Box,
+} from "lucide-react";
 import { api } from "../api";
 import { Feedback, LoadError, useWork, words } from "./shared";
 type Integration = {
@@ -10,6 +17,12 @@ type Integration = {
   state: string;
   disabled_by: string | null;
   devices: number;
+  device_items?: {
+    id: string;
+    name: string;
+    model: string | null;
+    area: string | null;
+  }[];
 };
 type Update = {
   entity_id: string;
@@ -25,6 +38,24 @@ type Update = {
   can_backup: boolean;
   summary: string;
 };
+function IntegrationLogo({ domain }: { domain: string }) {
+  const [source, setSource] = useState(0);
+  if (source > 1 || !/^[a-z0-9_]+$/.test(domain))
+    return <Plug size={28} aria-label={domain} />;
+  return (
+    <img
+      alt={domain}
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      src={
+        source === 0
+          ? `api/manage/integration-brands/${domain}`
+          : `https://brands.home-assistant.io/${domain}/icon.png`
+      }
+      onError={() => setSource((v) => v + 1)}
+    />
+  );
+}
 export function Integrations({ lang }: { lang: string }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const q = useQuery({
@@ -33,6 +64,7 @@ export function Integrations({ lang }: { lang: string }) {
     refetchInterval: 15000,
   });
   const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [edit, setEdit] = useState<Integration | null>(null);
   const [name, setName] = useState("");
   const [confirm, setConfirm] = useState<{ id: string; action: string } | null>(
@@ -77,6 +109,27 @@ export function Integrations({ lang }: { lang: string }) {
     failed_unload: t("Kunne ikke stoppe", "Could not stop"),
     migration_error: t("Migreringsfeil", "Migration error"),
   };
+  const groups = Object.entries(
+    (q.data || []).reduce<Record<string, Integration[]>>((all, i) => {
+      (all[i.domain] ||= []).push(i);
+      return all;
+    }, {}),
+  ).filter(([domain, entries]) =>
+    (
+      domain +
+      " " +
+      entries
+        .map(
+          (i) =>
+            i.title +
+            " " +
+            (i.device_items || []).map((d) => d.name + " " + d.area).join(" "),
+        )
+        .join(" ")
+    )
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
   return (
     <section>
       <div className="page-heading">
@@ -108,106 +161,196 @@ export function Integrations({ lang }: { lang: string }) {
       {q.isPending && (
         <p>{t("Henter integrasjoner …", "Loading integrations …")}</p>
       )}
-      <div className="management-rows">
-        {q.data
-          ?.filter((i) =>
-            `${i.title} ${i.domain}`
-              .toLowerCase()
-              .includes(search.toLowerCase()),
-          )
-          .map((i) => (
-            <article className="system-row" key={i.entry_id}>
-              <Plug size={26} />
-              <div>
-                <h2>{i.title}</h2>
-                <p>
-                  {i.domain} · {i.devices} {t("enheter", "devices")}
-                </p>
-                <span className="status-label">
-                  {i.disabled_by
-                    ? t("Deaktivert", "Disabled")
-                    : states[i.state] || t("Ukjent status", "Unknown status")}
-                </span>
-              </div>
-              <div className="row-actions">
-                <button
-                  disabled={w.busy}
-                  onClick={() => {
-                    setEdit(i);
-                    setName(i.title);
-                  }}
-                >
-                  {t("Endre navn", "Rename")}
-                </button>
-                <button
-                  disabled={w.busy || !!i.disabled_by}
-                  onClick={() =>
-                    setConfirm({ id: i.entry_id, action: "reload" })
-                  }
-                >
-                  {t("Last på nytt", "Reload")}
-                </button>
-                <button
-                  disabled={w.busy}
-                  onClick={() =>
-                    setConfirm({
-                      id: i.entry_id,
-                      action: i.disabled_by ? "enable" : "disable",
-                    })
-                  }
-                >
-                  {i.disabled_by
-                    ? t("Aktiver", "Enable")
-                    : t("Deaktiver", "Disable")}
-                </button>
-              </div>
-              {edit?.entry_id === i.entry_id && (
-                <form
-                  className="inline-form full-row"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void action(i.entry_id, "rename");
-                  }}
-                >
-                  <label>
-                    {t("Navn", "Name")}
-                    <input
-                      maxLength={80}
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                    />
-                  </label>
-                  <button disabled={w.busy || !name.trim()}>
-                    {t("Lagre", "Save")}
-                  </button>
-                  <button type="button" onClick={() => setEdit(null)}>
-                    {t("Avbryt", "Cancel")}
-                  </button>
-                </form>
-              )}
-              {confirm?.id === i.entry_id && (
-                <div className="inline-confirm full-row">
+      <div className="integration-grid">
+        {groups.map(([domain, entries]) => {
+          const open = expanded.has(domain);
+          const devices = new Set(
+            entries.flatMap((i) => (i.device_items || []).map((d) => d.id)),
+          ).size;
+          const issues = entries.filter(
+            (i) => !i.disabled_by && i.state !== "loaded",
+          ).length;
+          return (
+            <article
+              className={"integration-card" + (open ? " expanded" : "")}
+              key={domain}
+            >
+              <div className="integration-card-header">
+                <div className="integration-logo">
+                  <IntegrationLogo key={domain} domain={domain} />
+                </div>
+                <div>
+                  <h2>
+                    {entries.length === 1
+                      ? entries[0].title
+                      : domain.replaceAll("_", " ")}
+                  </h2>
                   <p>
-                    {t(
-                      "Dette kan midlertidig gjøre tilknyttede enheter og automasjoner utilgjengelige.",
-                      "This may temporarily affect connected devices and automations.",
-                    )}
+                    {entries.length} {t("oppsett", "connections")} · {devices}{" "}
+                    {t("enheter", "devices")}
                   </p>
-                  <button
-                    disabled={w.busy}
-                    onClick={() => void action(i.entry_id, confirm.action)}
-                  >
-                    {t("Bekreft", "Confirm")}
-                  </button>
-                  <button onClick={() => setConfirm(null)}>
-                    {t("Avbryt", "Cancel")}
-                  </button>
+                  <small>
+                    {issues
+                      ? t(
+                          `${issues} trenger oppmerksomhet`,
+                          `${issues} need attention`,
+                        )
+                      : entries.every((i) => i.disabled_by)
+                        ? t("Deaktivert", "Disabled")
+                        : t("Tilkoblet", "Connected")}
+                  </small>
+                </div>
+              </div>
+              <button
+                className="integration-expand"
+                type="button"
+                aria-expanded={open}
+                aria-controls={`integration-${domain}`}
+                onClick={() =>
+                  setExpanded((old) => {
+                    const next = new Set(old);
+                    if (open) next.delete(domain);
+                    else next.add(domain);
+                    return next;
+                  })
+                }
+              >
+                {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}{" "}
+                {open ? t("Skjul", "Collapse") : t("Utvid", "Expand")}
+              </button>
+              {open && (
+                <div
+                  id={`integration-${domain}`}
+                  className="integration-entries"
+                >
+                  {entries.map((i) => (
+                    <section className="integration-entry" key={i.entry_id}>
+                      <div>
+                        <h3>{i.title}</h3>
+                        <span className="status-label">
+                          {i.disabled_by
+                            ? t("Deaktivert", "Disabled")
+                            : states[i.state] ||
+                              t("Ukjent status", "Unknown status")}
+                        </span>
+                      </div>
+                      <ul className="integration-devices">
+                        {(i.device_items || []).map((d) => (
+                          <li key={d.id}>
+                            <Box size={19} />
+                            <div>
+                              <strong>{d.name}</strong>
+                              <small>
+                                {[d.area || t("Uten rom", "No room"), d.model]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </small>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      {!i.device_items?.length && (
+                        <p className="integration-empty">
+                          {t(
+                            "Ingen registrerte enheter. Integrasjonen kan fortsatt tilby tjenester og entiteter.",
+                            "No registered devices. This integration may still provide services and entities.",
+                          )}
+                        </p>
+                      )}
+                      <div className="row-actions">
+                        <button
+                          disabled={w.busy}
+                          onClick={() => {
+                            setEdit(i);
+                            setName(i.title);
+                          }}
+                        >
+                          {t("Endre navn", "Rename")}
+                        </button>
+                        <button
+                          disabled={w.busy || !!i.disabled_by}
+                          onClick={() =>
+                            setConfirm({ id: i.entry_id, action: "reload" })
+                          }
+                        >
+                          {t("Last på nytt", "Reload")}
+                        </button>
+                        <button
+                          disabled={w.busy}
+                          onClick={() =>
+                            setConfirm({
+                              id: i.entry_id,
+                              action: i.disabled_by ? "enable" : "disable",
+                            })
+                          }
+                        >
+                          {i.disabled_by
+                            ? t("Aktiver", "Enable")
+                            : t("Deaktiver", "Disable")}
+                        </button>
+                      </div>
+                      {edit?.entry_id === i.entry_id && (
+                        <form
+                          className="inline-form full-row"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            void action(i.entry_id, "rename");
+                          }}
+                        >
+                          <label>
+                            {t("Navn", "Name")}
+                            <input
+                              maxLength={80}
+                              required
+                              value={name}
+                              onChange={(e) => setName(e.target.value)}
+                            />
+                          </label>
+                          <button disabled={w.busy || !name.trim()}>
+                            {t("Lagre", "Save")}
+                          </button>
+                          <button type="button" onClick={() => setEdit(null)}>
+                            {t("Avbryt", "Cancel")}
+                          </button>
+                        </form>
+                      )}
+                      {confirm?.id === i.entry_id && (
+                        <div className="inline-confirm full-row">
+                          <p>
+                            {t(
+                              "Dette kan midlertidig gjøre tilknyttede enheter og automasjoner utilgjengelige.",
+                              "This may temporarily affect connected devices and automations.",
+                            )}
+                          </p>
+                          <button
+                            disabled={w.busy}
+                            onClick={() =>
+                              void action(i.entry_id, confirm.action)
+                            }
+                          >
+                            {t("Bekreft", "Confirm")}
+                          </button>
+                          <button onClick={() => setConfirm(null)}>
+                            {t("Avbryt", "Cancel")}
+                          </button>
+                        </div>
+                      )}
+                    </section>
+                  ))}
                 </div>
               )}
             </article>
-          ))}
+          );
+        })}
       </div>
+      {q.data && q.data.length > 0 && !groups.length && (
+        <p>
+          {t(
+            "Ingen integrasjoner eller enheter passer søket.",
+            "No integrations or devices match your search.",
+          )}
+        </p>
+      )}
       {q.data?.length === 0 && (
         <p>
           {t(

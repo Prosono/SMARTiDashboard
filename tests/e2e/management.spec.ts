@@ -479,3 +479,158 @@ test("flow cards add conditions and actions, reorder and preserve drafts across 
   await page.getByRole("button", { name: "Avbryt", exact: true }).click();
   await expect(page.locator(".flow-actions .flow-card")).toHaveCount(1);
 });
+
+test("advanced branches render recursively and deep edits round trip unchanged siblings", async ({
+  page,
+}) => {
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Mer", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Ny automasjon", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Flere muligheter", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
+    .click();
+  const config = {
+    alias: "Forgrenet kveld " + test.info().project.name,
+    mode: "restart",
+    variables: { keep: "{{ 1 + 1 }}" },
+    triggers: [{ trigger: "sun", event: "sunset" }],
+    conditions: [
+      {
+        condition: "or",
+        conditions: [
+          {
+            condition: "state",
+            entity_id: "binary_sensor.front_door",
+            state: "off",
+          },
+          { condition: "template", value_template: "{{ true }}" },
+        ],
+      },
+    ],
+    actions: [
+      {
+        alias: "Kveldsvalg",
+        choose: [
+          {
+            alias: "Når døren er lukket",
+            conditions: [
+              {
+                condition: "state",
+                entity_id: "binary_sensor.front_door",
+                state: "off",
+              },
+            ],
+            sequence: [
+              {
+                if: [{ condition: "template", value_template: "{{ true }}" }],
+                then: [
+                  { alias: "Liten pause", delay: 10 },
+                  {
+                    parallel: [
+                      {
+                        sequence: [
+                          {
+                            action: "light.turn_on",
+                            target: { entity_id: "light.living_pendant" },
+                            data: { brightness_pct: 40 },
+                          },
+                        ],
+                      },
+                      { repeat: { count: 2, sequence: [{ delay: 1 }] } },
+                    ],
+                  },
+                ],
+                else: [{ stop: "Avslutt" }],
+              },
+            ],
+          },
+        ],
+        default: [{ event: "smarti_no_match" }],
+      },
+    ],
+  };
+  const field = page.getByRole("textbox", {
+    name: "Konfigurasjon (JSON)",
+    exact: true,
+  });
+  await field.fill(JSON.stringify(config));
+  await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
+  await expect(
+    page.getByText(
+      "Første valg som passer kjøres. Ellers brukes reserveveien.",
+      { exact: false },
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Minst én må stemme", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Rediger steg: Liten pause", exact: true })
+    .click();
+  await page
+    .getByLabel("Ventetid (sekunder eller tt:mm:ss)", { exact: true })
+    .fill("25");
+  await page
+    .getByRole("button", { name: "Ferdig med steget", exact: true })
+    .click();
+  await page
+    .getByRole("heading", {
+      name: "Ellers · når ingen valg passer",
+      exact: true,
+    })
+    .locator("..")
+    .getByRole("button", { name: "+ Legg til steg", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Vent litt", exact: true }).click();
+  await expect(
+    page.getByLabel("Ventetid (sekunder eller tt:mm:ss)", { exact: true }),
+  ).toHaveValue("60");
+  await page.getByRole("button", { name: "Fjern steget", exact: true }).click();
+  await page.screenshot({
+    path: `../artifacts/${test.info().project.name}-advanced-flow.png`,
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Vanlig editor", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
+    .click();
+  const expected = structuredClone(config);
+  expected.actions[0].choose[0].sequence[0].then[0].delay = 25;
+  expect(JSON.parse(await field.inputValue())).toEqual(expected);
+  await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Lagre automasjon", exact: true })
+    .click();
+  await expect(
+    page.getByText("Automasjonen er lagret.", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Alle automasjoner", exact: true })
+    .click();
+  await page
+    .locator(".system-row")
+    .filter({
+      has: page.getByRole("heading", { name: config.alias, exact: true }),
+    })
+    .getByRole("button", { name: "Rediger", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
+    .click();
+  const saved = JSON.parse(await field.inputValue());
+  delete saved.id;
+  expect(saved).toEqual(expected);
+  await page.getByRole("button", { name: "Slett", exact: true }).click();
+  await page.getByRole("button", { name: "Bekreft", exact: true }).click();
+});
