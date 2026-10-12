@@ -11,7 +11,7 @@ from fastapi import HTTPException
 from .ha import HAError
 from .inventory import Inventory
 
-ACTIVE = {"starting", "searching", "interviewing", "security", "pin", "needs_stop"}
+ACTIVE = {"starting", "searching", "interviewing", "security", "pin", "needs_stop", "stopping"}
 
 
 class DeviceSetup:
@@ -49,6 +49,7 @@ class DeviceSetup:
                             "operation",
                             "device_name",
                             "node_id",
+                            "stop_requested",
                         ]
                         if k in s
                     }
@@ -153,6 +154,14 @@ class DeviceSetup:
             self.session.pop("dsk", None)
             self.session.pop("grant", None)
 
+    def zwave_callback(self, session_id):
+        # Events queued by an old subscription must never mutate a newer session.
+        def receive(event):
+            if self.session and self.session["id"] == session_id:
+                self.zwave_event(event)
+
+        return receive
+
     def zwave_event(self, event):
         s = self.session
         if not s or s["provider"] != "zwave_js":
@@ -160,6 +169,8 @@ class DeviceSetup:
         kind = event.get("event")
         if kind == "smarti disconnected":
             self.interrupted()
+        elif not s.get("radio_open") or s.get("stop_requested"):
+            return
         elif s.get("operation") == "remove":
             if kind == "node removed":
                 s["removed_node_id"] = event.get("node", {}).get("node_id")
@@ -280,6 +291,7 @@ class DeviceSetup:
 
     async def remove(self, provider, device_id, user_id):
         async with self.lock:
+            await self.reconcile_stop()
             if self.session and (self.session["status"] in ACTIVE or self.session.get("radio_open")):
                 raise HTTPException(409, "pairing_already_active")
             device = await self.inventory.require(provider, device_id)
@@ -316,7 +328,10 @@ class DeviceSetup:
             self.timer = asyncio.create_task(self.watch(self.session["id"]))
             try:
                 self.zwave_subscription = await self.ha.request(
-                    "zwave_js/remove_node", entry_id=entry_id, strategy=2, _callback=self.zwave_event
+                    "zwave_js/remove_node",
+                    entry_id=entry_id,
+                    strategy=2,
+                    _callback=self.zwave_callback(self.session["id"]),
                 )
                 if self.session["status"] == "starting":
                     self.session["status"] = "searching"
@@ -326,6 +341,7 @@ class DeviceSetup:
 
     async def start(self, provider, entry_id, user_id):
         async with self.lock:
+            await self.reconcile_stop()
             if self.session and (self.session["status"] in ACTIVE or self.session.get("radio_open")):
                 raise HTTPException(409, "pairing_already_active")
             options = await self.providers()
@@ -362,7 +378,7 @@ class DeviceSetup:
                         "zwave_js/add_node",
                         entry_id=entry_id,
                         inclusion_strategy=0,
-                        _callback=self.zwave_event,
+                        _callback=self.zwave_callback(self.session["id"]),
                     )
                 if self.session["status"] == "starting":
                     self.session["status"] = "searching"
@@ -370,11 +386,57 @@ class DeviceSetup:
                 self.session["status"], self.session["error"] = "needs_stop", "start_unconfirmed"
             return self.snapshot()
 
+    async def zwave_idle(self, s):
+        if not self.ha.connected:
+            return False
+        network = await self.ha.request("zwave_js/network_status", entry_id=s["entry_id"])
+        return network.get("client", {}).get("state") == "connected" and network.get("controller", {}).get(
+            "inclusion_state"
+        ) in [0, 4]
+
+    async def finish_stop(self, s):
+        s["radio_open"] = False
+        if s["status"] in ACTIVE:
+            s["status"] = "stopped"
+        for key in ["error", "dsk", "grant"]:
+            s.pop(key, None)
+        self.persist()
+        if self.zwave_subscription is not None:
+            number = self.zwave_subscription
+            self.zwave_subscription = None
+            self.ha.callbacks.pop(number, None)
+            with contextlib.suppress(HAError, TimeoutError):
+                await self.ha.request("unsubscribe_events", subscription=number)
+
+    async def reconcile_stop(self):
+        """Read-only reconciliation under lock; never restart or abort another operation."""
+        s = self.session
+        if (
+            not s
+            or s["provider"] != "zwave_js"
+            or not s.get("radio_open")
+            or not (s.get("stop_requested") or s["status"] == "needs_stop" or s.get("_finish"))
+        ):
+            return
+        with contextlib.suppress(HAError, TimeoutError):
+            if await self.zwave_idle(s):
+                await self.finish_stop(s)
+
+    async def status(self):
+        async with self.lock:
+            await self.reconcile_stop()
+            return self.snapshot()
+
     async def stop(self, session_id):
         async with self.lock:
             s = self.require(session_id)
             if not s.get("radio_open"):
                 return self.snapshot()
+            cancel_s2 = s["status"] in {"pin", "security"} or "dsk" in s or "grant" in s
+            s["stop_requested"] = True
+            if s["status"] in ACTIVE:
+                s["status"] = "stopping"
+            self.persist()
             try:
                 if not self.ha.connected:
                     raise HAError("disconnected")
@@ -382,29 +444,26 @@ class DeviceSetup:
                     await self.ensure_mqtt()
                     await self.permit(0)
                 else:
-                    if s["status"] in {"pin", "security"}:
-                        await self.ha.request("zwave_js/cancel_secure_bootstrap_s2", entry_id=s["entry_id"])
-                    await self.ha.request(
-                        "zwave_js/stop_exclusion"
-                        if s.get("operation") == "remove"
-                        else "zwave_js/stop_inclusion",
-                        entry_id=s["entry_id"],
-                    )
-                    network = await self.ha.request("zwave_js/network_status", entry_id=s["entry_id"])
-                    if network.get("controller", {}).get("inclusion_state") not in [0, 4]:
-                        raise HAError("stop_unconfirmed")
-                s["radio_open"] = False
-                if s["status"] in ACTIVE:
-                    s["status"] = "stopped"
-                s.pop("error", None)
-                s.pop("dsk", None)
-                s.pop("grant", None)
-                if self.zwave_subscription is not None:
-                    number = self.zwave_subscription
-                    self.zwave_subscription = None
-                    self.ha.callbacks.pop(number, None)
+                    # Cancellation may race with completion of secure bootstrap.
+                    # Its rejection must not prevent stopping inclusion itself.
+                    if cancel_s2:
+                        with contextlib.suppress(HAError, TimeoutError):
+                            await self.ha.request(
+                                "zwave_js/cancel_secure_bootstrap_s2", entry_id=s["entry_id"]
+                            )
                     with contextlib.suppress(HAError, TimeoutError):
-                        await self.ha.request("unsubscribe_events", subscription=number)
+                        await self.ha.request(
+                            "zwave_js/stop_exclusion"
+                            if s.get("operation") == "remove"
+                            else "zwave_js/stop_inclusion",
+                            entry_id=s["entry_id"],
+                        )
+                    # HA's cached controller state can lag the command response.
+                    # Poll reads only; do not replay radio commands.
+                    async with asyncio.timeout(5):
+                        while not await self.zwave_idle(s):
+                            await asyncio.sleep(0.25)
+                await self.finish_stop(s)
             except (HAError, TimeoutError):
                 s["status"], s["error"] = "needs_stop", "stop_unconfirmed"
             self.persist()

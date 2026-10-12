@@ -77,11 +77,9 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
     .getByRole("button", { name: "Legg til enhet", exact: true })
     .first()
     .click();
-  const zwave = page
-    .locator("article")
-    .filter({
-      has: page.getByRole("heading", { name: "Z-Wave JS", exact: true }),
-    });
+  const zwave = page.locator("article").filter({
+    has: page.getByRole("heading", { name: "Z-Wave JS", exact: true }),
+  });
   await zwave.getByRole("button", { name: "Start paring" }).click();
   await expect(
     page.getByRole("heading", { name: "Bekreft sikkerheten" }),
@@ -111,4 +109,12 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
   await expect(
     zwave.getByRole("button", { name: "Start paring" }),
   ).toBeEnabled();
+  await zwave.getByRole("button", { name: "Start paring" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Bekreft sikkerheten" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Stopp paring" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Paringen er stoppet" }),
+  ).toBeVisible();
 });

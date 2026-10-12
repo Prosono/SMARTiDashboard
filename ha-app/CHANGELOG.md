@@ -1,3 +1,7 @@
+# 0.2.3
+
+Fix pairing remaining blocked after stopping Z-Wave inclusion. Wait for delayed controller state, continue stopping when S2 cancellation has already completed, and reconcile unresolved sessions against connected idle controller status. Ignore late events from previous sessions and preserve active interviews. Show separate messages for an unresolved SMARTi session and a busy controller, with visible stopping progress. No start commands are replayed.
+
 # 0.2.2
 
 Add Zigbee and Z-Wave tabs under Devices with physical device inventories, status icons, search and refresh. Show Zigbee LQI when reported, explicitly mark unknown measurement age and distinguish sleeping Z-Wave battery devices from offline nodes. Admins can remove Zigbee devices with a correlated acknowledgement or start a two-minute, stoppable Z-Wave exclusion flow. Controller deletion is blocked. Exclusion recovery markers persist across restarts; a different excluded node is never reported as the selected device. Add new device opens the existing pairing wizard. Real hardware validation remains pending.

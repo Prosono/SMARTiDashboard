@@ -48,7 +48,12 @@ const copy = {
       "Mistet kontakten. Status kan være utdatert. Ikke start paringen på nytt før du har kontrollert nettverket.",
     error:
       "Handlingen kunne ikke bekreftes. Kontroller forbindelsen før du prøver igjen.",
-    busy: "En paring er allerede i gang. Fullfør eller stopp den først.",
+    busy: "SMARTi har en uavklart paring. Bruk «Stopp paring» og vent på bekreftelsen.",
+    controllerBusy:
+      "Kontrolleren er fortsatt opptatt. Vent litt og prøv igjen. Hvis dette vedvarer, kontroller paringsstatus i Home Assistant.",
+    stopping: "Stopper paringen …",
+    stopPending:
+      "Stopp er ikke bekreftet ennå. Vi sjekker status automatisk. Du kan forsøke å stoppe igjen når forbindelsen er tilbake.",
     starting: "Starter paring …",
     searching: "Venter på enheten din",
     interviewing: "Leser inn enheten …",
@@ -103,7 +108,12 @@ const copy = {
       "Connection lost. Status may be outdated. Check the network before starting pairing again.",
     error:
       "The action could not be confirmed. Check the connection before trying again.",
-    busy: "Pairing is already in progress. Complete or stop it first.",
+    busy: "SMARTi has an unresolved pairing session. Use Stop pairing and wait for confirmation.",
+    controllerBusy:
+      "The controller is still busy. Wait and try again. If this persists, check pairing status in Home Assistant.",
+    stopping: "Stopping pairing …",
+    stopPending:
+      "Stop is not confirmed yet. Status is checked automatically. You can retry stopping when the connection returns.",
     starting: "Starting pairing …",
     searching: "Waiting for your device",
     interviewing: "Reading the device …",
@@ -163,6 +173,7 @@ export function DeviceSetup({
   const [entry, setEntry] = useState("");
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [error, setError] = useState("");
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -170,22 +181,28 @@ export function DeviceSetup({
     return () => clearInterval(timer);
   }, []);
   const s = session.data;
+  useEffect(() => {
+    if (s?.status === "stopped" && !s.radio_open) setError("");
+  }, [s?.status, s?.radio_open]);
   async function act(path: string, body?: unknown) {
     setBusy(true);
+    setStopping(path.endsWith("/stop"));
     setError("");
     try {
       await api(path, "POST", body);
     } catch (e) {
       setError(
-        e instanceof ApiError &&
-          ["controller_busy", "pairing_already_active"].includes(e.code)
-          ? t.busy
-          : t.error,
+        e instanceof ApiError && e.code === "controller_busy"
+          ? t.controllerBusy
+          : e instanceof ApiError && e.code === "pairing_already_active"
+            ? t.busy
+            : t.error,
       );
     } finally {
       setPin("");
       await session.refetch();
       setBusy(false);
+      setStopping(false);
     }
   }
   return (
@@ -239,7 +256,9 @@ export function DeviceSetup({
             {s.provider === "zigbee2mqtt" ? "Zigbee2MQTT" : "Z-Wave JS"}
           </span>
           <h2>
-            {((t as Record<string, unknown>)[s.status] as string) || t.error}
+            {stopping
+              ? t.stopping
+              : ((t as Record<string, unknown>)[s.status] as string) || t.error}
           </h2>
           {s.status === "searching" && <p>{t.searchHint}</p>}
           {s.status === "paired" && (
@@ -248,7 +267,9 @@ export function DeviceSetup({
               {t.pairedHint}
             </p>
           )}
-          {s.status === "needs_stop" && <p className="form-error">{t.error}</p>}
+          {s.status === "needs_stop" && (
+            <p className="form-error">{t.stopPending}</p>
+          )}
           {s.low_security && (
             <p className="form-error" role="alert">
               {t.low}

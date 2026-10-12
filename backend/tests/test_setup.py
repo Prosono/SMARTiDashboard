@@ -247,3 +247,95 @@ def test_pairing_routes_require_admin_csrf_and_validate_pin(tmp_path):
             ).status_code
             == 403
         )
+
+
+@pytest.mark.asyncio
+async def test_stop_waits_for_delayed_controller_state_and_allows_restart(setup):
+    original = setup.ha.request
+    lag = 0
+
+    async def request(kind, **data):
+        nonlocal lag
+        result = await original(kind, **data)
+        if kind == "zwave_js/stop_inclusion":
+            lag = 3
+        if kind == "zwave_js/network_status" and lag:
+            lag -= 1
+            result["controller"]["inclusion_state"] = 1
+        return result
+
+    setup.ha.request = request
+    try:
+        first = await setup.start("zwave_js", "zwave", 1)
+        old_callback = next(d["_callback"] for k, d in setup.ha.calls if k == "zwave_js/add_node")
+        stopped = await setup.stop(first["id"])
+        assert stopped["status"] == "stopped" and not stopped["radio_open"]
+        assert setup.store.get("pairing_active") == ""
+        second = await setup.start("zwave_js", "zwave", 1)
+        old_callback({"event": "inclusion failed"})
+        assert setup.snapshot()["id"] == second["id"]
+        assert setup.snapshot()["status"] == "searching"
+        assert sum(k == "zwave_js/stop_inclusion" for k, _ in setup.ha.calls) == 1
+    finally:
+        await setup.close()
+
+
+@pytest.mark.asyncio
+async def test_s2_cancel_error_does_not_prevent_stop(setup):
+    original = setup.ha.request
+
+    async def request(kind, **data):
+        if kind == "zwave_js/cancel_secure_bootstrap_s2":
+            raise HAError("bootstrap_already_finished")
+        return await original(kind, **data)
+
+    setup.ha.request = request
+    try:
+        session = await setup.start("zwave_js", "zwave", 1)
+        setup.zwave_event({"event": "validate dsk and enter pin", "dsk": "secret"})
+        result = await setup.stop(session["id"])
+        assert result["status"] == "stopped" and "dsk" not in result
+        assert any(k == "zwave_js/stop_inclusion" for k, _ in setup.ha.calls)
+    finally:
+        await setup.close()
+
+
+@pytest.mark.asyncio
+async def test_reconcile_interrupted_stop_only_after_connected_idle_status(setup):
+    try:
+        session = await setup.start("zwave_js", "zwave", 1)
+        setup.ha.connected = False
+        result = await setup.stop(session["id"])
+        assert result["status"] == "needs_stop"
+        assert (await setup.status())["radio_open"]
+        setup.ha.connected = True
+        assert (await setup.status())["radio_open"]  # Still actually including.
+        setup.ha.controller_state = 0
+        result = await setup.status()
+        assert result["status"] == "stopped" and not result["radio_open"]
+        assert setup.store.get("pairing_active") == ""
+        assert sum(k == "zwave_js/add_node" for k, _ in setup.ha.calls) == 1
+        assert not any(k == "zwave_js/stop_inclusion" for k, _ in setup.ha.calls)
+        await setup.start("zwave_js", "zwave", 1)
+    finally:
+        await setup.close()
+
+
+@pytest.mark.asyncio
+async def test_start_reconciles_persisted_stop_and_does_not_close_active_interview(setup):
+    try:
+        await setup.start("zwave_js", "zwave", 1)
+        setup.session["status"] = "interviewing"
+        setup.ha.controller_state = 0
+        with pytest.raises(HTTPException):
+            await setup.start("zwave_js", "zwave", 1)
+        setup.session["stop_requested"] = True
+        setup.persist()
+        restored = DeviceSetup(setup.ha, setup.settings, setup.store)
+        try:
+            session = await restored.start("zwave_js", "zwave", 1)
+            assert session["status"] == "searching"
+        finally:
+            await restored.close()
+    finally:
+        await setup.close()

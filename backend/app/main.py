@@ -357,7 +357,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
 
     @app.get("/api/setup/session")
     async def pairing_status(current=Depends(admin)):
-        return setup.snapshot()
+        return await setup.status()
 
     @app.post("/api/setup/sessions")
     async def start_pairing(body: PairingStart, current=Depends(admin)):

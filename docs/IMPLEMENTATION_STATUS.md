@@ -1,5 +1,9 @@
 # Implementation status — 2026-10-12
 
+## 0.2.3 — stopped pairing recovery
+
+Z-Wave stop now tolerates delayed status and S2 cancellation races. A bounded read-only polling window confirms the stop; subsequent status reads and starts reconcile unresolved sessions only when the connected controller reports Idle/SmartStart. Active interviews are preserved. Subscription callbacks are bound to the original session, preventing late events from corrupting a new pairing. UI distinguishes controller busy from unresolved SMARTi pairing and displays stopping progress. Regression fixtures cover delayed stop, S2 cancellation rejection, disconnection, persisted recovery, old callbacks and stop/start again. Physical radio reproduction is still pending.
+
 ## 0.2.2 — protocol inventory and removal
 
 Devices has All controls, Zigbee and Z-Wave tabs, with the pairing wizard available at the top. Physical inventories come from Zigbee2MQTT bridge/devices and each Z-Wave JS controller's network_status, including nodes without HA controls. Zigbee availability is unknown when not reported; last LQI is shown on a 0–255 scale with unknown age for retained samples. Z-Wave shows actual node status, including asleep, without inventing a signal-strength percentage.
