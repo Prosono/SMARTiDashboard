@@ -1,0 +1,971 @@
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  House,
+  Moon,
+  Briefcase,
+  Plane,
+  Settings2,
+  Star,
+  ArrowUpRight,
+  Shield,
+  Zap,
+  Thermometer,
+  Leaf,
+  Camera,
+  Lightbulb,
+  LayoutGrid,
+  AlertCircle,
+} from "lucide-react";
+import { api } from "../api";
+import type { Home, Control } from "../types";
+import { entityState } from "../manage/entityWords";
+import { overview, reading, temperature, usable } from "./homeModel";
+import { CameraCard, Energy } from "./HomeMedia";
+import "./home.css";
+export type HomePreferences = {
+  rooms: string[];
+  energy: string | null;
+  cameras: string[];
+  modes: Record<string, string | null>;
+  images: Record<string, boolean>;
+};
+const modes = [
+  { id: "home", nb: "Hjemme", en: "Home", Icon: House },
+  { id: "away", nb: "Borte", en: "Away", Icon: Briefcase },
+  { id: "night", nb: "Natt", en: "Night", Icon: Moon },
+  { id: "holiday", nb: "Ferie", en: "Holiday", Icon: Plane },
+];
+export function HomeOverview({
+  home: h,
+  offline,
+  lang,
+  admin,
+  renderControls,
+  openRooms,
+  openDevices,
+  add,
+}: {
+  home: Home;
+  offline: boolean;
+  lang: string;
+  admin: boolean;
+  renderControls: (c: Control[]) => ReactNode;
+  openRooms: (id?: string) => void;
+  openDevices: () => void;
+  add: () => void;
+}) {
+  const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const qc = useQueryClient();
+  const prefs = useQuery({
+    queryKey: ["home-preferences"],
+    queryFn: () => api<HomePreferences>("home/preferences"),
+  });
+  const energySources = useQuery({
+    queryKey: ["home-energy-sources"],
+    queryFn: () =>
+      api<{ id: string; type: string; measurement: string }[]>(
+        "home/energy-sources",
+      ),
+    enabled: !offline,
+    staleTime: 300000,
+    retry: false,
+  });
+  const activity = useQuery({
+    queryKey: ["home-activity"],
+    queryFn: () =>
+      api<{ entity_id: string; state: string; time: string }[]>(
+        "home/activity",
+      ),
+    enabled: !offline,
+    staleTime: 10000,
+    refetchInterval: 15000,
+  });
+  const [configuring, configure] = useState(false),
+    [search, searchFor] = useState("");
+  const [allCameras, showAllCameras] = useState(false),
+    [allSecurity, showAllSecurity] = useState(false);
+  const [busy, setBusy] = useState(false),
+    [message, setMessage] = useState("");
+  const [clock, setClock] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setClock(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+  const model = useMemo(() => overview(h), [h]);
+  const pref = prefs.data;
+  const roomList = pref?.rooms.length
+    ? h.areas.filter((a) => pref.rooms.includes(a.area_id))
+    : h.areas.slice(0, 4);
+  const favorites = model.controls.filter((c) =>
+    h.favorites.includes(c.entity_id),
+  );
+  const hour = clock.getHours();
+  const greeting =
+    hour < 5
+      ? t("God natt", "Good night")
+      : hour < 10
+        ? t("God morgen", "Good morning")
+        : hour < 18
+          ? t("God dag", "Good afternoon")
+          : t("God kveld", "Good evening");
+  async function change(work: () => Promise<unknown>) {
+    if (busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      await work();
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["home-preferences"] }),
+        qc.invalidateQueries({ queryKey: ["home"] }),
+      ]);
+    } catch {
+      setMessage(
+        t(
+          "Kunne ikke lagre endringen. Prøv igjen.",
+          "Could not save the change. Try again.",
+        ),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  function savePreference(update: Partial<HomePreferences>) {
+    if (!pref || busy) return;
+    qc.setQueryData(["home-preferences"], { ...pref, ...update });
+    return change(async () => {
+      try {
+        return await api("home/preferences", "PUT", {
+          rooms: pref.rooms,
+          energy: pref.energy,
+          cameras: pref.cameras,
+          ...update,
+        });
+      } catch (error) {
+        qc.setQueryData(["home-preferences"], pref);
+        throw error;
+      }
+    });
+  }
+  async function uploadRoom(id: string, file: File) {
+    await change(async () => {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 15000000)
+        throw new Error("image");
+      const image = await createImageBitmap(file);
+      const ratio = Math.min(1, 1400 / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * ratio));
+      canvas.height = Math.max(1, Math.round(image.height * ratio));
+      canvas
+        .getContext("2d")!
+        .drawImage(image, 0, 0, canvas.width, canvas.height);
+      image.close();
+      await api(`home/room-image/${encodeURIComponent(id)}`, "PUT", {
+        data: canvas.toDataURL("image/jpeg", 0.78).split(",")[1],
+      });
+    });
+  }
+  async function runMode(id: string, label: string) {
+    const target = h.controls.find((c) => c.id === pref?.modes[id]);
+    if (
+      !target ||
+      !window.confirm(
+        t(
+          `Aktivere ${label} via «${target.name}»? Dette kjører den konfigurerte rutinen og kan påvirke lys, låser og andre enheter.`,
+          `Activate ${label} using “${target.name}”? This runs the configured routine and may affect lights, locks and other devices.`,
+        ),
+      )
+    )
+      return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const v = await api<{ status: string }>(`home/modes/${id}/run`, "POST", {
+        confirmed: true,
+      });
+      setMessage(
+        v.status === "simulated"
+          ? t("Simulert i demohjemmet.", "Simulated in the demo home.")
+          : t(
+              "Forespørselen er sendt. Fysisk utførelse er ikke bekreftet.",
+              "Request sent. Physical execution is not confirmed.",
+            ),
+      );
+    } catch {
+      setMessage(
+        t(
+          "Handlingen kunne ikke bekreftes. Kontroller hjemmet før du prøver igjen.",
+          "The action could not be confirmed. Check your home before retrying.",
+        ),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  const displayedCameras = pref?.cameras.length
+    ? model.cameras.filter((c) => pref.cameras.includes(c.id))
+    : model.cameras;
+  const weatherLabels: Record<string, string> = {
+    sunny: t("Sol", "Sunny"),
+    cloudy: t("Skyet", "Cloudy"),
+    partlycloudy: t("Delvis skyet", "Partly cloudy"),
+    rainy: t("Regn", "Rain"),
+    snowy: t("Snø", "Snow"),
+    "clear-night": t("Klar natt", "Clear night"),
+  };
+  return (
+    <div className="home-overview">
+      <header className="home-welcome">
+        <div>
+          <span className="eyebrow">{h.home_name}</span>
+          <h1>{greeting}.</h1>
+          <p>
+            {offline
+              ? t(
+                  "Vi venter på ferske data fra hjemmet.",
+                  "Waiting for fresh data from your home.",
+                )
+              : model.alerts.length
+                ? t(
+                    "Noe trenger oppmerksomheten din.",
+                    "Something needs your attention.",
+                  )
+                : model.open.length
+                  ? t(
+                      "Se over åpninger og aktivitet nedenfor.",
+                      "Review openings and activity below.",
+                    )
+                  : t(
+                      "Hjemmet ditt, samlet på ett sted.",
+                      "Your home, all in one place.",
+                    )}
+          </p>
+        </div>
+        <div className="home-welcome-side">
+          {model.weather && !offline && (
+            <div className="home-weather">
+              <span>
+                {weatherLabels[model.weather.state] || model.weather.state}
+              </span>
+              <strong>
+                {typeof model.weather.attributes.temperature === "number"
+                  ? `${model.weather.attributes.temperature} ${model.weather.attributes.temperature_unit || "°"}`
+                  : "—"}
+              </strong>
+              <small>{model.weather.name}</small>
+            </div>
+          )}
+          <button
+            className="home-customize"
+            aria-expanded={configuring}
+            onClick={() => configure(!configuring)}
+          >
+            <Settings2 size={18} />
+            {t("Tilpass Hjem", "Personalize Home")}
+          </button>
+        </div>
+      </header>
+      {message && (
+        <p className="notice" role="status">
+          {message}
+        </p>
+      )}
+      {prefs.isError && (
+        <p role="alert">
+          {t(
+            "Favorittvalg kunne ikke lastes.",
+            "Could not load your preferences.",
+          )}{" "}
+          <button onClick={() => prefs.refetch()}>
+            {t("Prøv igjen", "Retry")}
+          </button>
+        </p>
+      )}
+      {configuring && (
+        <section className="home-panel home-preferences">
+          <h2>
+            {t("Dine favoritter. Vårt oppsett.", "Your favorites. Our layout.")}
+          </h2>
+          <p>
+            {t(
+              "Velg det du vil ha nærmest. SMARTi organiserer resten.",
+              "Choose what matters most. SMARTi organizes the rest.",
+            )}
+          </p>
+          {!pref ? (
+            <p>{t("Laster valg…", "Loading preferences…")}</p>
+          ) : (
+            <fieldset disabled={busy}>
+              <details open>
+                <summary>
+                  {t(
+                    "Favorittrom og rombilder",
+                    "Favorite rooms and room photos",
+                  )}
+                </summary>
+                <div className="home-room-options">
+                  {h.areas.map((a) => (
+                    <div key={a.area_id}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={pref.rooms.includes(a.area_id)}
+                          onChange={() =>
+                            savePreference({
+                              rooms: pref.rooms.includes(a.area_id)
+                                ? pref.rooms.filter((id) => id !== a.area_id)
+                                : [...pref.rooms, a.area_id].slice(0, 12),
+                            })
+                          }
+                        />
+                        {a.name}
+                      </label>
+                      {admin && (
+                        <>
+                          <label className="home-upload">
+                            {t("Velg rombilde", "Choose room photo")}
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              aria-label={`${t("Rombilde", "Room photo")}: ${a.name}`}
+                              onChange={(e) => {
+                                if (e.target.files?.[0])
+                                  void uploadRoom(a.area_id, e.target.files[0]);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                          {pref.images[a.area_id] && (
+                            <button
+                              onClick={() =>
+                                change(() =>
+                                  api(
+                                    `home/room-image/${encodeURIComponent(a.area_id)}`,
+                                    "PUT",
+                                    { data: "" },
+                                  ),
+                                )
+                              }
+                            >
+                              {t("Fjern bilde", "Remove photo")}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <small>
+                  {t(
+                    "Uten valgte favoritter vises opptil fire rom automatisk.",
+                    "Without favorites, up to four rooms are shown automatically.",
+                  )}
+                </small>
+              </details>
+              <details>
+                <summary>
+                  {t(
+                    "Favorittenheter og handlinger",
+                    "Favorite devices and actions",
+                  )}
+                </summary>
+                <input
+                  aria-label={t("Søk etter favoritt", "Search favorites")}
+                  value={search}
+                  onChange={(e) => searchFor(e.target.value)}
+                  placeholder={t(
+                    "Søk etter navn eller rom…",
+                    "Search by name or room…",
+                  )}
+                />
+                <div className="home-favorite-options">
+                  {model.controls
+                    .filter((c) =>
+                      `${c.name} ${h.areas.find((a) => a.area_id === c.area_id)?.name || ""}`
+                        .toLowerCase()
+                        .includes(search.toLowerCase()),
+                    )
+                    .slice(0, 50)
+                    .map((c) => (
+                      <label key={c.id}>
+                        <input
+                          type="checkbox"
+                          checked={h.favorites.includes(c.entity_id)}
+                          onChange={() =>
+                            change(() =>
+                              api(
+                                `favorites/${encodeURIComponent(c.entity_id)}`,
+                                "PUT",
+                              ),
+                            )
+                          }
+                        />
+                        {c.name}
+                        <small>
+                          {h.areas.find((a) => a.area_id === c.area_id)?.name}
+                        </small>
+                      </label>
+                    ))}
+                </div>
+                <small>
+                  {t(
+                    "Viser opptil 50 treff. Søk for å finne flere.",
+                    "Showing up to 50 results. Search to find more.",
+                  )}
+                </small>
+              </details>
+              {model.cameras.length > 0 && (
+                <details>
+                  <summary>
+                    {t("Utvalgte kameraer", "Selected cameras")}
+                  </summary>
+                  {model.cameras.map((c) => (
+                    <label className="home-check" key={c.id}>
+                      <input
+                        type="checkbox"
+                        checked={pref.cameras.includes(c.id)}
+                        onChange={() =>
+                          savePreference({
+                            cameras: pref.cameras.includes(c.id)
+                              ? pref.cameras.filter((id) => id !== c.id)
+                              : [...pref.cameras, c.id].slice(0, 8),
+                          })
+                        }
+                      />
+                      {c.name}
+                    </label>
+                  ))}
+                </details>
+              )}
+              <details>
+                <summary>
+                  {t(
+                    "Hjemme, Borte, Natt og Ferie",
+                    "Home, Away, Night and Holiday",
+                  )}
+                </summary>
+                <p>
+                  {t(
+                    "Ingen rutiner velges automatisk. Hver aktivering må bekreftes. Modusknappene viser ikke en målt tilstand.",
+                    "No routines are selected automatically. Each activation requires confirmation. Mode buttons do not represent a measured state.",
+                  )}
+                </p>
+                {admin ? (
+                  modes.map((m) => (
+                    <label key={m.id}>
+                      {t(m.nb, m.en)}
+                      <select
+                        aria-label={`${t("Rutine for", "Routine for")} ${t(m.nb, m.en)}`}
+                        value={pref.modes[m.id] || ""}
+                        onChange={(e) =>
+                          change(() =>
+                            api(`home/modes/${m.id}`, "PUT", {
+                              control_id: e.target.value || null,
+                            }),
+                          )
+                        }
+                      >
+                        <option value="">
+                          {t("Ikke konfigurert", "Not configured")}
+                        </option>
+                        {h.controls
+                          .filter((c) =>
+                            ["scene", "script", "automation"].includes(
+                              c.domain,
+                            ),
+                          )
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} · {c.domain}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                  ))
+                ) : (
+                  <p>
+                    {t(
+                      "En administrator kan koble til rutiner.",
+                      "An administrator can connect routines.",
+                    )}
+                  </p>
+                )}
+              </details>
+            </fieldset>
+          )}
+          <button className="home-customize" onClick={() => configure(false)}>
+            {t("Ferdig", "Done")}
+          </button>
+        </section>
+      )}
+      <nav className="home-modes" aria-label={t("Hjemmemoduser", "Home modes")}>
+        {modes.map((m) => {
+          const target = h.controls.find((c) => c.id === pref?.modes[m.id]);
+          return (
+            <button
+              key={m.id}
+              disabled={
+                busy || offline || (!!target && !usable(target)) || !pref
+              }
+              onClick={() =>
+                target ? runMode(m.id, t(m.nb, m.en)) : configure(true)
+              }
+            >
+              <m.Icon size={19} />
+              <span>
+                {t(m.nb, m.en)}
+                <small>
+                  {target ? target.name : t("Velg rutine", "Choose routine")}
+                </small>
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+      <div className="home-status-grid">
+        {model.security.length > 0 && (
+          <a
+            href="#home-security"
+            className={
+              "home-status " +
+              (model.alerts.length || offline
+                ? "status-warning"
+                : "status-safety")
+            }
+          >
+            <Shield />
+            <span>
+              {t("Sikkerhet", "Security")}
+              <strong>
+                {offline
+                  ? t("Ukjent status", "Unknown status")
+                  : model.alerts.length
+                    ? `${model.alerts.length} ${t("å sjekke", "to check")}`
+                    : model.open.length
+                      ? `${model.open.length} ${t("åpne / aktive", "open / active")}`
+                      : t("Ingen registrerte avvik", "No reported issues")}
+              </strong>
+              <small>
+                {model.security.length}{" "}
+                {t("tilkoblede målepunkter", "connected signals")}
+              </small>
+            </span>
+          </a>
+        )}
+        {model.meters.length > 0 && (
+          <a href="#home-energy" className="home-status status-energy">
+            <Zap />
+            <span>
+              {t("Energi", "Energy")}
+              <strong>
+                {offline
+                  ? "—"
+                  : reading(
+                      model.meters.find((c) => c.id === pref?.energy) ||
+                        model.meters[0],
+                      lang,
+                    )}
+              </strong>
+              <small>
+                {
+                  (
+                    model.meters.find((c) => c.id === pref?.energy) ||
+                    model.meters[0]
+                  ).name
+                }
+              </small>
+            </span>
+          </a>
+        )}
+        {model.temperature !== null && (
+          <a href="#home-climate" className="home-status status-climate">
+            <Thermometer />
+            <span>
+              {t("Innetemperatur", "Indoor temperature")}
+              <strong>
+                {offline ? "—" : `${model.temperature.toFixed(1)} °C`}
+              </strong>
+              <small>
+                {t("Utvalgte målere i", "Selected readings in")}{" "}
+                {model.temperatureRooms} {t("rom", "rooms")}
+              </small>
+            </span>
+          </a>
+        )}
+        {model.air.length > 0 && (
+          <a href="#home-climate" className="home-status status-air">
+            <Leaf />
+            <span>
+              {t("Luft & fuktighet", "Air & humidity")}
+              <strong>{offline ? "—" : reading(model.air[0], lang)}</strong>
+              <small>{model.air[0].name}</small>
+            </span>
+          </a>
+        )}
+        {!model.security.length &&
+          !model.meters.length &&
+          model.controls.some((c) => c.domain === "light") && (
+            <button className="home-status status-energy" onClick={openDevices}>
+              <Lightbulb />
+              <span>
+                {t("Lys", "Lights")}
+                <strong>
+                  {offline
+                    ? "—"
+                    : model.controls.filter(
+                        (c) =>
+                          c.domain === "light" && usable(c) && c.state === "on",
+                      ).length}{" "}
+                  {t("på", "on")}
+                </strong>
+                <small>{t("Åpne enheter", "Open devices")}</small>
+              </span>
+            </button>
+          )}
+      </div>
+      {!model.controls.length && (
+        <section className="home-panel">
+          <House />
+          <h2>{t("Gjør plass til hjemmet ditt", "Make room for your home")}</h2>
+          <p>
+            {t(
+              "Rom og funksjoner dukker opp når enhetene er tilgjengelige.",
+              "Rooms and features appear when devices are available.",
+            )}
+          </p>
+          {admin && (
+            <button onClick={add}>{t("Legg til enhet", "Add device")}</button>
+          )}
+        </section>
+      )}
+      {roomList.length > 0 && (
+        <section className="home-rooms">
+          <header className="home-section-heading">
+            <h2>
+              {pref?.rooms.length
+                ? t("Favorittrom", "Favorite rooms")
+                : t("Rommene dine", "Your rooms")}
+            </h2>
+            <button onClick={() => openRooms()}>
+              {t("Vis alle rom", "View all rooms")} <ArrowUpRight size={17} />
+            </button>
+          </header>
+          <div className="home-room-strip">
+            {roomList.map((a, i) => {
+              const controls = model.byRoom.get(a.area_id) || [],
+                temp = controls.find(
+                  (c) =>
+                    temperature(c) !== null &&
+                    (c.domain === "climate" ||
+                      c.attributes.device_class === "temperature"),
+                );
+              return (
+                <button
+                  className={`home-room-card room-tone-${i % 4}`}
+                  key={a.area_id}
+                  onClick={() => openRooms(a.area_id)}
+                >
+                  <div className="home-room-art">
+                    {pref?.images[a.area_id] ? (
+                      <img
+                        src={
+                          new URL(
+                            `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
+                            document.baseURI,
+                          ).href
+                        }
+                        alt=""
+                        loading="lazy"
+                      />
+                    ) : (
+                      <>
+                        <LayoutGrid size={36} strokeWidth={1} />
+                        <span>{a.name.slice(0, 1)}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="home-room-caption">
+                    <strong>{a.name}</strong>
+                    <span>
+                      {offline
+                        ? t("Venter på data", "Waiting for data")
+                        : temp
+                          ? `${temperature(temp)!.toFixed(1)} °C`
+                          : `${controls.length} ${t("enheter", "controls")}`}
+                    </span>
+                    <small>
+                      <Lightbulb size={13} />
+                      {offline
+                        ? "—"
+                        : controls.filter(
+                            (c) =>
+                              c.domain === "light" &&
+                              usable(c) &&
+                              c.state === "on",
+                          ).length}{" "}
+                      {t("lys på", "lights on")}
+                    </small>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+      <section className="home-favorites">
+        <header className="home-section-heading">
+          <h2>{t("Nærmest deg", "At your fingertips")}</h2>
+          <button onClick={() => configure(true)}>
+            <Star size={16} />
+            {t("Velg favoritter", "Choose favorites")}
+          </button>
+        </header>
+        {favorites.length ? (
+          renderControls(favorites.slice(0, 12))
+        ) : (
+          <div className="home-favorite-hint">
+            <Star />
+            <p>
+              {t(
+                "Velg lys, temperatur og handlinger du bruker ofte.",
+                "Choose lights, temperature and actions you use often.",
+              )}
+            </p>
+            <button onClick={() => configure(true)}>
+              {t("Velg favoritter", "Choose favorites")}
+            </button>
+          </div>
+        )}
+        {favorites.length > 12 && (
+          <button onClick={openDevices}>
+            {t("Vis flere enheter", "View more devices")}
+          </button>
+        )}
+      </section>
+      <div className="home-insights">
+        {!!energySources.data?.some((s) =>
+          h.controls.some((c) => c.id === s.id),
+        ) && (
+          <section className="home-panel">
+            <h2>
+              <Zap size={20} />
+              {t(
+                "Produksjon, lagring & forbrukere",
+                "Production, storage & consumers",
+              )}
+            </h2>
+            <small>
+              {t(
+                "Fra hjemmets energioppsett. Målerne vises hver for seg.",
+                "From your home's energy configuration. Meters are shown individually.",
+              )}
+            </small>
+            <ul className="home-signal-list">
+              {energySources.data.map((s, i) => {
+                const c = h.controls.find((c) => c.id === s.id);
+                if (!c) return null;
+                return (
+                  <li key={i}>
+                    <span>
+                      {c.name}
+                      <small>
+                        {s.type === "solar"
+                          ? t("Solproduksjon", "Solar production")
+                          : s.type === "battery"
+                            ? t("Batteri", "Battery")
+                            : t("Forbruker", "Consumer")}{" "}
+                        ·{" "}
+                        {s.measurement === "stat_soc"
+                          ? t("Ladenivå", "Charge level")
+                          : s.measurement === "stat_rate"
+                            ? t("Effekt", "Power")
+                            : s.measurement === "stat_energy_to"
+                              ? t("Energi inn", "Energy in")
+                              : t("Målerstand", "Meter reading")}
+                      </small>
+                    </span>
+                    <strong>{offline ? "—" : reading(c, lang)}</strong>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {model.meters.length > 0 && (
+          <div id="home-energy">
+            <Energy
+              meters={model.meters}
+              selected={pref?.energy || null}
+              onSelect={(id) => savePreference({ energy: id })}
+              offline={offline}
+              lang={lang}
+            />
+          </div>
+        )}
+        {model.cameras.length > 0 && (
+          <section
+            className={
+              "home-panel home-cameras" +
+              (allCameras ? " show-all-cameras" : "")
+            }
+          >
+            <header className="home-section-heading">
+              <h2>
+                <Camera size={20} />
+                {t("Kameraer", "Cameras")}
+              </h2>
+              <button onClick={() => showAllCameras(!allCameras)}>
+                {t(
+                  allCameras ? "Vis utvalgte" : "Vis alle kameraer",
+                  allCameras ? "Show selected" : "View all cameras",
+                )}
+              </button>
+            </header>
+            <div className="home-camera-grid">
+              {(allCameras ? model.cameras : displayedCameras.slice(0, 3)).map(
+                (c) => (
+                  <CameraCard key={c.id} c={c} offline={offline} lang={lang} />
+                ),
+              )}
+            </div>
+          </section>
+        )}
+        {model.security.length > 0 && (
+          <section id="home-security" className="home-panel">
+            <header className="home-section-heading">
+              <h2>
+                <Shield size={20} />
+                {t("Sikkerhet & åpninger", "Security & openings")}
+              </h2>
+              <button onClick={() => showAllSecurity(!allSecurity)}>
+                {t(
+                  allSecurity ? "Vis færre" : "Vis alle",
+                  allSecurity ? "Show less" : "Show all",
+                )}
+              </button>
+            </header>
+            <ul className="home-signal-list">
+              {(allSecurity ? model.security : model.security.slice(0, 5)).map(
+                (c) => (
+                  <li key={c.id}>
+                    <span>
+                      {c.name}
+                      <small>
+                        {h.areas.find((a) => a.area_id === c.area_id)?.name}
+                      </small>
+                    </span>
+                    <strong>
+                      {offline
+                        ? t("Ukjent", "Unknown")
+                        : entityState(c.entity_id, c.state, h, lang)}
+                    </strong>
+                  </li>
+                ),
+              )}
+            </ul>
+          </section>
+        )}
+        {(model.temperature !== null ||
+          model.air.length > 0 ||
+          model.controls.some((c) => c.domain === "climate")) && (
+          <section id="home-climate" className="home-panel">
+            <h2>
+              <Thermometer size={20} />
+              {t("Inneklima", "Indoor climate")}
+            </h2>
+            <button className="text-button" onClick={openDevices}>
+              {t("Vis enheter", "View devices")}
+            </button>
+            {renderControls(
+              model.controls
+                .filter(
+                  (c) =>
+                    c.domain === "climate" &&
+                    !h.favorites.includes(c.entity_id),
+                )
+                .slice(0, 2),
+            )}
+            <ul className="home-signal-list">
+              {model.air.slice(0, 4).map((c) => (
+                <li key={c.id}>
+                  <span>{c.name}</span>
+                  <strong>{offline ? "—" : reading(c, lang)}</strong>
+                </li>
+              ))}
+            </ul>
+            {model.temperature !== null && (
+              <p>
+                {offline ? "—" : `${model.temperature.toFixed(1)} °C`} ·{" "}
+                {t(
+                  "fra tilgjengelige rommålere",
+                  "from available room sensors",
+                )}
+              </p>
+            )}
+          </section>
+        )}
+        {model.charging.length > 0 && (
+          <section className="home-panel">
+            <h2>
+              <Zap size={20} />
+              {t("Lading", "Charging")}
+            </h2>
+            <ul className="home-signal-list">
+              {model.charging.slice(0, 5).map((c) => (
+                <li key={c.id}>
+                  <span>{c.name}</span>
+                  <strong>
+                    {offline
+                      ? "—"
+                      : c.domain === "sensor"
+                        ? reading(c, lang)
+                        : entityState(c.entity_id, c.state, h, lang)}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {!!activity.data?.length && (
+          <section className="home-panel">
+            <h2>{t("Siste aktivitet", "Recent activity")}</h2>
+            <small>
+              {t(
+                "Observerte endringer siden SMARTi startet. Ikke en komplett hendelseslogg.",
+                "Observed changes since SMARTi started. Not a complete event log.",
+              )}
+            </small>
+            <ul className="home-signal-list">
+              {activity.data.slice(0, 6).map((e, i) => (
+                <li key={i}>
+                  <span>
+                    {h.controls.find((c) => c.entity_id === e.entity_id)?.name}
+                    <small>{entityState(e.entity_id, e.state, h, lang)}</small>
+                  </span>
+                  <time>
+                    {new Date(e.time).toLocaleTimeString(lang, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
+      {model.unavailable.length > 0 && (
+        <button className="home-unavailable" onClick={openDevices}>
+          <AlertCircle size={18} />
+          {model.unavailable.length}{" "}
+          {t(
+            "enheter har ukjent eller utilgjengelig status",
+            "controls have unknown or unavailable status",
+          )}
+          <ArrowUpRight size={16} />
+        </button>
+      )}
+    </div>
+  );
+}

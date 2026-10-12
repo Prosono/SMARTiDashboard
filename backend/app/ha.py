@@ -5,6 +5,7 @@ import contextlib
 import json
 import random
 import re
+from collections import deque
 from datetime import UTC, datetime
 
 import httpx
@@ -46,12 +47,18 @@ class HomeAssistant:
         self.buffer = []
         self.refresh_task = None
         self.last_sync = None
+        self.activity = deque(maxlen=100)
+        self.temperature_unit = None
 
     def changed(self):
         self.revision += 1
 
     def controls(self):
-        return normalize(self.states, self.entities, self.devices)
+        controls = normalize(self.states, self.entities, self.devices)
+        for c in controls:
+            if c.domain == "climate" and self.temperature_unit:
+                c.attributes.setdefault("temperature_unit", self.temperature_unit)
+        return controls
 
     async def request(self, kind, _callback=None, **data):
         if self.ws is None:
@@ -117,6 +124,28 @@ class HomeAssistant:
         except httpx.HTTPError:
             raise HAError("brand_unavailable") from None
 
+    async def camera_image(self, entity_id):
+        if not re.fullmatch(r"camera\.[a-z0-9_]+", entity_id) or not self.connected:
+            raise HAError("camera_unavailable")
+        try:
+            async with httpx.AsyncClient(timeout=15, follow_redirects=False, trust_env=False) as client:
+                async with client.stream("GET", self.http_url + "camera_proxy/" + entity_id,
+                    headers={"Authorization": "Bearer " + self.token}) as response:
+                    if response.status_code != 200:
+                        raise HAError("camera_unavailable")
+                    data = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        data.extend(chunk)
+                        if len(data) > 5_000_000:
+                            raise HAError("camera_unavailable")
+            if data.startswith(b"\xff\xd8\xff"):
+                return bytes(data), "image/jpeg"
+            if data.startswith(b"\x89PNG\r\n\x1a\n"):
+                return bytes(data), "image/png"
+            raise HAError("camera_unavailable")
+        except httpx.HTTPError:
+            raise HAError("camera_unavailable") from None
+
     def apply_state(self, data):
         entity_id, state = data["entity_id"], data.get("new_state")
         current = self.states.get(entity_id)
@@ -135,6 +164,9 @@ class HomeAssistant:
                 self.states.pop(entity_id, None)
         elif not current or timestamp(state.get("last_updated")) >= current_time:
             self.states[entity_id] = state
+            if current and current.get("state") != state.get("state"):
+                self.activity.appendleft({"entity_id": entity_id, "state": state.get("state"),
+                    "time": state.get("last_updated")})
         self.changed()
 
     async def receive(self):
@@ -192,6 +224,11 @@ class HomeAssistant:
             await self.request("subscribe_events", event_type=event)
         states = await self.request("get_states")
         await self.registries()
+        try:
+            config = await self.request("get_config")
+            self.temperature_unit = (config or {}).get("unit_system", {}).get("temperature")
+        except HAError:
+            self.temperature_unit = None
         self.states = {s["entity_id"]: s for s in states}
         for event in self.buffer:
             self.apply_state(event)
@@ -255,7 +292,7 @@ class HomeAssistant:
             raise HAError("disconnected")
         domain = entity_id.split(".")[0]
         data = {}
-        service = action
+        service = "turn_on" if action == "activate" else action
         if action == "set_brightness":
             service, data = "turn_on", {"brightness_pct": value}
         elif action == "set_temperature":

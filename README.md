@@ -14,7 +14,7 @@ Requires HAOS. Configure the local/external browser origins and a random owner s
 
 ## Home administration (0.3.0)
 
-Create and edit automations, manage rooms/device placement, administer configured integrations and install supported updates from SMARTi. Home Assistant update names use SMARTi display branding. Build private or shared dashboards with separate phone/tablet/desktop grids, drag-and-drop, keyboard movement and live controls. See [administration instructions and limitations](ha-app/DOCS.md#administration-and-custom-dashboards-030). Configuration writes and updates require administrator access; new integration setup flows remain deferred.
+Create and edit automations, manage rooms/device placement, administer configured integrations and install supported updates from SMARTi. Home Assistant update names use SMARTi display branding. Home automatically adapts to available devices, with personal favorites, room photos, explicit mode shortcuts and optional camera/energy sections. The custom dashboard builder has been removed. See [administration instructions and limitations](ha-app/DOCS.md#administration-and-home-overview-040). Configuration writes and updates require administrator access; new integration setup flows remain deferred.
 
 ## Start locally
 

@@ -6,9 +6,7 @@ test.beforeEach(async ({ page }) => {
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Velkommen hjem." }),
-  ).toBeVisible();
+  await expect(page.locator(".home-welcome h1")).toBeVisible();
 });
 test("rooms create, rename, assign and remove without deleting devices", async ({
   page,
@@ -215,112 +213,6 @@ test("integrations and branded updates use explicit confirmation", async ({
     ),
   ).toBeVisible();
 });
-test("dashboard touch handles, keyboard moves, responsive layouts and persistence", async ({
-  page,
-}) => {
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Dashbord", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Nytt dashbord", exact: true })
-    .click();
-  const name = "Min oversikt " + test.info().project.name;
-  await page.getByLabel("Dashbordnavn", { exact: true }).fill(name);
-  await page
-    .getByRole("combobox", { name: "Synlighet", exact: true })
-    .selectOption("shared");
-  await page
-    .getByRole("combobox", { name: "Velg kontroll", exact: true })
-    .selectOption("demo-light.living_pendant");
-  await page
-    .getByRole("button", { name: "Legg til rute", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Telefon", exact: true }).click();
-  const handle = page.getByRole("button", { name: "Dra rute", exact: true });
-  await handle.focus();
-  await page.keyboard.press("ArrowDown");
-  const tile = page.locator(".dashboard-tile");
-  await expect(tile).toHaveCSS("grid-row-start", "2");
-  await handle.scrollIntoViewIfNeeded();
-  const box = (await handle.boundingBox())!;
-  if (test.info().project.name === "mobile") {
-    const cdp = await page.context().newCDPSession(page);
-    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-    await cdp.send("Input.dispatchTouchEvent", {
-      type: "touchStart",
-      touchPoints: [point],
-    });
-    await cdp.send("Input.dispatchTouchEvent", {
-      type: "touchMove",
-      touchPoints: [{ x: point.x, y: point.y + 112 }],
-    });
-    await cdp.send("Input.dispatchTouchEvent", {
-      type: "touchEnd",
-      touchPoints: [],
-    });
-    await cdp.detach();
-  } else {
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 112, {
-      steps: 8,
-    });
-    await page.mouse.up();
-  }
-  await expect(tile).toHaveCSS("grid-row-start", "3");
-  await page.getByRole("button", { name: "Stor skjerm", exact: true }).click();
-  await expect(tile).toHaveCSS("grid-row-start", "1");
-  await page
-    .getByRole("combobox", { name: "Bredde", exact: true })
-    .selectOption("6");
-  await page
-    .getByRole("button", { name: "Lagre dashbord", exact: true })
-    .click();
-  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-  const boards = await (await page.request.get("/api/dashboards")).json();
-  const board = boards.find((b: any) => b.name === name);
-  expect(board.scope).toBe("shared");
-  expect(board.tiles[0].layouts.phone.y).toBe(2);
-  expect(board.tiles[0].layouts.desktop.w).toBe(6);
-  await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Dashbord", exact: true }).click();
-  await page.getByRole("button", { name, exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Pendellampe", exact: true }),
-  ).toBeVisible();
-  await page.screenshot({
-    path: `../artifacts/${test.info().project.name}-custom-dashboard.png`,
-    fullPage: true,
-  });
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
-  await page
-    .getByRole("button", { name: "Rediger dashbord", exact: true })
-    .click();
-  await page.getByLabel("Dashbordnavn", { exact: true }).fill("Unsaved");
-  page.once("dialog", (dialog) => dialog.dismiss());
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Hjem", exact: true })
-    .click();
-  await expect(page.getByLabel("Dashbordnavn", { exact: true })).toHaveValue(
-    "Unsaved",
-  );
-  await page
-    .getByRole("button", { name: "Slett dashbord", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Bekreft", exact: true }).click();
-});
-
 test("guided sensor transitions and sunset survive review without running devices", async ({
   page,
 }) => {

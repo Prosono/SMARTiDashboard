@@ -7,6 +7,7 @@ from .ha import HomeAssistant
 class Demo(HomeAssistant):
     def __init__(self):
         super().__init__("", "")
+        self.temperature_unit = "°C"
         self.connected = True
         self.error = None
         self.version = "demo"

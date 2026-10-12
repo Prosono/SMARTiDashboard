@@ -29,60 +29,8 @@ def client(tmp_path):
         yield c
 
 
-def tile():
-    return {
-        "id": "tile",
-        "kind": "heading",
-        "title": "Morning",
-        "layouts": {bp: {"x": 0, "y": 0, "w": 2, "h": 1} for bp in ["phone", "tablet", "desktop"]},
-    }
-
-
-def test_dashboard_ownership_revisions_layout_and_restart(client):
-    board = client.post("/api/dashboards", json={"name": "Private", "tiles": [tile()]}).json()
-    assert board["editable"] and board["revision"] == 1
-    body = {k: board[k] for k in ["name", "scope", "revision", "tiles"]}
-    body["name"] = "Renamed"
-    assert client.put(f"/api/dashboards/{board['id']}", json=body).status_code == 200
-    assert client.put(f"/api/dashboards/{board['id']}", json=body).status_code == 409
-    assert client.delete(f"/api/dashboards/{board['id']}?revision=1").status_code == 409
-    shared = client.post("/api/dashboards", json={"name": "Shared", "scope": "shared"}).json()
-    assert (
-        client.post(
-            "/api/users", json={"name": "resident", "password": "another long password", "role": "user"}
-        ).status_code
-        == 200
-    )
-    client.post("/api/logout")
-    login(client, "resident", "another long password")
-    listing = client.get("/api/dashboards").json()
-    assert [b["id"] for b in listing] == [shared["id"]]
-    assert not listing[0]["editable"]
-    assert client.put(f"/api/dashboards/{board['id']}", json=body).status_code == 404
-    assert client.post("/api/dashboards", json={"name": "Unauthorized", "scope": "shared"}).status_code == 403
-    assert (
-        client.put(f"/api/dashboards/{shared['id']}", json={"name": "Attack", "revision": 1}).status_code
-        == 403
-    )
-    own = client.post("/api/dashboards", json={"name": "Resident", "tiles": [tile()]}).json()
-    assert own["editable"]
-    # Independent app against the same SQLite file preserves dashboards and sessions.
-    from app.storage import Store
-
-    reopened = Store(client.app.state.store.path)
-    with reopened.connect() as db:
-        persisted = db.execute("SELECT name,tiles FROM dashboards WHERE id=?", (own["id"],)).fetchone()
-        assert persisted["name"] == "Resident"
-        assert json.loads(persisted["tiles"]) == own["tiles"]
-    invalid = tile()
-    invalid["layouts"]["phone"]["x"] = 1
-    assert client.post("/api/dashboards", json={"name": "Overflow", "tiles": [invalid]}).status_code == 422
-    assert (
-        client.post(
-            "/api/dashboards", json={"name": "Overlap", "tiles": [tile(), tile() | {"id": "second"}]}
-        ).status_code
-        == 422
-    )
+def test_dashboard_creation_removed(client):
+    assert client.post("/api/dashboards", json={"name": "Old"}).status_code == 410
 
 
 def test_management_admin_csrf_and_room_registry_semantics(client):

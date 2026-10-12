@@ -31,8 +31,20 @@ class Control(BaseModel):
 
 class Command(BaseModel):
     model_config = {"extra": "forbid"}
-    action: Literal["turn_on", "turn_off", "set_temperature", "set_brightness"]
+    action: Literal[
+        "turn_on",
+        "turn_off",
+        "set_temperature",
+        "set_brightness",
+        "activate",
+        "lock",
+        "unlock",
+        "open_cover",
+        "close_cover",
+        "stop_cover",
+    ]
     value: float | None = Field(default=None, allow_inf_nan=False)
+    confirmed: bool = False
 
 
 def normalize(states, entities, devices):
@@ -42,7 +54,21 @@ def normalize(states, entities, devices):
         if registry.get("disabled_by"):
             continue
         domain = entity_id.split(".")[0]  # HA domain selects schema, never physical identity.
-        if domain not in {"light", "switch", "climate", "sensor", "binary_sensor", "automation", "lock"}:
+        if domain not in {
+            "light",
+            "switch",
+            "climate",
+            "sensor",
+            "binary_sensor",
+            "automation",
+            "lock",
+            "cover",
+            "camera",
+            "weather",
+            "alarm_control_panel",
+            "scene",
+            "script",
+        }:
             continue
         a = state.get("attributes", {})
         caps = []
@@ -73,6 +99,22 @@ def normalize(states, entities, devices):
             )
         if domain in {"sensor", "binary_sensor", "lock"}:
             caps.append(Capability(kind=a.get("device_class", domain), unit=a.get("unit_of_measurement")))
+        if domain in {"scene", "script"}:
+            caps.append(Capability(kind="scene", actions=["activate"]))
+        if domain == "lock":
+            caps.append(Capability(kind="lock", actions=["lock", "unlock"]))
+        if domain == "cover":
+            features = a.get("supported_features", 0)
+            caps.append(
+                Capability(
+                    kind="cover",
+                    actions=[
+                        action
+                        for bit, action in [(1, "open_cover"), (2, "close_cover"), (8, "stop_cover")]
+                        if features & bit
+                    ],
+                )
+            )
         device_id = registry.get("device_id")
         device = devices.get(device_id, {})
         raw = state.get("state", "unknown")
@@ -85,7 +127,7 @@ def normalize(states, entities, devices):
                 name=registry.get("name") or a.get("friendly_name") or entity_id,
                 domain=domain,
                 state=raw,
-                attributes=a,
+                attributes={k: v for k, v in a.items() if k not in {"access_token", "entity_picture"}},
                 capabilities=caps,
                 availability=raw if raw in {"unknown", "unavailable"} else "available",
                 updated_at=state.get("last_updated"),

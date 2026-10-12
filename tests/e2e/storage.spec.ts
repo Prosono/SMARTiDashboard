@@ -29,9 +29,7 @@ for (const failure of ["quota", "blocked"] as const) {
       .getByLabel("Passord", { exact: true })
       .fill("test-password-not-for-live");
     await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: "Velkommen hjem." }),
-    ).toBeVisible();
+    await expect(page.locator(".home-welcome h1")).toBeVisible();
     await page.getByRole("button", { name: "Mørkt", exact: true }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page
@@ -46,13 +44,9 @@ for (const failure of ["quota", "blocked"] as const) {
       .getByRole("navigation")
       .getByRole("button", { name: "Home", exact: true })
       .click();
-    await expect(
-      page.getByRole("heading", { name: "Welcome home." }),
-    ).toBeVisible();
+    await expect(page.locator(".home-welcome h1")).toBeVisible();
     await page.reload();
-    await expect(
-      page.getByRole("heading", { name: "Velkommen hjem." }),
-    ).toBeVisible();
+    await expect(page.locator(".home-welcome h1")).toBeVisible();
     expect(errors).toEqual([]);
   });
 }

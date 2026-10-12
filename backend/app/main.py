@@ -12,9 +12,9 @@ from pydantic import BaseModel, Field
 
 from .auth import Auth, hasher
 from .config import Settings
-from .dashboards import dashboard_router
 from .demo import Demo
 from .ha import HAError, HomeAssistant
+from .home_overview import home_router
 from .management import Management, management_router
 from .mobile import MobileAuth
 from .models import Command
@@ -151,7 +151,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     management = Management(ha, store, settings)
     app.state.management = management
     app.include_router(management_router(management, admin))
-    app.include_router(dashboard_router(store, user))
+    app.include_router(home_router(store, user, ha, settings))
 
     @app.get("/healthz")
     async def health():
@@ -272,6 +272,11 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             "favorites": favorites,
         }
 
+    @app.api_route("/api/dashboards", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
+    @app.api_route("/api/dashboards/{retired_path:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
+    async def retired_dashboards(current=Depends(user)):
+        raise HTTPException(410, "dashboard_builder_removed")
+
     @app.get("/api/home")
     async def home(current=Depends(user)):
         return snapshot(current)
@@ -305,6 +310,8 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             raise HTTPException(404, "entity_not_found")
         if control.domain == "automation" and current["role"] != "admin":
             raise HTTPException(403, "admin_required")
+        if body.action in {"activate", "lock", "unlock", "open_cover", "close_cover"} and not body.confirmed:
+            raise HTTPException(422, "confirmation_required")
         capability = next((c for c in control.capabilities if body.action in c.actions), None)
         if not capability:
             raise HTTPException(422, "unsupported_action")

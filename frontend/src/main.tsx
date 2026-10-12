@@ -43,7 +43,7 @@ import "./manage/manage.css";
 import { Automations } from "./manage/Automations";
 import { RoomManager } from "./manage/Rooms";
 import { Integrations, Updates } from "./manage/System";
-import { Dashboards } from "./manage/Dashboards";
+import { HomeOverview } from "./home/HomeOverview";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
@@ -429,9 +429,6 @@ function Dashboard({
   );
   const roomName = (id: string | null) =>
     h.areas.find((a) => a.area_id === id)?.name || t.unassigned;
-  const unavailable = regular.filter(
-    (c) => c.availability === "unavailable",
-  ).length;
   function cards(controls: Control[]) {
     return (
       <div className="controls-grid">
@@ -518,128 +515,27 @@ function Dashboard({
         ) : adding ? (
           <DeviceSetup lang={lang} onBack={() => setAdding(false)} />
         ) : page === "home" ? (
-          <>
-            <div className="page-heading home-heading">
-              <div>
-                <span className="eyebrow">{h.home_name}</span>
-                <h1>{t.welcome}</h1>
-                <p>{t.intro}</p>
-              </div>
-              <span className="sun-emblem">
-                <Sun strokeWidth={1} />
-              </span>
-            </div>
-            {regular.length > 0 ? (
-              <>
-                <div className="home-summary">
-                  <span>
-                    <Lightbulb size={19} />
-                    <strong>
-                      {
-                        regular.filter(
-                          (c) => c.domain === "light" && c.state === "on",
-                        ).length
-                      }
-                    </strong>{" "}
-                    {t.activeLights}
-                  </span>
-                  <span>
-                    <LayoutGrid size={18} />
-                    <strong>{h.areas.length}</strong> {t.rooms.toLowerCase()}
-                  </span>
-                  <span className={unavailable ? "attention" : ""}>
-                    <Activity size={19} />
-                    <strong>{unavailable}</strong> {t.attention}
-                  </span>
-                </div>
-                <section>
-                  <div className="section-heading">
-                    <h2>
-                      {t.favorites}
-                      <span>{h.favorites.length}</span>
-                    </h2>
-                    <button
-                      className="text-button"
-                      onClick={() => setPage("devices")}
-                    >
-                      {t.devices}
-                      <ArrowUpRight size={17} />
-                    </button>
-                  </div>
-                  {h.favorites.length ? (
-                    cards(
-                      regular.filter((c) => h.favorites.includes(c.entity_id)),
-                    )
-                  ) : (
-                    <div className="favorite-empty">
-                      <Star size={24} />
-                      <p>{t.favoriteHint}</p>
-                      <button
-                        className="text-button"
-                        onClick={() => setPage("devices")}
-                      >
-                        {t.devices}
-                        <ArrowUpRight size={17} />
-                      </button>
-                    </div>
-                  )}
-                </section>
-                <section>
-                  <div className="section-heading">
-                    <h2>{t.rooms}</h2>
-                    <button
-                      className="text-button"
-                      onClick={() => setPage("rooms")}
-                    >
-                      {t.allRooms}
-                      <ArrowUpRight size={17} />
-                    </button>
-                  </div>
-                  <div className="room-overview">
-                    {rooms.map((a, i) => (
-                      <button
-                        key={a.area_id}
-                        className="room-tile"
-                        onClick={() => {
-                          setPage("rooms");
-                          setRoom(a.area_id);
-                        }}
-                      >
-                        <span className="room-index">0{i + 1}</span>
-                        <div>
-                          <h3>{a.name}</h3>
-                          <span>
-                            {
-                              regular.filter(
-                                (c) => (c.area_id || "") === a.area_id,
-                              ).length
-                            }{" "}
-                            {t.controls}
-                          </span>
-                        </div>
-                        <ArrowUpRight size={23} />
-                      </button>
-                    ))}
-                  </div>
-                </section>
-                {unavailable > 0 && (
-                  <div className="quiet-notice">
-                    <AlertCircle size={20} />
-                    <p>{t.attentionHint}</p>
-                    <button
-                      className="text-button"
-                      onClick={() => setPage("devices")}
-                    >
-                      {t.devices}
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Empty t={t} add={() => setAdding(true)} />
-            )}
-          </>
+          <HomeOverview
+            home={h}
+            offline={offline}
+            lang={lang}
+            admin={session.role === "admin"}
+            renderControls={cards}
+            openRooms={(id) => {
+              setSearch("");
+              setFilter("all");
+              setRoom(id ?? null);
+              setPage("rooms");
+            }}
+            openDevices={() => {
+              setRoom(null);
+              setSearch("");
+              setFilter("all");
+              setProtocol("all");
+              setPage("devices");
+            }}
+            add={() => setAdding(true)}
+          />
         ) : page === "devices" || page === "rooms" ? (
           <>
             <div className="page-heading">
@@ -777,7 +673,6 @@ function Dashboard({
             >
               {[
                 ["overview", lang === "en" ? "Overview" : "Oversikt"],
-                ["dashboards", lang === "en" ? "Dashboards" : "Dashbord"],
                 ...(session.role === "admin"
                   ? [
                       ["automations", t.automations],
@@ -799,24 +694,7 @@ function Dashboard({
                 </button>
               ))}
             </nav>
-            {more === "dashboards" ? (
-              <Dashboards
-                lang={lang}
-                admin={session.role === "admin"}
-                home={h}
-                onDirty={onDirty}
-                renderControl={(c) => (
-                  <Device
-                    c={c}
-                    t={t}
-                    h={h}
-                    offline={offline}
-                    roomName={roomName(c.area_id)}
-                    admin={session.role === "admin"}
-                  />
-                )}
-              />
-            ) : more === "automations" && session.role === "admin" ? (
+            {more === "automations" && session.role === "admin" ? (
               <Automations lang={lang} home={h} onDirty={onDirty} />
             ) : more === "integrations" && session.role === "admin" ? (
               <Integrations lang={lang} />
@@ -979,6 +857,31 @@ function Device({
               ? Zap
               : Activity;
   async function command(action: string, value?: number) {
+    const actionNames: Record<string, string> =
+      document.documentElement.lang === "en"
+        ? {
+            activate: "Activate",
+            lock: "Lock",
+            unlock: "Unlock",
+            open_cover: "Open",
+            close_cover: "Close",
+          }
+        : {
+            activate: "Aktiver",
+            lock: "Lås",
+            unlock: "Lås opp",
+            open_cover: "Åpne",
+            close_cover: "Lukk",
+          };
+    const confirmed = [
+      "activate",
+      "lock",
+      "unlock",
+      "open_cover",
+      "close_cover",
+    ].includes(action);
+    if (confirmed && !window.confirm(`${c.name}: ${actionNames[action]}?`))
+      return;
     setBusy(true);
     setMessage("");
     setFailed(false);
@@ -986,7 +889,7 @@ function Device({
       const result = await api<{ status: string }>(
         `controls/${encodeURIComponent(c.entity_id)}/commands`,
         "POST",
-        { action, ...(value === undefined ? {} : { value }) },
+        { action, confirmed, ...(value === undefined ? {} : { value }) },
       );
       setMessage(
         result.status === "simulated"
@@ -1100,6 +1003,60 @@ function Device({
           </button>
         )}
       </div>
+      {c.capabilities.some((v) =>
+        v.actions.some((a) =>
+          [
+            "activate",
+            "lock",
+            "unlock",
+            "open_cover",
+            "close_cover",
+            "stop_cover",
+          ].includes(a),
+        ),
+      ) && (
+        <div className="home-device-actions">
+          {c.capabilities
+            .flatMap((v) => v.actions)
+            .filter((a) =>
+              [
+                "activate",
+                "lock",
+                "unlock",
+                "open_cover",
+                "close_cover",
+                "stop_cover",
+              ].includes(a),
+            )
+            .map((action) => (
+              <button
+                key={action}
+                disabled={!can || busy}
+                onClick={() => command(action)}
+              >
+                {
+                  (document.documentElement.lang === "en"
+                    ? {
+                        activate: "Activate",
+                        lock: "Lock",
+                        unlock: "Unlock",
+                        open_cover: "Open",
+                        close_cover: "Close",
+                        stop_cover: "Stop",
+                      }
+                    : {
+                        activate: "Aktiver",
+                        lock: "Lås",
+                        unlock: "Lås opp",
+                        open_cover: "Åpne",
+                        close_cover: "Lukk",
+                        stop_cover: "Stopp",
+                      })[action as "activate"]
+                }
+              </button>
+            ))}
+        </div>
+      )}
       {dim && (
         <label className="range-label">
           <span>

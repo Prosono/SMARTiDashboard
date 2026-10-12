@@ -1,5 +1,20 @@
 # Implementation status — 2026-10-12
 
+## 0.4.0 — automatic Home overview (current)
+
+The separate custom dashboard editor and its grid library are removed. Its API returns 410 after authentication; existing database rows remain inert to avoid destroying customer data on upgrade. Hjem is now the fixed overview, composed from capability/registry-backed data. Existing rooms, devices, automations, integrations and updates remain in place.
+
+New frontend modules separate discovery (`homeModel`), camera/history components (`HomeMedia`) and Home presentation/preferences (`HomeOverview`). Backend `home_overview` adds personal favorite room/camera/meter choices, admin-managed room photos and household mode mappings. Device/action favorites reuse the original stable-ID mechanism. All browser storage remains optional. Room images are resized in the browser, accepted as bounded JPEG/PNG and served only to authenticated users. Modes are never inferred from names or executed on selection/configuration. Explicit admin assignment and per-activation confirmation are required; no measured home-mode state is fabricated.
+
+HA normalization now includes weather, camera, alarm, cover, scene and script domains, with capability-checked confirmed lock/cover/scene commands and camera credential filtering. Climate units come from HA system configuration. Security prioritizes critical/unknown/open signals without claiming a home is safe when disconnected. Temperature summarizes one known-unit reading per room. Unknown metadata is handled conservatively; temperature/energy unit fallbacks are used where unambiguous.
+
+Energy uses one selected W/kW/Wh/kWh meter and bounded 24-hour recorder history, preserves unknown gaps and never sums potentially overlapping sources. Solar/storage/consumer readings are discovered from HA energy preferences when configured and backed by accessible entities. Daily totals, savings, costs and comparisons are not fabricated from cumulative meter values. External statistics without entities are not displayed. Charger discovery uses charging device classes and known integration metadata; unrecognized devices remain available for favorites. Camera previews are explicit still-image requests, without background streams. Activity is a bounded in-memory list of observed state changes, not a full logbook or an automation trace history.
+
+Validation includes small light-only homes, temperature/sensor homes, energy/charging, camera/security, 600-control browser fixtures and an 800-control discovery test; offline handling; favorite persistence; room photos; mode confirmation and access control; mobile, desktop and an 834px tablet viewport; light and dark screenshots. Existing management, pairing, setup and storage failure journeys remain tested. No physical HA devices were changed. Version 0.4.0 is prepared locally, not published.
+
+References: [HA REST/history API](https://developers.home-assistant.io/docs/api/rest/), [energy preference API](https://github.com/home-assistant/core/blob/dev/homeassistant/components/energy/websocket_api.py), [energy source schemas](https://github.com/home-assistant/core/blob/dev/homeassistant/components/energy/data.py).
+
+
 ## 0.3.5 — Homey-inspired card workspace
 
 Studied official [Advanced Flow](https://homey.app/en-us/features/advanced-flow/), [Flow card SDK](https://apps.developer.homey.app/the-basics/flow) and [Or/Else guidance](https://support.homey.app/hc/en-us/articles/360015464674-Use-Or-and-Else-in-Flows). Adopted readable When/And/Then cards, visible connections, movable cards, a searchable card library and subflow disclosure. Homey's ANY/ALL completion gates and freely connected graph are not treated as equivalent to HA's triggers, condition groups or sequential actions.
