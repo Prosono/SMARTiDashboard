@@ -1,3 +1,9 @@
+# 0.2.4
+
+Add actual Z-Wave controller state, redacted diagnostics and an explicitly confirmed stop operation for inclusion/exclusion that no longer belongs to a SMARTi session. Distinguish disconnected, unknown and busy states; support named and numeric state values. This supplies recovery and diagnostic tools; the customer's persistent busy state has not been reproduced on hardware.
+
+Add clickable physical device rows with a modal showing model, firmware, network metadata, related sensor readings and supported power/brightness/temperature commands. Use Zigbee2MQTT's official model image catalog, with an icon fallback. Add persistent administrator-uploaded PNG/JPEG/WebP images for either protocol. Automatic Z-Wave JS UI image import is not available via the current HA API. Images and device actions retain session/role/CSRF checks.
+
 # 0.2.3
 
 Fix pairing remaining blocked after stopping Z-Wave inclusion. Wait for delayed controller state, continue stopping when S2 cancellation has already completed, and reconcile unresolved sessions against connected idle controller status. Ignore late events from previous sessions and preserve active interviews. Show separate messages for an unresolved SMARTi session and a busy controller, with visible stopping progress. No start commands are replayed.

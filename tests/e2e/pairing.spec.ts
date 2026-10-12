@@ -4,6 +4,8 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
   page,
 }) => {
   let session: any = null;
+  let externalBusy = false;
+  let recoveryCalls = 0;
   const answers: any[] = [];
   await page.route("**/api/session", (r) =>
     r.fulfill({ json: { name: "tester", role: "admin", csrf: "fixture" } }),
@@ -48,6 +50,8 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
   );
   await page.route("**/api/setup/sessions", (r) => {
     const body = r.request().postDataJSON();
+    if (externalBusy)
+      return r.fulfill({ status: 409, json: { detail: "controller_busy" } });
     session = {
       id: "pairing",
       provider: body.provider,
@@ -71,6 +75,23 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
   await page.route("**/api/setup/sessions/pairing/stop", (r) => {
     session = { ...session, status: "stopped", radio_open: false };
     return r.fulfill({ json: session });
+  });
+  const controller = () => ({
+    id: "zwave",
+    name: "Home",
+    state: externalBusy ? "including" : "idle",
+    raw_state: externalBusy ? 1 : 0,
+    connected: true,
+    ready: !externalBusy,
+    client_state: "connected",
+  });
+  await page.route("**/api/setup/controllers", (r) =>
+    r.fulfill({ json: [controller()] }),
+  );
+  await page.route("**/api/setup/controllers/zwave/stop", (r) => {
+    recoveryCalls++;
+    externalBusy = false;
+    return r.fulfill({ json: controller() });
   });
   await page.goto("/");
   await page
@@ -116,5 +137,24 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
   await page.getByRole("button", { name: "Stopp paring" }).click();
   await expect(
     page.getByRole("heading", { name: "Paringen er stoppet" }),
+  ).toBeVisible();
+  externalBusy = true;
+  await zwave.getByRole("button", { name: "Start paring" }).click();
+  await expect(
+    page.getByText("Kontrolleren er fortsatt opptatt.", { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Sjekk kontrollerstatus" }).click();
+  await page
+    .getByRole("button", { name: "Stopp aktiv nettverksoperasjon" })
+    .click();
+  expect(recoveryCalls).toBe(0);
+  await page.getByRole("button", { name: "Bekreft stopp" }).click();
+  await expect(
+    page.getByText("Kontrolleren er ledig. Du kan starte ny paring."),
+  ).toBeVisible();
+  expect(recoveryCalls).toBe(1);
+  await zwave.getByRole("button", { name: "Start paring" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Bekreft sikkerheten" }),
   ).toBeVisible();
 });

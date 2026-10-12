@@ -11,8 +11,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { api } from "./api";
+import { DeviceDetails, DevicePicture } from "./DeviceDetails";
 
 type Device = {
+  image_url?: string;
   id: string;
   name: string;
   model?: string;
@@ -44,6 +46,7 @@ export function ProtocolDevices({
 }) {
   const no = lang === "nb";
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Device | null>(null);
   const [confirm, setConfirm] = useState<Device | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -241,10 +244,18 @@ export function ProtocolDevices({
           return (
             <article className="protocol-row" key={d.id}>
               <div className="protocol-device-icon">
-                <Radio size={25} />
+                <DevicePicture url={d.image_url} name={d.name} />
               </div>
               <div className="protocol-identity">
-                <h3>{d.name}</h3>
+                <h3>
+                  <button
+                    className="device-open"
+                    onClick={() => setSelected(d)}
+                  >
+                    {d.name}
+                    <span>{no ? "Se detaljer" : "View details"} →</span>
+                  </button>
+                </h3>
                 <p>
                   {[d.manufacturer, d.model, d.controller_name]
                     .filter(Boolean)
@@ -296,6 +307,17 @@ export function ProtocolDevices({
             ? "Ingen enheter å vise. Bruk «Legg til ny enhet» for å åpne veiviseren."
             : "No devices to show. Use “Add new device” to open the wizard."}
         </p>
+      )}
+      {selected && (
+        <DeviceDetails
+          provider={provider}
+          id={selected.id}
+          name={selected.name}
+          lang={lang}
+          admin={admin}
+          close={() => setSelected(null)}
+          remove={() => setConfirm(selected)}
+        />
       )}
       {confirm && (
         <div

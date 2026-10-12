@@ -1,11 +1,16 @@
 """Physical radio inventory. Only retain public diagnostics from MQTT payloads."""
 
+import base64
+import hashlib
 import json
+import re
 import time
+from urllib.parse import quote
 
 from fastapi import HTTPException
 
 from .ha import HAError
+from .radio_status import controller_status
 
 
 class Inventory:
@@ -37,6 +42,13 @@ class Inventory:
                     "manufacturer": (d.get("definition") or {}).get("vendor"),
                     "controller": d.get("type") == "Coordinator",
                     "disabled": bool(d.get("disabled")),
+                    "description": (d.get("definition") or {}).get("description"),
+                    "image_model": (d.get("definition") or {}).get("model"),
+                    "power_source": d.get("power_source"),
+                    "firmware": d.get("software_build_id"),
+                    "network_address": d.get("network_address"),
+                    "interview_state": d.get("interview_state"),
+                    "supported": d.get("supported"),
                 }
                 for d in data
                 if isinstance(d, dict) and isinstance(d.get("ieee_address"), str)
@@ -70,7 +82,19 @@ class Inventory:
                 return {
                     "status": "ready" if ready else "unavailable",
                     "devices": [
-                        d
+                        self.enrich(
+                            provider,
+                            d,
+                            next(
+                                (
+                                    v
+                                    for v in ha.devices.values()
+                                    if ["mqtt", f"zigbee2mqtt_{k}"]
+                                    in [list(i) for i in v.get("identifiers", [])]
+                                ),
+                                {},
+                            ),
+                        )
                         | self.telemetry.get(k, {})
                         | {
                             "status": self.telemetry.get(k, {}).get("status", "unknown")
@@ -91,7 +115,7 @@ class Inventory:
                     continue
                 try:
                     network = await ha.request("zwave_js/network_status", entry_id=entry["entry_id"])
-                    connected = network.get("client", {}).get("state") == "connected"
+                    connected = controller_status(network)["connected"]
                     unavailable |= not connected
                     controller = network.get("controller", {})
                     for node in controller.get("nodes", []):
@@ -102,35 +126,108 @@ class Inventory:
                                 d
                                 for d in ha.devices.values()
                                 if entry["entry_id"] in d.get("config_entries", [])
-                                and ["zwave_js", identifier] in [list(i) for i in d.get("identifiers", [])]
+                                and any(
+                                    i[0] == "zwave_js"
+                                    and (i[1] == identifier or i[1].startswith(identifier + "-"))
+                                    for i in d.get("identifiers", [])
+                                )
                             ),
                             {},
                         )
                         devices.append(
-                            {
-                                "id": f"{entry['entry_id']}:{node_id}",
-                                "entry_id": entry["entry_id"],
-                                "node_id": node_id,
-                                "controller_name": entry.get("title", "Z-Wave JS"),
-                                "name": registered.get("name_by_user")
-                                or registered.get("name")
-                                or f"Node {node_id}",
-                                "model": registered.get("model"),
-                                "manufacturer": registered.get("manufacturer"),
-                                "status": {1: "asleep", 2: "awake", 3: "offline", 4: "online"}.get(
-                                    node.get("status"), "unknown"
-                                )
-                                if connected
-                                else "unknown",
-                                "controller": bool(node.get("is_controller_node")),
-                                "removable": connected and not node.get("is_controller_node"),
-                            }
+                            self.enrich(
+                                provider,
+                                {
+                                    "id": f"{entry['entry_id']}:{node_id}",
+                                    "entry_id": entry["entry_id"],
+                                    "node_id": node_id,
+                                    "controller_name": entry.get("title", "Z-Wave JS"),
+                                    "name": registered.get("name_by_user")
+                                    or registered.get("name")
+                                    or f"Node {node_id}",
+                                    "model": registered.get("model"),
+                                    "manufacturer": registered.get("manufacturer"),
+                                    "status": {1: "asleep", 2: "awake", 3: "offline", 4: "online"}.get(
+                                        node.get("status"), "unknown"
+                                    )
+                                    if connected
+                                    else "unknown",
+                                    "controller": bool(node.get("is_controller_node")),
+                                    "removable": connected and not node.get("is_controller_node"),
+                                    "secure": node.get("is_secure"),
+                                    "ready": node.get("ready"),
+                                },
+                                registered,
+                            )
                         )
                 except (HAError, TimeoutError):
                     unavailable = True
             return {"status": "unavailable" if unavailable or not entries else "ready", "devices": devices}
         except (HAError, TimeoutError):
             return {"status": "unavailable", "devices": []}
+
+    def image_key(self, provider, device_id):
+        return f"device_image:{provider}:{device_id}"
+
+    def enrich(self, provider, device, registered):
+        store = self.setup.store
+        custom = store and store.get(self.image_key(provider, device["id"]))
+        model = device.get("image_model")
+        image = None
+        if custom:
+            image = f"api/devices/{provider}/image?device_id={quote(device['id'], safe='')}&v={hashlib.sha256(custom.encode()).hexdigest()[:12]}"
+        elif provider == "zigbee2mqtt" and model:
+            image = (
+                "https://www.zigbee2mqtt.io/images/devices/"
+                + quote(re.sub(r"[:\s/]", "-", model), safe="")
+                + ".png"
+            )
+        area = self.setup.ha.areas.get(registered.get("area_id"), {})
+        return device | {
+            "ha_device_id": registered.get("id"),
+            "area": area.get("name"),
+            "firmware": device.get("firmware") or registered.get("sw_version"),
+            "hardware": registered.get("hw_version"),
+            "image_url": image,
+            "custom_image": bool(custom),
+        }
+
+    async def detail(self, provider, device_id):
+        inventory = await self.list(provider)
+        device = next((d for d in inventory["devices"] if d["id"] == device_id), None)
+        if not device:
+            raise HTTPException(404, "device_unavailable")
+        controls = [
+            c.model_dump()
+            for c in self.setup.ha.controls()
+            if device.get("ha_device_id") and c.device_id == device["ha_device_id"]
+        ]
+        return device | {"controls": controls, "network_status": inventory["status"]}
+
+    async def save_image(self, provider, device_id, image):
+        await self.detail(provider, device_id)
+        if image:
+            match = re.fullmatch(r"data:image/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)", image)
+            if not match:
+                raise HTTPException(422, "invalid_image")
+            try:
+                content = base64.b64decode(match[2], validate=True)
+            except ValueError:
+                raise HTTPException(422, "invalid_image")
+            kind = match[1]
+            valid = (
+                kind == "png"
+                and content.startswith(b"\x89PNG\r\n\x1a\n")
+                or kind == "jpeg"
+                and content.startswith(b"\xff\xd8\xff")
+                or kind == "webp"
+                and content.startswith(b"RIFF")
+                and content[8:12] == b"WEBP"
+            )
+            if not valid or len(content) > 600_000:
+                raise HTTPException(422, "invalid_image")
+        self.setup.store.set(self.image_key(provider, device_id), image or "")
+        return {"saved": True}
 
     async def require(self, provider, device_id):
         result = await self.list(provider)

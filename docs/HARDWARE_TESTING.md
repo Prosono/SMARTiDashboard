@@ -26,3 +26,12 @@ Use a disposable test network. Under Devices, verify each Zigbee2MQTT device and
 After explicit hardware-test authorization, remove a spare Zigbee device (awake, force=false) and verify the MQTT acknowledgement, registry removal and affected controls. For Z-Wave, confirm the warning, activate exclusion on only the spare selected node, verify node identity and stopped radio. Test cancel, timeout, disconnection and app restart during exclusion; no start should replay. Confirm controller delete is unavailable and a resident account cannot remove devices. A failed/dead device that cannot participate in ordinary removal still needs installer recovery; this UI does not force-delete it.
 
 Contracts: [Zigbee2MQTT MQTT API](https://www.zigbee2mqtt.io/guide/usage/mqtt_topics_and_messages.html), [HA Z-Wave JS API](https://github.com/home-assistant/core/blob/dev/homeassistant/components/zwave_js/api.py), [node statuses](https://github.com/home-assistant-libs/zwave-js-server-python/blob/master/zwave_js_server/const/__init__.py).
+
+
+## Controller recovery and details (0.2.4)
+
+If pairing remains busy, open the wizard's Z-Wave controller section and record only its support diagnostics (controller name, connection, raw inclusion state, driver/server versions). Verify these against Z-Wave JS UI. An administrator may explicitly confirm “Stop active network operation”; it can stop a pairing begun elsewhere. Confirm no controller reset occurs. Unknown/disconnected states must never be treated as permission to start. The actual reported customer issue is not yet reproduced on hardware.
+
+Verify device detail controls match the physical device using IEEE identity or controller/home/node identity. Test a spare light on/off, dimming and thermostat setpoint only with authorization. Check Zigbee model images with internet available and unavailable, custom-image upload/removal and persistence across app restart. Automatic Z-Wave product pictures are not exposed by the current HA API; custom local images are supported instead.
+
+Zigbee image naming reference: https://github.com/nurikk/zigbee2mqtt-frontend/blob/dev/src/components/device-image/index.tsx (model colon/space/slash replaced by hyphen). No frontend source code or images are bundled from that repository.

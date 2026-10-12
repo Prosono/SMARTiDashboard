@@ -8,6 +8,7 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import { api, ApiError } from "./api";
+import { ControllerStatus } from "./ControllerStatus";
 
 type Provider = {
   id: string;
@@ -194,9 +195,15 @@ export function DeviceSetup({
       setError(
         e instanceof ApiError && e.code === "controller_busy"
           ? t.controllerBusy
-          : e instanceof ApiError && e.code === "pairing_already_active"
-            ? t.busy
-            : t.error,
+          : e instanceof ApiError && e.code === "controller_disconnected"
+            ? t.offline
+            : e instanceof ApiError && e.code === "controller_state_unknown"
+              ? lang === "en"
+                ? "Unknown controller state. See support diagnostics below."
+                : "Ukjent kontrollerstatus. Se diagnostikken nedenfor."
+              : e instanceof ApiError && e.code === "pairing_already_active"
+                ? t.busy
+                : t.error,
       );
     } finally {
       setPin("");
@@ -352,6 +359,14 @@ export function DeviceSetup({
           )}
         </div>
       )}
+      <ControllerStatus
+        lang={lang}
+        changed={() => {
+          setError("");
+          void session.refetch();
+          void providers.refetch();
+        }}
+      />
       <div className="pairing-providers">
         {providers.isPending && <LoaderCircle aria-label="Loading" />}
         {providers.data?.map((p) => (

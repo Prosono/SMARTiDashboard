@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import contextlib
 import json
 import secrets
@@ -52,6 +53,11 @@ class PairingStart(BaseModel):
     model_config = {"extra": "forbid"}
     provider: Literal["zigbee2mqtt", "zwave_js"]
     entry_id: str | None = Field(default=None, max_length=100)
+
+
+class DeviceImage(BaseModel):
+    device_id: str = Field(min_length=1, max_length=200)
+    image: str | None = Field(default=None, max_length=810_000)
 
 
 class DeviceRemoval(BaseModel):
@@ -123,7 +129,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "same-origin"
         response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+            "default-src 'self'; img-src 'self' data: https://www.zigbee2mqtt.io; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
         )
         return response
 
@@ -344,12 +350,48 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     async def protocol_devices(provider: Literal["zigbee2mqtt", "zwave_js"], current=Depends(user)):
         return await setup.inventory.list(provider)
 
+    @app.get("/api/devices/{provider}/detail")
+    async def device_detail(
+        provider: Literal["zigbee2mqtt", "zwave_js"], device_id: str, current=Depends(user)
+    ):
+        return await setup.inventory.detail(provider, device_id)
+
+    @app.put("/api/devices/{provider}/image")
+    async def save_device_image(
+        provider: Literal["zigbee2mqtt", "zwave_js"], body: DeviceImage, current=Depends(admin)
+    ):
+        return await setup.inventory.save_image(provider, body.device_id, body.image)
+
+    @app.get("/api/devices/{provider}/image")
+    async def device_image(
+        provider: Literal["zigbee2mqtt", "zwave_js"], device_id: str, current=Depends(user)
+    ):
+        value = store.get(setup.inventory.image_key(provider, device_id))
+        if not value:
+            raise HTTPException(404, "image_not_found")
+        header, data = value.split(",", 1)
+        return Response(base64.b64decode(data), media_type=header[5:].split(";")[0])
+
     @app.post("/api/devices/remove")
     async def remove_device(body: DeviceRemoval, current=Depends(admin)):
         try:
             return await setup.remove(body.provider, body.device_id, current["id"])
         except (HAError, TimeoutError):
             raise HTTPException(503, "removal_unconfirmed")
+
+    @app.get("/api/setup/controllers")
+    async def radio_controllers(current=Depends(admin)):
+        try:
+            return await setup.controllers()
+        except (HAError, TimeoutError):
+            raise HTTPException(503, "controller_disconnected")
+
+    @app.post("/api/setup/controllers/{entry_id}/stop")
+    async def recover_controller(entry_id: str, current=Depends(admin)):
+        try:
+            return await setup.recover_controller(entry_id, current["id"])
+        except (HAError, TimeoutError):
+            raise HTTPException(503, "controller_disconnected")
 
     @app.get("/api/setup/providers")
     async def providers(current=Depends(admin)):

@@ -10,6 +10,7 @@ from fastapi import HTTPException
 
 from .ha import HAError
 from .inventory import Inventory
+from .radio_status import controller_status
 
 ACTIVE = {"starting", "searching", "interviewing", "security", "pin", "needs_stop", "stopping"}
 
@@ -307,10 +308,7 @@ class DeviceSetup:
                 return {"status": "removed", "device_name": device["name"]}
             entry_id = device["entry_id"]
             network = await self.ha.request("zwave_js/network_status", entry_id=entry_id)
-            if network.get("client", {}).get("state") != "connected" or network.get("controller", {}).get(
-                "inclusion_state"
-            ) not in [0, 4]:
-                raise HTTPException(409, "controller_busy")
+            self.require_ready(network)
             self.session = {
                 "id": str(uuid.uuid4()),
                 "provider": provider,
@@ -352,10 +350,7 @@ class DeviceSetup:
                 if entry_id not in [e["id"] for e in option["entries"]]:
                     raise HTTPException(422, "invalid_entry")
                 network = await self.ha.request("zwave_js/network_status", entry_id=entry_id)
-                if network.get("client", {}).get("state") != "connected" or network.get("controller", {}).get(
-                    "inclusion_state"
-                ) not in [0, 4]:
-                    raise HTTPException(409, "controller_busy")
+                self.require_ready(network)
             elif self.mqtt_info.get("permit_join"):
                 raise HTTPException(409, "controller_busy")
             self.session = {
@@ -386,13 +381,72 @@ class DeviceSetup:
                 self.session["status"], self.session["error"] = "needs_stop", "start_unconfirmed"
             return self.snapshot()
 
+    def require_ready(self, network):
+        state = controller_status(network)
+        if not state["connected"]:
+            raise HTTPException(409, "controller_disconnected")
+        if state["state"] == "unknown":
+            raise HTTPException(409, "controller_state_unknown")
+        if not state["ready"]:
+            raise HTTPException(409, "controller_busy")
+
+    async def controllers(self):
+        if self.settings.mode == "demo" or not self.ha.connected:
+            return []
+        entries = await self.ha.request("config_entries/get", domain="zwave_js")
+        result = []
+        for entry in entries:
+            if entry.get("domain") != "zwave_js" or entry.get("disabled_by"):
+                continue
+            state = controller_status({})
+            if entry.get("state") == "loaded":
+                with contextlib.suppress(HAError, TimeoutError):
+                    state = controller_status(
+                        await self.ha.request("zwave_js/network_status", entry_id=entry["entry_id"])
+                    )
+            result.append(state | {"id": entry["entry_id"], "name": entry.get("title", "Z-Wave JS")})
+        return result
+
+    async def recover_controller(self, entry_id, user_id):
+        # Explicit user action: stop an inclusion/exclusion even if SMARTi lost
+        # ownership across an app update. Never reset the controller or replay start.
+        async with self.lock:
+            controllers = await self.controllers()
+            controller = next((c for c in controllers if c["id"] == entry_id), None)
+            if not controller or not controller["connected"]:
+                raise HTTPException(409, "controller_disconnected")
+            if controller["state"] == "unknown":
+                raise HTTPException(409, "controller_state_unknown")
+            s = self.session
+            if s and s.get("radio_open") and (s["provider"] != "zwave_js" or s["entry_id"] != entry_id):
+                raise HTTPException(409, "pairing_already_active")
+            if controller["ready"]:
+                if s and s.get("radio_open"):
+                    await self.finish_stop(s)
+                return controller
+            self.session = {
+                "id": str(uuid.uuid4()),
+                "provider": "zwave_js",
+                "entry_id": entry_id,
+                "operation": "remove" if controller["state"] == "excluding" else "pair",
+                "status": "needs_stop",
+                "radio_open": True,
+                "stop_requested": True,
+                "expires_at": time.time(),
+                "_user_id": user_id,
+                # Attempt S2 cancellation for an interrupted inclusion too.
+                "grant": {} if controller["state"] != "excluding" else None,
+            }
+            self.persist()
+            session_id = self.session["id"]
+        await self.stop(session_id)
+        return next(c for c in await self.controllers() if c["id"] == entry_id)
+
     async def zwave_idle(self, s):
         if not self.ha.connected:
             return False
         network = await self.ha.request("zwave_js/network_status", entry_id=s["entry_id"])
-        return network.get("client", {}).get("state") == "connected" and network.get("controller", {}).get(
-            "inclusion_state"
-        ) in [0, 4]
+        return controller_status(network)["ready"]
 
     async def finish_stop(self, s):
         s["radio_open"] = False
@@ -432,7 +486,9 @@ class DeviceSetup:
             s = self.require(session_id)
             if not s.get("radio_open"):
                 return self.snapshot()
-            cancel_s2 = s["status"] in {"pin", "security"} or "dsk" in s or "grant" in s
+            cancel_s2 = s.get("operation") != "remove" and (
+                s["status"] in {"pin", "security"} or "dsk" in s or "grant" in s
+            )
             s["stop_requested"] = True
             if s["status"] in ACTIVE:
                 s["status"] = "stopping"

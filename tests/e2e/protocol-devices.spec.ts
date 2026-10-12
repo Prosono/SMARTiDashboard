@@ -112,6 +112,36 @@ test("protocol inventory, confirmed removal and add wizard", async ({
       ],
     }),
   );
+  let power = "off";
+  await page.route("**/api/devices/zigbee2mqtt/detail?*", (r) =>
+    r.fulfill({
+      json: {
+        id: "lamp",
+        name: "Stuelampe",
+        model: "Dimbar lampe",
+        manufacturer: "Fixture",
+        status: "online",
+        network_status: "ready",
+        removable: true,
+        firmware: "1.2.3",
+        controls: [
+          {
+            entity_id: "light.fixture",
+            name: "Lys",
+            state: power,
+            availability: "available",
+            domain: "light",
+            attributes: {},
+            capabilities: [{ kind: "power", actions: ["turn_on", "turn_off"] }],
+          },
+        ],
+      },
+    }),
+  );
+  await page.route("**/api/controls/light.fixture/commands", (r) => {
+    power = r.request().postDataJSON().action === "turn_on" ? "on" : "off";
+    return r.fulfill({ json: { status: "state_updated" } });
+  });
   await page.goto("/");
   await page.getByRole("button", { name: "Enheter", exact: true }).click();
   await page.getByRole("button", { name: "Zigbee", exact: true }).click();
@@ -127,6 +157,22 @@ test("protocol inventory, confirmed removal and add wizard", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  await page.getByRole("button", { name: "Stuelampe Se detaljer" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("heading", { name: "Om enheten" }),
+  ).toBeVisible();
+  await expect(dialog.getByText("1.2.3")).toBeVisible();
+  await dialog.getByRole("button", { name: "Slå på", exact: true }).click();
+  await expect(
+    dialog.getByRole("button", { name: "Slå av", exact: true }),
+  ).toBeEnabled();
+  await page.screenshot({
+    path: `../artifacts/${test.info().project.name}-device-dialog.png`,
+    animations: "disabled",
+  });
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
   await page.getByRole("button", { name: "Slett Stuelampe" }).click();
   expect(calls).toBe(0);
   await page.getByRole("button", { name: "Avbryt", exact: true }).click();

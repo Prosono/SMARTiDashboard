@@ -6,6 +6,8 @@ export function setSession(value: Session | null) {
 const errorCodes = new Set([
   "pairing_already_active",
   "controller_busy",
+  "controller_disconnected",
+  "controller_state_unknown",
   "pairing_provider_unavailable",
   "origin_rejected",
   "ingress_rejected",

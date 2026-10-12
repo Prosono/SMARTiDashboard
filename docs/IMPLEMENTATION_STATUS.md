@@ -1,5 +1,11 @@
 # Implementation status — 2026-10-12
 
+## 0.2.4 — controller diagnostics and device detail dialog
+
+The user's controller still reports busy after 0.2.3; the cause is not confirmed without the actual controller state/version. Added raw inclusion state and connection/version diagnostics, correct disconnected/unknown errors, named/numeric enum handling, and explicit confirmed inclusion/exclusion stop even without a SMARTi-owned session. This is recovery and observability, not a claim of physical root-cause verification. No controller reset or automatic retry/start is performed.
+
+Device rows now open a native accessible dialog with registry/network metadata and existing HA capability-checked commands. Exact physical identity links controls to devices (including extended Z-Wave identifiers). Zigbee images use the official model catalog and require internet access; missing images use an icon. Z-Wave's HA API does not supply a product image. Both protocols support an administrator-uploaded persistent local image, limited to PNG/JPEG/WebP under 600 kB. Direct automatic Z-Wave JS UI picture import remains unimplemented.
+
 ## 0.2.3 — stopped pairing recovery
 
 Z-Wave stop now tolerates delayed status and S2 cancellation races. A bounded read-only polling window confirms the stop; subsequent status reads and starts reconcile unresolved sessions only when the connected controller reports Idle/SmartStart. Active interviews are preserved. Subscription callbacks are bound to the original session, preventing late events from corrupting a new pairing. UI distinguishes controller busy from unresolved SMARTi pairing and displays stopping progress. Regression fixtures cover delayed stop, S2 cancellation rejection, disconnection, persisted recovery, old callbacks and stop/start again. Physical radio reproduction is still pending.

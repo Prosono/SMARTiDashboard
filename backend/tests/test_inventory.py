@@ -164,3 +164,48 @@ async def test_exclusion_timeout_and_disconnect_are_not_success(setup):
         assert setup.snapshot()["radio_open"]
     finally:
         await setup.close()
+
+
+@pytest.mark.asyncio
+async def test_detail_exact_identity_controls_and_model_image(setup):
+    await setup.inventory.list("zigbee2mqtt")
+    setup.inventory.devices["lamp"]["image_model"] = "Model: 1/2"
+    setup.ha.devices["lamp-ha"] = {"id": "lamp-ha", "identifiers": [["mqtt", "zigbee2mqtt_lamp"]]}
+    setup.ha.entities["light.fixture"] = {"device_id": "lamp-ha", "platform": "mqtt"}
+    setup.ha.states["light.fixture"] = {
+        "entity_id": "light.fixture",
+        "state": "off",
+        "attributes": {"friendly_name": "Fixture"},
+    }
+    detail = await setup.inventory.detail("zigbee2mqtt", "lamp")
+    assert detail["ha_device_id"] == "lamp-ha"
+    assert [c["entity_id"] for c in detail["controls"]] == ["light.fixture"]
+    assert detail["image_url"] == "https://www.zigbee2mqtt.io/images/devices/Model--1-2.png"
+    assert not (await setup.inventory.detail("zigbee2mqtt", "coordinator"))["controls"]
+
+
+@pytest.mark.asyncio
+async def test_custom_images_persist_with_validation(setup):
+    import base64
+
+    value = "data:image/png;base64," + base64.b64encode(b"\x89PNG\r\n\x1a\nfixture").decode()
+    await setup.inventory.save_image("zwave_js", "zwave:2", value)
+    detail = await setup.inventory.detail("zwave_js", "zwave:2")
+    assert detail["custom_image"] and detail["image_url"].startswith("api/devices/zwave_js/image?")
+    for invalid in [
+        "data:image/svg+xml;base64,PHN2Zz4=",
+        "https://example.com/image.png",
+        "data:image/png;base64,YWJj",
+    ]:
+        with pytest.raises(HTTPException):
+            await setup.inventory.save_image("zwave_js", "zwave:2", invalid)
+    await setup.inventory.save_image("zwave_js", "zwave:2", None)
+    assert not (await setup.inventory.detail("zwave_js", "zwave:2"))["custom_image"]
+
+
+@pytest.mark.asyncio
+async def test_extended_zwave_registry_identifier_matches_device(setup):
+    setup.ha.devices["ha-device"]["id"] = "ha-device"
+    setup.ha.devices["ha-device"]["identifiers"] = [["zwave_js", "123-2-271:2048:4097"]]
+    detail = await setup.inventory.detail("zwave_js", "zwave:2")
+    assert detail["ha_device_id"] == "ha-device" and detail["name"] == "Hall sensor"

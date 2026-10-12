@@ -225,6 +225,13 @@ def test_pairing_routes_require_admin_csrf_and_validate_pin(tmp_path):
             ).status_code
             == 403
         )
+        assert client.post("/api/setup/controllers/zwave/stop").status_code == 403
+        assert (
+            client.put(
+                "/api/devices/zwave_js/image", json={"device_id": "zwave:2", "image": None}
+            ).status_code
+            == 403
+        )
         client.headers["x-csrf-token"] = login["csrf"]
         result = client.post("/api/setup/sessions", json={"provider": "zigbee2mqtt"}).json()
         assert result["status"] == "searching"
@@ -238,6 +245,14 @@ def test_pairing_routes_require_admin_csrf_and_validate_pin(tmp_path):
         with app.state.store.connect() as db:
             db.execute("UPDATE users SET role='user'")
         assert client.get("/api/setup/session").status_code == 403
+        assert client.get("/api/setup/controllers").status_code == 403
+        assert client.post("/api/setup/controllers/zwave/stop").status_code == 403
+        assert (
+            client.put(
+                "/api/devices/zwave_js/image", json={"device_id": "zwave:2", "image": None}
+            ).status_code
+            == 403
+        )
         assert client.post("/api/setup/sessions", json={"provider": "zigbee2mqtt"}).status_code == 403
 
         assert client.get("/api/devices/zwave_js").status_code == 200
