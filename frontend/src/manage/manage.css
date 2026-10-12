@@ -1460,3 +1460,198 @@ textarea:focus-visible {
   gap: 0.5rem;
   margin-top: 1rem;
 }
+.flow-board[hidden] {
+  display: none;
+}
+.flow-view-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.flow-view-tabs button,
+.canvas-toolbar button,
+.canvas-add button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.flow-view-tabs button[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--bg);
+}
+.flow-workspace {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface);
+  margin-bottom: 1.5rem;
+}
+.canvas-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  padding: 1rem;
+}
+.canvas-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.canvas-toolbar output {
+  min-width: 46px;
+  text-align: center;
+  font-size: 0.8rem;
+}
+.canvas-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+.canvas-help {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  padding: 0 1rem 1rem;
+  margin: 0;
+}
+.canvas-viewport {
+  height: 500px;
+  overflow: auto;
+  background-color: var(--soft);
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 20px 20px;
+  border-block: 1px solid var(--line);
+}
+.canvas-plane {
+  position: relative;
+  transform-origin: top left;
+}
+.canvas-wires {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--muted);
+  pointer-events: none;
+}
+.canvas-wires text {
+  fill: var(--muted);
+  font-size: 12px;
+}
+.canvas-node {
+  position: absolute;
+  width: 260px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--orange);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 5px 15px #00000009;
+}
+.canvas-conditions {
+  border-left-color: #8c7343;
+}
+.canvas-actions {
+  border-left-color: #648270;
+}
+.canvas-gate {
+  border-left-color: var(--muted);
+}
+.canvas-drag {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  min-height: 40px;
+  width: 100%;
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  touch-action: none;
+  cursor: grab;
+}
+.canvas-drag:active {
+  cursor: grabbing;
+}
+.canvas-node-content {
+  text-align: left;
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem 1rem;
+  width: 100%;
+  min-height: 90px;
+}
+.canvas-node-content:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.canvas-node-content strong {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+.canvas-node-content span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.canvas-node-content small {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.canvas-port {
+  position: absolute;
+  top: 61px;
+  width: 9px;
+  height: 9px;
+  background: var(--surface);
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+}
+.canvas-port.in {
+  left: -7px;
+}
+.canvas-port.out {
+  right: -5px;
+}
+.canvas-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+@media (max-width: 600px) {
+  .canvas-viewport {
+    height: 430px;
+  }
+  .canvas-toolbar {
+    padding: 0.75rem;
+  }
+  .canvas-toolbar button {
+    padding: 0.5rem;
+  }
+}
+.flow-card-library {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  padding: 1rem 0;
+}
+.flow-card-library button {
+  justify-content: flex-start;
+  text-align: left;
+  min-height: 64px;
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: 12px;
+  border-left: 3px solid var(--orange);
+}

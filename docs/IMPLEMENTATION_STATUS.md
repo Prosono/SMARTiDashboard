@@ -1,5 +1,14 @@
 # Implementation status — 2026-10-12
 
+## 0.3.5 — Homey-inspired card workspace
+
+Studied official [Advanced Flow](https://homey.app/en-us/features/advanced-flow/), [Flow card SDK](https://apps.developer.homey.app/the-basics/flow) and [Or/Else guidance](https://support.homey.app/hc/en-us/articles/360015464674-Use-Or-and-Else-in-Flows). Adopted readable When/And/Then cards, visible connections, movable cards, a searchable card library and subflow disclosure. Homey's ANY/ALL completion gates and freely connected graph are not treated as equivalent to HA's triggers, condition groups or sequential actions.
+
+The workspace projects alternative HA triggers into a start gate, sequential conditions and action cards. Conditions explicitly describe the false/stop path; stop actions do not draw a continuing edge. Advanced blocks open the lossless structural editor. Dragging and keyboard movement change only temporary layout, not execution order. Zoom, scrolling and arrange/reset are supported. Arbitrary connector wiring, persistent positions and Homey-style runtime tags/error ports remain outside this implementation; this is not a full Advanced Flow clone or a new execution engine.
+
+Validation: 25 frontend unit tests and 18 desktop/mobile management browser tests passed, including pointer/keyboard movement, zoom, card search, unchanged source configuration, nested flows and existing integration/dashboard management. TypeScript/Vite build and deterministic HA payload checks passed. Screenshot reviewed. Version 0.3.5 prepared locally; no live installation or publication.
+
+
 ## 0.3.4 — grouped integrations
 
 Integration connections are grouped by domain into collapsed cards, with unique device counts, issue summaries and searchable device/room names. Expanding shows devices and existing per-entry rename/reload/enable/disable operations. Device data is explicitly allowlisted and supports both legacy config_entries and current config_entry_id registry fields.

@@ -1,3 +1,7 @@
+# 0.3.5
+
+Add a Homey-inspired automation workspace with connected cards, pointer/touch and keyboard movement, zoom, arrange/reset and a searchable card library. Select cards to edit or open advanced subflows. Preserve the structural and JSON editors. Connections are projected from HA execution order; position changes do not change the automation. Card positions are temporary and arbitrary connector wiring is not implemented. No physical automations were executed during validation.
+
 # 0.3.4
 
 Group integration connections into compact, expandable cards with Home Assistant brand images. Fetch local/custom brand icons through an authenticated backend request, fall back to the official brands CDN on older HA installations, and use an icon when neither source is available. Expand each card to inspect connection-specific devices, rooms, models and administration actions. Search also matches devices and rooms. Count unique devices across connections and support legacy/current HA device registry associations. Existing automation flow improvements are included.

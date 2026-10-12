@@ -1,3 +1,4 @@
+import { FlowCanvas } from "./FlowCanvas";
 import { FlowTree } from "./FlowTree";
 import { FlowInspector } from "./FlowInspector";
 import {
@@ -115,6 +116,9 @@ export function AutomationFlow({
       index: number;
     } | null>(null),
     [adding, setAdding] = useState<FlowKey | null>(null);
+  const [cardSearch, setCardSearch] = useState("");
+  useEffect(() => setCardSearch(""), [adding]);
+  const [view, setView] = useState<"canvas" | "structure">("canvas");
   const [nested, setNested] = useState<FlowPath | null>(null);
   const [appendTarget, setAppendTarget] = useState<FlowPath | null>(null);
   const detail = useRef<HTMLElement>(null);
@@ -216,6 +220,51 @@ export function AutomationFlow({
         </p>
       </div>
       <div
+        className="flow-view-tabs"
+        role="group"
+        aria-label={t("Flytoppsett", "Flow layout")}
+      >
+        <button
+          type="button"
+          aria-pressed={view === "canvas"}
+          onClick={() => setView("canvas")}
+        >
+          {t("Arbeidsflate", "Canvas")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={view === "structure"}
+          onClick={() => setView("structure")}
+        >
+          {t("Strukturliste", "Structure list")}
+        </button>
+      </div>
+      {view === "canvas" && (
+        <FlowCanvas
+          config={c}
+          home={home}
+          lang={lang}
+          onAdd={(key) => {
+            setAdding(key);
+            setAppendTarget(null);
+            setSelected(null);
+            setNested(null);
+          }}
+          onSelect={(p) => {
+            setView("structure");
+            if (structureSummary(readFlowPath(c, p), lang)) {
+              setNested(p);
+              setSelected(null);
+            } else {
+              setSelected({ key: p[0] as FlowKey, index: p[1] as number });
+              setNested(null);
+            }
+            setAdding(null);
+          }}
+        />
+      )}
+      <div
+        hidden={view !== "structure"}
         className={
           "flow-board" +
           (c.actions.some((r: any) => structureSummary(r, lang))
@@ -329,7 +378,17 @@ export function AutomationFlow({
           aria-label={t("Ny flytblokk", "New flow block")}
         >
           <h2>{t("Velg hva du vil legge til", "Choose what to add")}</h2>
-          <div className="block-add">
+          <input
+            className="wide-input"
+            aria-label={t("Søk etter kort", "Search cards")}
+            placeholder={t(
+              "Hva vil du at hjemmet skal gjøre?",
+              "What should your home do?",
+            )}
+            value={cardSearch}
+            onChange={(e) => setCardSearch(e.target.value)}
+          />
+          <div className="block-add flow-card-library">
             {(adding === "triggers"
               ? [
                   ["time", t("Klokkeslett", "Time")],
@@ -366,11 +425,15 @@ export function AutomationFlow({
                     ],
                     ["scene.turn_on", t("Aktiver scene", "Activate scene")],
                   ]
-            ).map(([kind, label]) => (
-              <button type="button" key={kind} onClick={() => add(kind)}>
-                {label}
-              </button>
-            ))}
+            )
+              .filter(([, label]) =>
+                label.toLowerCase().includes(cardSearch.toLowerCase()),
+              )
+              .map(([kind, label]) => (
+                <button type="button" key={kind} onClick={() => add(kind)}>
+                  {label}
+                </button>
+              ))}
           </div>
           <button type="button" onClick={() => setAdding(null)}>
             {t("Avbryt", "Cancel")}
