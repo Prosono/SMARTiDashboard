@@ -9,6 +9,8 @@ if options_file.exists():
         'SMARTI_INGRESS': 'true',
         'SMARTI_MODE': 'live',
         'SMARTI_ORIGIN': options['origin'],
+        'SMARTI_ADDITIONAL_ORIGINS': json.dumps(options.get('additional_origins', [])),
+        'SMARTI_ALLOW_HTTP_INGRESS': str(options.get('allow_http_ingress', False)).lower(),
         'SMARTI_BOOTSTRAP_SECRET': options.get('bootstrap_secret', ''),
     })
 from app.run import main

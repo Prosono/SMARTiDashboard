@@ -8,7 +8,7 @@ Add **https://github.com/Prosono/SMARTiDashboard** under **Settings → Apps →
 
 [Add repository in Home Assistant](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FProsono%2FSMARTiDashboard)
 
-Requires HAOS and an HTTPS HA origin. Configure the origin and a random owner setup secret in the app's Configuration tab. Home Assistant credentials are provided automatically by Supervisor. [Step-by-step setup](ha-app/DOCS.md).
+Requires HAOS. Configure the local/external browser origins and a random owner setup secret in the app's Configuration tab. Home Assistant credentials are provided automatically by Supervisor. [Step-by-step setup](ha-app/DOCS.md).
 
 ## Start locally
 

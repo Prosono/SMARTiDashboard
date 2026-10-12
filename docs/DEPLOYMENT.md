@@ -24,7 +24,7 @@ Trust `ca.crt` on clients, transfer only `server.crt` and `server.key` to the hu
 
 Install through the built-in app manager: Settings → Apps → App store → menu → Repositories. Add `https://github.com/Prosono/SMARTiDashboard`, find SMARTi and select Install. Older HA versions label apps as add-ons. See [the complete UI instructions](../ha-app/DOCS.md).
 
-Configure `origin` as the exact HTTPS origin used to open HA (including a nonstandard port) and `bootstrap_secret` as a unique random secret of at least 24 characters from a password manager. Start, open the web UI and create a SMARTi owner. Clear the secret after setup. Supervisor provides HA authentication automatically.
+Configure `origin` as the exact browser origin used to open HA (including a nonstandard port), and add other local/external addresses to `additional_origins`. Local HTTP Ingress also requires `allow_http_ingress: true`; prefer HTTPS to protect credentials on the LAN. Set `bootstrap_secret` as a unique random secret of at least 24 characters from a password manager. Start, open the web UI and create a SMARTi owner. Clear the secret after setup. Supervisor provides HA authentication automatically.
 
 The app uses `/data` for SQLite and Supervisor's HA proxy with `homeassistant_api`. It requests no host devices, privileged mode, Docker socket or write access to HA configuration. Its ingress listener is 8099 and is not published to LAN. A separate LAN entry point for this same HA app instance is planned; standalone HTTPS works now. HAOS end-to-end deployment still requires a real installation test.
 

@@ -1,5 +1,12 @@
 # Implementation status — 2026-10-12
 
+## Version 0.1.3 — setup diagnostics and multiple HA addresses
+
+Local changes support `additional_origins` alongside the existing `origin`, with explicit `allow_http_ingress` for local HTTP access through Supervisor. HTTPS cookies remain Secure; standalone HTTP is still rejected. Both entry points use the same database/accounts and independent browser sessions. Setup errors now distinguish address, secret, validation and network failures; successful owner creation followed by failed login returns to the login form.
+
+Validation: 32 backend tests, 8 frontend unit tests and 14 desktop/mobile browser tests passed, along with lint, production build and payload freshness verification. Tests cover both HTTP/HTTPS Ingress session cookies, authenticated actions, logout, rejected origins and setup recovery. The original screenshot's cause is not confirmed, and real HAOS/Nabu Casa validation remains pending. The 0.1.3 package is prepared locally, not deployed by this session.
+
+
 ## Browser storage fix (0.1.2)
 
 A user-reported blank Ingress panel with QuotaExceededError was traced to an unguarded theme-preference write in the deployed index-mS6izSEm.js bundle. Reproduced locally by making browser storage writes throw; the original build failed to render the login form.

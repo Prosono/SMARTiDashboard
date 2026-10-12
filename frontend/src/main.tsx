@@ -189,21 +189,36 @@ function Login({
     const values = Object.fromEntries(new FormData(e.currentTarget));
     setBusy(true);
     setError("");
+    let creating = Boolean(first);
     try {
-      if (first) await api("bootstrap", "POST", { ...values, language: lang });
+      if (first) {
+        await api("bootstrap", "POST", { ...values, language: lang });
+        creating = false;
+        await setup.refetch();
+      }
       const s = await api<Session>("login", "POST", {
         name: values.name,
         password: values.password,
       });
       signedIn(s);
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.status === 429
-          ? t.rateError
-          : first
-            ? t.setupError
-            : t.loginError,
-      );
+      if (err instanceof ApiError) {
+        const messages: Record<string, string> = {
+          origin_rejected: t.originError,
+          invalid_setup_secret: t.secretError,
+          already_configured: t.alreadyConfigured,
+          invalid_timezone: t.timezoneError,
+          validation_error: t.validationError,
+        };
+        setError(
+          err.status === 429
+            ? t.rateError
+            : messages[err.code] || (creating ? t.setupError : t.loginError),
+        );
+        if (err.code === "already_configured") await setup.refetch();
+      } else {
+        setError(t.connectionError);
+      }
     } finally {
       setBusy(false);
     }

@@ -207,3 +207,53 @@ def test_favorite_survives_entity_id_rename(client, app):
     ha.states["light.renamed"] = state
     assert client.get("/api/home").json()["favorites"] == ["light.renamed"]
     assert client.put("/api/favorites/light.renamed").json()["favorite"] is False
+
+
+@pytest.mark.parametrize(
+    "address,secure", [("https://remote.example", True), ("http://homeassistant.local:8123", False)]
+)
+def test_multiple_ingress_origins(tmp_path, address, secure):
+    settings = Settings(
+        mode="demo",
+        data_dir=tmp_path,
+        ingress=True,
+        ingress_proxy="testclient",
+        origin="https://remote.example",
+        additional_origins=["http://homeassistant.local:8123"],
+        allow_http_ingress=True,
+        bootstrap_secret=SECRET,
+    )
+    with TestClient(create_app(settings, Demo()), base_url=address) as c:
+        c.headers.update({"origin": address, "x-ingress-path": "/"})
+        r = login(c)
+        assert ("Secure" in r.headers["set-cookie"]) == secure
+        assert c.get("/api/session").status_code == 200
+        assert c.put("/api/favorites/light.living_pendant").status_code == 200
+        for bad in ["https://evil.example", "null", "https://remote.example.evil.example"]:
+            rejected = c.post("/api/logout", headers={"origin": bad})
+            assert rejected.status_code == 403
+            assert rejected.json() == {"detail": "origin_rejected"}
+            assert rejected.headers["cache-control"] == "no-store"
+        assert c.post("/api/logout").status_code == 200
+        assert c.get("/api/session").status_code == 401
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://host/path",
+        "https://user:pass@host",
+        "https://*.example",
+        "https://host?x=y",
+        "https://host#frag",
+        "http://homeassistant.local:8123",
+    ],
+)
+def test_reject_invalid_additional_origins(origin):
+    with pytest.raises(ValueError):
+        Settings(ingress=True, additional_origins=[origin]).validate_runtime()
+
+
+def test_http_opt_in_does_not_enable_standalone_http():
+    with pytest.raises(ValueError):
+        Settings(origin="http://homeassistant.local:8123", allow_http_ingress=True).validate_runtime()

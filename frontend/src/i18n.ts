@@ -66,6 +66,17 @@ export const nb = {
   commandError:
     "Kommandoen kunne ikke bekreftes. Sjekk enhetens tilstand før du prøver igjen.",
   loginError: "Kunne ikke logge inn. Kontroller brukernavn og passord.",
+  originError:
+    "HA-adressen er ikke godkjent i SMARTi-konfigurasjonen. Legg adressen fra nettleseren i origin eller additional_origins (http(s)://vertsnavn og eventuell port, uten sti), lagre og start SMARTi på nytt.",
+  secretError:
+    "Engangshemmeligheten stemmer ikke med bootstrap_secret i HA-konfigurasjonen, eller er ikke konfigurert med minst 24 tegn. Lagre riktig verdi, start SMARTi på nytt og bruk den samme verdien her.",
+  alreadyConfigured:
+    "Eierkontoen er allerede opprettet. Logg inn med brukernavnet og passordet du valgte.",
+  timezoneError: "Tidssonen er ugyldig. Bruk for eksempel Europe/Oslo.",
+  validationError:
+    "Kontroller feltene. Passordet må ha 12–128 tegn. Brukernavn kan inneholde bokstaver, tall, punktum, @, bindestrek og understrek.",
+  connectionError:
+    "Får ikke kontakt med SMARTi. Kontroller at appen kjører, og prøv igjen.",
   setupError:
     "Kunne ikke opprette hjemmet. Kontroller engangshemmeligheten og feltene.",
   rateError: "For mange forsøk. Vent 15 minutter og prøv igjen.",
@@ -189,6 +200,17 @@ export const en: typeof nb = {
   commandError:
     "The command could not be confirmed. Check the device state before trying again.",
   loginError: "Could not sign in. Check your username and password.",
+  originError:
+    "The HA address is not allowed in SMARTi configuration. Add the browser address to origin or additional_origins (http(s)://hostname and optional port, without a path), save and restart SMARTi.",
+  secretError:
+    "The setup secret does not match bootstrap_secret in HA configuration, or it is not configured with at least 24 characters. Save the correct value, restart SMARTi and use the same value here.",
+  alreadyConfigured:
+    "The owner account already exists. Sign in with the username and password you chose.",
+  timezoneError: "Invalid time zone. Use a value such as Europe/Oslo.",
+  validationError:
+    "Check the fields. Passwords need 12–128 characters. Usernames may contain letters, numbers, periods, @, hyphens and underscores.",
+  connectionError:
+    "Cannot reach SMARTi. Check that the app is running and try again.",
   setupError: "Could not create your home. Check the setup secret and fields.",
   rateError: "Too many attempts. Wait 15 minutes and try again.",
   loadError: "Could not load your home.",

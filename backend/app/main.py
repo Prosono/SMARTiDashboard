@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .auth import Auth, hasher
@@ -55,11 +55,15 @@ def create_app(settings=None, adapter=None):
     @app.middleware("http")
     async def boundary(request, call_next):
         if settings.ingress and (not request.client or request.client.host != settings.ingress_proxy):
-            return Response(status_code=403)
+            return JSONResponse(
+                {"detail": "ingress_rejected"}, status_code=403, headers={"Cache-Control": "no-store"}
+            )
         if request.method not in {"GET", "HEAD", "OPTIONS"}:
             origin = request.headers.get("origin")
-            if origin != settings.origin:
-                return Response("origin_rejected", status_code=403)
+            if origin not in settings.allowed_origins:
+                return JSONResponse(
+                    {"detail": "origin_rejected"}, status_code=403, headers={"Cache-Control": "no-store"}
+                )
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store" if request.url.path.startswith("/api") else "no-cache"
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -118,7 +122,7 @@ def create_app(settings=None, adapter=None):
             "smarti_session",
             token,
             httponly=True,
-            secure=not settings.development,
+            secure=request.headers.get("origin", "").startswith("https://"),
             samesite="strict",
             path=cookie_path(request),
             max_age=settings.session_hours * 3600,
@@ -260,7 +264,7 @@ def create_app(settings=None, adapter=None):
     @app.get("/api/events")
     async def events(request: Request, current=Depends(user)):
         origin = request.headers.get("origin")
-        if origin and origin != settings.origin:
+        if origin and origin not in settings.allowed_origins:
             raise HTTPException(403, "origin_rejected")
 
         async def stream():

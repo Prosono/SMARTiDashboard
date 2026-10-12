@@ -1,6 +1,6 @@
 # Install SMARTi from the Home Assistant app store
 
-Requires Home Assistant OS with the app store and an HTTPS URL for Home Assistant. Use the same HA URL throughout setup. This development preview requires its own SMARTi login inside Ingress.
+Requires Home Assistant OS with the app store and a configured Home Assistant URL. Both local and external URLs can be allowed. This development preview requires its own SMARTi login inside Ingress.
 
 1. Open **Settings → Apps → App store** (older versions call these Add-ons).
 2. Open the store's three-dot menu → **Repositories**.
@@ -9,11 +9,16 @@ Requires Home Assistant OS with the app store and an HTTPS URL for Home Assistan
 5. In SMARTi's **Configuration** tab, set:
 
 ```yaml
-origin: "https://your-home-assistant-address"
+origin: "https://your-external-home-assistant-address"
+additional_origins:
+  - "http://homeassistant.local:8123"
+allow_http_ingress: true
 bootstrap_secret: "a-long-random-secret-from-your-password-manager"
 ```
 
-`origin` is exactly the scheme, hostname and port used in the browser address bar, without a path or trailing slash. Example: `https://ha.example.net:8123`. An HTTP-only HA URL is not supported by this version. The certificate must be trusted by the browser.
+`origin` is exactly the scheme, hostname and port used in the browser address bar, without a path or trailing slash. Example: `https://ha.example.net:8123`. Add each additional local or external address to `additional_origins`. Existing installations can keep their `origin` unchanged and add the other address. Save and restart SMARTi after changes. HTTPS certificates must be trusted by the browser.
+
+Local HTTP Ingress requires `allow_http_ingress: true` (default false). HTTP sends credentials and sessions unencrypted on the LAN; use it only on a trusted network, and prefer HTTPS where available. HTTPS logins always retain Secure cookies. Sessions are separate for each hostname, but both addresses use the same SMARTi accounts and home. Standalone deployments still require HTTPS.
 
 Choose a unique random `bootstrap_secret` of at least 24 characters, using a password manager. Do not use the example above as the actual secret. This setup secret establishes the first SMARTi owner; it is not your HA password or token.
 
