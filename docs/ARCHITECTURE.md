@@ -12,7 +12,7 @@ React + TypeScript + Vite + Tailwind + TanStack Query, FastAPI + Pydantic + SQLi
 One home and HA instance per process. No cloud dependency, analytics, remote fonts or CDN at runtime.
 The original SMARTi logo and locally bundled Bai Jamjuree follow smarti.no; charcoal, orange and warm light surfaces adapt its identity for daily use.
 
-The browser only calls SMARTi. The backend owns the HA credential, cache, authorization and sessions. HA remains the only authority for areas, devices, entity IDs, states and automations. SMARTi stores accounts, preferences and favorites. HA outages preserve stale cache and inhibit commands. No state cache survives a restart; it is rebuilt.
+The browser only calls SMARTi. The backend owns the HA credential, cache, authorization and sessions. HA remains the only authority for areas, devices, entity IDs, states and automations. SMARTi stores accounts, preferences, favorites and owner-scoped/shared custom dashboard layouts. HA outages preserve stale cache and inhibit commands. No state cache survives a restart; it is rebuilt.
 
 A single HA WebSocket receiver routes request IDs and subscriptions. Subscribe before fetching a snapshot, buffer events during synchronization, merge newer state timestamps, then expose the synchronized cache. Registry changes trigger a fresh, atomic registry snapshot. A generation counter prevents registry events during refresh from being lost. Reconnection re-subscribes once per event type. Commands are never queued or retried.
 
@@ -26,3 +26,9 @@ Device IDs come from the HA registry. Controls retain entity and device linkage;
 - Account creation is resumable at the installation level: existing users prevent bootstrap, and the original HA installation is automatically imported.
 - Admin/user roles apply to the whole installation. No guest/per-room authorization.
 - HA Ingress and standalone LAN HTTPS use separate deployment modes/listeners. The HA app exposes no LAN port. Concurrent LAN ingress for that same HA app is a later integration step.
+
+## Management boundary
+
+`management.py` exposes dedicated administrator-only operations, not a generic HA service or HTTP proxy. HA WebSocket APIs handle registries/config entries/services; narrowly constructed backend REST paths handle editable automation files and integration reload. Unknown advanced automation fields survive editing, and configs use a content revision check. The HA token remains in the backend. Update names/logo are mapped at presentation time, while entity IDs and installed/latest versions retain their actual identities. No successful request is presented as verified physical execution or completed installation.
+
+`dashboards.py` persists private/shared dashboards and 2/6/12-column layouts in SQLite with owner visibility, shared-admin edit checks and transactional revision checks. No HA secrets or HTML are accepted as tiles; text is rendered as plain text. Layouts have bounded coordinates, unique tile IDs and no overlap. The browser editor drafts in memory until save and provides pointer/touch handles and keyboard controls. Existing HA-backed device components perform runtime commands through the same authorization layer as the standard home view.

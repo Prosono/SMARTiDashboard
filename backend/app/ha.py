@@ -6,6 +6,7 @@ import json
 import random
 from datetime import UTC, datetime
 
+import httpx
 import websockets
 
 from .models import normalize
@@ -27,6 +28,7 @@ class HomeAssistant:
         self.url = (
             url.rstrip("/").replace("https://", "wss://").replace("http://", "ws://") + "/api/websocket"
         )
+        self.http_url = url.rstrip("/") + "/api/"
         self.token = token
         self.ws = None
         self.pending = {}
@@ -70,6 +72,25 @@ class HomeAssistant:
             raise
         finally:
             self.pending.pop(number, None)
+
+    async def rest(self, method, path, data=None):
+        """Paths are built by dedicated backend handlers, never a browser-supplied proxy URL."""
+        if not self.connected:
+            raise HAError("disconnected")
+        try:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=False, trust_env=False) as client:
+                response = await client.request(
+                    method, self.http_url + path, headers={"Authorization": "Bearer " + self.token}, json=data
+                )
+            if response.status_code == 404:
+                from fastapi import HTTPException
+
+                raise HTTPException(404, "ha_config_not_editable")
+            if not response.is_success:
+                raise HAError("ha_request_rejected")
+            return response.json() if response.content else None
+        except (httpx.HTTPError, ValueError):
+            raise HAError("ha_request_unconfirmed") from None
 
     def apply_state(self, data):
         entity_id, state = data["entity_id"], data.get("new_state")

@@ -12,6 +12,10 @@ Add **https://github.com/Prosono/SMARTiDashboard** under **Settings → Apps →
 
 Requires HAOS. Configure the local/external browser origins and a random owner setup secret in the app's Configuration tab. Home Assistant credentials are provided automatically by Supervisor. [Step-by-step setup](ha-app/DOCS.md).
 
+## Home administration (0.3.0)
+
+Create and edit automations, manage rooms/device placement, administer configured integrations and install supported updates from SMARTi. Home Assistant update names use SMARTi display branding. Build private or shared dashboards with separate phone/tablet/desktop grids, drag-and-drop, keyboard movement and live controls. See [administration instructions and limitations](ha-app/DOCS.md#administration-and-custom-dashboards-030). Configuration writes and updates require administrator access; new integration setup flows remain deferred.
+
 ## Start locally
 
 Requires Python 3.14 and Node 24:

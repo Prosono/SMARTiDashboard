@@ -254,3 +254,27 @@ def test_reject_invalid_additional_origins(origin):
 def test_http_opt_in_does_not_enable_standalone_http():
     with pytest.raises(ValueError):
         Settings(origin="http://homeassistant.local:8123", allow_http_ingress=True).validate_runtime()
+
+
+def test_successful_logins_do_not_exhaust_budget_or_erase_failures(client):
+    login(client)
+    for _ in range(12):
+        assert (
+            client.post("/api/login", json={"name": "owner", "password": "correct horse battery"}).status_code
+            == 200
+        )
+    for _ in range(7):
+        assert (
+            client.post("/api/login", json={"name": "owner", "password": "a wrong password"}).status_code
+            == 401
+        )
+    assert (
+        client.post("/api/login", json={"name": "owner", "password": "correct horse battery"}).status_code
+        == 200
+    )
+    assert (
+        client.post("/api/login", json={"name": "owner", "password": "a wrong password"}).status_code == 401
+    )
+    assert (
+        client.post("/api/login", json={"name": "owner", "password": "a wrong password"}).status_code == 429
+    )

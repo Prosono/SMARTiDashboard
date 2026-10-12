@@ -39,6 +39,11 @@ import "@fontsource/bai-jamjuree/500.css";
 import "@fontsource/bai-jamjuree/600.css";
 import "@fontsource/bai-jamjuree/700.css";
 import "./style.css";
+import "./manage/manage.css";
+import { Automations } from "./manage/Automations";
+import { RoomManager } from "./manage/Rooms";
+import { Integrations, Updates } from "./manage/System";
+import { Dashboards } from "./manage/Dashboards";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
@@ -76,6 +81,21 @@ function App() {
   const [session, updateSession] = useState<Session | null>(null);
   const [checking, setChecking] = useState(true);
   const [page, setPage] = useState<Page>("home");
+  const [dirty, setDirty] = useState(false);
+  function guard(work: () => void) {
+    if (
+      dirty &&
+      !window.confirm(
+        lang === "en"
+          ? "Discard unsaved changes?"
+          : "Forkaste ulagrede endringer?",
+      )
+    )
+      return;
+    setDirty(false);
+    work();
+  }
+  const navigate = (p: Page) => guard(() => setPage(p));
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     writePreference("smarti-theme", theme);
@@ -127,7 +147,7 @@ function App() {
                 key={p}
                 className={page === p ? "nav-item active" : "nav-item"}
                 aria-current={page === p ? "page" : undefined}
-                onClick={() => setPage(p)}
+                onClick={() => navigate(p)}
               >
                 <Icon size={21} />
                 <span>{t[p]}</span>
@@ -156,7 +176,9 @@ function App() {
           t={t}
           session={session}
           page={page}
-          setPage={setPage}
+          setPage={navigate}
+          guard={guard}
+          onDirty={setDirty}
           theme={theme}
           setTheme={setTheme}
           lang={lang}
@@ -338,6 +360,8 @@ function Dashboard({
   session,
   page,
   setPage,
+  guard,
+  onDirty,
   theme,
   setTheme,
   lang,
@@ -348,6 +372,8 @@ function Dashboard({
   session: Session;
   page: Page;
   setPage: (p: Page) => void;
+  guard: (work: () => void) => void;
+  onDirty: (value: boolean) => void;
   theme: string;
   setTheme: (s: string) => void;
   lang: string;
@@ -362,6 +388,8 @@ function Dashboard({
   const [streamConnected, streamStatus] = useState(true);
   const [room, setRoom] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [roomEditing, setRoomEditing] = useState(false);
+  const [more, setMore] = useState("overview");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [protocol, setProtocol] = useState("all");
@@ -377,6 +405,7 @@ function Dashboard({
   }, [queryClient]);
   useEffect(() => {
     setAdding(false);
+    setRoomEditing(false);
   }, [page]);
   if (home.isLoading)
     return (
@@ -484,7 +513,9 @@ function Dashboard({
             </span>
           </div>
         )}
-        {adding ? (
+        {roomEditing && page === "rooms" && session.role === "admin" ? (
+          <RoomManager lang={lang} back={() => setRoomEditing(false)} />
+        ) : adding ? (
           <DeviceSetup lang={lang} onBack={() => setAdding(false)} />
         ) : page === "home" ? (
           <>
@@ -624,14 +655,18 @@ function Dashboard({
                 {session.role === "admin" && (
                   <button
                     className="primary compact"
-                    onClick={() => setAdding(true)}
+                    onClick={() =>
+                      page === "rooms" ? setRoomEditing(true) : setAdding(true)
+                    }
                   >
                     <Plus size={18} />
                     {page === "devices"
                       ? lang === "nb"
                         ? "Legg til ny enhet"
                         : "Add new device"
-                      : t.add}
+                      : lang === "en"
+                        ? "Manage rooms"
+                        : "Administrer rom"}
                   </button>
                 )}
               </div>
@@ -736,76 +771,131 @@ function Dashboard({
           </>
         ) : (
           <>
-            <div className="page-heading">
-              <span className="eyebrow">SMARTi</span>
-              <h1>{t.more}</h1>
-            </div>
-            <div className="settings-layout">
-              <section className="settings-panel">
-                <h2>
-                  <Activity size={21} />
-                  {t.status}
-                </h2>
-                <dl>
-                  <div>
-                    <dt>{t.process}</dt>
-                    <dd>
-                      <Check size={16} />
-                      {t.running}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>{t.ha}</dt>
-                    <dd>{h.connected ? t.connected : t.unknown}</dd>
-                  </div>
-                  <div>
-                    <dt>{t.version}</dt>
-                    <dd>{h.ha_version || "—"}</dd>
-                  </div>
-                </dl>
-                <p className="note">{t.radioHint}</p>
-              </section>
-              <section className="settings-panel">
-                <h2>
-                  <Settings size={21} />
-                  {t.settings}
-                </h2>
-                <label>
-                  {t.appearance}
-                  <select
-                    value={theme}
-                    onChange={(e) => setTheme(e.target.value)}
-                  >
-                    <option value="light">{t.light}</option>
-                    <option value="dark">{t.dark}</option>
-                  </select>
-                </label>
-                <label>
-                  {t.language}
-                  <select
-                    value={lang}
-                    onChange={(e) => language(e.target.value)}
-                  >
-                    <option value="nb">Norsk bokmål</option>
-                    <option value="en">English</option>
-                  </select>
-                </label>
-                <button className="text-button" onClick={logout}>
-                  <LogOut size={17} />
-                  {t.logout}
+            <nav
+              className="management-tabs"
+              aria-label={lang === "en" ? "More sections" : "Flere funksjoner"}
+            >
+              {[
+                ["overview", lang === "en" ? "Overview" : "Oversikt"],
+                ["dashboards", lang === "en" ? "Dashboards" : "Dashbord"],
+                ...(session.role === "admin"
+                  ? [
+                      ["automations", t.automations],
+                      [
+                        "integrations",
+                        lang === "en" ? "Integrations" : "Integrasjoner",
+                      ],
+                      ["updates", lang === "en" ? "Updates" : "Oppdateringer"],
+                    ]
+                  : []),
+              ].map(([key, label]) => (
+                <button
+                  key={key}
+                  className={more === key ? "selected" : ""}
+                  aria-current={more === key ? "page" : undefined}
+                  onClick={() => guard(() => setMore(key))}
+                >
+                  {label}
                 </button>
-              </section>
-            </div>
-            {h.controls.some((c) => c.domain === "automation") && (
-              <section>
-                <div className="section-heading">
-                  <h2>{t.automations}</h2>
+              ))}
+            </nav>
+            {more === "dashboards" ? (
+              <Dashboards
+                lang={lang}
+                admin={session.role === "admin"}
+                home={h}
+                onDirty={onDirty}
+                renderControl={(c) => (
+                  <Device
+                    c={c}
+                    t={t}
+                    h={h}
+                    offline={offline}
+                    roomName={roomName(c.area_id)}
+                    admin={session.role === "admin"}
+                  />
+                )}
+              />
+            ) : more === "automations" && session.role === "admin" ? (
+              <Automations lang={lang} home={h} onDirty={onDirty} />
+            ) : more === "integrations" && session.role === "admin" ? (
+              <Integrations lang={lang} />
+            ) : more === "updates" && session.role === "admin" ? (
+              <Updates lang={lang} />
+            ) : (
+              <>
+                <div className="page-heading">
+                  <span className="eyebrow">SMARTi</span>
+                  <h1>{t.more}</h1>
                 </div>
-                <p className="muted">{t.automationHint}</p>
-                {cards(h.controls.filter((c) => c.domain === "automation"))}
-              </section>
+                <div className="settings-layout">
+                  <section className="settings-panel">
+                    <h2>
+                      <Activity size={21} />
+                      {t.status}
+                    </h2>
+                    <dl>
+                      <div>
+                        <dt>{t.process}</dt>
+                        <dd>
+                          <Check size={16} />
+                          {t.running}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>{t.ha}</dt>
+                        <dd>{h.connected ? t.connected : t.unknown}</dd>
+                      </div>
+                      <div>
+                        <dt>{t.version}</dt>
+                        <dd>{h.ha_version || "—"}</dd>
+                      </div>
+                    </dl>
+                    <p className="note">{t.radioHint}</p>
+                  </section>
+                  <section className="settings-panel">
+                    <h2>
+                      <Settings size={21} />
+                      {t.settings}
+                    </h2>
+                    <label>
+                      {t.appearance}
+                      <select
+                        value={theme}
+                        onChange={(e) => setTheme(e.target.value)}
+                      >
+                        <option value="light">{t.light}</option>
+                        <option value="dark">{t.dark}</option>
+                      </select>
+                    </label>
+                    <label>
+                      {t.language}
+                      <select
+                        value={lang}
+                        onChange={(e) => language(e.target.value)}
+                      >
+                        <option value="nb">Norsk bokmål</option>
+                        <option value="en">English</option>
+                      </select>
+                    </label>
+                    <button className="text-button" onClick={logout}>
+                      <LogOut size={17} />
+                      {t.logout}
+                    </button>
+                  </section>
+                </div>
+                {h.controls.some((c) => c.domain === "automation") && (
+                  <section>
+                    <div className="section-heading">
+                      <h2>{t.automations}</h2>
+                    </div>
+                    <p className="muted">{t.automationHint}</p>
+                    {cards(h.controls.filter((c) => c.domain === "automation"))}
+                  </section>
+                )}
+                {session.role === "admin" && <Users t={t} />}
+              </>
             )}
-            {session.role === "admin" && <Users t={t} />}
           </>
         )}
       </main>

@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Python backend | Python 3.14.7; FastAPI 0.143.0; Pydantic 2.14.1; websockets 16.1.1; pwdlib 0.3.1 | Local API and WebSocket contract tests | No production certification |
 | React UI | Exact npm graph in package-lock.json | TypeScript and production build; browser tests recorded in IMPLEMENTATION_STATUS | Local demo |
-| SQLite | Python bundled SQLite; schema user_version=3 | Bootstrap transaction, session expiry/revocation and metadata tests | Whole-home roles |
+| SQLite | Python bundled SQLite; schema user_version=4 | Bootstrap transaction, session expiry/revocation and metadata tests | Whole-home roles |
 | HA auth / get_states / subscribe_events / call_service | [Official WebSocket API](https://developers.home-assistant.io/docs/api/websocket/) | Protocol simulator, including stale snapshot race and reconnect | No real Core version verified |
 | HA physical commands | [REST/service semantics](https://developers.home-assistant.io/docs/api/rest/) | Commands use call_service, never state-register writes | HA acknowledgment is not physical execution |
 | HA area/device/entity registry list + events | [area source](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/area_registry.py), [device source](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/device_registry.py), [entity source](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/entity_registry.py) | Upstream source inspected; isolated in ha.py; protocol fixtures | Version-sensitive internal operations; requires privileged registry access, real-version matrix pending |
@@ -21,3 +21,12 @@
 The source links use the inspected upstream development branch, not a guaranteed stable API. Record actual Core versions and source commit hashes before declaring a supported HA release. Registry failures retain the cache and mark the connection stale rather than silently dropping rooms. Lock entities are view-only. Energy totals, radio health and cloud-dependency assertions are deliberately not inferred.
 
 Brand reference: [SMARTi](https://www.smarti.no/), original logo downloaded for the requested SMARTi implementation; font bundled from @fontsource/bai-jamjuree (OFL). No runtime request is made to the reference website.
+
+## 0.3.0 management contracts
+
+- Room creation/update/deletion: [HA area registry implementation](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/area_registry.py); device assignment uses [device registry update](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/device_registry.py). Entity overrides use the corresponding entity registry update command.
+- Automations: [HA config implementation](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/automation.py) and [frontend contracts](https://github.com/home-assistant/frontend/blob/dev/src/data/automation.ts). Read/write/delete use the authenticated `config/automation/config/{id}` REST endpoints, with compare-before-write content revisions inside SMARTi. An external HA edit can still race the separate read/write calls; HA supplies no atomic compare-and-swap here.
+- Integration administration: [official frontend contracts](https://github.com/home-assistant/frontend/blob/dev/src/data/config_entries.ts). Config-entry data/options/secrets are never returned by SMARTi's overview.
+- Update installation: [official update feature flags and contracts](https://github.com/home-assistant/frontend/blob/dev/src/data/update.ts). Display branding only; no changes to HA's entity IDs or package provenance.
+
+These APIs were checked against upstream development sources and exercised with fixtures. They are not a verified matrix of installed HA Core/Supervisor versions.

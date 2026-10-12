@@ -1,5 +1,13 @@
 # Implementation status — 2026-10-12
 
+## 0.3.0 — administration and responsive dashboards
+
+Implemented HA-backed room CRUD and device/entity area assignment; automation CRUD with visual blocks and a lossless advanced JSON editor; integration overview, rename, enable/disable and reload; capability-checked update installation with explicit confirmation, supported backup and SMARTi display branding. New integration configuration flows are deferred by the user's choice. Separate YAML automation files remain outside HA's editable config API.
+
+Dashboards are SMARTi SQLite metadata (schema 4): private per owner or shared per home, three independent responsive layouts, pointer/touch and keyboard movement, sizing, collision resolution, control/sensor/text/heading tiles and optimistic revision checking. Admin/CSRF checks protect HA changes; private dashboard access is owner-scoped, shared edits require admin. Controls remain governed by existing command permissions. No real HA install or system update has been executed. Verify the internal HA config API against the customer's version before acceptance.
+
+Verification: 92 backend tests, 12 frontend unit tests and 26 desktop/mobile browser tests passed. Browser coverage includes touch and keyboard movement, independent layouts, saving/reloading, room CRUD, advanced automation preservation and confirmed integration/update actions. TypeScript/build, Ruff and deterministic HA payload checks passed. The Docker 0.3.0 image built locally; no image/repository publication was performed.
+
 ## 0.2.4 — controller diagnostics and device detail dialog
 
 The user's controller still reports busy after 0.2.3; the cause is not confirmed without the actual controller state/version. Added raw inclusion state and connection/version diagnostics, correct disconnected/unknown errors, named/numeric enum handling, and explicit confirmed inclusion/exclusion stop even without a SMARTi-owned session. This is recovery and observability, not a claim of physical root-cause verification. No controller reset or automatic retry/start is performed.
@@ -86,14 +94,14 @@ One upstream test-client deprecation warning remains: Starlette recommends httpx
 ## Remaining scope
 Milestone 1 is not declared fully accepted or production-ready until the real HA/HAOS journey is verified. These requested features remain:
 - Full resumable step-by-step onboarding beyond owner creation and automatic import.
-- Editing HA names/areas from SMARTi, category overrides, manual room/control ordering.
-- PWA install/offline static-resource shell (no service worker is currently registered).
+- Category overrides and manual ordering of the standard room/control lists (custom dashboards have independent ordering).
+- Native phone-app distribution is deferred; PWA was explicitly declined.
 - Simultaneous LAN + Ingress listeners for the same HA app instance (standalone LAN is implemented separately).
 - Detailed radio health and redacted diagnostic export; additional device capabilities such as color temperature.
-- Milestone 2 pairing state machine, verified Z-Wave/S2 and Zigbee setup, timeouts/cancellation/restart reconciliation.
+- Real-hardware verification of the implemented pairing, S2, cancellation and restart-recovery flows.
 - Milestone 3 automation templates, energy, expanded adapters and installer/support workflows.
 
-The setup UI explicitly directs users to their existing HA setup flow. There are no active fake pairing operations, guessed radio health, whole-home energy totals or hidden administrator accounts.
+Unsupported commissioning integrations are identified explicitly. There are no active fake pairing operations, guessed radio health, whole-home energy totals or hidden administrator accounts.
 
 ## Start and next priority
 `make setup && make dev`, then open http://localhost:5173/. Read the generated owner-only `.data/setup-secret.txt` locally for first setup. See DEVELOPMENT.md and DEPLOYMENT.md for live credentials, HTTPS and the HA package.

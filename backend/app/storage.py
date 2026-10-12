@@ -28,6 +28,12 @@ CREATE INDEX mobile_refresh_device ON mobile_refresh(device_id);
 CREATE TABLE mobile_audit (id INTEGER PRIMARY KEY, event TEXT NOT NULL, user_id INTEGER NOT NULL,
  device_id TEXT, created REAL NOT NULL);
 """,
+    """
+CREATE TABLE dashboards (id TEXT PRIMARY KEY, owner_id INTEGER NOT NULL,
+ scope TEXT NOT NULL CHECK(scope IN ('private','shared')), name TEXT NOT NULL,
+ tiles TEXT NOT NULL, revision INTEGER NOT NULL);
+CREATE INDEX dashboards_owner ON dashboards(owner_id);
+""",
 ]
 
 

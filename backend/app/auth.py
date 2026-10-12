@@ -34,6 +34,11 @@ class Auth:
                 (key, now + 900),
             )
 
+    def finish_successful_attempt(self, key):
+        # Refund this successful login only; preserve prior failures from this source.
+        with self.store.connect() as db:
+            db.execute("UPDATE attempts SET count=MAX(0,count-1) WHERE key=?", (key,))
+
     def bootstrap(self, name, password, secret):
         expected = self.settings.bootstrap_secret
         if len(expected) < 24 or not secrets.compare_digest(secret, expected):

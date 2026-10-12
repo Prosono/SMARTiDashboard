@@ -237,7 +237,7 @@ def test_upgrade_from_version_two_preserves_users_and_sessions(tmp_path):
     store = Store(path)
     identity = MobileAuth(store).installation_id
     with store.connect() as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert db.execute("PRAGMA user_version").fetchone()[0] == len(MIGRATIONS)
         assert db.execute("SELECT name FROM users").fetchone()[0] == "existing"
         assert db.execute("SELECT token FROM sessions").fetchone()[0] == "existing-token"
     assert MobileAuth(Store(path)).installation_id == identity

@@ -1,3 +1,11 @@
+# 0.3.0
+
+Add administrator room creation/rename/deletion, device placement and explicit entity area overrides. Add automation creation/editing/deletion, enable/disable and confirmed runs; a visual time/state/sun editor preserves advanced configuration through a full JSON editor. HA remains the execution engine and authority. Automations in separate YAML files that the HA config API cannot edit stay at their source.
+
+Add integration status, rename, enable/disable and reload (new integration setup is deferred by choice). Add update entities with current/latest versions, live progress, confirmed installation and optional supported backup. Names containing Home Assistant display as SMARTi with the SMARTi logo; underlying component identity and versions are unchanged.
+
+Add persistent private and shared dashboards with separate 2/6/12-column phone/tablet/desktop layouts, pointer/touch drag handles, keyboard movement, tile sizing, collision handling, sensor/control/text/heading tiles and revision checks. Residents edit their own private dashboards; admins edit shared dashboards. Existing SQLite data migrates without account reset. Successful logins no longer consume the failed-login rate-limit budget; previous failed attempts remain counted. No live system updates or real HA configuration changes were performed during development; installation validation remains required.
+
 # 0.2.5
 
 Support both HA MQTT and an explicitly configured external Zigbee2MQTT frontend WebSocket, including setups using Zigbee2MQTT Proxy. Add backend-only server/token options and redacted connection diagnostics. Pairing, stop and removal require correlated acknowledgements; no command is replayed after reconnect. HA entity controls still require HA integration. Accept legacy plain online/offline messages and preserve bounded, sanitized telemetry arriving before device inventory. Frontend sample age remains unknown because the stream does not identify cached samples. Hardware/HAOS validation remains pending.

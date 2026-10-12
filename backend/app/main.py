@@ -12,8 +12,10 @@ from pydantic import BaseModel, Field
 
 from .auth import Auth, hasher
 from .config import Settings
+from .dashboards import dashboard_router
 from .demo import Demo
 from .ha import HAError, HomeAssistant
+from .management import Management, management_router
 from .mobile import MobileAuth
 from .models import Command
 from .setup import DeviceSetup
@@ -146,6 +148,11 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             raise HTTPException(403, "admin_required")
         return current
 
+    management = Management(ha, store, settings)
+    app.state.management = management
+    app.include_router(management_router(management, admin))
+    app.include_router(dashboard_router(store, user))
+
     @app.get("/healthz")
     async def health():
         return {"status": "running"}
@@ -176,8 +183,10 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
 
     @app.post("/api/login")
     async def login(body: Credentials, request: Request, response: Response):
-        auth.throttle("login:" + request.client.host)
+        key = "login:" + request.client.host
+        auth.throttle(key)
         token, session = auth.login(body.name, body.password)
+        auth.finish_successful_attempt(key)
         response.set_cookie(
             "smarti_session",
             token,
