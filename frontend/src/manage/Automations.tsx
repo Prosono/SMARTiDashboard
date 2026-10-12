@@ -1,3 +1,6 @@
+import { entityState } from "./entityWords";
+import { EntityPicker } from "./EntityPicker";
+import { AutomationFlow } from "./AutomationFlow";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -9,7 +12,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import { AutomationGuide, canGuide } from "./AutomationGuide";
+import { AutomationGuide } from "./AutomationGuide";
 import { api } from "../api";
 import type { Home } from "../types";
 import { Feedback, LoadError, useWork, words } from "./shared";
@@ -54,6 +57,8 @@ export function Automations({
     revision: string;
     config: Config;
   } | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [flow, setFlow] = useState(true);
   const [guided, setGuided] = useState(false);
   const [guideReady, setGuideReady] = useState(false);
   const [advanced, setAdvanced] = useState(false);
@@ -64,20 +69,23 @@ export function Automations({
   const w = useWork(lang);
   const c = editing?.config;
   useEffect(() => {
-    onDirty(!!editing);
+    onDirty(!!editing && dirty);
     return () => onDirty(false);
-  }, [!!editing, onDirty]);
+  }, [!!editing, dirty, onDirty]);
   useEffect(() => {
-    if (!editing) return;
+    if (!editing || !dirty) return;
     const before = (e: BeforeUnloadEvent) => e.preventDefault();
     window.addEventListener("beforeunload", before);
     return () => window.removeEventListener("beforeunload", before);
-  }, [!!editing]);
+  }, [!!editing, dirty]);
   function patch(value: Config) {
+    setDirty(true);
+    w.setMessage("");
     if (editing)
       setEditing({ ...editing, config: { ...editing.config, ...value } });
   }
   function rawMode() {
+    if (advanced) return;
     setRaw(JSON.stringify(c, null, 2));
     setAdvanced(true);
   }
@@ -113,23 +121,30 @@ export function Automations({
     value: string,
     onChange: (v: string) => void,
     label = t("Enhet eller sensor", "Device or sensor"),
+    domain?: string,
   ) {
+    if (value && typeof value !== "string")
+      return (
+        <button type="button" onClick={rawMode}>
+          {t(
+            "Flere enheter eller mal · åpne avansert",
+            "Multiple entities or template · open advanced",
+          )}
+        </button>
+      );
     return (
-      <select
-        aria-label={label}
+      <EntityPicker
         value={value || ""}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">{t("Velg …", "Choose …")}</option>
-        {value && !options.some((o) => o.entity_id === value) && (
-          <option value={value}>{value}</option>
-        )}
-        {options.map((o) => (
-          <option key={o.entity_id} value={o.entity_id}>
-            {o.name} · {o.entity_id}
-          </option>
-        ))}
-      </select>
+        onChange={onChange}
+        choices={
+          domain
+            ? options.filter((o) => o.entity_id.startsWith(domain + "."))
+            : options
+        }
+        home={home}
+        lang={lang}
+        label={label}
+      />
     );
   }
   function updateRow(key: string, i: number, value: Config) {
@@ -142,6 +157,7 @@ export function Automations({
     index: string,
     title: string,
     intro: string,
+    selectedIndex?: number,
   ) {
     const rows: Config[] = c![key];
     return (
@@ -154,6 +170,7 @@ export function Automations({
           </div>
         </div>
         {rows.map((row, i) => {
+          if (selectedIndex !== undefined && selectedIndex !== i) return null;
           const kind =
             row?.trigger ||
             row?.platform ||
@@ -288,18 +305,59 @@ export function Automations({
                           {key === "triggers"
                             ? t("Blir", "Becomes")
                             : t("Er", "Is")}
-                          <input
-                            value={
-                              (key === "triggers" ? row.to : row.state) ?? ""
-                            }
-                            placeholder="on / off"
-                            onChange={(e) =>
-                              update({
-                                [key === "triggers" ? "to" : "state"]:
-                                  e.target.value,
-                              })
-                            }
-                          />
+                          {home.controls.some(
+                            (x) =>
+                              x.entity_id === row.entity_id &&
+                              ["binary_sensor", "light", "switch"].includes(
+                                x.domain,
+                              ),
+                          ) &&
+                          ["on", "off"].includes(
+                            key === "triggers" ? row.to : row.state,
+                          ) ? (
+                            <select
+                              value={key === "triggers" ? row.to : row.state}
+                              onChange={(e) =>
+                                update({
+                                  [key === "triggers" ? "to" : "state"]:
+                                    e.target.value,
+                                  ...(key === "triggers" &&
+                                  ["on", "off"].includes(row.from)
+                                    ? {
+                                        from:
+                                          e.target.value === "on"
+                                            ? "off"
+                                            : "on",
+                                      }
+                                    : {}),
+                                })
+                              }
+                            >
+                              {["on", "off"].map((state) => (
+                                <option key={state} value={state}>
+                                  {entityState(
+                                    row.entity_id,
+                                    state,
+                                    home,
+                                    lang,
+                                  )}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              value={
+                                (key === "triggers" ? row.to : row.state) ?? ""
+                              }
+                              placeholder="on / off"
+                              onChange={(e) =>
+                                update({
+                                  [key === "triggers" ? "to" : "state"]:
+                                    e.target.value,
+                                })
+                              }
+                            />
+                          )}
                         </label>
                       ) : (
                         <>
@@ -391,6 +449,7 @@ export function Automations({
                                 target: { ...row.target, entity_id: v },
                               }),
                             t("Mål", "Target"),
+                            kind.split(".")[0],
                           )
                         ) : (
                           <button type="button" onClick={rawMode}>
@@ -423,57 +482,76 @@ export function Automations({
                   )}
                 </div>
               )}
+              {supported && (
+                <details className="flow-settings">
+                  <summary>
+                    {t(
+                      "Alle innstillinger for denne blokken",
+                      "All settings for this block",
+                    )}
+                  </summary>
+                  <pre>{JSON.stringify(row, null, 2)}</pre>
+                  <button type="button" onClick={rawMode}>
+                    {t(
+                      "Rediger avanserte innstillinger",
+                      "Edit advanced settings",
+                    )}
+                  </button>
+                </details>
+              )}
             </div>
           );
         })}
-        <div className="block-add">
-          {(key === "triggers"
-            ? [
-                ["time", t("Klokkeslett", "Time")],
-                ["state", t("Tilstand", "State")],
-                ["sun", t("Sol", "Sun")],
-              ]
-            : key === "conditions"
+        {selectedIndex === undefined && (
+          <div className="block-add">
+            {(key === "triggers"
               ? [
+                  ["time", t("Klokkeslett", "Time")],
                   ["state", t("Tilstand", "State")],
-                  ["numeric_state", t("Tallverdi", "Numeric value")],
+                  ["sun", t("Sol", "Sun")],
                 ]
-              : [["light.turn_on", t("Handling", "Action")]]
-          ).map(([kind, label]) => (
-            <button
-              type="button"
-              key={kind}
-              onClick={() =>
-                patch({
-                  [key]: [
-                    ...rows,
-                    key === "triggers"
-                      ? {
-                          trigger: kind,
-                          ...(kind === "time"
-                            ? { at: "20:00:00" }
-                            : kind === "sun"
-                              ? { event: "sunset" }
-                              : { entity_id: "", to: "on" }),
-                        }
-                      : key === "conditions"
+              : key === "conditions"
+                ? [
+                    ["state", t("Tilstand", "State")],
+                    ["numeric_state", t("Tallverdi", "Numeric value")],
+                  ]
+                : [["light.turn_on", t("Handling", "Action")]]
+            ).map(([kind, label]) => (
+              <button
+                type="button"
+                key={kind}
+                onClick={() =>
+                  patch({
+                    [key]: [
+                      ...rows,
+                      key === "triggers"
                         ? {
-                            condition: kind,
-                            entity_id: "",
-                            ...(kind === "state"
-                              ? { state: "on" }
-                              : { above: 0 }),
+                            trigger: kind,
+                            ...(kind === "time"
+                              ? { at: "20:00:00" }
+                              : kind === "sun"
+                                ? { event: "sunset" }
+                                : { entity_id: "", to: "on" }),
                           }
-                        : { action: kind, target: { entity_id: "" } },
-                  ],
-                })
-              }
-            >
-              <Plus size={16} />
-              {label}
-            </button>
-          ))}
-        </div>
+                        : key === "conditions"
+                          ? {
+                              condition: kind,
+                              entity_id: "",
+                              ...(kind === "state"
+                                ? { state: "on" }
+                                : { above: 0 }),
+                            }
+                          : { action: kind, target: { entity_id: "" } },
+                    ],
+                  })
+                }
+              >
+                <Plus size={16} />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
     );
   }
@@ -490,15 +568,20 @@ export function Automations({
       });
       setRaw(JSON.stringify(v.config, null, 2));
       setAdvanced(!!v.config.use_blueprint);
-      setGuided(canGuide(normalizedConfig(v.config)));
+      setGuided(false);
+      setFlow(true);
       setGuideReady(false);
       setConfirm(null);
+      setDirty(false);
     });
   }
   if (editing && c)
     return (
       <section className="management-page">
-        <button className="text-button" onClick={() => setConfirm("leave")}>
+        <button
+          className="text-button"
+          onClick={() => (dirty ? setConfirm("leave") : setEditing(null))}
+        >
           <ArrowLeft size={18} />
           {t("Alle automasjoner", "All automations")}
         </button>
@@ -512,21 +595,38 @@ export function Automations({
         </div>
         <Feedback message={w.message} />
         <form
-          className={guided ? "guided-form" : undefined}
+          className={guided || (flow && !advanced) ? "guided-form" : undefined}
           onSubmit={(e) => {
             e.preventDefault();
             if (!usable || (guided && !guideReady)) return;
-            void w.run(
-              () =>
-                api(
-                  editing.id
-                    ? `manage/automations/${encodeURIComponent(editing.id)}`
-                    : "manage/automations",
-                  editing.id ? "PUT" : "POST",
-                  { config: usable, revision: editing.revision },
-                ),
-              () => setEditing(null),
-            );
+            void w.run(async () => {
+              const saved = await api<{
+                id: string;
+                config: Config;
+                revision: string;
+              }>(
+                editing.id
+                  ? `manage/automations/${encodeURIComponent(editing.id)}`
+                  : "manage/automations",
+                editing.id ? "PUT" : "POST",
+                { config: usable, revision: editing.revision },
+              );
+              if (guided || flow) {
+                setEditing({
+                  id: saved.id || editing.id,
+                  revision: saved.revision,
+                  config: saved.config.use_blueprint
+                    ? saved.config
+                    : normalizedConfig(saved.config),
+                });
+                setGuided(false);
+                setAdvanced(!!saved.config.use_blueprint);
+                setRaw(JSON.stringify(saved.config, null, 2));
+                setFlow(true);
+                setDirty(false);
+                w.setMessage(t("Automasjonen er lagret.", "Automation saved."));
+              } else setEditing(null);
+            });
           }}
         >
           {guided && (
@@ -536,10 +636,74 @@ export function Automations({
               lang={lang}
               patch={patch}
               onReady={setGuideReady}
-              onAdvanced={() => setGuided(false)}
+              onAdvanced={() => {
+                setGuided(false);
+                setFlow(true);
+              }}
             />
           )}
-          {!advanced && !guided && (
+          {!guided && (
+            <div
+              className="automation-view-switch"
+              role="group"
+              aria-label={t("Redigeringsvisning", "Editor view")}
+            >
+              <button
+                type="button"
+                aria-pressed={flow && !advanced}
+                disabled={!!usable?.use_blueprint || (advanced && !parsed)}
+                onClick={() => {
+                  if (advanced && parsed)
+                    setEditing({
+                      ...editing,
+                      config: normalizedConfig(parsed),
+                    });
+                  setAdvanced(false);
+                  setFlow(true);
+                }}
+              >
+                {t("Flytvisning", "Flow view")}
+              </button>
+              <button
+                type="button"
+                aria-pressed={!flow && !advanced}
+                disabled={!!usable?.use_blueprint || (advanced && !parsed)}
+                onClick={() => {
+                  if (advanced && parsed)
+                    setEditing({
+                      ...editing,
+                      config: normalizedConfig(parsed),
+                    });
+                  setAdvanced(false);
+                  setFlow(false);
+                }}
+              >
+                {t("Vanlig editor", "Standard editor")}
+              </button>
+              <button type="button" aria-pressed={advanced} onClick={rawMode}>
+                {t("Avansert redigering (JSON)", "Advanced editing (JSON)")}
+              </button>
+            </div>
+          )}
+          {!advanced && !guided && flow && (
+            <AutomationFlow
+              config={c}
+              home={home}
+              lang={lang}
+              patch={patch}
+              onAdvanced={rawMode}
+              editor={(key, i) =>
+                section(
+                  key,
+                  String(i + 1),
+                  t("Innstillinger", "Settings"),
+                  "",
+                  i,
+                )
+              }
+            />
+          )}
+          {!advanced && !guided && !flow && (
             <>
               <div className="form-grid">
                 <label>
@@ -605,9 +769,6 @@ export function Automations({
                   "Actions run in this order.",
                 ),
               )}
-              <button type="button" className="text-button" onClick={rawMode}>
-                {t("Avansert redigering (JSON)", "Advanced editing (JSON)")}
-              </button>
             </>
           )}
           {advanced && (
@@ -625,7 +786,11 @@ export function Automations({
                   rows={22}
                   spellCheck={false}
                   value={raw}
-                  onChange={(e) => setRaw(e.target.value)}
+                  onChange={(e) => {
+                    setRaw(e.target.value);
+                    setDirty(true);
+                    w.setMessage("");
+                  }}
                 />
               </label>
               {!parsed && (
@@ -643,6 +808,7 @@ export function Automations({
                       config: normalizedConfig(parsed),
                     });
                     setAdvanced(false);
+                    setFlow(false);
                   }
                 }}
               >
@@ -741,6 +907,7 @@ export function Automations({
                 },
               });
               setAdvanced(false);
+              setDirty(true);
               setGuided(true);
               setGuideReady(false);
               setConfirm(null);

@@ -1,9 +1,9 @@
+import { EntityPicker } from "./EntityPicker";
 import { useState, useRef, useEffect } from "react";
 import {
   Clock,
   Sunset,
   DoorOpen,
-  Lightbulb,
   ArrowRight,
   Check,
   SlidersHorizontal,
@@ -92,8 +92,7 @@ export function AutomationGuide({
   onReady: (v: boolean) => void;
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
-  const [step, setStep] = useState(0),
-    [search, setSearch] = useState("");
+  const [step, setStep] = useState(0);
   const title = useRef<HTMLHeadingElement>(null);
   const r = c.triggers[0],
     a = c.actions[0];
@@ -101,8 +100,6 @@ export function AutomationGuide({
     (x) => x.entity_id === a?.target?.entity_id,
   );
   const sensor = home.controls.find((x) => x.entity_id === r?.entity_id);
-  const room = (id: string | null) =>
-    home.areas.find((x) => x.area_id === id)?.name || t("Uten rom", "No room");
   const targets = home.controls.filter(
     (x) =>
       ["light", "switch"].includes(x.domain) &&
@@ -146,7 +143,6 @@ export function AutomationGuide({
   }, [step, valid, onReady]);
   function go(n: number) {
     setStep(n);
-    setSearch("");
     requestAnimationFrame(() => title.current?.focus());
   }
   function trigger(kind: string) {
@@ -297,27 +293,16 @@ export function AutomationGuide({
               )}
               {r?.trigger === "state" && (
                 <div className="routine-field">
-                  <label>
-                    {t("Sensor", "Sensor")}
-                    <select
-                      aria-label="Sensor"
-                      value={r.entity_id}
-                      onChange={(e) =>
-                        patch({
-                          triggers: [{ ...r, entity_id: e.target.value }],
-                        })
-                      }
-                    >
-                      <option value="">
-                        {t("Velg en sensor", "Choose a sensor")}
-                      </option>
-                      {sensors.map((x) => (
-                        <option key={x.entity_id} value={x.entity_id}>
-                          {x.name} · {room(x.area_id)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <EntityPicker
+                    value={r.entity_id}
+                    onChange={(v) =>
+                      patch({ triggers: [{ ...r, entity_id: v }] })
+                    }
+                    choices={sensors}
+                    home={home}
+                    lang={lang}
+                    label={t("Velg sensor", "Choose sensor")}
+                  />
                   {!sensors.length && (
                     <p>
                       {t(
@@ -354,56 +339,28 @@ export function AutomationGuide({
           )}
           {step === 1 && (
             <>
-              <input
-                className="wide-input"
-                aria-label={t(
-                  "Søk etter lys eller stikkontakt",
-                  "Search lights or sockets",
+              <EntityPicker
+                value={target?.entity_id || ""}
+                onChange={(v) => {
+                  const device = targets.find((x) => x.entity_id === v);
+                  if (device)
+                    patch({
+                      actions: [
+                        {
+                          action: device.domain + ".turn_on",
+                          target: { entity_id: v },
+                        },
+                      ],
+                    });
+                }}
+                choices={targets}
+                home={home}
+                lang={lang}
+                label={t(
+                  "Velg lys eller stikkontakt",
+                  "Choose light or socket",
                 )}
-                placeholder={t(
-                  "Søk etter navn eller rom …",
-                  "Search by name or room …",
-                )}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
               />
-              <div className="routine-devices">
-                {targets
-                  .filter((x) =>
-                    (x.name + " " + room(x.area_id))
-                      .toLowerCase()
-                      .includes(search.toLowerCase()),
-                  )
-                  .map((x) => (
-                    <button
-                      type="button"
-                      key={x.entity_id}
-                      aria-pressed={target?.entity_id === x.entity_id}
-                      onClick={() =>
-                        patch({
-                          actions: [
-                            {
-                              action: x.domain + ".turn_on",
-                              target: { entity_id: x.entity_id },
-                            },
-                          ],
-                        })
-                      }
-                    >
-                      <Lightbulb size={20} />
-                      <span>
-                        <strong>{x.name}</strong>
-                        <small>
-                          {room(x.area_id)}
-                          {x.availability === "unavailable"
-                            ? t(" · Frakoblet", " · Offline")
-                            : ""}
-                        </small>
-                      </span>
-                      {target?.entity_id === x.entity_id && <Check size={18} />}
-                    </button>
-                  ))}
-              </div>
               {!targets.length && (
                 <p>
                   {t(

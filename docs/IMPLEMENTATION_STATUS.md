@@ -1,5 +1,12 @@
 # Implementation status — 2026-10-12
 
+## 0.3.2 — automation flows and room-based selection
+
+Automations now open as an editable When / And if / Then flow. New guided routines enter that flow after saving. Cards support adding, editing, ordering and removing blocks. The standard and JSON editors share the same draft. Unknown blocks, additional fields and conditions are retained; unsupported blocks use the JSON editor and blueprints stay in the full editor. Room-filtered searchable entity dialogs show real known metadata, appropriate icons and friendly state labels, retaining missing selections without silently replacing them. Action targets are filtered to their service domain. Save responses update the revision; clean saved editors no longer claim unsaved changes.
+
+Validation: 18 frontend unit tests, 12 desktop/mobile management browser tests, TypeScript/Vite build and HA payload validation. Covered flow creation, condition/action edits and ordering/removal, view switching, advanced-field preservation, picker search/empty results/room filters and draft protection. Screenshots reviewed on desktop and phone. No live HA installation or physical automation was changed. Release 0.3.2 is prepared locally, not published.
+
+
 ## 0.3.1 — guided everyday automations
 
 New routines start with When → Then → Review, using time, sunrise/sunset or explicit binary-sensor transitions and capability-backed light/socket actions. Choices use room/device names, searchable selection, a plain-language preview and automatic name suggestions. Compatible existing routines reopen in the guide; other configurations retain the complete editor. More devices, conditions and actions remain available under More options. No physical actions run during editing or review.

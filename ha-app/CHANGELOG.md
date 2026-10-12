@@ -1,3 +1,7 @@
+# 0.3.2
+
+Add a responsive, editable When / And if / Then flow view for existing and newly saved automations, with card editing, additions, removal, ordering and switching to the standard editor without losing configuration. Advanced blocks and additional settings remain visible and preserved; blueprints use the full configuration editor. Replace entity dropdowns with a searchable room-filtered picker, device-type icons, available state labels and keyboard-accessible dialogs. Successful saves refresh the editing revision and keep the flow open. Physical HA validation remains pending.
+
 # 0.3.1
 
 Add a three-step automation guide: choose a time, sunrise/sunset or binary sensor event; select a light/socket by name and room; review a plain-language summary before saving. Supports backtracking, automatic name suggestions and validated selections. Simple compatible routines reopen in the guide. Complex configurations retain the full editor without hiding or discarding settings. Saving does not trigger a test run. HA remains the execution engine; physical installation testing is still required.

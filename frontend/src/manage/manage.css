@@ -785,3 +785,353 @@ textarea:focus-visible {
 .guided-form .editor-footer:empty {
   display: none;
 }
+/* Room-first device selection; the native dialog handles focus and Escape. */
+.entity-picker {
+  min-width: 0;
+}
+.entity-picker-opener {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+.entity-picker-opener span {
+  flex: 1;
+  min-width: 0;
+}
+.entity-picker strong,
+.entity-picker small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.entity-picker small {
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
+.entity-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: 85dvh;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 24px 100px #0004;
+}
+.entity-dialog::backdrop {
+  background: #161e1966;
+  backdrop-filter: blur(5px);
+}
+.entity-dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.entity-dialog h2 {
+  font-size: 1.6rem;
+  margin: 0.3rem 0 1rem;
+}
+.entity-search {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-bottom: 1px solid var(--line);
+  margin: 0.5rem 0 1rem;
+}
+.entity-search input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+}
+.entity-room-filter {
+  display: flex;
+  gap: 0.5rem;
+  overflow: auto;
+  padding-bottom: 0.7rem;
+}
+.entity-room-filter button {
+  white-space: nowrap;
+  border-radius: 24px;
+}
+.entity-picker button[aria-pressed="true"] {
+  background: var(--tint);
+  border-color: var(--orange);
+}
+.entity-results > p {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.entity-results h3 {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 1.5rem 0 0.7rem;
+}
+.entity-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.entity-card-grid button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 0.9rem;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+.entity-card-grid button span {
+  flex: 1;
+  min-width: 0;
+}
+.entity-empty {
+  padding: 2rem;
+  text-align: center;
+}
+.automation-view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-bottom: 1.5rem;
+}
+.automation-view-switch [aria-pressed="true"] {
+  background: var(--text);
+  color: var(--bg);
+}
+.flow-intro {
+  display: flex;
+  align-items: end;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+.flow-intro label {
+  flex: 1;
+  display: grid;
+  gap: 0.5rem;
+}
+.flow-intro p {
+  flex: 1;
+  color: var(--muted);
+}
+.flow-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+  padding: 1.5rem;
+  background: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.flow-lane {
+  min-width: 0;
+}
+.flow-lane header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  position: relative;
+}
+.flow-lane header > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg);
+}
+.flow-lane h2 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+.flow-lane > p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  min-height: 2.7em;
+}
+.flow-arrow {
+  margin-left: auto;
+  color: var(--muted);
+}
+.flow-cards {
+  display: grid;
+  gap: 0.75rem;
+}
+.flow-card {
+  position: relative;
+  display: grid;
+  text-align: left;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 150px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--orange);
+  border-radius: 12px;
+  padding: 1.1rem;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 4px 10px #00000005;
+}
+.flow-conditions .flow-card {
+  border-top-color: var(--muted);
+}
+.flow-actions .flow-card {
+  border-top-color: var(--text);
+}
+.flow-card > svg {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+}
+.flow-card small,
+.flow-card > span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.flow-card strong {
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+.flow-card[aria-pressed="true"] {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+.flow-empty {
+  min-height: 150px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.flow-add {
+  margin-top: 1rem;
+  width: 100%;
+}
+.flow-detail {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.flow-detail .automation-section {
+  display: block;
+  margin-top: 1rem;
+}
+.flow-detail .automation-step {
+  display: none;
+}
+.flow-detail .automation-block {
+  border: 0;
+  padding: 0;
+}
+.flow-settings {
+  margin-top: 1.5rem;
+}
+.flow-settings summary {
+  cursor: pointer;
+  padding: 1rem 0;
+}
+.flow-settings label {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+@media (max-width: 700px) {
+  .entity-card-grid {
+    grid-template-columns: 1fr;
+  }
+  .entity-dialog {
+    padding: 1rem;
+  }
+  .flow-board {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+  .flow-lane > p {
+    min-height: 0;
+  }
+  .flow-lane header .flow-arrow {
+    transform: rotate(90deg);
+  }
+  .flow-card,
+  .flow-empty {
+    min-height: 110px;
+  }
+  .flow-intro {
+    display: block;
+  }
+  .flow-detail {
+    padding: 1rem;
+  }
+}
+.entity-dialog {
+  margin: auto;
+}
+.entity-dialog-head > button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--soft);
+}
+.entity-room-filter button,
+.entity-empty button,
+.automation-view-switch button,
+.flow-add,
+.flow-detail > button,
+.flow-settings > button {
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+.entity-room-filter button {
+  border-radius: 24px;
+}
+.automation-view-switch button[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--bg);
+}
+.flow-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--bg);
+}
+.flow-lane + .flow-lane {
+  margin-top: 0;
+}
+.flow-detail .heading-row > button {
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+}
+.flow-detail pre {
+  overflow: auto;
+  max-height: 300px;
+  font-size: 0.85rem;
+  padding: 1rem;
+  background: var(--soft);
+}

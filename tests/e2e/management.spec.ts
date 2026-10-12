@@ -79,15 +79,24 @@ test("automations create visually and preserve advanced configuration on edit", 
   await expect(
     page.getByRole("button", { name: "Se over rutinen", exact: true }),
   ).toBeDisabled();
-  await page.getByRole("button", { name: /Pendellampe/ }).click();
+  await page
+    .getByRole("button", { name: "Velg lys eller stikkontakt", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /Pendellampe/ })
+    .click();
   await page
     .getByRole("button", { name: "Se over rutinen", exact: true })
     .click();
   await expect(page.locator(".routine-review")).toContainText("19:30");
   await page.getByRole("button", { name: "Tilbake", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: /Pendellampe/ }),
-  ).toHaveAttribute("aria-pressed", "true");
+    page.getByRole("button", {
+      name: "Velg lys eller stikkontakt",
+      exact: true,
+    }),
+  ).toContainText("Pendellampe");
   await page
     .getByRole("button", { name: "Se over rutinen", exact: true })
     .click();
@@ -102,10 +111,25 @@ test("automations create visually and preserve advanced configuration on edit", 
   const row = page
     .locator(".system-row")
     .filter({ has: page.getByRole("heading", { name, exact: true }) });
-  await row.getByRole("button", { name: "Rediger", exact: true }).click();
+  await expect(
+    page.getByLabel("Automasjonsflyt", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Rediger Når 1/ }).click();
+  await page.getByLabel("Klokkeslett", { exact: true }).fill("21:00:00");
   await page
-    .getByRole("button", { name: "Flere muligheter", exact: true })
+    .getByRole("button", { name: "Ferdig med kortet", exact: true })
     .click();
+  await page
+    .getByRole("button", { name: "Vanlig editor", exact: true })
+    .click();
+  await expect(page.getByLabel("Klokkeslett", { exact: true })).toHaveValue(
+    "21:00:00",
+  );
+  await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
+  await page.screenshot({
+    path: `../artifacts/${test.info().project.name}-automation-flow.png`,
+    fullPage: true,
+  });
   await page
     .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
     .click();
@@ -119,6 +143,9 @@ test("automations create visually and preserve advanced configuration on edit", 
   await field.fill(JSON.stringify(config, null, 2));
   await page
     .getByRole("button", { name: "Lagre automasjon", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Alle automasjoner", exact: true })
     .click();
   await row.getByRole("button", { name: "Rediger", exact: true }).click();
   await page
@@ -291,19 +318,37 @@ test("guided sensor transitions and sunset survive review without running device
     .getByRole("button", { name: "Ny automasjon", exact: true })
     .click();
   await page.getByRole("button", { name: /Når noe skjer hjemme/ }).click();
+  await page.getByRole("button", { name: "Velg sensor", exact: true }).click();
   await page
-    .getByRole("combobox", { name: "Sensor", exact: true })
-    .selectOption("binary_sensor.front_door");
+    .getByRole("dialog")
+    .getByRole("button", { name: /Ytterdør/ })
+    .click();
   await page
     .getByRole("button", { name: "Velg handling", exact: true })
     .click();
   await page
-    .getByRole("textbox", {
-      name: "Søk etter lys eller stikkontakt",
-      exact: true,
-    })
+    .getByRole("button", { name: "Velg lys eller stikkontakt", exact: true })
+    .click();
+  const picker = page.getByRole("dialog");
+  await picker
+    .getByRole("textbox", { name: "Søk etter navn eller rom", exact: true })
+    .fill("ingen-slik-enhet");
+  await expect(
+    picker.getByText("Ingen treff her", { exact: true }),
+  ).toBeVisible();
+  await picker
+    .getByRole("button", { name: "Vis alle enheter", exact: true })
+    .click();
+  await picker.getByRole("button", { name: "Stue", exact: true }).click();
+  await picker
+    .getByRole("textbox", { name: "Søk etter navn eller rom", exact: true })
     .fill("Pendellampe");
-  await page.getByRole("button", { name: /Pendellampe/ }).click();
+  await page.screenshot({
+    path: `../artifacts/${test.info().project.name}-entity-picker.png`,
+    fullPage: true,
+  });
+  await picker.getByRole("button", { name: /Pendellampe/ }).click();
+  await expect(picker).not.toBeVisible();
   await page.getByRole("button", { name: "Slå av", exact: true }).click();
   await page
     .getByRole("button", { name: "Se over rutinen", exact: true })
@@ -343,4 +388,94 @@ test("guided sensor transitions and sunset survive review without running device
   expect(config.actions).toEqual([
     { action: "light.turn_off", target: { entity_id: "light.living_pendant" } },
   ]);
+});
+
+test("flow cards add conditions and actions, reorder and preserve drafts across editors", async ({
+  page,
+}) => {
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Mer", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Ny automasjon", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Flere muligheter", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Legg til når", exact: true }).click();
+  await page.getByRole("button", { name: "Klokkeslett", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Legg til og hvis", exact: true })
+    .click();
+  await page.getByRole("button", { name: "En tilstand", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Enhet eller sensor", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("textbox", { name: "Søk etter navn eller rom", exact: true })
+    .fill("Ytterdør");
+  await dialog.getByRole("button", { name: /Ytterdør/ }).click();
+  await page
+    .getByRole("combobox", { name: "Er", exact: true })
+    .selectOption("off");
+  await page
+    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .click();
+  await expect(page.locator(".flow-conditions")).toContainText("Er lukket");
+  for (const action of ["Slå på lys", "Slå av lys"]) {
+    await page
+      .getByRole("button", { name: "Legg til så gjør", exact: true })
+      .click();
+    await page.getByRole("button", { name: action, exact: true }).click();
+    await page.getByRole("button", { name: "Mål", exact: true }).click();
+    await dialog.getByRole("button", { name: /Pendellampe/ }).click();
+    await page
+      .getByRole("button", { name: "Ferdig med kortet", exact: true })
+      .click();
+  }
+  await page.getByRole("button", { name: /Rediger Så gjør 2/ }).click();
+  await page.getByRole("button", { name: "Flytt opp", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .click();
+  await expect(page.locator(".flow-actions .flow-card").first()).toContainText(
+    "Slå av",
+  );
+  await page
+    .getByRole("button", { name: "Vanlig editor", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
+    .click();
+  const json = JSON.parse(
+    await page
+      .getByRole("textbox", { name: "Konfigurasjon (JSON)", exact: true })
+      .inputValue(),
+  );
+  expect(json.conditions).toEqual([
+    { condition: "state", entity_id: "binary_sensor.front_door", state: "off" },
+  ]);
+  expect(json.actions.map((r: any) => r.action)).toEqual([
+    "light.turn_off",
+    "light.turn_on",
+  ]);
+  await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
+  await page.getByRole("button", { name: /Rediger Så gjør 2/ }).click();
+  await page.getByRole("button", { name: "Fjern blokk", exact: true }).click();
+  await expect(page.locator(".flow-actions .flow-card")).toHaveCount(1);
+  await page
+    .getByRole("button", { name: "Alle automasjoner", exact: true })
+    .click();
+  await expect(
+    page.getByText("Forkaste ulagrede endringer?", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(page.locator(".flow-actions .flow-card")).toHaveCount(1);
 });
