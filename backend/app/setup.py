@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from .ha import HAError
 from .inventory import Inventory
 from .radio_status import controller_status
+from .zigbee_frontend import ZigbeeFrontend, parse_payload
 
 ACTIVE = {"starting", "searching", "interviewing", "security", "pin", "needs_stop", "stopping"}
 
@@ -26,7 +27,9 @@ class DeviceSetup:
         self.mqtt_online = False
         self.mqtt_info = {}
         self.responses = {}
+        self.response_commands = {}
         self.inventory = Inventory(self)
+        self.frontend = ZigbeeFrontend(self) if settings.zigbee2mqtt_transport == "frontend" else None
         self.timer = None
         self.zwave_subscription = None
         if store and store.get("pairing_active"):
@@ -69,6 +72,11 @@ class DeviceSetup:
             await self._ensure_mqtt()
 
     async def _ensure_mqtt(self):
+        if self.frontend:
+            await self.frontend.ensure()
+            return
+        if not self.ha.connected:
+            raise HAError("ha_disconnected")
         if self.mqtt_epoch == self.ha.epoch:
             return
         self.mqtt_online, self.mqtt_info = False, {}
@@ -114,13 +122,17 @@ class DeviceSetup:
         if event.get("event") == "smarti disconnected":
             self.mqtt_epoch = None
             self.mqtt_online = False
-            self.interrupted()
+            if self.session and self.session["provider"] == "zigbee2mqtt":
+                self.interrupted()
             return
-        try:
-            data = json.loads(event.get("payload", ""))
-        except (TypeError, ValueError):
-            return
+        data = parse_payload(event.get("payload", ""))
         topic = event.get("topic", "")
+        prefix = self.settings.zigbee2mqtt_base_topic + "/bridge/"
+        if topic not in {
+            prefix + part
+            for part in ["state", "info", "event", "response/permit_join", "response/device/remove"]
+        }:
+            return
         if topic.endswith("/bridge/state"):
             self.mqtt_online = data == "online" or isinstance(data, dict) and data.get("state") == "online"
         elif topic.endswith("/bridge/info") and isinstance(data, dict):
@@ -129,8 +141,15 @@ class DeviceSetup:
         elif topic.endswith(
             ("/bridge/response/permit_join", "/bridge/response/device/remove")
         ) and isinstance(data, dict):
-            future = self.responses.get(data.get("transaction"))
-            if future and not future.done():
+            transaction = data.get("transaction")
+            if not isinstance(transaction, str):
+                return
+            future = self.responses.get(transaction)
+            if (
+                future
+                and not future.done()
+                and topic == prefix + "response/" + self.response_commands.get(transaction, "")
+            ):
                 future.set_result(data.get("status") == "ok")
         elif topic.endswith("/bridge/event") and isinstance(data, dict) and not event.get("retain"):
             s = self.session
@@ -219,7 +238,7 @@ class DeviceSetup:
                 {"id": p, "status": "demo", "entries": [], "reason": "demo_no_radio"}
                 for p in ["zigbee2mqtt", "zwave_js"]
             ]
-        if not self.ha.connected:
+        if not self.ha.connected and not self.frontend:
             return [
                 {"id": p, "status": "unavailable", "entries": [], "reason": "ha_disconnected"}
                 for p in ["zigbee2mqtt", "zwave_js"]
@@ -234,6 +253,7 @@ class DeviceSetup:
                     "status": "ready" if ready else "unavailable",
                     "entries": [],
                     "reason": "" if ready else "mqtt_bridge_unavailable",
+                    "transport": self.settings.zigbee2mqtt_transport,
                 }
             )
         except (HAError, TimeoutError):
@@ -242,10 +262,13 @@ class DeviceSetup:
                     "id": "zigbee2mqtt",
                     "status": "unavailable",
                     "entries": [],
-                    "reason": "mqtt_api_unavailable",
+                    "reason": self.frontend.error if self.frontend else "mqtt_api_unavailable",
+                    "transport": self.settings.zigbee2mqtt_transport,
                 }
             )
         try:
+            if not self.ha.connected:
+                raise HAError("ha_disconnected")
             entries = await self.ha.request("config_entries/get", domain="zwave_js")
             entries = [
                 {"id": e["entry_id"], "name": e.get("title", "Z-Wave JS")}
@@ -266,26 +289,49 @@ class DeviceSetup:
             )
         return result
 
+    async def zigbee_status(self):
+        error = "demo_no_radio" if self.settings.mode == "demo" else ""
+        if not error:
+            try:
+                await self.ensure_mqtt()
+            except (HAError, TimeoutError):
+                error = self.frontend.error if self.frontend else "mqtt_api_unavailable"
+        return {
+            "transport": self.settings.zigbee2mqtt_transport,
+            "online": self.mqtt_online,
+            "info_received": bool(self.mqtt_info),
+            "devices_received": self.inventory.devices is not None,
+            "device_count": len(self.inventory.devices or {}),
+            "version": self.mqtt_info.get("version"),
+            "permit_join": self.mqtt_info.get("permit_join"),
+            "error": error,
+        }
+
     async def mqtt_command(self, command, payload, timeout=8):
         transaction = str(uuid.uuid4())
         future = asyncio.get_running_loop().create_future()
         self.responses[transaction] = future
+        self.response_commands[transaction] = command
         try:
-            await self.ha.request(
-                "call_service",
-                domain="mqtt",
-                service="publish",
-                service_data={
-                    "topic": f"{self.settings.zigbee2mqtt_base_topic}/bridge/request/{command}",
-                    "payload": json.dumps(payload | {"transaction": transaction}),
-                    "qos": 0,
-                    "retain": False,
-                },
-            )
+            if self.frontend:
+                await self.frontend.send(command, payload | {"transaction": transaction})
+            else:
+                await self.ha.request(
+                    "call_service",
+                    domain="mqtt",
+                    service="publish",
+                    service_data={
+                        "topic": f"{self.settings.zigbee2mqtt_base_topic}/bridge/request/{command}",
+                        "payload": json.dumps(payload | {"transaction": transaction}),
+                        "qos": 0,
+                        "retain": False,
+                    },
+                )
             if not await asyncio.wait_for(future, timeout):
                 raise HAError("permit_rejected")
         finally:
             self.responses.pop(transaction, None)
+            self.response_commands.pop(transaction, None)
 
     async def permit(self, seconds):
         await self.mqtt_command("permit_join", {"time": seconds})
@@ -494,7 +540,7 @@ class DeviceSetup:
                 s["status"] = "stopping"
             self.persist()
             try:
-                if not self.ha.connected:
+                if not self.ha.connected and not (s["provider"] == "zigbee2mqtt" and self.frontend):
                     raise HAError("disconnected")
                 if s["provider"] == "zigbee2mqtt":
                     await self.ensure_mqtt()
@@ -574,3 +620,6 @@ class DeviceSetup:
                 await self.timer
         if self.session and self.session.get("radio_open"):
             await self.stop(self.session["id"])
+
+        if self.frontend:
+            await self.frontend.close()

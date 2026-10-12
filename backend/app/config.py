@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +20,9 @@ class Settings(BaseSettings):
     ingress_proxy: str = "172.30.32.2"
     static_dir: Path = Path("frontend/dist")
     zigbee2mqtt_base_topic: str = "zigbee2mqtt"
+    zigbee2mqtt_transport: Literal["ha_mqtt", "frontend"] = "ha_mqtt"
+    zigbee2mqtt_server: str = ""
+    zigbee2mqtt_auth_token: str = Field(default="", repr=False)
     mobile_enabled: bool = False
     mobile_url: str = ""
     session_hours: int = 12
@@ -32,6 +36,21 @@ class Settings(BaseSettings):
 
     def validate_runtime(self):
         from urllib.parse import urlparse
+
+        if self.zigbee2mqtt_transport == "frontend":
+            server = urlparse(self.zigbee2mqtt_server)
+            if (
+                server.scheme not in {"http", "https"}
+                or not server.hostname
+                or server.username
+                or server.password
+                or server.query
+                or server.fragment
+                or server.port == 0
+            ):
+                raise ValueError(
+                    "Zigbee2MQTT server must be an HTTP(S) frontend URL without credentials or query"
+                )
 
         topic = self.zigbee2mqtt_base_topic
         if not topic or len(topic) > 200 or any(c in topic for c in "#+\x00") or topic.endswith("/"):

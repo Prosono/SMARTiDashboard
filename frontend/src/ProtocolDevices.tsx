@@ -1,3 +1,4 @@
+import { ZigbeeStatus } from "./ZigbeeStatus";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -144,6 +145,7 @@ export function ProtocolDevices({
           </p>
         </div>
       </div>
+      {admin && provider === "zigbee2mqtt" && <ZigbeeStatus lang={lang} />}
       <details className="protocol-note">
         <summary>
           {no ? "Om tilkobling og signal" : "About connection and signal"}

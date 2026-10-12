@@ -8,6 +8,7 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import { api, ApiError } from "./api";
+import { ZigbeeStatus } from "./ZigbeeStatus";
 import { ControllerStatus } from "./ControllerStatus";
 
 type Provider = {
@@ -15,6 +16,7 @@ type Provider = {
   status: string;
   entries: { id: string; name: string }[];
   reason: string;
+  transport?: string;
 };
 type Pairing = {
   operation?: string;
@@ -42,6 +44,8 @@ const copy = {
     ready: "Klar til å legge til",
     missing: "Ikke tilgjengelig",
     demo: "Demohjem – ingen radio er koblet til.",
+    frontend:
+      "Kontroller Zigbee2MQTT-serverens adresse og eventuell tilgangsnøkkel i SMARTi-konfigurasjonen. Bruk samme server som Zigbee2MQTT Proxy.",
     mqtt: "Kontroller at Zigbee2MQTT og MQTT kjører. Base topic i SMARTi-konfigurasjonen må være lik Zigbee2MQTT sitt base topic.",
     zwave:
       "Kontroller at Z-Wave JS-integrasjonen og kontrolleren er tilkoblet Home Assistant.",
@@ -102,6 +106,8 @@ const copy = {
     ready: "Ready to add",
     missing: "Unavailable",
     demo: "Demo home — no radio is connected.",
+    frontend:
+      "Check the Zigbee2MQTT server address and optional access token in SMARTi configuration. Use the same server as Zigbee2MQTT Proxy.",
     mqtt: "Check that Zigbee2MQTT and MQTT are running. SMARTi's base topic must match the Zigbee2MQTT base topic.",
     zwave:
       "Check that the Z-Wave JS integration and controller are connected to Home Assistant.",
@@ -367,6 +373,7 @@ export function DeviceSetup({
           void providers.refetch();
         }}
       />
+      <ZigbeeStatus lang={lang} />
       <div className="pairing-providers">
         {providers.isPending && <LoaderCircle aria-label="Loading" />}
         {providers.data?.map((p) => (
@@ -382,7 +389,13 @@ export function DeviceSetup({
                     : t.missing}
               </p>
               {p.status === "unavailable" && (
-                <p>{p.id === "zigbee2mqtt" ? t.mqtt : t.zwave}</p>
+                <p>
+                  {p.id === "zigbee2mqtt"
+                    ? p.transport === "frontend"
+                      ? t.frontend
+                      : t.mqtt
+                    : t.zwave}
+                </p>
               )}
               {p.id === "zwave_js" && p.entries.length > 1 && (
                 <label>

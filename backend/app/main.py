@@ -379,6 +379,10 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         except (HAError, TimeoutError):
             raise HTTPException(503, "removal_unconfirmed")
 
+    @app.get("/api/setup/zigbee")
+    async def zigbee_status(u=Depends(admin)):
+        return await setup.zigbee_status()
+
     @app.get("/api/setup/controllers")
     async def radio_controllers(current=Depends(admin)):
         try:

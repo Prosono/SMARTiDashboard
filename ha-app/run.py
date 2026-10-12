@@ -12,6 +12,9 @@ if options_file.exists():
         'SMARTI_ADDITIONAL_ORIGINS': json.dumps(options.get('additional_origins', [])),
         'SMARTI_ALLOW_HTTP_INGRESS': str(options.get('allow_http_ingress', False)).lower(),
         'SMARTI_ZIGBEE2MQTT_BASE_TOPIC': options.get('zigbee2mqtt_base_topic', 'zigbee2mqtt'),
+        'SMARTI_ZIGBEE2MQTT_TRANSPORT': options.get('zigbee2mqtt_transport', 'ha_mqtt'),
+        'SMARTI_ZIGBEE2MQTT_SERVER': options.get('zigbee2mqtt_server', ''),
+        'SMARTI_ZIGBEE2MQTT_AUTH_TOKEN': options.get('zigbee2mqtt_auth_token', ''),
         'SMARTI_BOOTSTRAP_SECRET': options.get('bootstrap_secret', ''),
     })
 from app.run import main

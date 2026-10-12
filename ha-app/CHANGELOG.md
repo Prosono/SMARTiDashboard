@@ -1,3 +1,7 @@
+# 0.2.5
+
+Support both HA MQTT and an explicitly configured external Zigbee2MQTT frontend WebSocket, including setups using Zigbee2MQTT Proxy. Add backend-only server/token options and redacted connection diagnostics. Pairing, stop and removal require correlated acknowledgements; no command is replayed after reconnect. HA entity controls still require HA integration. Accept legacy plain online/offline messages and preserve bounded, sanitized telemetry arriving before device inventory. Frontend sample age remains unknown because the stream does not identify cached samples. Hardware/HAOS validation remains pending.
+
 # 0.2.4
 
 Add actual Z-Wave controller state, redacted diagnostics and an explicitly confirmed stop operation for inclusion/exclusion that no longer belongs to a SMARTi session. Distinguish disconnected, unknown and busy states; support named and numeric state values. This supplies recovery and diagnostic tools; the customer's persistent busy state has not been reproduced on hardware.

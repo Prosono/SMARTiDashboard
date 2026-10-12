@@ -6,6 +6,11 @@ test("protocol inventory, confirmed removal and add wizard", async ({
   let session: any = null;
   let removed = false;
   let calls = 0;
+  let diagnosticsCalls = 0;
+  await page.route("**/api/setup/zigbee", (r) => {
+    diagnosticsCalls++;
+    return r.fulfill({ json: { transport: "frontend", online: true, info_received: true, devices_received: true, device_count: 1, error: "" } });
+  });
   await page.route("**/api/session", (r) =>
     r.fulfill({ json: { name: "tester", role: "admin", csrf: "fixture" } }),
   );
@@ -146,6 +151,14 @@ test("protocol inventory, confirmed removal and add wizard", async ({
   await page.getByRole("button", { name: "Enheter", exact: true }).click();
   await page.getByRole("button", { name: "Zigbee", exact: true }).click();
   await expect(page.getByText("LQI 185/255", { exact: false })).toBeVisible();
+  await page.getByText("Zigbee-forbindelse · Tilkoblet", { exact: true }).click();
+  await expect(page.getByText("Direkte til Zigbee2MQTT-serveren", { exact: true })).toBeVisible();
+  const beforeCheck = diagnosticsCalls;
+  await page.getByRole("button", { name: "Sjekk forbindelse" }).click();
+  await expect.poll(() => diagnosticsCalls).toBeGreaterThan(beforeCheck);
+  expect(calls).toBe(0);
+  expect(session).toBeNull();
+
   await expect(page.getByText("Tilkoblet", { exact: true })).toBeVisible();
   await page.screenshot({
     path: `../artifacts/${test.info().project.name}-protocol-devices.png`,

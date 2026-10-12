@@ -34,12 +34,39 @@ If SMARTi is absent, refresh the app store and confirm that the repository is ac
 ## Data and verification
 Back up the `/data` database with the app stopped. HA backups and radio-network backups are separate. The containers are build- and smoke-tested; real HAOS/Ingress, registry permissions and physical devices still need installation validation. No production-readiness claim. See the repository's docs/SECURITY.md for console account recovery and docs/DEPLOYMENT.md for optional standalone LAN HTTPS.
 
-## Add devices from SMARTi (0.2.1)
+## Add devices from SMARTi (0.2.5)
 
-Sign in as a SMARTi administrator and open **Add device**. Zigbee2MQTT must already run with HA MQTT integration enabled. The default base topic is `zigbee2mqtt`; if yours differs, set `zigbee2mqtt_base_topic` in this app configuration and restart SMARTi. No broker password is entered in SMARTi. Z-Wave JS must already have a loaded integration and connected controller; select the controller if more than one is configured.
+Sign in as a SMARTi administrator and open **Add device**. Zigbee2MQTT must already run. Select one of the two connection methods below. Z-Wave JS must already have a loaded integration and connected controller; select the controller if more than one is configured.
 
 Start pairing, then activate pairing on a spare device following its manufacturer instructions. SMARTi follows bridge/controller events and provides stop, security-grant approval and five-digit Z-Wave DSK PIN entry. Check the DSK against the device label. Only admins can use this flow. Demo mode never opens a radio.
 
 The search window is bounded to 120 seconds; Zigbee2MQTT receives its own 120-second permit-join duration. Z-Wave stop is sent by the SMARTi backend timer. On disconnect, timeout or forced app termination, stop may be unconfirmed: the UI reports uncertainty and blocks another start. A persisted marker survives restart; reconnect and explicitly stop before starting another search. Never treat a request acknowledgment or HA device-registration event alone as completed pairing. A low-security Z-Wave result is shown as a warning. This has contract/browser coverage, but actual radio validation is still required.
 
 Bluetooth, ZHA and Matter commissioning are not included in this version. Bluetooth setup depends on the specific device integration. Existing devices from these integrations continue to be imported normally when their controls are supported.
+
+## Zigbee2MQTT: HA MQTT or an external server / Proxy
+
+A USB or Ethernet/Wi-Fi coordinator is managed by Zigbee2MQTT, not directly by SMARTi. Zigbee2MQTT Proxy only opens the external frontend; it does not connect HA to that server's MQTT broker. SMARTi supports both connections explicitly:
+
+**Existing HA MQTT (default):**
+```yaml
+zigbee2mqtt_transport: ha_mqtt
+zigbee2mqtt_base_topic: zigbee2mqtt
+```
+HA's MQTT integration must connect to the same broker as Zigbee2MQTT. Set the base topic to the actual `mqtt.base_topic`. No broker password is entered in SMARTi.
+
+**External Zigbee2MQTT, including installations using Zigbee2MQTT Proxy:**
+```yaml
+zigbee2mqtt_transport: frontend
+zigbee2mqtt_server: "http://192.168.1.50:8080"
+zigbee2mqtt_auth_token: ""
+```
+Replace the example with the same `server` address used by Zigbee2MQTT Proxy. Use the frontend URL (including any configured base path), **not** the coordinator's `tcp://…:6638` address, an HA Ingress URL, or the Proxy sidebar link. SMARTi connects server-to-server to `/api` over WebSocket. `zigbee2mqtt_base_topic` is not needed for routing in this mode; the external frontend handles its own base topic. No new inbound port is exposed by SMARTi.
+
+If Zigbee2MQTT frontend has an `auth_token`, enter that same token in `zigbee2mqtt_auth_token` (password field). Otherwise leave it empty. This is not a SMARTi bootstrap secret, HA token or MQTT password. Keep it private. The server URL/token stay on the backend and are not returned in diagnostics. HTTPS verifies the server certificate; HTTP should only be used on a trusted local network. SMARTi's container must be able to reach the configured server.
+
+Save and restart SMARTi. Under **Devices → Zigbee → Zigbee connection**, choose **Check connection**. It reads bridge status and the device list without opening pairing. Then test start/stop with a spare Zigbee device. Direct mode supports inventory, pairing and removal even without HA MQTT; device controls and HA sensor readings still require the devices to be integrated into HA. The frontend API does not distinguish cached device samples, so SMARTi does not present their receipt time as a fresh radio measurement. Availability may remain unknown if reporting is disabled in Zigbee2MQTT.
+
+Contract tests cover both transports, authentication failures, reply correlation and disconnect recovery. Physical coordinator/HAOS verification is still required. Commands are never replayed when a connection is restored.
+
+References: [Zigbee2MQTT Proxy](https://github.com/zigbee2mqtt/hassio-zigbee2mqtt/tree/master/zigbee2mqtt-proxy), [frontend configuration](https://www.zigbee2mqtt.io/guide/configuration/frontend.html).

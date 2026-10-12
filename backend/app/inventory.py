@@ -2,7 +2,6 @@
 
 import base64
 import hashlib
-import json
 import re
 import time
 from urllib.parse import quote
@@ -11,6 +10,7 @@ from fastapi import HTTPException
 
 from .ha import HAError
 from .radio_status import controller_status
+from .zigbee_frontend import parse_payload
 
 
 class Inventory:
@@ -18,10 +18,12 @@ class Inventory:
         self.setup = setup
         self.devices = None
         self.telemetry = {}
+        self.pending = {}
 
     def reset(self):
         self.devices = None
         self.telemetry.clear()
+        self.pending.clear()
 
     def event(self, event):
         base = self.setup.settings.zigbee2mqtt_base_topic + "/"
@@ -29,10 +31,7 @@ class Inventory:
         if not topic.startswith(base):
             return
         topic = topic[len(base) :]
-        try:
-            data = json.loads(event.get("payload", ""))
-        except (ValueError, TypeError):
-            return
+        data = parse_payload(event.get("payload", ""))
         if topic == "bridge/devices" and isinstance(data, list):
             self.devices = {
                 d["ieee_address"]: {
@@ -54,26 +53,37 @@ class Inventory:
                 if isinstance(d, dict) and isinstance(d.get("ieee_address"), str)
             }
             self.telemetry = {k: v for k, v in self.telemetry.items() if k in self.devices}
-        elif self.devices:
             for key, device in self.devices.items():
-                if topic not in [device["name"], device["name"] + "/availability"]:
-                    continue
-                values = self.telemetry.setdefault(key, {})
-                if topic.endswith("/availability"):
-                    state = data.get("state") if isinstance(data, dict) else data
-                    values["status"] = state if state in ["online", "offline"] else "unknown"
-                elif isinstance(data, dict):
-                    lqi = data.get("linkquality")
-                    if type(lqi) in (int, float) and 0 <= lqi <= 255:
-                        values["lqi"] = lqi
-                        values["sample_at"] = None if event.get("retain") else time.time()
-                break
+                values = self.pending.pop(device["name"], {})
+                self.telemetry.setdefault(key, {}).update(values)
+        elif not topic.startswith("bridge/"):
+            name = topic.removesuffix("/availability")
+            values = {}
+            if topic.endswith("/availability"):
+                state = data.get("state") if isinstance(data, dict) else data
+                if state in ("online", "offline"):
+                    values["status"] = state
+            elif isinstance(data, dict):
+                lqi = data.get("linkquality")
+                if type(lqi) in (int, float) and 0 <= lqi <= 255:
+                    values = {"lqi": lqi, "sample_at": None if event.get("retain") else time.time()}
+            if not values:
+                return
+            for key, device in (self.devices or {}).items():
+                if name == device["name"]:
+                    self.telemetry.setdefault(key, {}).update(values)
+                    return
+            # Retained delivery order is unspecified. Cache only bounded, safe diagnostics.
+            if len(name) <= 200:
+                if name not in self.pending and len(self.pending) >= 512:
+                    self.pending.pop(next(iter(self.pending)))
+                self.pending.setdefault(name, {}).update(values)
 
     async def list(self, provider):
         s, ha = self.setup, self.setup.ha
         if s.settings.mode == "demo":
             return {"status": "demo", "devices": []}
-        if not ha.connected:
+        if not ha.connected and not (provider == "zigbee2mqtt" and s.frontend):
             return {"status": "unavailable", "devices": []}
         try:
             if provider == "zigbee2mqtt":

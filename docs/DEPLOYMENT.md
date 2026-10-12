@@ -35,3 +35,7 @@ The repository uses on-device Docker builds, not externally published images. Up
 
 ## Backup
 Stop SMARTi before a filesystem backup, then copy `smarti-live.sqlite3` (or `smarti-demo.sqlite3`) from its data directory. Protect this file: it contains password hashes and sessions. Restore into the same path and mode with ownership restricted to the service. Revoke sessions using the recovery tool after restoring a backup. Keep HA backups and Z-Wave/Zigbee network backups separately; SMARTi metadata cannot restore radio networks. HA state/registry cache is rebuilt on connection.
+
+## Zigbee2MQTT transport
+
+Version 0.2.5 supports HA MQTT (default) and a direct connection to an external Zigbee2MQTT frontend, including setups using Zigbee2MQTT Proxy. See [transport configuration and verification](../ha-app/DOCS.md#zigbee2mqtt-ha-mqtt-or-an-external-server--proxy). Standalone deployments use `SMARTI_ZIGBEE2MQTT_TRANSPORT=frontend`, `SMARTI_ZIGBEE2MQTT_SERVER=http://your-zigbee2mqtt-host:8080` and optional `SMARTI_ZIGBEE2MQTT_AUTH_TOKEN`. These are server-side settings; don't use the coordinator's TCP socket address. HA entity controls continue to use the HA integration.
