@@ -1,0 +1,20 @@
+services:
+  smarti:
+    build: ha-app
+    ports:
+      - "8443:8443"
+    env_file: .env
+    environment:
+      SMARTI_DATA_DIR: /data
+      SMARTI_TLS_CERT: /certs/server.crt
+      SMARTI_TLS_KEY: /certs/server.key
+    volumes:
+      - smarti-data:/data
+      - ${SMARTI_CERT_DIR:?Set SMARTI_CERT_DIR to a directory containing server.crt and server.key}:/certs:ro
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  smarti-data:

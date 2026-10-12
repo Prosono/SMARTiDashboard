@@ -1,0 +1,44 @@
+import {test,expect} from '../../frontend/node_modules/@playwright/test';
+test.beforeEach(async({page})=>{
+ await page.goto('/');
+ await page.getByLabel('Brukernavn',{exact:true}).fill('tester');
+ await page.getByLabel('Passord',{exact:true}).fill('test-password-not-for-live');
+ await page.getByRole('button',{name:'Logg inn',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Velkommen hjem.'})).toBeVisible();
+});
+test('daily journey, persisted favorite, command and room filter',async({page})=>{
+ await expect(page.getByText('Du utforsker et eksempel. Ingen ekte enheter blir styrt.')).toBeVisible();
+ await page.screenshot({path:`../artifacts/${test.info().project.name}-light.png`,fullPage:true});
+ const card=page.locator('article').filter({has:page.getByRole('heading',{name:'Pendellampe',exact:true})});
+ const toggle=card.getByRole('switch');
+ const before=await toggle.getAttribute('aria-checked');
+ await toggle.click();
+ await expect(toggle).toHaveAttribute('aria-checked',before==='true'?'false':'true');
+ await expect(card.getByRole('status')).toHaveText('Oppdatert i demo.');
+ await page.getByRole('navigation').getByRole('button',{name:'Enheter',exact:true}).click();
+ await page.getByLabel('Søk etter enhet eller rom').fill('Stikkontakt');
+ await expect(page.locator('article')).toHaveCount(1);
+ await expect(page.getByRole('heading',{name:'Stikkontakt',exact:true})).toBeVisible();
+ await page.getByRole('navigation').getByRole('button',{name:'Rom',exact:true}).click();
+ await page.getByLabel('Søk etter enhet eller rom').fill('');
+ await page.getByRole('button',{name:'Soverom',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Nattbord',exact:true})).toBeVisible();
+ await expect(page.getByRole('switch',{name:'Nattbord: På'})).toBeDisabled();
+ await expect(page.locator('body')).toHaveJSProperty('scrollWidth',await page.locator('body').evaluate(e=>e.clientWidth));
+});
+test('themes, language, no sensitive cache and responsive navigation',async({page})=>{
+ await page.getByRole('button',{name:'Mørkt',exact:true}).focus();
+ await page.keyboard.press('Enter');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
+ await page.getByLabel('Utseende').selectOption('dark');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ await page.getByLabel('Språk').selectOption('en');
+ await expect(page.getByRole('heading',{name:'Settings',exact:true})).toBeVisible();
+ const response=await page.request.get('/api/home');
+ expect(response.headers()['cache-control']).toBe('no-store');
+ expect(await page.evaluate(()=>navigator.serviceWorker.getRegistrations().then(v=>v.length))).toBe(0);
+ await page.getByRole('navigation').getByRole('button',{name:'Home',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Welcome home.'})).toBeVisible();
+ await page.screenshot({path:`../artifacts/${test.info().project.name}-dark.png`,fullPage:true});
+});

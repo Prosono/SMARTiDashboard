@@ -1,0 +1,20 @@
+name: Checks
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: make setup
+      - run: make lint test package
+      - run: cd frontend && npx playwright install --with-deps chromium
+      - run: make e2e
+      - run: docker build --platform linux/amd64 -t smarti:test ha-app

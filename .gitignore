@@ -1,0 +1,16 @@
+node_modules/
+frontend/dist/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+.env
+.data/
+artifacts/
+ha-app/frontend/
+ha-app/backend/
+playwright-report/
+test-results/
+*.egg-info/
+*.tsbuildinfo
