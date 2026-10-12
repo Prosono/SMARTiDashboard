@@ -1,5 +1,12 @@
 # Implementation status — 2026-10-12
 
+## 0.3.4 — grouped integrations
+
+Integration connections are grouped by domain into collapsed cards, with unique device counts, issue summaries and searchable device/room names. Expanding shows devices and existing per-entry rename/reload/enable/disable operations. Device data is explicitly allowlisted and supports both legacy config_entries and current config_entry_id registry fields.
+
+Brand images use HA's authenticated [local brands API](https://developers.home-assistant.io/blog/2026/02/24/brands-proxy-api/) via a size-bounded PNG backend handler, without exposing HA credentials. Missing/older API images fall back to the [official brand CDN](https://github.com/home-assistant/brands), then a local icon. CDN requests require internet; the local HA API can serve its cached/custom images. Validation covers device association and data filtering, bounded image transport, mobile/desktop grouping, expansion, search, logo fallback and confirmed admin actions. No customer installation was changed. Release 0.3.4 is prepared locally, not published.
+
+
 ## 0.3.3 — structured advanced flows
 
 Recursive source-path projection now renders choose/default, if/then/else, repeat variants, parallel/sequence, AND/OR/NOT and wait-trigger branches. Delay, stop, variables, scenes, events and template conditions have explicit summaries. Nested steps can be inspected and common fields edited, with branch additions and array-step removal. Immutable path replacement retains every untouched field; unknown fields remain available through source editing. Templates remain literal expressions; blueprints are still handled in the full editor. Deep branches collapse progressively and rendering is bounded at 12 levels, with access to complete source.

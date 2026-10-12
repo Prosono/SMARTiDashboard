@@ -168,9 +168,18 @@ test("integrations and branded updates use explicit confirmation", async ({
   await page
     .getByRole("button", { name: "Integrasjoner", exact: true })
     .click();
+  await expect(
+    page.getByRole("button", { name: "Deaktiver", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Utvid", exact: true }).click();
+  await expect(page.locator(".integration-devices")).toContainText(
+    "Pendellampe",
+  );
   await page.getByRole("button", { name: "Deaktiver", exact: true }).click();
   await page.getByRole("button", { name: "Bekreft", exact: true }).click();
-  await expect(page.getByText("Deaktivert", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".integration-entry").getByText("Deaktivert", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Aktiver", exact: true }).click();
   await page.getByRole("button", { name: "Bekreft", exact: true }).click();
   await page
@@ -633,4 +642,89 @@ test("advanced branches render recursively and deep edits round trip unchanged s
   expect(saved).toEqual(expected);
   await page.getByRole("button", { name: "Slett", exact: true }).click();
   await page.getByRole("button", { name: "Bekreft", exact: true }).click();
+});
+
+test("integrations group connections and expand devices with logo fallback", async ({
+  page,
+}) => {
+  await page.route("**/api/manage/integrations", (r) =>
+    r.fulfill({
+      json: [
+        {
+          entry_id: "one",
+          domain: "hue",
+          title: "Bro i stua",
+          state: "loaded",
+          disabled_by: null,
+          devices: 1,
+          device_items: [
+            { id: "lamp", name: "Leselampe", area: "Stue", model: "Hue White" },
+          ],
+        },
+        {
+          entry_id: "two",
+          domain: "hue",
+          title: "Bro i garasjen",
+          state: "setup_retry",
+          disabled_by: null,
+          devices: 1,
+          device_items: [
+            { id: "garage", name: "Garasjelys", area: "Garasje", model: null },
+          ],
+        },
+        {
+          entry_id: "weather",
+          domain: "met",
+          title: "Værmelding",
+          state: "loaded",
+          disabled_by: null,
+          devices: 0,
+          device_items: [],
+        },
+      ],
+    }),
+  );
+  await page.route("**/api/manage/integration-brands/*", (r) =>
+    r.fulfill({ status: 404 }),
+  );
+  await page.route("https://brands.home-assistant.io/**", (r) =>
+    r.fulfill({
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1XkAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    }),
+  );
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Mer", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Integrasjoner", exact: true })
+    .click();
+  await expect(page.locator(".integration-card")).toHaveCount(2);
+  const hue = page
+    .locator(".integration-card")
+    .filter({
+      has: page.getByRole("heading", { name: "Philips Hue", exact: true }),
+    });
+  await expect(hue).toContainText("2 oppsett · 2 enheter");
+  await expect(hue).toContainText("1 trenger oppmerksomhet");
+  await expect(
+    hue.getByRole("img", { name: "hue", exact: true }),
+  ).toHaveAttribute("src", "https://brands.home-assistant.io/hue/icon.png");
+  await hue.getByRole("button", { name: "Utvid", exact: true }).click();
+  await expect(hue.getByText("Leselampe", { exact: true })).toBeVisible();
+  await expect(hue.getByText("Garasjelys", { exact: true })).toBeVisible();
+  await page.screenshot({
+    path: `../artifacts/${test.info().project.name}-integrations.png`,
+    fullPage: true,
+  });
+  await hue.getByRole("button", { name: "Skjul", exact: true }).click();
+  await expect(page.getByText("Leselampe", { exact: true })).toHaveCount(0);
+  await page
+    .getByRole("textbox", { name: "Søk i integrasjoner", exact: true })
+    .fill("Garasjelys");
+  await expect(page.locator(".integration-card")).toHaveCount(1);
 });

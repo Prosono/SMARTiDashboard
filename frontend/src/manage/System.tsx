@@ -183,7 +183,15 @@ export function Integrations({ lang }: { lang: string }) {
                   <h2>
                     {entries.length === 1
                       ? entries[0].title
-                      : domain.replaceAll("_", " ")}
+                      : (
+                          {
+                            hue: "Philips Hue",
+                            mqtt: "MQTT",
+                            zwave_js: "Z-Wave JS",
+                            bluetooth: "Bluetooth",
+                            zha: "Zigbee Home Automation",
+                          } as Record<string, string>
+                        )[domain] || domain.replaceAll("_", " ")}
                   </h2>
                   <p>
                     {entries.length} {t("oppsett", "connections")} · {devices}{" "}

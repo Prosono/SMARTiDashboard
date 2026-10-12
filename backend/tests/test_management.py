@@ -283,3 +283,51 @@ async def test_rest_keeps_backend_token_and_redacts_errors(monkeypatch):
     assert str(observed[0].url) == "http://supervisor/core/api/config/automation/config/123"
     assert observed[0].headers["authorization"] == "Bearer backend-only"
     assert json.loads(observed[0].content) == {"alias": "test"}
+
+
+def test_integration_device_membership_legacy_and_current(live):
+    client, ha = live
+    ha.devices = {
+        "first": {
+            "id": "first",
+            "config_entries": ["abc"],
+            "config_entry_id": "abc",
+            "name": "Lamp",
+            "name_by_user": "My lamp",
+            "area_id": "living",
+            "secret": "hidden",
+        },
+        "second": {"id": "second", "config_entry_id": "abc", "name": "Socket"},
+        "other": {"id": "other", "config_entry_id": "different", "name": "Other"},
+    }
+    entry = client.get("/api/manage/integrations").json()[0]
+    assert entry["devices"] == 2
+    assert [d["name"] for d in entry["device_items"]] == ["My lamp", "Socket"]
+    assert "hidden" not in str(entry)
+    assert "never-expose" not in str(entry)
+
+
+@pytest.mark.asyncio
+async def test_brand_image_bounded_authenticated_no_redirects(monkeypatch):
+    original = httpx.AsyncClient
+    observed = []
+    png = b"\x89PNG\r\n\x1a\nfixture"
+
+    def reply(request):
+        observed.append(request)
+        return httpx.Response(200, content=png)
+
+    monkeypatch.setattr(
+        httpx, "AsyncClient", lambda **kw: original(transport=httpx.MockTransport(reply), **kw)
+    )
+    ha = HomeAssistant("http://ha.local:8123", "private-token")
+    assert await ha.brand_image("hue") == png
+    assert observed[0].headers["authorization"] == "Bearer private-token"
+    assert observed[0].url.path == "/api/brands/integration/hue/icon.png"
+    with pytest.raises(HAError):
+        await ha.brand_image("../secrets")
+    assert len(observed) == 1
+    for body in [b"<html>not an image</html>", b"\x89PNG\r\n\x1a\n" + b"x" * 2_000_000]:
+        png = body
+        with pytest.raises(HAError):
+            await ha.brand_image("hue")

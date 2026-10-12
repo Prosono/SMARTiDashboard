@@ -3,8 +3,8 @@
 import asyncio
 import contextlib
 import json
-import re
 import random
+import re
 from datetime import UTC, datetime
 
 import httpx

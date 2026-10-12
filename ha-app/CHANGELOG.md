@@ -1,3 +1,7 @@
+# 0.3.4
+
+Group integration connections into compact, expandable cards with Home Assistant brand images. Fetch local/custom brand icons through an authenticated backend request, fall back to the official brands CDN on older HA installations, and use an icon when neither source is available. Expand each card to inspect connection-specific devices, rooms, models and administration actions. Search also matches devices and rooms. Count unique devices across connections and support legacy/current HA device registry associations. Existing automation flow improvements are included.
+
 # 0.3.3
 
 Render nested choose/default, if/then/else, repeat count/for_each/while/until, parallel/sequence, logical conditions and wait-trigger branches as expandable flows. Show delay, stop, variables, events and template conditions explicitly. Add targeted nested-step editing and branch additions/removal while preserving untouched configuration, templates and unknown fields. Give advanced action flows full width with quieter surfaces and connection rails. Unsupported fields and blueprints remain accessible through full configuration editing; templates are never evaluated in the browser. No real HA automations were executed during validation.
