@@ -1727,3 +1727,180 @@ textarea:focus-visible {
 .canvas-wire-actions {
   color: #568d72;
 }
+
+/* Color belongs to the role, so ports, cards and wires tell the same story. */
+.flow-workspace {
+  --flow-event: #c14d19;
+  --flow-condition: #2868b0;
+  --flow-action: #207b5e;
+  --flow-start: #67705a;
+}
+.flow-workspace.palette-calm {
+  --flow-event: #a74513;
+  --flow-condition: #316b91;
+  --flow-action: #35715a;
+  --flow-start: #626958;
+}
+.canvas-triggers {
+  --node-color: var(--flow-event);
+}
+.canvas-conditions {
+  --node-color: var(--flow-condition);
+}
+.canvas-actions {
+  --node-color: var(--flow-action);
+}
+.canvas-gate {
+  --node-color: var(--flow-start);
+}
+.canvas-wire-triggers {
+  color: var(--flow-event);
+}
+.canvas-wire-conditions {
+  color: var(--flow-condition);
+}
+.canvas-wire-actions {
+  color: var(--flow-action);
+}
+.canvas-wire-gate {
+  color: var(--flow-start);
+}
+.palette-vivid .canvas-node {
+  background: color-mix(in srgb, var(--node-color) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--node-color) 55%, var(--line));
+}
+.canvas-palette {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.canvas-palette select {
+  font-size: 0.8rem;
+  width: auto;
+  min-height: 44px;
+}
+.canvas-connection-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--line);
+}
+.canvas-connection-tools > span {
+  font-weight: 600;
+}
+.canvas-connection-tools [role="group"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.canvas-connection-tools button {
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.canvas-connection-tools button[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--surface);
+}
+.canvas-connection-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0 1rem 0.7rem;
+  padding: 0.8rem 1rem;
+  background: var(--soft);
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+.canvas-connection-status strong {
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+.canvas-connection-status span {
+  flex: 1 1 300px;
+}
+.canvas-connection-status button {
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.canvas-node.is-connectable {
+  outline: 2px dashed var(--node-color);
+  outline-offset: 5px;
+}
+.canvas-node.is-connecting {
+  outline: 3px solid var(--node-color);
+  outline-offset: 5px;
+}
+.canvas-node .canvas-port {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  top: 43px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--node-color);
+  border-radius: 50%;
+  touch-action: none;
+  cursor: crosshair;
+}
+.canvas-node .canvas-port.in {
+  left: -22px;
+}
+.canvas-node .canvas-port.out {
+  right: -22px;
+}
+.canvas-port > svg,
+.canvas-port > span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--node-color);
+  background: var(--surface);
+  padding: 2px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.canvas-port > span {
+  background: var(--node-color);
+  border: 4px solid var(--surface);
+  box-shadow: 0 0 0 2px var(--node-color);
+  width: 16px;
+  height: 16px;
+}
+.canvas-port:hover,
+.canvas-port:focus-visible {
+  outline: 2px solid var(--node-color);
+  outline-offset: 0;
+}
+.canvas-wire-preview {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: visible;
+}
+.canvas-wire-preview path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+}
+@media (max-width: 600px) {
+  .canvas-connection-tools {
+    gap: 0.4rem;
+  }
+  .canvas-connection-status {
+    margin-inline: 0.7rem;
+    padding: 0.7rem;
+  }
+}

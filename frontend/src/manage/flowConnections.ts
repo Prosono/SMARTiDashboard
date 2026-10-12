@@ -1,0 +1,141 @@
+import { canvasModel } from "./flowCanvasModel";
+
+export type ConnectionMode = "sequence" | "parallel";
+export type ConnectionPlan =
+  | { ok: false; message: string }
+  | { ok: true; message: string; patch: Record<string, any> };
+
+// Translate gestures to HA's native lists/parallel block. Never store decorative
+// edges that imply a different execution graph than the saved automation.
+export function planConnection(
+  config: Record<string, any>,
+  from: string,
+  to: string,
+  mode: ConnectionMode,
+  lang: string,
+): ConnectionPlan {
+  const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const fail = (nb: string, en: string): ConnectionPlan => ({
+    ok: false,
+    message: t(nb, en),
+  });
+  const graph = canvasModel(config, lang);
+  const source = graph.nodes.find((n) => n.id === from);
+  const target = graph.nodes.find((n) => n.id === to);
+  if (!source || !target)
+    return fail(
+      "Kortet finnes ikke lenger. Velg på nytt.",
+      "The card no longer exists. Select again.",
+    );
+  if (from === to)
+    return fail(
+      "Et kort kan ikke kobles til seg selv.",
+      "A card cannot connect to itself.",
+    );
+  if (mode === "parallel") {
+    if (source.kind !== "actions" || target.kind !== "actions")
+      return fail(
+        "Samtidig krever to handlingskort.",
+        "Parallel requires two action cards.",
+      );
+    const a = source.path![1] as number,
+      b = target.path![1] as number;
+    // A stop/variables/condition can change meaning or scope when moved into
+    // a parallel branch. Offer sequence only for these blocks.
+    const parallelSafe = (row: any) =>
+      row &&
+      typeof row === "object" &&
+      !["stop", "variables", "condition"].some((k) => Object.hasOwn(row, k));
+    if (!parallelSafe(config.actions[a]) || !parallelSafe(config.actions[b]))
+      return fail(
+        "Stopp, variabler og handlingskrav må kobles i rekkefølge.",
+        "Stop, variables and action conditions must be connected in sequence.",
+      );
+    const actions = config.actions.flatMap((row: any, index: number) =>
+      index === a
+        ? [
+            {
+              parallel: [
+                { sequence: [row] },
+                { sequence: [config.actions[b]] },
+              ],
+            },
+          ]
+        : index === b
+          ? []
+          : [row],
+    );
+    return {
+      ok: true,
+      patch: { actions },
+      message: t(
+        "De to kortene samles i én Samtidig-gren på det første kortets plass. Begge starter sammen; neste steg venter til begge er ferdige. Andre kort beholder sin innbyrdes rekkefølge.",
+        "The two cards become a parallel block at the source card's position. Both start together; the next step waits for both. Other cards keep their relative order.",
+      ),
+    };
+  }
+  if (graph.edges.some((e) => e.from === from && e.to === to))
+    return fail(
+      "Disse kortene er allerede koblet sammen.",
+      "These cards are already connected.",
+    );
+  if (
+    source.kind === "triggers" ||
+    target.kind === "triggers" ||
+    target.kind === "gate"
+  )
+    return fail(
+      "Hendelser er alternative startpunkter og kobles via Start. Koble videre fra Start-kortet.",
+      "Events are alternative starting points connected through Start. Connect from the Start card.",
+    );
+  if (target.kind !== "conditions" && target.kind !== "actions")
+    return fail(
+      "Velg et krav eller en handling.",
+      "Choose a requirement or an action.",
+    );
+  const key = target.kind;
+  const rows = config[key] as any[];
+  const targetIndex = target.path![1] as number;
+  const sourceIndex = source.path?.[1] as number | undefined;
+  let insertAfter: number;
+  if (source.kind === key) {
+    if (
+      key === "actions" &&
+      Object.hasOwn(rows[sourceIndex!] || {}, "stop") &&
+      rows[sourceIndex!].enabled !== false
+    )
+      return fail(
+        "Et aktivt Stopp-kort avslutter løpet. Koble fra et annet kort.",
+        "An active Stop ends the run. Connect from a different card.",
+      );
+    insertAfter = sourceIndex!;
+  } else if (
+    source.kind === "gate" &&
+    (key === "conditions" || !(config.conditions || []).length)
+  ) {
+    insertAfter = -1;
+  } else if (
+    source.kind === "conditions" &&
+    key === "actions" &&
+    sourceIndex === config.conditions.length - 1
+  ) {
+    insertAfter = -1;
+  } else {
+    return fail(
+      "Alle krav må sjekkes før handlingene. Koble fra siste krav, eller koble kort av samme type.",
+      "All requirements must be checked before actions. Connect from the last requirement, or between cards of the same type.",
+    );
+  }
+  const result = rows.filter((_, index) => index !== targetIndex);
+  const newIndex =
+    insertAfter < 0 ? 0 : insertAfter - (targetIndex < insertAfter ? 1 : 0) + 1;
+  result.splice(newIndex, 0, rows[targetIndex]);
+  return {
+    ok: true,
+    patch: { [key]: result },
+    message: t(
+      "Målkortet flyttes rett etter kortet du kobler fra. De øvrige kortene beholder sin innbyrdes rekkefølge, og linjene kobles om. Ingen kort slettes.",
+      "The target moves directly after the source. Other cards keep their relative order and their connections are updated. No cards are deleted.",
+    ),
+  };
+}

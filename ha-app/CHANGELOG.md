@@ -1,3 +1,7 @@
+# 0.3.7
+
+Connect flow cards by dragging output to input or selecting ports by touch/keyboard. Preview and confirm sequence changes or combine two action cards into a native HA parallel block. Show compatible targets and explanations for unsupported links. Keep global conditions before actions, reject self/duplicate links and outgoing active stops, and preserve untouched card configuration. New vivid/calm palettes color cards, ports and wires consistently. Connections change the saved automation; visual positions and palette remain session-only. Arbitrary graphs and custom conditional port wiring remain unsupported; edit conditional branches in the subflow editor.
+
 # 0.3.6
 
 Give flow cards distinct orange, blue and green headers with matching connections. Drag cards from their body or handle, pan by dragging the canvas background, toggle the grid and connection lines, and remove cards with confirmation. Moving cards and hiding lines do not alter execution order; removing a card changes the draft until saved. Card positions remain temporary. Validated with frontend unit tests and desktop/mobile browser interaction tests; not tested on physical HA.

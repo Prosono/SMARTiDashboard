@@ -144,3 +144,12 @@ Unsupported commissioning integrations are identified explicitly. There are no a
 `make setup && make dev`, then open http://localhost:5173/. Read the generated owner-only `.data/setup-secret.txt` locally for first setup. See DEVELOPMENT.md and DEPLOYMENT.md for live credentials, HTTPS and the HA package.
 
 Next priority: configure a development HA endpoint and backend-only token, verify read-only registry/state import and Ingress, then—with explicit permission—one harmless physical lamp command. Only after this foundation is validated should real radio pairing be added.
+
+
+## 0.3.7 — editable flow connections
+
+The canvas supports pointer-drawn connections and two-port touch/keyboard selection, live preview lines, compatible-target highlighting, Escape cancellation and an explicit change preview before applying. Sequence connections move the target immediately after the source (or first after Start/the last global condition), reconnecting the remaining list without deleting cards. Parallel connections wrap two action cards in HA `parallel`/`sequence` blocks at the source position. Other configuration fields are retained. These edits go through the existing draft/save/revision API; they are not decorative stored edges.
+
+Vivid and calm palettes share semantic colors across headers, ports and wires. Existing dragging, background pan, grid/line controls and card removal remain available. Positions and palette are temporary. Conditional branches are edited in the existing subflow editor, not through arbitrary Yes/No connector wiring. Global conditions cannot be bypassed, and self/duplicate/invalid links and outgoing active Stop connections are rejected. No separate graph runtime is introduced.
+
+Reference: https://www.home-assistant.io/docs/scripts/ (sequence, parallel and conditions). Verified using local frontend and desktop/mobile browser tests, including persisted demo API configuration. Physical HA execution remains unverified.

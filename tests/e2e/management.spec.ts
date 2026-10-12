@@ -859,3 +859,153 @@ test("canvas moves cards with keyboard and pointer without changing automation l
   expect(config.triggers).toEqual([{ trigger: "time", at: "20:00:00" }]);
   expect(config.actions).toEqual([{ delay: 60 }]);
 });
+
+test("canvas connects by dragging or keyboard and saves native sequence and parallel actions", async ({
+  page,
+}) => {
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Mer", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Ny automasjon", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Flere muligheter", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
+    .click();
+  const config = {
+    alias: "Koblingstest " + test.info().project.name,
+    triggers: [{ trigger: "time", at: "20:00:00" }],
+    conditions: [],
+    actions: [
+      { alias: "A", delay: 10 },
+      { alias: "B", delay: 20 },
+      { alias: "C", delay: 30 },
+    ],
+    mode: "single",
+  };
+  await page
+    .getByRole("textbox", { name: "Konfigurasjon (JSON)", exact: true })
+    .fill(JSON.stringify(config));
+  await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Farger", exact: true })
+    .selectOption("calm");
+  await expect(page.locator(".flow-workspace")).toHaveClass(/palette-calm/);
+  await page
+    .getByRole("combobox", { name: "Farger", exact: true })
+    .selectOption("vivid");
+  for (let i = 0; i < 4; i++)
+    await page.getByRole("button", { name: "Zoom ut", exact: true }).click();
+  // Bring the target within the mobile viewport, without changing execution.
+  await page
+    .getByRole("button", { name: "Flytt kort: C", exact: true })
+    .focus();
+  for (let i = 0; i < 34; i++) await page.keyboard.press("ArrowLeft");
+  for (let i = 0; i < 8; i++) await page.keyboard.press("ArrowDown");
+  const viewport = page.locator(".canvas-viewport");
+  await viewport.evaluate((el) => {
+    el.scrollLeft = 0;
+  });
+  await viewport.scrollIntoViewIfNeeded();
+  const output = page.getByRole("button", {
+    name: "Koble fra: Når én hendelse skjer",
+    exact: true,
+  });
+  const input = page.getByRole("button", { name: "Koble til: C", exact: true });
+  const from = await output.boundingBox(),
+    to = await input.boundingBox();
+  await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to!.x + to!.width / 2, to!.y + to!.height / 2, {
+    steps: 8,
+  });
+  await expect(page.locator(".canvas-wire-preview")).toBeVisible();
+  await page.mouse.up();
+  await expect(
+    page.getByRole("button", { name: "Bekreft kobling", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Bekreft kobling", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
+    .click();
+  let actual = JSON.parse(
+    await page
+      .getByRole("textbox", { name: "Konfigurasjon (JSON)", exact: true })
+      .inputValue(),
+  );
+  expect(actual.actions.map((r: any) => r.alias)).toEqual(["C", "A", "B"]);
+  await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
+  await page.getByRole("button", { name: "Koble fra: C", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Koble til: C", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".canvas-connection-status")).toContainText(
+    "Et kort kan ikke kobles til seg selv",
+  );
+  await expect(
+    page.getByRole("button", { name: "Bekreft kobling", exact: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Samtidig", exact: true }).click();
+  const sourcePort = page.getByRole("button", {
+    name: "Koble fra: C",
+    exact: true,
+  });
+  const targetPort = page.getByRole("button", {
+    name: "Koble til: B",
+    exact: true,
+  });
+  if (test.info().project.name === "mobile") {
+    await sourcePort.tap();
+    await targetPort.tap();
+  } else {
+    await sourcePort.click();
+    await targetPort.click();
+  }
+  await page
+    .getByRole("button", { name: "Bekreft kobling", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
+    .click();
+  actual = JSON.parse(
+    await page
+      .getByRole("textbox", { name: "Konfigurasjon (JSON)", exact: true })
+      .inputValue(),
+  );
+  expect(actual.actions).toEqual([
+    {
+      parallel: [
+        { sequence: [config.actions[2]] },
+        { sequence: [config.actions[1]] },
+      ],
+    },
+    config.actions[0],
+  ]);
+  await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
+  await page.getByRole("button", { name: "Mørkt", exact: true }).click();
+  await page.locator(".flow-workspace").screenshot({
+    path: `../artifacts/${test.info().project.name}-flow-connections-dark.png`,
+    animations: "disabled",
+  });
+  const savedResponse = page.waitForResponse(
+    (r) =>
+      r.url().includes("/api/manage/automations") &&
+      r.request().method() === "POST",
+  );
+  await page
+    .getByRole("button", { name: "Lagre automasjon", exact: true })
+    .click();
+  const saved = await (await savedResponse).json();
+  const persisted = await (
+    await page.request.get(`/api/manage/automations/${saved.id}`)
+  ).json();
+  expect(persisted.config.actions).toEqual(actual.actions);
+});

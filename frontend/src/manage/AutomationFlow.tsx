@@ -250,6 +250,12 @@ export function AutomationFlow({
             setSelected(null);
             setNested(null);
           }}
+          onConnect={(change) => {
+            patch(change);
+            setSelected(null);
+            setNested(null);
+            setAdding(null);
+          }}
           onRemove={(p) => {
             const key = p[0] as FlowKey;
             patch({
