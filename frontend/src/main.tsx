@@ -43,6 +43,7 @@ import "./style.css";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
+import { readPreference, writePreference } from "./preferences";
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } },
 });
@@ -64,11 +65,11 @@ function Logo() {
   );
 }
 function App() {
-  const [lang, language] = useState(
-    localStorage.getItem("smarti-language") === "en" ? "en" : "nb",
+  const [lang, language] = useState(() =>
+    readPreference("smarti-language", "nb", ["nb", "en"]),
   );
-  const [theme, setTheme] = useState(
-    localStorage.getItem("smarti-theme") || "light",
+  const [theme, setTheme] = useState(() =>
+    readPreference("smarti-theme", "light", ["light", "dark"]),
   );
   const t = lang === "en" ? en : nb;
   const [session, updateSession] = useState<Session | null>(null);
@@ -76,11 +77,11 @@ function App() {
   const [page, setPage] = useState<Page>("home");
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem("smarti-theme", theme);
+    writePreference("smarti-theme", theme);
   }, [theme]);
   useEffect(() => {
     document.documentElement.lang = lang;
-    localStorage.setItem("smarti-language", lang);
+    writePreference("smarti-language", lang);
   }, [lang]);
   useEffect(() => {
     api<Session>("session")

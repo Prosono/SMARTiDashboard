@@ -1,5 +1,13 @@
 # Implementation status — 2026-10-12
 
+## Browser storage fix (0.1.2)
+
+A user-reported blank Ingress panel with QuotaExceededError was traced to an unguarded theme-preference write in the deployed index-mS6izSEm.js bundle. Reproduced locally by making browser storage writes throw; the original build failed to render the login form.
+
+Theme/language storage reads and writes now fail safely. Preferences remain in React state when persistence is unavailable, and invalid saved values use defaults. No HA origin storage is cleared. The rebuilt app-store payload is version 0.1.2 and needs to be pushed before HA can offer the update.
+
+Verification: TypeScript check, production build, payload freshness check, 5 Vitest tests and 8 Playwright tests passed. Browser regressions cover full storage (QuotaExceededError) and blocked access (SecurityError), login, theme/language changes and reload on desktop and mobile. The original user browser has not yet been retested with the updated package. Roboto preload warnings come from the surrounding HA page and are separate from the reproduced crash.
+
 ## App-store packaging update (0.1.1)
 
 Prepared installation through the built-in HA app manager using https://github.com/Prosono/SMARTiDashboard. The repository includes a deterministic runtime archive and checksums, so HA can build directly from a clone without manual staging. Both linux/amd64 and linux/arm64 containers were built and smoke-tested with networking disabled. Actual HAOS/Ingress remains unverified. CI checks payload freshness and both architectures. These local changes must be pushed before HA can fetch version 0.1.1.

@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "e1d0801f04de740997769f1946dc57b178af6f9fa3f47aa787c7eeeca51a2929",
+  "bundle_sha256": "87e7f3b71c3f6556bbe688d199874839ea4b6208b380f929d80c86557566d460",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/auth.py": "226bda02000d81a28b28bede1ad99f26ac041d827e54a46869ac09f6842eb4ba",
@@ -45,11 +45,11 @@
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-B4ES4mUY.woff": "dd34fad57ed536134141ac3c4ad6697e8ce389aa1193d07ddabd2d1cb2fbaaa0",
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-Bt7Gqki8.woff2": "4900a39cfa8b2fe08bccd07eb2371519172b07ed9ce9765e5a4ad9097cb6759b",
     "frontend/dist/assets/index-CS0wcxrn.css": "41b380b7c172bab4ff0931ba3f994cb9545528f259f62fce57a78ea179fc7c35",
-    "frontend/dist/assets/index-mS6izSEm.js": "3e1952fc7f7153b49901b0a6da4e833210548e3687c36453b9f5c80ba1a8c05c",
+    "frontend/dist/assets/index-ClcuA-80.js": "cf563b18dae3927f6f3af46cab2417ee1f333d3a4c484cbaafbb8c1dfdb6598f",
     "frontend/dist/brand/Bai-Jamjuree-OFL.txt": "74b7deafa632a5ed301dc322fcc2867ac200402e06b6d0b0b01faf09b8514e3e",
     "frontend/dist/brand/README.md": "7bce8f4c0331d16ac1279426991badcfff774ef0d4837acc01e511bb5c32af4e",
     "frontend/dist/brand/smarti-logo.png": "ae1207d5b3e40031220662a602d1ed4361585a33da405ad754829d0ab70b501b",
-    "frontend/dist/index.html": "3e66e190dc64773b173f56b16ac50597e91184d62705df4fc58e63fc752486a8"
+    "frontend/dist/index.html": "f572c87566a1afb378f7808b22c61d2361ef53c17d70d1fe851038342a498122"
   },
   "sources": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -72,7 +72,9 @@
     "frontend/src/api.ts": "a136dd449210874abfa65535c63abbac4e2e54814feeea09865fab9f6352adee",
     "frontend/src/i18n.test.ts": "3204922b2a259f48b2a7c7d0efc3ec4f32a79380b0636124cbb67eba9282c2c1",
     "frontend/src/i18n.ts": "4a545582fd30a648d6dbc36120c4ac15781f2bf85be1474c838e30f187ccacad",
-    "frontend/src/main.tsx": "ce5c423b4acf96075c6d0cdf16a4aacb3932ac42fd95a205e8a7e0a156abd124",
+    "frontend/src/main.tsx": "9b0f3c1f9dee90d605c1e907f1fa9d22e8d784538f4d3d2875c008021063881c",
+    "frontend/src/preferences.test.ts": "fe85ef3a5d645105d11135978dae33ca08e7230d0d566cd589496772c0df8e7e",
+    "frontend/src/preferences.ts": "b2d618156a01db504b0cfba775fa31ae7c23eddcf111c1d9df6e3a6e1f7913ef",
     "frontend/src/style.css": "3ad35bf6fd49f3a5a8bba7a6cf6a2a15c75d3191b37f13ea75f38b2f6e5dd36a",
     "frontend/src/types.ts": "590e8063a9906e130c57914d480993d2cee864b43141409e8d3e66f24eee8599",
     "frontend/tsconfig.json": "f65b978d7a7f5bd026f009cd6d83a685a025f30aaf88af95736e82af1ed2dae6",
