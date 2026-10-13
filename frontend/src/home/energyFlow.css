@@ -1,0 +1,327 @@
+.energy-flow {
+  margin: 0 0 2.5rem;
+}
+.flow-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.2rem;
+  margin: 1.3rem 0 1.5rem;
+}
+.flow-heading .eyebrow {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.flow-heading h1 {
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  letter-spacing: -0.045em;
+  font-weight: 500;
+  margin: 0.5rem 0;
+}
+.flow-heading p {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.energy-flow button {
+  min-height: 44px;
+}
+.flow-configure {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.flow-visual {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 26px;
+  overflow: hidden;
+  position: relative;
+}
+.flow-visual-top {
+  position: absolute;
+  top: 1rem;
+  left: 1.4rem;
+  right: 1.4rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.7rem;
+}
+.flow-visual-top > span,
+.flow-visual-top button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.flow-visual-top button {
+  color: var(--muted);
+  padding: 0.5rem;
+}
+.flow-live {
+  color: #31765e;
+}
+[data-theme="dark"] .flow-live {
+  color: #8ecaae;
+}
+.flow-waiting {
+  color: var(--muted);
+}
+.energy-scene-wrap {
+  position: relative;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    color-mix(in srgb, var(--accent) 6%, var(--surface)),
+    var(--surface) 75%
+  );
+}
+.energy-scene {
+  width: 100%;
+  height: clamp(360px, 48vw, 540px);
+  cursor: grab;
+  touch-action: pan-y;
+}
+.energy-scene canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.energy-scene:active {
+  cursor: grabbing;
+}
+.energy-scene-tools {
+  position: absolute;
+  bottom: 0.3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+.energy-scene-tools button {
+  width: 44px;
+  font-size: 1.3rem;
+}
+.energy-scene-fallback {
+  position: absolute;
+  inset: 25% 12%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--muted);
+}
+.flow-loading {
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.flow-measurements {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+.flow-measurement {
+  position: relative;
+  text-align: left;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  border-right: 1px solid var(--line);
+  --flow-color: #be8432;
+}
+.flow-measurement:last-child {
+  border-right: 0;
+}
+.flow-measurement[data-role="home"] {
+  --flow-color: #b7642c;
+}
+.flow-measurement[data-role="grid"] {
+  --flow-color: #577ead;
+}
+.flow-measurement[data-role="battery"] {
+  --flow-color: #388364;
+}
+.flow-measurement[data-role="ev"] {
+  --flow-color: #8870a2;
+}
+[data-theme="dark"] .flow-measurement {
+  --flow-color: #e0b068;
+}
+[data-theme="dark"] .flow-measurement[data-role="grid"] {
+  --flow-color: #93b5de;
+}
+[data-theme="dark"] .flow-measurement[data-role="battery"] {
+  --flow-color: #87c8a8;
+}
+[data-theme="dark"] .flow-measurement[data-role="ev"] {
+  --flow-color: #b6a0d0;
+}
+.flow-measurement > span {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--flow-color);
+  font-size: 0.78rem;
+}
+.flow-measurement > strong {
+  font-size: clamp(1.2rem, 2vw, 1.65rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+.flow-measurement > small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.flow-measurement em {
+  font-size: 0.7rem;
+  font-style: normal;
+  color: var(--muted);
+}
+.flow-measurement[aria-expanded="true"],
+.flow-measurement:hover {
+  background: var(--soft);
+}
+.energy-flow button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+.flow-reading-detail {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.4rem;
+  background: var(--soft);
+  font-size: 0.8rem;
+}
+.flow-reading-detail small {
+  color: var(--muted);
+}
+.flow-note,
+.flow-start {
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.6;
+  padding: 0 1.4rem;
+  margin: 1rem 0;
+}
+.flow-settings {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 16px;
+  margin: 1.5rem 0;
+  padding: 1.3rem;
+}
+.flow-settings legend {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.flow-settings p,
+.flow-settings small {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.flow-binding-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+}
+.flow-binding {
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.flow-settings label {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  margin: 0.6rem 0;
+}
+.flow-settings select {
+  width: 100%;
+  min-width: 0;
+}
+.flow-settings .flow-visible {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+}
+.flow-visible input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.flow-extra-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+}
+.flow-form-actions {
+  display: flex;
+  gap: 1rem;
+}
+.flow-form-actions button {
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.flow-form-actions button:first-child {
+  background: var(--text);
+  color: var(--surface);
+}
+@media (max-width: 700px) {
+  .flow-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .flow-measurements {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .flow-measurement {
+    padding: 1rem 0.7rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .flow-measurement:nth-child(3) {
+    border-right: 0;
+  }
+  .flow-binding-grid,
+  .flow-extra-settings {
+    grid-template-columns: 1fr;
+  }
+  .flow-visual-top {
+    left: 0.8rem;
+    right: 0.8rem;
+  }
+  .energy-scene {
+    height: 380px;
+  }
+  .flow-measurement > span {
+    font-size: 0.72rem;
+  }
+}
+
+.energy-scene-tools {
+  position: static;
+  transform: none;
+  justify-content: center;
+  padding-bottom: 0.5rem;
+}

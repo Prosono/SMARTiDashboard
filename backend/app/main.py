@@ -16,6 +16,7 @@ from .camera_stream import camera_router
 from .config import Settings
 from .demo import Demo
 from .energy import energy_router
+from .energy_flow import energy_flow_router
 from .ha import HAError, HomeAssistant
 from .home_extras import extras_router
 from .home_overview import home_router
@@ -164,6 +165,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     app.include_router(camera_router(ha, user, settings))
     app.include_router(scenes_router(ha, store, user, settings))
     app.include_router(energy_router(ha, store, user, settings))
+    app.include_router(energy_flow_router(store, user, ha))
 
     @app.get("/healthz")
     async def health():

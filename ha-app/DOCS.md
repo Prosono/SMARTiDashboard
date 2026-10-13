@@ -141,3 +141,16 @@ Thermostats now show a semicircular target-temperature gauge, current room tempe
 Under Home → Energy, **Elbil & lader → Tilpass** binds existing entities to battery percentage, range (km/mi), charging power (W/kW), energy (Wh/kWh), status and an optional on/off charging switch. Preferences are personal. These bindings do not install an integration: connect the car/charger to the home hub first. The energy value is the selected meter reading, not an inferred charging-session total. Only use a switch known to control charging; turning it on/off requires confirmation and retains the backend's existing capability and availability checks. No current limits, schedules or vendor-specific start/stop services are changed.
 
 Validated with isolated demo/API and desktop/mobile tests; live thermostat and EV hardware confirmation remains pending.
+
+
+## 3D energy flow (1.1.0)
+
+Open Home → Energy → **Konfigurer energiflyt**. Choose visible solar, home consumption, EV, battery and grid components and bind each to an existing W/kW sensor. These personal settings only affect display; they do not control equipment. The house is a generic illustration, not a model of the actual property. A local Three.js renderer supplies the geometry, lighting and animated paths; no remote assets or credentials are sent to it.
+
+For grid and battery, choose what a positive sensor value means. A single signed sensor reverses direction on negative values. Optionally choose a separate meter for the opposite direction; both source readings must then be nonnegative and their difference is displayed. Source/return readings are netted only within that connection. Home consumption is never inferred from other measurements and may already include EV charging. Flow lines illustrate net exchange with the home distribution point, not proof that a particular source directly powers a particular load.
+
+Live readings refresh every five seconds. The sensor timestamp uses last_reported when available, otherwise last_updated. Missing, nonnumeric, unavailable, offline, future-dated or stale readings stop that connection's animation. The configurable age limit defaults to five minutes; choose a suitable interval for sensors that report less frequently. Values within 0.5 W of zero are treated as no visible flow. Battery percentage is optional. Historical kWh graphs stay separate below the model.
+
+Mouse dragging or the rotation buttons turn the house. Pause stops movement without stopping readings. Reduced-motion preferences disable movement, and the renderer releases its resources when leaving Energy. Hidden/background views do not animate. When WebGL is unavailable the readings and configuration still work.
+
+Renderer reference: [Three.js WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html). Verified locally with API and mobile/desktop WebGL tests; physical energy sensor validation remains pending.

@@ -233,3 +233,10 @@ Reusable semicircle thermostat presentation now serves control cards and device 
 Home → Energy has a personal EV/charger configuration for existing battery/range/power/energy/status sensors and a charging switch. Empty, missing and offline states are explicit. The energy figure remains the source meter value. Mapping is validated server-side and does not send commands; switching is confirmed by the user and uses the existing guarded command endpoint. No vehicle/provider integration or charging scheduler is included.
 
 Verified through backend preference isolation/validation/authentication tests, 33 frontend unit tests, and desktop/mobile tests for setpoint changes, limits, offline disabling, configuration, cancelled/confirmed switch commands and persistence. The user has no connected EV/charger for hardware validation yet.
+
+
+## 1.1.0 — Configurable 3D energy flow
+
+Energy has a lazy-loaded local WebGL house model, rotation, five configurable power connections, directional particles and accessible numerical readings. Per-user mappings validate W/kW sensors, net/split grid/battery direction, optional SOC and freshness; no energy totals or balance are derived. Five-second readings stop affected animations on missing, old or disconnected data. Visibility/reduced-motion handling and disposal bound graphics activity; WebGL failures preserve the text/configuration UI. Existing history and vehicle controls are retained below.
+
+Backend coverage verifies sign, split readings, units, SOC, freshness, validation, authentication and personal settings. Browser coverage verifies configuration, visible rendering/movement, rotation, persistence, hidden components, offline data and unavailable WebGL on desktop/mobile. Live HA and native mobile GPU/provider validation remain pending.

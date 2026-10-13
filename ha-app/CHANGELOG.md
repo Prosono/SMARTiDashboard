@@ -1,3 +1,12 @@
+# 1.1.0
+
+- Add a real, locally rendered 3D energy home with solar roof, battery, EV/charger and utility connection. Rotate the view and inspect color-coded power readings; animate flows in their measured direction.
+- Configure visible components and W/kW sensors per user. Grid and battery support signed net readings or separate opposite-direction meters, with explicit positive-direction configuration. Optional battery percentage is supported.
+- Refresh power readings every five seconds. Missing, invalid, disconnected or stale readings stop the affected flow. Configure freshness from one to 60 minutes; no totals or energy balances are inferred.
+- Lazy-load the renderer, pause animation outside the viewport/background, respect reduced motion and preserve readings/configuration when WebGL is unavailable. Existing kWh history remains below the model.
+
+Prepared locally; live HA energy hardware validation remains pending.
+
 # 1.0.0
 
 - Replace thermostat controls with a semicircular target-temperature display, room reading and large +/- buttons. Show mode and HVAC activity separately with heating/cooling/off colors, across Home, rooms and device dialogs. Respect reported steps, bounds and availability; mode switching and dual-setpoint editing are not introduced.

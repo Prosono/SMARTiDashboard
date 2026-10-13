@@ -38,6 +38,7 @@ import { entityState } from "../manage/entityWords";
 import { overview, reading, temperature, usable } from "./homeModel";
 import { CameraCard } from "./HomeMedia";
 import { Energy } from "./EnergyOverview";
+import { EnergyFlow } from "./EnergyFlow";
 import { Scenes } from "./Scenes";
 import { HomeTabs, type HomeTab } from "./HomeTabs";
 import { RoomControls } from "./HomeRooms";
@@ -964,6 +965,9 @@ export function HomeOverview({
               </p>
             </div>
           </header>
+        )}
+        {tab === "energy" && (
+          <EnergyFlow home={h} offline={offline} lang={lang} />
         )}
         {tab === "energy" && !model.meters.length && (
           <section className="home-empty-view">
