@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "7eab0cd9c5fa46bdba30ae34217d190622fb5366e5ce6935ed2f48a5116823b9",
+  "bundle_sha256": "b46aefd7fe1c78c501f0715549aabb4b1d6b197cb2dde54c01a5ea0ac5d1538b",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/auth.py": "a1b5574b40832328d6d1162e8e6d4060315b668581d9bc077d89cb54bd21ead5",
@@ -29,7 +29,7 @@
     "backend/app/vehicle.py": "5e6ada60be6b0b93067af6420e0517ae75803f624c96e97390afe466d3b13ce0",
     "backend/app/zigbee_frontend.py": "8874aa2e0cb1a27295b6454327fbcc6662d7e9598596433c0b6906f21c2c55b5",
     "backend/requirements.lock": "a132f7a5e88a758637a6c1c0976782ead209b68c3aaade959457391f7d89d4ff",
-    "frontend/dist/assets/EnergyScene-TP77eB99.js": "4d2a4d6a3b6c2d9cd3bde325e0e3b8b10ad532bcf2419f984725662659a5e46b",
+    "frontend/dist/assets/EnergyScene-Cx2kppsv.js": "5ff27e4eab9fe05b12c765111cc59c94f88ed32f78706ea0ad0e9dea53e5b23c",
     "frontend/dist/assets/bai-jamjuree-latin-400-normal-C8Ab1JOR.woff2": "5200faf54f32adc1dc47b8522adbd1399e739f4ce5c9236866806c04d6397b19",
     "frontend/dist/assets/bai-jamjuree-latin-400-normal-D7asZ9Ds.woff": "1f3c77498a55115c745d171a012976acca24e33cf51562c83b1b763596260e1d",
     "frontend/dist/assets/bai-jamjuree-latin-500-normal-B317a6-V.woff": "7a8f6f6671601a0adfac066e53fb42a61afdf51b48204a51d1207c28882c3b92",
@@ -63,8 +63,8 @@
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-B4ES4mUY.woff": "dd34fad57ed536134141ac3c4ad6697e8ce389aa1193d07ddabd2d1cb2fbaaa0",
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-Bt7Gqki8.woff2": "4900a39cfa8b2fe08bccd07eb2371519172b07ed9ce9765e5a4ad9097cb6759b",
     "frontend/dist/assets/hls-h6QHvJ3w.js": "eb729b4a5638b2bc913f41288655ef496c049debff24c2608550eaf5a2abb01e",
-    "frontend/dist/assets/index-B-nJJOu-.js": "c92a8f5ef3ffcf7f5de6c1469cbef0b496acfc730e1ecf5b69bb72a38537b29a",
-    "frontend/dist/assets/index-iSWQQsmK.css": "9f2a0bc5100bd805bd07fe7f903e75346eabbe3ab632442260adae637dc6a667",
+    "frontend/dist/assets/index-C7RPUfUi.js": "ee5fe1d87931a2238345a503930f0a011887cb906ae9dff4c2775741d56fb9a5",
+    "frontend/dist/assets/index-CxSQeLlu.css": "6de4769cbafd69a01850a32c180d520266ae41674ea6037880f4b070e9a80d4d",
     "frontend/dist/brand/Bai-Jamjuree-OFL.txt": "74b7deafa632a5ed301dc322fcc2867ac200402e06b6d0b0b01faf09b8514e3e",
     "frontend/dist/brand/README.md": "7bce8f4c0331d16ac1279426991badcfff774ef0d4837acc01e511bb5c32af4e",
     "frontend/dist/brand/smarti-logo.png": "ae1207d5b3e40031220662a602d1ed4361585a33da405ad754829d0ab70b501b",
@@ -73,7 +73,7 @@
     "frontend/dist/home/home-bedroom.webp": "6018e9787392cf19595cadb532327d2eefd6d4c085083757361039382c9d29ed",
     "frontend/dist/home/home-kitchen.webp": "7a1eb136515f328b2518b84787a639c59bb81f478a929e6b414f645b75378f7b",
     "frontend/dist/home/home-living.webp": "21f510933c56e907b480f765752973fb4430f5ef72ee993df7bc7927b965376e",
-    "frontend/dist/index.html": "9cebf27859cc44c147c090a55a1a6b95a5c3499a9569d2d57dea96f4b0a357d6"
+    "frontend/dist/index.html": "8daff6cdff15ea5b0b306643b944bfca19071636adc635b4dd89f16aa98b28f4"
   },
   "sources": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -127,9 +127,9 @@
     "frontend/src/branding.test.ts": "59f40a6446bf38af66418b33383593edcf598df4469fdf0832e6ef5169d8f691",
     "frontend/src/branding.ts": "84bfa4b06781dde8458c9905b504ff34a79b2157bd78d1e186c38d6afdaa6b97",
     "frontend/src/home/Calendar.tsx": "74b5a2363467902db0c298e99171033d068834f22f5de39f91971fe7baa36347",
-    "frontend/src/home/EnergyFlow.tsx": "145f4ed36c4d6dc0e4c1e693dda20a0aa2571136f83a830d43042b6f2302000e",
+    "frontend/src/home/EnergyFlow.tsx": "d7581335d03d7e5771306fb733ad36490e3da237b8f5fc4f8d9b7e4251bfac81",
     "frontend/src/home/EnergyOverview.tsx": "e601ca18af9d1ac7023194c75f66e783addd325c49b295b1a8f560e10d45e669",
-    "frontend/src/home/EnergyScene.tsx": "ae25bd0c3bcf21713a53bf6a1d9009da34a10e9a8fa89eb6c80eed05ec634fd4",
+    "frontend/src/home/EnergyScene.tsx": "a4e8fc37b66a48488840b4aec8e1f1baba0bc0e74d95d5dd35061bfc3b591e43",
     "frontend/src/home/HomeMedia.tsx": "afe9ce347a9352a568dfa23d052c8ed026fc1f28a03b6a64d978e5d7499d3d61",
     "frontend/src/home/HomeOverview.tsx": "1c50ea1bd7ea8593259ac7d12ece732daa7b22bf1b06e848d1548ff4310aef33",
     "frontend/src/home/HomeRooms.tsx": "e7c4a15b894bf882991c629447484fd35bc0d275628706c09e0f1dfd04843c17",
@@ -140,8 +140,9 @@
     "frontend/src/home/Weather.tsx": "27666d23e04b8067825cc6396c06cea731d379fdbb90438285e5b822b375f46d",
     "frontend/src/home/calendar.css": "645dd7513a4d8e62e110188f580efddbb582f6203a96fb2c69af2259b152182d",
     "frontend/src/home/energy.css": "002beba9032118dfc4e8dec34f43e6b4c67c79b40ec25fa211c25b223a0d897e",
-    "frontend/src/home/energyFlow.css": "d6609b380813cb4247f5fe1b107803ded6c1ee1fa1bcf33ab65128d8281e8952",
+    "frontend/src/home/energyFlow.css": "c3942b7382b15d12e3b0d750cb1934c8a0d5392df9854d7a8c7530f96e4b30a9",
     "frontend/src/home/energyFlowModel.ts": "f75c4cf5bbc60487b998fcf2506904a1362b518f6f5a6bb6c074d01c308c0012",
+    "frontend/src/home/energyHouseModel.ts": "16e2a6ed8616dcd2f1ce530e3e9706e04388757e9a5c9260ceb63217281f3ba1",
     "frontend/src/home/extras.css": "ce905706204cdb95952e2400cb075094dc95bc0c15319135d7deab465c9785f4",
     "frontend/src/home/home.css": "ec32b38051b2108ab09ec259bfc020be52ae2c2098d68e43e74ef472683a3c3e",
     "frontend/src/home/homeMedia.css": "ccbc41a43e556fa65158d9a97ef98e349ddafb807e9a65e0e95e02648506f73c",

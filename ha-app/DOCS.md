@@ -143,9 +143,9 @@ Under Home → Energy, **Elbil & lader → Tilpass** binds existing entities to 
 Validated with isolated demo/API and desktop/mobile tests; live thermostat and EV hardware confirmation remains pending.
 
 
-## 3D energy flow (1.1.0)
+## 3D energy flow (1.2.0)
 
-Open Home → Energy → **Konfigurer energiflyt**. Choose visible solar, home consumption, EV, battery and grid components and bind each to an existing W/kW sensor. These personal settings only affect display; they do not control equipment. The house is a generic illustration, not a model of the actual property. A local Three.js renderer supplies the geometry, lighting and animated paths; no remote assets or credentials are sent to it.
+Open Home → Energy and select the icon beside the solar roof, home, charger, battery or utility mast to add/change its measurement. The matching sensor field opens and receives focus. **Konfigurer energiflyt** opens the complete setup. Choose visible solar, home consumption, EV, battery and grid components and bind each to an existing W/kW sensor. These personal settings only affect display; they do not control equipment. The house is a generic illustration, not a model of the actual property. A local Three.js renderer supplies the architectural model, lighting and colored ground/wall light paths; no remote assets or credentials are sent to it.
 
 For grid and battery, choose what a positive sensor value means. A single signed sensor reverses direction on negative values. Optionally choose a separate meter for the opposite direction; both source readings must then be nonnegative and their difference is displayed. Source/return readings are netted only within that connection. Home consumption is never inferred from other measurements and may already include EV charging. Flow lines illustrate net exchange with the home distribution point, not proof that a particular source directly powers a particular load.
 

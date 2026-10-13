@@ -1,7 +1,17 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
-test("3D flow configuration, live directions, offline state and persistence", async ({
+test("3D hotspots configure live measurements and preserve directions, freshness and persistence", async ({
   page,
 }) => {
+  test.setTimeout(60000);
+  const renderingErrors: string[] = [];
+  page.on("pageerror", (error) => renderingErrors.push(error.message));
+  page.on("console", (message) => {
+    if (
+      message.type() === "error" &&
+      /WebGL|shader|THREE\./i.test(message.text())
+    )
+      renderingErrors.push(message.text());
+  });
   let pref: any = {
     solar: {
       visible: true,
@@ -38,6 +48,7 @@ test("3D flow configuration, live directions, offline state and persistence", as
     animation: true,
   };
   let online = true;
+  let solarStale = false;
   await page.route("**/api/home/energy-flow/preferences", (r) => {
     if (r.request().method() === "PUT") pref = r.request().postDataJSON();
     return r.fulfill({ json: pref });
@@ -48,28 +59,32 @@ test("3D flow configuration, live directions, offline state and persistence", as
         connected: online,
         sampled_at: new Date().toISOString(),
         battery_level: 74,
+        battery_status: "ok",
         flows: Object.fromEntries(
           ["solar", "home", "ev", "battery", "grid"].map((role) => [
             role,
             {
-              watts: !online
-                ? null
-                : pref[role].source
-                  ? (
-                      {
-                        solar: 4300,
-                        home: 1700,
-                        ev: 3200,
-                        battery: -900,
-                        grid: -500,
-                      } as any
-                    )[role]
-                  : null,
+              watts:
+                !online || (role === "solar" && solarStale)
+                  ? null
+                  : pref[role].source
+                    ? (
+                        {
+                          solar: 4300,
+                          home: 1700,
+                          ev: 3200,
+                          battery: -900,
+                          grid: -500,
+                        } as any
+                      )[role]
+                    : null,
               status: !online
                 ? "unavailable"
-                : pref[role].source
-                  ? "ok"
-                  : "unconfigured",
+                : role === "solar" && solarStale
+                  ? "stale"
+                  : pref[role].source
+                    ? "ok"
+                    : "unconfigured",
               visible: pref[role].visible,
               measured_at: new Date().toISOString(),
             },
@@ -103,9 +118,16 @@ test("3D flow configuration, live directions, offline state and persistence", as
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
   const flow = page.getByRole("region", { name: "Energiflyt", exact: true });
   await expect(flow).toContainText("Gjør huset til ditt");
-  await flow
-    .getByRole("button", { name: "Konfigurer energiflyt", exact: true })
-    .click();
+  const solar = flow.locator('.flow-measurement[data-role="solar"]');
+  const grid = flow.locator('.flow-measurement[data-role="grid"]');
+  const battery = flow.locator('.flow-measurement[data-role="battery"]');
+  const solarHotspot = flow.locator('[data-hotspot="solar"]');
+  await expect(solar.locator("strong")).toHaveText("—");
+  await expect(solarHotspot).toContainText("—");
+  await solarHotspot.click();
+  await expect(
+    flow.getByLabel("Effektmåler · Solceller", { exact: true }),
+  ).toBeFocused();
   for (const label of ["Solceller", "Hjemmet", "Elbil", "Batteri", "Strømnett"])
     await flow
       .getByLabel("Effektmåler · " + label, { exact: true })
@@ -113,11 +135,10 @@ test("3D flow configuration, live directions, offline state and persistence", as
   await flow
     .getByRole("button", { name: "Lagre energiflyt", exact: true })
     .click();
-  await expect(flow.locator('[data-role="grid"]')).toContainText("Til nettet");
-  await expect(flow.locator('[data-role="battery"]')).toContainText(
-    "Lader batteriet",
-  );
-  await expect(flow.locator('[data-role="solar"]')).toContainText("4,3 kW");
+  await expect(grid).toContainText("Til nettet");
+  await expect(battery).toContainText("Lader batteriet");
+  await expect(solar).toContainText("4,3 kW");
+  await expect(solarHotspot).toContainText("4,3 kW");
   await expect(flow.locator("canvas")).toBeVisible();
   // Native WebGL renderer must have allocated a non-empty drawing buffer.
   await expect
@@ -135,9 +156,79 @@ test("3D flow configuration, live directions, offline state and persistence", as
     )
     .toBe(false);
   await flow.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(
+    flow.getByRole("button", { name: "Vis flyt", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  const renderFrames = () =>
+    page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          let frames = 0;
+          function nextFrame() {
+            if (++frames === 8) resolve();
+            else requestAnimationFrame(nextFrame);
+          }
+          requestAnimationFrame(nextFrame);
+        }),
+    );
+  // Let React's renderer effect settle before checking that paused paths stay fixed.
+  await renderFrames();
+  const paused = await flow.locator("canvas").screenshot();
+  await renderFrames();
+  const stillPaused = await flow.locator("canvas").screenshot();
+  if (!stillPaused.equals(paused)) {
+    await test
+      .info()
+      .attach("paused-first", { body: paused, contentType: "image/png" });
+    await test
+      .info()
+      .attach("paused-after-eight-frames", {
+        body: stillPaused,
+        contentType: "image/png",
+      });
+  }
+  expect(stillPaused.equals(paused)).toBe(true);
   await flow
     .getByRole("button", { name: "Drei huset mot høyre", exact: true })
     .click();
+  const overlaps = await flow.locator("[data-hotspot]").evaluateAll((nodes) => {
+    const boxes = nodes.map((node) => ({
+      role: node.getAttribute("data-hotspot"),
+      bounds: node.getBoundingClientRect(),
+    }));
+    return boxes.flatMap((a, i) =>
+      boxes.slice(i + 1).flatMap((b) => {
+        const horizontal =
+          Math.min(a.bounds.right, b.bounds.right) -
+          Math.max(a.bounds.left, b.bounds.left);
+        const vertical =
+          Math.min(a.bounds.bottom, b.bounds.bottom) -
+          Math.max(a.bounds.top, b.bounds.top);
+        return horizontal > 1 && vertical > 1 ? [`${a.role}/${b.role}`] : [];
+      }),
+    );
+  });
+  expect(
+    overlaps,
+    "Measurement buttons must not overlap after rotation",
+  ).toEqual([]);
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    ),
+    "The energy view must fit the viewport without horizontal page scrolling",
+  ).toBeLessThanOrEqual(1);
+  // Projected buttons must remain clickable and open the matching sensor after rotation.
+  await flow.locator('[data-hotspot="battery"]').click();
+  await expect(
+    flow.getByLabel("Effektmåler · Batteri", { exact: true }),
+  ).toBeFocused();
+  await expect(
+    flow.getByLabel("Effektmåler · Batteri", { exact: true }),
+  ).toHaveValue("sensor.test_power");
+  await flow.getByRole("button", { name: "Avbryt", exact: true }).click();
   await flow.screenshot({
     animations: "disabled",
     path: `../artifacts/${test.info().project.name}-energy-flow.png`,
@@ -147,7 +238,7 @@ test("3D flow configuration, live directions, offline state and persistence", as
     animations: "disabled",
     path: `../artifacts/${test.info().project.name}-energy-flow-dark.png`,
   });
-  await flow.locator('[data-role="solar"]').click();
+  await solar.click();
   await expect(flow.locator(".flow-reading-detail")).toContainText("Sist målt");
   await flow
     .getByRole("button", { name: "Konfigurer energiflyt", exact: true })
@@ -156,16 +247,36 @@ test("3D flow configuration, live directions, offline state and persistence", as
   await flow
     .getByRole("button", { name: "Lagre energiflyt", exact: true })
     .click();
-  await expect(flow.locator('[data-role="ev"]')).toHaveCount(0);
+  await expect(flow.locator('.flow-measurement[data-role="ev"]')).toHaveCount(
+    0,
+  );
+  await expect(flow.locator('[data-hotspot="ev"]')).toHaveCount(0);
   await page.reload();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
-  await expect(flow.locator('[data-role="ev"]')).toHaveCount(0);
-  online = false;
-  await expect(flow.locator('[data-role="grid"]')).toContainText(
-    "Utilgjengelig",
-    { timeout: 10000 },
+  await expect(flow.locator('.flow-measurement[data-role="ev"]')).toHaveCount(
+    0,
   );
-  await expect(flow.locator('[data-role="grid"] strong')).toHaveText("—");
+  await expect(flow.locator('[data-hotspot="ev"]')).toHaveCount(0);
+  await expect(solarHotspot).toContainText("4,3 kW");
+  await solarHotspot.click();
+  await expect(
+    flow.getByLabel("Effektmåler · Solceller", { exact: true }),
+  ).toHaveValue("sensor.test_power");
+  await flow.getByRole("button", { name: "Avbryt", exact: true }).click();
+  solarStale = true;
+  await expect(solar).toContainText("Gammel måling", { timeout: 10000 });
+  await expect(solar.locator("strong")).toHaveText("—");
+  await expect(solarHotspot).toContainText("—");
+  await expect(solarHotspot).not.toContainText("4,3 kW");
+  online = false;
+  await expect(grid).toContainText("Utilgjengelig", { timeout: 10000 });
+  await expect(grid.locator("strong")).toHaveText("—");
+  await expect(flow.locator('[data-hotspot="grid"]')).toContainText("—");
+  await expect(battery).not.toContainText("74%");
+  await expect(flow.locator('[data-hotspot="battery"]')).not.toContainText(
+    "74%",
+  );
+  expect(renderingErrors, "No JavaScript or WebGL shader errors").toEqual([]);
 });
 test("3D renderer failure preserves live UI and configuration", async ({
   page,

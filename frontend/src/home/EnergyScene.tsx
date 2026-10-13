@@ -1,17 +1,121 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  BatteryCharging,
+  CarFront,
+  House,
+  RotateCcw,
+  RotateCw,
+  Sun,
+  UtilityPole,
+} from "lucide-react";
 import * as THREE from "three";
-import type { FlowRole, FlowSnapshot } from "./energyFlowModel";
+import { flowRoles, type FlowRole, type FlowSnapshot } from "./energyFlowModel";
+import { createEnergyHouse } from "./energyHouseModel";
+
+const colors: Record<FlowRole, number> = {
+  solar: 0xffba45,
+  home: 0xff7554,
+  ev: 0xb787ff,
+  battery: 0x48e8b1,
+  grid: 0x59c8ff,
+};
+const icons = {
+  solar: Sun,
+  home: House,
+  ev: CarFront,
+  battery: BatteryCharging,
+  grid: UtilityPole,
+};
+type Reading = { label: string; value: string; detail: string };
+
+// A flat ribbon of light, rather than a physical cable. UV.y follows the path;
+// UV.x fades the edges so the same surface supplies the soft spill and white core.
+function lightRibbon(curve: THREE.Curve<THREE.Vector3>) {
+  const positions: number[] = [],
+    uv: number[] = [],
+    indices: number[] = [];
+  const segments = 140,
+    up = new THREE.Vector3(0, 1, 0);
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments,
+      p = curve.getPointAt(t),
+      tangent = curve.getTangentAt(t);
+    const side = new THREE.Vector3().crossVectors(tangent, up);
+    if (side.lengthSq() < 0.01) side.set(1, 0, 0);
+    side.normalize().multiplyScalar(0.17);
+    positions.push(
+      p.x - side.x,
+      p.y - side.y,
+      p.z - side.z,
+      p.x + side.x,
+      p.y + side.y,
+      p.z + side.z,
+    );
+    uv.push(0, t, 1, t);
+    if (i < segments) {
+      const a = i * 2;
+      indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(positions, 3),
+  );
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geometry.setIndex(indices);
+  return geometry;
+}
+function lightMaterial(color: number) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      tint: { value: new THREE.Color(color) },
+      phase: { value: 0 },
+      direction: { value: 1 },
+      strength: { value: 1 },
+    },
+    vertexShader: `varying vec2 vUv;
+      void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+    fragmentShader: `varying vec2 vUv;
+      uniform vec3 tint;
+      uniform float phase, direction, strength;
+      void main() {
+        float edge = abs(vUv.x - .5) * 2.;
+        float core = 1. - smoothstep(.1, .27, edge);
+        float halo = pow(1. - edge, 2.8);
+        float wave = fract(vUv.y * 2. - phase * direction);
+        float pulse = smoothstep(.38, .78, wave) * (1. - smoothstep(.78, 1., wave));
+        vec3 light = mix(tint, vec3(1.), core * (.32 + .65 * pulse));
+        float alpha = (halo * .42 + core * (.66 + .34 * pulse)) * strength;
+        gl_FragColor = vec4(light, alpha);
+        #include <colorspace_fragment>
+      }`,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
 
 export default function EnergyScene({
   flows,
   animate,
   lang,
+  readings,
+  onConfigure,
+  canConfigure,
 }: {
   flows: FlowSnapshot;
   animate: boolean;
   lang: string;
+  readings: Record<FlowRole, Reading>;
+  onConfigure: (role: FlowRole) => void;
+  canConfigure: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const hotspots = useRef<Partial<Record<FlowRole, HTMLButtonElement | null>>>(
+    {},
+  );
   const values = useRef({ flows, animate });
   values.current = { flows, animate };
   const api = useRef<{
@@ -32,300 +136,206 @@ export default function EnergyScene({
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.12;
     renderer.setClearColor(0x000000, 0);
     element.appendChild(renderer.domElement);
     renderer.domElement.setAttribute("aria-hidden", "true");
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-6, 6, 5, -5, 0.1, 70);
-    const root = new THREE.Group();
-    scene.add(root);
-    const geometries: THREE.BufferGeometry[] = [],
-      materials: THREE.Material[] = [];
-    function material(color: number, roughness = 0.75) {
-      const m = new THREE.MeshStandardMaterial({ color, roughness });
-      materials.push(m);
-      return m;
-    }
-    const wall = material(0xe8e4da),
-      roof = material(0x45575a),
-      frame = material(0x283c40),
-      slab = material(0xdbdcd4);
-    const glass = material(0xffdc95, 0.3),
-      panel = material(0x173947, 0.25),
-      trim = material(0x8cabba);
-    function mesh(
-      g: THREE.BufferGeometry,
-      m: THREE.Material,
-      x: number,
-      y: number,
-      z: number,
-      parent: THREE.Object3D = root,
-    ) {
-      geometries.push(g);
-      const object = new THREE.Mesh(g, m);
-      object.position.set(x, y, z);
-      object.castShadow = object.receiveShadow = true;
-      parent.add(object);
-      return object;
-    }
-    function box(
-      w: number,
-      h: number,
-      d: number,
-      m: THREE.Material,
-      x: number,
-      y: number,
-      z: number,
-      parent: THREE.Object3D = root,
-    ) {
-      return mesh(new THREE.BoxGeometry(w, h, d), m, x, y, z, parent);
-    }
-    // Architectural model: gabled home, carport, solar roof, battery and utility connection.
-    box(9, 0.18, 8, slab, 0, -0.12, 0.8);
-    box(3.6, 1.8, 3, wall, 0, 0.9, 0);
-    const triangle = new THREE.Shape();
-    triangle.moveTo(-1.8, 1.8);
-    triangle.lineTo(0, 2.8);
-    triangle.lineTo(1.8, 1.8);
-    triangle.closePath();
-    mesh(
-      new THREE.ExtrudeGeometry(triangle, { depth: 3, bevelEnabled: false }),
-      wall,
-      0,
-      0,
-      -1.5,
-    );
-    const pitch = Math.atan(1 / 1.8);
-    box(2.2, 0.13, 3.5, roof, -0.9, 2.3, 0).rotation.z = pitch;
-    box(2.2, 0.13, 3.5, roof, 0.9, 2.3, 0).rotation.z = -pitch;
-    box(0.72, 1.4, 0.07, frame, -0.92, 0.7, 1.54);
-    box(0.5, 1.13, 0.08, glass, -0.92, 0.8, 1.58);
-    box(1.25, 1.3, 0.07, frame, 0.63, 1.05, 1.54);
-    box(1.12, 1.16, 0.08, glass, 0.63, 1.05, 1.59);
-    box(0.045, 1.2, 0.03, frame, 0.63, 1.05, 1.64);
-    box(1.15, 0.04, 0.03, frame, 0.63, 1.05, 1.64);
-    box(0.07, 0.9, 1.35, frame, 1.83, 0.95, -0.55);
-    box(0.08, 0.78, 1.22, glass, 1.88, 0.95, -0.55);
-    box(2.25, 0.15, 2.9, roof, -2.7, 1.55, 0.3);
-    for (const x of [-3.6, -1.8])
-      for (const z of [-0.9, 1.5]) box(0.09, 1.5, 0.09, frame, x, 0.75, z);
-    const groups: Partial<Record<FlowRole, THREE.Group>> = {};
-    const solar = new THREE.Group();
-    solar.position.set(0.93, 2.43, 0);
-    solar.rotation.z = -pitch;
-    root.add(solar);
-    groups.solar = solar;
-    for (let x = 0; x < 2; x++)
-      for (let z = 0; z < 5; z++) {
-        box(0.75, 0.045, 0.49, trim, (x - 0.5) * 0.8, 0, (z - 2) * 0.54, solar);
-        box(
-          0.7,
-          0.05,
-          0.44,
-          panel,
-          (x - 0.5) * 0.8,
-          0.025,
-          (z - 2) * 0.54,
-          solar,
-        );
-        box(
-          0.014,
-          0.007,
-          0.44,
-          trim,
-          (x - 0.5) * 0.8,
-          0.055,
-          (z - 2) * 0.54,
-          solar,
-        );
+    const model = createEnergyHouse();
+    scene.add(model.root);
+    // Fit actual mesh bounds, not the enclosing house/mast box whose empty top
+    // corners would shrink the building unnecessarily in an isometric camera.
+    model.root.updateMatrixWorld(true);
+    const corners: THREE.Vector3[] = [];
+    model.root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      let bounds: THREE.Box3 | null;
+      if (object instanceof THREE.InstancedMesh) {
+        object.computeBoundingBox();
+        bounds = object.boundingBox;
+      } else {
+        object.geometry.computeBoundingBox();
+        bounds = object.geometry.boundingBox;
       }
-    const battery = new THREE.Group();
-    root.add(battery);
-    groups.battery = battery;
-    box(0.48, 1.25, 0.7, wall, 2.55, 0.64, 0.7, battery);
-    box(0.02, 0.85, 0.55, frame, 2.8, 0.68, 0.7, battery);
-    box(0.03, 0.035, 0.24, material(0x63bc94), 2.82, 1, 0.7, battery);
-    const ev = new THREE.Group();
-    root.add(ev);
-    groups.ev = ev;
-    const car = material(0xf3f1e7, 0.35);
-    const bodyShape = new THREE.Shape();
-    bodyShape.moveTo(-0.54, -0.13);
-    bodyShape.lineTo(0.54, -0.13);
-    bodyShape.lineTo(0.54, 0.1);
-    bodyShape.lineTo(0.4, 0.18);
-    bodyShape.lineTo(-0.4, 0.18);
-    bodyShape.lineTo(-0.54, 0.1);
-    bodyShape.closePath();
-    mesh(
-      new THREE.ExtrudeGeometry(bodyShape, {
-        depth: 2.02,
-        bevelEnabled: true,
-        bevelSegments: 3,
-        steps: 1,
-        bevelSize: 0.07,
-        bevelThickness: 0.08,
-      }),
-      car,
-      -2.75,
-      0.4,
-      0.75,
-      ev,
-    );
-    box(1.04, 0.37, 1.14, frame, -2.75, 0.7, 1.52, ev);
-    box(1.08, 0.08, 1.13, car, -2.75, 0.9, 1.52, ev);
-    box(1.1, 0.06, 0.05, glass, -2.75, 0.49, 2.92, ev);
-    for (const x of [-3.35, -2.15])
-      for (const z of [1.13, 2.47])
-        mesh(
-          new THREE.CylinderGeometry(0.22, 0.22, 0.13, 16),
-          frame,
-          x,
-          0.23,
-          z,
-          ev,
-        ).rotation.z = Math.PI / 2;
-    box(0.23, 0.85, 0.24, frame, -1.88, 0.45, 1.8, ev);
-    box(0.25, 0.24, 0.25, wall, -1.88, 0.8, 1.8, ev);
-    const grid = new THREE.Group();
-    root.add(grid);
-    groups.grid = grid;
-    box(0.65, 1.08, 0.6, frame, 3.55, 0.55, 3.4, grid);
-    box(0.67, 0.1, 0.62, wall, 3.55, 1.13, 3.4, grid);
-    box(0.45, 0.38, 0.025, material(0x9bc4cb), 3.55, 0.8, 3.71, grid);
-    // Small garden gives the model a physical base without hiding the flows.
-    const leaf = material(0x6c8b73),
-      soil = material(0x8d8878);
-    for (const [x, z] of [
-      [-3.4, -1.6],
-      [2.8, -1.7],
-    ]) {
-      mesh(new THREE.CylinderGeometry(0.42, 0.34, 0.35, 24), soil, x, 0.1, z);
-      mesh(new THREE.SphereGeometry(0.5, 16, 12), leaf, x, 0.63, z);
-    }
-    const ambient = new THREE.HemisphereLight(0xf8fcff, 0x71837d, 2.5);
-    scene.add(ambient);
-    const sun = new THREE.DirectionalLight(0xfff3dc, 3);
-    sun.position.set(-4, 9, 6);
+      if (!bounds) return;
+      for (const x of [bounds.min.x, bounds.max.x])
+        for (const y of [bounds.min.y, bounds.max.y])
+          for (const z of [bounds.min.z, bounds.max.z])
+            corners.push(
+              new THREE.Vector3(x, y, z).applyMatrix4(object.matrixWorld),
+            );
+    });
+
+    scene.add(new THREE.HemisphereLight(0xe8f4ff, 0x73716d, 1.8));
+    const sun = new THREE.DirectionalLight(0xffeedb, 3.1);
+    sun.position.set(-3, 8, 5);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
-    sun.shadow.camera.left = -7;
-    sun.shadow.camera.right = 7;
-    sun.shadow.camera.top = 7;
-    sun.shadow.camera.bottom = -7;
-    sun.shadow.normalBias = 0.035;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -8;
+    sun.shadow.camera.right = 8;
+    sun.shadow.camera.top = 8;
+    sun.shadow.camera.bottom = -8;
+    sun.shadow.normalBias = 0.028;
+    sun.shadow.bias = -0.00015;
+    sun.shadow.radius = 3;
     scene.add(sun);
-    const hub = [0, 0.11, 2.8];
-    const routes: Record<FlowRole, number[][]> = {
-      solar: [
-        [2, 2.05, 0.9],
-        [2.12, 1, 0.9],
-        [2.12, 0.11, 1.65],
-        [1.8, 0.11, 2.8],
-        hub,
-      ],
-      battery: [[2.55, 0.11, 1.15], [2.55, 0.11, 2.5], [1.8, 0.11, 2.8], hub],
-      grid: [[3.55, 0.11, 3.75], [2.3, 0.11, 3.85], [0.2, 0.11, 3.85], hub],
-      ev: [[-2.75, 0.11, 3.05], [-2, 0.11, 3.05], [-1, 0.11, 2.8], hub],
-      home: [[0, 0.11, 1.55], [0, 0.11, 2.15], hub],
-    };
-    const colors: Record<FlowRole, number> = {
-      solar: 0xd5a039,
-      battery: 0x4cac88,
-      grid: 0x759bc9,
-      ev: 0x9985bc,
-      home: 0xe88b46,
-    };
-    const tracks = (Object.keys(routes) as FlowRole[]).map((role) => {
-      const group = new THREE.Group();
-      root.add(group);
+    const rim = new THREE.DirectionalLight(0xa7d8ff, 1.5);
+    rim.position.set(5, 4, -5);
+    scene.add(rim);
+
+    const tracks = flowRoles.map((role) => {
       const curve = new THREE.CatmullRomCurve3(
-        routes[role].map((p) => new THREE.Vector3(...p)),
+        model.routes[role],
         false,
         "centripetal",
       );
-      const mat = material(0x9baba7);
-      mesh(
-        new THREE.TubeGeometry(curve, 60, 0.022, 6, false),
-        mat,
-        0,
-        0,
-        0,
-        group,
-      );
-      const particleMat = new THREE.MeshStandardMaterial({
-        color: colors[role],
-        emissive: colors[role],
-        emissiveIntensity: 0.7,
-      });
-      materials.push(particleMat);
-      const dots = Array.from({ length: 5 }, () =>
-        mesh(
-          new THREE.SphereGeometry(0.055, 8, 6),
-          particleMat,
-          0,
-          0,
-          0,
-          group,
-        ),
-      );
-      return { role, curve, group, mat, dots };
+      const material = lightMaterial(colors[role]);
+      const geometry = lightRibbon(curve);
+      const ribbon = new THREE.Mesh(geometry, material);
+      ribbon.renderOrder = 2;
+      scene.add(ribbon);
+      return { role, material, geometry, ribbon };
     });
-    let angle = 0.69,
+    let angle = 0.62,
       visible = true,
       lost = false,
       lastFrame = 0;
+    // Keep animation time separate from wall time: pause/reduced motion really freeze it.
+    let animationTime = 0,
+      previousTime: number | null = null;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function positionHotspots() {
+      const width = element.clientWidth,
+        height = element.clientHeight;
+      const small = width < 600;
+      const offsets: Record<FlowRole, [number, number]> = {
+        solar: [-25, -52],
+        home: [-185, -30],
+        ev: [-130, 35],
+        battery: [165, 40],
+        grid: [155, -25],
+      };
+      // Phones put two labels above and three below the model. The architecture
+      // remains unobscured; names and colors map to the visible equipment.
+      const mobileSlots: Record<FlowRole, [number, number]> = {
+        solar: [0.27, 0.25],
+        grid: [0.73, 0.25],
+        ev: [0.17, 0.9],
+        home: [0.5, 0.9],
+        battery: [0.83, 0.9],
+      };
+      const items = flowRoles.flatMap((role) => {
+        const node = hotspots.current[role];
+        if (!node || !values.current.flows[role].visible) return [];
+        const point = model.anchors[role].clone().project(camera);
+        const w = node.offsetWidth,
+          h = node.offsetHeight;
+        return [
+          {
+            role,
+            node,
+            w,
+            h,
+            x: small
+              ? mobileSlots[role][0] * width
+              : ((point.x + 1) / 2) * width + offsets[role][0],
+            y: small
+              ? mobileSlots[role][1] * height
+              : ((1 - point.y) / 2) * height + offsets[role][1],
+          },
+        ];
+      });
+      const clamp = (value: number, lo: number, hi: number) =>
+        Math.min(Math.max(value, lo), Math.max(lo, hi));
+      // A compact screen-space collision pass keeps labels usable as the camera turns.
+      for (let pass = 0; pass < 8; pass++) {
+        for (const a of items) {
+          a.x = clamp(a.x, a.w / 2 + 12, width - a.w / 2 - 12);
+          a.y = clamp(a.y, a.h + 66, height - 16);
+        }
+        for (let i = 0; i < items.length; i++)
+          for (let j = i + 1; j < items.length; j++) {
+            const a = items[i],
+              b = items[j];
+            const overlapX = (a.w + b.w) / 2 + 10 - Math.abs(a.x - b.x);
+            const aCenter = a.y - a.h / 2,
+              bCenter = b.y - b.h / 2;
+            const overlapY = (a.h + b.h) / 2 + 12 - Math.abs(aCenter - bCenter);
+            if (overlapX > 0 && overlapY > 0) {
+              const sign = aCenter < bCenter ? -1 : 1;
+              a.y += (sign * overlapY) / 2;
+              b.y -= (sign * overlapY) / 2;
+            }
+          }
+      }
+      for (const item of items) {
+        item.node.style.left = `${clamp(item.x, item.w / 2 + 12, width - item.w / 2 - 12)}px`;
+        item.node.style.top = `${clamp(item.y, item.h + 66, height - 16)}px`;
+        item.node.dataset.positioned = "true";
+      }
+    }
     function view() {
-      const aspect = element.clientWidth / Math.max(element.clientHeight, 1);
-      const height = Math.max(aspect < 1 ? 11.5 : 8.4, 11.8 / aspect);
-      camera.left = (-height * aspect) / 2;
-      camera.right = (height * aspect) / 2;
-      camera.top = height / 2;
-      camera.bottom = -height / 2;
-      camera.position.set(12 * Math.sin(angle), 8, 12 * Math.cos(angle));
-      camera.lookAt(0, 0.85, 0.8);
+      const width = element.clientWidth,
+        height = Math.max(element.clientHeight, 1),
+        aspect = width / height;
+      camera.position.set(12 * Math.sin(angle), 8.7, 12 * Math.cos(angle));
+      camera.lookAt(0, 1, 0.45);
+      camera.updateMatrixWorld(true);
+      const cameraBounds = new THREE.Box3().setFromPoints(
+        corners.map((v) => v.clone().applyMatrix4(camera.matrixWorldInverse)),
+      );
+      const size = cameraBounds.getSize(new THREE.Vector3());
+      const viewHeight = Math.max(
+        size.y / (width < 600 ? 0.63 : 0.78),
+        size.x / (aspect * (width < 600 ? 0.97 : 0.91)),
+      );
+      const center = cameraBounds.getCenter(new THREE.Vector3());
+      camera.left = center.x - (viewHeight * aspect) / 2;
+      camera.right = center.x + (viewHeight * aspect) / 2;
+      camera.top = center.y + viewHeight / 2;
+      camera.bottom = center.y - viewHeight / 2;
       camera.updateProjectionMatrix();
-      renderer.setSize(element.clientWidth, element.clientHeight, false);
+      renderer.setSize(width, height, false);
+      positionHotspots();
     }
     function draw(ms = 0) {
       if (ms && ms - lastFrame < 33) return;
       lastFrame = ms;
       const value = values.current;
+      if (previousTime !== null && value.animate && !reduced.matches)
+        animationTime += Math.min((ms - previousTime) / 1000, 0.1);
+      previousTime = ms;
       for (const item of tracks) {
-        const flow = value.flows[item.role],
-          active =
-            flow.status === "ok" &&
-            flow.watts !== null &&
-            Math.abs(flow.watts) > 0.5;
-        item.group.visible = flow.visible;
-        if (groups[item.role]) groups[item.role]!.visible = flow.visible;
-        item.mat.color.setHex(active ? colors[item.role] : 0x9baba7);
+        const flow = value.flows[item.role];
+        const active =
+          flow.status === "ok" &&
+          flow.watts !== null &&
+          Math.abs(flow.watts) > 0.5;
+        // Unknown or stale data must not imply electricity is flowing.
+        item.ribbon.visible = flow.visible && active;
+        const component = model.components[item.role];
+        if (component) component.visible = flow.visible;
         const forward =
           item.role === "home" || item.role === "ev"
             ? false
             : (flow.watts || 0) > 0;
-        const speed = 0.07 + Math.min(0.17, Math.abs(flow.watts || 0) / 40000);
-        item.dots.forEach((dot, i) => {
-          dot.visible = active;
-          const phase =
-            (i / 5 +
-              (value.animate && !reduced.matches ? (ms / 1000) * speed : 0)) %
-            1;
-          dot.position.copy(item.curve.getPointAt(forward ? phase : 1 - phase));
-        });
+        const speed = 0.26 + Math.min(0.5, Math.abs(flow.watts || 0) / 18000);
+        item.material.uniforms.direction.value = forward ? 1 : -1;
+        item.material.uniforms.phase.value = animationTime * speed;
       }
       renderer.render(scene, camera);
     }
     function sync() {
       if (lost || !visible || document.hidden) {
+        previousTime = null;
         renderer.setAnimationLoop(null);
         return;
       }
       draw(performance.now());
       const shouldAnimate =
-        visible &&
-        !document.hidden &&
         !reduced.matches &&
         values.current.animate &&
         Object.values(values.current.flows).some(
@@ -335,6 +345,7 @@ export default function EnergyScene({
             f.watts !== null &&
             Math.abs(f.watts) > 0.5,
         );
+      if (!shouldAnimate) previousTime = null;
       renderer.setAnimationLoop(shouldAnimate ? draw : null);
     }
     function resize() {
@@ -344,11 +355,12 @@ export default function EnergyScene({
     }
     api.current = {
       sync: () => {
+        positionHotspots();
         lastFrame = 0;
         sync();
       },
       rotate: (amount) => {
-        angle = Math.max(0.15, Math.min(1.3, angle + amount));
+        angle = Math.max(0.2, Math.min(1.17, angle + amount));
         view();
         lastFrame = 0;
         sync();
@@ -402,55 +414,99 @@ export default function EnergyScene({
       renderer.domElement.removeEventListener("pointermove", move);
       renderer.domElement.removeEventListener("pointerup", up);
       renderer.domElement.removeEventListener("pointercancel", up);
-      geometries.forEach((g) => g.dispose());
-      materials.forEach((m) => m.dispose());
+      tracks.forEach((t) => {
+        t.geometry.dispose();
+        t.material.dispose();
+      });
+      model.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();
     };
   }, []);
-  useEffect(() => api.current?.sync(), [flows, animate]);
+  useEffect(() => api.current?.sync(), [flows, animate, readings]);
+  const en = lang === "en";
   return (
     <div className="energy-scene-wrap">
-      <div
-        ref={host}
-        className="energy-scene"
-        role="img"
-        aria-label={
-          lang === "en"
-            ? "3D home with solar panels, battery, EV and grid connections. Readings below."
-            : "3D-hus med solceller, batteri, elbil og strømnett. Målinger under."
-        }
-      />
-      {failed && (
-        <div className="energy-scene-fallback" role="status">
-          {lang === "en"
-            ? "3D view is unavailable in this browser. Live readings remain available below."
-            : "3D-visningen er ikke tilgjengelig i denne nettleseren. Målingene vises fortsatt under."}
-        </div>
-      )}
+      <div className="energy-scene-stage">
+        <div
+          ref={host}
+          className="energy-scene"
+          role="img"
+          aria-label={
+            en
+              ? "Interactive 3D energy home with solar roof, EV charger, battery and utility pole. Measurements available beside each component and below."
+              : "Interaktivt 3D-energihus med soltak, elbillader, batteri og strømmast. Målinger ved hver del og under modellen."
+          }
+        />
+        {!failed && (
+          <div className="energy-hotspots">
+            {flowRoles
+              .filter((r) => flows[r].visible)
+              .map((role) => {
+                const Icon = icons[role],
+                  reading = readings[role];
+                const action =
+                  flows[role].status === "unconfigured"
+                    ? en
+                      ? "Add measurement"
+                      : "Legg til måling"
+                    : en
+                      ? "Change sensor"
+                      : "Endre måler";
+                return (
+                  <button
+                    key={role}
+                    ref={(node) => {
+                      hotspots.current[role] = node;
+                    }}
+                    className="energy-hotspot"
+                    data-hotspot={role}
+                    data-status={flows[role].status}
+                    aria-label={`${reading.label}: ${reading.value}. ${reading.detail}. ${action}`}
+                    title={`${action} · ${reading.label}`}
+                    disabled={!canConfigure}
+                    onClick={() => onConfigure(role)}
+                  >
+                    <span className="energy-hotspot-icon">
+                      <Icon size={19} aria-hidden="true" />
+                    </span>
+                    <span className="energy-hotspot-copy">
+                      <span>{reading.label}</span>
+                      <strong>{reading.value}</strong>
+                      <small>{reading.detail}</small>
+                    </span>
+                  </button>
+                );
+              })}
+          </div>
+        )}
+        {failed && (
+          <div className="energy-scene-fallback" role="status">
+            {en
+              ? "3D view is unavailable in this browser. Live readings remain available below."
+              : "3D-visningen er ikke tilgjengelig i denne nettleseren. Målingene vises fortsatt under."}
+          </div>
+        )}
+      </div>
       {!failed && (
         <div className="energy-scene-tools">
           <button
-            aria-label={
-              lang === "en" ? "Rotate house left" : "Drei huset mot venstre"
-            }
+            aria-label={en ? "Rotate house left" : "Drei huset mot venstre"}
             onClick={() => api.current?.rotate(-0.15)}
           >
-            ↶
+            <RotateCcw size={16} />
           </button>
           <span>
-            {lang === "en"
-              ? "Your home · illustration"
-              : "Hjemmet ditt · illustrasjon"}
+            {en
+              ? "Your energy home · drag to rotate"
+              : "Ditt energihus · dra for å dreie"}
           </span>
           <button
-            aria-label={
-              lang === "en" ? "Rotate house right" : "Drei huset mot høyre"
-            }
+            aria-label={en ? "Rotate house right" : "Drei huset mot høyre"}
             onClick={() => api.current?.rotate(0.15)}
           >
-            ↷
+            <RotateCw size={16} />
           </button>
         </div>
       )}

@@ -240,3 +240,10 @@ Verified through backend preference isolation/validation/authentication tests, 3
 Energy has a lazy-loaded local WebGL house model, rotation, five configurable power connections, directional particles and accessible numerical readings. Per-user mappings validate W/kW sensors, net/split grid/battery direction, optional SOC and freshness; no energy totals or balance are derived. Five-second readings stop affected animations on missing, old or disconnected data. Visibility/reduced-motion handling and disposal bound graphics activity; WebGL failures preserve the text/configuration UI. Existing history and vehicle controls are retained below.
 
 Backend coverage verifies sign, split readings, units, SOC, freshness, validation, authentication and personal settings. Browser coverage verifies configuration, visible rendering/movement, rotation, persistence, hidden components, offline data and unavailable WebGL on desktop/mobile. Live HA and native mobile GPU/provider validation remain pending.
+
+
+## 1.2.0 — Architectural energy home and direct sensor setup
+
+The local model now includes recessed interior/glazing detail, timber, solar cell frames, a sculpted EV/charger, wall battery and utility mast. Colored light ribbons replace physical loose cables. Projected DOM buttons carry accessible live values and open the corresponding sensor field; camera rotation and responsive collision handling keep these targets within view. Pause and reduced motion freeze highlights; zero/missing/stale/disconnected paths are not illuminated. Values still come from the existing five-second power API and no energy balance is inferred.
+
+The expanded desktop/mobile browser scenario exercises projected component setup/focus, rendering and actual movement, rotation, retained mappings, hidden components, stale/offline readings and WebGL fallback. Physical HA energy hardware and native mobile GPU validation remain pending.

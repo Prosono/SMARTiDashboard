@@ -1,4 +1,12 @@
-import { Component, lazy, Suspense, useState, type ReactNode } from "react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Sun,
@@ -11,6 +19,9 @@ import {
   Check,
   Pause,
   Play,
+  Plus,
+  ArrowUpRight,
+  Zap,
 } from "lucide-react";
 import { api } from "../api";
 import type { Home } from "../types";
@@ -38,6 +49,7 @@ class SceneBoundary extends Component<
 type Live = {
   flows: FlowSnapshot;
   battery_level: number | null;
+  battery_status?: FlowSnapshot[FlowRole]["status"];
   connected: boolean;
   sampled_at: string;
 };
@@ -68,7 +80,18 @@ export function EnergyFlow({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [paused, pause] = useState(false),
-    [selected, select] = useState<FlowRole | null>(null);
+    [selected, select] = useState<FlowRole | null>(null),
+    [editingRole, setEditingRole] = useState<FlowRole | null>(null),
+    [focusRequest, requestFocus] = useState(0);
+  const bindingRefs = useRef<Partial<Record<FlowRole, HTMLDivElement>>>({});
+  useEffect(() => {
+    if (!focusRequest || !editingRole) return;
+    const target = bindingRefs.current[editingRole];
+    target?.scrollIntoView({ block: "center", behavior: "instant" });
+    target
+      ?.querySelector<HTMLSelectElement>("select")
+      ?.focus({ preventScroll: true });
+  }, [focusRequest, editingRole]);
   const labels: Record<FlowRole, string> = {
     solar: t("Solceller", "Solar"),
     home: t("Hjemmet", "Home"),
@@ -88,7 +111,7 @@ export function EnergyFlow({
     unavailable: t("Utilgjengelig", "Unavailable"),
     stale: t("Gammel måling", "Stale reading"),
     invalid: t("Ugyldig måling", "Invalid reading"),
-    unconfigured: t("Velg måler", "Choose sensor"),
+    unconfigured: t("Legg til måling", "Add a reading"),
   };
   const flows = noFlows();
   for (const role of flowRoles) {
@@ -132,6 +155,33 @@ export function EnergyFlow({
         ? t("Lader", "Charging")
         : t("Forbruk", "Consumption");
   }
+  const batteryLevel =
+    !offline &&
+    !live.isError &&
+    live.data?.connected &&
+    (live.data.battery_status === undefined ||
+      live.data.battery_status === "ok") &&
+    live.data.battery_level != null
+      ? `${live.data.battery_level.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 0 })}%`
+      : null;
+  const readings = Object.fromEntries(
+    flowRoles.map((role) => [
+      role,
+      {
+        label: labels[role],
+        value: format(flows[role].watts),
+        detail: `${direction(role)}${role === "battery" && batteryLevel ? ` · ${batteryLevel}` : ""}`,
+      },
+    ]),
+  ) as Record<FlowRole, { label: string; value: string; detail: string }>;
+  function configure(role: FlowRole) {
+    if (!config.data || busy) return;
+    edit(draft ?? structuredClone(config.data));
+    setEditingRole(role);
+    select(role);
+    setError("");
+    requestFocus((n) => n + 1);
+  }
   const sensors = home.controls.filter(
     (c) =>
       c.domain === "sensor" &&
@@ -159,6 +209,7 @@ export function EnergyFlow({
       await qc.invalidateQueries({ queryKey: ["energy-flow-preferences"] });
       await qc.invalidateQueries({ queryKey: ["energy-flow-live"] });
       edit(null);
+      setEditingRole(null);
     } catch {
       setError(
         t(
@@ -204,8 +255,11 @@ export function EnergyFlow({
     >
       <header className="flow-heading">
         <div>
-          <span className="eyebrow">
-            {t("Hjemmets energiflyt", "Your home's energy flow")}
+          <span className="flow-kicker">
+            <Zap size={14} aria-hidden="true" />
+            <span className="eyebrow">
+              {t("Hjemmets energiflyt", "Your home's energy flow")}
+            </span>
           </span>
           <h1>{t("Se hvor strømmen går.", "See where your power goes.")}</h1>
           <p>
@@ -221,6 +275,7 @@ export function EnergyFlow({
           aria-expanded={!!draft}
           onClick={() => {
             edit(draft ? null : structuredClone(config.data!));
+            setEditingRole(null);
             setError("");
           }}
         >
@@ -255,7 +310,15 @@ export function EnergyFlow({
           </p>
           <div className="flow-binding-grid">
             {flowRoles.map((role) => (
-              <div className="flow-binding" key={role}>
+              <div
+                className={`flow-binding${editingRole === role ? " is-editing" : ""}`}
+                data-binding={role}
+                key={role}
+                ref={(element) => {
+                  if (element) bindingRefs.current[role] = element;
+                  else delete bindingRefs.current[role];
+                }}
+              >
                 <label className="flow-visible">
                   <input
                     type="checkbox"
@@ -267,6 +330,12 @@ export function EnergyFlow({
                       })
                     }
                   />
+                  <span className="flow-binding-icon">
+                    {(() => {
+                      const Icon = icons[role];
+                      return <Icon size={20} aria-hidden="true" />;
+                    })()}
+                  </span>
                   {labels[role]}
                 </label>
                 {draft[role].visible && (
@@ -386,7 +455,14 @@ export function EnergyFlow({
                 ? t("Lagrer…", "Saving…")
                 : t("Lagre energiflyt", "Save energy flow")}
             </button>
-            <button onClick={() => edit(null)}>{t("Avbryt", "Cancel")}</button>
+            <button
+              onClick={() => {
+                edit(null);
+                setEditingRole(null);
+              }}
+            >
+              {t("Avbryt", "Cancel")}
+            </button>
           </div>
         </fieldset>
       )}
@@ -394,7 +470,7 @@ export function EnergyFlow({
         <div className="flow-visual-top">
           <span className={anyLive ? "flow-live" : "flow-waiting"}>
             <Radio size={14} />
-            {offline || live.isError
+            {offline || live.isError || live.data?.connected === false
               ? t("Frakoblet", "Offline")
               : anyLive
                 ? t("Målinger fra hjemmet", "Readings from home")
@@ -428,6 +504,9 @@ export function EnergyFlow({
                 !!config.data?.animation && !paused && !offline && !live.isError
               }
               lang={lang}
+              readings={readings}
+              onConfigure={configure}
+              canConfigure={!!config.data && !busy}
             />
           </Suspense>
         </SceneBoundary>
@@ -443,26 +522,39 @@ export function EnergyFlow({
                   data-role={role}
                   data-status={flows[role].status}
                   aria-expanded={selected === role}
-                  onClick={() => select(selected === role ? null : role)}
+                  onClick={() =>
+                    flows[role].status === "unconfigured"
+                      ? configure(role)
+                      : select(selected === role ? null : role)
+                  }
                 >
-                  <span>
-                    <Icon size={18} />
+                  <span className="flow-measurement-label">
+                    <span className="flow-measurement-icon">
+                      <Icon size={18} aria-hidden="true" />
+                    </span>
                     {labels[role]}
+                    <ArrowUpRight
+                      className="flow-measurement-arrow"
+                      size={14}
+                      aria-hidden="true"
+                    />
                   </span>
                   <strong>{format(flows[role].watts)}</strong>
-                  <small>{direction(role)}</small>
-                  {role === "battery" &&
-                    !offline &&
-                    !live.isError &&
-                    live.data?.battery_level != null && (
-                      <em>
-                        {live.data.battery_level.toLocaleString(
-                          en ? "en-GB" : "nb-NO",
-                          { maximumFractionDigits: 0 },
-                        )}
-                        %
-                      </em>
+                  <small
+                    className={
+                      flows[role].status === "unconfigured"
+                        ? "flow-add-reading"
+                        : undefined
+                    }
+                  >
+                    {flows[role].status === "unconfigured" && (
+                      <Plus size={13} aria-hidden="true" />
                     )}
+                    {direction(role)}
+                    {role === "battery" && batteryLevel && (
+                      <em> · {batteryLevel}</em>
+                    )}
+                  </small>
                 </button>
               );
             })}
@@ -486,6 +578,15 @@ export function EnergyFlow({
             <small>
               {t("Retning", "Direction")}: {direction(selected)}
             </small>
+            <button
+              disabled={!config.data || busy}
+              onClick={() => configure(selected)}
+            >
+              <Settings2 size={15} aria-hidden="true" />
+              {config.data?.[selected].source
+                ? t("Endre måler", "Change sensor")
+                : t("Legg til måling", "Add a reading")}
+            </button>
           </div>
         )}
         {!anyConfigured && config.data && (

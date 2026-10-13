@@ -1,3 +1,12 @@
+# 1.2.0
+
+- Rebuild the energy house as a detailed architectural model with recessed glazing, timber, framed solar cells, a sculpted EV, charger, wall battery and utility mast.
+- Replace loose grey cables with colored ribbons of light following the site's distribution paths. Moving white highlights show measured direction; missing, stale or zero readings do not light up a connection.
+- Add anchored icons and live power readings beside each component. Select a component to open its sensor setup directly; labels remain usable while rotating and on smaller screens. Retain grid/battery direction, battery percentage and personal component visibility.
+- Refine measurement summaries and configuration in every palette and both themes. Disconnected responses hide battery percentage and explicitly show offline status.
+
+Prepared locally; live HA energy hardware validation remains pending.
+
 # 1.1.0
 
 - Add a real, locally rendered 3D energy home with solar roof, battery, EV/charger and utility connection. Rotate the view and inspect color-coded power readings; animate flows in their measured direction.
