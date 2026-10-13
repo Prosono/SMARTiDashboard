@@ -418,9 +418,18 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     await settleRendering(page);
   }
   await page.getByRole("button", { name: "Mørkt", exact: true }).click();
+  await flow.locator(".energy-scene-stage").screenshot({
+    animations: "disabled",
+    style: ".sidebar { visibility: hidden !important; }",
+    path: `../artifacts/${test.info().project.name}-energy-stage-dark.png`,
+  });
   await flow.screenshot({
     animations: "disabled",
     path: `../artifacts/${test.info().project.name}-energy-flow-dark.png`,
+  });
+  await page.locator(".home-overview").screenshot({
+    animations: "disabled",
+    path: `../artifacts/${test.info().project.name}-energy-overview-dark.png`,
   });
   await solar.click();
   await expect(flow.locator(".flow-reading-detail")).toContainText("Sist målt");

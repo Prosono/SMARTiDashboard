@@ -1,3 +1,11 @@
+# 1.5.0
+
+- Replace the pitched-roof miniature with a minimal graphite pavilion: stepped flat roofs, smoked glazing and restrained architectural lighting. Use a dark slate site and studio background in both app themes.
+- Give solar, battery, grid and EV separate paths and physical house terminals instead of one shared outdoor junction. Show household consumption as an interior circuit behind the glass facade.
+- Preserve measured directions, equipment visibility, history and pause/reduced-motion behavior. Add route checks for independent terminals and usable curves.
+
+Prepared locally; physical HA energy hardware validation remains pending.
+
 # 1.4.0
 
 - Refine the energy home with a curved anonymous electric fastback, panoramic glazing, sculpted fenders, detailed wheels and studio reflections.

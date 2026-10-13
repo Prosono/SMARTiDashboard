@@ -160,7 +160,7 @@ export default function EnergyScene({
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.12;
+    renderer.toneMappingExposure = 0.96;
     renderer.setClearColor(0x000000, 0);
     element.appendChild(renderer.domElement);
     renderer.domElement.setAttribute("aria-hidden", "true");
@@ -170,7 +170,7 @@ export default function EnergyScene({
     const pmrem = new THREE.PMREMGenerator(renderer);
     const reflection = pmrem.fromScene(studio, 0.045);
     scene.environment = reflection.texture;
-    scene.environmentIntensity = 0.35;
+    scene.environmentIntensity = 0.32;
     studio.dispose();
     pmrem.dispose();
     const model = createEnergyHouse();
@@ -198,8 +198,8 @@ export default function EnergyScene({
             );
     });
 
-    scene.add(new THREE.HemisphereLight(0xe8f4ff, 0x73716d, 1.65));
-    const sun = new THREE.DirectionalLight(0xffeedb, 2.7);
+    scene.add(new THREE.HemisphereLight(0xc5d9e9, 0x35434a, 1.35));
+    const sun = new THREE.DirectionalLight(0xffeedb, 2.25);
     sun.position.set(-3, 8, 5);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -211,7 +211,7 @@ export default function EnergyScene({
     sun.shadow.bias = -0.00015;
     sun.shadow.radius = 3;
     scene.add(sun);
-    const rim = new THREE.DirectionalLight(0xa7d8ff, 1.5);
+    const rim = new THREE.DirectionalLight(0xb4d2ec, 1.7);
     rim.position.set(5, 4, -5);
     scene.add(rim);
 
@@ -342,7 +342,7 @@ export default function EnergyScene({
       const width = element.clientWidth,
         height = Math.max(element.clientHeight, 1),
         aspect = width / height;
-      camera.position.set(12 * Math.sin(angle), 8.7, 12 * Math.cos(angle));
+      camera.position.set(12 * Math.sin(angle), 8.2, 12 * Math.cos(angle));
       camera.lookAt(0, 1, 0.45);
       camera.updateMatrixWorld(true);
       const cameraBounds = new THREE.Box3().setFromPoints(

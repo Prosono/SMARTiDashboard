@@ -262,3 +262,11 @@ The anonymous electric fastback uses a curved body/canopy, sculpted wheel openin
 Desktop reading cards connect to physical component anchors; smaller views arrange labels around the model. Live values and actual hourly previews have separate space. Measurement layouts respond to available content width, including tablets with a sidebar. The history workspace includes responsive signed axes, filled segments that preserve missing hours, pointer/touch/keyboard inspection and explicit recorded-data coverage.
 
 Validation covers 33 frontend unit tests and four desktop/mobile browser scenarios: actual rendered movement, stable pixels during pause/reduced motion/zero readings/disconnection, resumed animation, rotation, history inspection, configuration persistence, hidden components and WebGL fallback. Desktop, tablet and mobile screenshots are reviewed in light/dark themes. Release 1.4.0 is prepared locally, not published; physical HA hardware and native mobile GPU validation remain pending.
+
+## 1.5.0 — Graphite pavilion and independent energy connections
+
+The energy house is rebuilt as two minimal graphite volumes with flat roofs, smoked glazing and a dark slate base. Architectural detail is reduced to thin fascia, a recessed entry and one low planter. The model stage uses its own dark studio background in both app themes, while the surrounding readings and history retain the selected theme. The anonymous fastback is retained.
+
+Each external role has an independent physical terminal: roof solar to a facade inverter, battery to its adjacent service bay, EV to a front-left charging circuit and grid to a separate side meter. Household consumption runs inside the glazed living wing. No route uses the former common outdoor hub. Direction, freshness, pause and equipment visibility rules remain unchanged; these display routes do not imply the property's actual wiring or an inferred energy balance.
+
+Validation: 35 frontend unit tests include independent route terminals, usable curves and floor clearance. Four desktop/mobile browser scenarios exercise rendering, animation/status transitions, history, saved visibility/mappings and WebGL fallback. Light/dark stage and full-page captures plus tablet layout are reviewed. Release 1.5.0 is prepared locally, not published; live HA hardware/native mobile GPU validation remains pending.
