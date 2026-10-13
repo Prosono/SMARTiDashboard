@@ -72,7 +72,8 @@ def test_photo_paths_and_forecast_local_calendar():
     assert days["tomorrow"]["precipitation"] == 0
 
 
-def test_live_forecast_and_device_history_contract(tmp_path):
+@pytest.mark.parametrize("period", [None, "24", "168"])
+def test_live_forecast_and_device_history_contract(tmp_path, period):
     class HA:
         connected = True
         devices = {"one": {"id": "one", "name": "Meter", "manufacturer": "Maker", "sw_version": "1"}}
@@ -110,7 +111,12 @@ def test_live_forecast_and_device_history_contract(tmp_path):
     with TestClient(app) as c:
         assert c.get("/api/home/weather/weather.home").json()["days"] == {}
         assert c.get("/api/manage/device/one").json()["firmware"] == "1"
-        history = c.get("/api/manage/device/one/history?entity_id=sensor.temp").json()
+        url = "/api/manage/device/one/history?entity_id=sensor.temp"
+        response = c.get(url + (f"&hours={period}" if period else ""))
+        assert response.status_code == 200, response.text
+        history = response.json()
+        duration = datetime.fromisoformat(history["end"]) - datetime.fromisoformat(history["start"])
+        assert abs(duration.total_seconds() - int(period or "24") * 3600) < 5
         assert history["minimum"] == 20 and history["maximum"] == 23
         assert history["points"][1]["value"] is None
         assert c.get("/api/manage/device/one/history?entity_id=sensor.other").status_code == 404

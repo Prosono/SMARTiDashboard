@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "60cbf9a66a542b37707aa698a4cd2b881853907bd97347f243428c44fa803d18",
+  "bundle_sha256": "2a5290e3a5becf658be32862da2195523dc751246e43987224d469f20e205a7c",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/auth.py": "a1b5574b40832328d6d1162e8e6d4060315b668581d9bc077d89cb54bd21ead5",
@@ -9,7 +9,7 @@
     "backend/app/demo.py": "b91ce175c49669b143189d4652d5f2e962a534c98a2f337ebb415e1cebf1dfe2",
     "backend/app/energy.py": "5a620e4f4f5060a86feeda05da66fe38bf5d2a22ded1bb15cb79c215a79e0996",
     "backend/app/ha.py": "a1b89d5dc9da70dbc62410ae8feab9d141cd1ea61c37fbb8661e676cfce62a53",
-    "backend/app/home_extras.py": "834387e97bce141c911163a06527720f24d19c2bdcd7e4ba584d3725b33d5b30",
+    "backend/app/home_extras.py": "691aa8bb4e12df795d0ae2f313d1e67fdb75c2a1f4b1e767ad94ac1920c11acd",
     "backend/app/home_overview.py": "7499923eeec829d249d12b4288f5e00fa23ebfc5198e991c8315ea0ac2e5d512",
     "backend/app/inventory.py": "041165790f4de012754740568249c27ff98f497021ee670a3988938a86414ee6",
     "backend/app/main.py": "2db7a98ba0eff83fd641d7510faf88d0a677225e27a5eb5b7d8b9251f3745369",
@@ -80,7 +80,7 @@
     "backend/app/demo.py": "b91ce175c49669b143189d4652d5f2e962a534c98a2f337ebb415e1cebf1dfe2",
     "backend/app/energy.py": "5a620e4f4f5060a86feeda05da66fe38bf5d2a22ded1bb15cb79c215a79e0996",
     "backend/app/ha.py": "a1b89d5dc9da70dbc62410ae8feab9d141cd1ea61c37fbb8661e676cfce62a53",
-    "backend/app/home_extras.py": "834387e97bce141c911163a06527720f24d19c2bdcd7e4ba584d3725b33d5b30",
+    "backend/app/home_extras.py": "691aa8bb4e12df795d0ae2f313d1e67fdb75c2a1f4b1e767ad94ac1920c11acd",
     "backend/app/home_overview.py": "7499923eeec829d249d12b4288f5e00fa23ebfc5198e991c8315ea0ac2e5d512",
     "backend/app/inventory.py": "041165790f4de012754740568249c27ff98f497021ee670a3988938a86414ee6",
     "backend/app/main.py": "2db7a98ba0eff83fd641d7510faf88d0a677225e27a5eb5b7d8b9251f3745369",

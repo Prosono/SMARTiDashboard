@@ -1,3 +1,7 @@
+# 0.8.1
+
+Fix integration device history returning HTTP 422 when the browser explicitly requests 24 hours or seven days. Validate the period as a URL string before converting it to hours. Regression tests cover both explicit periods, the default period and invalid values.
+
 # 0.8.0
 
 - Choose which people appear on Home, with an optional “only home” filter saved per login. Show actual local system profile photos through an authenticated proxy; administrators can upload shared profile overrides or restore system photos.

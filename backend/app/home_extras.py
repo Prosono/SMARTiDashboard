@@ -226,7 +226,9 @@ def extras_router(store, user, ha, settings):
         }
 
     @router.get("/manage/device/{id}/history")
-    async def device_history(id: str, entity_id: str, hours: Literal[24, 168] = 24, current=Depends(user)):
+    async def device_history(
+        id: str, entity_id: str, hours: Literal["24", "168"] = "24", current=Depends(user)
+    ):
         device(id, current)
         c = next(
             (
@@ -240,7 +242,7 @@ def extras_router(store, user, ha, settings):
             raise HTTPException(404, "sensor_not_found")
         if not ha.connected:
             raise HTTPException(503, "history_unavailable")
-        start = datetime.now(UTC) - timedelta(hours=hours)
+        start = datetime.now(UTC) - timedelta(hours=int(hours))
         if settings.mode == "demo":
             rows = []
         else:
