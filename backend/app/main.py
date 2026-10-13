@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .auth import Auth, hasher
+from .calendar import calendar_router
 from .camera_stream import camera_router
 from .config import Settings
 from .demo import Demo
@@ -24,6 +25,7 @@ from .models import Command
 from .scenes import scenes_router
 from .setup import DeviceSetup
 from .storage import Store
+from .vehicle import vehicle_router
 
 
 class Credentials(BaseModel):
@@ -157,6 +159,8 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     app.include_router(management_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
     app.include_router(extras_router(store, user, ha, settings))
+    app.include_router(calendar_router(store, user, ha, settings))
+    app.include_router(vehicle_router(store, user, ha))
     app.include_router(camera_router(ha, user, settings))
     app.include_router(scenes_router(ha, store, user, settings))
     app.include_router(energy_router(ha, store, user, settings))

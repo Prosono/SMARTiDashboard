@@ -1,0 +1,159 @@
+.thermostat {
+  --thermo: #b95b18;
+  width: 100%;
+  padding-top: 0.8rem;
+}
+.thermostat[data-tone="cool"] {
+  --thermo: #267abd;
+}
+.thermostat[data-tone="off"] {
+  --thermo: var(--muted);
+}
+.thermostat[data-tone="auto"] {
+  --thermo: #568277;
+}
+[data-theme="dark"] .thermostat[data-tone="heat"] {
+  --thermo: #f2a457;
+}
+[data-theme="dark"] .thermostat[data-tone="cool"] {
+  --thermo: #73baf1;
+}
+[data-theme="dark"] .thermostat[data-tone="auto"] {
+  --thermo: #8bc6b5;
+}
+.thermostat-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  color: var(--thermo);
+  font-size: 0.78rem;
+}
+.thermostat-mode small {
+  margin-left: auto;
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+.thermostat-dial {
+  position: relative;
+  max-width: 320px;
+  margin: 0.8rem auto 0;
+}
+.thermostat-dial svg {
+  width: 100%;
+  display: block;
+  overflow: visible;
+}
+.thermostat-dial path {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+.thermostat-track {
+  stroke: color-mix(in srgb, var(--thermo) 14%, var(--surface));
+}
+.thermostat-arc {
+  stroke: var(--thermo);
+}
+.thermostat-knob {
+  fill: var(--surface);
+  stroke: var(--thermo);
+  stroke-width: 3;
+}
+.thermostat-target {
+  position: absolute;
+  inset: 45% 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.thermostat-target > span {
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+.thermostat-target strong {
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+}
+.thermostat-target strong small {
+  font-size: 0.85rem;
+  margin-left: 0.15rem;
+  letter-spacing: 0;
+}
+.thermostat-adjust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+.thermostat-adjust button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+}
+.thermostat-adjust button:hover:not(:disabled) {
+  color: var(--thermo);
+  background: color-mix(in srgb, var(--thermo) 10%, var(--surface));
+}
+.thermostat-adjust button:focus-visible {
+  outline: 2px solid var(--thermo);
+  outline-offset: 3px;
+}
+.thermostat-adjust > span {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+.thermostat-adjust strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.thermostat-readonly {
+  display: block;
+  color: var(--muted);
+  margin-top: 0.6rem;
+  font-size: 0.7rem;
+}
+.device:has(.thermostat) .device-value {
+  display: block;
+}
+.device-detail-control:has(.thermostat) {
+  display: block;
+}
+
+.thermostat {
+  container-type: inline-size;
+}
+.thermostat-adjust strong {
+  white-space: nowrap;
+}
+@container (max-width: 200px) {
+  .thermostat-adjust {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .thermostat-adjust > span {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+  .thermostat-adjust button {
+    justify-self: center;
+  }
+  .thermostat-mode small {
+    margin-left: 0;
+  }
+  .thermostat-target strong {
+    font-size: 1.7rem;
+  }
+}

@@ -219,3 +219,17 @@ The weather card shows now and tomorrow. Tomorrow requires a daily forecast from
 Under **Integrasjoner**, expand a group and select a device. The administrator dialog shows registry information and available controls. **Statistikk** selects a sensor/binary sensor and the last 24 hours or seven days. This requires recorded history; it does not infer energy consumption or invent missing values. The graph and table show at most 300 sampled readings, with unknown-state gaps preserved; min/max are calculated from all returned numeric readings. Devices without supported measurements have an explicit empty state.
 
 Local automated coverage includes preference isolation, photo authorization/proxy paths, timezone boundaries, device ownership of history sources, and desktop/mobile interactions. Actual HA hardware, weather providers and native Safari still require live validation.
+
+## 0.9.0 — Home calendar
+
+Home now includes a read-only calendar date strip and daily agenda. Existing hub calendar entities are selected per user (up to 12), with no calendars selected initially. Supports timed/all-day/multi-day events, home timezone, seven-day browsing, expandable location/description, refresh, and explicit missing/offline/partial-failure states. Event responses are limited to 200 per calendar per week and rendered as text, without browser persistence. Selection is not an access-control boundary; home users can select calendars exposed by the hub.
+
+Backend tests cover authentication, CSRF, per-user selection, exclusive all-day end dates, timezone/DST normalization and partial provider failure. Desktop/mobile tests cover selection persistence, navigation, event details and failures. Live calendar provider validation and appointment creation/editing remain outside this release. Protocol reference: https://developers.home-assistant.io/docs/api/rest/.
+
+## 0.10.0 — Thermostat design and EV bindings
+
+Reusable semicircle thermostat presentation now serves control cards and device dialogs. It displays target/current temperature, source-reported mode and HVAC activity, semantic heat/cool/off colors and capability-bound +/- controls. Unsupported dual-setpoint control remains read-only; no mode-change API or arc-drag action is added.
+
+Home → Energy has a personal EV/charger configuration for existing battery/range/power/energy/status sensors and a charging switch. Empty, missing and offline states are explicit. The energy figure remains the source meter value. Mapping is validated server-side and does not send commands; switching is confirmed by the user and uses the existing guarded command endpoint. No vehicle/provider integration or charging scheduler is included.
+
+Verified through backend preference isolation/validation/authentication tests, 33 frontend unit tests, and desktop/mobile tests for setpoint changes, limits, offline disabling, configuration, cancelled/confirmed switch commands and persistence. The user has no connected EV/charger for hardware validation yet.

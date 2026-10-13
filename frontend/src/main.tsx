@@ -1,3 +1,4 @@
+import { Thermostat } from "./Thermostat";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -898,9 +899,6 @@ function Device({
   const device = h.devices.find((v) => v.id === c.device_id);
   const power = c.capabilities.some((v) => v.kind === "power");
   const dim = c.capabilities.find((v) => v.kind === "brightness");
-  const temp = c.capabilities.find((v) =>
-    v.actions.includes("set_temperature"),
-  );
   const Icon =
     c.domain === "light"
       ? Lightbulb
@@ -1027,15 +1025,12 @@ function Device({
       </div>
       <div className="device-value">
         {c.domain === "climate" ? (
-          <>
-            <span className="big-value">
-              {c.availability === "available"
-                ? String(c.attributes.current_temperature ?? "—")
-                : "—"}
-              <small>°</small>
-            </span>
-            <span className="value-label">{t.temperature}</span>
-          </>
+          <Thermostat
+            c={{ ...c, availability: offline ? "unavailable" : c.availability }}
+            lang={document.documentElement.lang}
+            disabled={!can || busy}
+            change={(value) => void command("set_temperature", value)}
+          />
         ) : c.domain === "sensor" && c.availability === "available" ? (
           <span className="big-value">
             {c.state}
@@ -1150,50 +1145,7 @@ function Device({
           />
         </label>
       )}
-      {temp && (
-        <div className="temperature-control">
-          <button
-            className="icon-button"
-            aria-label={`${c.name}: ${t.target} −`}
-            disabled={
-              !can ||
-              busy ||
-              typeof c.attributes.temperature !== "number" ||
-              Number(c.attributes.temperature) <= Number(temp.minimum)
-            }
-            onClick={() =>
-              command(
-                "set_temperature",
-                Number(c.attributes.temperature) - Number(temp.step),
-              )
-            }
-          >
-            <Minus size={18} />
-          </button>
-          <span>
-            <small>{t.target}</small>
-            <strong>{String(c.attributes.temperature ?? "—")}°</strong>
-          </span>
-          <button
-            className="icon-button"
-            aria-label={`${c.name}: ${t.target} +`}
-            disabled={
-              !can ||
-              busy ||
-              typeof c.attributes.temperature !== "number" ||
-              Number(c.attributes.temperature) >= Number(temp.maximum)
-            }
-            onClick={() =>
-              command(
-                "set_temperature",
-                Number(c.attributes.temperature) + Number(temp.step),
-              )
-            }
-          >
-            <Plus size={18} />
-          </button>
-        </div>
-      )}
+
       <button
         className="device-details"
         aria-expanded={details}

@@ -1,3 +1,4 @@
+import { Thermostat } from "./Thermostat";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Radio } from "lucide-react";
@@ -368,7 +369,15 @@ export function DeviceControl({
           </button>
         </div>
       )}
-      {numeric && (
+      {c.domain === "climate" && (
+        <Thermostat
+          c={{ ...c, availability: disabled ? "unavailable" : c.availability }}
+          lang={no ? "nb" : "en"}
+          disabled={blocked}
+          change={(v) => void command("set_temperature", v)}
+        />
+      )}
+      {numeric && c.domain !== "climate" && (
         <form
           onSubmit={(e) => {
             e.preventDefault();

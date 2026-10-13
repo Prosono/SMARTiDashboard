@@ -184,7 +184,7 @@ test("capability profiles, cameras on demand, missing data and large homes", asy
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
   await expect(page.locator("#home-energy")).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Lading", exact: true }),
+    page.getByRole("heading", { name: "Elbil & lader", exact: true }),
   ).toBeVisible();
   expect(cameraRequests).toBe(0);
   await page.getByRole("tab", { name: "Sikkerhet", exact: true }).click();

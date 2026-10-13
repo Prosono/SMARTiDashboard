@@ -42,6 +42,8 @@ import { Scenes } from "./Scenes";
 import { HomeTabs, type HomeTab } from "./HomeTabs";
 import { RoomControls } from "./HomeRooms";
 import { Presence } from "./People";
+import { Calendar } from "./Calendar";
+import { Vehicle } from "./Vehicle";
 import { Weather } from "./Weather";
 import "./home.css";
 import "./homeTabs.css";
@@ -925,6 +927,7 @@ export function HomeOverview({
                 </button>
               )}
             </section>
+            <Calendar lang={lang} offline={offline} />
             <Scenes home={h} offline={offline} admin={admin} lang={lang} />
           </>
         )}
@@ -1098,27 +1101,8 @@ export function HomeOverview({
                 )}
               </section>
             )}
-          {tab === "energy" && model.charging.length > 0 && (
-            <section className="home-panel">
-              <h2>
-                <Zap size={20} />
-                {t("Lading", "Charging")}
-              </h2>
-              <ul className="home-signal-list">
-                {model.charging.slice(0, 5).map((c) => (
-                  <li key={c.id}>
-                    <span>{c.name}</span>
-                    <strong>
-                      {offline
-                        ? "—"
-                        : c.domain === "sensor"
-                          ? reading(c, lang)
-                          : entityState(c.entity_id, c.state, h, lang)}
-                    </strong>
-                  </li>
-                ))}
-              </ul>
-            </section>
+          {tab === "energy" && (
+            <Vehicle home={h} offline={offline} lang={lang} />
           )}
           {tab === "overview" && !!activity.data?.length && (
             <section className="home-panel">

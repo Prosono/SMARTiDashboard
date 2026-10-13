@@ -121,3 +121,23 @@ The weather card shows now and tomorrow. Tomorrow requires a daily forecast from
 Under **Integrasjoner**, expand a group and select a device. The administrator dialog shows registry information and available controls. **Statistikk** selects a sensor/binary sensor and the last 24 hours or seven days. This requires recorded history; it does not infer energy consumption or invent missing values. The graph and table show at most 300 sampled readings, with unknown-state gaps preserved; min/max are calculated from all returned numeric readings. Devices without supported measurements have an explicit empty state.
 
 Local automated coverage includes preference isolation, photo authorization/proxy paths, timezone boundaries, device ownership of history sources, and desktop/mobile interactions. Actual HA hardware, weather providers and native Safari still require live validation.
+
+
+## Calendar on Home (0.9.0)
+
+On Home → Overview, find **På planen** and choose **Velg kalendere**. Select existing calendars and save. Selection is personal to the SMARTi login (up to 12); all residents can view calendars made available to the home hub. This selection is a display preference, not a calendar access-control boundary.
+
+Choose a date to view that day's agenda, use arrows to move by a week or **I dag** to return to today. Expand an appointment for location and description. Times follow the configured home timezone; all-day end dates are exclusive and overnight events appear on each affected day. Existing recurring appointments are returned by the calendar integration as occurrences.
+
+Connect calendars to the home hub first if none appear. This version reads appointments; it does not create calendars or edit events. Data refreshes every five minutes while open, with manual refresh available. Offline or failed calendars are explicitly labelled. Each calendar is limited to 200 events per requested week, with an on-screen notice if truncated. Calendar details are not stored in browser storage.
+
+Uses the official [calendar REST API](https://developers.home-assistant.io/docs/api/rest/). Live installation/provider validation remains pending.
+
+
+## Thermostats and EV charging (0.10.0)
+
+Thermostats now show a semicircular target-temperature gauge, current room temperature and +/- controls. Heating is orange, cooling blue and off/unavailable neutral; activity such as heating versus idle is shown separately from mode. Only reported temperature capabilities are editable. Devices that only expose a high/low target range display that range without introducing unsupported commands. This release does not add mode selection or dragging on the arc. The visual direction follows the [thermostat card](https://www.home-assistant.io/dashboards/thermostat/), using SMARTi styling.
+
+Under Home → Energy, **Elbil & lader → Tilpass** binds existing entities to battery percentage, range (km/mi), charging power (W/kW), energy (Wh/kWh), status and an optional on/off charging switch. Preferences are personal. These bindings do not install an integration: connect the car/charger to the home hub first. The energy value is the selected meter reading, not an inferred charging-session total. Only use a switch known to control charging; turning it on/off requires confirmation and retains the backend's existing capability and availability checks. No current limits, schedules or vendor-specific start/stop services are changed.
+
+Validated with isolated demo/API and desktop/mobile tests; live thermostat and EV hardware confirmation remains pending.

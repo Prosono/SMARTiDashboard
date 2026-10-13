@@ -1,3 +1,13 @@
+# 0.10.0
+
+- Replace thermostat controls with a semicircular target-temperature display, room reading and large +/- buttons. Show mode and HVAC activity separately with heating/cooling/off colors, across Home, rooms and device dialogs. Respect reported steps, bounds and availability; mode switching and dual-setpoint editing are not introduced.
+- Add a configurable EV/charger section under Home → Energy. Bind existing battery, range, power, energy and status sensors plus an optional charging switch per user. Missing/offline readings remain explicit; configuration sends no device commands and switching asks for confirmation.
+- Provide a setup empty state until a vehicle or charger is connected. No vendor integration, current-limit control or charging schedule is created automatically.
+
+# 0.9.0
+
+Add a calendar to Home with a seven-day date strip, week navigation, today shortcut and expandable daily agenda. Select up to 12 existing calendars per SMARTi user; none are selected initially. Display timed, all-day and multi-day events using the home timezone, with exclusive end dates and explicit loading/offline/partial-failure states. Calendar viewing is read-only; events remain in their existing calendar service.
+
 # 0.8.2
 
 Inspect integration device history with a pointer or touch: show the nearest sampled reading, timestamp, unit and a graph marker. Unknown readings are explicitly labelled. Arrow keys, Home and End navigate readings; changing sensor or period clears the selection.
