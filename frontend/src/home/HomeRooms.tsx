@@ -1,77 +1,7 @@
 import { useState, type ReactNode } from "react";
-import { Lightbulb, Thermometer, Users, Search } from "lucide-react";
+import { Lightbulb, Thermometer, Search } from "lucide-react";
 import type { Home, Control } from "../types";
 import { usable } from "./homeModel";
-export function Presence({
-  home,
-  offline,
-  lang,
-}: {
-  home: Home;
-  offline: boolean;
-  lang: string;
-}) {
-  const en = lang === "en";
-  const people = home.controls.filter(
-    (c) => c.domain === "person" && !c.diagnostic,
-  );
-  return (
-    <section
-      className="home-presence"
-      aria-label={en ? "Who's home" : "Hvem er hjemme"}
-    >
-      <div>
-        <Users size={20} />
-        <h2>{en ? "Who's home" : "Hvem er hjemme"}</h2>
-      </div>
-      {people.length ? (
-        <ul>
-          {people.map((c) => {
-            const unknown = offline || !usable(c),
-              here = !unknown && c.state === "home";
-            return (
-              <li key={c.id} className={here ? "person-home" : "person-away"}>
-                <span className="person-avatar" aria-hidden="true">
-                  {c.name.trim().slice(0, 1).toLocaleUpperCase()}
-                </span>
-                <span>
-                  <strong>{c.name}</strong>
-                  <small>
-                    {unknown
-                      ? en
-                        ? "Unknown"
-                        : "Ukjent"
-                      : here
-                        ? en
-                          ? "Home"
-                          : "Hjemme"
-                        : en
-                          ? "Away"
-                          : "Borte"}
-                  </small>
-                </span>
-                <span className="person-dot" aria-hidden="true" />
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p>
-          {en
-            ? "No people are configured in SMARTi yet. Presence appears here when available."
-            : "Ingen personer er satt opp i SMARTi ennå. Tilstedeværelse vises her når den er tilgjengelig."}
-        </p>
-      )}
-      {offline && (
-        <small>
-          {en
-            ? "Waiting for fresh presence data."
-            : "Venter på ferske tilstedeværelsesdata."}
-        </small>
-      )}
-    </section>
-  );
-}
 export function RoomControls({
   home,
   kind,

@@ -208,3 +208,14 @@ The canvas supports pointer-drawn connections and two-port touch/keyboard select
 Vivid and calm palettes share semantic colors across headers, ports and wires. Existing dragging, background pan, grid/line controls and card removal remain available. Positions and palette are temporary. Conditional branches are edited in the existing subflow editor, not through arbitrary Yes/No connector wiring. Global conditions cannot be bypassed, and self/duplicate/invalid links and outgoing active Stop connections are rejected. No separate graph runtime is introduced.
 
 Reference: https://www.home-assistant.io/docs/scripts/ (sequence, parallel and conditions). Verified using local frontend and desktop/mobile browser tests, including persisted demo API configuration. Physical HA execution remains unverified.
+
+
+## People, tomorrow’s weather and integration device details (0.8.0)
+
+On Home, choose **Velg personer** to select existing people and optionally show only those at home. Selection is personal to the logged-in account; unknown/offline presence stays visible. Administrators can choose a profile image in the same panel. Uploaded images are cropped to a square and shared with the home; “Bruk systembildet” removes the override. Native local person images are fetched through the authenticated backend. External image URLs are not fetched; upload a photo instead. This does not create tracking entities or change their location data.
+
+The weather card shows now and tomorrow. Tomorrow requires a daily forecast from the configured weather integration; missing data is explicitly labelled. Dates follow the configured home timezone. Forecasts are cached for five minutes. The implementation uses the official [weather.get_forecasts service](https://www.home-assistant.io/integrations/weather/).
+
+Under **Integrasjoner**, expand a group and select a device. The administrator dialog shows registry information and available controls. **Statistikk** selects a sensor/binary sensor and the last 24 hours or seven days. This requires recorded history; it does not infer energy consumption or invent missing values. The graph and table show at most 300 sampled readings, with unknown-state gaps preserved; min/max are calculated from all returned numeric readings. Devices without supported measurements have an explicit empty state.
+
+Local automated coverage includes preference isolation, photo authorization/proxy paths, timezone boundaries, device ownership of history sources, and desktop/mobile interactions. Actual HA hardware, weather providers and native Safari still require live validation.

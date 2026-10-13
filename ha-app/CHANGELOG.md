@@ -1,3 +1,12 @@
+# 0.8.0
+
+- Choose which people appear on Home, with an optional “only home” filter saved per login. Show actual local system profile photos through an authenticated proxy; administrators can upload shared profile overrides or restore system photos.
+- Show current weather alongside tomorrow’s daily forecast, including high/low temperature and precipitation when supplied. Use the home timezone and clearly indicate unavailable forecasts.
+- Open devices from expanded integrations in a detail dialog with manufacturer, model, room, firmware and supported controls. Inspect sensor and binary sensor history over 24 hours or seven days, with min/max, a graph and readings table; unknown values break the graph.
+- Keep photo credentials server-side and enforce administrator access for photo changes and integration device inspection.
+
+Prepared locally; physical HA installation validation remains pending.
+
 # 0.7.1
 
 Use SMARTi names and the bundled SMARTi logo for Home Assistant platform integrations, including Supervisor and hardware variants. Brand expanded integration/device labels, update labels, home/control display names and built-in Norwegian/English copy consistently. Search accepts SMARTi while retaining original integration searches. Preserve original domain/entry/entity IDs, endpoints and saved names; opening and saving an unchanged branded integration name does not rewrite its underlying name. Third-party integrations retain their own logos.

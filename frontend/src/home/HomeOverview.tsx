@@ -29,11 +29,6 @@ import {
   Car,
   ChevronRight,
   MapPin,
-  Sun,
-  CloudSun,
-  CloudRain,
-  Cloud,
-  Snowflake,
   Radio,
   AlertCircle,
 } from "lucide-react";
@@ -45,7 +40,9 @@ import { CameraCard } from "./HomeMedia";
 import { Energy } from "./EnergyOverview";
 import { Scenes } from "./Scenes";
 import { HomeTabs, type HomeTab } from "./HomeTabs";
-import { Presence, RoomControls } from "./HomeRooms";
+import { RoomControls } from "./HomeRooms";
+import { Presence } from "./People";
+import { Weather } from "./Weather";
 import "./home.css";
 import "./homeTabs.css";
 export type HomePreferences = {
@@ -244,26 +241,6 @@ export function HomeOverview({
   const displayedCameras = pref?.cameras.length
     ? model.cameras.filter((c) => pref.cameras.includes(c.id))
     : model.cameras;
-  const weatherLabels: Record<string, string> = {
-    sunny: t("Sol", "Sunny"),
-    cloudy: t("Skyet", "Cloudy"),
-    partlycloudy: t("Delvis skyet", "Partly cloudy"),
-    rainy: t("Regn", "Rain"),
-    snowy: t("Snø", "Snow"),
-    "clear-night": t("Klar natt", "Clear night"),
-  };
-  const WeatherIcon =
-    model.weather?.state === "sunny"
-      ? Sun
-      : model.weather?.state === "clear-night"
-        ? Moon
-        : model.weather?.state === "rainy"
-          ? CloudRain
-          : model.weather?.state === "snowy"
-            ? Snowflake
-            : model.weather?.state === "partlycloudy"
-              ? CloudSun
-              : Cloud;
   return (
     <div className="home-overview">
       <div className="home-toolbar">
@@ -328,18 +305,7 @@ export function HomeOverview({
               </p>
             </div>
             {model.weather && !offline && (
-              <div className="home-weather">
-                <WeatherIcon size={37} strokeWidth={1.4} />
-                <strong>
-                  {typeof model.weather.attributes.temperature === "number"
-                    ? `${model.weather.attributes.temperature}${model.weather.attributes.temperature_unit || "°"}`
-                    : "—"}
-                </strong>
-                <span>
-                  {weatherLabels[model.weather.state] || model.weather.state}
-                </span>
-                <small>{model.weather.name}</small>
-              </div>
+              <Weather c={model.weather} lang={lang} />
             )}
             <nav
               className="home-modes"
@@ -622,7 +588,7 @@ export function HomeOverview({
         )}
         {tab === "overview" && (
           <>
-            <Presence home={h} offline={offline} lang={lang} />
+            <Presence home={h} offline={offline} lang={lang} admin={admin} />
             {!!model.alerts.length && (
               <button
                 className="home-alert-banner"

@@ -110,3 +110,14 @@ Choose the palette icon in the top bar, or open More → Settings → Color pale
 Opening a room from Home or Rooms now shows its photo, actual status and grouped sections for lighting, climate/air, power/outlets, security, cameras and other supported controls. Search within the room, use section shortcuts, or select another room at the top. Empty categories are omitted; larger categories have Show all. Control capabilities, availability checks and action confirmations are unchanged. Camera playback follows the existing visibility/session rules and stops when leaving the room. A temperature summary uses one named sensor/thermostat and converts Fahrenheit to Celsius; it is not an average. Connection status describes data availability, not radio signal quality or verified physical execution.
 
 Personal room photos configured under Home → Personalize Home take precedence. Otherwise supported room names use a labelled decorative image; unavailable images fall back to a plain header. Manage rooms opens the existing administrator room-assignment editor.
+
+
+## People, tomorrow’s weather and integration device details (0.8.0)
+
+On Home, choose **Velg personer** to select existing people and optionally show only those at home. Selection is personal to the logged-in account; unknown/offline presence stays visible. Administrators can choose a profile image in the same panel. Uploaded images are cropped to a square and shared with the home; “Bruk systembildet” removes the override. Native local person images are fetched through the authenticated backend. External image URLs are not fetched; upload a photo instead. This does not create tracking entities or change their location data.
+
+The weather card shows now and tomorrow. Tomorrow requires a daily forecast from the configured weather integration; missing data is explicitly labelled. Dates follow the configured home timezone. Forecasts are cached for five minutes. The implementation uses the official [weather.get_forecasts service](https://www.home-assistant.io/integrations/weather/).
+
+Under **Integrasjoner**, expand a group and select a device. The administrator dialog shows registry information and available controls. **Statistikk** selects a sensor/binary sensor and the last 24 hours or seven days. This requires recorded history; it does not infer energy consumption or invent missing values. The graph and table show at most 300 sampled readings, with unknown-state gaps preserved; min/max are calculated from all returned numeric readings. Devices without supported measurements have an explicit empty state.
+
+Local automated coverage includes preference isolation, photo authorization/proxy paths, timezone boundaries, device ownership of history sources, and desktop/mobile interactions. Actual HA hardware, weather providers and native Safari still require live validation.

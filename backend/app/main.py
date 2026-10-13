@@ -16,6 +16,7 @@ from .config import Settings
 from .demo import Demo
 from .energy import energy_router
 from .ha import HAError, HomeAssistant
+from .home_extras import extras_router
 from .home_overview import home_router
 from .management import Management, management_router
 from .mobile import MobileAuth
@@ -155,6 +156,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     app.state.management = management
     app.include_router(management_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
+    app.include_router(extras_router(store, user, ha, settings))
     app.include_router(camera_router(ha, user, settings))
     app.include_router(scenes_router(ha, store, user, settings))
     app.include_router(energy_router(ha, store, user, settings))

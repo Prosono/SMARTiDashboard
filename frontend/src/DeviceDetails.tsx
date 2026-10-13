@@ -291,7 +291,7 @@ export function DeviceDetails({
     </dialog>
   );
 }
-function DeviceControl({
+export function DeviceControl({
   c,
   no,
   disabled,

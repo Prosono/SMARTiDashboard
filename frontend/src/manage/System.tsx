@@ -1,3 +1,4 @@
+import { IntegrationDevice } from "./IntegrationDevice";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -66,6 +67,7 @@ export function Integrations({ lang }: { lang: string }) {
     queryFn: () => api<Integration[]>("manage/integrations"),
     refetchInterval: 15000,
   });
+  const [selectedDevice, selectDevice] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [edit, setEdit] = useState<Integration | null>(null);
@@ -142,6 +144,13 @@ export function Integrations({ lang }: { lang: string }) {
   );
   return (
     <section>
+      {selectedDevice && (
+        <IntegrationDevice
+          id={selectedDevice}
+          lang={lang}
+          close={() => selectDevice(null)}
+        />
+      )}
       <div className="page-heading">
         <span className="eyebrow">
           {t("Tjenestene i hjemmet", "Services in your home")}
@@ -255,17 +264,26 @@ export function Integrations({ lang }: { lang: string }) {
                       <ul className="integration-devices">
                         {(i.device_items || []).map((d) => (
                           <li key={d.id}>
-                            <Box size={19} />
-                            <div>
-                              <strong>{smartiName(d.name)}</strong>
-                              <small>
-                                {smartiName(
-                                  [d.area || t("Uten rom", "No room"), d.model]
-                                    .filter(Boolean)
-                                    .join(" · "),
-                                )}
-                              </small>
-                            </div>
+                            <button
+                              className="integration-device-open"
+                              onClick={() => selectDevice(d.id)}
+                              aria-label={`${t("Åpne enhet", "Open device")}: ${smartiName(d.name)}`}
+                            >
+                              <Box size={19} />
+                              <div>
+                                <strong>{smartiName(d.name)}</strong>
+                                <small>
+                                  {smartiName(
+                                    [
+                                      d.area || t("Uten rom", "No room"),
+                                      d.model,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · "),
+                                  )}
+                                </small>
+                              </div>
+                            </button>
                           </li>
                         ))}
                       </ul>
