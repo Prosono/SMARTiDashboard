@@ -62,9 +62,9 @@ const modes = [
   { id: "holiday", nb: "Ferie", en: "Holiday", Icon: Plane },
 ];
 // These are decorative room moods; personal room photos always take precedence.
-const homeAsset = (name: string) =>
+export const homeAsset = (name: string) =>
   new URL(`home/${name}.webp`, document.baseURI).href;
-function roomMood(name: string) {
+export function roomMood(name: string) {
   const n = name.toLocaleLowerCase();
   if (/kjøkken|kitchen/.test(n))
     return { Icon: CookingPot, photo: "home-kitchen" };

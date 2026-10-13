@@ -101,3 +101,12 @@ Home now has five fixed views: **Overview**, **Lights**, **Energy**, **Security*
 Overview contains your greeting, weather, favorite rooms/devices, scenes and security attention notices. Presence comes from HA `person` entities and displays Home, Away or Unknown. No people are inferred from motion sensors or usernames. When disconnected, presence is shown as unknown. Configure people and their presence sources in HA; SMARTi does not create trackers. Coordinates, tracker references and HA user IDs are omitted from person attributes sent to the browser.
 
 Lights and Climate group the existing controls/readings by room, with search and expandable lists for large rooms. Capabilities remain those of the imported devices; this release does not add color or HVAC-mode controls. Energy retains personal meter/chart choices. Security groups cameras, sensor/alarm status and supported lock/gate controls; alarm arming is not added. Cameras start only while their cards are visible on Security and stop when leaving it. Missing integrations have useful empty states instead of invented readings. Preferences and scene management remain under Home.
+
+
+## Color palettes and room overview (0.7.0)
+
+Choose the palette icon in the top bar, or open More → Settings → Color palette. SMARTi, Fjord, Forest, Sand and Plum can each be combined with light or dark mode. The choice applies to this browser and is retained when optional browser storage is available; it is not a household-wide setting. The SMARTi logo stays unchanged. Escape closes the quick palette menu.
+
+Opening a room from Home or Rooms now shows its photo, actual status and grouped sections for lighting, climate/air, power/outlets, security, cameras and other supported controls. Search within the room, use section shortcuts, or select another room at the top. Empty categories are omitted; larger categories have Show all. Control capabilities, availability checks and action confirmations are unchanged. Camera playback follows the existing visibility/session rules and stops when leaving the room. A temperature summary uses one named sensor/thermostat and converts Fahrenheit to Celsius; it is not an average. Connection status describes data availability, not radio signal quality or verified physical execution.
+
+Personal room photos configured under Home → Personalize Home take precedence. Otherwise supported room names use a labelled decorative image; unavailable images fall back to a plain header. Manage rooms opens the existing administrator room-assignment editor.

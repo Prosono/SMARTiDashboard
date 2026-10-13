@@ -1,3 +1,11 @@
+# 0.7.0
+
+- Add SMARTi, Fjord, Forest, Sand and Plum color palettes, each combined independently with light/dark mode. Choose from the header palette menu or More → Settings. Optional browser storage remembers the choice; blocked/full storage cannot prevent rendering.
+- Replace individual room device lists with a photographic room overview, real room status, section icons, search and shortcuts. Group lights, climate/air, power/outlets, security, cameras and other controls. Existing controls, confirmations and availability restrictions remain in place.
+- Reuse personal room photos, with labelled decorative imagery as a fallback. Large groups expand explicitly, room cameras use the existing visibility-managed live player, and room switching/back navigation stay accessible on mobile and desktop.
+
+Prepared locally; physical HA installation validation remains pending.
+
 # 0.6.0
 
 - Split Home into Overview, Lights, Energy, Security and Climate, with direct tab selection, keyboard navigation and horizontal touch swipes. Gestures starting on controls, video or charts stay with those controls; vertical scrolling remains available.

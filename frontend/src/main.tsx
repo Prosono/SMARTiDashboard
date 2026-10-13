@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  Palette,
   House,
   LayoutGrid,
   SlidersHorizontal,
@@ -43,6 +44,9 @@ import "./manage/manage.css";
 import { Automations } from "./manage/Automations";
 import { RoomManager } from "./manage/Rooms";
 import { Integrations, Updates } from "./manage/System";
+import { PalettePicker, palettes } from "./PalettePicker";
+import { RoomView } from "./rooms/RoomView";
+import "./palettes.css";
 import { HomeOverview } from "./home/HomeOverview";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
@@ -77,6 +81,17 @@ function App() {
   const [theme, setTheme] = useState(() =>
     readPreference("smarti-theme", "light", ["light", "dark"]),
   );
+  const [palette, setPalette] = useState(() =>
+    readPreference(
+      "smarti-palette",
+      "smarti",
+      palettes.map((p) => p.id),
+    ),
+  );
+  useEffect(() => {
+    document.documentElement.dataset.palette = palette;
+    writePreference("smarti-palette", palette);
+  }, [palette]);
   const t = lang === "en" ? en : nb;
   const [session, updateSession] = useState<Session | null>(null);
   const [checking, setChecking] = useState(true);
@@ -179,6 +194,8 @@ function App() {
           setPage={navigate}
           guard={guard}
           onDirty={setDirty}
+          palette={palette}
+          setPalette={setPalette}
           theme={theme}
           setTheme={setTheme}
           lang={lang}
@@ -356,6 +373,8 @@ function Login({
   );
 }
 function Dashboard({
+  palette,
+  setPalette,
   t,
   session,
   page,
@@ -368,6 +387,8 @@ function Dashboard({
   language,
   logout,
 }: {
+  palette: string;
+  setPalette: (s: string) => void;
   t: Text;
   session: Session;
   page: Page;
@@ -478,6 +499,22 @@ function Dashboard({
           <span>{t[page]}</span>
         </div>
         <div className="top-actions">
+          <details
+            className="palette-menu"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.currentTarget.open = false;
+                e.currentTarget.querySelector("summary")?.focus();
+              }
+            }}
+          >
+            <summary
+              aria-label={lang === "en" ? "Choose palette" : "Velg fargepalett"}
+            >
+              <Palette size={19} />
+            </summary>
+            <PalettePicker value={palette} change={setPalette} lang={lang} />
+          </details>
           <span className={"connection " + (offline ? "warning" : "")}>
             <span />
             {h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}
@@ -536,6 +573,19 @@ function Dashboard({
               setPage("devices");
             }}
             add={() => setAdding(true)}
+          />
+        ) : page === "rooms" && room !== null ? (
+          <RoomView
+            key={room}
+            home={h}
+            room={room}
+            rooms={rooms}
+            offline={offline}
+            lang={lang}
+            admin={session.role === "admin"}
+            renderControls={cards}
+            selectRoom={setRoom}
+            manage={() => setRoomEditing(true)}
           />
         ) : page === "devices" || page === "rooms" ? (
           <>
@@ -747,6 +797,11 @@ function Dashboard({
                         <option value="dark">{t.dark}</option>
                       </select>
                     </label>
+                    <PalettePicker
+                      value={palette}
+                      change={setPalette}
+                      lang={lang}
+                    />
                     <label>
                       {t.language}
                       <select

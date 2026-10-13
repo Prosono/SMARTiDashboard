@@ -1,0 +1,266 @@
+html[data-palette="fjord"] {
+  --bg: #eff4f8;
+  --surface: #fafdff;
+  --text: #203746;
+  --muted: #586e7d;
+  --line: #d5e1e8;
+  --soft: #e3edf3;
+  --tint: #e0edf4;
+  --accent: #286280;
+  --orange: #327b9c;
+  --sidebar: #152f40;
+}
+html[data-palette="forest"] {
+  --bg: #eef3eb;
+  --surface: #fafdf6;
+  --text: #283c2e;
+  --muted: #5e705e;
+  --line: #d6e2d0;
+  --soft: #e2ecd9;
+  --tint: #e0ecd9;
+  --accent: #346544;
+  --orange: #44784e;
+  --sidebar: #1d3528;
+}
+html[data-palette="sand"] {
+  --bg: #f6f0e6;
+  --surface: #fffaf2;
+  --text: #483b30;
+  --muted: #786957;
+  --line: #e5d9c8;
+  --soft: #eee3d2;
+  --tint: #f0dfcb;
+  --accent: #895a34;
+  --orange: #a16c42;
+  --sidebar: #3c3028;
+}
+html[data-palette="plum"] {
+  --bg: #f5eff5;
+  --surface: #fffbff;
+  --text: #403244;
+  --muted: #77657a;
+  --line: #e3d8e5;
+  --soft: #ecdfed;
+  --tint: #f0dfeb;
+  --accent: #80516f;
+  --orange: #915d80;
+  --sidebar: #352638;
+}
+html[data-theme="dark"][data-palette="fjord"] {
+  --bg: #111d27;
+  --surface: #1b2c39;
+  --text: #e5eff7;
+  --muted: #a3bbcd;
+  --line: #304654;
+  --soft: #263e4e;
+  --tint: #233e50;
+  --accent: #9ecde4;
+  --orange: #83bfdc;
+  --sidebar: #0c1822;
+}
+html[data-theme="dark"][data-palette="forest"] {
+  --bg: #152019;
+  --surface: #202e23;
+  --text: #ebf1e3;
+  --muted: #afc0a4;
+  --line: #364733;
+  --soft: #30432c;
+  --tint: #34462c;
+  --accent: #b8d39e;
+  --orange: #a9c68e;
+  --sidebar: #111b14;
+}
+html[data-theme="dark"][data-palette="sand"] {
+  --bg: #231e18;
+  --surface: #302920;
+  --text: #f3ebdf;
+  --muted: #c5b59e;
+  --line: #4b4031;
+  --soft: #423729;
+  --tint: #483826;
+  --accent: #e1bc91;
+  --orange: #d6aa7c;
+  --sidebar: #1a1612;
+}
+html[data-theme="dark"][data-palette="plum"] {
+  --bg: #211b24;
+  --surface: #302635;
+  --text: #f4eaf5;
+  --muted: #c5acc9;
+  --line: #4a3a4e;
+  --soft: #402f44;
+  --tint: #482f43;
+  --accent: #deb2d1;
+  --orange: #d09bbb;
+  --sidebar: #1b141e;
+}
+html[data-palette]:not([data-palette="smarti"]) {
+  background: var(--bg);
+  color: var(--text);
+}
+html[data-palette]:not([data-palette="smarti"]) .sidebar {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--sidebar) 88%, var(--orange)),
+    var(--sidebar) 70%
+  );
+}
+html[data-palette]:not([data-palette="smarti"]) .primary {
+  background: var(--orange);
+  color: var(--surface);
+}
+html[data-theme="dark"][data-palette]:not([data-palette="smarti"]) .primary {
+  color: var(--bg);
+}
+html[data-palette]:not([data-palette="smarti"]) .device.is-on {
+  background: color-mix(in srgb, var(--tint) 40%, var(--surface));
+  border-color: color-mix(in srgb, var(--orange) 45%, var(--line));
+}
+html[data-palette]:not([data-palette="smarti"])
+  .toggle[aria-checked="true"]:before {
+  background: var(--orange);
+}
+html[data-palette]:not([data-palette="smarti"]) .starred svg {
+  color: var(--accent);
+  fill: var(--tint);
+}
+html[data-palette]:not([data-palette="smarti"]) .tabs .selected {
+  background: var(--soft);
+  color: var(--text);
+}
+html[data-palette]:not([data-palette="smarti"])
+  .home-tabs
+  [aria-selected="true"]
+  svg {
+  color: var(--orange);
+}
+html[data-palette]:not([data-palette="smarti"]) input[type="range"] {
+  accent-color: var(--orange);
+}
+.palette-menu {
+  position: relative;
+}
+.palette-menu > summary {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  list-style: none;
+}
+.palette-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.palette-menu[open] > summary {
+  background: var(--soft);
+}
+.palette-menu > .palette-picker {
+  position: absolute;
+  right: 0;
+  top: 50px;
+  width: min(340px, calc(100vw - 32px));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1.2rem;
+  box-shadow: 0 12px 40px #101b2026;
+  z-index: 90;
+}
+.palette-picker {
+  margin: 1.4rem 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.palette-picker legend {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.palette-picker > p {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0.3rem 0 1rem;
+}
+.palette-options {
+  display: grid;
+  gap: 7px;
+}
+.palette-options button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 58px;
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  text-align: left;
+  background: var(--surface);
+}
+.palette-options button[aria-pressed="true"] {
+  background: var(--soft);
+  border-color: var(--accent);
+}
+.palette-options button > span:nth-child(2) {
+  flex: 1;
+}
+.palette-options strong,
+.palette-options small {
+  display: block;
+}
+.palette-options strong {
+  font-size: 0.85rem;
+}
+.palette-options small {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.palette-swatches {
+  display: flex;
+}
+.palette-swatches i {
+  width: 19px;
+  height: 30px;
+}
+.palette-swatches i:first-child {
+  border-radius: 7px 0 0 7px;
+}
+.palette-swatches i:last-child {
+  border-radius: 0 7px 7px 0;
+  border: 1px solid #00000010;
+}
+.palette-menu > .palette-picker {
+  right: -44px;
+  top: 48px;
+  margin: 0;
+  max-height: calc(100dvh - 110px);
+  overflow-y: auto;
+}
+.palette-menu > summary {
+  width: 44px;
+  height: 44px;
+}
+.palette-menu > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+html[data-palette]:not([data-palette="smarti"]) .primary:hover {
+  background: color-mix(in srgb, var(--orange) 85%, var(--text));
+}
+html[data-palette]:not([data-palette="smarti"]) .is-on .device-icon,
+html[data-palette]:not([data-palette="smarti"]) .nav-item.active svg {
+  color: var(--orange);
+}
+@media (max-width: 760px) {
+  html[data-palette]:not([data-palette="smarti"]) .sidebar {
+    background: var(--surface);
+  }
+  html[data-palette]:not([data-palette="smarti"]) .nav-item.active svg {
+    color: var(--accent);
+  }
+}
+@media(max-width:760px) {
+ .palette-menu > .palette-picker { position:fixed; top:72px; right:16px; width:calc(100vw - 32px); max-height:calc(100dvh - 100px); }
+}

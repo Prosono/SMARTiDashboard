@@ -1,6 +1,14 @@
-# Implementation status — 2026-10-12
+# Implementation status — 2026-10-13
 
-## 0.6.0 — five Home views and presence (current)
+## 0.7.0 — selectable palettes and grouped room overview (current)
+
+Five palettes (SMARTi, Fjord, Forest, Sand, Plum) independently combine with light/dark mode. A header quick picker and settings picker share an optional browser preference, retaining the existing storage-failure safeguards. Theme tokens color surfaces, text, borders, controls and navigation while preserving original branding and semantic warnings. Mobile navigation retains readable surface backgrounds rather than inheriting desktop sidebar colors.
+
+Individual rooms now have a photographic header, named measurement summary, availability summary, section navigation and search. Controls are grouped by lighting, climate/air, power/outlets, security, cameras and other actions. Room-assignment precedence and native controls remain unchanged. Personal photos take precedence, stock imagery is labelled decorative, failed images fall back gracefully. Camera players reuse visibility-aware teardown and unmount on room changes. Larger groups expand explicitly; no new device capabilities or commands are introduced.
+
+Validation: 31 frontend unit tests passed; TypeScript/Vite build passed. Browser coverage exercises all ten palette/mode combinations, persistence, popup bounds, responsive navigation, room grouping/search/switching and real demo control state changes. The full browser run passed 56 of 58 tests and exposed a 320 px palette-popup overflow. After fixing that layout, all four palette/room desktop/mobile tests passed on rerun. Deterministic release payload verification passed. Physical HA and native Safari validation remain pending. Version 0.7.0 is prepared locally, not published.
+
+## 0.6.0 — five Home views and presence
 
 Home now separates Overview, Lights, Energy, Security and Climate. Accessible tab buttons support direct selection, arrow/Home/End keys and bounded horizontal touch swipes. Vertical scroll and gestures beginning on controls, video, charts and dialogs are excluded from paging. Content transitions respect reduced motion. Inactive views unmount, releasing camera players when leaving Security; energy choices remain stored per user. Home opens on Overview rather than persisting a tab in browser storage.
 
