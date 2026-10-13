@@ -215,8 +215,8 @@ export default function EnergyScene({
         solar: [-25, -52],
         home: [-185, -30],
         ev: [-130, 35],
-        battery: [165, 40],
-        grid: [155, -25],
+        battery: [-45, 132],
+        grid: [65, -4],
       };
       // Phones put two labels above and three below the model. The architecture
       // remains unobscured; names and colors map to the visible equipment.
@@ -316,6 +316,11 @@ export default function EnergyScene({
           Math.abs(flow.watts) > 0.5;
         // Unknown or stale data must not imply electricity is flowing.
         item.ribbon.visible = flow.visible && active;
+        model.setActivity(
+          item.role,
+          flow.visible && active,
+          0.5 + 0.5 * Math.sin(animationTime * 2.6),
+        );
         const component = model.components[item.role];
         if (component) component.visible = flow.visible;
         const forward =
@@ -452,8 +457,8 @@ export default function EnergyScene({
                       ? "Add measurement"
                       : "Legg til måling"
                     : en
-                      ? "Change sensor"
-                      : "Endre måler";
+                      ? "View history"
+                      : "Vis historikk";
                 return (
                   <button
                     key={role}

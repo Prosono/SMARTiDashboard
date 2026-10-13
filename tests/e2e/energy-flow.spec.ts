@@ -93,6 +93,32 @@ test("3D hotspots configure live measurements and preserve directions, freshness
       },
     }),
   );
+  await page.route("**/api/home/energy-flow/history?*", (r) => {
+    const period =
+      new URL(r.request().url()).searchParams.get("period") || "24h";
+    const count = period === "7d" ? 168 : 24;
+    return r.fulfill({
+      json: {
+        period,
+        series: Object.fromEntries(
+          ["solar", "home", "ev", "battery", "grid"]
+            .filter((role) => pref[role].source && pref[role].visible)
+            .map((role) => [
+              role,
+              Array.from({ length: count }, (_, i) => ({
+                time: new Date(
+                  Date.now() - (count - i) * 3600000,
+                ).toISOString(),
+                value:
+                  i === 5
+                    ? null
+                    : (role === "battery" ? -1 : 1) * (900 + i * 15),
+              })),
+            ]),
+        ),
+      },
+    });
+  });
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
   await page
@@ -180,12 +206,10 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     await test
       .info()
       .attach("paused-first", { body: paused, contentType: "image/png" });
-    await test
-      .info()
-      .attach("paused-after-eight-frames", {
-        body: stillPaused,
-        contentType: "image/png",
-      });
+    await test.info().attach("paused-after-eight-frames", {
+      body: stillPaused,
+      contentType: "image/png",
+    });
   }
   expect(stillPaused.equals(paused)).toBe(true);
   await flow
@@ -222,6 +246,26 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   ).toBeLessThanOrEqual(1);
   // Projected buttons must remain clickable and open the matching sensor after rotation.
   await flow.locator('[data-hotspot="battery"]').click();
+  const historyPanel = flow.getByRole("region", {
+    name: "Effekthistorikk",
+    exact: true,
+  });
+  await expect(historyPanel.locator(".flow-history-svg")).toBeVisible();
+  await expect(historyPanel.locator(".flow-chart-readout strong")).toHaveText(
+    /[-−]/,
+  );
+  await historyPanel
+    .getByRole("button", { name: "Siste uke", exact: true })
+    .click();
+  await expect(
+    historyPanel.getByRole("button", { name: "Siste uke", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await historyPanel.locator(".flow-history-svg").focus();
+  await page.keyboard.press("Home");
+  await expect(historyPanel.locator(".flow-chart-readout strong")).toHaveText(
+    /[-−]0,9 kW/,
+  );
+  await flow.getByRole("button", { name: "Endre måler", exact: true }).click();
   await expect(
     flow.getByLabel("Effektmåler · Batteri", { exact: true }),
   ).toBeFocused();
@@ -241,7 +285,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await solar.click();
   await expect(flow.locator(".flow-reading-detail")).toContainText("Sist målt");
   await flow
-    .getByRole("button", { name: "Konfigurer energiflyt", exact: true })
+    .getByRole("button", { name: "Rediger 3D-modell", exact: true })
     .click();
   await flow.getByRole("checkbox", { name: "Elbil", exact: true }).uncheck();
   await flow
@@ -259,6 +303,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(flow.locator('[data-hotspot="ev"]')).toHaveCount(0);
   await expect(solarHotspot).toContainText("4,3 kW");
   await solarHotspot.click();
+  await flow.getByRole("button", { name: "Endre måler", exact: true }).click();
   await expect(
     flow.getByLabel("Effektmåler · Solceller", { exact: true }),
   ).toHaveValue("sensor.test_power");
@@ -276,6 +321,27 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(flow.locator('[data-hotspot="battery"]')).not.toContainText(
     "74%",
   );
+
+  await flow
+    .getByRole("button", { name: "Rediger 3D-modell", exact: true })
+    .click();
+  await flow
+    .getByRole("checkbox", { name: "Solceller", exact: true })
+    .uncheck();
+  await flow.getByRole("checkbox", { name: "Batteri", exact: true }).uncheck();
+  await flow
+    .getByRole("button", { name: "Lagre energiflyt", exact: true })
+    .click();
+  await expect(
+    flow.locator('[data-hotspot="solar"], [data-hotspot="battery"]'),
+  ).toHaveCount(0);
+  await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  await expect(
+    flow.locator(
+      '[data-hotspot="solar"], [data-hotspot="battery"], [data-hotspot="ev"]',
+    ),
+  ).toHaveCount(0);
   expect(renderingErrors, "No JavaScript or WebGL shader errors").toEqual([]);
 });
 test("3D renderer failure preserves live UI and configuration", async ({

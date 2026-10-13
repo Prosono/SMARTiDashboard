@@ -1,3 +1,12 @@
+# 1.3.0
+
+- Give the anonymous EV a lower fastback silhouette, smooth nose, glass canopy and narrow headlights, without manufacturer branding.
+- Move battery/grid labels closer to their equipment. Add colored pulsing coronas around active solar panels, battery, EV and utility mast; pause, reduced motion, stale/offline/zero readings and hidden components remain respected.
+- Add background sparklines and an expandable power-history graph with 24-hour/seven-day periods, pointer/touch/keyboard inspection and signed grid/battery direction. Use recorded hourly means and preserve gaps; align split meters before computing net values.
+- Add a dedicated Edit 3D model entry and equipment checklist. Hide optional equipment and its readings/flows, retaining personal mappings for later reuse. A removed sensor does not prevent hiding its component.
+
+Prepared locally; live HA recorder and physical energy hardware validation remain pending.
+
 # 1.2.0
 
 - Rebuild the energy house as a detailed architectural model with recessed glazing, timber, framed solar cells, a sculpted EV, charger, wall battery and utility mast.

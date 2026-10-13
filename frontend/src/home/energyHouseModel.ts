@@ -346,17 +346,40 @@ export function createEnergyHouse() {
   car.position.set(-2.84, 0, 1.18);
   ev.add(car);
   const pearl = material(0xd1dce0, 0.26, 0.5);
-  const paint = material(0xb8c7d2, 0.3, 0.5);
   const rubber = material(0x17232c, 0.97);
   const autoGlass = material(0x1e3b4b, 0.16, 0.52);
-  box(1.14, 0.34, 2.22, pearl, 0, 0.42, 0, car, 0.15);
-  box(1.12, 0.1, 2.05, charcoal, 0, 0.265, 0.03, car, 0.04);
+  const bodyProfile = new THREE.Shape();
+  bodyProfile.moveTo(-1.22, 0.3);
+  bodyProfile.quadraticCurveTo(-1.25, 0.46, -1.05, 0.53);
+  bodyProfile.lineTo(-0.7, 0.56);
+  bodyProfile.quadraticCurveTo(0.1, 0.59, 0.67, 0.52);
+  bodyProfile.quadraticCurveTo(1.2, 0.5, 1.24, 0.36);
+  bodyProfile.lineTo(1.14, 0.27);
+  bodyProfile.lineTo(-1.12, 0.27);
+  bodyProfile.closePath();
+  const body = mesh(
+    new THREE.ExtrudeGeometry(bodyProfile, {
+      depth: 1.02,
+      bevelEnabled: true,
+      bevelSegments: 4,
+      bevelSize: 0.045,
+      bevelThickness: 0.065,
+      curveSegments: 16,
+    }),
+    pearl,
+    0.51,
+    0,
+    0,
+    car,
+  );
+  body.rotation.y = -Math.PI / 2;
+  box(1.08, 0.08, 2.26, charcoal, 0, 0.265, 0, car, 0.035);
   // Side profile extruded across the width creates sloped windscreen and rear window.
   const cabinProfile = new THREE.Shape();
-  cabinProfile.moveTo(-0.71, 0.52);
-  cabinProfile.lineTo(-0.39, 0.98);
-  cabinProfile.quadraticCurveTo(0.03, 1.075, 0.36, 0.97);
-  cabinProfile.lineTo(0.74, 0.53);
+  cabinProfile.moveTo(-0.96, 0.51);
+  cabinProfile.quadraticCurveTo(-0.65, 0.73, -0.47, 0.85);
+  cabinProfile.quadraticCurveTo(-0.03, 0.98, 0.25, 0.84);
+  cabinProfile.lineTo(0.69, 0.52);
   cabinProfile.closePath();
   const cabin = mesh(
     new THREE.ExtrudeGeometry(cabinProfile, {
@@ -377,25 +400,38 @@ export function createEnergyHouse() {
   cabin.rotation.y = -Math.PI / 2;
   // After rotating the side profile its local X becomes front-to-back.
   cabin.position.x = 0.46;
-  box(0.96, 0.055, 0.72, paint, 0, 1.002, 0.0, car, 0.065);
+  box(0.88, 0.018, 0.31, autoGlass, 0, 0.92, -0.13, car, 0.008);
   for (const x of [-0.5, 0.5]) {
-    box(0.028, 0.35, 0.047, pearl, x, 0.763, -0.02, car);
-    box(0.17, 0.075, 0.16, pearl, x * 1.17, 0.7, 0.37, car, 0.035);
+    box(0.025, 0.32, 0.035, charcoal, x, 0.689, -0.08, car);
+    box(0.17, 0.075, 0.16, pearl, x * 1.17, 0.61, 0.41, car, 0.035);
     box(0.017, 0.022, 0.12, charcoal, x * 1.15, 0.5, -0.2, car, 0.008);
   }
   const wheels = own(new THREE.CylinderGeometry(0.23, 0.23, 0.16, 24));
   const rims = own(new THREE.CylinderGeometry(0.153, 0.153, 0.17, 20));
   for (const x of [-0.535, 0.535])
-    for (const z of [-0.7, 0.7]) {
+    for (const z of [-0.8, 0.8]) {
       mesh(wheels, rubber, x, 0.27, z, car).rotation.z = Math.PI / 2;
       mesh(rims, aluminium, x, 0.27, z, car).rotation.z = Math.PI / 2;
       cylinder(0.062, 0.062, 0.177, charcoal, x, 0.27, z, car).rotation.z =
         Math.PI / 2;
     }
-  box(0.94, 0.026, 0.032, warmWhite, 0, 0.525, 1.116, car, 0.009);
-  box(0.67, 0.055, 0.024, charcoal, 0, 0.36, 1.12, car, 0.014);
-  box(0.18, 0.055, 0.017, chalk, 0, 0.365, 1.139, car, 0.008);
-  box(0.9, 0.027, 0.02, material(0xbc6879, 0.3), 0, 0.505, -1.11, car, 0.008);
+  for (const side of [-1, 1]) {
+    const headlight = box(
+      0.27,
+      0.032,
+      0.05,
+      warmWhite,
+      side * 0.39,
+      0.445,
+      1.184,
+      car,
+      0.012,
+    );
+    headlight.rotation.y = side * -0.22;
+  }
+  box(0.67, 0.055, 0.024, charcoal, 0, 0.31, 1.242, car, 0.014);
+  box(0.18, 0.055, 0.017, chalk, 0, 0.335, 1.263, car, 0.008);
+  box(0.9, 0.027, 0.02, material(0xbc6879, 0.3), 0, 0.465, -1.237, car, 0.008);
   // Charger is deliberately cable-free; energy is represented by the scene's light paths.
   box(0.37, 0.07, 0.4, stone, -1.91, 0.045, 2.0, ev, 0.04);
   box(0.25, 0.86, 0.22, charcoal, -1.91, 0.49, 2.0, ev, 0.045);
@@ -509,6 +545,99 @@ export function createEnergyHouse() {
   ])
     mesh(new THREE.SphereGeometry(size, 14, 10), foliage[1], x, y, z);
 
+  // Broad translucent coronas surround equipment only while its live flow is active.
+  const activity = new Map<FlowRole, THREE.ShaderMaterial[]>();
+  function corona(
+    role: FlowRole,
+    color: number,
+    w: number,
+    h: number,
+    position: THREE.Vector3,
+    rotation: THREE.Euler,
+    parent: THREE.Object3D,
+    ellipse = false,
+  ) {
+    const surface = new THREE.ShaderMaterial({
+      uniforms: {
+        tint: { value: new THREE.Color(color) },
+        opacity: { value: 0 },
+        ellipse: { value: ellipse ? 1 : 0 },
+      },
+      vertexShader: `varying vec2 vUv; void main() { vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+      fragmentShader: `varying vec2 vUv; uniform vec3 tint; uniform float opacity, ellipse;
+        void main() { vec2 q=abs(vUv-.5)*2.; float d=mix(max(q.x,q.y),length(q),ellipse);
+          float band=exp(-pow((d-.77)*9.,2.));
+          gl_FragColor=vec4(mix(tint,vec3(1.),band*.45),band*opacity);
+          #include <colorspace_fragment>
+        }`,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    materials.add(surface);
+    const glow = mesh(
+      new THREE.PlaneGeometry(w, h),
+      surface,
+      position.x,
+      position.y,
+      position.z,
+      parent,
+    );
+    glow.rotation.copy(rotation);
+    glow.castShadow = false;
+    glow.receiveShadow = false;
+    glow.renderOrder = 3;
+    activity.set(role, [...(activity.get(role) || []), surface]);
+  }
+  corona(
+    "solar",
+    0xffbc42,
+    2.05,
+    3.6,
+    vector(0, 0.1, 0),
+    new THREE.Euler(-Math.PI / 2, 0, 0),
+    solar,
+  );
+  corona(
+    "ev",
+    0xb18aff,
+    1.92,
+    3.25,
+    vector(-2.84, 0.035, 1.18),
+    new THREE.Euler(-Math.PI / 2, 0, 0),
+    ev,
+    true,
+  );
+  corona(
+    "battery",
+    0x4ce3ad,
+    1.01,
+    1.6,
+    vector(2.265, 0.94, 0.99),
+    new THREE.Euler(0, Math.PI / 2, 0),
+    battery,
+  );
+  corona(
+    "grid",
+    0x5bcaff,
+    1.3,
+    1.3,
+    vector(mastX, 0.135, mastZ),
+    new THREE.Euler(-Math.PI / 2, 0, 0),
+    grid,
+    true,
+  );
+  corona(
+    "grid",
+    0x5bcaff,
+    1.5,
+    0.65,
+    vector(mastX, 3.35, mastZ + 0.1),
+    new THREE.Euler(0, 0, 0),
+    grid,
+  );
+
   // Curves run from each physical component to the same front-of-house distribution point.
   // Their elevation keeps light ribbons above paving, not embedded in the plinth.
   const hub = vector(0.08, 0.075, 2.97);
@@ -564,6 +693,11 @@ export function createEnergyHouse() {
     components,
     anchors,
     routes,
+    setActivity(role: FlowRole, active: boolean, pulse: number) {
+      activity.get(role)?.forEach((surface) => {
+        surface.uniforms.opacity.value = active ? 0.26 + pulse * 0.48 : 0;
+      });
+    },
     dispose() {
       geometries.forEach((geometry) => geometry.dispose());
       materials.forEach((surface) => surface.dispose());

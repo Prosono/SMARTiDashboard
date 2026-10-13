@@ -143,9 +143,9 @@ Under Home → Energy, **Elbil & lader → Tilpass** binds existing entities to 
 Validated with isolated demo/API and desktop/mobile tests; live thermostat and EV hardware confirmation remains pending.
 
 
-## 3D energy flow (1.2.0)
+## 3D energy flow (1.3.0)
 
-Open Home → Energy and select the icon beside the solar roof, home, charger, battery or utility mast to add/change its measurement. The matching sensor field opens and receives focus. **Konfigurer energiflyt** opens the complete setup. Choose visible solar, home consumption, EV, battery and grid components and bind each to an existing W/kW sensor. These personal settings only affect display; they do not control equipment. The house is a generic illustration, not a model of the actual property. A local Three.js renderer supplies the architectural model, lighting and colored ground/wall light paths; no remote assets or credentials are sent to it.
+Open Home → Energy and select an unconfigured component to add its measurement, or select a configured component to open its power history. **Endre måler** opens and focuses the matching sensor field. **Konfigurer energiflyt** opens the complete setup. Choose visible solar, home consumption, EV, battery and grid components and bind each to an existing W/kW sensor. These personal settings only affect display; they do not control equipment. The house is a generic illustration, not a model of the actual property. A local Three.js renderer supplies the architectural model, lighting and colored ground/wall light paths; no remote assets or credentials are sent to it.
 
 For grid and battery, choose what a positive sensor value means. A single signed sensor reverses direction on negative values. Optionally choose a separate meter for the opposite direction; both source readings must then be nonnegative and their difference is displayed. Source/return readings are netted only within that connection. Home consumption is never inferred from other measurements and may already include EV charging. Flow lines illustrate net exchange with the home distribution point, not proof that a particular source directly powers a particular load.
 
@@ -154,3 +154,7 @@ Live readings refresh every five seconds. The sensor timestamp uses last_reporte
 Mouse dragging or the rotation buttons turn the house. Pause stops movement without stopping readings. Reduced-motion preferences disable movement, and the renderer releases its resources when leaving Energy. Hidden/background views do not animate. When WebGL is unavailable the readings and configuration still work.
 
 Renderer reference: [Three.js WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html). Verified locally with API and mobile/desktop WebGL tests; physical energy sensor validation remains pending.
+
+Use **Rediger 3D-modell** to uncheck solar, EV/charger, battery or utility mast equipment you do not have, then save. The home checkbox hides the consumption reading/flow while preserving the house itself. Settings remain personal; hidden mappings are retained so equipment can be restored. No device is removed from the home hub.
+
+Active equipment has a colored corona that pulses with the flow animation. Unknown, stale, offline and zero readings do not illuminate it. Graphs use actual recorder hourly average power, independently of the live reading: choose the last 24 completed hours or seven days. Move/touch the graph or use arrow keys, Home and End to inspect values. Negative grid means export; negative battery means charging. Missing data remains a gap, including when one side of a split meter lacks a matching hour. Sensors without recorded mean statistics show an explicit empty state; graphs do not infer energy totals. History refreshes every minute while Energy is open.

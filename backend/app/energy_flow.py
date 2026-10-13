@@ -1,11 +1,13 @@
 """Explicit power bindings and freshness-aware directional energy flows."""
 
 import math
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+from .ha import HAError
 
 ROLES = ("solar", "grid", "battery", "home", "ev")
 
@@ -55,7 +57,7 @@ def power_reading(c, states, connected, now, max_age, units=("W", "kW")):
         return None, "stale", stamp
 
 
-def energy_flow_router(store, user, ha):
+def energy_flow_router(store, user, ha, settings):
     router = APIRouter(prefix="/api/home/energy-flow", dependencies=[Depends(user)])
 
     def prefs(current):
@@ -76,15 +78,17 @@ def energy_flow_router(store, user, ha):
 
         for role in ROLES:
             binding = getattr(body, role)
-            validate(binding.source, {"W", "kW"})
-            validate(binding.return_source, {"W", "kW"})
+            if binding.visible:
+                validate(binding.source, {"W", "kW"})
+                validate(binding.return_source, {"W", "kW"})
             if binding.return_source and (
                 role not in {"grid", "battery"}
                 or not binding.source
                 or binding.source == binding.return_source
             ):
                 raise HTTPException(422, "invalid_return_sensor")
-        validate(body.battery_level, {"%"})
+        if body.battery.visible:
+            validate(body.battery_level, {"%"})
         store.set(f"energy_flow:{current['id']}", body.model_dump_json())
         return body
 
@@ -140,4 +144,82 @@ def energy_flow_router(store, user, ha):
             "sampled_at": now.isoformat(),
         }
 
+    @router.get("/history")
+    async def history(period: Literal["24h", "7d"] = "24h", current=Depends(user)):
+        pref = prefs(current)
+        controls = {c.entity_id: c for c in ha.controls()}
+        bindings = {role: getattr(pref, role) for role in ROLES}
+        ids = sorted(
+            {
+                id
+                for binding in bindings.values()
+                if binding.visible
+                for id in (binding.source, binding.return_source)
+                if id in controls and controls[id].attributes.get("unit_of_measurement") in {"W", "kW"}
+            }
+        )
+        if not ha.connected:
+            raise HTTPException(503, "flow_history_unavailable")
+        end = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
+        start = end - timedelta(hours=24 if period == "24h" else 168)
+        data = {}
+        if ids and settings.mode != "demo":
+            try:
+                data = await ha.request(
+                    "recorder/statistics_during_period",
+                    start_time=start.isoformat(),
+                    end_time=end.isoformat(),
+                    statistic_ids=ids,
+                    period="hour",
+                    units={"power": "kW"},
+                    types=["mean"],
+                )
+            except (HAError, TimeoutError):
+                raise HTTPException(503, "flow_history_unavailable") from None
+        return {
+            "period": period,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "series": flow_history(bindings, data or {}, start, end),
+        }
+
     return router
+
+
+def flow_history(bindings, data, start, end):
+    """Align completed hours before netting split meters; gaps never become zero."""
+    count = int((end - start).total_seconds() / 3600)
+    indexed = {}
+    for id, rows in data.items():
+        hours = {}
+        for row in rows[: count + 2]:
+            stamp, mean = row.get("start"), row.get("mean")
+            if not isinstance(stamp, (int, float)) or not math.isfinite(stamp):
+                continue
+            offset = (stamp / 1000 - start.timestamp()) / 3600
+            if offset.is_integer() and 0 <= offset < count:
+                hours[int(offset)] = (
+                    mean * 1000 if isinstance(mean, (int, float)) and math.isfinite(mean) else None
+                )
+        indexed[id] = hours
+    series = {}
+    for role, binding in bindings.items():
+        if not binding.visible or not binding.source:
+            continue
+        points = []
+        for i in range(count):
+            value = indexed.get(binding.source, {}).get(i)
+            if binding.return_source:
+                other = indexed.get(binding.return_source, {}).get(i)
+                value = (
+                    value - other
+                    if value is not None and other is not None and value >= 0 and other >= 0
+                    else None
+                )
+            if value is not None and role in {"grid", "battery"} and binding.positive == "consume":
+                value = -value
+            if value is not None and role in {"solar", "home", "ev"} and value < 0:
+                value = None
+            points.append({"time": (start + timedelta(hours=i)).isoformat(), "value": value})
+        series[role] = points
+    return series

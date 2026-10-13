@@ -165,7 +165,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     app.include_router(camera_router(ha, user, settings))
     app.include_router(scenes_router(ha, store, user, settings))
     app.include_router(energy_router(ha, store, user, settings))
-    app.include_router(energy_flow_router(store, user, ha))
+    app.include_router(energy_flow_router(store, user, ha, settings))
 
     @app.get("/healthz")
     async def health():

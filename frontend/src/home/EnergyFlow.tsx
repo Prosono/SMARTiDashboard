@@ -32,6 +32,7 @@ import {
   type FlowPreferences,
   type FlowSnapshot,
 } from "./energyFlowModel";
+import { FlowHistory, type FlowHistoryData } from "./FlowHistory";
 import "./energyFlow.css";
 const Scene = lazy(() => import("./EnergyScene"));
 class SceneBoundary extends Component<
@@ -82,7 +83,8 @@ export function EnergyFlow({
     [paused, pause] = useState(false),
     [selected, select] = useState<FlowRole | null>(null),
     [editingRole, setEditingRole] = useState<FlowRole | null>(null),
-    [focusRequest, requestFocus] = useState(0);
+    [focusRequest, requestFocus] = useState(0),
+    [historyPeriod, setHistoryPeriod] = useState("24h");
   const bindingRefs = useRef<Partial<Record<FlowRole, HTMLDivElement>>>({});
   useEffect(() => {
     if (!focusRequest || !editingRole) return;
@@ -131,6 +133,14 @@ export function EnergyFlow({
   const anyLive = flowRoles.some(
     (r) => flows[r].visible && flows[r].status === "ok",
   );
+  const history = useQuery({
+    queryKey: ["flow-history", config.data, historyPeriod],
+    queryFn: () =>
+      api<FlowHistoryData>(`home/energy-flow/history?period=${historyPeriod}`),
+    enabled: !!config.data && anyConfigured && !offline,
+    refetchInterval: 60000,
+    retry: false,
+  });
   const format = (watts: number | null) =>
     watts === null
       ? "—"
@@ -208,6 +218,7 @@ export function EnergyFlow({
       await api("home/energy-flow/preferences", "PUT", draft);
       await qc.invalidateQueries({ queryKey: ["energy-flow-preferences"] });
       await qc.invalidateQueries({ queryKey: ["energy-flow-live"] });
+      await qc.invalidateQueries({ queryKey: ["flow-history"] });
       edit(null);
       setEditingRole(null);
     } catch {
@@ -269,19 +280,36 @@ export function EnergyFlow({
             )}
           </p>
         </div>
-        <button
-          className="flow-configure"
-          disabled={!config.data || busy}
-          aria-expanded={!!draft}
-          onClick={() => {
-            edit(draft ? null : structuredClone(config.data!));
-            setEditingRole(null);
-            setError("");
-          }}
-        >
-          <Settings2 size={18} />
-          {t("Konfigurer energiflyt", "Configure energy flow")}
-        </button>
+        <div className="flow-heading-actions">
+          <button
+            className="flow-configure"
+            disabled={!config.data || busy}
+            onClick={() => {
+              edit(structuredClone(config.data!));
+              setEditingRole(null);
+              setError("");
+              requestAnimationFrame(() =>
+                document.getElementById("flow-model-options")?.focus(),
+              );
+            }}
+          >
+            <House size={18} />
+            {t("Rediger 3D-modell", "Edit 3D model")}
+          </button>
+          <button
+            className="flow-configure"
+            disabled={!config.data || busy}
+            aria-expanded={!!draft}
+            onClick={() => {
+              edit(draft ? null : structuredClone(config.data!));
+              setEditingRole(null);
+              setError("");
+            }}
+          >
+            <Settings2 size={18} />
+            {t("Konfigurer energiflyt", "Configure energy flow")}
+          </button>
+        </div>
       </header>
       {config.isError && (
         <p role="alert">
@@ -308,100 +336,120 @@ export function EnergyFlow({
               "Choose power sensors in W or kW. kWh measures energy over time and belongs in the history below. Configuration controls no devices.",
             )}
           </p>
+          <div
+            id="flow-model-options"
+            className="flow-model-options"
+            tabIndex={-1}
+          >
+            <h3>{t("Dette finnes i hjemmet mitt", "Equipment in my home")}</h3>
+            <p>
+              {t(
+                "Fjern avhukingen for utstyr du ikke har. Det fjernes fra modellen, målekortene og lysflyten når du lagrer. «Hjemmet» styrer bare visningen av husets forbruk.",
+                "Uncheck equipment you do not have. Saving removes it from the model, readings and light paths. “Home” only controls the consumption display.",
+              )}
+            </p>
+            <div className="flow-model-toggles">
+              {flowRoles.map((role) => {
+                const Icon = icons[role];
+                return (
+                  <label key={role}>
+                    <input
+                      type="checkbox"
+                      checked={draft[role].visible}
+                      onChange={(e) =>
+                        edit({
+                          ...draft,
+                          [role]: { ...draft[role], visible: e.target.checked },
+                        })
+                      }
+                    />
+                    <Icon size={21} />
+                    {labels[role]}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
           <div className="flow-binding-grid">
-            {flowRoles.map((role) => (
-              <div
-                className={`flow-binding${editingRole === role ? " is-editing" : ""}`}
-                data-binding={role}
-                key={role}
-                ref={(element) => {
-                  if (element) bindingRefs.current[role] = element;
-                  else delete bindingRefs.current[role];
-                }}
-              >
-                <label className="flow-visible">
-                  <input
-                    type="checkbox"
-                    checked={draft[role].visible}
-                    onChange={(e) =>
-                      edit({
-                        ...draft,
-                        [role]: { ...draft[role], visible: e.target.checked },
-                      })
-                    }
-                  />
-                  <span className="flow-binding-icon">
-                    {(() => {
-                      const Icon = icons[role];
-                      return <Icon size={20} aria-hidden="true" />;
-                    })()}
-                  </span>
-                  {labels[role]}
-                </label>
-                {draft[role].visible && (
-                  <>
-                    <label>
-                      {t("Effektmåler", "Power sensor")} · {labels[role]}
-                      {picker(
-                        draft[role].source,
-                        (source) =>
-                          edit({
-                            ...draft,
-                            [role]: { ...draft[role], source },
-                          }),
-                        sensors,
-                        `${t("Effektmåler", "Power sensor")} · ${labels[role]}`,
-                      )}
-                    </label>
-                    {["grid", "battery"].includes(role) && (
-                      <>
-                        <label>
-                          {t("Positiv verdi betyr", "Positive value means")}
-                          <select
-                            value={draft[role].positive}
-                            onChange={(e) =>
-                              edit({
-                                ...draft,
-                                [role]: {
-                                  ...draft[role],
-                                  positive: e.target.value as
-                                    "supply" | "consume",
-                                },
-                              })
-                            }
-                          >
-                            <option value="supply">
-                              {positiveLabels(role)[0]}
-                            </option>
-                            <option value="consume">
-                              {positiveLabels(role)[1]}
-                            </option>
-                          </select>
-                        </label>
-                        <label>
-                          {t(
-                            "Egen måler for motsatt retning (valgfritt)",
-                            "Separate opposite-direction sensor (optional)",
-                          )}
-                          {picker(draft[role].return_source, (return_source) =>
+            {flowRoles
+              .filter((role) => draft[role].visible)
+              .map((role) => (
+                <div
+                  className={`flow-binding${editingRole === role ? " is-editing" : ""}`}
+                  data-binding={role}
+                  key={role}
+                  ref={(element) => {
+                    if (element) bindingRefs.current[role] = element;
+                    else delete bindingRefs.current[role];
+                  }}
+                >
+                  <strong className="flow-binding-title">{labels[role]}</strong>
+                  {draft[role].visible && (
+                    <>
+                      <label>
+                        {t("Effektmåler", "Power sensor")} · {labels[role]}
+                        {picker(
+                          draft[role].source,
+                          (source) =>
                             edit({
                               ...draft,
-                              [role]: { ...draft[role], return_source },
+                              [role]: { ...draft[role], source },
                             }),
-                          )}
-                        </label>
-                        <small>
-                          {t(
-                            "Én måler: minus betyr motsatt retning. To målere: begge må være positive; vi viser nettoforskjellen.",
-                            "One sensor: negative means reverse flow. Two sensors: both must be nonnegative; the net difference is shown.",
-                          )}
-                        </small>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            ))}
+                          sensors,
+                          `${t("Effektmåler", "Power sensor")} · ${labels[role]}`,
+                        )}
+                      </label>
+                      {["grid", "battery"].includes(role) && (
+                        <>
+                          <label>
+                            {t("Positiv verdi betyr", "Positive value means")}
+                            <select
+                              value={draft[role].positive}
+                              onChange={(e) =>
+                                edit({
+                                  ...draft,
+                                  [role]: {
+                                    ...draft[role],
+                                    positive: e.target.value as
+                                      "supply" | "consume",
+                                  },
+                                })
+                              }
+                            >
+                              <option value="supply">
+                                {positiveLabels(role)[0]}
+                              </option>
+                              <option value="consume">
+                                {positiveLabels(role)[1]}
+                              </option>
+                            </select>
+                          </label>
+                          <label>
+                            {t(
+                              "Egen måler for motsatt retning (valgfritt)",
+                              "Separate opposite-direction sensor (optional)",
+                            )}
+                            {picker(
+                              draft[role].return_source,
+                              (return_source) =>
+                                edit({
+                                  ...draft,
+                                  [role]: { ...draft[role], return_source },
+                                }),
+                            )}
+                          </label>
+                          <small>
+                            {t(
+                              "Én måler: minus betyr motsatt retning. To målere: begge må være positive; vi viser nettoforskjellen.",
+                              "One sensor: negative means reverse flow. Two sensors: both must be nonnegative; the net difference is shown.",
+                            )}
+                          </small>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
           </div>
           <div className="flow-extra-settings">
             <label>
@@ -505,7 +553,17 @@ export function EnergyFlow({
               }
               lang={lang}
               readings={readings}
-              onConfigure={configure}
+              onConfigure={(role) => {
+                if (!config.data?.[role].source) configure(role);
+                else {
+                  select(role);
+                  requestAnimationFrame(() =>
+                    document
+                      .getElementById("flow-history-panel")
+                      ?.scrollIntoView({ block: "center" }),
+                  );
+                }
+              }}
               canConfigure={!!config.data && !busy}
             />
           </Suspense>
@@ -528,6 +586,11 @@ export function EnergyFlow({
                       : select(selected === role ? null : role)
                   }
                 >
+                  <FlowHistory
+                    compact
+                    lang={lang}
+                    points={history.data?.series[role] || []}
+                  />
                   <span className="flow-measurement-label">
                     <span className="flow-measurement-icon">
                       <Icon size={18} aria-hidden="true" />
@@ -560,34 +623,104 @@ export function EnergyFlow({
             })}
         </div>
         {selected && flows[selected].visible && (
-          <div className="flow-reading-detail">
-            <strong>{labels[selected]}</strong>
-            <span>
-              {home.controls.find(
-                (c) => c.entity_id === config.data?.[selected].source,
-              )?.name || t("Ingen måler valgt", "No sensor selected")}
-            </span>
-            <span>
-              {t("Sist målt", "Last measured")}:{" "}
-              {flows[selected].measured_at
-                ? new Date(flows[selected].measured_at!).toLocaleString(
-                    en ? "en-GB" : "nb-NO",
-                  )
-                : "—"}
-            </span>
-            <small>
-              {t("Retning", "Direction")}: {direction(selected)}
-            </small>
-            <button
-              disabled={!config.data || busy}
-              onClick={() => configure(selected)}
+          <>
+            <section
+              id="flow-history-panel"
+              className="flow-history-panel"
+              data-role={selected}
+              aria-label={t("Effekthistorikk", "Power history")}
             >
-              <Settings2 size={15} aria-hidden="true" />
-              {config.data?.[selected].source
-                ? t("Endre måler", "Change sensor")
-                : t("Legg til måling", "Add a reading")}
-            </button>
-          </div>
+              <header>
+                <div>
+                  <span className="eyebrow">
+                    {t("Effekthistorikk", "Power history")}
+                  </span>
+                  <h3>{labels[selected]}</h3>
+                </div>
+                <div className="flow-history-periods">
+                  {[
+                    ["24h", t("Siste døgn", "24 hours")],
+                    ["7d", t("Siste uke", "7 days")],
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      aria-pressed={historyPeriod === value}
+                      onClick={() => setHistoryPeriod(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </header>
+              {offline ? (
+                <p>
+                  {t(
+                    "Historikken er utilgjengelig når du er frakoblet.",
+                    "History is unavailable while offline.",
+                  )}
+                </p>
+              ) : history.isError ? (
+                <p role="alert">
+                  {t(
+                    "Kunne ikke hente historikken.",
+                    "Could not load history.",
+                  )}{" "}
+                  <button onClick={() => history.refetch()}>
+                    {t("Prøv igjen", "Retry")}
+                  </button>
+                </p>
+              ) : history.isFetching && !history.data ? (
+                <p>{t("Henter historikk…", "Loading history…")}</p>
+              ) : (
+                <FlowHistory
+                  key={`${selected}-${historyPeriod}`}
+                  lang={lang}
+                  points={history.data?.series[selected] || []}
+                />
+              )}
+              {["grid", "battery"].includes(selected) && (
+                <p className="flow-chart-sign">
+                  {selected === "grid"
+                    ? t(
+                        "Pluss: fra nettet · Minus: til nettet",
+                        "Positive: import · Negative: export",
+                      )
+                    : t(
+                        "Pluss: batteriet leverer · Minus: batteriet lader",
+                        "Positive: discharging · Negative: charging",
+                      )}
+                </p>
+              )}
+            </section>
+            <div className="flow-reading-detail">
+              <strong>{labels[selected]}</strong>
+              <span>
+                {home.controls.find(
+                  (c) => c.entity_id === config.data?.[selected].source,
+                )?.name || t("Ingen måler valgt", "No sensor selected")}
+              </span>
+              <span>
+                {t("Sist målt", "Last measured")}:{" "}
+                {flows[selected].measured_at
+                  ? new Date(flows[selected].measured_at!).toLocaleString(
+                      en ? "en-GB" : "nb-NO",
+                    )
+                  : "—"}
+              </span>
+              <small>
+                {t("Retning", "Direction")}: {direction(selected)}
+              </small>
+              <button
+                disabled={!config.data || busy}
+                onClick={() => configure(selected)}
+              >
+                <Settings2 size={15} aria-hidden="true" />
+                {config.data?.[selected].source
+                  ? t("Endre måler", "Change sensor")
+                  : t("Legg til måling", "Add a reading")}
+              </button>
+            </div>
+          </>
         )}
         {!anyConfigured && config.data && (
           <p className="flow-start">

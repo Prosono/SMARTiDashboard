@@ -247,3 +247,10 @@ Backend coverage verifies sign, split readings, units, SOC, freshness, validatio
 The local model now includes recessed interior/glazing detail, timber, solar cell frames, a sculpted EV/charger, wall battery and utility mast. Colored light ribbons replace physical loose cables. Projected DOM buttons carry accessible live values and open the corresponding sensor field; camera rotation and responsive collision handling keep these targets within view. Pause and reduced motion freeze highlights; zero/missing/stale/disconnected paths are not illuminated. Values still come from the existing five-second power API and no energy balance is inferred.
 
 The expanded desktop/mobile browser scenario exercises projected component setup/focus, rendering and actual movement, rotation, retained mappings, hidden components, stale/offline readings and WebGL fallback. Physical HA energy hardware and native mobile GPU validation remain pending.
+
+
+## 1.3.0 — Active equipment coronas, power history and model editing
+
+The anonymous EV now uses a low fastback profile. Battery and grid cards sit closer to their objects; active solar, EV, battery and grid components receive shader-based pulsing coronas, using the same freshness, pause, visibility and reduced-motion rules as energy paths. A dedicated model editor exposes equipment toggles and preserves mappings when hidden, including missing sensors.
+
+The authenticated energy-flow history endpoint requests completed-hour recorder means in kW, normalizes them to W and aligns split meter timestamps before applying the same direction conventions as live data. Per-component sparklines open an inspectable signed graph with 24h/7d choices, gap preservation, explicit errors/empty states and keyboard/touch support. No extrapolated totals or fake history is generated. Live HA recorder/device validation remains pending.
