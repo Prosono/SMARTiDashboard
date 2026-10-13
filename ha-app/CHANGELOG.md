@@ -1,3 +1,12 @@
+# 1.4.0
+
+- Refine the energy home with a curved anonymous electric fastback, panoramic glazing, sculpted fenders, detailed wheels and studio reflections.
+- Fit activity lighting to individual solar-module frames, the battery shell, vehicle/charger and mast insulators. Directional light packets travel smoothly when meter readings change; zero, missing and stale readings remain unlit.
+- Anchor desktop measurement labels to the physical equipment with subtle pointers. Refine responsive spacing, measurement cards and separate hourly-history previews.
+- Improve the energy-history workspace with readable responsive axes, signed area graphs, visible gaps, interactive inspection and data-coverage indicators.
+
+Prepared locally; live HA recorder and physical energy hardware validation remain pending.
+
 # 1.3.0
 
 - Give the anonymous EV a lower fastback silhouette, smooth nose, glass canopy and narrow headlights, without manufacturer branding.

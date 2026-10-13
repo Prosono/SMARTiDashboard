@@ -1,7 +1,6 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Zap,
   Settings2,
   TrendingDown,
   TrendingUp,
@@ -81,6 +80,8 @@ export function Energy({
     locale = lang === "en" ? "en-GB" : "nb-NO";
   const qc = useQueryClient(),
     gradient = useId().replaceAll(":", "");
+  const chartRef = useRef<SVGSVGElement>(null);
+  const [chartWidth, setChartWidth] = useState(760);
   const prefQuery = useQuery({
     queryKey: ["energy-preferences"],
     queryFn: () => api<Preferences>("home/energy/preferences"),
@@ -161,10 +162,22 @@ export function Energy({
   const samples = [...points, ...(show("comparison") ? previous : [])].flatMap(
     (p) => (p.value === null ? [] : [p.value]),
   );
+  useEffect(() => {
+    if (!chartRef.current) return;
+    const observer = new ResizeObserver(([entry]) =>
+      setChartWidth(Math.max(260, Math.round(entry.contentRect.width))),
+    );
+    observer.observe(chartRef.current);
+    return () => observer.disconnect();
+  }, [series?.id, pref.period, pref.hidden, samples.length]);
+  const chartLeft = 46,
+    chartRight = chartWidth - 14,
+    chartSpan = chartRight - chartLeft;
   const min = Math.min(0, ...samples),
     max = Math.max(0.001, ...samples),
     span = max - min;
-  const x = (i: number) => 42 + ((i + 0.5) / Math.max(points.length, 1)) * 696,
+  const x = (i: number) =>
+      chartLeft + ((i + 0.5) / Math.max(points.length, 1)) * chartSpan,
     y = (value: number) => 188 - ((value - min) / span) * 160;
   const path = (values: typeof points) => {
     let pen = false;
@@ -196,12 +209,15 @@ export function Energy({
       <header className="energy-workspace-heading">
         <div>
           <span className="eyebrow">
-            {t("Oversikt som gir innsikt", "An overview with insight")}
+            {t("Historikk & innsikt", "History & insights")}
           </span>
-          <h2>
-            <Zap size={22} />
-            {t("Energien i hjemmet", "Your home’s energy")}
-          </h2>
+          <h2>{t("Energien over tid", "Your energy over time")}</h2>
+          <p>
+            {t(
+              "Se mønstrene i forbruket, time for time.",
+              "Discover how your energy use changes, hour by hour.",
+            )}
+          </p>
         </div>
         <button
           className="home-customize"
@@ -417,6 +433,15 @@ export function Energy({
                     ? t("Komplett timehistorikk", "Complete hourly history")
                     : `${t("Datadekning", "Data coverage")}: ${series?.current.coverage ?? 0}% · ${t("ufullstendig", "incomplete")}`}
                 </span>
+                {series && (
+                  <meter
+                    className="energy-coverage"
+                    min={0}
+                    max={100}
+                    value={series.current.coverage}
+                    aria-label={t("Datadekning", "Data coverage")}
+                  />
+                )}
               </article>
               {show("comparison") && (
                 <article className="energy-comparison">
@@ -485,15 +510,17 @@ export function Energy({
               {samples.length && series ? (
                 <>
                   <svg
+                    ref={chartRef}
                     className="energy-large-chart"
-                    viewBox="0 0 760 225"
+                    viewBox={`0 0 ${chartWidth} 225`}
                     role="group"
                     onPointerMove={(e) => {
                       const bounds = e.currentTarget.getBoundingClientRect();
                       const position =
-                        (((e.clientX - bounds.left) / bounds.width) * 760 -
-                          42) /
-                        696;
+                        (((e.clientX - bounds.left) / bounds.width) *
+                          chartWidth -
+                          chartLeft) /
+                        chartSpan;
                       if (position >= 0 && position <= 1)
                         setPoint(
                           Math.min(
@@ -516,13 +543,17 @@ export function Energy({
                     {[0, 0.5, 1].map((f) => (
                       <g key={f}>
                         <line
-                          x1="42"
-                          x2="738"
+                          x1={chartLeft}
+                          x2={chartRight}
                           y1={28 + 160 * f}
                           y2={28 + 160 * f}
                           className="energy-gridline"
                         />
-                        <text x="35" y={32 + 160 * f} textAnchor="end">
+                        <text
+                          x={chartLeft - 8}
+                          y={32 + 160 * f}
+                          textAnchor="end"
+                        >
                           {number(max - span * f)}
                         </text>
                       </g>
@@ -535,6 +566,15 @@ export function Energy({
                     )}
                     {pref.chart === "line" && (
                       <path d={path(points)} className="energy-current-line" />
+                    )}
+                    {point !== null && points[point] && (
+                      <line
+                        className="energy-inspection-line"
+                        x1={x(point)}
+                        x2={x(point)}
+                        y1="28"
+                        y2="188"
+                      />
                     )}
                     {points.map((p, i) =>
                       p.value === null ? (
@@ -558,9 +598,15 @@ export function Energy({
                           }}
                         >
                           <rect
-                            x={x(i) - Math.max(3, (696 / points.length) * 0.32)}
+                            x={
+                              x(i) -
+                              Math.max(1, (chartSpan / points.length) * 0.32)
+                            }
                             y={Math.min(y(p.value), y(0))}
-                            width={Math.max(6, (696 / points.length) * 0.64)}
+                            width={Math.max(
+                              2,
+                              (chartSpan / points.length) * 0.64,
+                            )}
                             height={Math.max(2, Math.abs(y(p.value) - y(0)))}
                             rx="3"
                             fill={
@@ -585,10 +631,10 @@ export function Energy({
                         </g>
                       ),
                     )}
-                    <text x="42" y="217">
+                    <text x={chartLeft} y="217">
                       {points[0] ? date(points[0].time) : ""}
                     </text>
-                    <text x="738" y="217" textAnchor="end">
+                    <text x={chartRight} y="217" textAnchor="end">
                       {points.at(-1) ? date(points.at(-1)!.time) : ""}
                     </text>
                   </svg>

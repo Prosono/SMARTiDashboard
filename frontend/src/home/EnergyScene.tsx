@@ -9,6 +9,7 @@ import {
   UtilityPole,
 } from "lucide-react";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { flowRoles, type FlowRole, type FlowSnapshot } from "./energyFlowModel";
 import { createEnergyHouse } from "./energyHouseModel";
 
@@ -30,19 +31,34 @@ type Reading = { label: string; value: string; detail: string };
 
 // A flat ribbon of light, rather than a physical cable. UV.y follows the path;
 // UV.x fades the edges so the same surface supplies the soft spill and white core.
-function lightRibbon(curve: THREE.Curve<THREE.Vector3>) {
+function lightRibbon(curve: THREE.Curve<THREE.Vector3>, role: FlowRole) {
   const positions: number[] = [],
     uv: number[] = [],
     indices: number[] = [];
   const segments = 140,
     up = new THREE.Vector3(0, 1, 0);
+  const facade =
+    role === "solar" || role === "battery"
+      ? new THREE.Vector3(1, 0, 0)
+      : new THREE.Vector3(0, 0, 1);
+  let previousSide: THREE.Vector3 | null = null;
   for (let i = 0; i <= segments; i++) {
     const t = i / segments,
       p = curve.getPointAt(t),
       tangent = curve.getTangentAt(t);
-    const side = new THREE.Vector3().crossVectors(tangent, up);
-    if (side.lengthSq() < 0.01) side.set(1, 0, 0);
-    side.normalize().multiplyScalar(0.17);
+    // Blend from ground to facade orientation before an ascent becomes vertical.
+    // Keeping consecutive sides in the same hemisphere avoids ribbon flips.
+    const vertical = THREE.MathUtils.smoothstep(Math.abs(tangent.y), 0.2, 0.88);
+    const normal = up.clone().lerp(facade, vertical).normalize();
+    const side = new THREE.Vector3().crossVectors(tangent, normal);
+    if (side.lengthSq() < 0.0001) {
+      side.copy(previousSide || new THREE.Vector3(1, 0, 0));
+      side.addScaledVector(tangent, -side.dot(tangent));
+    }
+    side.normalize();
+    if (previousSide && side.dot(previousSide) < 0) side.negate();
+    previousSide = side.clone();
+    side.multiplyScalar(0.12);
     positions.push(
       p.x - side.x,
       p.y - side.y,
@@ -66,27 +82,29 @@ function lightRibbon(curve: THREE.Curve<THREE.Vector3>) {
   geometry.setIndex(indices);
   return geometry;
 }
-function lightMaterial(color: number) {
+function lightMaterial(color: number, length: number) {
   return new THREE.ShaderMaterial({
     uniforms: {
       tint: { value: new THREE.Color(color) },
       phase: { value: 0 },
       direction: { value: 1 },
-      strength: { value: 1 },
+      length: { value: length },
     },
     vertexShader: `varying vec2 vUv;
       void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
     fragmentShader: `varying vec2 vUv;
       uniform vec3 tint;
-      uniform float phase, direction, strength;
+      uniform float phase, direction, length;
       void main() {
         float edge = abs(vUv.x - .5) * 2.;
-        float core = 1. - smoothstep(.1, .27, edge);
-        float halo = pow(1. - edge, 2.8);
-        float wave = fract(vUv.y * 2. - phase * direction);
-        float pulse = smoothstep(.38, .78, wave) * (1. - smoothstep(.78, 1., wave));
-        vec3 light = mix(tint, vec3(1.), core * (.32 + .65 * pulse));
-        float alpha = (halo * .42 + core * (.66 + .34 * pulse)) * strength;
+        float wave = fract((vUv.y * length - phase) / 1.75);
+        float head = exp(-pow((wave - .5) * 19., 2.));
+        float trail = .5 + (wave - .5) * direction;
+        float tail = smoothstep(.08, .46, trail) * (1. - smoothstep(.48, .63, trail));
+        float core = 1. - smoothstep(.07 + .07 * head, .23 + .1 * head, edge);
+        float glow = pow(1. - edge, 3.);
+        vec3 light = mix(tint, vec3(1.), core * (.14 + .72 * head + .25 * tail));
+        float alpha = glow * (.10 + .26 * tail) + core * (.24 + .40 * tail + .34 * head);
         gl_FragColor = vec4(light, alpha);
         #include <colorspace_fragment>
       }`,
@@ -116,6 +134,11 @@ export default function EnergyScene({
   const hotspots = useRef<Partial<Record<FlowRole, HTMLButtonElement | null>>>(
     {},
   );
+  const tethers = useRef<Partial<Record<FlowRole, SVGLineElement | null>>>({});
+  const anchors = useRef<Partial<Record<FlowRole, SVGCircleElement | null>>>(
+    {},
+  );
+  const tetherLayer = useRef<SVGSVGElement>(null);
   const values = useRef({ flows, animate });
   values.current = { flows, animate };
   const api = useRef<{
@@ -143,6 +166,13 @@ export default function EnergyScene({
     renderer.domElement.setAttribute("aria-hidden", "true");
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-6, 6, 5, -5, 0.1, 70);
+    const studio = new RoomEnvironment();
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const reflection = pmrem.fromScene(studio, 0.045);
+    scene.environment = reflection.texture;
+    scene.environmentIntensity = 0.35;
+    studio.dispose();
+    pmrem.dispose();
     const model = createEnergyHouse();
     scene.add(model.root);
     // Fit actual mesh bounds, not the enclosing house/mast box whose empty top
@@ -168,8 +198,8 @@ export default function EnergyScene({
             );
     });
 
-    scene.add(new THREE.HemisphereLight(0xe8f4ff, 0x73716d, 1.8));
-    const sun = new THREE.DirectionalLight(0xffeedb, 3.1);
+    scene.add(new THREE.HemisphereLight(0xe8f4ff, 0x73716d, 1.65));
+    const sun = new THREE.DirectionalLight(0xffeedb, 2.7);
     sun.position.set(-3, 8, 5);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -185,38 +215,48 @@ export default function EnergyScene({
     rim.position.set(5, 4, -5);
     scene.add(rim);
 
-    const tracks = flowRoles.map((role) => {
+    const tracks = flowRoles.map((role, index) => {
       const curve = new THREE.CatmullRomCurve3(
         model.routes[role],
         false,
         "centripetal",
       );
-      const material = lightMaterial(colors[role]);
-      const geometry = lightRibbon(curve);
+      const material = lightMaterial(colors[role], curve.getLength());
+      const geometry = lightRibbon(curve, role);
       const ribbon = new THREE.Mesh(geometry, material);
       ribbon.renderOrder = 2;
       scene.add(ribbon);
-      return { role, material, geometry, ribbon };
+      return {
+        role,
+        material,
+        geometry,
+        ribbon,
+        phase: index * 0.31,
+        speed: 0.35,
+      };
     });
     let angle = 0.62,
       visible = true,
       lost = false,
       lastFrame = 0;
     // Keep animation time separate from wall time: pause/reduced motion really freeze it.
-    let animationTime = 0,
-      previousTime: number | null = null;
+    let previousTime: number | null = null;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     function positionHotspots() {
       const width = element.clientWidth,
         height = element.clientHeight;
       const small = width < 600;
+      if (tetherLayer.current) {
+        tetherLayer.current.style.display = small ? "none" : "block";
+        tetherLayer.current.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      }
       const offsets: Record<FlowRole, [number, number]> = {
-        solar: [-25, -52],
-        home: [-185, -30],
-        ev: [-130, 35],
-        battery: [-45, 132],
-        grid: [65, -4],
+        solar: [-10, -96],
+        home: [-215, -30],
+        ev: [-165, 16],
+        battery: [-35, 145],
+        grid: [86, -30],
       };
       // Phones put two labels above and three below the model. The architecture
       // remains unobscured; names and colors map to the visible equipment.
@@ -239,6 +279,8 @@ export default function EnergyScene({
             node,
             w,
             h,
+            anchorX: ((point.x + 1) / 2) * width,
+            anchorY: ((1 - point.y) / 2) * height,
             x: small
               ? mobileSlots[role][0] * width
               : ((point.x + 1) / 2) * width + offsets[role][0],
@@ -272,9 +314,28 @@ export default function EnergyScene({
           }
       }
       for (const item of items) {
-        item.node.style.left = `${clamp(item.x, item.w / 2 + 12, width - item.w / 2 - 12)}px`;
-        item.node.style.top = `${clamp(item.y, item.h + 66, height - 16)}px`;
+        const x = clamp(item.x, item.w / 2 + 12, width - item.w / 2 - 12);
+        const y = clamp(item.y, item.h + 66, height - 16);
+        item.node.style.left = `${x}px`;
+        item.node.style.top = `${y}px`;
         item.node.dataset.positioned = "true";
+        const line = tethers.current[item.role],
+          dot = anchors.current[item.role];
+        if (line && dot) {
+          // Connect the physical part to the nearest card edge, rather than its centre.
+          const ex = clamp(
+            item.anchorX,
+            x - item.w / 2 + 10,
+            x + item.w / 2 - 10,
+          );
+          const ey = clamp(item.anchorY, y - item.h + 8, y - 8);
+          line.setAttribute("x1", String(item.anchorX));
+          line.setAttribute("y1", String(item.anchorY));
+          line.setAttribute("x2", String(ex));
+          line.setAttribute("y2", String(ey));
+          dot.setAttribute("cx", String(item.anchorX));
+          dot.setAttribute("cy", String(item.anchorY));
+        }
       }
     }
     function view() {
@@ -305,8 +366,10 @@ export default function EnergyScene({
       if (ms && ms - lastFrame < 33) return;
       lastFrame = ms;
       const value = values.current;
-      if (previousTime !== null && value.animate && !reduced.matches)
-        animationTime += Math.min((ms - previousTime) / 1000, 0.1);
+      const dt =
+        previousTime !== null && value.animate && !reduced.matches
+          ? Math.max(0, Math.min((ms - previousTime) / 1000, 0.1))
+          : 0;
       previousTime = ms;
       for (const item of tracks) {
         const flow = value.flows[item.role];
@@ -314,22 +377,27 @@ export default function EnergyScene({
           flow.status === "ok" &&
           flow.watts !== null &&
           Math.abs(flow.watts) > 0.5;
-        // Unknown or stale data must not imply electricity is flowing.
-        item.ribbon.visible = flow.visible && active;
-        model.setActivity(
-          item.role,
-          flow.visible && active,
-          0.5 + 0.5 * Math.sin(animationTime * 2.6),
-        );
-        const component = model.components[item.role];
-        if (component) component.visible = flow.visible;
         const forward =
           item.role === "home" || item.role === "ev"
             ? false
             : (flow.watts || 0) > 0;
-        const speed = 0.26 + Math.min(0.5, Math.abs(flow.watts || 0) / 18000);
+        const targetSpeed =
+          0.38 +
+          Math.min(0.52, Math.sqrt(Math.abs(flow.watts || 0) / 8000) * 0.4);
+        if (active && flow.visible && dt > 0) {
+          item.speed += (targetSpeed - item.speed) * (1 - Math.exp(-dt * 3));
+          item.phase =
+            (item.phase + dt * item.speed * (forward ? 1 : -1)) % 1.75;
+        }
+        // Integrate each stream's travelled distance. A changing meter never
+        // teleports the pulse, and paused readings cannot move its position.
+        item.ribbon.visible = flow.visible && active;
+        const pulse = 0.5 + 0.5 * Math.cos((item.phase / 1.75) * Math.PI * 2);
+        model.setActivity(item.role, flow.visible && active, pulse);
+        const component = model.components[item.role];
+        if (component) component.visible = flow.visible;
         item.material.uniforms.direction.value = forward ? 1 : -1;
-        item.material.uniforms.phase.value = animationTime * speed;
+        item.material.uniforms.phase.value = item.phase;
       }
       renderer.render(scene, camera);
     }
@@ -424,6 +492,7 @@ export default function EnergyScene({
         t.material.dispose();
       });
       model.dispose();
+      reflection.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();
@@ -444,6 +513,35 @@ export default function EnergyScene({
               : "Interaktivt 3D-energihus med soltak, elbillader, batteri og strømmast. Målinger ved hver del og under modellen."
           }
         />
+        {!failed && (
+          <svg
+            ref={tetherLayer}
+            className="energy-hotspot-tethers"
+            aria-hidden="true"
+          >
+            {flowRoles
+              .filter((role) => flows[role].visible)
+              .map((role) => (
+                <g key={role}>
+                  <line
+                    ref={(node) => {
+                      tethers.current[role] = node;
+                    }}
+                    className="energy-hotspot-tether"
+                    data-role={role}
+                  />
+                  <circle
+                    ref={(node) => {
+                      anchors.current[role] = node;
+                    }}
+                    className="energy-hotspot-anchor"
+                    data-role={role}
+                    r="3"
+                  />
+                </g>
+              ))}
+          </svg>
+        )}
         {!failed && (
           <div className="energy-hotspots">
             {flowRoles

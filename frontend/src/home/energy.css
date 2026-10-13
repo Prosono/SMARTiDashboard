@@ -454,3 +454,208 @@
     font-size: 22px;
   }
 }
+
+/* The historical workspace reads as a second chapter below the live model. */
+.energy-workspace {
+  padding: clamp(18px, 2.6vw, 30px);
+  border-radius: 22px;
+  box-shadow: none;
+}
+.energy-workspace-heading {
+  margin-bottom: 26px;
+  align-items: flex-start;
+}
+.energy-workspace-heading h2 {
+  font-size: clamp(1.3rem, 2.1vw, 1.65rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.energy-workspace-heading p {
+  color: var(--muted);
+  margin: 0.5rem 0 0;
+  font-size: 0.77rem;
+}
+.energy-workspace-heading .eyebrow {
+  color: var(--muted);
+  margin-bottom: 0.45rem;
+  display: block;
+}
+.energy-toolbar {
+  border-block: 1px solid var(--line);
+  padding-block: 0.85rem;
+  margin-bottom: 0;
+}
+.energy-periods {
+  background: var(--soft);
+  border-radius: 100px;
+  padding: 3px;
+}
+.energy-periods button {
+  min-height: 38px;
+  border-radius: 100px;
+  font-size: 0.71rem;
+}
+.energy-main-meter {
+  font-size: 0.66rem;
+}
+.energy-main-meter select {
+  border-radius: 10px;
+}
+.energy-summary-grid {
+  gap: 0;
+  margin: 0 0 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+.energy-summary-grid article,
+.energy-summary-grid article:nth-child(2) {
+  background: none;
+  padding: 1.5rem 1.2rem;
+  border-radius: 0;
+  border-right: 1px solid var(--line);
+}
+.energy-summary-grid article:first-child {
+  padding-left: 0;
+}
+.energy-summary-grid article:last-child {
+  border-right: 0;
+}
+.energy-summary-grid strong {
+  font-size: clamp(1.6rem, 2.4vw, 2.05rem);
+  font-variant-numeric: tabular-nums;
+  margin: 0.6rem 0;
+}
+.energy-summary-grid article:nth-child(2) strong {
+  color: var(--home-green);
+}
+.energy-summary-grid small {
+  font-size: 0.71rem;
+}
+.energy-summary-grid span {
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+.energy-coverage {
+  display: block;
+  width: 76px;
+  height: 4px;
+  margin-top: 9px;
+  border: 0;
+  background: var(--line);
+  border-radius: 4px;
+  accent-color: var(--home-green);
+}
+.energy-coverage::-webkit-meter-bar {
+  background: var(--line);
+  border: 0;
+  height: 4px;
+}
+.energy-coverage::-webkit-meter-optimum-value {
+  background: var(--home-green);
+}
+.energy-coverage::-moz-meter-bar {
+  background: var(--home-green);
+}
+.energy-chart-panel {
+  padding: 0 0 1.5rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  margin-bottom: 1.5rem;
+}
+.energy-chart-heading h3 {
+  font-weight: 500;
+  font-size: 1rem;
+}
+.energy-large-chart {
+  height: 225px;
+  touch-action: pan-y;
+}
+.energy-large-chart text {
+  font-size: 10px;
+}
+.energy-inspection-line {
+  stroke: var(--home-green);
+  stroke-dasharray: 3 4;
+  opacity: 0.5;
+}
+.energy-insight {
+  justify-content: space-between;
+  border-radius: 9px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.68rem;
+}
+.energy-insight span {
+  font-variant-numeric: tabular-nums;
+}
+.energy-meter-overview h3,
+.energy-sources h3 {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.energy-meter-overview > button {
+  padding: 0.9rem 0.6rem;
+  border-radius: 0;
+}
+.energy-meter-overview > button:hover {
+  background: var(--soft);
+}
+.energy-meter-overview > button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--home-green) 6%, var(--surface));
+  border-color: var(--line);
+  border-radius: 0;
+}
+.energy-meter-reading strong {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+.energy-method {
+  font-size: 0.62rem;
+}
+@media (max-width: 600px) {
+  .energy-workspace-heading {
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .energy-workspace-heading p {
+    font-size: 0.7rem;
+  }
+  .energy-workspace-heading .home-customize {
+    min-height: 40px;
+    font-size: 0.7rem;
+  }
+  .energy-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .energy-summary-grid article,
+  .energy-summary-grid article:nth-child(2) {
+    padding: 1.1rem 0.65rem;
+  }
+  .energy-summary-grid article:first-child {
+    padding-left: 0;
+  }
+  .energy-summary-grid article:nth-child(2) {
+    border-right: 0;
+  }
+  .energy-summary-grid article:nth-child(3) {
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .energy-summary-grid strong {
+    font-size: 1.4rem;
+  }
+  .energy-summary-grid small {
+    font-size: 0.64rem;
+  }
+  .energy-chart-heading h3 {
+    font-size: 0.91rem;
+  }
+  .energy-chart-heading small {
+    font-size: 0.61rem;
+  }
+  .energy-large-chart text {
+    font-size: 10px;
+  }
+  .energy-meter-overview > header {
+    gap: 0.3rem;
+  }
+}

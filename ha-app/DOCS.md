@@ -143,7 +143,7 @@ Under Home → Energy, **Elbil & lader → Tilpass** binds existing entities to 
 Validated with isolated demo/API and desktop/mobile tests; live thermostat and EV hardware confirmation remains pending.
 
 
-## 3D energy flow (1.3.0)
+## 3D energy flow (1.4.0)
 
 Open Home → Energy and select an unconfigured component to add its measurement, or select a configured component to open its power history. **Endre måler** opens and focuses the matching sensor field. **Konfigurer energiflyt** opens the complete setup. Choose visible solar, home consumption, EV, battery and grid components and bind each to an existing W/kW sensor. These personal settings only affect display; they do not control equipment. The house is a generic illustration, not a model of the actual property. A local Three.js renderer supplies the architectural model, lighting and colored ground/wall light paths; no remote assets or credentials are sent to it.
 
@@ -158,3 +158,5 @@ Renderer reference: [Three.js WebGLRenderer](https://threejs.org/docs/pages/WebG
 Use **Rediger 3D-modell** to uncheck solar, EV/charger, battery or utility mast equipment you do not have, then save. The home checkbox hides the consumption reading/flow while preserving the house itself. Settings remain personal; hidden mappings are retained so equipment can be restored. No device is removed from the home hub.
 
 Active equipment has a colored corona that pulses with the flow animation. Unknown, stale, offline and zero readings do not illuminate it. Graphs use actual recorder hourly average power, independently of the live reading: choose the last 24 completed hours or seven days. Move/touch the graph or use arrow keys, Home and End to inspect values. Negative grid means export; negative battery means charging. Missing data remains a gap, including when one side of a split meter lacks a matching hour. Sensors without recorded mean statistics show an explicit empty state; graphs do not infer energy totals. History refreshes every minute while Energy is open.
+
+Lighting now traces individual equipment edges, including each solar module. Light packets follow measured direction and change speed smoothly; their speed is illustrative, not a calibrated power scale. Desktop pointers connect each reading to the corresponding physical part while mobile labels sit around the model. Hourly previews occupy their own area below live values, and the expanded graph includes a signed numeric axis. **Energien over tid** retains personal meter choices and shows recorded-data coverage.

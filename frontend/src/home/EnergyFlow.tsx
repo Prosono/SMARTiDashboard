@@ -22,6 +22,7 @@ import {
   Plus,
   ArrowUpRight,
   Zap,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import { api } from "../api";
 import type { Home } from "../types";
@@ -275,8 +276,8 @@ export function EnergyFlow({
           <h1>{t("Se hvor strømmen går.", "See where your power goes.")}</h1>
           <p>
             {t(
-              "Produksjon, lagring og forbruk. Samlet i hjemmet ditt.",
-              "Generation, storage and consumption. Together in your home.",
+              "Hjemmet ditt, i flyt. Følg produksjon, lagring og forbruk.",
+              "Your home, in flow. Follow generation, storage and consumption.",
             )}
           </p>
         </div>
@@ -383,7 +384,13 @@ export function EnergyFlow({
                     else delete bindingRefs.current[role];
                   }}
                 >
-                  <strong className="flow-binding-title">{labels[role]}</strong>
+                  <strong className="flow-binding-title">
+                    {(() => {
+                      const Icon = icons[role];
+                      return <Icon size={19} aria-hidden="true" />;
+                    })()}
+                    {labels[role]}
+                  </strong>
                   {draft[role].visible && (
                     <>
                       <label>
@@ -586,11 +593,6 @@ export function EnergyFlow({
                       : select(selected === role ? null : role)
                   }
                 >
-                  <FlowHistory
-                    compact
-                    lang={lang}
-                    points={history.data?.series[role] || []}
-                  />
                   <span className="flow-measurement-label">
                     <span className="flow-measurement-icon">
                       <Icon size={18} aria-hidden="true" />
@@ -618,6 +620,30 @@ export function EnergyFlow({
                       <em> · {batteryLevel}</em>
                     )}
                   </small>
+                  <span className="flow-measurement-trend" aria-hidden="true">
+                    {history.data?.series[role]?.some(
+                      (p) => p.value !== null,
+                    ) ? (
+                      <FlowHistory
+                        compact
+                        lang={lang}
+                        points={history.data.series[role]!}
+                      />
+                    ) : (
+                      <span className="flow-trend-empty">
+                        <ChartNoAxesCombined size={18} />
+                        {t("Ingen historikk ennå", "No history yet")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="flow-measurement-caption">
+                    {t("Timehistorikk", "Hourly history")}
+                    <span>
+                      {historyPeriod === "7d"
+                        ? t("7 dager", "7 days")
+                        : t("24 timer", "24 hours")}
+                    </span>
+                  </span>
                 </button>
               );
             })}
@@ -633,6 +659,7 @@ export function EnergyFlow({
               <header>
                 <div>
                   <span className="eyebrow">
+                    <ChartNoAxesCombined size={14} aria-hidden="true" />
                     {t("Effekthistorikk", "Power history")}
                   </span>
                   <h3>{labels[selected]}</h3>

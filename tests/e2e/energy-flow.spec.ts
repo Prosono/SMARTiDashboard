@@ -1,8 +1,47 @@
-import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import {
+  test,
+  expect,
+  type Page,
+  type Locator,
+} from "../../frontend/node_modules/@playwright/test";
+
+// Let React, ResizeObserver and WebGL finish pending frames before checking motion.
+const settleRendering = (page: Page) =>
+  page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        let frames = 0;
+        function nextFrame() {
+          if (++frames === 8) resolve();
+          else requestAnimationFrame(nextFrame);
+        }
+        requestAnimationFrame(nextFrame);
+      }),
+  );
+
+async function expectStillCanvas(page: Page, canvas: Locator, reason: string) {
+  await canvas.scrollIntoViewIfNeeded();
+  await settleRendering(page);
+  const before = await canvas.screenshot();
+  await settleRendering(page);
+  const after = await canvas.screenshot();
+  if (!after.equals(before)) {
+    await test.info().attach(`${reason}-before`, {
+      body: before,
+      contentType: "image/png",
+    });
+    await test.info().attach(`${reason}-after`, {
+      body: after,
+      contentType: "image/png",
+    });
+  }
+  expect(after.equals(before), reason).toBe(true);
+}
+
 test("3D hotspots configure live measurements and preserve directions, freshness and persistence", async ({
   page,
 }) => {
-  test.setTimeout(60000);
+  test.setTimeout(90000);
   const renderingErrors: string[] = [];
   page.on("pageerror", (error) => renderingErrors.push(error.message));
   page.on("console", (message) => {
@@ -49,6 +88,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   };
   let online = true;
   let solarStale = false;
+  let zeroPower = false;
   await page.route("**/api/home/energy-flow/preferences", (r) => {
     if (r.request().method() === "PUT") pref = r.request().postDataJSON();
     return r.fulfill({ json: pref });
@@ -68,15 +108,17 @@ test("3D hotspots configure live measurements and preserve directions, freshness
                 !online || (role === "solar" && solarStale)
                   ? null
                   : pref[role].source
-                    ? (
-                        {
-                          solar: 4300,
-                          home: 1700,
-                          ev: 3200,
-                          battery: -900,
-                          grid: -500,
-                        } as any
-                      )[role]
+                    ? zeroPower
+                      ? 0
+                      : (
+                          {
+                            solar: 4300,
+                            home: 1700,
+                            ev: 3200,
+                            battery: -900,
+                            grid: -500,
+                          } as any
+                        )[role]
                     : null,
               status: !online
                 ? "unavailable"
@@ -140,6 +182,59 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await page.route("**/api/home", (r) =>
     r.fulfill({ json: { ...base, controls: [...base.controls, sensor] } }),
   );
+  // The whole-page visual fixture also populates the separate energy overview.
+  await page.route("**/api/home/energy/preferences", (r) =>
+    r.fulfill({
+      json: { meters: [sensor.id], hidden: [], period: "24h", chart: "bar" },
+    }),
+  );
+  await page.route("**/api/home/energy/statistics?*", (r) => {
+    const values = [
+      620, 540, 530, 580, 700, 1150, 2260, 3090, 1910, 1320, 1280, 1690, 1890,
+      2100, 2500, 2980, 3540, 4300, 3850, 3100, 2620, 1980, 1310, 880,
+    ];
+    const points = values.map((value, i) => ({
+      time: new Date(Date.now() - (24 - i) * 3600000).toISOString(),
+      value,
+    }));
+    const average =
+      values.reduce((sum, value) => sum + value, 0) / values.length;
+    return r.fulfill({
+      json: {
+        start: points[0].time,
+        end: new Date().toISOString(),
+        previous_start: new Date(Date.now() - 48 * 3600000).toISOString(),
+        period: "24h",
+        demo: true,
+        series: [
+          {
+            id: sensor.id,
+            name: sensor.name,
+            kind: "power",
+            unit: "W",
+            current: {
+              value: average,
+              complete: true,
+              coverage: 100,
+              peak: 4300,
+              points,
+            },
+            previous: {
+              value: average * 1.12,
+              complete: true,
+              coverage: 100,
+              peak: 4816,
+              points: points.map((point) => ({
+                ...point,
+                value: point.value * 1.12,
+              })),
+            },
+            change_percent: -10.7,
+          },
+        ],
+      },
+    });
+  });
   await page.reload();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
   const flow = page.getByRole("region", { name: "Energiflyt", exact: true });
@@ -148,8 +243,14 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   const grid = flow.locator('.flow-measurement[data-role="grid"]');
   const battery = flow.locator('.flow-measurement[data-role="battery"]');
   const solarHotspot = flow.locator('[data-hotspot="solar"]');
+  const canvas = flow.locator("canvas");
   await expect(solar.locator("strong")).toHaveText("—");
   await expect(solarHotspot).toContainText("—");
+  await expectStillCanvas(
+    page,
+    canvas,
+    "Unconfigured sensors must not animate energy",
+  );
   await solarHotspot.click();
   await expect(
     flow.getByLabel("Effektmåler · Solceller", { exact: true }),
@@ -185,33 +286,29 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(
     flow.getByRole("button", { name: "Vis flyt", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  const renderFrames = () =>
-    page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          let frames = 0;
-          function nextFrame() {
-            if (++frames === 8) resolve();
-            else requestAnimationFrame(nextFrame);
-          }
-          requestAnimationFrame(nextFrame);
-        }),
-    );
-  // Let React's renderer effect settle before checking that paused paths stay fixed.
-  await renderFrames();
-  const paused = await flow.locator("canvas").screenshot();
-  await renderFrames();
-  const stillPaused = await flow.locator("canvas").screenshot();
-  if (!stillPaused.equals(paused)) {
-    await test
-      .info()
-      .attach("paused-first", { body: paused, contentType: "image/png" });
-    await test.info().attach("paused-after-eight-frames", {
-      body: stillPaused,
-      contentType: "image/png",
-    });
-  }
-  expect(stillPaused.equals(paused)).toBe(true);
+  await expectStillCanvas(
+    page,
+    canvas,
+    "Paused energy paths must remain fixed",
+  );
+  // The operating-system motion preference overrides the animation toggle.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await flow.getByRole("button", { name: "Vis flyt", exact: true }).click();
+  await expect(
+    flow.getByRole("button", { name: "Pause", exact: true }),
+  ).toBeVisible();
+  await expectStillCanvas(
+    page,
+    canvas,
+    "Reduced motion must suppress active flow animation",
+  );
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const reducedFrame = await canvas.screenshot();
+  await expect
+    .poll(async () => (await canvas.screenshot()).equals(reducedFrame))
+    .toBe(false);
+  await flow.getByRole("button", { name: "Pause", exact: true }).click();
+  await settleRendering(page);
   await flow
     .getByRole("button", { name: "Drei huset mot høyre", exact: true })
     .click();
@@ -273,10 +370,53 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     flow.getByLabel("Effektmåler · Batteri", { exact: true }),
   ).toHaveValue("sensor.test_power");
   await flow.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await flow.locator(".energy-scene-stage").screenshot({
+    animations: "disabled",
+    // Isolate the model for visual review; fixed mobile navigation otherwise overlays the crop.
+    style: ".sidebar { visibility: hidden !important; }",
+    path: `../artifacts/${test.info().project.name}-energy-stage.png`,
+  });
   await flow.screenshot({
     animations: "disabled",
     path: `../artifacts/${test.info().project.name}-energy-flow.png`,
   });
+  await expect(
+    page.locator(".energy-workspace .energy-large-chart"),
+  ).toBeVisible();
+  await page.locator(".home-overview").screenshot({
+    animations: "disabled",
+    path: `../artifacts/${test.info().project.name}-energy-overview.png`,
+  });
+  if (test.info().project.name === "desktop") {
+    const originalViewport = page.viewportSize()!;
+    await page.setViewportSize({ width: 820, height: 1180 });
+    await settleRendering(page);
+    const clippedHotspots = await flow
+      .locator("[data-hotspot]")
+      .evaluateAll((nodes) => {
+        return nodes
+          .filter((node) => {
+            const bounds = node.getBoundingClientRect();
+            const stage = node
+              .closest(".energy-scene-stage")!
+              .getBoundingClientRect();
+            return (
+              bounds.left < stage.left - 1 || bounds.right > stage.right + 1
+            );
+          })
+          .map((node) => node.getAttribute("data-hotspot"));
+      });
+    expect(
+      clippedHotspots,
+      "Tablet measurement controls must fit the stage",
+    ).toEqual([]);
+    await page.locator(".home-overview").screenshot({
+      animations: "disabled",
+      path: "../artifacts/tablet-energy-overview.png",
+    });
+    await page.setViewportSize(originalViewport);
+    await settleRendering(page);
+  }
   await page.getByRole("button", { name: "Mørkt", exact: true }).click();
   await flow.screenshot({
     animations: "disabled",
@@ -308,6 +448,19 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     flow.getByLabel("Effektmåler · Solceller", { exact: true }),
   ).toHaveValue("sensor.test_power");
   await flow.getByRole("button", { name: "Avbryt", exact: true }).click();
+  zeroPower = true;
+  await expect(solar.locator("strong")).toHaveText("0 W", { timeout: 10000 });
+  await expectStillCanvas(
+    page,
+    canvas,
+    "Zero measured power must not animate energy",
+  );
+  zeroPower = false;
+  await expect(solarHotspot).toContainText("4,3 kW", { timeout: 10000 });
+  const resumed = await canvas.screenshot();
+  await expect
+    .poll(async () => (await canvas.screenshot()).equals(resumed))
+    .toBe(false);
   solarStale = true;
   await expect(solar).toContainText("Gammel måling", { timeout: 10000 });
   await expect(solar.locator("strong")).toHaveText("—");
@@ -320,6 +473,11 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(battery).not.toContainText("74%");
   await expect(flow.locator('[data-hotspot="battery"]')).not.toContainText(
     "74%",
+  );
+  await expectStillCanvas(
+    page,
+    canvas,
+    "Offline sensors must stop every energy flow",
   );
 
   await flow

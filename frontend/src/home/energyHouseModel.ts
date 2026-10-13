@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { FlowRole } from "./energyFlowModel";
+import { createEnergyVehicle } from "./energyVehicleModel";
 
 /** A small architectural model, in metres. The front of the home faces +Z. */
 export function createEnergyHouse() {
@@ -338,100 +339,15 @@ export function createEnergyHouse() {
   for (let i = 0; i < 14; i++)
     box(0.07, 1.36, 0.07, cedar, -3.89 + i * 0.155, 0.8, -1.46, carport);
 
-  // A sculpted, softly bevelled electric crossover. No device state is inferred by the model.
+  // A low, unbadged electric fastback with a compound-curved body and panoramic canopy.
   const ev = new THREE.Group();
   root.add(ev);
   components.ev = ev;
-  const car = new THREE.Group();
-  car.position.set(-2.84, 0, 1.18);
-  ev.add(car);
-  const pearl = material(0xd1dce0, 0.26, 0.5);
-  const rubber = material(0x17232c, 0.97);
-  const autoGlass = material(0x1e3b4b, 0.16, 0.52);
-  const bodyProfile = new THREE.Shape();
-  bodyProfile.moveTo(-1.22, 0.3);
-  bodyProfile.quadraticCurveTo(-1.25, 0.46, -1.05, 0.53);
-  bodyProfile.lineTo(-0.7, 0.56);
-  bodyProfile.quadraticCurveTo(0.1, 0.59, 0.67, 0.52);
-  bodyProfile.quadraticCurveTo(1.2, 0.5, 1.24, 0.36);
-  bodyProfile.lineTo(1.14, 0.27);
-  bodyProfile.lineTo(-1.12, 0.27);
-  bodyProfile.closePath();
-  const body = mesh(
-    new THREE.ExtrudeGeometry(bodyProfile, {
-      depth: 1.02,
-      bevelEnabled: true,
-      bevelSegments: 4,
-      bevelSize: 0.045,
-      bevelThickness: 0.065,
-      curveSegments: 16,
-    }),
-    pearl,
-    0.51,
-    0,
-    0,
-    car,
-  );
-  body.rotation.y = -Math.PI / 2;
-  box(1.08, 0.08, 2.26, charcoal, 0, 0.265, 0, car, 0.035);
-  // Side profile extruded across the width creates sloped windscreen and rear window.
-  const cabinProfile = new THREE.Shape();
-  cabinProfile.moveTo(-0.96, 0.51);
-  cabinProfile.quadraticCurveTo(-0.65, 0.73, -0.47, 0.85);
-  cabinProfile.quadraticCurveTo(-0.03, 0.98, 0.25, 0.84);
-  cabinProfile.lineTo(0.69, 0.52);
-  cabinProfile.closePath();
-  const cabin = mesh(
-    new THREE.ExtrudeGeometry(cabinProfile, {
-      depth: 0.92,
-      bevelEnabled: true,
-      bevelSegments: 3,
-      bevelSize: 0.035,
-      bevelThickness: 0.045,
-      steps: 1,
-      curveSegments: 10,
-    }),
-    autoGlass,
-    -0.46,
-    0,
-    0,
-    car,
-  );
-  cabin.rotation.y = -Math.PI / 2;
-  // After rotating the side profile its local X becomes front-to-back.
-  cabin.position.x = 0.46;
-  box(0.88, 0.018, 0.31, autoGlass, 0, 0.92, -0.13, car, 0.008);
-  for (const x of [-0.5, 0.5]) {
-    box(0.025, 0.32, 0.035, charcoal, x, 0.689, -0.08, car);
-    box(0.17, 0.075, 0.16, pearl, x * 1.17, 0.61, 0.41, car, 0.035);
-    box(0.017, 0.022, 0.12, charcoal, x * 1.15, 0.5, -0.2, car, 0.008);
-  }
-  const wheels = own(new THREE.CylinderGeometry(0.23, 0.23, 0.16, 24));
-  const rims = own(new THREE.CylinderGeometry(0.153, 0.153, 0.17, 20));
-  for (const x of [-0.535, 0.535])
-    for (const z of [-0.8, 0.8]) {
-      mesh(wheels, rubber, x, 0.27, z, car).rotation.z = Math.PI / 2;
-      mesh(rims, aluminium, x, 0.27, z, car).rotation.z = Math.PI / 2;
-      cylinder(0.062, 0.062, 0.177, charcoal, x, 0.27, z, car).rotation.z =
-        Math.PI / 2;
-    }
-  for (const side of [-1, 1]) {
-    const headlight = box(
-      0.27,
-      0.032,
-      0.05,
-      warmWhite,
-      side * 0.39,
-      0.445,
-      1.184,
-      car,
-      0.012,
-    );
-    headlight.rotation.y = side * -0.22;
-  }
-  box(0.67, 0.055, 0.024, charcoal, 0, 0.31, 1.242, car, 0.014);
-  box(0.18, 0.055, 0.017, chalk, 0, 0.335, 1.263, car, 0.008);
-  box(0.9, 0.027, 0.02, material(0xbc6879, 0.3), 0, 0.465, -1.237, car, 0.008);
+  const vehicle = createEnergyVehicle();
+  vehicle.root.position.set(-2.93, 0, 1.3);
+  vehicle.root.rotation.y = -0.045;
+  ev.add(vehicle.root);
+  const pearl = material(0xe0e7e7, 0.26, 0.32);
   // Charger is deliberately cable-free; energy is represented by the scene's light paths.
   box(0.37, 0.07, 0.4, stone, -1.91, 0.045, 2.0, ev, 0.04);
   box(0.25, 0.86, 0.22, charcoal, -1.91, 0.49, 2.0, ev, 0.045);
@@ -545,98 +461,133 @@ export function createEnergyHouse() {
   ])
     mesh(new THREE.SphereGeometry(size, 14, 10), foliage[1], x, y, z);
 
-  // Broad translucent coronas surround equipment only while its live flow is active.
-  const activity = new Map<FlowRole, THREE.ShaderMaterial[]>();
-  function corona(
+  // Activity follows the equipment's real perimeter. No plane fills over the solar cells,
+  // no floating rectangles, and no glow at all for missing, stale or inactive readings.
+  const activity = new Map<
+    FlowRole,
+    { surface: THREE.MeshBasicMaterial; intensity: number }[]
+  >();
+  function contour(
     role: FlowRole,
     color: number,
+    curve: THREE.Curve<THREE.Vector3>,
+    parent: THREE.Object3D,
+    radius = 0.006,
+  ) {
+    for (const [size, intensity] of [
+      [radius * 3.7, 0.11],
+      [radius, 0.8],
+    ]) {
+      const surface = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0,
+        // A coloured core stays legible over pale paving; only the soft spill adds light.
+        blending:
+          size === radius ? THREE.NormalBlending : THREE.AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false,
+      });
+      materials.add(surface);
+      const glow = mesh(
+        new THREE.TubeGeometry(curve, 96, size, 5, true),
+        surface,
+        0,
+        0,
+        0,
+        parent,
+      );
+      glow.castShadow = glow.receiveShadow = false;
+      glow.renderOrder = 3;
+      activity.set(role, [
+        ...(activity.get(role) || []),
+        { surface, intensity },
+      ]);
+    }
+  }
+  function roundedContour(
     w: number,
     h: number,
-    position: THREE.Vector3,
-    rotation: THREE.Euler,
-    parent: THREE.Object3D,
-    ellipse = false,
+    radius: number,
+    point: (x: number, y: number) => THREE.Vector3,
   ) {
-    const surface = new THREE.ShaderMaterial({
-      uniforms: {
-        tint: { value: new THREE.Color(color) },
-        opacity: { value: 0 },
-        ellipse: { value: ellipse ? 1 : 0 },
-      },
-      vertexShader: `varying vec2 vUv; void main() { vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-      fragmentShader: `varying vec2 vUv; uniform vec3 tint; uniform float opacity, ellipse;
-        void main() { vec2 q=abs(vUv-.5)*2.; float d=mix(max(q.x,q.y),length(q),ellipse);
-          float band=exp(-pow((d-.77)*9.,2.));
-          gl_FragColor=vec4(mix(tint,vec3(1.),band*.45),band*opacity);
-          #include <colorspace_fragment>
-        }`,
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      toneMapped: false,
-    });
-    materials.add(surface);
-    const glow = mesh(
-      new THREE.PlaneGeometry(w, h),
-      surface,
-      position.x,
-      position.y,
-      position.z,
-      parent,
-    );
-    glow.rotation.copy(rotation);
-    glow.castShadow = false;
-    glow.receiveShadow = false;
-    glow.renderOrder = 3;
-    activity.set(role, [...(activity.get(role) || []), surface]);
+    const curve = new THREE.CurvePath<THREE.Vector3>();
+    const x = w / 2,
+      y = h / 2,
+      r = radius;
+    const line = (a: number[], b: number[]) =>
+      curve.add(new THREE.LineCurve3(point(a[0], a[1]), point(b[0], b[1])));
+    const corner = (a: number[], b: number[], c: number[]) =>
+      curve.add(
+        new THREE.QuadraticBezierCurve3(
+          point(a[0], a[1]),
+          point(b[0], b[1]),
+          point(c[0], c[1]),
+        ),
+      );
+    line([-x + r, -y], [x - r, -y]);
+    corner([x - r, -y], [x, -y], [x, -y + r]);
+    line([x, -y + r], [x, y - r]);
+    corner([x, y - r], [x, y], [x - r, y]);
+    line([x - r, y], [-x + r, y]);
+    corner([-x + r, y], [-x, y], [-x, y - r]);
+    line([-x, y - r], [-x, -y + r]);
+    corner([-x, -y + r], [-x, -y], [-x + r, -y]);
+    return curve;
   }
-  corona(
-    "solar",
-    0xffbc42,
-    2.05,
-    3.6,
-    vector(0, 0.1, 0),
-    new THREE.Euler(-Math.PI / 2, 0, 0),
-    solar,
-  );
-  corona(
-    "ev",
-    0xb18aff,
-    1.92,
-    3.25,
-    vector(-2.84, 0.035, 1.18),
-    new THREE.Euler(-Math.PI / 2, 0, 0),
-    ev,
-    true,
-  );
-  corona(
+  for (let row = 0; row < 2; row++)
+    for (let column = 0; column < 4; column++) {
+      const x = (row - 0.5) * 0.82,
+        z = (column - 1.5) * 0.77;
+      contour(
+        "solar",
+        0xffc257,
+        roundedContour(0.778, 0.718, 0.018, (u, v) =>
+          vector(x + u, 0.029, z + v),
+        ),
+        solar,
+        0.005,
+      );
+    }
+  contour(
     "battery",
-    0x4ce3ad,
-    1.01,
-    1.6,
-    vector(2.265, 0.94, 0.99),
-    new THREE.Euler(0, Math.PI / 2, 0),
+    0x52dcaa,
+    roundedContour(0.675, 1.16, 0.102, (u, v) =>
+      vector(2.214, 0.94 + v, 0.99 + u),
+    ),
     battery,
+    0.008,
   );
-  corona(
-    "grid",
-    0x5bcaff,
-    1.3,
-    1.3,
-    vector(mastX, 0.135, mastZ),
-    new THREE.Euler(-Math.PI / 2, 0, 0),
-    grid,
-    true,
+  contour(
+    "ev",
+    0xb38bff,
+    roundedContour(1.34, 3.16, 0.34, (u, v) => vector(u, 0.016, v + 0.025)),
+    vehicle.root,
+    0.007,
   );
-  corona(
-    "grid",
-    0x5bcaff,
-    1.5,
-    0.65,
-    vector(mastX, 3.35, mastZ + 0.1),
-    new THREE.Euler(0, 0, 0),
-    grid,
+  contour(
+    "ev",
+    0xb38bff,
+    roundedContour(0.23, 0.363, 0.028, (u, v) =>
+      vector(-1.91 + u, 1 + v, 2.153),
+    ),
+    ev,
+    0.005,
   );
+  const circle = (radius: number, x: number, y: number, z: number) =>
+    new THREE.CatmullRomCurve3(
+      Array.from({ length: 48 }, (_, i) =>
+        vector(
+          x + Math.cos((i * Math.PI) / 24) * radius,
+          y,
+          z + Math.sin((i * Math.PI) / 24) * radius,
+        ),
+      ),
+      true,
+    );
+  contour("grid", 0x57c8eb, circle(0.38, mastX, 0.135, mastZ), grid, 0.007);
+  for (const x of [mastX - 0.47, mastX, mastX + 0.47])
+    contour("grid", 0x57c8eb, circle(0.088, x, 3.387, mastZ), grid, 0.0045);
 
   // Curves run from each physical component to the same front-of-house distribution point.
   // Their elevation keeps light ribbons above paving, not embedded in the plinth.
@@ -682,11 +633,11 @@ export function createEnergyHouse() {
     ],
   };
   const anchors: Record<FlowRole, THREE.Vector3> = {
-    solar: vector(0.92, 3.1, -0.43),
-    home: vector(0.25, 1.65, 1.75),
-    ev: vector(-2.7, 1.02, 2.55),
-    battery: vector(2.42, 1.51, 1.15),
-    grid: vector(3.9, 3.7, 1.35),
+    solar: vector(1.01, 2.735, -0.1),
+    home: vector(0.47, 1.32, 1.56),
+    ev: vector(-2.97, 0.565, 2.37),
+    battery: vector(2.24, 0.98, 0.99),
+    grid: vector(mastX, 3.3, mastZ),
   };
   return {
     root,
@@ -694,11 +645,14 @@ export function createEnergyHouse() {
     anchors,
     routes,
     setActivity(role: FlowRole, active: boolean, pulse: number) {
-      activity.get(role)?.forEach((surface) => {
-        surface.uniforms.opacity.value = active ? 0.26 + pulse * 0.48 : 0;
+      activity.get(role)?.forEach(({ surface, intensity }) => {
+        surface.opacity = active
+          ? intensity * (0.3 + THREE.MathUtils.clamp(pulse, 0, 1) * 0.7)
+          : 0;
       });
     },
     dispose() {
+      vehicle.dispose();
       geometries.forEach((geometry) => geometry.dispose());
       materials.forEach((surface) => surface.dispose());
     },
