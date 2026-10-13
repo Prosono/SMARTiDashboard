@@ -8,6 +8,7 @@ import {
   ChevronUp,
   Box,
 } from "lucide-react";
+import { smartiName, isSmartiIntegration, integrationName } from "../branding";
 import { api } from "../api";
 import { Feedback, LoadError, useWork, words } from "./shared";
 type Integration = {
@@ -40,11 +41,13 @@ type Update = {
 };
 function IntegrationLogo({ domain }: { domain: string }) {
   const [source, setSource] = useState(0);
+  if (isSmartiIntegration(domain))
+    return <img alt="SMARTi" src="./brand/smarti-logo.png" />;
   if (source > 1 || !/^[a-z0-9_]+$/.test(domain))
-    return <Plug size={28} aria-label={domain} />;
+    return <Plug size={28} aria-label={integrationName(domain)} />;
   return (
     <img
-      alt={domain}
+      alt={integrationName(domain)}
       loading="lazy"
       referrerPolicy="no-referrer"
       src={
@@ -77,7 +80,10 @@ export function Integrations({ lang }: { lang: string }) {
         const result = await api<{ require_restart: boolean; status: string }>(
           `manage/integrations/${encodeURIComponent(id)}`,
           "POST",
-          { action, name },
+          {
+            action,
+            name: edit && name === smartiName(edit.title) ? edit.title : name,
+          },
         );
         w.setMessage(
           result.require_restart
@@ -116,11 +122,15 @@ export function Integrations({ lang }: { lang: string }) {
     }, {}),
   ).filter(([domain, entries]) =>
     (
+      integrationName(domain) +
+      " " +
       domain +
       " " +
       entries
         .map(
           (i) =>
+            smartiName(i.title) +
+            " " +
             i.title +
             " " +
             (i.device_items || []).map((d) => d.name + " " + d.area).join(" "),
@@ -182,7 +192,7 @@ export function Integrations({ lang }: { lang: string }) {
                 <div>
                   <h2>
                     {entries.length === 1
-                      ? entries[0].title
+                      ? smartiName(entries[0].title)
                       : (
                           {
                             hue: "Philips Hue",
@@ -191,7 +201,7 @@ export function Integrations({ lang }: { lang: string }) {
                             bluetooth: "Bluetooth",
                             zha: "Zigbee Home Automation",
                           } as Record<string, string>
-                        )[domain] || domain.replaceAll("_", " ")}
+                        )[domain] || integrationName(domain)}
                   </h2>
                   <p>
                     {entries.length} {t("oppsett", "connections")} · {devices}{" "}
@@ -234,7 +244,7 @@ export function Integrations({ lang }: { lang: string }) {
                   {entries.map((i) => (
                     <section className="integration-entry" key={i.entry_id}>
                       <div>
-                        <h3>{i.title}</h3>
+                        <h3>{smartiName(i.title)}</h3>
                         <span className="status-label">
                           {i.disabled_by
                             ? t("Deaktivert", "Disabled")
@@ -247,11 +257,13 @@ export function Integrations({ lang }: { lang: string }) {
                           <li key={d.id}>
                             <Box size={19} />
                             <div>
-                              <strong>{d.name}</strong>
+                              <strong>{smartiName(d.name)}</strong>
                               <small>
-                                {[d.area || t("Uten rom", "No room"), d.model]
-                                  .filter(Boolean)
-                                  .join(" · ")}
+                                {smartiName(
+                                  [d.area || t("Uten rom", "No room"), d.model]
+                                    .filter(Boolean)
+                                    .join(" · "),
+                                )}
                               </small>
                             </div>
                           </li>
@@ -270,7 +282,7 @@ export function Integrations({ lang }: { lang: string }) {
                           disabled={w.busy}
                           onClick={() => {
                             setEdit(i);
-                            setName(i.title);
+                            setName(smartiName(i.title));
                           }}
                         >
                           {t("Endre navn", "Rename")}
@@ -398,7 +410,7 @@ export function Updates({ lang }: { lang: string }) {
       <div className="management-rows">
         {q.data?.map((u) => (
           <article className="system-row" key={u.entity_id}>
-            {u.smarti ? (
+            {u.smarti || smartiName(u.name) !== u.name ? (
               <img
                 className="update-logo"
                 src="./brand/smarti-logo.png"
@@ -408,7 +420,7 @@ export function Updates({ lang }: { lang: string }) {
               <Download size={25} />
             )}
             <div>
-              <h2>{u.name}</h2>
+              <h2>{smartiName(u.name)}</h2>
               <p>
                 {u.installed_version || "–"} → {u.latest_version || "–"}
               </p>
@@ -449,7 +461,7 @@ export function Updates({ lang }: { lang: string }) {
             {u.summary && (
               <details className="full-row">
                 <summary>{t("Om versjonen", "About this version")}</summary>
-                <p className="preserve-text">{u.summary}</p>
+                <p className="preserve-text">{smartiName(u.summary)}</p>
               </details>
             )}
             {selected?.entity_id === u.entity_id && (

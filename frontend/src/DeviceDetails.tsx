@@ -207,8 +207,8 @@ export function DeviceDetails({
           {!d.controls.length && (
             <p>
               {no
-                ? "Ingen tilgjengelige kontroller fra Home Assistant for denne enheten ennå."
-                : "Home Assistant has no available controls for this device yet."}
+                ? "Ingen tilgjengelige kontroller fra SMARTi for denne enheten ennå."
+                : "SMARTi has no available controls for this device yet."}
             </p>
           )}
           <div className="device-detail-controls">

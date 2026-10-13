@@ -86,8 +86,8 @@ export function ControllerStatus({
       {status.isError && (
         <p role="alert">
           {no
-            ? "Status kunne ikke leses. Kontroller forbindelsen til Home Assistant."
-            : "Status could not be read. Check the Home Assistant connection."}
+            ? "Status kunne ikke leses. Kontroller forbindelsen til SMARTi."
+            : "Status could not be read. Check the SMARTi connection."}
         </p>
       )}
       {message && <p role="status">{message}</p>}
@@ -111,8 +111,8 @@ export function ControllerStatus({
             <div className="protocol-notice">
               <p>
                 {no
-                  ? "Stoppe inkludering/ekskludering på denne kontrolleren? Dette kan også avbryte paring startet i Home Assistant eller Z-Wave JS UI. Nettverket slettes ikke."
-                  : "Stop inclusion/exclusion on this controller? This may interrupt pairing started in Home Assistant or Z-Wave JS UI. The network will not be erased."}
+                  ? "Stoppe inkludering/ekskludering på denne kontrolleren? Dette kan også avbryte paring startet i SMARTi eller Z-Wave JS UI. Nettverket slettes ikke."
+                  : "Stop inclusion/exclusion on this controller? This may interrupt pairing started in SMARTi or Z-Wave JS UI. The network will not be erased."}
               </p>
               <button disabled={busy} onClick={() => setConfirm(null)}>
                 {no ? "Avbryt" : "Cancel"}

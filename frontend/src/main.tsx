@@ -48,6 +48,7 @@ import { PalettePicker, palettes } from "./PalettePicker";
 import { RoomView } from "./rooms/RoomView";
 import "./palettes.css";
 import { HomeOverview } from "./home/HomeOverview";
+import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
@@ -1203,10 +1204,10 @@ function Device({
       </button>
       {details && (
         <dl className="details">
-          <dt>Home Assistant</dt>
+          <dt>SMARTi</dt>
           <dd>{c.entity_id}</dd>
           <dt>{t.source}</dt>
-          <dd>{c.integration || t.unknown}</dd>
+          <dd>{c.integration ? integrationName(c.integration) : t.unknown}</dd>
           <dt>{t.physical}</dt>
           <dd>{c.device_id || "—"}</dd>
           {battery && (

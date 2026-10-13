@@ -1,3 +1,7 @@
+# 0.7.1
+
+Use SMARTi names and the bundled SMARTi logo for Home Assistant platform integrations, including Supervisor and hardware variants. Brand expanded integration/device labels, update labels, home/control display names and built-in Norwegian/English copy consistently. Search accepts SMARTi while retaining original integration searches. Preserve original domain/entry/entity IDs, endpoints and saved names; opening and saving an unchanged branded integration name does not rewrite its underlying name. Third-party integrations retain their own logos.
+
 # 0.7.0
 
 - Add SMARTi, Fjord, Forest, Sand and Plum color palettes, each combined independently with light/dark mode. Choose from the header palette menu or More → Settings. Optional browser storage remembers the choice; blocked/full storage cannot prevent rendering.

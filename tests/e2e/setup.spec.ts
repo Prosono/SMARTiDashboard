@@ -14,7 +14,7 @@ for (const code of ["origin_rejected", "invalid_setup_secret"] as const) {
     await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
     await page.getByLabel("Passord", { exact: true }).fill("test-password-not-for-live");
     await page.getByRole("button", { name: "Opprett hjem", exact: true }).click();
-    await expect(page.getByText(code === "origin_rejected" ? /HA-adressen er ikke godkjent/ : /Engangshemmeligheten stemmer ikke/)).toBeVisible();
+    await expect(page.getByText(code === "origin_rejected" ? /SMARTi-adressen er ikke godkjent/ : /Engangshemmeligheten stemmer ikke/)).toBeVisible();
   });
 }
 

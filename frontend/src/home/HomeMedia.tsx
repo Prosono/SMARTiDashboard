@@ -166,8 +166,8 @@ export function CameraCard({
             {status === "error" && (
               <small>
                 {t(
-                  "Kameraet må støtte HLS via Home Assistant. Prøv igjen når forbindelsen er klar.",
-                  "The camera needs HLS support through Home Assistant. Retry when connected.",
+                  "Kameraet må støtte HLS via SMARTi. Prøv igjen når forbindelsen er klar.",
+                  "The camera needs HLS support through SMARTi. Retry when connected.",
                 )}
               </small>
             )}

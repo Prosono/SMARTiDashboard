@@ -1,3 +1,4 @@
+import { homeDisplay } from "./branding";
 import type { Session } from "./types";
 let session: Session | null = null;
 export function setSession(value: Session | null) {
@@ -71,5 +72,6 @@ export async function api<T>(
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   if (!response.ok) throw responseError(response.status, await response.text());
-  return response.json();
+  const data = await response.json();
+  return path === "home" && method === "GET" ? (homeDisplay(data) as T) : data;
 }

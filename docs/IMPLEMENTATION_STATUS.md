@@ -1,6 +1,12 @@
 # Implementation status — 2026-10-13
 
-## 0.7.0 — selectable palettes and grouped room overview (current)
+## 0.7.1 — consistent SMARTi presentation (current)
+
+Platform integration domains (homeassistant, hassio and homeassistant hardware variants) use the bundled SMARTi logo without fetching upstream platform logos. A shared display helper brands titles, expanded device names/models, update labels and home/control names. Built-in Norwegian/English prose uses SMARTi or clear home-hub/app terminology. Technical identifiers, API routes, URLs and stored integration titles are preserved; submitting an unchanged branded title retains the original source title. Third-party integration branding remains unchanged. Source configs and technical entity IDs are not rewritten.
+
+Validation: all 60 desktop/mobile browser tests and 33 frontend unit tests passed, including brand detection and immutable display projections. Browser regression covers local logo selection, branded search/details and unchanged source names when saving; build and release payload checks are included. Version 0.7.1 is prepared locally, not published.
+
+## 0.7.0 — selectable palettes and grouped room overview
 
 Five palettes (SMARTi, Fjord, Forest, Sand, Plum) independently combine with light/dark mode. A header quick picker and settings picker share an optional browser preference, retaining the existing storage-failure safeguards. Theme tokens color surfaces, text, borders, controls and navigation while preserving original branding and semantic warnings. Mobile navigation retains readable surface backgrounds rather than inheriting desktop sidebar colors.
 

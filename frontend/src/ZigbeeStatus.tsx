@@ -43,7 +43,7 @@ export function ZigbeeStatus({ lang }: { lang: string }) {
               ? no
                 ? "Direkte til Zigbee2MQTT-serveren"
                 : "Direct to the Zigbee2MQTT server"
-              : "Home Assistant / MQTT"}
+              : "SMARTi / MQTT"}
           </p>
           <p>
             {no ? "Bridge på nett" : "Bridge online"}:{" "}
@@ -69,8 +69,8 @@ export function ZigbeeStatus({ lang }: { lang: string }) {
                   ? "Bruk samme serveradresse som i Zigbee2MQTT Proxy, og kontroller at SMARTi-serveren kan nå den."
                   : "Use the same server address as Zigbee2MQTT Proxy and check that the SMARTi server can reach it."
                 : no
-                  ? "HA må bruke samme MQTT-broker som Zigbee2MQTT, og base topic må samsvare. Ved bruk av Zigbee2MQTT Proxy kan du velge frontend i SMARTi-konfigurasjonen."
-                  : "HA must use the same MQTT broker and matching base topic. For Zigbee2MQTT Proxy, you can select frontend in SMARTi configuration."}
+                  ? "SMARTi må bruke samme MQTT-broker som Zigbee2MQTT, og base topic må samsvare. Ved bruk av Zigbee2MQTT Proxy kan du velge frontend i SMARTi-konfigurasjonen."
+                  : "SMARTi must use the same MQTT broker and matching base topic. For Zigbee2MQTT Proxy, you can select frontend in SMARTi configuration."}
             </p>
           )}
         </>
@@ -95,8 +95,8 @@ export function ZigbeeStatus({ lang }: { lang: string }) {
       </button>
       <p className="muted">
         {no
-          ? "Sjekken åpner ikke paring. Styring av enheter krever fortsatt at enhetene er tilgjengelige i Home Assistant."
-          : "This check does not start pairing. Device controls still require the devices to be available in Home Assistant."}
+          ? "Sjekken åpner ikke paring. Styring av enheter krever fortsatt at enhetene er tilgjengelige i SMARTi."
+          : "This check does not start pairing. Device controls still require the devices to be available in SMARTi."}
       </p>
     </details>
   );

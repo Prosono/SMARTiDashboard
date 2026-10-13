@@ -1004,8 +1004,8 @@ export function HomeOverview({
             </h1>
             <p>
               {t(
-                "Koble en strøm- eller energimåler til Home Assistant. Deretter kan du velge målere og grafer her.",
-                "Connect a power or energy meter to Home Assistant. Then choose your meters and charts here.",
+                "Koble en strøm- eller energimåler til SMARTi. Deretter kan du velge målere og grafer her.",
+                "Connect a power or energy meter to SMARTi. Then choose your meters and charts here.",
               )}
             </p>
           </section>
@@ -1020,8 +1020,8 @@ export function HomeOverview({
               </h2>
               <p>
                 {t(
-                  "Kameraer, låser og kompatible sensorer vises når de er koblet til Home Assistant.",
-                  "Cameras, locks and compatible sensors appear when connected to Home Assistant.",
+                  "Kameraer, låser og kompatible sensorer vises når de er koblet til SMARTi.",
+                  "Cameras, locks and compatible sensors appear when connected to SMARTi.",
                 )}
               </p>
             </section>

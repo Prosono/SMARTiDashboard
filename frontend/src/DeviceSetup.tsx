@@ -48,14 +48,14 @@ const copy = {
       "Kontroller Zigbee2MQTT-serverens adresse og eventuell tilgangsnøkkel i SMARTi-konfigurasjonen. Bruk samme server som Zigbee2MQTT Proxy.",
     mqtt: "Kontroller at Zigbee2MQTT og MQTT kjører. Base topic i SMARTi-konfigurasjonen må være lik Zigbee2MQTT sitt base topic.",
     zwave:
-      "Kontroller at Z-Wave JS-integrasjonen og kontrolleren er tilkoblet Home Assistant.",
+      "Kontroller at Z-Wave JS-integrasjonen og kontrolleren er tilkoblet SMARTi.",
     offline:
       "Mistet kontakten. Status kan være utdatert. Ikke start paringen på nytt før du har kontrollert nettverket.",
     error:
       "Handlingen kunne ikke bekreftes. Kontroller forbindelsen før du prøver igjen.",
     busy: "SMARTi har en uavklart paring. Bruk «Stopp paring» og vent på bekreftelsen.",
     controllerBusy:
-      "Kontrolleren er fortsatt opptatt. Vent litt og prøv igjen. Hvis dette vedvarer, kontroller paringsstatus i Home Assistant.",
+      "Kontrolleren er fortsatt opptatt. Vent litt og prøv igjen. Hvis dette vedvarer, kontroller paringsstatus i SMARTi.",
     stopping: "Stopper paringen …",
     stopPending:
       "Stopp er ikke bekreftet ennå. Vi sjekker status automatisk. Du kan forsøke å stoppe igjen når forbindelsen er tilbake.",
@@ -75,7 +75,7 @@ const copy = {
     closed: "Søkevinduet er lukket.",
     auto: "Søkevinduet er begrenset til to minutter. Ved brudd kan du stoppe paringen her når forbindelsen er tilbake.",
     pairedHint:
-      "Home Assistant importerer enheten. Støttede funksjoner dukker opp under Enheter når importen er ferdig.",
+      "SMARTi importerer enheten. Støttede funksjoner dukker opp under Enheter når importen er ferdig.",
     pinLabel: "De fem første sifrene i DSK-koden",
     pinHint:
       "Sammenlign resten av DSK-koden med etiketten på enheten før du bekrefter.",
@@ -110,14 +110,14 @@ const copy = {
       "Check the Zigbee2MQTT server address and optional access token in SMARTi configuration. Use the same server as Zigbee2MQTT Proxy.",
     mqtt: "Check that Zigbee2MQTT and MQTT are running. SMARTi's base topic must match the Zigbee2MQTT base topic.",
     zwave:
-      "Check that the Z-Wave JS integration and controller are connected to Home Assistant.",
+      "Check that the Z-Wave JS integration and controller are connected to SMARTi.",
     offline:
       "Connection lost. Status may be outdated. Check the network before starting pairing again.",
     error:
       "The action could not be confirmed. Check the connection before trying again.",
     busy: "SMARTi has an unresolved pairing session. Use Stop pairing and wait for confirmation.",
     controllerBusy:
-      "The controller is still busy. Wait and try again. If this persists, check pairing status in Home Assistant.",
+      "The controller is still busy. Wait and try again. If this persists, check pairing status in SMARTi.",
     stopping: "Stopping pairing …",
     stopPending:
       "Stop is not confirmed yet. Status is checked automatically. You can retry stopping when the connection returns.",
@@ -137,7 +137,7 @@ const copy = {
     closed: "The search window is closed.",
     auto: "The search window is limited to two minutes. After a disconnection, stop pairing here once the connection returns.",
     pairedHint:
-      "Home Assistant is importing the device. Supported controls appear under Devices when import finishes.",
+      "SMARTi is importing the device. Supported controls appear under Devices when import finishes.",
     pinLabel: "First five digits of the DSK",
     pinHint:
       "Compare the remaining DSK with the label on your device before confirming.",

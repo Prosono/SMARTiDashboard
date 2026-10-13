@@ -901,3 +901,28 @@ test("canvas connects by dragging or keyboard and saves native sequence and para
   ).json();
   expect(persisted.config.actions).toEqual(actual.actions);
 });
+
+test('platform integrations use SMARTi names and local logos without rewriting IDs',async ({page})=>{
+  await page.route('**/api/manage/integrations',r=>r.fulfill({json:[{
+    entry_id:'ha-entry',domain:'hassio',title:'Home Assistant Supervisor',state:'loaded',disabled_by:null,devices:1,
+    device_items:[{id:'ha-device',name:'HA Green',area:null,model:'Home Assistant Green'}]
+  }]}));
+  let brandRequests=0;
+  page.on('request',r=>{if(r.url().includes('integration-brands/hassio') || r.url().includes('brands.home-assistant.io/hassio')) brandRequests++;});
+  await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
+  await page.getByRole('button',{name:'Integrasjoner',exact:true}).click();
+  await page.getByLabel('Søk i integrasjoner').fill('SMARTi');
+  const card=page.locator('.integration-card');
+  await expect(card.getByRole('heading',{name:'SMARTi Supervisor'})).toBeVisible();
+  await expect(card.getByRole('img',{name:'SMARTi',exact:true})).toHaveAttribute('src','./brand/smarti-logo.png');
+  expect(brandRequests).toBe(0);
+  await card.getByRole('button',{name:'Utvid',exact:true}).click();
+  await expect(card).not.toContainText('Home Assistant');
+  await expect(card).toContainText('SMARTi Green');
+  await card.getByRole('button',{name:'Endre navn',exact:true}).click();
+  await expect(card.getByLabel('Navn',{exact:true})).toHaveValue('SMARTi Supervisor');
+  let body:any;
+  await page.route('**/api/manage/integrations/ha-entry',r=>{body=r.request().postDataJSON();return r.fulfill({json:{status:'simulated',require_restart:false}});});
+  await card.getByRole('button',{name:'Lagre',exact:true}).click();
+  await expect.poll(()=>body?.name).toBe('Home Assistant Supervisor');
+});

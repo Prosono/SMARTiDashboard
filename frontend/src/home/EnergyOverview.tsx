@@ -629,8 +629,8 @@ export function Energy({
                   </strong>
                   <p>
                     {t(
-                      "Måleren trenger timebasert statistikk i Home Assistant. Manglende målinger vises ikke som null.",
-                      "This meter needs hourly statistics in Home Assistant. Missing readings are not shown as zero.",
+                      "Måleren trenger timebasert statistikk i SMARTi. Manglende målinger vises ikke som null.",
+                      "This meter needs hourly statistics in SMARTi. Missing readings are not shown as zero.",
                     )}
                   </p>
                 </div>
@@ -724,8 +724,8 @@ export function Energy({
       )}
       <p className="energy-method">
         {t(
-          "Fullførte timer fra Home Assistant. kWh viser registrert energiendring, kW viser gjennomsnittseffekt. Målerne summeres ikke; delvis historikk merkes og hull beholdes.",
-          "Completed hours from Home Assistant. kWh is recorded energy change; kW is average power. Meters are not added together; partial history is labelled and gaps are preserved.",
+          "Fullførte timer fra SMARTi. kWh viser registrert energiendring, kW viser gjennomsnittseffekt. Målerne summeres ikke; delvis historikk merkes og hull beholdes.",
+          "Completed hours from SMARTi. kWh is recorded energy change; kW is average power. Meters are not added together; partial history is labelled and gaps are preserved.",
         )}
       </p>
     </section>

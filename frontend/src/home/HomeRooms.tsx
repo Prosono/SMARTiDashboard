@@ -58,8 +58,8 @@ export function Presence({
       ) : (
         <p>
           {en
-            ? "No people are configured in Home Assistant yet. Presence appears here when available."
-            : "Ingen personer er satt opp i Home Assistant ennå. Tilstedeværelse vises her når den er tilgjengelig."}
+            ? "No people are configured in SMARTi yet. Presence appears here when available."
+            : "Ingen personer er satt opp i SMARTi ennå. Tilstedeværelse vises her når den er tilgjengelig."}
         </p>
       )}
       {offline && (
@@ -179,8 +179,8 @@ export function RoomControls({
           </h2>
           <p>
             {en
-              ? "Compatible devices appear automatically when connected to Home Assistant."
-              : "Kompatible enheter vises automatisk når de er koblet til Home Assistant."}
+              ? "Compatible devices appear automatically when connected to SMARTi."
+              : "Kompatible enheter vises automatisk når de er koblet til SMARTi."}
           </p>
         </div>
       )}
