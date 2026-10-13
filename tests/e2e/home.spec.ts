@@ -181,12 +181,14 @@ test("capability profiles, cameras on demand, missing data and large homes", asy
     return route.fulfill({ status: 503 });
   });
   await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
   await expect(page.locator("#home-energy")).toBeVisible();
-  await expect(page.locator("#home-security")).toContainText("Lock");
   await expect(
     page.getByRole("heading", { name: "Lading", exact: true }),
   ).toBeVisible();
   expect(cameraRequests).toBe(0);
+  await page.getByRole("tab", { name: "Sikkerhet", exact: true }).click();
+  await expect(page.locator("#home-security")).toContainText("Lock");
   await page.locator(".home-cameras").scrollIntoViewIfNeeded();
   await expect(
     page.getByText("Strømmen kunne ikke startes", { exact: true }),
@@ -198,6 +200,7 @@ test("capability profiles, cameras on demand, missing data and large homes", asy
   await expect(page.locator(".home-welcome")).toContainText(
     "venter på ferske data",
   );
+  await page.getByRole("tab", { name: "Sikkerhet", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Stopp live: Front", exact: true }),
   ).toBeDisabled();

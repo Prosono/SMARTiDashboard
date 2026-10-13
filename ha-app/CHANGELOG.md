@@ -1,3 +1,12 @@
+# 0.6.0
+
+- Split Home into Overview, Lights, Energy, Security and Climate, with direct tab selection, keyboard navigation and horizontal touch swipes. Gestures starting on controls, video or charts stay with those controls; vertical scrolling remains available.
+- Keep greetings, favorite rooms/devices, scenes and security warnings on Overview. Show HA person presence as Home/Away/Unknown without exposing location/tracker metadata; disconnected presence is unknown.
+- Group lights and climate devices by room, with search and expandable device lists. Move energy configuration and charging to Energy; camera playback and security controls to Security. Camera players unmount and release their sessions when leaving the tab.
+- Retain responsive light/dark styling, accessible tab labels, reduced motion, and clear empty states. No separate dashboard editor.
+
+Prepared locally; physical HA and native Safari testing remain pending.
+
 # 0.5.0
 
 - Replace Home camera stills with authenticated HLS live video, automatic playback while visible, explicit stop/retry and fullscreen. HA credentials remain server-side; streams are scoped to the SMARTi login session. Requires an HA camera with HLS stream support; WebRTC-only cameras are not supported yet.

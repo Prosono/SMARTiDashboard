@@ -68,6 +68,7 @@ def normalize(states, entities, devices):
             "alarm_control_panel",
             "scene",
             "script",
+            "person",
         }:
             continue
         a = state.get("attributes", {})
@@ -127,7 +128,10 @@ def normalize(states, entities, devices):
                 name=registry.get("name") or a.get("friendly_name") or entity_id,
                 domain=domain,
                 state=raw,
-                attributes={k: v for k, v in a.items() if k not in {"access_token", "entity_picture"}},
+                # Presence needs only the name and state, never location/user/tracker metadata.
+                attributes={}
+                if domain == "person"
+                else {k: v for k, v in a.items() if k not in {"access_token", "entity_picture"}},
                 capabilities=caps,
                 availability=raw
                 if raw in {"unknown", "unavailable"} and not (domain == "scene" and raw == "unknown")

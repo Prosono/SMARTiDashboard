@@ -28,3 +28,29 @@ def test_unregistered_entity_and_onoff_light():
 def test_missing_thermostat_limits_do_not_invent_control_bounds():
     controls = normalize({"climate.x": {"state": "heat", "attributes": {"supported_features": 1}}}, {}, {})
     assert controls[0].capabilities == []
+
+
+def test_presence_exposes_state_without_location_or_tracker_metadata():
+    states = {
+        "person.resident": {
+            "state": "home",
+            "attributes": {
+                "friendly_name": "Resident",
+                "latitude": 58.1,
+                "longitude": 8.1,
+                "user_id": "private",
+                "device_trackers": ["device_tracker.phone"],
+                "entity_picture": "/private.jpg",
+                "source": "device_tracker.phone",
+            },
+        },
+        "person.unknown": {"state": "unknown", "attributes": {}},
+        "person.disabled": {"state": "home", "attributes": {}},
+    }
+    controls = normalize(states, {"person.disabled": {"disabled_by": "user"}}, {})
+    assert len(controls) == 2
+    assert controls[0].name == "Resident"
+    assert controls[0].state == "home"
+    assert controls[0].attributes == {}
+    assert controls[0].capabilities == []
+    assert controls[1].availability == "unknown"

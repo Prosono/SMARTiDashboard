@@ -12,9 +12,9 @@ Add **https://github.com/Prosono/SMARTiDashboard** under **Settings → Apps →
 
 Requires HAOS. Configure the local/external browser origins and a random owner setup secret in the app's Configuration tab. Home Assistant credentials are provided automatically by Supervisor. [Step-by-step setup](ha-app/DOCS.md).
 
-## Home administration and overview (0.5.0)
+## Home administration and overview (0.6.0)
 
-Create and edit automations, manage rooms/device placement, administer configured integrations and install supported updates from SMARTi. Home Assistant update names use SMARTi display branding. Home automatically adapts to available devices, with personal favorites, room photos, explicit mode shortcuts and live HLS camera cards, a scene creator and configurable energy charts using HA recorder statistics. The custom dashboard builder has been removed. See [administration instructions and limitations](ha-app/DOCS.md#administration-and-home-overview-040). Configuration writes and updates require administrator access; new integration setup flows remain deferred.
+Create and edit automations, manage rooms/device placement, administer configured integrations and install supported updates from SMARTi. Home Assistant update names use SMARTi display branding. Home automatically adapts to available devices, with personal favorites, room photos, explicit mode shortcuts and live HLS camera cards, a scene creator and configurable energy charts using HA recorder statistics. Five Home tabs — Overview, Lights, Energy, Security and Climate — support touch swipes, direct selection and keyboard navigation. HA person presence appears on Overview. The custom dashboard builder has been removed. See [administration instructions and limitations](ha-app/DOCS.md#administration-and-home-overview-040). Configuration writes and updates require administrator access; new integration setup flows remain deferred.
 
 ## Start locally
 

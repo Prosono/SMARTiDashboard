@@ -516,6 +516,7 @@ function Dashboard({
           <DeviceSetup lang={lang} onBack={() => setAdding(false)} />
         ) : page === "home" ? (
           <HomeOverview
+            residentName={session.name}
             home={h}
             offline={offline}
             lang={lang}

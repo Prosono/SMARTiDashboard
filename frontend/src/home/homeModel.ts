@@ -20,7 +20,7 @@ export function temperature(c: Control): number | null {
 }
 export function overview(h: Home) {
   const controls = h.controls.filter(
-    (c) => !c.diagnostic && c.domain !== "automation",
+    (c) => !c.diagnostic && !["automation", "person"].includes(c.domain),
   );
   const byRoom = new Map<string, Control[]>();
   for (const c of controls) {

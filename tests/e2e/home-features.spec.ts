@@ -127,6 +127,7 @@ test("energy choices persist, period changes and missing samples stay gaps", asy
     });
   });
   await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
   const energy = page.locator(".energy-workspace");
   await energy.scrollIntoViewIfNeeded();
   await expect(energy).toContainText("96%");
@@ -152,6 +153,7 @@ test("energy choices persist, period changes and missing samples stay gaps", asy
     energy.getByRole("button", { name: "7 dager", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
   await expect(energy.locator(".energy-comparison")).toHaveCount(0);
   await energy.scrollIntoViewIfNeeded();
   await page.screenshot({
@@ -218,6 +220,7 @@ test("real HLS decoding starts only in view and stop releases the session", asyn
   await page.reload();
   await expect(page.locator(".home-welcome")).toBeVisible();
   expect(starts).toBe(0);
+  await page.getByRole("tab", { name: "Sikkerhet", exact: true }).click();
   const card = page.locator(".camera-live-card");
   await card.scrollIntoViewIfNeeded();
   await expect
@@ -234,6 +237,7 @@ test("real HLS decoding starts only in view and stop releases the session", asyn
   await expect(card.locator("video")).not.toHaveAttribute("src", /./);
   await card.getByRole("button", { name: "Start live: Testkamera" }).click();
   await expect.poll(() => starts).toBe(2);
-  await page.locator(".home-welcome").scrollIntoViewIfNeeded();
+  await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+  await expect(card).toHaveCount(0);
   await expect.poll(() => stops).toBe(2);
 });

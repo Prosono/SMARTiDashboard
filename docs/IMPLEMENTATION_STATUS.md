@@ -1,6 +1,14 @@
 # Implementation status — 2026-10-12
 
-## 0.5.0 — live video, native scenes and configurable energy (current)
+## 0.6.0 — five Home views and presence (current)
+
+Home now separates Overview, Lights, Energy, Security and Climate. Accessible tab buttons support direct selection, arrow/Home/End keys and bounded horizontal touch swipes. Vertical scroll and gestures beginning on controls, video, charts and dialogs are excluded from paging. Content transitions respect reduced motion. Inactive views unmount, releasing camera players when leaving Security; energy choices remain stored per user. Home opens on Overview rather than persisting a tab in browser storage.
+
+Overview retains the greeting (using the SMARTi account name), weather, room/device favorites, scenes and security attention notices. HA person entities provide Home/Away/Unknown presence; disconnected data is always unknown. Person normalization drops location, tracker and user metadata. No motion-derived identity or fabricated presence is introduced. Lights and climate controls/readings are searchable and grouped by room, with expandable lists instead of silently truncating large rooms. Empty capability sets receive explanatory states. Security includes the existing confirmed lock/gate controls; no new alarm-arming, light-color or HVAC-mode commands are added.
+
+Validation: all 54 desktop/mobile browser tests passed, including real Chromium touch events, dimmer gesture isolation, keyboard navigation, person/offline states, HLS teardown on tab change and existing management flows. Screenshots reviewed in light/dark themes, with overflow checks at 320, 834 and 1440 px. All 31 frontend unit tests and four model tests (including presence attribute filtering) passed; Ruff, TypeScript/Vite build and deterministic HA payload verification passed. Native Safari and physical HA testing remain pending. Version 0.6.0 is prepared locally, not published.
+
+## 0.5.0 — live video, native scenes and configurable energy
 
 Home camera cards now play HLS video using native browser support or lazily loaded hls.js. Visibility, tab state, explicit stop and unmount control player/session lifetime. SMARTi proxies bounded manifests and fragments through session-bound opaque resources; same-origin/path validation prevents arbitrary upstream requests, and HA credentials stay server-side. Four concurrent sessions per user, bounded lifetime and explicit retry limit resource use. Demo does not pretend to be live. WebRTC-only and MJPEG-only cameras are not covered. Native Safari and real HA video remain unverified.
 
