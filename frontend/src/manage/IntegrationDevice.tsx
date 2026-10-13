@@ -77,6 +77,32 @@ export function IntegrationDevice({
     hi = Math.max(...values),
     start = Date.parse(data?.start || ""),
     end = Date.parse(data?.end || "");
+  const [inspection, inspect] = useState<{
+    points: History["points"];
+    index: number;
+  } | null>(null);
+  const activeIndex = inspection?.points === points ? inspection.index : -1;
+  const active = points[activeIndex];
+  const activeX = active
+    ? 40 + ((Date.parse(active.time) - start) / (end - start || 1)) * 640
+    : 0;
+  function inspectAt(svg: SVGSVGElement, clientX: number, clientY: number) {
+    const matrix = svg.getScreenCTM();
+    if (!matrix || !points.length) return;
+    const x = new DOMPoint(clientX, clientY).matrixTransform(
+      matrix.inverse(),
+    ).x;
+    const time = start + ((x - 40) / 640) * (end - start);
+    let index = 0;
+    points.forEach((point, i) => {
+      if (
+        Math.abs(Date.parse(point.time) - time) <
+        Math.abs(Date.parse(points[index].time) - time)
+      )
+        index = i;
+    });
+    inspect({ points, index });
+  }
   let move = true;
   const path = points
     .map((p) => {
@@ -260,54 +286,152 @@ export function IntegrationDevice({
                             </strong>
                           </span>
                         </div>
-                        <svg
-                          className="device-history-chart"
-                          viewBox="0 0 720 200"
-                          role="img"
-                          aria-label={t(
-                            "Målehistorikk med hull ved ukjente verdier",
-                            "Reading history with gaps for unknown values",
-                          )}
-                        >
-                          <text x="4" y="25">
-                            {number(hi)}
-                          </text>
-                          <text x="4" y="156">
-                            {number(lo)}
-                          </text>
-                          <path d="M40 165H690" className="history-axis" />
-                          <path d={path} />
-                          {points.map((p, i) =>
-                            p.value === null ? null : (
-                              <circle
-                                key={i}
-                                cx={
-                                  40 +
-                                  ((Date.parse(p.time) - start) /
-                                    (end - start || 1)) *
-                                    640
-                                }
-                                cy={
-                                  155 - ((p.value - lo) / (hi - lo || 1)) * 120
-                                }
-                                r="2"
-                              >
-                                <title>
-                                  {new Date(p.time).toLocaleString(
+                        <div className="history-interactive">
+                          <div
+                            className="history-readout"
+                            aria-live="polite"
+                            aria-atomic="true"
+                          >
+                            {active ? (
+                              <>
+                                <time dateTime={active.time}>
+                                  {new Date(active.time).toLocaleString(
                                     en ? "en-GB" : "nb-NO",
                                   )}
-                                  : {p.value} {data.unit}
-                                </title>
-                              </circle>
-                            ),
-                          )}
-                          <text x="40" y="190">
-                            {new Date(start).toLocaleDateString()}
-                          </text>
-                          <text x="610" y="190">
-                            {new Date(end).toLocaleDateString()}
-                          </text>
-                        </svg>
+                                </time>
+                                <strong>
+                                  {active.value === null
+                                    ? t("Ingen måling", "No reading")
+                                    : `${number(active.value)} ${data.unit || ""}`}
+                                </strong>
+                              </>
+                            ) : (
+                              <span>
+                                {t(
+                                  "Pek eller trykk på grafen for å se en måling.",
+                                  "Point or tap on the chart to inspect a reading.",
+                                )}
+                              </span>
+                            )}
+                          </div>
+                          <svg
+                            className="device-history-chart"
+                            tabIndex={0}
+                            onPointerMove={(e) =>
+                              inspectAt(e.currentTarget, e.clientX, e.clientY)
+                            }
+                            onPointerDown={(e) =>
+                              inspectAt(e.currentTarget, e.clientX, e.clientY)
+                            }
+                            onPointerLeave={(e) => {
+                              if (e.pointerType === "mouse") inspect(null);
+                            }}
+                            onFocus={() =>
+                              inspect((current) =>
+                                current?.points === points
+                                  ? current
+                                  : { points, index: 0 },
+                              )
+                            }
+                            onBlur={() => inspect(null)}
+                            onKeyDown={(e) => {
+                              if (
+                                ![
+                                  "ArrowLeft",
+                                  "ArrowRight",
+                                  "Home",
+                                  "End",
+                                ].includes(e.key)
+                              )
+                                return;
+                              e.preventDefault();
+                              const index =
+                                e.key === "Home"
+                                  ? 0
+                                  : e.key === "End"
+                                    ? points.length - 1
+                                    : Math.max(
+                                        0,
+                                        Math.min(
+                                          points.length - 1,
+                                          activeIndex +
+                                            (e.key === "ArrowRight" ? 1 : -1),
+                                        ),
+                                      );
+                              inspect({ points, index });
+                            }}
+                            viewBox="0 0 720 200"
+                            role="img"
+                            aria-label={t(
+                              "Målehistorikk med hull ved ukjente verdier",
+                              "Reading history with gaps for unknown values",
+                            )}
+                          >
+                            <text x="4" y="25">
+                              {number(hi)}
+                            </text>
+                            <text x="4" y="156">
+                              {number(lo)}
+                            </text>
+                            <path d="M40 165H690" className="history-axis" />
+                            <path d={path} />
+                            {points.map((p, i) =>
+                              p.value === null ? null : (
+                                <circle
+                                  key={i}
+                                  cx={
+                                    40 +
+                                    ((Date.parse(p.time) - start) /
+                                      (end - start || 1)) *
+                                      640
+                                  }
+                                  cy={
+                                    155 -
+                                    ((p.value - lo) / (hi - lo || 1)) * 120
+                                  }
+                                  r="2"
+                                >
+                                  <title>
+                                    {new Date(p.time).toLocaleString(
+                                      en ? "en-GB" : "nb-NO",
+                                    )}
+                                    : {p.value} {data.unit}
+                                  </title>
+                                </circle>
+                              ),
+                            )}
+                            {active && (
+                              <g
+                                className="history-inspection"
+                                aria-hidden="true"
+                              >
+                                <line
+                                  x1={activeX}
+                                  x2={activeX}
+                                  y1="20"
+                                  y2="165"
+                                />
+                                {active.value !== null && (
+                                  <circle
+                                    cx={activeX}
+                                    cy={
+                                      155 -
+                                      ((active.value - lo) / (hi - lo || 1)) *
+                                        120
+                                    }
+                                    r="5"
+                                  />
+                                )}
+                              </g>
+                            )}
+                            <text x="40" y="190">
+                              {new Date(start).toLocaleDateString()}
+                            </text>
+                            <text x="610" y="190">
+                              {new Date(end).toLocaleDateString()}
+                            </text>
+                          </svg>
+                        </div>
                         <p>
                           {t(
                             "Registrerte målinger, ikke beregnet forbruk. Ukjente verdier gir hull i grafen.",

@@ -206,7 +206,30 @@ test("integration device opens details, statistics and gap-preserving history", 
   await dialog.getByRole("button", { name: "Statistikk", exact: true }).click();
   await expect(dialog).toContainText("23 °C");
   await expect(dialog.locator("svg path").last()).toHaveAttribute("d", /M.*M/);
+  const chart = dialog.locator(".device-history-chart");
+  await chart.scrollIntoViewIfNeeded();
+  const bounds = (await chart.boundingBox())!;
+  const at = (hour: number) => ({
+    x: ((40 + (hour / 24) * 640) / 720) * bounds.width,
+    y: bounds.height / 2,
+  });
+  if (test.info().project.name === "mobile") {
+    await chart.tap({ position: at(3) });
+  } else {
+    await chart.hover({ position: at(3) });
+  }
+  await expect(dialog.locator(".history-readout")).toContainText("23 °C");
+  await chart.focus();
+  await chart.press("Home");
+  await expect(dialog.locator(".history-readout")).toContainText("20 °C");
+  await chart.press("ArrowRight");
+  await expect(dialog.locator(".history-readout")).toContainText(
+    "Ingen måling",
+  );
+  await chart.press("End");
+  await expect(dialog.locator(".history-readout")).toContainText("23 °C");
   await dialog.getByLabel("Periode", { exact: true }).selectOption("168");
+  await expect(dialog.locator(".history-readout")).not.toContainText("23 °C");
   await dialog.getByText("Se registrerte verdier", { exact: false }).click();
   await expect(dialog.locator("table")).toContainText("unknown");
   await page.screenshot({

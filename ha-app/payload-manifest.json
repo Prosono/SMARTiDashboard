@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "2a5290e3a5becf658be32862da2195523dc751246e43987224d469f20e205a7c",
+  "bundle_sha256": "e2c4310a134c34252820e83620ba90e87904e99588b2585004aca5c364d08aa6",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/auth.py": "a1b5574b40832328d6d1162e8e6d4060315b668581d9bc077d89cb54bd21ead5",
@@ -59,8 +59,8 @@
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-B4ES4mUY.woff": "dd34fad57ed536134141ac3c4ad6697e8ce389aa1193d07ddabd2d1cb2fbaaa0",
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-Bt7Gqki8.woff2": "4900a39cfa8b2fe08bccd07eb2371519172b07ed9ce9765e5a4ad9097cb6759b",
     "frontend/dist/assets/hls-h6QHvJ3w.js": "eb729b4a5638b2bc913f41288655ef496c049debff24c2608550eaf5a2abb01e",
-    "frontend/dist/assets/index-B_pd0LmD.css": "e298506cd2c308bf6f8bfda1425a1b434125d65688feb2307f58870edf735334",
-    "frontend/dist/assets/index-CFHWCv-N.js": "565ccd10815b143c7ba8f616d76521f4c408b56c6834ec17c828d57a85cc08c6",
+    "frontend/dist/assets/index-Dy0VxMTh.js": "f6c8622e87125b716327d81b03ffaf68a811086dabd027c5f5b2a89887ab6bda",
+    "frontend/dist/assets/index-HY_bbx6S.css": "a5e41f0139a496e46b187271cf67049c89c40d940c7725d721587bac354523ff",
     "frontend/dist/brand/Bai-Jamjuree-OFL.txt": "74b7deafa632a5ed301dc322fcc2867ac200402e06b6d0b0b01faf09b8514e3e",
     "frontend/dist/brand/README.md": "7bce8f4c0331d16ac1279426991badcfff774ef0d4837acc01e511bb5c32af4e",
     "frontend/dist/brand/smarti-logo.png": "ae1207d5b3e40031220662a602d1ed4361585a33da405ad754829d0ab70b501b",
@@ -69,7 +69,7 @@
     "frontend/dist/home/home-bedroom.webp": "6018e9787392cf19595cadb532327d2eefd6d4c085083757361039382c9d29ed",
     "frontend/dist/home/home-kitchen.webp": "7a1eb136515f328b2518b84787a639c59bb81f478a929e6b414f645b75378f7b",
     "frontend/dist/home/home-living.webp": "21f510933c56e907b480f765752973fb4430f5ef72ee993df7bc7927b965376e",
-    "frontend/dist/index.html": "4c29cb3052eed8c8b66cb4ae86d64edfddf166e0b89e7838dd4219ac6b63e2c0"
+    "frontend/dist/index.html": "b32be9bd68d6bf7187a72ada8f5ef0566b1c6802a45c69c4fcedbf5387297b03"
   },
   "sources": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -127,7 +127,7 @@
     "frontend/src/home/Scenes.tsx": "f638c8f85d9ff63ce7d37ee7e4cd2b2b8a289fb287dd8fda0af32ad2f75117d6",
     "frontend/src/home/Weather.tsx": "27666d23e04b8067825cc6396c06cea731d379fdbb90438285e5b822b375f46d",
     "frontend/src/home/energy.css": "002beba9032118dfc4e8dec34f43e6b4c67c79b40ec25fa211c25b223a0d897e",
-    "frontend/src/home/extras.css": "6b49a9254f04bbbde570c7d25a76c063e7552826660b9ec13af22cbfce3820a2",
+    "frontend/src/home/extras.css": "ce905706204cdb95952e2400cb075094dc95bc0c15319135d7deab465c9785f4",
     "frontend/src/home/home.css": "ec32b38051b2108ab09ec259bfc020be52ae2c2098d68e43e74ef472683a3c3e",
     "frontend/src/home/homeMedia.css": "ccbc41a43e556fa65158d9a97ef98e349ddafb807e9a65e0e95e02648506f73c",
     "frontend/src/home/homeModel.test.ts": "3d752b70e4fe24dddd65d87292b6f8a0e53d1342206dd1b80c4293cda9ac764a",
@@ -146,7 +146,7 @@
     "frontend/src/manage/FlowCanvas.tsx": "360a7ddd203aaffa0005489f93912e3212bd1e8676c382d57b74d346bbcee201",
     "frontend/src/manage/FlowInspector.tsx": "e15f0ad54033e66c8d7e28c2befe4c561cc515e83f63c617396cc6743be64bbc",
     "frontend/src/manage/FlowTree.tsx": "c3b7ac31738c459b7d2861f0b1168bac249c6a6a56d157ab14249bb784c96d11",
-    "frontend/src/manage/IntegrationDevice.tsx": "e681f49dc116f410ebc3475be404ba42ace57b981265069cbf881396db5ad003",
+    "frontend/src/manage/IntegrationDevice.tsx": "a3e70b34ba7562ae3a1d815c3a453e7c228da4d3f8ce2fc24b7b3a6532c46ab4",
     "frontend/src/manage/Rooms.tsx": "ab050d1f787ec59ed64949dbbec761199486d405591bcd7196f14eb73013f5fb",
     "frontend/src/manage/System.tsx": "44dde225bed91e1cf547638d0328a0dcb764abbf66643ce1a65b21700971787f",
     "frontend/src/manage/entityWords.ts": "f6128893568c0bec1fbc0322c10b6c5fee937873ce18416a0ccffa18e11975c3",

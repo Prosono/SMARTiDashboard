@@ -1,3 +1,7 @@
+# 0.8.2
+
+Inspect integration device history with a pointer or touch: show the nearest sampled reading, timestamp, unit and a graph marker. Unknown readings are explicitly labelled. Arrow keys, Home and End navigate readings; changing sensor or period clears the selection.
+
 # 0.8.1
 
 Fix integration device history returning HTTP 422 when the browser explicitly requests 24 hours or seven days. Validate the period as a URL string before converting it to hours. Regression tests cover both explicit periods, the default period and invalid values.
