@@ -226,7 +226,7 @@ Home now includes a read-only calendar date strip and daily agenda. Existing hub
 
 Backend tests cover authentication, CSRF, per-user selection, exclusive all-day end dates, timezone/DST normalization and partial provider failure. Desktop/mobile tests cover selection persistence, navigation, event details and failures. Live calendar provider validation and appointment creation/editing remain outside this release. Protocol reference: https://developers.home-assistant.io/docs/api/rest/.
 
-## 0.10.0 — Thermostat design and EV bindings
+## 1.0.0 — Thermostat design and EV bindings
 
 Reusable semicircle thermostat presentation now serves control cards and device dialogs. It displays target/current temperature, source-reported mode and HVAC activity, semantic heat/cool/off colors and capability-bound +/- controls. Unsupported dual-setpoint control remains read-only; no mode-change API or arc-drag action is added.
 

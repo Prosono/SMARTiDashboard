@@ -1,4 +1,4 @@
-# 0.10.0
+# 1.0.0
 
 - Replace thermostat controls with a semicircular target-temperature display, room reading and large +/- buttons. Show mode and HVAC activity separately with heating/cooling/off colors, across Home, rooms and device dialogs. Respect reported steps, bounds and availability; mode switching and dual-setpoint editing are not introduced.
 - Add a configurable EV/charger section under Home → Energy. Bind existing battery, range, power, energy and status sensors plus an optional charging switch per user. Missing/offline readings remain explicit; configuration sends no device commands and switching asks for confirmation.

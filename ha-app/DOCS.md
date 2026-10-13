@@ -134,7 +134,7 @@ Connect calendars to the home hub first if none appear. This version reads appoi
 Uses the official [calendar REST API](https://developers.home-assistant.io/docs/api/rest/). Live installation/provider validation remains pending.
 
 
-## Thermostats and EV charging (0.10.0)
+## Thermostats and EV charging (1.0.0)
 
 Thermostats now show a semicircular target-temperature gauge, current room temperature and +/- controls. Heating is orange, cooling blue and off/unavailable neutral; activity such as heating versus idle is shown separately from mode. Only reported temperature capabilities are editable. Devices that only expose a high/low target range display that range without introducing unsupported commands. This release does not add mode selection or dragging on the arc. The visual direction follows the [thermostat card](https://www.home-assistant.io/dashboards/thermostat/), using SMARTi styling.
 
