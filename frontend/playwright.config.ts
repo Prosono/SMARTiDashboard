@@ -1,9 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
+const baseURL = `http://localhost:${process.env.SMARTI_TEST_PORT || "8765"}`;
 export default defineConfig({
   testDir: "../tests/e2e",
   fullyParallel: false,
   workers: 1,
-  use: { baseURL: "http://localhost:8765", trace: "retain-on-failure" },
+  use: { baseURL, trace: "retain-on-failure" },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     {
@@ -14,7 +15,7 @@ export default defineConfig({
   webServer: {
     command: ".venv/bin/python scripts/test_server.py",
     cwd: "../",
-    url: "http://localhost:8765/healthz",
+    url: `${baseURL}/healthz`,
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },

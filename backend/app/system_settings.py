@@ -152,6 +152,14 @@ def system_settings_router(m, admin, settings):
                     "device_trackers": p.get("device_trackers", []),
                     "editable": editable,
                     "user_id": p.get("user_id"),
+                    "entity_id": next(
+                        (
+                            id
+                            for id, state in m.ha.states.items()
+                            if id.startswith("person.") and state.get("attributes", {}).get("id") == p["id"]
+                        ),
+                        None,
+                    ),
                 }
                 for group, editable in [("storage", True), ("config", False)]
                 for p in result.get(group, [])

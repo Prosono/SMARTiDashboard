@@ -1,12 +1,13 @@
+import { HomeMap } from "./HomeMap";
+import { HubStatus } from "./HubStatus";
 import { Accounts } from "./Accounts";
 import { Backups } from "./Backups";
 import { SystemActions } from "./SystemActions";
-import { SystemGraph, type Sample } from "./SystemGraph";
+import { type Sample } from "./SystemGraph";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cpu, HardDrive, Network, MapPin, Pencil } from "lucide-react";
+import { Network, MapPin, Pencil } from "lucide-react";
 import { api } from "../api";
-import { smartiName } from "../branding";
 import { SettingsDialog } from "../home/SettingsDialog";
 import { Presence } from "../home/People";
 import type { Home } from "../types";
@@ -24,7 +25,7 @@ type Person = {
   device_trackers: string[];
   editable: boolean;
 };
-type System = {
+export type System = {
   history?: Sample[];
   demo: boolean;
   unavailable: string[];
@@ -88,10 +89,6 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
     [remove, setRemove] = useState<Person | null>(null);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const number = (v: number | null | undefined, suffix: string) =>
-    v == null
-      ? "—"
-      : `${v.toLocaleString(lang === "en" ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })} ${suffix}`;
   async function save(action: () => Promise<unknown>) {
     setBusy(true);
     setError("");
@@ -131,6 +128,75 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
           {t("Oppdater", "Refresh")}
         </button>
       </div>
+      <div className="settings-personal-grid">
+        <section className="settings-panel location-panel">
+          <h3>
+            <MapPin /> {t("Hjemmets plassering", "Home location")}
+          </h3>
+          {location.data ? (
+            <>
+              <HomeMap
+                latitude={location.data.latitude}
+                longitude={location.data.longitude}
+                name={location.data.location_name}
+                lang={lang}
+              />
+              <strong>{location.data.location_name}</strong>
+              <p>
+                {location.data.latitude}, {location.data.longitude} ·{" "}
+                {location.data.time_zone}
+              </p>
+              <button
+                onClick={() => {
+                  setError("");
+                  setPlace({ ...location.data! });
+                }}
+              >
+                <Pencil size={17} />
+                {t("Endre plassering", "Edit location")}
+              </button>
+            </>
+          ) : (
+            <p>
+              {t(
+                "Plassering krever forbindelse til hjemmesentralen og er utilgjengelig i demo.",
+                "Location requires a connected controller and is unavailable in demo.",
+              )}
+            </p>
+          )}
+        </section>
+        <Accounts
+          lang={lang}
+          people={people.data?.people}
+          onPerson={(p) => {
+            setError("");
+            setPerson({ ...p });
+          }}
+        >
+          {people.isError && (
+            <p role="alert">
+              {t(
+                "Personer kunne ikke hentes fra sentralen.",
+                "Could not load people from the controller.",
+              )}
+            </p>
+          )}
+          <details className="household-presence">
+            <summary>
+              {t(
+                "Hvem vises på hjemskjermen?",
+                "Who appears on the home screen?",
+              )}
+            </summary>
+            <Presence
+              home={home}
+              offline={!home.connected}
+              lang={lang}
+              admin={true}
+            />
+          </details>
+        </Accounts>
+      </div>
       {system.isError && (
         <p role="alert">
           {t("Kunne ikke hente systemstatus.", "Could not load system status.")}
@@ -143,84 +209,12 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
       )}
       {s && (
         <>
-          <p className="muted">
-            {smartiName(
-              s.host.hostname || t("Hjemmesentral", "Home controller"),
-            )}{" "}
-            · {smartiName(s.host.operating_system || "SMARTi")}{" "}
-            {s.host.kernel ? `· ${s.host.kernel}` : ""}
-          </p>
-          <div className="system-metrics">
-            <article>
-              <SystemGraph
-                history={s.history || []}
-                metric="cpu"
-                unit="%"
-                lang={lang}
-              />
-              <Cpu />
-              <h3>{t("Prosessor · SMARTi-kjerne", "CPU · SMARTi core")}</h3>
-              <strong>{number(s.core.cpu_percent, "%")}</strong>
-              <small>
-                {t(
-                  "Prosessbruk, kan overstige 100 % med flere kjerner",
-                  "Process usage, may exceed 100% across multiple cores",
-                )}
-              </small>
-            </article>
-            <article>
-              <SystemGraph
-                history={s.history || []}
-                metric="memory"
-                unit="%"
-                lang={lang}
-              />
-              <Cpu />
-              <h3>{t("Minne · SMARTi-kjerne", "Memory · SMARTi core")}</h3>
-              <strong>{number(s.core.memory_percent, "%")}</strong>
-              <small>
-                {number(
-                  s.core.memory_usage == null
-                    ? null
-                    : s.core.memory_usage / 1048576,
-                  "MiB",
-                )}{" "}
-                /{" "}
-                {number(
-                  s.core.memory_limit == null
-                    ? null
-                    : s.core.memory_limit / 1048576,
-                  "MiB",
-                )}
-              </small>
-            </article>
-            <article>
-              <SystemGraph
-                history={s.history || []}
-                metric="storage"
-                unit="GB"
-                lang={lang}
-              />
-              <HardDrive />
-              <h3>{t("Lagring · sentralen", "Storage · controller")}</h3>
-              <strong>
-                {number(s.host.disk_free, "GB")} {t("ledig", "free")}
-              </strong>
-              {s.host.disk_total != null &&
-                s.host.disk_total > 0 &&
-                s.host.disk_used != null && (
-                  <progress
-                    aria-label={t("Brukt lagringsplass", "Used storage")}
-                    value={s.host.disk_used}
-                    max={s.host.disk_total}
-                  />
-                )}
-              <small>
-                {number(s.host.disk_used, "GB")} /{" "}
-                {number(s.host.disk_total, "GB")}
-              </small>
-            </article>
-          </div>
+          <HubStatus
+            system={s}
+            home={home}
+            lang={lang}
+            stale={system.isError}
+          />
           {s.unavailable.length > 0 && (
             <p className="note">
               {t(
@@ -275,69 +269,6 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
           <Backups items={s.backups} lang={lang} />
         </>
       )}
-      <div className="settings-layout">
-        <section className="settings-panel">
-          <h3>
-            <MapPin /> {t("Hjemmets plassering", "Home location")}
-          </h3>
-          {location.data ? (
-            <>
-              <strong>{location.data.location_name}</strong>
-              <p>
-                {location.data.latitude}, {location.data.longitude} ·{" "}
-                {location.data.time_zone}
-              </p>
-              <button
-                onClick={() => {
-                  setError("");
-                  setPlace({ ...location.data! });
-                }}
-              >
-                <Pencil size={17} />
-                {t("Endre plassering", "Edit location")}
-              </button>
-            </>
-          ) : (
-            <p>
-              {t(
-                "Plassering krever forbindelse til hjemmesentralen og er utilgjengelig i demo.",
-                "Location requires a connected controller and is unavailable in demo.",
-              )}
-            </p>
-          )}
-        </section>
-      </div>
-      <Accounts
-        lang={lang}
-        people={people.data?.people}
-        onPerson={(p) => {
-          setError("");
-          setPerson({ ...p });
-        }}
-      >
-        {people.isError && (
-          <p role="alert">
-            {t(
-              "Personer kunne ikke hentes fra sentralen.",
-              "Could not load people from the controller.",
-            )}
-          </p>
-        )}
-        <details className="household-presence">
-          <summary>
-            {t(
-              "Hvem vises på hjemskjermen?",
-              "Who appears on the home screen?",
-            )}
-          </summary>
-          <Presence
-            home={home}
-            offline={!home.connected}
-            lang={lang}
-            admin={true}
-          />
-        </details>
-      </Accounts>
       {(place || person || remove) && (
         <SettingsDialog
           lang={lang}

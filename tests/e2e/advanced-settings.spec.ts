@@ -58,3 +58,18 @@ test('linked household account and person share one row',async({page})=>{
  await page.reload();await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
  const household=page.locator('.account-management');await expect(household.getByText('Ola',{exact:true})).toHaveCount(1);await expect(household).toContainText('Administrator');await household.getByRole('button',{name:/Person og tilstedeværelse/}).click();const d=page.getByRole('dialog',{name:'Rediger person'});await expect(d.getByLabel('Telefon',{exact:true})).toBeChecked();
 });
+test('personal panels precede hub, real profile photo and usage levels',async({page})=>{
+ await page.route('https://www.openstreetmap.org/**',r=>r.fulfill({contentType:'text/html; charset=utf-8',body:'<p>OpenStreetMap · test</p>'}));
+ await page.route('**/api/manage/accounts',r=>r.fulfill({json:[{id:2,name:'ola',display_name:'Ola',role:'admin',linked:true,ha_user_id:'ha2',photo:true}]}));
+ await page.route('**/api/manage/accounts/2/photo*',r=>r.fulfill({path:path.resolve('public/brand/smarti-logo.png'),contentType:'image/png'}));
+ let cpu=39.9,memory=40,used=71;
+ await page.route('**/api/manage/settings/system',r=>r.fulfill({json:{...system,core:{...system.core,cpu_percent:cpu,memory_percent:memory},host:{...system.host,disk_total:100,disk_used:used,disk_free:100-used}}}));
+ await page.reload();await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
+ await expect(page.locator('.account-person img')).toHaveAttribute('src',/accounts\/2\/photo/);
+ await expect(page.locator('iframe[title="Kart · Mitt hjem"]')).toHaveAttribute('src',/marker=58%2C8/);
+ await expect(page.frameLocator('iframe[title="Kart · Mitt hjem"]').getByText('OpenStreetMap · test')).toBeVisible();
+ await expect(page.locator('[data-metric="cpu"]')).toHaveClass(/metric-good/);await expect(page.locator('[data-metric="memory"]')).toHaveClass(/metric-moderate/);await expect(page.locator('[data-metric="storage"]')).toHaveClass(/metric-high/);
+ const positions=await page.evaluate(()=>({personal:document.querySelector('.settings-personal-grid')!.getBoundingClientRect().bottom,hub:document.querySelector('.hub-overview')!.getBoundingClientRect().top,columns:getComputedStyle(document.querySelector('.settings-personal-grid')!).gridTemplateColumns.split(' ').length}));expect(positions.personal).toBeLessThan(positions.hub);expect(positions.columns).toBe(test.info().project.name==='mobile'?1:2);
+ await page.locator('.home-settings').screenshot({path:`test-results/personal-hub-${test.info().project.name}.png`});
+ cpu=40;memory=70;used=0;await page.getByRole('button',{name:'Oppdater',exact:true}).click();await expect(page.locator('[data-metric="cpu"]')).toHaveClass(/metric-moderate/);await expect(page.locator('[data-metric="memory"]')).toHaveClass(/metric-moderate/);await expect(page.locator('[data-metric="storage"]')).toHaveClass(/metric-good/);
+});

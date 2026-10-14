@@ -34,7 +34,12 @@ def test_home_and_people_admin_updates(client):  # noqa: F811
     assert client.put("/api/manage/settings/home", json=body).status_code == 200
     assert calls[-1] == ("config/core/update", body)
     assert m.store.get("home_name") == "Huset"
+    m.ha.states["person.test"] = {
+        "state": "home",
+        "attributes": {"id": "p1", "entity_picture": "/api/image/serve/abc/512x512"},
+    }
     people = client.get("/api/manage/settings/people").json()
+    assert people["people"][0]["entity_id"] == "person.test"
     assert people["people"][1]["editable"] is False
     assert people["trackers"][-1]["id"] == "device_tracker.phone"
     person = {"name": "Test", "device_trackers": ["device_tracker.phone"]}

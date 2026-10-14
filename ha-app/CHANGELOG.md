@@ -1,3 +1,14 @@
+# 1.11.0
+
+- Place home location and household profiles first in a responsive two-column desktop layout.
+- Show the configured home location in an OpenStreetMap embed with a marker, attribution and external-map link. Map viewing requires internet access; allow only the OpenStreetMap frame origin in CSP.
+- Display account photos or matched controller person photos, with a person-icon fallback when unavailable.
+- Group the official SMARTi Hub product photo, connection/version status and CPU, memory and storage usage into one system overview.
+- Color metric icons, charts and labels green below 40%, orange at 40–70%, red above 70%; missing or failed measurements remain unknown. Storage percentage represents used space.
+- Retain history inspection and modal editing; remove the duplicate administrator system-status panel.
+
+Prepared locally, not published.
+
 # 1.10.1
 
 - Connect home welcome/photo overlays, home modes, room views, camera overlays, scene tiles, login accents and primary controls to shared palette roles.

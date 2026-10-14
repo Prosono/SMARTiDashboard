@@ -764,30 +764,32 @@ function Dashboard({
                   <HomeSettings lang={lang} home={h} />
                 )}
                 <div className="settings-layout">
-                  <section className="settings-panel">
-                    <h2>
-                      <Activity size={21} />
-                      {t.status}
-                    </h2>
-                    <dl>
-                      <div>
-                        <dt>{t.process}</dt>
-                        <dd>
-                          <Check size={16} />
-                          {t.running}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>{t.ha}</dt>
-                        <dd>{h.connected ? t.connected : t.unknown}</dd>
-                      </div>
-                      <div>
-                        <dt>{t.version}</dt>
-                        <dd>{h.ha_version || "—"}</dd>
-                      </div>
-                    </dl>
-                    <p className="note">{t.radioHint}</p>
-                  </section>
+                  {session.role !== "admin" && (
+                    <section className="settings-panel">
+                      <h2>
+                        <Activity size={21} />
+                        {t.status}
+                      </h2>
+                      <dl>
+                        <div>
+                          <dt>{t.process}</dt>
+                          <dd>
+                            <Check size={16} />
+                            {t.running}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{t.ha}</dt>
+                          <dd>{h.connected ? t.connected : t.unknown}</dd>
+                        </div>
+                        <div>
+                          <dt>{t.version}</dt>
+                          <dd>{h.ha_version || "—"}</dd>
+                        </div>
+                      </dl>
+                      <p className="note">{t.radioHint}</p>
+                    </section>
+                  )}
                   <section className="settings-panel">
                     <h2>
                       <Settings size={21} />

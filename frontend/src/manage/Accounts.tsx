@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, CheckCircle2, Shield, Camera } from "lucide-react";
+import {
+  UserPlus,
+  CheckCircle2,
+  Shield,
+  Camera,
+  UserRound,
+} from "lucide-react";
 import { api, ApiError } from "../api";
 import { SettingsDialog } from "../home/SettingsDialog";
 type Account = {
@@ -53,7 +59,18 @@ export type HouseholdPerson = {
   device_trackers: string[];
   editable: boolean;
   user_id?: string;
+  entity_id?: string;
 };
+function HouseholdPhoto({ src, name }: { src?: string; name: string }) {
+  const [failed, setFailed] = useState("");
+  return src && failed !== src ? (
+    <img src={src} alt={name} onError={() => setFailed(src)} />
+  ) : (
+    <span className="account-initial" aria-label={name}>
+      <UserRound size={26} />
+    </span>
+  );
+}
 export function Accounts({
   lang,
   people = [],
@@ -251,14 +268,17 @@ export function Accounts({
       {accounts.data?.map((a) => (
         <div className="system-list-row" key={a.id}>
           <div className="account-person">
-            {a.photo ? (
-              <img
-                src={`api/manage/accounts/${a.id}/photo?v=${revision}`}
-                alt=""
-              />
-            ) : (
-              <span className="account-initial">{a.display_name[0]}</span>
-            )}
+            <HouseholdPhoto
+              name={a.display_name}
+              src={
+                a.photo
+                  ? `api/manage/accounts/${a.id}/photo?v=${revision}`
+                  : people.find((p) => p.user_id && p.user_id === a.ha_user_id)
+                        ?.entity_id
+                    ? `api/home/people/${encodeURIComponent(people.find((p) => p.user_id && p.user_id === a.ha_user_id)!.entity_id!)}/photo?v=${revision}`
+                    : undefined
+              }
+            />
             <div>
               <strong>{a.display_name}</strong>
               <small>
@@ -309,7 +329,14 @@ export function Accounts({
           .map((p) => (
             <div className="system-list-row" key={p.id}>
               <div className="account-person">
-                <span className="account-initial">{p.name[0]}</span>
+                <HouseholdPhoto
+                  name={p.name}
+                  src={
+                    p.entity_id
+                      ? `api/home/people/${encodeURIComponent(p.entity_id)}/photo?v=${revision}`
+                      : undefined
+                  }
+                />
                 <div>
                   <strong>{p.name}</strong>
                   <small>
