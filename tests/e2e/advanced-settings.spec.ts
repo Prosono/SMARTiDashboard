@@ -73,3 +73,10 @@ test('personal panels precede hub, real profile photo and usage levels',async({p
  await page.locator('.home-settings').screenshot({path:`test-results/personal-hub-${test.info().project.name}.png`});
  cpu=40;memory=70;used=0;await page.getByRole('button',{name:'Oppdater',exact:true}).click();await expect(page.locator('[data-metric="cpu"]')).toHaveClass(/metric-moderate/);await expect(page.locator('[data-metric="memory"]')).toHaveClass(/metric-moderate/);await expect(page.locator('[data-metric="storage"]')).toHaveClass(/metric-good/);
 });
+test('hub product image stays uncropped in dark palette',async({page})=>{
+ await page.getByRole('button',{name:'Mørkt',exact:true}).click();
+ const image=page.locator('.hub-product > img');await expect(image).toBeVisible();
+ await expect.poll(()=>image.evaluate((el:HTMLImageElement)=>el.naturalWidth)).toBe(1774);
+ await expect(image).toHaveCSS('object-fit','contain');
+ await page.locator('.hub-overview').screenshot({path:`test-results/hub-product-dark-${test.info().project.name}.png`});
+});

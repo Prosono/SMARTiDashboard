@@ -1,3 +1,11 @@
+# 1.11.1
+
+- Use the creator-supplied transparent SMARTi Hub image without cropping.
+- Redesign the hub as a full-width product presentation with integrated metric columns, refined typography and palette-aware surfaces.
+- Refine home/location and household panels with larger portraits, balanced spacing and responsive layouts.
+
+Prepared locally, not published.
+
 # 1.11.0
 
 - Place home location and household profiles first in a responsive two-column desktop layout.

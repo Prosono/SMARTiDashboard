@@ -5,4 +5,4 @@ Source: https://images.squarespace-cdn.com/content/v1/63e0ed583f15bc4cb2421287/b
 
 Brand ownership remains with SMARTi. Bai Jamjuree is bundled through @fontsource/bai-jamjuree under its included OFL license.
 
-SMARTi Hub product photo: smarti-hub.png, sourced from the creator's SMARTi website (https://www.smarti.no/), product gallery image https://images.squarespace-cdn.com/content/v1/63e0ed583f15bc4cb2421287/c49774a9-40a1-40f9-8500-205cfb9bfb93/smarfti%2Bpromo%2B4.png (750w rendition). Used for the requested hub system-status panel.
+SMARTi Hub product image: smarti-hub.png, supplied by the creator in this chat on 2026-10-14. Original PNG preserved, including transparency.
