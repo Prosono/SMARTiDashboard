@@ -4,10 +4,10 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Radio,
-  Bluetooth,
   LoaderCircle,
 } from "lucide-react";
 import { api, ApiError } from "./api";
+import { WirelessDevices } from "./WirelessDevices";
 import { ZigbeeStatus } from "./ZigbeeStatus";
 import { ControllerStatus } from "./ControllerStatus";
 
@@ -443,13 +443,7 @@ export function DeviceSetup({
         ))}
       </div>
       <p className="muted">{t.auto}</p>
-      <details className="pairing-other">
-        <summary>
-          <Bluetooth size={18} />
-          {t.bluetooth}
-        </summary>
-        <p>{t.bluetoothHint}</p>
-      </details>
+      <WirelessDevices lang={lang} />
     </section>
   );
 }

@@ -33,6 +33,7 @@ from .storage import Store
 from .system_operations import system_operations_router
 from .system_settings import system_settings_router
 from .vehicle import vehicle_router
+from .wireless_setup import WirelessSetup
 
 
 class Credentials(BaseModel):
@@ -103,6 +104,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             yield
         finally:
             try:
+                await wireless.close()
                 await setup.close()
             finally:
                 task.cancel()
@@ -174,6 +176,8 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
 
     management = Management(ha, store, settings)
     app.state.management = management
+    wireless = WirelessSetup(management, settings)
+    app.include_router(wireless.router(admin))
     app.include_router(management_router(management, admin))
     app.include_router(system_settings_router(management, admin, settings))
     app.include_router(system_operations_router(management, admin, settings))

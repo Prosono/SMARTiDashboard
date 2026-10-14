@@ -64,3 +64,12 @@ The administrator **Apper** destination provides Installed/App library views, se
 SMARTi is excluded from inventory and its management API rejects `self`, SMARTi names/slugs and the actual current app slug resolved via `/addons/self/info`. Identity lookup failures block management. Integration-managed apps cannot be uninstalled here. Other uninstalls request `remove_config: false`, but app data may still be removed by Supervisor; use backups for recovery.
 
 Configuration is currently an advanced JSON editor, with explicit automatic start/watchdog/update switches. Supervisor validates options before saving; a revision check prevents overwriting an observed newer configuration. Secrets are only fetched when an administrator opens configuration, never included in inventory or stored in activity records. App options may need an app restart. App administration requires the installed HA/Supervisor app and its existing `manager` role; standalone/demo deployments show an unavailable state. Live hardware validation is still required.
+
+### Bluetooth og Matter
+
+Under **Enheter → Legg til ny enhet** finnes egne veivisere for Bluetooth og Matter (administrator).
+Bluetooth viser nye enheter som hjemmesentralens integrasjoner har oppdaget, også via Bluetooth-proxy. Velg en enhet for å fullføre produsentens oppsett. Dette er ikke en generell liste over alle Bluetooth-signaler; støttet integrasjon og adapter/proxy er nødvendig.
+
+Matter krever en tilkoblet Matter-integrasjon og Matter Server. Enheter som allerede er på Wi-Fi/Thread kan legges til med en fersk Matter-delingskode fra appen som eier enheten. Hjemmesentralen må kunne nå enheten på lokalnettet. Fremdriften beholdes når dialogen lukkes, og koden lagres ikke. Ved et ubekreftet resultat må Enheter/status kontrolleres før et nytt forsøk.
+
+Helt nye Matter-enheter settes først opp med telefonens Bluetooth gjennom Companion-appen. SMARTi-nettvisningen har ikke tilgang til telefonens native Matter-oppsett. Matter over Thread trenger en Thread-grenseruter. Oppsett er ikke tilgjengelig i demo.

@@ -69,13 +69,17 @@ function choices(f: Field): Option[] {
 export function IntegrationSetup({
   lang,
   close,
+  initialSearch = "",
+  discovery,
 }: {
   lang: string;
   close: () => void;
+  initialSearch?: string;
+  discovery?: { id: string; domain: string };
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const qc = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [flow, setFlow] = useState<Flow | null>(null);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [busy, setBusy] = useState(false);
@@ -143,6 +147,19 @@ export function IntegrationSetup({
       if (alive.current) setBusy(false);
     }
   }
+  const claimed = useRef(false);
+  useEffect(() => {
+    if (discovery && !claimed.current) {
+      claimed.current = true;
+      void run(() =>
+        api<Flow>(
+          `manage/integration-setup/bluetooth/${encodeURIComponent(discovery.id)}/claim`,
+          "POST",
+          { domain: discovery.domain, language: lang === "en" ? "en" : "nb" },
+        ),
+      );
+    }
+  }, [discovery]);
   async function dismiss() {
     if (!flowId.current) {
       close();
@@ -212,7 +229,16 @@ export function IntegrationSetup({
             {error}
           </p>
         )}
-        {!flow ? (
+        {!flow && discovery ? (
+          <p role="status">
+            {busy
+              ? t("Åpner enhetsoppsettet …", "Opening device setup …")
+              : t(
+                  "Lukk og velg enheten på nytt dersom oppsettet ikke kunne hentes.",
+                  "Close and select the device again if setup could not be loaded.",
+                )}
+          </p>
+        ) : !flow ? (
           <>
             <p>
               {t(

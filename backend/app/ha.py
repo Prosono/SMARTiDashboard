@@ -60,7 +60,7 @@ class HomeAssistant:
                 c.attributes.setdefault("temperature_unit", self.temperature_unit)
         return controls
 
-    async def request(self, kind, _callback=None, **data):
+    async def request(self, kind, _callback=None, _timeout=12, **data):
         if self.ws is None:
             raise HAError("disconnected")
         self.next_id += 1
@@ -71,7 +71,7 @@ class HomeAssistant:
             self.callbacks[number] = _callback
         try:
             await self.ws.send(json.dumps({"id": number, "type": kind, **data}))
-            result = await asyncio.wait_for(future, 12)
+            result = await asyncio.wait_for(future, _timeout)
             if _callback and result is False:
                 raise HAError("ha_request_rejected")
             return number if _callback else result

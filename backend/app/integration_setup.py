@@ -84,7 +84,7 @@ def integration_setup_router(m, admin):
             # Clean abandoned flows without exposing or modifying another HA user's flows.
             for id, item in list(flows.items()):
                 if time.monotonic() - item["used"] > 1800:
-                    if not item["terminal"]:
+                    if not item["terminal"] and not item.get("discovered"):
                         try:
                             await m.rest("DELETE", prefix + "/" + quote(id, safe=""))
                         except HTTPException:
@@ -131,6 +131,70 @@ def integration_setup_router(m, admin):
                 flows[result["flow_id"]] = item
             return await present(result, item)
 
+    @router.get("/bluetooth")
+    async def bluetooth():
+        live()
+        config = await m.rest("GET", "config")
+        progress = await m.ws("config_entries/flow/progress")
+        return {
+            "loaded": "bluetooth" in config.get("components", []),
+            "discoveries": [
+                {
+                    "id": f["flow_id"],
+                    "domain": f["handler"],
+                    "name": f.get("context", {}).get("title_placeholders", {}).get("name", f["handler"]),
+                }
+                for f in progress
+                if f.get("context", {}).get("source") == "bluetooth" and isinstance(f.get("handler"), str)
+            ],
+        }
+
+    @router.post("/bluetooth/{id}/claim")
+    async def claim_bluetooth(id: str, body: StartIntegration, current=Depends(admin)):
+        live()
+        async with lock:
+            existing = flows.get(id)
+            if not existing and len(flows) >= 32:
+                raise HTTPException(429, "flow_limit")
+            if existing and existing["owner"] != (current["id"], current["csrf"]):
+                raise HTTPException(409, "flow_owned")
+            progress = await m.ws("config_entries/flow/progress")
+            found = next(
+                (
+                    f
+                    for f in progress
+                    if f.get("flow_id") == id
+                    and f.get("handler") == body.domain
+                    and f.get("context", {}).get("source") == "bluetooth"
+                ),
+                None,
+            )
+            if not found:
+                raise HTTPException(404, "bluetooth_discovery_missing")
+            try:
+                translations = (
+                    await m.ws(
+                        "frontend/get_translations",
+                        language=body.language,
+                        category="config",
+                        integration=[body.domain],
+                    )
+                )["resources"]
+            except HTTPException:
+                translations = {}
+            item = {
+                "frontend_base": None,
+                "owner": (current["id"], current["csrf"]),
+                "domain": body.domain,
+                "translations": translations,
+                "terminal": False,
+                "used": time.monotonic(),
+                "discovered": True,
+            }
+            result = await m.rest("GET", prefix + "/" + quote(id, safe=""))
+            flows[id] = item
+            return await present(result, item)
+
     @router.get("/flows/{id}")
     async def poll(id: str, current=Depends(admin)):
         async with lock:
@@ -161,7 +225,7 @@ def integration_setup_router(m, admin):
     async def cancel(id: str, current=Depends(admin)):
         async with lock:
             item = owned(id, current)
-            if not item["terminal"]:
+            if not item["terminal"] and not item.get("discovered"):
                 try:
                     await m.rest("DELETE", prefix + "/" + quote(id, safe=""))
                 except HTTPException as exc:

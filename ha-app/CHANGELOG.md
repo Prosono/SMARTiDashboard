@@ -1,3 +1,12 @@
+# 1.15.0
+
+- Add Bluetooth and Matter to Add device with dedicated setup dialogs.
+- Show Bluetooth discoveries from the controller, including Bluetooth proxies, and continue the manufacturer's integration setup. Closing the dialog preserves shared controller discoveries.
+- Commission Matter devices already on the local network using a fresh sharing/setup code, with persistent progress and duplicate-request protection. Codes are not stored.
+- Explain phone-based first-time Matter commissioning through the Companion app and Thread border-router requirements; this web interface does not emulate the native phone setup.
+
+Prepared locally, not published. Verified with mocked controller APIs; live Bluetooth/Matter hardware validation remains required.
+
 # 1.14.1
 
 - Show app icons in installed/library cards and larger logos in app dialogs, with icon/logo fallback and a neutral placeholder for missing images.
