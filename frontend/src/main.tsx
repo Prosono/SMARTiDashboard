@@ -1,3 +1,4 @@
+import { RadioAdvanced } from "./RadioAdvanced";
 import { Apps } from "./manage/Apps";
 import { AccountAvatar } from "./manage/Accounts";
 import { HomeSettings } from "./manage/HomeSettings";
@@ -661,7 +662,8 @@ function Dashboard({
             </div>
             {page === "devices" && (
               <div
-                className="tabs"
+                className="tabs protocol-navigation"
+                data-protocol={protocol}
                 aria-label={lang === "nb" ? "Protokoller" : "Protocols"}
               >
                 {[
@@ -675,9 +677,20 @@ function Dashboard({
                     className={protocol === id ? "selected" : ""}
                     onClick={() => setProtocol(id)}
                   >
+                    {id === "all" ? (
+                      <LayoutGrid size={17} />
+                    ) : (
+                      <SlidersHorizontal size={17} />
+                    )}
                     {label}
                   </button>
                 ))}
+                {protocol !== "all" && session.role === "admin" && (
+                  <RadioAdvanced
+                    provider={protocol}
+                    lang={lang === "en" ? "en" : "nb"}
+                  />
+                )}
               </div>
             )}
             {page === "devices" && protocol !== "all" ? (

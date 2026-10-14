@@ -1,9 +1,14 @@
-import { RadioAdvanced } from "./RadioAdvanced";
+import "./protocolOverview.css";
 import { ZigbeeStatus } from "./ZigbeeStatus";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Radio,
+  House,
+  Lightbulb,
+  Plug,
+  Search,
+  RefreshCw,
   Signal,
   WifiOff,
   Moon,
@@ -50,6 +55,7 @@ export function ProtocolDevices({
 }) {
   const no = lang === "nb";
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("name");
   const [selected, setSelected] = useState<Device | null>(null);
   const [confirm, setConfirm] = useState<Device | null>(null);
   const [busy, setBusy] = useState(false);
@@ -132,14 +138,28 @@ export function ProtocolDevices({
       : !!pairedDevice.name &&
         (d.name === pairedDevice.name || d.id === pairedDevice.name));
   const devices = (inventory.data?.devices ?? []).filter((d) =>
-    `${d.name} ${d.model ?? ""} ${d.id}`
+    `${d.name} ${d.model ?? ""} ${d.manufacturer ?? ""} ${d.id}`
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
-  devices.sort((a, b) => Number(isNew(b)) - Number(isNew(a)));
+  devices.sort(
+    (a, b) =>
+      Number(isNew(b)) - Number(isNew(a)) ||
+      (sort === "status"
+        ? a.status.localeCompare(b.status)
+        : sort === "manufacturer"
+          ? (a.manufacturer ?? "").localeCompare(b.manufacturer ?? "")
+          : 0) ||
+      a.name.localeCompare(b.name, no ? "nb" : "en", { numeric: true }),
+  );
   const stale = inventory.isError || inventory.data?.status !== "ready";
+  const all = inventory.data?.devices ?? [];
+  const count = (states: string[]) =>
+    stale ? "–" : all.filter((d) => states.includes(d.status)).length;
+  const zigbee = provider === "zigbee2mqtt";
   return (
     <section
+      data-protocol={provider}
       className="protocol-devices"
       aria-label={provider === "zigbee2mqtt" ? "Zigbee" : "Z-Wave"}
     >
@@ -154,34 +174,77 @@ export function ProtocolDevices({
               : "Device paired. Waiting for the device list to update …"}
         </p>
       )}
-      {admin && <RadioAdvanced provider={provider} lang={lang} />}
-      <div className="protocol-intro">
-        <Radio size={24} />
-        <div>
-          <h2>{provider === "zigbee2mqtt" ? "Zigbee" : "Z-Wave"}</h2>
+      <div className="protocol-banner">
+        <div className="protocol-wordmark" aria-hidden="true">
+          <Radio strokeWidth={2.5} />
+          <strong>{zigbee ? "zigbee" : "Z-Wave"}</strong>
+          <span>{no ? "DITT NETTVERK" : "YOUR NETWORK"}</span>
+        </div>
+        <div className="protocol-summary">
+          <h2>{zigbee ? "Zigbee" : "Z-Wave"}</h2>
           <p>
             {no
               ? "Fysiske enheter på nettverket"
               : "Physical devices on the network"}{" "}
             · {inventory.data?.devices.length ?? "–"}
           </p>
+          <dl className="protocol-stats">
+            <div>
+              <dt>
+                <i className="dot-online" />
+                {no ? "På nett" : "Online"}
+              </dt>
+              <dd>{count(["online", "awake"])}</dd>
+            </div>
+            <div>
+              <dt>
+                <i className="dot-offline" />
+                {no ? "Frakoblet" : "Offline"}
+              </dt>
+              <dd>{count(["offline"])}</dd>
+            </div>
+            <div>
+              <dt>
+                <Moon size={13} />
+                {no ? "Sover" : "Sleeping"}
+              </dt>
+              <dd>{count(["asleep"])}</dd>
+            </div>
+            <div>
+              <dt>
+                <CircleHelp size={13} />
+                {no ? "Ukjent" : "Unknown"}
+              </dt>
+              <dd>
+                {stale
+                  ? "–"
+                  : all.filter(
+                      (d) =>
+                        !["online", "awake", "offline", "asleep"].includes(
+                          d.status,
+                        ),
+                    ).length}
+              </dd>
+            </div>
+          </dl>
+        </div>
+        <div className="protocol-art" aria-hidden="true">
+          <div className="radio-orbit" />
+          <div className="radio-orbit second" />
+          {zigbee ? (
+            <div className="protocol-art-devices">
+              <Plug />
+              <Lightbulb />
+              <Radio />
+            </div>
+          ) : (
+            <div className="protocol-art-house">
+              <House strokeWidth={1.3} />
+            </div>
+          )}
         </div>
       </div>
-      {admin && provider === "zigbee2mqtt" && <ZigbeeStatus lang={lang} />}
-      <details className="protocol-note">
-        <summary>
-          {no ? "Om tilkobling og signal" : "About connection and signal"}
-        </summary>
-        <p>
-          {provider === "zigbee2mqtt"
-            ? no
-              ? "LQI viser sist rapporterte signalkvalitet (0–255, høyere er bedre). Det er ikke en prosent eller garanti for stabil forbindelse. Ukjent status kan bety at tilgjengelighetsrapportering ikke er aktivert i Zigbee2MQTT."
-              : "LQI is the last reported link quality (0–255, higher is better), not a percentage or guarantee. Unknown status can mean availability reporting is disabled in Zigbee2MQTT."
-            : no
-              ? "Status hentes fra Z-Wave JS. En sovende batterienhet er normalt tilkoblet. Signalstyrke rapporteres ikke av denne statusoversikten."
-              : "Status comes from Z-Wave JS. Sleeping is normal for battery devices. Signal strength is not reported by this status overview."}
-        </p>
-      </details>
+
       {inventory.isPending && (
         <p role="status">{no ? "Henter enheter …" : "Loading devices …"}</p>
       )}
@@ -238,20 +301,38 @@ export function ProtocolDevices({
             : "Action could not be confirmed. Check the network and refresh the list before retrying."}
         </p>
       )}
-      <div className="device-toolbar">
-        <input
-          aria-label={no ? "Søk i nettverket" : "Search network"}
-          placeholder={
-            no ? "Søk etter navn eller modell" : "Search by name or model"
-          }
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="device-toolbar protocol-toolbar">
+        <label className="protocol-search">
+          <Search size={19} />
+          <input
+            aria-label={no ? "Søk i nettverket" : "Search network"}
+            placeholder={
+              no
+                ? "Søk etter navn, modell eller produsent …"
+                : "Search name, model or manufacturer …"
+            }
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+        <select
+          aria-label={no ? "Sorter enheter" : "Sort devices"}
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          <option value="name">{no ? "Navn (A–Å)" : "Name (A–Z)"}</option>
+          <option value="manufacturer">
+            {no ? "Produsent" : "Manufacturer"}
+          </option>
+          <option value="status">
+            {no ? "Tilkoblingsstatus" : "Connection status"}
+          </option>
+        </select>
         <button
           onClick={() => void inventory.refetch()}
           disabled={inventory.isFetching}
         >
-          {no ? "Oppdater" : "Refresh"}
+          <RefreshCw size={17} /> {no ? "Oppdater" : "Refresh"}
         </button>
       </div>
       <div className="protocol-list">
@@ -266,7 +347,11 @@ export function ProtocolDevices({
                   ? Signal
                   : CircleHelp;
           return (
-            <article className="protocol-row" key={d.id}>
+            <article
+              className="protocol-row"
+              data-new={isNew(d) || undefined}
+              key={d.id}
+            >
               <div className="protocol-device-icon">
                 <DevicePicture url={d.image_url} name={d.name} />
               </div>
@@ -335,6 +420,23 @@ export function ProtocolDevices({
             : "No devices to show. Use “Add new device” to open the wizard."}
         </p>
       )}
+      <div className="protocol-diagnostics">
+        <details className="protocol-note">
+          <summary>
+            {no ? "Om tilkobling og signal" : "About connection and signal"}
+          </summary>
+          <p>
+            {provider === "zigbee2mqtt"
+              ? no
+                ? "LQI viser sist rapporterte signalkvalitet (0–255, høyere er bedre). Det er ikke en prosent eller garanti for stabil forbindelse. Ukjent status kan bety at tilgjengelighetsrapportering ikke er aktivert i Zigbee2MQTT."
+                : "LQI is the last reported link quality (0–255, higher is better), not a percentage or guarantee. Unknown status can mean availability reporting is disabled in Zigbee2MQTT."
+              : no
+                ? "Status hentes fra Z-Wave JS. En sovende batterienhet er normalt tilkoblet. Signalstyrke rapporteres ikke av denne statusoversikten."
+                : "Status comes from Z-Wave JS. Sleeping is normal for battery devices. Signal strength is not reported by this status overview."}
+          </p>
+        </details>
+        {admin && provider === "zigbee2mqtt" && <ZigbeeStatus lang={lang} />}
+      </div>
       {selected && (
         <DeviceDetails
           provider={provider}

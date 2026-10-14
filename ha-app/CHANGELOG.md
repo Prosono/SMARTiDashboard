@@ -1,3 +1,12 @@
+# 1.17.0
+
+- Redesign Zigbee and Z-Wave overviews with protocol-colored network banners, decorative illustrations and clearer device cards that adapt to light/dark themes and mobile screens.
+- Show actual online, offline, sleeping and unknown counts; unavailable network data remains unknown. Do not infer network signal quality from connectivity.
+- Add manufacturer search and name/manufacturer/status sorting while keeping newly paired devices first.
+- Move Advanced mode beside protocol navigation and place expandable diagnostics below the device list. Preserve device details, images, removal confirmations and pairing navigation.
+
+Prepared locally, not published. Browser regression covers mobile and desktop with simulated radio inventories.
+
 # 1.16.1
 
 - Add an administrator-only restart button under Settings → System, with an explicit confirmation dialog and a demo-disabled state.
