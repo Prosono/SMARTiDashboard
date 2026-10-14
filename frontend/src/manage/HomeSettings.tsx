@@ -1,17 +1,10 @@
+import { Accounts } from "./Accounts";
+import { Backups } from "./Backups";
 import { SystemActions } from "./SystemActions";
 import { SystemGraph, type Sample } from "./SystemGraph";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Cpu,
-  HardDrive,
-  Network,
-  MapPin,
-  Users,
-  Archive,
-  Pencil,
-  Plus,
-} from "lucide-react";
+import { Cpu, HardDrive, Network, MapPin, Pencil } from "lucide-react";
 import { api } from "../api";
 import { smartiName } from "../branding";
 import { SettingsDialog } from "../home/SettingsDialog";
@@ -278,57 +271,8 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
                 ))
               )}
             </section>
-            <section className="settings-panel">
-              <h3>
-                <Archive /> {t("Sikkerhetskopier", "Backups")}
-              </h3>
-              <p className="muted">
-                {t(
-                  "Oversikt over sikkerhetskopier registrert på sentralen.",
-                  "Backups registered on the controller.",
-                )}
-              </p>
-              {s.backups !== null && <SystemActions lang={lang} />}
-              {s.backups === null ? (
-                <p>
-                  {t("Sikkerhetskopier utilgjengelige", "Backups unavailable")}
-                </p>
-              ) : s.backups.length === 0 ? (
-                <p>
-                  {t(
-                    "Ingen sikkerhetskopier registrert.",
-                    "No backups registered.",
-                  )}
-                </p>
-              ) : (
-                <div className="system-backups">
-                  {[...s.backups]
-                    .sort((a, b) => b.date.localeCompare(a.date))
-                    .map((b) => (
-                      <div className="system-list-row" key={b.slug}>
-                        <div>
-                          <strong>{smartiName(b.name)}</strong>
-                          <small>
-                            {new Date(b.date).toLocaleString(
-                              lang === "en" ? "en-GB" : "nb-NO",
-                            )}{" "}
-                            · {number(b.size, "MB")} ·{" "}
-                            {b.type === "full"
-                              ? t("Full", "Full")
-                              : t("Delvis", "Partial")}
-                          </small>
-                        </div>
-                        <span>
-                          {b.protected
-                            ? t("Beskyttet", "Protected")
-                            : t("Uten passord", "No password")}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </section>
           </div>
+          <Backups items={s.backups} lang={lang} />
         </>
       )}
       <div className="settings-layout">
@@ -362,70 +306,38 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
             </p>
           )}
         </section>
-        <section className="settings-panel">
-          <h3>
-            <Users /> {t("Personer i hjemmet", "Household members")}
-          </h3>
-          <p className="muted">
+      </div>
+      <Accounts
+        lang={lang}
+        people={people.data?.people}
+        onPerson={(p) => {
+          setError("");
+          setPerson({ ...p });
+        }}
+      >
+        {people.isError && (
+          <p role="alert">
             {t(
-              "Personer brukes til tilstedeværelse. Innloggingskontoer administreres separat nedenfor.",
-              "People are used for presence. Login accounts are managed separately below.",
+              "Personer kunne ikke hentes fra sentralen.",
+              "Could not load people from the controller.",
             )}
           </p>
-          {people.data ? (
-            <>
-              <button
-                onClick={() => {
-                  setError("");
-                  setPerson({
-                    id: "",
-                    name: "",
-                    device_trackers: [],
-                    editable: true,
-                  });
-                }}
-              >
-                <Plus size={17} />
-                {t("Legg til person", "Add person")}
-              </button>
-              {people.data.people.map((p) => (
-                <div className="system-list-row" key={p.id}>
-                  <div>
-                    <strong>{p.name}</strong>
-                    <small>
-                      {p.device_trackers.length}{" "}
-                      {t("tilstedeværelsesenheter", "presence trackers")}
-                      {!p.editable ? " · YAML" : ""}
-                    </small>
-                  </div>
-                  <button
-                    disabled={!p.editable}
-                    onClick={() => {
-                      setError("");
-                      setPerson({ ...p });
-                    }}
-                  >
-                    {t("Rediger", "Edit")}
-                  </button>
-                </div>
-              ))}
-            </>
-          ) : (
-            <p>
-              {t(
-                "Kunne ikke hente personer. Krever personintegrasjonen på en tilkoblet sentral.",
-                "Could not load people. Requires the person integration on a connected controller.",
-              )}
-            </p>
-          )}
-        </section>
-      </div>
-      <Presence
-        home={home}
-        offline={!home.connected}
-        lang={lang}
-        admin={true}
-      />
+        )}
+        <details className="household-presence">
+          <summary>
+            {t(
+              "Hvem vises på hjemskjermen?",
+              "Who appears on the home screen?",
+            )}
+          </summary>
+          <Presence
+            home={home}
+            offline={!home.connected}
+            lang={lang}
+            admin={true}
+          />
+        </details>
+      </Accounts>
       {(place || person || remove) && (
         <SettingsDialog
           lang={lang}

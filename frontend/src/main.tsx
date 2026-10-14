@@ -1,4 +1,4 @@
-import { Accounts, AccountAvatar } from "./manage/Accounts";
+import { AccountAvatar } from "./manage/Accounts";
 import { HomeSettings } from "./manage/HomeSettings";
 import { Thermostat } from "./Thermostat";
 import React, { useEffect, useState } from "react";
@@ -824,7 +824,6 @@ function Dashboard({
                     </button>
                   </section>
                 </div>
-                {session.role === "admin" && <Accounts lang={lang} />}
               </>
             )}
           </>

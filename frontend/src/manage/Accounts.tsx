@@ -9,6 +9,7 @@ type Account = {
   display_name: string;
   role: string;
   linked: boolean;
+  ha_user_id?: string;
   photo: boolean;
 };
 type Result = {
@@ -46,7 +47,24 @@ async function readPhoto(file: File) {
   img.close();
   return canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
 }
-export function Accounts({ lang }: { lang: string }) {
+export type HouseholdPerson = {
+  id: string;
+  name: string;
+  device_trackers: string[];
+  editable: boolean;
+  user_id?: string;
+};
+export function Accounts({
+  lang,
+  people = [],
+  onPerson,
+  children,
+}: {
+  lang: string;
+  people?: HouseholdPerson[];
+  onPerson?: (person: HouseholdPerson) => void;
+  children?: React.ReactNode;
+}) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb),
     qc = useQueryClient();
   const accounts = useQuery({
@@ -111,6 +129,7 @@ export function Accounts({ lang }: { lang: string }) {
       }
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["accounts"] }),
+        qc.invalidateQueries({ queryKey: ["settings", "people"] }),
         qc.invalidateQueries({ queryKey: ["account-pending"] }),
         qc.invalidateQueries({ queryKey: ["home"] }),
       ]);
@@ -202,7 +221,7 @@ export function Accounts({ lang }: { lang: string }) {
       <div className="section-heading">
         <h2>
           <Shield size={21} />
-          {t("Brukere og tilgang", "Users and access")}
+          {t("Husstanden", "Household")}
         </h2>
         <button onClick={() => start()}>
           <UserPlus size={18} />
@@ -211,14 +230,23 @@ export function Accounts({ lang }: { lang: string }) {
       </div>
       <p>
         {t(
-          "Opprett innlogging i både SMARTi og hjemmesentralen. Velg rolle og profilbilde i en enkel veiviser.",
-          "Create a login in both SMARTi and the controller. Choose a role and profile photo in a simple wizard.",
+          "Personer, innlogging, profilbilder og tilstedeværelse – samlet på ett sted.",
+          "People, logins, profile photos and presence — all in one place.",
         )}
       </p>
       {accounts.isError && (
         <p role="alert">
           {t("Kunne ikke hente brukere.", "Could not load users.")}
         </p>
+      )}
+      {onPerson && (
+        <button
+          onClick={() =>
+            onPerson({ id: "", name: "", device_trackers: [], editable: true })
+          }
+        >
+          {t("Legg til person uten innlogging", "Add person without login")}
+        </button>
       )}
       {accounts.data?.map((a) => (
         <div className="system-list-row" key={a.id}>
@@ -245,18 +273,63 @@ export function Accounts({ lang }: { lang: string }) {
               </small>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setEditing(a);
-              setPhoto("");
-              setError("");
-              setOpen(true);
-            }}
-          >
-            {t("Profilbilde", "Profile photo")}
-          </button>
+          <div className="row-actions">
+            {people
+              .filter((p) => !!p.user_id && p.user_id === a.ha_user_id)
+              .map((p) => (
+                <button
+                  key={p.id}
+                  disabled={!p.editable}
+                  onClick={() => onPerson?.(p)}
+                >
+                  {t("Person og tilstedeværelse", "Person and presence")} ·{" "}
+                  {p.device_trackers.length}
+                </button>
+              ))}
+            <button
+              onClick={() => {
+                setEditing(a);
+                setPhoto("");
+                setError("");
+                setOpen(true);
+              }}
+            >
+              {t("Profilbilde", "Profile photo")}
+            </button>
+          </div>
         </div>
       ))}
+      {accounts.data &&
+        people
+          .filter(
+            (p) =>
+              !p.user_id ||
+              !accounts.data.some((a) => a.ha_user_id === p.user_id),
+          )
+          .map((p) => (
+            <div className="system-list-row" key={p.id}>
+              <div className="account-person">
+                <span className="account-initial">{p.name[0]}</span>
+                <div>
+                  <strong>{p.name}</strong>
+                  <small>
+                    {p.user_id
+                      ? t("Konto på sentralen", "Controller account")
+                      : t(
+                          "Person uten innlogging",
+                          "Person without login",
+                        )}{" "}
+                    · {p.device_trackers.length}{" "}
+                    {t("tilstedeværelsesenheter", "presence trackers")}
+                  </small>
+                </div>
+              </div>
+              <button disabled={!p.editable} onClick={() => onPerson?.(p)}>
+                {t("Rediger person", "Edit person")}
+              </button>
+            </div>
+          ))}
+      {children}
       {pending.data?.map((p) => (
         <div className="system-list-row" key={p.request_id}>
           <span>

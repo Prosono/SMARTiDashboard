@@ -106,6 +106,7 @@ def accounts_router(m, admin, user):
             row.update(
                 display_name=info.get("display_name", row["name"]),
                 linked=bool(info.get("ha_user_id")),
+                ha_user_id=info.get("ha_user_id"),
                 photo=bool(m.store.get(f"account_photo:{row['id']}")),
             )
         return rows

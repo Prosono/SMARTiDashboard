@@ -5,13 +5,16 @@ import hashlib
 import ipaddress
 import json
 import os
+import re
 import time
 from typing import Literal
 from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, model_validator
+from starlette.background import BackgroundTask
 
 
 class BackupRequest(BaseModel):
@@ -19,6 +22,13 @@ class BackupRequest(BaseModel):
     request_id: UUID
     name: str = Field(min_length=1, max_length=80)
     password: str = Field(min_length=12, max_length=128, repr=False)
+
+
+class RestoreRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+    confirm_slug: str
+    password: str = Field(default="", max_length=256, repr=False)
 
 
 class IPv4Settings(BaseModel):
@@ -177,6 +187,99 @@ def system_operations_router(m, admin, settings):
                     state["status"] = "failed" if job.get("errors") else "completed"
                     m.store.set(key, json.dumps(state))
         return state
+
+    @router.get("/operations")
+    async def operations(current=Depends(admin)):
+        with m.store.connect() as db:
+            rows = db.execute("SELECT key,value FROM settings WHERE key LIKE 'system_operation:%'").fetchall()
+        items = [dict(json.loads(r["value"]), request_id=r["key"].split(":", 1)[1]) for r in rows]
+        items = [
+            i for i in items if i["owner"] == current["id"] and i["kind"].startswith(("backup", "restore:"))
+        ]
+        return sorted(items, key=lambda i: i["created"], reverse=True)[:12]
+
+    async def backup_info(slug):
+        if not re.fullmatch(r"[a-zA-Z0-9_-]{1,80}", slug):
+            raise HTTPException(404, "backup_not_found")
+        inventory = await supervisor.request("GET", "/backups/info")
+        if not any(b.get("slug") == slug for b in inventory.get("backups", [])):
+            raise HTTPException(404, "backup_not_found")
+        return await supervisor.request("GET", f"/backups/{slug}/info")
+
+    @router.get("/backups/{slug}/info")
+    async def details(slug: str):
+        info = await backup_info(slug)
+        return {
+            k: info.get(k)
+            for k in ("slug", "name", "date", "type", "protected", "homeassistant", "addons", "folders")
+        }
+
+    @router.post("/backups/{slug}/restore")
+    async def restore(slug: str, body: RestoreRequest, current=Depends(admin)):
+        if body.confirm_slug != slug:
+            raise HTTPException(422, "confirmation_required")
+        info = await backup_info(slug)
+        if info.get("protected") and not body.password:
+            raise HTTPException(422, "backup_password_required")
+        if info.get("type") not in {"full", "partial"}:
+            raise HTTPException(422, "unsupported_backup")
+        payload = {"background": True}
+        if body.password:
+            payload["password"] = body.password
+        if info["type"] == "partial":
+            payload.update(
+                homeassistant=bool(info.get("homeassistant")),
+                addons=[a["slug"] if isinstance(a, dict) else a for a in info.get("addons", [])],
+                folders=info.get("folders", []),
+            )
+        return await operation(
+            body.request_id,
+            current,
+            "restore:" + slug,
+            lambda: supervisor.request("POST", f"/backups/{slug}/restore/{info['type']}", payload),
+        )
+
+    @router.get("/backups/{slug}/download")
+    async def download(slug: str):
+        await backup_info(slug)
+        token = os.environ.get("SUPERVISOR_TOKEN")
+        if settings.mode == "demo" or not settings.ingress or not token:
+            raise HTTPException(503, "supervisor_unavailable")
+        client = httpx.AsyncClient(timeout=60, trust_env=False, follow_redirects=False)
+        try:
+            response = await client.send(
+                client.build_request(
+                    "GET",
+                    f"http://supervisor/backups/{slug}/download",
+                    headers={"Authorization": "Bearer " + token},
+                ),
+                stream=True,
+            )
+            response.raise_for_status()
+        except httpx.HTTPError:
+            await client.aclose()
+            raise HTTPException(502, "backup_download_unavailable") from None
+
+        async def close():
+            await response.aclose()
+            await client.aclose()
+
+        async def chunks():
+            try:
+                async for chunk in response.aiter_bytes():
+                    yield chunk
+            finally:
+                await close()
+
+        return StreamingResponse(
+            chunks(),
+            media_type="application/x-tar",
+            headers={
+                "Content-Disposition": f'attachment; filename="SMARTi-{slug}.tar"',
+                "Cache-Control": "private, no-store",
+            },
+            background=BackgroundTask(close),
+        )
 
     @router.get("/network/{name}")
     async def network(name: str):

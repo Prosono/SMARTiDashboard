@@ -151,6 +151,7 @@ def system_settings_router(m, admin, settings):
                     "name": p["name"],
                     "device_trackers": p.get("device_trackers", []),
                     "editable": editable,
+                    "user_id": p.get("user_id"),
                 }
                 for group, editable in [("storage", True), ("config", False)]
                 for p in result.get(group, [])

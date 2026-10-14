@@ -201,3 +201,92 @@
   border-color: var(--orange);
   color: #241407;
 }
+
+.backup-manager {
+  padding: clamp(1.1rem, 3vw, 2rem);
+}
+.backup-manager h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0.5rem 0;
+}
+.backup-manager button,
+.backup-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+.backup-manager .section-heading {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.backup-description {
+  flex: 1;
+  min-width: 160px;
+}
+.backup-summary {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding-block: 1rem;
+  border-block: 1px solid var(--line);
+}
+.backup-empty {
+  padding: 2rem 0;
+}
+.backup-history,
+.household-presence {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+.backup-history summary,
+.household-presence summary {
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+.backup-activity {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+.backup-activity span {
+  opacity: 0.75;
+}
+.home-settings .account-management {
+  margin: 0;
+  padding: clamp(1.1rem, 3vw, 2rem);
+}
+.account-management .section-heading {
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.home-settings > .settings-layout {
+  grid-template-columns: 1fr;
+}
+@media (max-width: 650px) {
+  .backup-manager .row-actions {
+    width: 100%;
+  }
+  .backup-manager .row-actions > * {
+    flex: 1;
+  }
+  .account-management .row-actions {
+    flex-wrap: wrap;
+  }
+  .backup-manager > .section-heading > button {
+    width: 100%;
+  }
+}

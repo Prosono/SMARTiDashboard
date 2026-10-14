@@ -400,6 +400,9 @@ export function Updates({ lang }: { lang: string }) {
   const [selected, select] = useState<Update | null>(null);
   const [backup, setBackup] = useState(false);
   const w = useWork(lang);
+  const available = q.data?.filter(
+    (u) => (u.state === "on" && u.can_install) || u.in_progress || u.pending,
+  );
   return (
     <section>
       <div className="page-heading">
@@ -416,7 +419,7 @@ export function Updates({ lang }: { lang: string }) {
       {q.isError && <LoadError lang={lang} retry={() => void q.refetch()} />}
       {q.isPending && <p>{t("Henter oppdateringer …", "Loading updates …")}</p>}
       <div className="management-rows">
-        {q.data?.map((u) => (
+        {available?.map((u) => (
           <article className="system-row" key={u.entity_id}>
             {u.smarti || smartiName(u.name) !== u.name ? (
               <img
@@ -534,11 +537,11 @@ export function Updates({ lang }: { lang: string }) {
           </article>
         ))}
       </div>
-      {q.data?.length === 0 && (
+      {available?.length === 0 && (
         <p className="empty">
           {t(
-            "Ingen oppdateringskilder er tilgjengelige ennå.",
-            "No update sources are available yet.",
+            "Alt er oppdatert. Ingen tilgjengelige oppdateringer.",
+            "Everything is up to date. No updates available.",
           )}
         </p>
       )}

@@ -5,6 +5,7 @@ test("home settings location and household editing stay in dialogs", async ({ pa
   const req=route.request(),url=req.url();
   if(req.method()==="PUT"){saved=req.postDataJSON();return route.fulfill({json:{saved:true}});}
   if(req.method()==="POST"){personSaved=req.postDataJSON();return route.fulfill({json:{id:"p"}});}
+  if(url.endsWith("/operations"))return route.fulfill({json:[]});
   if(url.endsWith("/home"))return route.fulfill({json:{location_name:"Mitt hjem",latitude:58.1,longitude:8,elevation:12,time_zone:"Europe/Oslo"}});
   if(url.endsWith("/people"))return route.fulfill({json:{people:[],trackers:[{id:"device_tracker.phone",name:"Telefon"}]}});
   return route.fulfill({json:{demo:false,unavailable:[],host:{hostname:"SMARTi sentral",operating_system:"Home Assistant OS",disk_free:32,disk_used:32,disk_total:64},core:{cpu_percent:12,memory_percent:25,memory_usage:1024,memory_limit:4096},network:[{interface:"eth0",type:"ethernet",connected:true,primary:true,addresses:["192.168.1.2/24"]}],backups:[{slug:"a",name:"Home Assistant backup",date:"2026-10-14T08:00:00Z",size:300,type:"full",protected:true}]}});
@@ -21,7 +22,7 @@ test("home settings location and household editing stay in dialogs", async ({ pa
  await dialog.getByLabel("Hjemmets navn").fill("Huset vårt");
  await dialog.getByRole("button",{name:"Lagre plassering"}).click();
  await expect(dialog).toHaveCount(0);expect(saved.location_name).toBe("Huset vårt");
- await page.getByRole("button",{name:"Legg til person",exact:true}).click();
+ await page.getByRole("button",{name:"Legg til person uten innlogging",exact:true}).click();
  const person=page.getByRole("dialog",{name:"Legg til person"});
  await person.getByLabel("Navn",{exact:true}).fill("Ola");
  await person.getByLabel("Telefon",{exact:true}).check();

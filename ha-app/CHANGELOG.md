@@ -1,3 +1,13 @@
+# 1.10.0
+
+- Show only installable available updates and ongoing installations; hide up-to-date and unsupported update entries.
+- Redesign backup management with password confirmation, persistent recent activity, streamed administrator-only downloads and reviewed restoration of full or partial backups.
+- Restore the contents recorded in the selected backup after explicit confirmation; keep uncertain results distinct from completion and prevent replay of the same restore request.
+- Combine linked SMARTi accounts and controller people into one household list with access labels, profile photos and presence editing. Keep people without login and home-screen visibility settings in this section.
+- Refine Settings layout and mobile actions.
+
+Prepared locally. Backup/restore APIs are tested with mocked Supervisor responses; an actual restoration and reconnection must still be validated on a test controller.
+
 # 1.9.0
 
 - Move controller metrics to the top of Settings, add real sampled history behind CPU, memory and storage values, and remove automation cards from this tab.
