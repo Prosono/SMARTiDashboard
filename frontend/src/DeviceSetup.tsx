@@ -1,7 +1,16 @@
+import { ProtocolLogo } from "./ProtocolLogo";
+import "./deviceSetup.css";
 import { PairingFinish, type PairedDevice } from "./PairingFinish";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowUpRight, Radio, LoaderCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  CheckCircle2,
+  LoaderCircle,
+  Lightbulb,
+  BookOpen,
+} from "lucide-react";
 import { api, ApiError } from "./api";
 import { WirelessDevices } from "./WirelessDevices";
 import { ZigbeeStatus } from "./ZigbeeStatus";
@@ -236,7 +245,12 @@ export function DeviceSetup({
         <ArrowLeft size={17} />
         {t.back}
       </button>
-      <div className="page-heading">
+      <div className="page-heading setup-hero">
+        <img
+          className="setup-hero-art"
+          src={new URL("brand/setup-devices.png", document.baseURI).href}
+          alt=""
+        />
         <span className="eyebrow">SMARTi</span>
         <h1>{t.title}</h1>
         <p>{t.intro}</p>
@@ -260,6 +274,37 @@ export function DeviceSetup({
           {error}
         </p>
       )}
+      {(!s || s.setup_completed) && (
+        <div className="setup-welcome">
+          <span className="setup-welcome-icon">
+            <Lightbulb />
+          </span>
+          <div>
+            <span className="eyebrow">
+              {lang === "en" ? "Get started" : "Kom i gang"}
+            </span>
+            <h2>
+              {lang === "en"
+                ? "A smarter home starts here."
+                : "Et smartere hjem starter her."}
+            </h2>
+            <p>
+              {lang === "en"
+                ? "Choose a connection below. After pairing, give your device a name and choose its room."
+                : "Velg tilkobling nedenfor. Etter paring gir du enheten et navn og velger hvilket rom den hører til."}
+            </p>
+          </div>
+          <aside>
+            <BookOpen size={20} />
+            <strong>Tips</strong>
+            <p>
+              {lang === "en"
+                ? "Keep the device nearby and follow the manufacturer's pairing instructions."
+                : "Ha enheten i nærheten og følg produsentens veiledning for å sette den i paringsmodus."}
+            </p>
+          </aside>
+        </div>
+      )}
       {s?.operation === "remove" && s.radio_open && (
         <div className="pairing-progress" role="status">
           <p>
@@ -275,8 +320,19 @@ export function DeviceSetup({
           </button>
         </div>
       )}
-      {s && s.operation !== "remove" && (
-        <div className="pairing-progress" aria-live="polite">
+      {s && !s.setup_completed && s.operation !== "remove" && (
+        <div
+          className="pairing-progress"
+          data-status={s.status}
+          aria-live="polite"
+        >
+          <div className="pairing-status-icon" aria-hidden="true">
+            {s.status === "paired" ? (
+              <CheckCircle2 />
+            ) : (
+              <LoaderCircle className={s.radio_open ? "spin" : ""} />
+            )}
+          </div>
           <span className="eyebrow">
             {s.provider === "zigbee2mqtt" ? "Zigbee2MQTT" : "Z-Wave JS"}
           </span>
@@ -377,28 +433,56 @@ export function DeviceSetup({
           )}
         </div>
       )}
-      <ControllerStatus
-        lang={lang}
-        changed={() => {
-          setError("");
-          void session.refetch();
-          void providers.refetch();
-        }}
-      />
-      <ZigbeeStatus lang={lang} />
+      <div className="setup-diagnostics">
+        <h2>
+          {lang === "en" ? "Connection & support" : "Tilkobling og hjelp"}
+        </h2>
+        <ControllerStatus
+          lang={lang}
+          changed={() => {
+            setError("");
+            void session.refetch();
+            void providers.refetch();
+          }}
+        />
+        <ZigbeeStatus lang={lang} />
+      </div>
+      <div className="setup-section-heading">
+        <h2>{lang === "en" ? "Add devices" : "Legg til enheter"}</h2>
+        <span>
+          {lang === "en"
+            ? "Look for the symbol on the device"
+            : "Se etter symbolet på enheten"}
+        </span>
+      </div>
       <div className="pairing-providers">
         {providers.isPending && <LoaderCircle aria-label="Loading" />}
         {providers.data?.map((p) => (
-          <article key={p.id} className="pairing-provider">
-            <Radio size={24} aria-hidden="true" />
+          <article key={p.id} className="pairing-provider" data-protocol={p.id}>
+            <div className="setup-protocol-brand">
+              <ProtocolLogo provider={p.id} />
+            </div>
             <div>
               <h2>{p.id === "zigbee2mqtt" ? "Zigbee2MQTT" : "Z-Wave JS"}</h2>
-              <p className="muted">
+              <span
+                className="setup-provider-state"
+                data-ready={p.status === "ready"}
+              >
+                <i />
                 {p.status === "ready"
                   ? t.ready
                   : p.status === "demo"
                     ? t.demo
                     : t.missing}
+              </span>
+              <p className="muted">
+                {p.id === "zigbee2mqtt"
+                  ? lang === "en"
+                    ? "Connect lights, sensors and switches to your Zigbee network."
+                    : "Koble lys, sensorer og brytere til Zigbee-nettverket ditt."
+                  : lang === "en"
+                    ? "Add devices securely through your Z-Wave controller."
+                    : "Legg til enheter trygt gjennom Z-Wave-kontrolleren din."}
               </p>
               {p.status === "unavailable" && (
                 <p>
@@ -455,6 +539,9 @@ export function DeviceSetup({
         ))}
       </div>
       <p className="muted">{t.auto}</p>
+      <div className="setup-section-heading">
+        <h2>{lang === "en" ? "Other connections" : "Andre tilkoblinger"}</h2>
+      </div>
       <WirelessDevices lang={lang} />
     </section>
   );

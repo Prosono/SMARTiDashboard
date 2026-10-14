@@ -1,0 +1,375 @@
+.device-setup {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+.device-setup .setup-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 24px 0;
+  padding: 24px 0;
+}
+.setup-hero-art {
+  position: absolute;
+  z-index: -1;
+  right: -15px;
+  bottom: -22px;
+  width: 40%;
+  height: 300px;
+  object-fit: contain;
+  pointer-events: none;
+}
+.device-setup .setup-hero h1 {
+  max-width: 21ch;
+  width: 68%;
+  font-size: clamp(32px, 3.6vw, 49px);
+  letter-spacing: -0.045em;
+  line-height: 1.12;
+  margin: 18px 0 14px;
+}
+.device-setup .setup-hero p {
+  max-width: 65%;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.setup-welcome {
+  display: grid;
+  grid-template-columns: 80px 1fr 260px;
+  gap: 24px;
+  padding: 28px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px #00000004;
+}
+.setup-welcome-icon {
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 12%, var(--surface));
+}
+.setup-welcome-icon svg {
+  width: 36px;
+  height: 36px;
+}
+.setup-welcome h2 {
+  font-size: 25px;
+  letter-spacing: -0.03em;
+  margin: 10px 0;
+}
+.setup-welcome p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+}
+.setup-welcome aside {
+  padding: 20px;
+  border-left: 1px solid var(--line);
+  background: var(--soft);
+  border-radius: 12px;
+  font-size: 13px;
+}
+.setup-welcome aside svg {
+  vertical-align: middle;
+  margin-right: 10px;
+  color: var(--orange);
+}
+.setup-welcome aside p {
+  font-size: 12px;
+  margin-top: 10px;
+}
+.setup-diagnostics {
+  margin: 18px 0 26px;
+}
+.setup-diagnostics > h2 {
+  display: none;
+}
+.device-setup .controller-status {
+  border-radius: 18px;
+  background: var(--surface);
+  padding: 24px;
+  margin: 0 0 14px;
+}
+.device-setup .controller-status > h2 {
+  font-size: 20px;
+}
+.device-setup .controller-status > button {
+  width: 100%;
+  margin-top: 16px;
+  text-align: left;
+  background: var(--soft);
+  border-radius: 10px;
+}
+.setup-section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 2px 12px;
+  align-items: baseline;
+}
+.setup-section-heading h2 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+.setup-section-heading > span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.device-setup .pairing-providers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.device-setup .pairing-provider {
+  --protocol-accent: #368bdd;
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  padding: 23px 26px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(
+    100deg,
+    var(--surface) 55%,
+    color-mix(in srgb, var(--protocol-accent) 9%, var(--surface))
+  );
+}
+.device-setup .pairing-provider::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -45px;
+  top: -65px;
+  width: 220px;
+  height: 220px;
+  border: 24px solid color-mix(in srgb, var(--protocol-accent) 5%, transparent);
+  box-shadow: 0 0 0 24px
+    color-mix(in srgb, var(--protocol-accent) 3%, transparent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.device-setup .pairing-provider[data-protocol="zigbee2mqtt"] {
+  --protocol-accent: #e22c70;
+}
+.device-setup .pairing-provider[data-protocol="matter"] {
+  --protocol-accent: #25ac7a;
+}
+.setup-protocol-brand {
+  display: grid;
+  place-items: center;
+  width: 105px;
+  height: 76px;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 4px 18px #00000005;
+}
+.setup-protocol-brand .protocol-logo {
+  width: 90px;
+  height: 54px;
+  object-fit: contain;
+}
+.setup-provider-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 7px;
+}
+.setup-provider-state i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.setup-provider-state[data-ready="true"] i {
+  background: #219e73;
+}
+.device-setup .pairing-provider h2 {
+  font-size: 22px;
+  letter-spacing: -0.035em;
+  margin: 0;
+}
+.device-setup .pairing-provider p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 7px 0 0;
+  max-width: 58ch;
+}
+.device-setup .pairing-provider > button {
+  min-height: 46px;
+  min-width: 175px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-radius: 10px;
+}
+.device-setup .pairing-provider > svg {
+  width: 76px;
+  height: 76px;
+  padding: 20px;
+  margin: 0 auto;
+  border-radius: 50%;
+  color: var(--protocol-accent);
+  background: color-mix(in srgb, var(--protocol-accent) 9%, var(--surface));
+}
+.device-setup > .muted {
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.device-setup .pairing-progress {
+  position: relative;
+  border-radius: 20px;
+  padding: 28px 30px 28px 110px;
+  background: var(--surface);
+}
+.pairing-status-icon {
+  position: absolute;
+  left: 25px;
+  top: 28px;
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  border-radius: 50%;
+  color: var(--orange);
+}
+.device-setup .pairing-progress[data-status="paired"] .pairing-status-icon {
+  color: #219e73;
+}
+.device-setup .pairing-progress h2 {
+  font-size: 27px;
+  letter-spacing: -0.03em;
+}
+.device-setup .pairing-progress p {
+  font-size: 14px;
+  line-height: 1.7;
+}
+@media (max-width: 850px) {
+  .setup-welcome {
+    grid-template-columns: 60px 1fr;
+    gap: 16px;
+  }
+  .setup-welcome-icon {
+    width: 60px;
+    height: 60px;
+  }
+  .setup-welcome aside {
+    grid-column: 1 / -1;
+    border-left: 0;
+  }
+  .device-setup .pairing-provider {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .setup-protocol-brand {
+    width: 80px;
+  }
+  .setup-protocol-brand .protocol-logo {
+    width: 70px;
+  }
+  .device-setup .pairing-provider > button {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+@media (max-width: 550px) {
+  .device-setup .setup-hero {
+    padding-top: 10px;
+    min-height: 320px;
+    justify-content: flex-start;
+  }
+  .device-setup .setup-hero h1 {
+    width: 100%;
+    font-size: 33px;
+    max-width: 20ch;
+  }
+  .device-setup .setup-hero p {
+    max-width: 100%;
+    font-size: 13px;
+  }
+  .setup-hero-art {
+    width: 180px;
+    height: 120px;
+    bottom: -5px;
+    right: 0;
+  }
+  .setup-welcome {
+    padding: 20px;
+    grid-template-columns: 1fr;
+  }
+  .setup-welcome-icon {
+    display: none;
+  }
+  .setup-welcome h2 {
+    font-size: 23px;
+  }
+  .setup-section-heading > span {
+    display: none;
+  }
+  .device-setup .pairing-provider {
+    padding: 20px;
+    gap: 14px;
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .setup-protocol-brand {
+    width: 64px;
+    height: 60px;
+  }
+  .setup-protocol-brand .protocol-logo {
+    width: 56px;
+  }
+  .device-setup .pairing-provider > svg {
+    width: 60px;
+    height: 60px;
+    padding: 16px;
+  }
+  .device-setup .pairing-provider > button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .device-setup .pairing-provider h2 {
+    font-size: 21px;
+  }
+  .device-setup .pairing-progress {
+    padding: 24px;
+  }
+  .pairing-status-icon {
+    position: static;
+    margin-bottom: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .device-setup .spin {
+    animation: none;
+  }
+}
+.device-setup .controller-status > button {
+  padding: 13px 16px;
+  min-height: 46px;
+  border: 1px solid var(--line);
+}
+.device-setup .controller-status > button:hover:not(:disabled) {
+  border-color: var(--orange);
+}

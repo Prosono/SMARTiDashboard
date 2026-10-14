@@ -1,3 +1,4 @@
+import { controlState } from "./controlState";
 import { ProtocolLogo } from "./ProtocolLogo";
 import { Thermostat } from "./Thermostat";
 import { useEffect, useRef, useState } from "react";
@@ -364,7 +365,8 @@ export function DeviceControl({
       <div>
         <strong>{c.name}</strong>
         <span>
-          {c.state} {String(c.attributes.unit_of_measurement ?? "")}
+          {controlState(c, c.state, no ? "nb" : "en")}{" "}
+          {String(c.attributes.unit_of_measurement ?? "")}
         </span>
       </div>
       {power && (

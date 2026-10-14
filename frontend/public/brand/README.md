@@ -13,3 +13,5 @@ SMARTi Hub product image: smarti-hub.png, supplied by the creator in this chat o
 - `zwave-logo.png`: original Z-Wave wordmark distributed by the Home Assistant brand library, https://brands.home-assistant.io/zwave_js/logo.png.
 
 Images are bundled unchanged and displayed on a neutral white backing to preserve brand colors and legibility across themes. Used to identify protocols, not to assert SMARTi product certification. Controller rows retain actual configured/model images when available; protocol logos are the fallback, not an invented hardware photograph. Trademark ownership remains with the respective owners.
+
+- `setup-devices.png`: AI-generated decorative smart-home product illustration for the connection setup page (2026-10-14). Unbranded illustrative devices, not a compatibility claim.

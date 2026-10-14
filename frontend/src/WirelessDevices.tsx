@@ -59,7 +59,7 @@ export function WirelessDevices({ lang }: { lang: string }) {
   return (
     <>
       <div className="pairing-providers">
-        <article className="pairing-provider">
+        <article className="pairing-provider" data-protocol="bluetooth">
           <Bluetooth size={24} />
           <div>
             <h2>Bluetooth</h2>
@@ -78,7 +78,7 @@ export function WirelessDevices({ lang }: { lang: string }) {
             <ArrowUpRight size={17} />
           </button>
         </article>
-        <article className="pairing-provider">
+        <article className="pairing-provider" data-protocol="matter">
           <Network size={24} />
           <div>
             <h2>Matter</h2>

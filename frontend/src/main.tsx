@@ -1,3 +1,4 @@
+import { controlState } from "./controlState";
 import { ProtocolLogo } from "./ProtocolLogo";
 import { RadioAdvanced } from "./RadioAdvanced";
 import { Apps } from "./manage/Apps";
@@ -1083,31 +1084,7 @@ function Device({
       setMessage(t.loadError);
     }
   }
-  let state =
-    c.state === "on"
-      ? t.on
-      : c.state === "off"
-        ? t.off
-        : c.state === "unknown"
-          ? t.unknown
-          : c.state === "unavailable"
-            ? t.unavailable
-            : c.state;
-  if (c.domain === "binary_sensor" && c.availability === "available") {
-    const kind = String(c.attributes.device_class || "");
-    if (["door", "window", "opening", "garage_door"].includes(kind))
-      state = c.state === "on" ? t.open : t.closed;
-    else if (kind === "motion") state = c.state === "on" ? t.motion : t.clear;
-    else state = c.state === "on" ? t.detected : t.notDetected;
-  }
-  if (c.domain === "lock" && c.availability === "available") {
-    state =
-      c.state === "locked"
-        ? t.locked
-        : c.state === "unlocked"
-          ? t.unlocked
-          : c.state;
-  }
+  const state = controlState(c, c.state, document.documentElement.lang);
   return (
     <article
       className={

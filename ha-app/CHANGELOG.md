@@ -1,3 +1,19 @@
+# 1.19.1
+
+- Use shared, device-class-aware state labels in protocol and integration device dialogs, device cards, history tables, entity pickers and automation editors.
+- Display normalized door/window contacts as Open/Closed (Åpen/Lukket), with semantic labels for motion, moisture, smoke, battery, locks and other binary sensor classes in Norwegian and English.
+- Preserve unknown/unavailable states and raw automation/service values; never infer a closed or safe condition from missing data.
+
+Prepared locally, not published. State mapping follows Home Assistant binary-sensor device classes; no device-name guessing or raw Zigbee contact inversion.
+
+# 1.19.0
+
+- Redesign device setup with a dedicated smart-home illustration, an introductory help panel and wide, color-coded connection rows.
+- Show controller status above connection choices, retain official Zigbee/Z-Wave logos, and group Bluetooth/Matter separately.
+- Adapt the layout to mobile screens and the selected theme. Preserve pairing security, stop/recovery and the final name-and-room dialog.
+
+Prepared locally, not published. Frontend build and eight desktop/mobile pairing and wireless setup tests passed; physical pairing was not repeated on a live hub.
+
 # 1.18.1
 
 - Send radio inventory revisions over the existing authenticated event stream for Zigbee availability, link-quality samples, inventory changes and bridge disconnections, through both MQTT and the Zigbee2MQTT frontend/proxy transport.

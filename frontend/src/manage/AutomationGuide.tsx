@@ -1,3 +1,4 @@
+import { controlState } from "../controlState";
 import { EntityPicker } from "./EntityPicker";
 import { useState, useRef, useEffect } from "react";
 import {
@@ -109,21 +110,7 @@ export function AutomationGuide({
   );
   const sensors = home.controls.filter((x) => x.domain === "binary_sensor");
   const stateText = (on: boolean) =>
-    ["door", "window", "opening"].includes(
-      String(sensor?.attributes.device_class),
-    )
-      ? on
-        ? t("åpnes", "opens")
-        : t("lukkes", "closes")
-      : ["motion", "occupancy", "presence"].includes(
-            String(sensor?.attributes.device_class),
-          )
-        ? on
-          ? t("registrerer aktivitet", "detects activity")
-          : t("ikke lenger registrerer aktivitet", "stops detecting activity")
-        : on
-          ? t("blir aktiv", "becomes active")
-          : t("blir inaktiv", "becomes inactive");
+    `${t("blir", "becomes")} ${controlState(sensor, on ? "on" : "off", lang).toLocaleLowerCase()}`;
   const when =
     r?.trigger === "time"
       ? t("klokken er ", "the time is ") + r.at?.slice(0, 5)

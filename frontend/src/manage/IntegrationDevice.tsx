@@ -1,3 +1,4 @@
+import { controlState } from "../controlState";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Box, ChartNoAxesCombined } from "lucide-react";
@@ -478,7 +479,8 @@ export function IntegrationDevice({
                                     )}
                                   </td>
                                   <td>
-                                    {p.state} {data?.unit}
+                                    {controlState(sensor, p.state, lang)}{" "}
+                                    {data?.unit}
                                   </td>
                                 </tr>
                               ))}
