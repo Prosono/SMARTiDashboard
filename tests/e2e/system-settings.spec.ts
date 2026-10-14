@@ -5,6 +5,7 @@ test("home settings location and household editing stay in dialogs", async ({ pa
   const req=route.request(),url=req.url();
   if(req.method()==="PUT"){saved=req.postDataJSON();return route.fulfill({json:{saved:true}});}
   if(req.method()==="POST"){personSaved=req.postDataJSON();return route.fulfill({json:{id:"p"}});}
+  if(url.endsWith("/zones"))return route.fulfill({json:[]});
   if(url.endsWith("/operations"))return route.fulfill({json:[]});
   if(url.endsWith("/home"))return route.fulfill({json:{location_name:"Mitt hjem",latitude:58.1,longitude:8,elevation:12,time_zone:"Europe/Oslo"}});
   if(url.endsWith("/people"))return route.fulfill({json:{people:[],trackers:[{id:"device_tracker.phone",name:"Telefon"}]}});

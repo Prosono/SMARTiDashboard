@@ -3,7 +3,7 @@ import path from 'node:path';
 const now=Date.now()/1000;
 const system={demo:false,unavailable:[],history:[0,30,60].map((n,i)=>({time:now-60+n,cpu:10+i*5,memory:30+i,storage:24+i/10})),host:{hostname:'Hub',disk_total:64,disk_used:24.2,disk_free:39.8},core:{cpu_percent:20,memory_percent:32,memory_usage:536870912,memory_limit:2147483648},network:[{interface:'eth0',type:'ethernet',connected:true,primary:true,addresses:['192.168.1.20/24']}],backups:[]};
 test.beforeEach(async({page})=>{
- await page.route('**/api/manage/settings/**',async route=>{const url=route.request().url();if(url.endsWith('/system'))return route.fulfill({json:system});if(url.endsWith('/home'))return route.fulfill({json:{location_name:'Mitt hjem',latitude:58,longitude:8,elevation:1,time_zone:'Europe/Oslo'}});if(url.endsWith('/people'))return route.fulfill({json:{people:[],trackers:[]}});return route.fallback();});
+ await page.route('**/api/manage/settings/**',async route=>{const url=route.request().url();if(url.endsWith('/zones'))return route.fulfill({json:[]});if(url.endsWith('/system'))return route.fulfill({json:system});if(url.endsWith('/home'))return route.fulfill({json:{location_name:'Mitt hjem',latitude:58,longitude:8,elevation:1,time_zone:'Europe/Oslo'}});if(url.endsWith('/people'))return route.fulfill({json:{people:[],trackers:[]}});return route.fallback();});
  await page.route('**/api/manage/accounts',r=>r.fulfill({json:[]}));
  await page.route('**/api/manage/accounts/pending',r=>r.fulfill({json:[]}));
  await page.goto('/');await page.getByLabel('Brukernavn',{exact:true}).fill('tester');await page.getByLabel('Passord',{exact:true}).fill('test-password-not-for-live');await page.getByRole('button',{name:'Logg inn',exact:true}).click();await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
@@ -59,15 +59,15 @@ test('linked household account and person share one row',async({page})=>{
  const household=page.locator('.account-management');await expect(household.getByText('Ola',{exact:true})).toHaveCount(1);await expect(household).toContainText('Administrator');await household.getByRole('button',{name:/Person og tilstedeværelse/}).click();const d=page.getByRole('dialog',{name:'Rediger person'});await expect(d.getByLabel('Telefon',{exact:true})).toBeChecked();
 });
 test('personal panels precede hub, real profile photo and usage levels',async({page})=>{
- await page.route('https://www.openstreetmap.org/**',r=>r.fulfill({contentType:'text/html; charset=utf-8',body:'<p>OpenStreetMap · test</p>'}));
+ await page.route('https://tile.openstreetmap.org/**',r=>r.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=','base64')}));
  await page.route('**/api/manage/accounts',r=>r.fulfill({json:[{id:2,name:'ola',display_name:'Ola',role:'admin',linked:true,ha_user_id:'ha2',photo:true}]}));
  await page.route('**/api/manage/accounts/2/photo*',r=>r.fulfill({path:path.resolve('public/brand/smarti-logo.png'),contentType:'image/png'}));
  let cpu=39.9,memory=40,used=71;
  await page.route('**/api/manage/settings/system',r=>r.fulfill({json:{...system,core:{...system.core,cpu_percent:cpu,memory_percent:memory},host:{...system.host,disk_total:100,disk_used:used,disk_free:100-used}}}));
  await page.reload();await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
  await expect(page.locator('.account-person img')).toHaveAttribute('src',/accounts\/2\/photo/);
- await expect(page.locator('iframe[title="Kart · Mitt hjem"]')).toHaveAttribute('src',/marker=58%2C8/);
- await expect(page.frameLocator('iframe[title="Kart · Mitt hjem"]').getByText('OpenStreetMap · test')).toBeVisible();
+ await expect(page.getByLabel('Kart · Mitt hjem')).toBeVisible();
+ await expect(page.locator('.smarti-map-pin')).toBeVisible();
  await expect(page.locator('[data-metric="cpu"]')).toHaveClass(/metric-good/);await expect(page.locator('[data-metric="memory"]')).toHaveClass(/metric-moderate/);await expect(page.locator('[data-metric="storage"]')).toHaveClass(/metric-high/);
  const positions=await page.evaluate(()=>({personal:document.querySelector('.settings-personal-grid')!.getBoundingClientRect().bottom,hub:document.querySelector('.hub-overview')!.getBoundingClientRect().top,columns:getComputedStyle(document.querySelector('.settings-personal-grid')!).gridTemplateColumns.split(' ').length}));expect(positions.personal).toBeLessThan(positions.hub);expect(positions.columns).toBe(test.info().project.name==='mobile'?1:2);
  await page.locator('.home-settings').screenshot({path:`test-results/personal-hub-${test.info().project.name}.png`});
@@ -79,4 +79,30 @@ test('hub product image stays uncropped in dark palette',async({page})=>{
  await expect.poll(()=>image.evaluate((el:HTMLImageElement)=>el.naturalWidth)).toBe(1774);
  await expect(image).toHaveCSS('object-fit','contain');
  await page.locator('.hub-overview').screenshot({path:`test-results/hub-product-dark-${test.info().project.name}.png`});
+});
+test('map edits are drafts and zones support create edit and confirmed delete',async({page})=>{
+ let homeWrites=0;let savedHome:any;let zones:any[]=[];let deletes=0;
+ await page.route('**/api/manage/settings/home',r=>{if(r.request().method()==='PUT'){homeWrites++;savedHome=r.request().postDataJSON();return r.fulfill({json:{saved:true}});}return r.fallback();});
+ await page.route('**/api/manage/settings/zones',r=>{if(r.request().method()==='POST'){zones=[{id:'work',...r.request().postDataJSON()}];return r.fulfill({json:{id:'work'}});}return r.fulfill({json:zones});});
+ await page.route('**/api/manage/settings/zones/work',r=>{if(r.request().method()==='DELETE'){deletes++;zones=[];}else zones=[{id:'work',...r.request().postDataJSON()}];return r.fulfill({json:{saved:true}});});
+ await page.getByRole('button',{name:'Endre plassering',exact:true}).click();
+ let d=page.getByRole('dialog',{name:'Hjemmets plassering',exact:true});
+ const oldLat=await d.getByLabel('Breddegrad').inputValue();
+ await d.locator('.home-map-canvas').click({position:{x:100,y:100}});
+ await expect(d.getByLabel('Breddegrad')).not.toHaveValue(oldLat);expect(homeWrites).toBe(0);
+ if(test.info().project.name==='desktop'){
+ const marker=d.locator('.smarti-map-pin');const p=await marker.boundingBox();
+ const before=await d.getByLabel('Lengdegrad').inputValue();
+ await page.mouse.move(p!.x+20,p!.y+20);await page.mouse.down();await page.mouse.move(p!.x+65,p!.y+30,{steps:8});await page.mouse.up();
+ await expect(d.getByLabel('Lengdegrad')).not.toHaveValue(before);
+ }
+ await d.getByRole('button',{name:'Lagre plassering'}).click();await expect(d).toHaveCount(0);expect(homeWrites).toBe(1);expect(savedHome.latitude).not.toBe(58);
+ await page.getByRole('button',{name:'Ny sone',exact:true}).click();d=page.getByRole('dialog',{name:'Ny sone',exact:true});
+ await d.getByLabel('Navn på sonen').fill('Jobb');await d.getByLabel('Radius (meter)',{exact:true}).fill('250');
+ await d.locator('.home-map-canvas').click({position:{x:120,y:90}});expect(zones).toHaveLength(0);
+ await d.getByRole('button',{name:'Lagre sone'}).click();await expect(d).toHaveCount(0);expect(zones[0].radius).toBe(250);
+ await page.getByRole('button',{name:'Endre Jobb',exact:true}).click();d=page.getByRole('dialog',{name:'Rediger sone'});
+ await d.getByLabel('Navn på sonen').fill('Kontoret');await d.getByRole('button',{name:'Lagre sone'}).click();await expect(d).toHaveCount(0);
+ await page.getByRole('button',{name:'Endre Kontoret'}).click();d=page.getByRole('dialog');await d.getByRole('button',{name:'Slett sone',exact:true}).click();expect(deletes).toBe(0);
+ await expect(d).toContainText('Automasjoner som bruker denne sonen');await d.getByRole('button',{name:'Slett sone',exact:true}).click();await expect(d).toHaveCount(0);expect(deletes).toBe(1);
 });

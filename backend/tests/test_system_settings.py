@@ -107,3 +107,31 @@ def test_demo_no_fake_host_values_or_mutations(client):  # noqa: F811
     assert value["core"]["cpu_percent"] is None and value["backups"] is None
     assert client.get("/api/manage/settings/home").status_code == 503
     assert client.post("/api/manage/settings/people", json={"name": "Demo"}).status_code == 503
+
+
+def test_zones_validate_and_preserve_home_and_yaml(client):  # noqa: F811
+    m = client.app.state.management
+    m.demo = False
+    calls = []
+    body = {"name": "Jobb", "latitude": 58.2, "longitude": 8.1, "radius": 150, "passive": False}
+
+    async def ws(kind, **data):
+        calls.append((kind, data))
+        if kind == "zone/list":
+            return [{"id": "work", **body}]
+        return {"id": "work"}
+
+    m.ws = ws
+    assert client.get("/api/manage/settings/zones").json() == [{"id": "work", **body}]
+    for invalid in [{"latitude": 91}, {"radius": 0}, {"name": "  "}, {"longitude": 181}]:
+        assert client.post("/api/manage/settings/zones", json=body | invalid).status_code == 422
+    assert client.post("/api/manage/settings/zones", json=body).status_code == 200
+    assert calls[-1] == ("zone/create", body)
+    assert client.put("/api/manage/settings/zones/work", json=body).status_code == 200
+    assert calls[-1] == ("zone/update", {"zone_id": "work", **body})
+    for id in ["home", "yaml", "missing"]:
+        assert client.delete(f"/api/manage/settings/zones/{id}").status_code == 404
+        assert client.put(f"/api/manage/settings/zones/{id}", json=body).status_code == 404
+    assert client.delete("/api/manage/settings/zones/work").status_code == 200
+    assert calls[-1] == ("zone/delete", {"zone_id": "work"})
+    assert client.post("/api/manage/settings/zones", json=body, headers={"x-csrf-token": "bad"}).status_code == 403

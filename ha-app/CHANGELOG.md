@@ -1,3 +1,13 @@
+# 1.12.0
+
+- Replace the embedded location map with an interactive, subdued Leaflet map that adapts to light/dark themes, with a SMARTi marker and zoom controls.
+- Drag the marker or tap the map in the location dialog; changes apply only after saving. Coordinate inputs remain available.
+- Rename the section to “Hjemmets plassering og soner”. Create, edit and delete stored zones with a map preview, radius and optional automation-only mode.
+- Route zone changes through administrator/CSRF-protected controller APIs, validate coordinates and radius, and protect the special home zone and YAML configuration.
+- Map tiles use OpenStreetMap and require internet access; locally bundle map code and explicitly allow the tile origin in CSP.
+
+Prepared locally, not published.
+
 # 1.11.1
 
 - Use the creator-supplied transparent SMARTi Hub image without cropping.

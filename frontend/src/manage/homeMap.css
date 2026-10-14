@@ -1,0 +1,107 @@
+.home-map-canvas {
+  height: 260px;
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  isolation: isolate;
+  z-index: 0;
+  font-family: inherit;
+}
+.home-map-canvas .leaflet-tile-pane {
+  filter: grayscale(0.85) saturate(0.35) contrast(0.92);
+}
+[data-theme="dark"] .home-map-canvas .leaflet-tile-pane {
+  filter: grayscale(1) invert(1) hue-rotate(180deg) brightness(0.7)
+    contrast(0.9);
+}
+.home-map-canvas .leaflet-control-zoom a,
+.home-map-canvas .leaflet-control-attribution {
+  background: var(--surface);
+  color: var(--text);
+}
+.home-map-canvas .leaflet-control-attribution a {
+  color: var(--text);
+}
+.home-map-canvas .leaflet-control-zoom a {
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+  border-color: var(--line);
+}
+.home-map-canvas .leaflet-control-zoom {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.smarti-map-pin span {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50% 50% 50% 5px;
+  transform: rotate(-45deg);
+  background: var(--orange);
+  color: var(--on-primary);
+  box-shadow: 0 3px 12px #0004;
+  border: 3px solid var(--surface);
+  font-size: 25px;
+}
+.home-map-caption {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 9px;
+  color: var(--muted);
+}
+.home-map-caption button {
+  padding: 7px 11px;
+  font-size: 12px;
+}
+.dashboard-settings-dialog .home-map-canvas {
+  height: 300px;
+}
+.zone-settings {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 16px;
+}
+.zone-settings header,
+.zone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.zone-settings header strong {
+  font-size: 15px;
+}
+.zone-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.zone-row > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.zone-row small {
+  color: var(--muted);
+}
+.zone-row button {
+  flex-shrink: 0;
+}
+
+.smarti-map-pin svg {
+  width: 21px;
+  height: 21px;
+  transform: rotate(45deg);
+}
+.zone-settings header button {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  white-space: nowrap;
+}

@@ -49,6 +49,22 @@ class PersonSettings(BaseModel):
         return value.strip()
 
 
+class ZoneSettings(BaseModel):
+    model_config = {"extra": "forbid"}
+    name: str = Field(min_length=1, max_length=80)
+    latitude: float = Field(ge=-90, le=90, allow_inf_nan=False)
+    longitude: float = Field(ge=-180, le=180, allow_inf_nan=False)
+    radius: float = Field(ge=1, le=100000, allow_inf_nan=False)
+    passive: bool = False
+
+    @field_validator("name")
+    @classmethod
+    def valid_name(cls, value):
+        if not value.strip():
+            raise ValueError("Name required")
+        return value.strip()
+
+
 def system_settings_router(m, admin, settings):
     router = APIRouter(prefix="/api/manage/settings", dependencies=[Depends(admin)])
 
@@ -199,6 +215,37 @@ def system_settings_router(m, admin, settings):
     async def delete_person(id: str):
         await editable(id)
         await m.ws("person/delete", person_id=id)
+        return {"deleted": True}
+
+    @router.get("/zones")
+    async def zones():
+        live()
+        # The storage collection excludes YAML zones and the special home zone.
+        result = await m.ws("zone/list")
+        return [{"id": z["id"], **{k: z.get(k) for k in ZoneSettings.model_fields}} for z in result]
+
+    async def editable_zone(id):
+        live()
+        result = await m.ws("zone/list")
+        if id == "home" or not any(z["id"] == id for z in result):
+            raise HTTPException(404, "zone_not_editable")
+
+    @router.post("/zones")
+    async def create_zone(body: ZoneSettings):
+        live()
+        result = await m.ws("zone/create", **body.model_dump())
+        return {"id": result["id"]}
+
+    @router.put("/zones/{id}")
+    async def update_zone(id: str, body: ZoneSettings):
+        await editable_zone(id)
+        await m.ws("zone/update", zone_id=id, **body.model_dump())
+        return {"saved": True}
+
+    @router.delete("/zones/{id}")
+    async def delete_zone(id: str):
+        await editable_zone(id)
+        await m.ws("zone/delete", zone_id=id)
         return {"deleted": True}
 
     return router

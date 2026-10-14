@@ -50,3 +50,9 @@ No test changes a real home's devices. The HA contract suite uses an isolated We
 - [Explicit hardware validation](docs/HARDWARE_TESTING.md)
 
 The logo remains SMARTi brand material. No repository-wide license has been selected or implied.
+
+### Home location and zones
+
+Settings → Hjemmets plassering og soner uses a locally bundled Leaflet map with subdued OpenStreetMap tiles and theme-aware controls. Tiles are fetched by the browser from `tile.openstreetmap.org` and require internet access; the displayed area is sent to that tile service. Coordinate editing remains available without tiles. Keep OpenStreetMap attribution visible and observe its tile usage policy when deploying at scale.
+
+Choose **Endre plassering**, drag the marker or tap the map, then save to update the controller's home location. **Ny sone** creates a named zone with a radius in meters; “Kun til automasjoner” marks it passive. Stored zones can be edited or deleted (with confirmation). Zones defined in YAML are outside this editor; the special home zone is managed through home location. Changes require administrator access and a connected controller; demo mode does not fabricate zones.

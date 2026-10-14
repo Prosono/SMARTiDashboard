@@ -1,3 +1,4 @@
+import { Zones } from "./Zones";
 import { HomeMap } from "./HomeMap";
 import { HubStatus } from "./HubStatus";
 import { Accounts } from "./Accounts";
@@ -131,7 +132,8 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
       <div className="settings-personal-grid">
         <section className="settings-panel location-panel">
           <h3>
-            <MapPin /> {t("Hjemmets plassering", "Home location")}
+            <MapPin />{" "}
+            {t("Hjemmets plassering og soner", "Home location and zones")}
           </h3>
           {location.data ? (
             <>
@@ -155,6 +157,11 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
                 <Pencil size={17} />
                 {t("Endre plassering", "Edit location")}
               </button>
+              <Zones
+                latitude={location.data.latitude}
+                longitude={location.data.longitude}
+                lang={lang}
+              />
             </>
           ) : (
             <p>
@@ -307,6 +314,15 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
                   "Affects the home zone, sunrise/sunset and automations using location or time.",
                 )}
               </p>
+              <HomeMap
+                latitude={place.latitude}
+                longitude={place.longitude}
+                name={place.location_name}
+                lang={lang}
+                onChange={(point) => {
+                  if (!busy) setPlace({ ...place, ...point });
+                }}
+              />
               <label>
                 {t("Hjemmets navn", "Home name")}
                 <input
