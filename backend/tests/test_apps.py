@@ -213,3 +213,53 @@ def test_app_images_fixed_routes_bounded_raster_and_self_protection(client, supe
         assert c.get("/api/manage/apps/core_test/image?source=installed").status_code == 502
         content["body"] = b"\x89PNG\r\n\x1a\n" + b"a" * 2_000_001
         assert c.get("/api/manage/apps/core_test/image?source=installed").status_code == 502
+
+
+def test_radio_ui_only_returns_running_ingress_targets(client, monkeypatch):  # noqa: F811
+    from app.system_operations import Supervisor
+
+    entries = [
+        {
+            "slug": "abc_zigbee2mqtt_proxy",
+            "name": "Zigbee2MQTT Proxy",
+            "ingress": True,
+            "state": "started",
+            "ingress_url": "/api/hassio_ingress/safe-token",
+        },
+        {
+            "slug": "abc_zwavejs2mqtt",
+            "name": "Z-Wave JS UI",
+            "ingress": True,
+            "state": "started",
+            "ingress_url": "https://external.invalid/",
+        },
+        {
+            "slug": "abc_other",
+            "name": "Other",
+            "ingress": True,
+            "state": "started",
+            "ingress_url": "/api/hassio_ingress/other",
+        },
+    ]
+
+    async def request(self, method, path, data=None):
+        assert method == "GET"
+        if path == "/addons/self/info":
+            return {"slug": "abc_smarti"}
+        if path == "/addons":
+            return {"addons": entries}
+        return next(e for e in entries if path == "/addons/" + e["slug"] + "/info")
+
+    monkeypatch.setattr(Supervisor, "request", request)
+    base = "/api/manage/apps/radio-ui/"
+    result = client.get(base + "zigbee2mqtt").json()
+    assert len(result) == 1 and result[0]["available"]
+    assert result[0]["url"] == "/api/hassio_ingress/safe-token"
+    assert client.get(base + "zwave_js").json()[0]["url"] is None
+    entries[0]["state"] = "stopped"
+    assert not client.get(base + "zigbee2mqtt").json()[0]["available"]
+    assert client.get(base + "other").status_code == 422
+    client.post("/api/users", json={"name": "viewer", "password": "another long password", "role": "user"})
+    client.post("/api/logout")
+    login(client, "viewer", "another long password")
+    assert client.get(base + "zigbee2mqtt").status_code == 403

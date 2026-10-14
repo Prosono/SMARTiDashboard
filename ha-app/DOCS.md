@@ -188,3 +188,11 @@ Settings now starts with controller metrics; automation cards remain in their de
 **Edit network** supports IPv4 DHCP or static addresses (CIDR), gateway and DNS; wireless interfaces also support open or WPA/WPA2 Personal SSID/password changes. IPv6 is left unchanged. Settings are rechecked before applying. Review the exact interface and configuration before confirming, and retain local access to recover after an IP/Wi-Fi change. A timeout is an unconfirmed result, not proof that the change failed. Check the controller at its new address before starting another request.
 
 The app requires `hassio_role: manager` for network writes, backup creation and job status. All exposed routes remain administrator-only and CSRF-protected, with fixed upstream endpoints and credentials held server-side. Writes carry request IDs so an identical retry does not repeat the action. No network changes or backups are executed during local development tests.
+
+## Avansert Zigbee- og Z-Wave-visning
+
+Administratorer kan åpne **Enheter → Zigbee/Z-Wave → Avansert modus**. SMARTi viser den installerte appens originale webgrensesnitt i en stor dialog. Dette gjelder også Zigbee2MQTT Proxy når proxy-appen tilbyr Ingress. Ved flere installasjoner velger du riktig kontrollpanel.
+
+SMARTi må åpnes gjennom hjemmesentralens Ingress/app-tilgang, og målappen må kjøre og tilby Ingress. Nettleserens eksisterende Ingress-tilgang brukes; ved innloggingsfeil må SMARTi lastes inn på nytt. En Z-Wave-integrasjon alene betyr ikke at et separat Z-Wave-webgrensesnitt finnes. Eksterne Docker-grensesnitt uten Ingress er foreløpig ikke støttet.
+
+Endringer i avansert modus utføres direkte i originalappen. Lukk dialogen for å gå tilbake til SMARTi. Originalappen beholder sitt eget design og språk.

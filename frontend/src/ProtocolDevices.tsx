@@ -1,3 +1,4 @@
+import { RadioAdvanced } from "./RadioAdvanced";
 import { ZigbeeStatus } from "./ZigbeeStatus";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -153,6 +154,7 @@ export function ProtocolDevices({
               : "Device paired. Waiting for the device list to update …"}
         </p>
       )}
+      {admin && <RadioAdvanced provider={provider} lang={lang} />}
       <div className="protocol-intro">
         <Radio size={24} />
         <div>

@@ -128,6 +128,42 @@ def apps_router(m, admin, settings):
             merged[slug] = {**merged.get(slug, {}), **item}
         return [view(a, slug in installed) for slug, a in merged.items() if not protected(a, own)]
 
+    @router.get("/radio-ui/{provider}")
+    async def radio_ui(provider: Literal["zigbee2mqtt", "zwave_js"]):
+        own = await own_slug()
+        installed = await supervisor.request("GET", "/addons")
+        candidates = []
+        for item in installed.get("addons", []):
+            slug = item.get("slug", "")
+            if protected(item, own):
+                continue
+            valid_slug(slug)
+            normalized = re.sub(r"[^a-z0-9]", "", slug.lower())
+            matches = (
+                "zigbee2mqtt" in normalized
+                if provider == "zigbee2mqtt"
+                else any(name in normalized for name in ("zwavejsui", "zwavejs2mqtt", "zwavejs"))
+            )
+            if not matches:
+                continue
+            info = await supervisor.request("GET", f"/addons/{slug}/info")
+            url = info.get("ingress_url", "")
+            available = (
+                bool(info.get("ingress"))
+                and info.get("state") == "started"
+                and bool(isinstance(url, str) and re.fullmatch(r"/api/hassio_ingress/[A-Za-z0-9_-]+/?", url))
+            )
+            candidates.append(
+                {
+                    "slug": slug,
+                    "name": info.get("name", slug),
+                    "available": available,
+                    "url": url if available else None,
+                    "state": info.get("state", "unknown"),
+                }
+            )
+        return candidates
+
     @router.get("/repositories")
     async def repositories():
         await own_slug()

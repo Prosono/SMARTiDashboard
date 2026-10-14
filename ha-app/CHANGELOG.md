@@ -1,3 +1,12 @@
+# 1.16.0
+
+- Add administrator-only Advanced mode to Zigbee and Z-Wave device overviews, embedding the installed controller app's original web interface in a large SMARTi dialog.
+- Discover Zigbee2MQTT/Proxy and Z-Wave apps through Supervisor; offer selection for multiple installations and require a running app with Ingress.
+- Reuse the current browser's Ingress access; expose only validated same-origin Ingress paths. No arbitrary external URL proxy or Supervisor token is exposed.
+- Explain missing/stopped apps and standalone access limitations. External Docker interfaces without Ingress are not supported in this version.
+
+Prepared locally, not published. API and browser tests use simulated apps; actual Ingress sessions and radio UIs still need validation on a live installation.
+
 # 1.15.1
 
 - After successful Zigbee pairing, automatically open the Zigbee device overview and place the new device first with a recently-added label.
