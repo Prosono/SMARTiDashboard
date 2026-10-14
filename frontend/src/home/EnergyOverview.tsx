@@ -1,3 +1,4 @@
+import { SettingsDialog } from "./SettingsDialog";
 import { useEffect, useId, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -6,7 +7,6 @@ import {
   TrendingUp,
   BarChart3,
   ChartNoAxesCombined,
-  X,
   Check,
   Sun,
   Battery,
@@ -249,101 +249,98 @@ export function Energy({
         </p>
       )}
       {configured && (
-        <div className="energy-settings">
-          <header>
-            <h3>{t("Din energioversikt", "Your energy overview")}</h3>
-            <button
-              className="icon-button"
-              aria-label={t("Lukk energivalg", "Close energy preferences")}
-              disabled={busy}
-              onClick={() => configure(false)}
-            >
-              <X size={19} />
-            </button>
-          </header>
-          <fieldset disabled={busy}>
-            <legend>
-              {t(
-                "Velg opptil seks målere. De summeres ikke med hverandre.",
-                "Select up to six meters. They are not added together.",
-              )}
-            </legend>
-            <div className="energy-meter-options">
-              {meters.map((c) => (
-                <label key={c.id}>
-                  <input
-                    type="checkbox"
-                    checked={draft.meters.includes(c.id)}
-                    disabled={
-                      !draft.meters.includes(c.id) && draft.meters.length >= 6
-                    }
-                    onChange={() =>
-                      setDraft({
-                        ...draft,
-                        meters: draft.meters.includes(c.id)
-                          ? draft.meters.filter((id) => id !== c.id)
-                          : [...draft.meters, c.id],
-                      })
-                    }
-                  />
-                  <span>
-                    <strong>{c.name}</strong>
-                    <small>
-                      {String(c.attributes.unit_of_measurement || "")}
-                    </small>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <div className="energy-section-options">
-              {sections.map(([id, label]) => (
-                <label key={id}>
-                  <input
-                    type="checkbox"
-                    checked={!draft.hidden.includes(id)}
-                    onChange={() =>
-                      setDraft({
-                        ...draft,
-                        hidden: draft.hidden.includes(id)
-                          ? draft.hidden.filter((v) => v !== id)
-                          : [...draft.hidden, id],
-                      })
-                    }
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-            <label>
-              {t("Graftype", "Chart type")}
-              <select
-                value={draft.chart}
-                onChange={(e) =>
-                  setDraft({
-                    ...draft,
-                    chart: e.target.value as Preferences["chart"],
-                  })
-                }
+        <SettingsDialog
+          title={t("Din energioversikt", "Your energy overview")}
+          lang={lang}
+          busy={busy}
+          onClose={() => configure(false)}
+        >
+          {error && <p role="alert">{error}</p>}{" "}
+          <div className="energy-settings">
+            <fieldset disabled={busy}>
+              <legend>
+                {t(
+                  "Velg opptil seks målere. De summeres ikke med hverandre.",
+                  "Select up to six meters. They are not added together.",
+                )}
+              </legend>
+              <div className="energy-meter-options">
+                {meters.map((c) => (
+                  <label key={c.id}>
+                    <input
+                      type="checkbox"
+                      checked={draft.meters.includes(c.id)}
+                      disabled={
+                        !draft.meters.includes(c.id) && draft.meters.length >= 6
+                      }
+                      onChange={() =>
+                        setDraft({
+                          ...draft,
+                          meters: draft.meters.includes(c.id)
+                            ? draft.meters.filter((id) => id !== c.id)
+                            : [...draft.meters, c.id],
+                        })
+                      }
+                    />
+                    <span>
+                      <strong>{c.name}</strong>
+                      <small>
+                        {String(c.attributes.unit_of_measurement || "")}
+                      </small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className="energy-section-options">
+                {sections.map(([id, label]) => (
+                  <label key={id}>
+                    <input
+                      type="checkbox"
+                      checked={!draft.hidden.includes(id)}
+                      onChange={() =>
+                        setDraft({
+                          ...draft,
+                          hidden: draft.hidden.includes(id)
+                            ? draft.hidden.filter((v) => v !== id)
+                            : [...draft.hidden, id],
+                        })
+                      }
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              <label>
+                {t("Graftype", "Chart type")}
+                <select
+                  value={draft.chart}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      chart: e.target.value as Preferences["chart"],
+                    })
+                  }
+                >
+                  <option value="bar">{t("Søyler", "Bars")}</option>
+                  <option value="line">{t("Linje", "Line")}</option>
+                </select>
+              </label>
+              <button
+                className="energy-save"
+                disabled={!draft.meters.length}
+                onClick={() => void save(draft)}
               >
-                <option value="bar">{t("Søyler", "Bars")}</option>
-                <option value="line">{t("Linje", "Line")}</option>
-              </select>
-            </label>
-            <button
-              className="energy-save"
-              disabled={!draft.meters.length}
-              onClick={() => void save(draft)}
-            >
-              <Check size={16} />
-              {t("Lagre visning", "Save view")}
-            </button>
-            {!draft.meters.length && (
-              <small>
-                {t("Velg minst én måler.", "Select at least one meter.")}
-              </small>
-            )}
-          </fieldset>
-        </div>
+                <Check size={16} />
+                {t("Lagre visning", "Save view")}
+              </button>
+              {!draft.meters.length && (
+                <small>
+                  {t("Velg minst én måler.", "Select at least one meter.")}
+                </small>
+              )}
+            </fieldset>
+          </div>
+        </SettingsDialog>
       )}
       <div className="energy-toolbar">
         <div

@@ -13,15 +13,14 @@ test.beforeEach(async ({ page }) => {
 test("scenes create without execution, edit targets, favorite and confirm activation", async ({
   page,
 }) => {
+  const sceneName = `Filmtest ${test.info().project.name} ${Date.now()}`;
   let activations = 0;
   page.on("request", (r) => {
     if (r.url().includes("/scenes/activate/")) activations++;
   });
   await page.getByRole("button", { name: "Lag scene", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Din nye scene" });
-  await dialog
-    .getByLabel("Hva skal scenen hete?")
-    .fill("Filmtest " + test.info().project.name);
+  await dialog.getByLabel("Hva skal scenen hete?").fill(sceneName);
   await dialog.getByRole("button", { name: "Filmkveld", exact: true }).click();
   await dialog.getByRole("button", { name: "Neste", exact: true }).click();
   await dialog.getByRole("checkbox", { name: /Pendellampe/ }).check();
@@ -37,9 +36,7 @@ test("scenes create without execution, edit targets, favorite and confirm activa
     .click();
   await expect(dialog).not.toBeVisible();
   expect(activations).toBe(0);
-  const card = page
-    .locator(".scene-card")
-    .filter({ hasText: "Filmtest " + test.info().project.name });
+  const card = page.locator(".scene-card").filter({ hasText: sceneName });
   await card.getByRole("button", { name: /Favorittscene:/ }).click();
   await expect(
     card.getByRole("button", { name: /Favorittscene:/ }),
@@ -154,6 +151,10 @@ test("energy choices persist, period changes and missing samples stay gaps", asy
   ).toHaveAttribute("aria-pressed", "true");
   await page.reload();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  // Software WebGL can block the initial paint; wait for the saved preference, not defaults.
+  await expect(
+    energy.getByRole("button", { name: "7 dager", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true", { timeout: 20000 });
   await expect(energy.locator(".energy-comparison")).toHaveCount(0);
   await energy.scrollIntoViewIfNeeded();
   await page.screenshot({

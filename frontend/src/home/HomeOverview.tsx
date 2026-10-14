@@ -1,3 +1,4 @@
+import { SettingsDialog } from "./SettingsDialog";
 import {
   useEffect,
   useMemo,
@@ -367,227 +368,243 @@ export function HomeOverview({
           </p>
         )}
         {configuring && (
-          <section className="home-panel home-preferences">
-            <h2>
-              {t(
-                "Dine favoritter. Vårt oppsett.",
-                "Your favorites. Our layout.",
-              )}
-            </h2>
-            <p>
-              {t(
-                "Velg det du vil ha nærmest. SMARTi organiserer resten.",
-                "Choose what matters most. SMARTi organizes the rest.",
-              )}
-            </p>
-            {!pref ? (
-              <p>{t("Laster valg…", "Loading preferences…")}</p>
-            ) : (
-              <fieldset disabled={busy}>
-                <details open>
-                  <summary>
-                    {t(
-                      "Favorittrom og rombilder",
-                      "Favorite rooms and room photos",
-                    )}
-                  </summary>
-                  <div className="home-room-options">
-                    {h.areas.map((a) => (
-                      <div key={a.area_id}>
-                        <label>
+          <SettingsDialog
+            title={t("Tilpass Hjem", "Customize Home")}
+            lang={lang}
+            busy={busy}
+            onClose={() => configure(false)}
+          >
+            <section className="home-panel home-preferences">
+              <h2>
+                {t(
+                  "Dine favoritter. Vårt oppsett.",
+                  "Your favorites. Our layout.",
+                )}
+              </h2>
+              <p>
+                {t(
+                  "Velg det du vil ha nærmest. SMARTi organiserer resten.",
+                  "Choose what matters most. SMARTi organizes the rest.",
+                )}
+              </p>
+              {!pref ? (
+                <p>{t("Laster valg…", "Loading preferences…")}</p>
+              ) : (
+                <fieldset disabled={busy}>
+                  <details open>
+                    <summary>
+                      {t(
+                        "Favorittrom og rombilder",
+                        "Favorite rooms and room photos",
+                      )}
+                    </summary>
+                    <div className="home-room-options">
+                      {h.areas.map((a) => (
+                        <div key={a.area_id}>
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={pref.rooms.includes(a.area_id)}
+                              onChange={() =>
+                                savePreference({
+                                  rooms: pref.rooms.includes(a.area_id)
+                                    ? pref.rooms.filter(
+                                        (id) => id !== a.area_id,
+                                      )
+                                    : [...pref.rooms, a.area_id].slice(0, 12),
+                                })
+                              }
+                            />
+                            {a.name}
+                          </label>
+                          {admin && (
+                            <>
+                              <label className="home-upload">
+                                {t("Velg rombilde", "Choose room photo")}
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp"
+                                  aria-label={`${t("Rombilde", "Room photo")}: ${a.name}`}
+                                  onChange={(e) => {
+                                    if (e.target.files?.[0])
+                                      void uploadRoom(
+                                        a.area_id,
+                                        e.target.files[0],
+                                      );
+                                    e.target.value = "";
+                                  }}
+                                />
+                              </label>
+                              {pref.images[a.area_id] && (
+                                <button
+                                  onClick={() =>
+                                    change(() =>
+                                      api(
+                                        `home/room-image/${encodeURIComponent(a.area_id)}`,
+                                        "PUT",
+                                        { data: "" },
+                                      ),
+                                    )
+                                  }
+                                >
+                                  {t("Fjern bilde", "Remove photo")}
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <small>
+                      {t(
+                        "Uten valgte favoritter vises opptil fire rom automatisk.",
+                        "Without favorites, up to four rooms are shown automatically.",
+                      )}
+                    </small>
+                  </details>
+                  <details>
+                    <summary>
+                      {t(
+                        "Favorittenheter og handlinger",
+                        "Favorite devices and actions",
+                      )}
+                    </summary>
+                    <input
+                      aria-label={t("Søk etter favoritt", "Search favorites")}
+                      value={search}
+                      onChange={(e) => searchFor(e.target.value)}
+                      placeholder={t(
+                        "Søk etter navn eller rom…",
+                        "Search by name or room…",
+                      )}
+                    />
+                    <div className="home-favorite-options">
+                      {model.controls
+                        .filter((c) =>
+                          `${c.name} ${h.areas.find((a) => a.area_id === c.area_id)?.name || ""}`
+                            .toLowerCase()
+                            .includes(search.toLowerCase()),
+                        )
+                        .slice(0, 50)
+                        .map((c) => (
+                          <label key={c.id}>
+                            <input
+                              type="checkbox"
+                              checked={h.favorites.includes(c.entity_id)}
+                              onChange={() =>
+                                change(() =>
+                                  api(
+                                    `favorites/${encodeURIComponent(c.entity_id)}`,
+                                    "PUT",
+                                  ),
+                                )
+                              }
+                            />
+                            {c.name}
+                            <small>
+                              {
+                                h.areas.find((a) => a.area_id === c.area_id)
+                                  ?.name
+                              }
+                            </small>
+                          </label>
+                        ))}
+                    </div>
+                    <small>
+                      {t(
+                        "Viser opptil 50 treff. Søk for å finne flere.",
+                        "Showing up to 50 results. Search to find more.",
+                      )}
+                    </small>
+                  </details>
+                  {model.cameras.length > 0 && (
+                    <details>
+                      <summary>
+                        {t("Utvalgte kameraer", "Selected cameras")}
+                      </summary>
+                      {model.cameras.map((c) => (
+                        <label className="home-check" key={c.id}>
                           <input
                             type="checkbox"
-                            checked={pref.rooms.includes(a.area_id)}
+                            checked={pref.cameras.includes(c.id)}
                             onChange={() =>
                               savePreference({
-                                rooms: pref.rooms.includes(a.area_id)
-                                  ? pref.rooms.filter((id) => id !== a.area_id)
-                                  : [...pref.rooms, a.area_id].slice(0, 12),
+                                cameras: pref.cameras.includes(c.id)
+                                  ? pref.cameras.filter((id) => id !== c.id)
+                                  : [...pref.cameras, c.id].slice(0, 8),
                               })
                             }
                           />
-                          {a.name}
-                        </label>
-                        {admin && (
-                          <>
-                            <label className="home-upload">
-                              {t("Velg rombilde", "Choose room photo")}
-                              <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                aria-label={`${t("Rombilde", "Room photo")}: ${a.name}`}
-                                onChange={(e) => {
-                                  if (e.target.files?.[0])
-                                    void uploadRoom(
-                                      a.area_id,
-                                      e.target.files[0],
-                                    );
-                                  e.target.value = "";
-                                }}
-                              />
-                            </label>
-                            {pref.images[a.area_id] && (
-                              <button
-                                onClick={() =>
-                                  change(() =>
-                                    api(
-                                      `home/room-image/${encodeURIComponent(a.area_id)}`,
-                                      "PUT",
-                                      { data: "" },
-                                    ),
-                                  )
-                                }
-                              >
-                                {t("Fjern bilde", "Remove photo")}
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <small>
-                    {t(
-                      "Uten valgte favoritter vises opptil fire rom automatisk.",
-                      "Without favorites, up to four rooms are shown automatically.",
-                    )}
-                  </small>
-                </details>
-                <details>
-                  <summary>
-                    {t(
-                      "Favorittenheter og handlinger",
-                      "Favorite devices and actions",
-                    )}
-                  </summary>
-                  <input
-                    aria-label={t("Søk etter favoritt", "Search favorites")}
-                    value={search}
-                    onChange={(e) => searchFor(e.target.value)}
-                    placeholder={t(
-                      "Søk etter navn eller rom…",
-                      "Search by name or room…",
-                    )}
-                  />
-                  <div className="home-favorite-options">
-                    {model.controls
-                      .filter((c) =>
-                        `${c.name} ${h.areas.find((a) => a.area_id === c.area_id)?.name || ""}`
-                          .toLowerCase()
-                          .includes(search.toLowerCase()),
-                      )
-                      .slice(0, 50)
-                      .map((c) => (
-                        <label key={c.id}>
-                          <input
-                            type="checkbox"
-                            checked={h.favorites.includes(c.entity_id)}
-                            onChange={() =>
-                              change(() =>
-                                api(
-                                  `favorites/${encodeURIComponent(c.entity_id)}`,
-                                  "PUT",
-                                ),
-                              )
-                            }
-                          />
                           {c.name}
-                          <small>
-                            {h.areas.find((a) => a.area_id === c.area_id)?.name}
-                          </small>
                         </label>
                       ))}
-                  </div>
-                  <small>
-                    {t(
-                      "Viser opptil 50 treff. Søk for å finne flere.",
-                      "Showing up to 50 results. Search to find more.",
-                    )}
-                  </small>
-                </details>
-                {model.cameras.length > 0 && (
+                    </details>
+                  )}
                   <details>
                     <summary>
-                      {t("Utvalgte kameraer", "Selected cameras")}
+                      {t(
+                        "Hjemme, Borte, Natt og Ferie",
+                        "Home, Away, Night and Holiday",
+                      )}
                     </summary>
-                    {model.cameras.map((c) => (
-                      <label className="home-check" key={c.id}>
-                        <input
-                          type="checkbox"
-                          checked={pref.cameras.includes(c.id)}
-                          onChange={() =>
-                            savePreference({
-                              cameras: pref.cameras.includes(c.id)
-                                ? pref.cameras.filter((id) => id !== c.id)
-                                : [...pref.cameras, c.id].slice(0, 8),
-                            })
-                          }
-                        />
-                        {c.name}
-                      </label>
-                    ))}
-                  </details>
-                )}
-                <details>
-                  <summary>
-                    {t(
-                      "Hjemme, Borte, Natt og Ferie",
-                      "Home, Away, Night and Holiday",
-                    )}
-                  </summary>
-                  <p>
-                    {t(
-                      "Ingen rutiner velges automatisk. Hver aktivering må bekreftes. Modusknappene viser ikke en målt tilstand.",
-                      "No routines are selected automatically. Each activation requires confirmation. Mode buttons do not represent a measured state.",
-                    )}
-                  </p>
-                  {admin ? (
-                    modes.map((m) => (
-                      <label key={m.id}>
-                        {t(m.nb, m.en)}
-                        <select
-                          aria-label={`${t("Rutine for", "Routine for")} ${t(m.nb, m.en)}`}
-                          value={pref.modes[m.id] || ""}
-                          onChange={(e) =>
-                            change(() =>
-                              api(`home/modes/${m.id}`, "PUT", {
-                                control_id: e.target.value || null,
-                              }),
-                            )
-                          }
-                        >
-                          <option value="">
-                            {t("Ikke konfigurert", "Not configured")}
-                          </option>
-                          {h.controls
-                            .filter((c) =>
-                              ["scene", "script", "automation"].includes(
-                                c.domain,
-                              ),
-                            )
-                            .map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name} · {c.domain}
-                              </option>
-                            ))}
-                        </select>
-                      </label>
-                    ))
-                  ) : (
                     <p>
                       {t(
-                        "En administrator kan koble til rutiner.",
-                        "An administrator can connect routines.",
+                        "Ingen rutiner velges automatisk. Hver aktivering må bekreftes. Modusknappene viser ikke en målt tilstand.",
+                        "No routines are selected automatically. Each activation requires confirmation. Mode buttons do not represent a measured state.",
                       )}
                     </p>
-                  )}
-                </details>
-              </fieldset>
-            )}
-            <button className="home-customize" onClick={() => configure(false)}>
-              {t("Ferdig", "Done")}
-            </button>
-          </section>
+                    {admin ? (
+                      modes.map((m) => (
+                        <label key={m.id}>
+                          {t(m.nb, m.en)}
+                          <select
+                            aria-label={`${t("Rutine for", "Routine for")} ${t(m.nb, m.en)}`}
+                            value={pref.modes[m.id] || ""}
+                            onChange={(e) =>
+                              change(() =>
+                                api(`home/modes/${m.id}`, "PUT", {
+                                  control_id: e.target.value || null,
+                                }),
+                              )
+                            }
+                          >
+                            <option value="">
+                              {t("Ikke konfigurert", "Not configured")}
+                            </option>
+                            {h.controls
+                              .filter((c) =>
+                                ["scene", "script", "automation"].includes(
+                                  c.domain,
+                                ),
+                              )
+                              .map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name} · {c.domain}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                      ))
+                    ) : (
+                      <p>
+                        {t(
+                          "En administrator kan koble til rutiner.",
+                          "An administrator can connect routines.",
+                        )}
+                      </p>
+                    )}
+                  </details>
+                </fieldset>
+              )}
+              <button
+                className="home-customize"
+                disabled={busy}
+                onClick={() => configure(false)}
+              >
+                {t("Ferdig", "Done")}
+              </button>
+            </section>
+          </SettingsDialog>
         )}
         {tab === "overview" && (
           <>

@@ -1,3 +1,4 @@
+import { SettingsDialog } from "./SettingsDialog";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -197,65 +198,75 @@ export function Vehicle({
         </p>
       )}
       {draft && (
-        <fieldset disabled={busy}>
-          <legend>{t("Din bil og lader", "Your EV and charger")}</legend>
-          <p>
-            {t(
-              "Velg målepunkter fra bilen og laderen som er koblet til hjemmesentralen. Du kan la felt stå tomme.",
-              "Choose entities from the car and charger connected to your home hub. Fields can be left empty.",
-            )}
-          </p>
-          <label>
-            {t("Navn", "Name")}
-            <input
-              maxLength={80}
-              value={draft.name}
-              onChange={(e) => edit({ ...draft, name: e.target.value })}
-            />
-          </label>
-          <div className="vehicle-fields">
-            {kinds.map((kind) => (
-              <label key={kind}>
-                {names[kind]}
-                <select
-                  aria-label={names[kind]}
-                  value={draft[kind] || ""}
-                  onChange={(e) =>
-                    edit({ ...draft, [kind]: e.target.value || null })
-                  }
-                >
-                  <option value="">{t("Ikke valgt", "Not selected")}</option>
-                  {draft[kind] &&
-                    !candidates(kind).some(
-                      (c) => c.entity_id === draft[kind],
-                    ) && (
-                      <option value={draft[kind]!}>
-                        {t(
-                          "Tidligere valg er utilgjengelig",
-                          "Previous selection unavailable",
-                        )}
+        <SettingsDialog
+          title={t("Din bil og lader", "Your EV and charger")}
+          lang={lang}
+          busy={busy}
+          onClose={() => edit(null)}
+        >
+          {error && <p role="alert">{error}</p>}{" "}
+          <fieldset disabled={busy}>
+            <legend>{t("Din bil og lader", "Your EV and charger")}</legend>
+            <p>
+              {t(
+                "Velg målepunkter fra bilen og laderen som er koblet til hjemmesentralen. Du kan la felt stå tomme.",
+                "Choose entities from the car and charger connected to your home hub. Fields can be left empty.",
+              )}
+            </p>
+            <label>
+              {t("Navn", "Name")}
+              <input
+                maxLength={80}
+                value={draft.name}
+                onChange={(e) => edit({ ...draft, name: e.target.value })}
+              />
+            </label>
+            <div className="vehicle-fields">
+              {kinds.map((kind) => (
+                <label key={kind}>
+                  {names[kind]}
+                  <select
+                    aria-label={names[kind]}
+                    value={draft[kind] || ""}
+                    onChange={(e) =>
+                      edit({ ...draft, [kind]: e.target.value || null })
+                    }
+                  >
+                    <option value="">{t("Ikke valgt", "Not selected")}</option>
+                    {draft[kind] &&
+                      !candidates(kind).some(
+                        (c) => c.entity_id === draft[kind],
+                      ) && (
+                        <option value={draft[kind]!}>
+                          {t(
+                            "Tidligere valg er utilgjengelig",
+                            "Previous selection unavailable",
+                          )}
+                        </option>
+                      )}
+                    {candidates(kind).map((c) => (
+                      <option key={c.id} value={c.entity_id}>
+                        {smartiName(c.name)} · {c.entity_id}
                       </option>
-                    )}
-                  {candidates(kind).map((c) => (
-                    <option key={c.id} value={c.entity_id}>
-                      {smartiName(c.name)} · {c.entity_id}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </div>
-          <small>
-            {t(
-              "Velg bare en ladebryter du vet styrer lading. SMARTi endrer ikke strømgrense eller ladeplan.",
-              "Only choose a switch known to control charging. SMARTi does not change current limits or charging schedules.",
-            )}
-          </small>
-          <div className="vehicle-actions">
-            <button onClick={save}>{t("Lagre", "Save")}</button>
-            <button onClick={() => edit(null)}>{t("Avbryt", "Cancel")}</button>
-          </div>
-        </fieldset>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <small>
+              {t(
+                "Velg bare en ladebryter du vet styrer lading. SMARTi endrer ikke strømgrense eller ladeplan.",
+                "Only choose a switch known to control charging. SMARTi does not change current limits or charging schedules.",
+              )}
+            </small>
+            <div className="vehicle-actions">
+              <button onClick={save}>{t("Lagre", "Save")}</button>
+              <button onClick={() => edit(null)}>
+                {t("Avbryt", "Cancel")}
+              </button>
+            </div>
+          </fieldset>
+        </SettingsDialog>
       )}
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}

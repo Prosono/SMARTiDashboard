@@ -1,3 +1,11 @@
+# 1.6.1
+
+- Open Home customization, people, calendar, energy display, EV/charger and energy-flow preferences in consistent accessible dialogs without inserting forms into the dashboard layout.
+- Selecting an unconfigured energy component opens only its own measurement settings. Complete equipment and flow setup remain available from the toolbar.
+- Keep focus inside the dialog, restore it on close, support Escape and prevent dismissal while saving. Keep save errors visible in the dialog; cancelling draft forms does not save changes.
+
+Prepared locally; physical HA validation remains pending.
+
 # 1.6.0
 
 - Recompose Energy as one charcoal scene with a time-aware greeting, actual available weather, floating measurements with recorder-history previews, and compact source/period navigation.

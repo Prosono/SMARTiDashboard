@@ -297,6 +297,33 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(
     flow.getByLabel("Effektmåler · Solceller", { exact: true }),
   ).toBeFocused();
+  await expect(
+    page.getByRole("dialog", { name: "Måling · Solceller" }),
+  ).toBeVisible();
+  await expect(flow.locator(".flow-binding")).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(solarHotspot).toBeFocused();
+  const evHotspot = flow.locator('[data-hotspot="ev"]');
+  await evHotspot.click();
+  const evSettings = page.getByRole("dialog", { name: "Måling · Elbil" });
+  await expect(evSettings).toBeVisible();
+  await expect(evSettings.locator(".flow-binding")).toHaveCount(1);
+  await evSettings
+    .getByLabel("Effektmåler · Elbil", { exact: true })
+    .selectOption("sensor.test_power");
+  await evSettings.screenshot({
+    path: `../artifacts/${test.info().project.name}-energy-settings.png`,
+  });
+  await evSettings.getByRole("button", { name: "Avbryt", exact: true }).click();
+  expect(pref.ev.source).toBeNull();
+  await expect(evHotspot).toBeFocused();
+  await flow
+    .getByRole("button", { name: "Konfigurer energiflyt", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Konfigurer energiflyt" }),
+  ).toBeVisible();
   for (const label of ["Solceller", "Hjemmet", "Elbil", "Batteri", "Strømnett"])
     await flow
       .getByLabel("Effektmåler · " + label, { exact: true })
@@ -618,10 +645,54 @@ test("3D renderer failure preserves live UI and configuration", async ({
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
   const flow = page.getByRole("region", { name: "Energiflyt", exact: true });
   await expect(flow).toContainText("3D-visningen er ikke tilgjengelig");
+  await flow.locator('.flow-measurement[data-role="ev"]').click();
+  const evDialog = page.getByRole("dialog", { name: "Måling · Elbil" });
+  await expect(evDialog).toBeVisible();
+  await expect(evDialog.locator(".flow-binding")).toHaveCount(1);
+  await evDialog.screenshot({
+    path: `../artifacts/${test.info().project.name}-energy-settings.png`,
+  });
+  await evDialog.getByRole("button", { name: "Avbryt", exact: true }).click();
   await flow
     .getByRole("button", { name: "Konfigurer energiflyt", exact: true })
     .click();
   await expect(
     flow.getByRole("button", { name: "Lagre energiflyt", exact: true }),
   ).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "Konfigurer energiflyt" });
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/home/energy-flow/preferences", async (route) => {
+    if (route.request().method() !== "PUT") return route.continue();
+    await pending;
+    await route.fulfill({ status: 500, json: { detail: "Test save failure" } });
+  });
+  await dialog
+    .getByRole("button", { name: "Lagre energiflyt", exact: true })
+    .click();
+  await expect(dialog).toHaveAttribute("aria-busy", "true");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "Lukk innstillinger" }),
+  ).toBeDisabled();
+  release();
+  await expect(dialog.getByRole("alert")).toContainText("Kunne ikke lagre");
+  await expect(dialog).toHaveAttribute("aria-busy", "false");
+  const close = dialog.getByRole("button", { name: "Lukk innstillinger" });
+  await close.focus();
+  await page.keyboard.press("Shift+Tab");
+  expect(
+    await dialog.evaluate((el) => el.contains(document.activeElement)),
+  ).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(
+    flow.getByRole("button", { name: "Konfigurer energiflyt", exact: true }),
+  ).toBeFocused();
+  expect(await page.evaluate(() => document.body.style.overflow)).not.toBe(
+    "hidden",
+  );
 });

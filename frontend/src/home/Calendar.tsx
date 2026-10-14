@@ -1,3 +1,4 @@
+import { SettingsDialog } from "./SettingsDialog";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -158,54 +159,61 @@ export function Calendar({
       )}
       {info.isPending && <p>{t("Henter kalendere…", "Loading calendars…")}</p>}
       {draft !== null && (
-        <fieldset className="calendar-settings" disabled={saving}>
-          <legend>
-            {t("Kalendere på din Hjem-side", "Calendars on your Home page")}
-          </legend>
-          <p>
-            {t(
-              "Velg inntil 12 kalendere. Valget lagres for din bruker.",
-              "Choose up to 12 calendars. Your selection is personal.",
-            )}
-          </p>
-          {info.data?.sources.map((source) => (
-            <label key={source.id}>
-              <input
-                type="checkbox"
-                checked={draft.includes(source.id)}
-                disabled={!draft.includes(source.id) && draft.length >= 12}
-                onChange={(e) =>
-                  setDraft(
-                    e.target.checked
-                      ? [...draft, source.id]
-                      : draft.filter((id) => id !== source.id),
-                  )
-                }
-              />
-              {smartiName(source.name)}
-            </label>
-          ))}
-          {!info.data?.sources.length && (
+        <SettingsDialog
+          title={t("Velg kalendere", "Choose calendars")}
+          lang={lang}
+          busy={saving}
+          onClose={() => setDraft(null)}
+        >
+          <fieldset className="calendar-settings" disabled={saving}>
+            <legend>
+              {t("Kalendere på din Hjem-side", "Calendars on your Home page")}
+            </legend>
             <p>
               {t(
-                "Ingen kalendere er tilkoblet ennå. Koble til en kalender på hjemmesentralen, så dukker den opp her.",
-                "No calendars connected yet. Connect a calendar to your home hub and it will appear here.",
+                "Velg inntil 12 kalendere. Valget lagres for din bruker.",
+                "Choose up to 12 calendars. Your selection is personal.",
               )}
             </p>
-          )}
-          {error && <p role="alert">{error}</p>}
-          <div>
-            <button className="calendar-save" onClick={save}>
-              <Check size={16} />
-              {saving
-                ? t("Lagrer…", "Saving…")
-                : t("Lagre valg", "Save selection")}
-            </button>
-            <button onClick={() => setDraft(null)}>
-              {t("Avbryt", "Cancel")}
-            </button>
-          </div>
-        </fieldset>
+            {info.data?.sources.map((source) => (
+              <label key={source.id}>
+                <input
+                  type="checkbox"
+                  checked={draft.includes(source.id)}
+                  disabled={!draft.includes(source.id) && draft.length >= 12}
+                  onChange={(e) =>
+                    setDraft(
+                      e.target.checked
+                        ? [...draft, source.id]
+                        : draft.filter((id) => id !== source.id),
+                    )
+                  }
+                />
+                {smartiName(source.name)}
+              </label>
+            ))}
+            {!info.data?.sources.length && (
+              <p>
+                {t(
+                  "Ingen kalendere er tilkoblet ennå. Koble til en kalender på hjemmesentralen, så dukker den opp her.",
+                  "No calendars connected yet. Connect a calendar to your home hub and it will appear here.",
+                )}
+              </p>
+            )}
+            {error && <p role="alert">{error}</p>}
+            <div>
+              <button className="calendar-save" onClick={save}>
+                <Check size={16} />
+                {saving
+                  ? t("Lagrer…", "Saving…")
+                  : t("Lagre valg", "Save selection")}
+              </button>
+              <button onClick={() => setDraft(null)}>
+                {t("Avbryt", "Cancel")}
+              </button>
+            </div>
+          </fieldset>
+        </SettingsDialog>
       )}
       {info.data && (
         <div className="calendar-layout">

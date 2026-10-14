@@ -1,0 +1,120 @@
+.dashboard-settings-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(820px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(88dvh, 940px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 28px 90px #0005;
+  overflow: hidden;
+}
+.dashboard-settings-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-settings-dialog::backdrop {
+  background: #07101599;
+  backdrop-filter: blur(5px);
+}
+.dashboard-settings-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 26px;
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.dashboard-settings-heading span {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+.dashboard-settings-heading h2 {
+  margin: 5px 0 0;
+  font-size: clamp(20px, 3vw, 26px);
+  line-height: 1.2;
+}
+.dashboard-settings-heading > button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.dashboard-settings-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px 26px;
+}
+.dashboard-settings-dialog .flow-settings,
+.dashboard-settings-dialog .energy-settings,
+.dashboard-settings-dialog .home-preferences,
+.dashboard-settings-dialog .calendar-settings,
+.dashboard-settings-dialog .people-settings,
+.home-vehicle .dashboard-settings-dialog fieldset {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.dashboard-settings-dialog .flow-binding-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+}
+.dashboard-settings-dialog .flow-form-actions {
+  position: sticky;
+  bottom: -24px;
+  padding: 16px 0;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.dashboard-settings-dialog input:not([type="checkbox"]):not([type="file"]),
+.dashboard-settings-dialog select {
+  max-width: 100%;
+  min-width: 0;
+}
+.dashboard-settings-dialog button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .dashboard-settings-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 24px);
+    border-radius: 18px;
+  }
+  .dashboard-settings-heading {
+    padding: 18px;
+  }
+  .dashboard-settings-content {
+    padding: 18px;
+  }
+  .dashboard-settings-dialog .flow-form-actions {
+    bottom: -18px;
+    flex-wrap: wrap;
+  }
+  .dashboard-settings-dialog .flow-binding-grid,
+  .dashboard-settings-dialog .vehicle-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-settings-dialog[data-compact] {
+  width: min(600px, calc(100vw - 24px));
+}
+.dashboard-settings-dialog .flow-settings {
+  margin: 0;
+  padding: 0;
+}
