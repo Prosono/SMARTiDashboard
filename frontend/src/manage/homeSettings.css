@@ -74,12 +74,130 @@
 .home-settings > .section-heading button,
 .home-settings .settings-panel > button,
 .home-settings .system-list-row button {
- display:inline-flex; align-items:center; gap:.5rem; min-height:44px;
- padding:.65rem 1rem; border:1px solid var(--line); border-radius:.7rem;
- background:var(--surface); margin-top:.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: var(--surface);
+  margin-top: 0.5rem;
 }
-.system-metrics article { background:var(--surface); }
-.system-metrics progress { height:7px; border:0; border-radius:8px; overflow:hidden; }
-.system-metrics progress::-webkit-progress-bar { background:var(--line); }
-.system-metrics progress::-webkit-progress-value { background:var(--accent); }
-.system-metrics progress::-moz-progress-bar { background:var(--accent); }
+.system-metrics article {
+  background: var(--surface);
+}
+.system-metrics progress {
+  height: 7px;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.system-metrics progress::-webkit-progress-bar {
+  background: var(--line);
+}
+.system-metrics progress::-webkit-progress-value {
+  background: var(--accent);
+}
+.system-metrics progress::-moz-progress-bar {
+  background: var(--accent);
+}
+
+.system-metrics article {
+  position: relative;
+  overflow: hidden;
+  min-height: 210px;
+  isolation: isolate;
+}
+.system-metrics article > :not(.system-graph) {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+.system-graph {
+  position: absolute;
+  inset: 45% 0 0;
+  color: var(--accent);
+  z-index: 0;
+}
+.system-graph svg {
+  width: 100%;
+  height: 100%;
+  opacity: 0.35;
+}
+.system-graph output {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.3rem;
+  background: var(--surface);
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  z-index: 2;
+}
+.system-graph:focus svg,
+.system-graph:hover svg {
+  opacity: 0.75;
+}
+.account-person {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.account-person img,
+.account-initial {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  background: var(--line);
+}
+.account-photo-editor {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.account-photo-editor img,
+.account-review-photo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.account-management {
+  margin-block: 2rem;
+}
+.account-management button {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+}
+.system-settings-form input:not([type="checkbox"]):not([type="file"]),
+.system-settings-form select {
+  width: 100%;
+}
+.system-graph {
+  cursor: crosshair;
+}
+.system-graph-empty {
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+
+.account-management .row-actions button.primary {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #241407;
+}

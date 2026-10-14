@@ -1,7 +1,9 @@
 """Explicit administrator settings for the home, people and controller health."""
 
 import asyncio
+import json
 import os
+import time
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import httpx
@@ -50,6 +52,8 @@ class PersonSettings(BaseModel):
 def system_settings_router(m, admin, settings):
     router = APIRouter(prefix="/api/manage/settings", dependencies=[Depends(admin)])
 
+    history_lock = asyncio.Lock()
+
     def live():
         if m.demo:
             raise HTTPException(503, "live_settings_required")
@@ -79,7 +83,22 @@ def system_settings_router(m, admin, settings):
         def pick(value, keys):
             return {k: (value or {}).get(k) for k in keys}
 
+        async with history_lock:
+            now = time.time()
+            history = json.loads(m.store.get("system_history", "[]"))
+            history = [p for p in history if now - p["time"] < 86400][-2879:]
+            if not history or now - history[-1]["time"] >= 30:
+                history.append(
+                    {
+                        "time": now,
+                        "cpu": (core or {}).get("cpu_percent"),
+                        "memory": (core or {}).get("memory_percent"),
+                        "storage": (host or {}).get("disk_used"),
+                    }
+                )
+                m.store.set("system_history", json.dumps(history))
         return {
+            "history": history,
             "demo": m.demo,
             "host": pick(
                 host, ["hostname", "operating_system", "kernel", "disk_total", "disk_used", "disk_free"]

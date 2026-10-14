@@ -1,3 +1,5 @@
+import { SystemActions } from "./SystemActions";
+import { SystemGraph, type Sample } from "./SystemGraph";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -30,6 +32,7 @@ type Person = {
   editable: boolean;
 };
 type System = {
+  history?: Sample[];
   demo: boolean;
   unavailable: string[];
   host: {
@@ -156,6 +159,12 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
           </p>
           <div className="system-metrics">
             <article>
+              <SystemGraph
+                history={s.history || []}
+                metric="cpu"
+                unit="%"
+                lang={lang}
+              />
               <Cpu />
               <h3>{t("Prosessor · SMARTi-kjerne", "CPU · SMARTi core")}</h3>
               <strong>{number(s.core.cpu_percent, "%")}</strong>
@@ -167,6 +176,12 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
               </small>
             </article>
             <article>
+              <SystemGraph
+                history={s.history || []}
+                metric="memory"
+                unit="%"
+                lang={lang}
+              />
               <Cpu />
               <h3>{t("Minne · SMARTi-kjerne", "Memory · SMARTi core")}</h3>
               <strong>{number(s.core.memory_percent, "%")}</strong>
@@ -187,6 +202,12 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
               </small>
             </article>
             <article>
+              <SystemGraph
+                history={s.history || []}
+                metric="storage"
+                unit="GB"
+                lang={lang}
+              />
               <HardDrive />
               <h3>{t("Lagring · sentralen", "Storage · controller")}</h3>
               <strong>
@@ -215,6 +236,12 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
               )}
             </p>
           )}
+          <p className="muted">
+            {t(
+              "Historikk samles mens statusvisningen er åpen, og beholdes i inntil 24 timer. Pek på grafen for detaljer.",
+              "History is collected while this view is open and retained for up to 24 hours. Point at a graph for details.",
+            )}
+          </p>
           <div className="settings-layout">
             <section className="settings-panel">
               <h3>
@@ -230,6 +257,7 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
               ) : (
                 s.network.map((n) => (
                   <div className="system-list-row" key={n.interface}>
+                    <SystemActions lang={lang} network={n.interface} />
                     <div>
                       <strong>
                         {n.interface}{" "}
@@ -260,6 +288,7 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
                   "Backups registered on the controller.",
                 )}
               </p>
+              {s.backups !== null && <SystemActions lang={lang} />}
               {s.backups === null ? (
                 <p>
                   {t("Sikkerhetskopier utilgjengelige", "Backups unavailable")}

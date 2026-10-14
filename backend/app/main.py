@@ -7,9 +7,11 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from .accounts import accounts_router
 from .auth import Auth, hasher
 from .calendar import calendar_router
 from .camera_stream import camera_router
@@ -27,6 +29,7 @@ from .models import Command
 from .scenes import scenes_router
 from .setup import DeviceSetup
 from .storage import Store
+from .system_operations import system_operations_router
 from .system_settings import system_settings_router
 from .vehicle import vehicle_router
 
@@ -106,6 +109,17 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
                     await task
 
     app = FastAPI(title="SMARTi", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request, exc):
+        # Never echo submitted passwords, Wi-Fi keys or image payloads in validation errors.
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [{"loc": e["loc"], "type": e["type"], "msg": "Invalid field"} for e in exc.errors()]
+            },
+        )
+
     app.state.ha, app.state.auth, app.state.store = ha, auth, store
     app.state.mobile = mobile
     app.state.setup = setup
@@ -161,6 +175,8 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     app.state.management = management
     app.include_router(management_router(management, admin))
     app.include_router(system_settings_router(management, admin, settings))
+    app.include_router(system_operations_router(management, admin, settings))
+    app.include_router(accounts_router(management, admin, user))
     app.include_router(integration_setup_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
     app.include_router(extras_router(store, user, ha, settings))

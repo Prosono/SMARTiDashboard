@@ -1,3 +1,4 @@
+import { Accounts, AccountAvatar } from "./manage/Accounts";
 import { HomeSettings } from "./manage/HomeSettings";
 import { Thermostat } from "./Thermostat";
 import React, { useEffect, useState } from "react";
@@ -30,7 +31,6 @@ import {
   ChevronRight,
   Settings,
   LogOut,
-  Shield,
   Check,
   AlertCircle,
   LoaderCircle,
@@ -175,7 +175,7 @@ function App() {
           })}
         </nav>
         <div className="sidebar-bottom">
-          <div className="account-avatar">{session.name[0].toUpperCase()}</div>
+          <AccountAvatar name={session.name} />
           <div>
             <strong>{session.name}</strong>
             <small>{session.role === "admin" ? t.admin : t.user}</small>
@@ -760,6 +760,9 @@ function Dashboard({
                   <span className="eyebrow">SMARTi</span>
                   <h1>{t.settings}</h1>
                 </div>
+                {session.role === "admin" && (
+                  <HomeSettings lang={lang} home={h} />
+                )}
                 <div className="settings-layout">
                   <section className="settings-panel">
                     <h2>
@@ -821,19 +824,7 @@ function Dashboard({
                     </button>
                   </section>
                 </div>
-                {h.controls.some((c) => c.domain === "automation") && (
-                  <section>
-                    <div className="section-heading">
-                      <h2>{t.automations}</h2>
-                    </div>
-                    <p className="muted">{t.automationHint}</p>
-                    {cards(h.controls.filter((c) => c.domain === "automation"))}
-                  </section>
-                )}
-                {session.role === "admin" && (
-                  <HomeSettings lang={lang} home={h} />
-                )}
-                {session.role === "admin" && <Users t={t} />}
+                {session.role === "admin" && <Accounts lang={lang} />}
               </>
             )}
           </>
@@ -1201,61 +1192,6 @@ function Device({
         </p>
       )}
     </article>
-  );
-}
-function Users({ t }: { t: Text }) {
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    setBusy(true);
-    try {
-      await api("users", "POST", Object.fromEntries(new FormData(form)));
-      setMessage(t.userCreated);
-      form.reset();
-    } catch {
-      setMessage(t.userError);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <section className="settings-panel users">
-      <h2>
-        <Shield size={21} />
-        {t.security}
-      </h2>
-      <p className="muted">{t.accountHint}</p>
-      <form onSubmit={submit}>
-        <label>
-          {t.userName}
-          <input name="name" required maxLength={80} />
-        </label>
-        <label>
-          {t.newPassword}
-          <input
-            name="password"
-            type="password"
-            minLength={12}
-            maxLength={128}
-            required
-            autoComplete="new-password"
-          />
-        </label>
-        <label>
-          {t.role}
-          <select name="role">
-            <option value="user">{t.user}</option>
-            <option value="admin">{t.admin}</option>
-          </select>
-        </label>
-        <button className="primary compact" disabled={busy}>
-          {t.addUser}
-        </button>
-      </form>
-      <p role="status">{message}</p>
-    </section>
   );
 }
 createRoot(document.getElementById("root")!).render(

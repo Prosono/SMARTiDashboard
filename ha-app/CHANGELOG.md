@@ -1,3 +1,14 @@
+# 1.9.0
+
+- Move controller metrics to the top of Settings, add real sampled history behind CPU, memory and storage values, and remove automation cards from this tab.
+- Add a three-step user onboarding dialog: login, profile photo/access, review. Provision SMARTi and controller accounts plus a linked household person. Track partial results and reconcile known accounts without replaying uncertain user creation.
+- Add profile-photo uploads for accounts and synchronize linked controller person pictures. Passwords are hashed locally; validation responses omit submitted secrets.
+- Start password-protected full backups as background Supervisor jobs, with explicit accepted/completed/failed/unconfirmed states.
+- Add reviewed IPv4 DHCP/static, gateway, DNS and supported Wi-Fi changes. Preserve IPv6, reject stale configuration, validate addresses and never replay the same write request after an uncertain result.
+- Request Supervisor manager role for the new network/backup APIs. No restore, delete, reboot or arbitrary Supervisor proxy is exposed.
+
+Prepared locally. Physical network reconnection, vendor/platform behavior and restore testing still require validation on the target installation.
+
 # 1.8.0
 
 - Add administrator settings for controller CPU/memory, host storage, network interfaces and backup inventory, with explicit unavailable states and no simulated measurements.
