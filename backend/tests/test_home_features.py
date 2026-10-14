@@ -178,8 +178,9 @@ def test_energy_native_statistics_query_converts_units(tmp_path):
         assert calls[0][1]["units"] == {"energy": "kWh", "power": "kW"}
 
 
+@pytest.mark.parametrize("http_url", ["http://ha.local:8123/api/", "http://supervisor/core/api/"])
 @pytest.mark.asyncio
-async def test_live_hls_rewrites_every_uri_and_rejects_external_urls(monkeypatch):
+async def test_live_hls_rewrites_every_uri_and_rejects_external_urls(monkeypatch, http_url):
     observed = []
     content = b'#EXTM3U\n#EXT-X-MAP:URI="init.mp4"\n#EXT-X-PART:DURATION=0.5,URI="segment/1.0.m4s"\nsegment/1.m4s\nplaylist.m3u8\n'
     original = httpx.AsyncClient
@@ -196,9 +197,7 @@ async def test_live_hls_rewrites_every_uri_and_rejects_external_urls(monkeypatch
         assert kind == "camera/stream" and data["format"] == "hls"
         return {"url": "/api/hls/abcdef/master_playlist.m3u8"}
 
-    ha = SimpleNamespace(
-        connected=True, http_url="http://ha.local:8123/api/", token="private-secret", request=request
-    )
+    ha = SimpleNamespace(connected=True, http_url=http_url, token="private-secret", request=request)
     streams = CameraStreams(ha)
     value = await streams.start("camera.front", (1, "session1"))
     sid = value["id"]
@@ -210,6 +209,15 @@ async def test_live_hls_rewrites_every_uri_and_rejects_external_urls(monkeypatch
     assert "segment/" not in data.decode() and "init.mp4" not in data.decode()
     assert len(session["resources"]) == 5
     assert observed[0].headers["authorization"] == "Bearer private-secret"
+    assert str(observed[0].url) == http_url + "hls/abcdef/master_playlist.m3u8?_HLS_msn=1"
+    # HA can emit canonical root-relative links even when reached through Supervisor.
+    root_segment = streams.resource(session, http_url, "/api/hls/abcdef/segment/1.m4s")
+    assert session["resources"][root_segment] == http_url + "hls/abcdef/segment/1.m4s"
+    assert streams.resource(session, http_url, http_url + "hls/abcdef/segment/1.m4s") == root_segment
+    content = b"video-segment"
+    video, media = await streams.fetch(session, root_segment, {})
+    assert video == content and media == "video/mp4"
+    assert str(observed[-1].url) == http_url + "hls/abcdef/segment/1.m4s"
     for bad in ["https://evil.test/video.m3u8", "/api/config", "../123/playlist.m3u8", "%2e%2e/secret.mp4"]:
         with pytest.raises(HTTPException):
             streams.resource(session, ha.http_url + "hls/abcdef/master_playlist.m3u8", bad)

@@ -166,8 +166,8 @@ export function CameraCard({
             {status === "error" && (
               <small>
                 {t(
-                  "Kameraet må støtte HLS via SMARTi. Prøv igjen når forbindelsen er klar.",
-                  "The camera needs HLS support through SMARTi. Retry when connected.",
+                  "SMARTi kunne ikke hente eller spille av direktestrømmen. Prøv igjen.",
+                  "SMARTi could not fetch or play the live stream. Please retry.",
                 )}
               </small>
             )}

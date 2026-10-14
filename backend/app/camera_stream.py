@@ -25,6 +25,16 @@ class CameraStreams:
             k: s for k, s in self.sessions.items() if now - s["used"] < 120 and now - s["created"] < 3600
         }
 
+    def upstream_url(self, base, value):
+        """Keep HA's canonical API paths behind the configured Supervisor prefix."""
+        parsed = urlsplit(urljoin(base, value))
+        upstream = urlsplit(self.ha.http_url)
+        if (parsed.scheme, parsed.netloc) == (upstream.scheme, upstream.netloc) and parsed.path.startswith(
+            "/api/hls/"
+        ):
+            parsed = parsed._replace(path=upstream.path + parsed.path.removeprefix("/api/"))
+        return urlunsplit(parsed)
+
     async def start(self, entity_id, owner):
         async with self.lock:
             self.prune()
@@ -34,10 +44,12 @@ class CameraStreams:
                 raise HTTPException(429, "stream_limit")
             try:
                 result = await self.ha.request("camera/stream", entity_id=entity_id, format="hls")
-                source = urljoin(self.ha.http_url, result["url"])
+                source = self.upstream_url(self.ha.http_url, result["url"])
                 parsed = urlsplit(source)
                 base = urlsplit(self.ha.http_url)
-                match = re.fullmatch(r"(/api/hls/[a-f0-9]+/)([\w-]+\.m3u8)", parsed.path)
+                match = re.fullmatch(
+                    r"(" + re.escape(base.path) + r"hls/[a-f0-9]+/)([\w-]+\.m3u8)", parsed.path
+                )
                 if (
                     (parsed.scheme, parsed.netloc) != (base.scheme, base.netloc)
                     or not match
@@ -68,7 +80,7 @@ class CameraStreams:
         return s
 
     def resource(self, session, base, value):
-        url = urljoin(base, value)
+        url = self.upstream_url(base, value)
         parsed, upstream = urlsplit(url), urlsplit(self.ha.http_url)
         suffix = parsed.path.removeprefix(session["root"])
         if (

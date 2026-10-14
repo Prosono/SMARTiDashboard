@@ -1,3 +1,10 @@
+# 1.6.2
+
+- Fix camera live-stream relay through Supervisor by preserving the `/core/api/` upstream prefix for playlists and video segments, including root-relative playlist links.
+- Replace the misleading camera HLS-support error with an accurate playback failure message.
+
+Prepared locally; physical HA camera validation remains pending.
+
 # 1.6.1
 
 - Open Home customization, people, calendar, energy display, EV/charger and energy-flow preferences in consistent accessible dialogs without inserting forms into the dashboard layout.
