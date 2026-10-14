@@ -1551,3 +1551,12 @@ footer span:last-child {
 .protocol-delete { position: relative; z-index: 1; }
 .device-dialog { margin: auto; }
 .device-detail-control button, .device-dialog-actions button { background: var(--soft); border: 1px solid var(--line); border-radius: 8px; padding: .6rem 1rem; min-height: 44px; }
+
+/* Independent destinations remain reachable on narrow screens. */
+.settings-sections { margin-bottom: 28px; }
+@media (max-width: 760px) {
+  .sidebar nav { overflow-x: auto; justify-content: flex-start; scrollbar-width: thin; overscroll-behavior-x: contain; }
+  .sidebar .nav-item { flex: 1 0 88px; }
+  .settings-sections { overflow-x: auto; flex-wrap: nowrap; }
+  .settings-sections button { flex-shrink: 0; white-space: nowrap; }
+}

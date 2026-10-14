@@ -1,3 +1,13 @@
+# 1.13.0
+
+- Promote Automations, Integrations and Updates to independent administrator destinations in the main navigation.
+- Rename More to Settings and split settings into Home and people, Backups, Network, System, and Theme and appearance.
+- Keep location/zones and household together, and move hub metrics, backups and network management into their respective categories.
+- Preserve automation unsaved-change protection and administrator-only access. Make navigation horizontally scrollable on phones.
+- Fetch settings data for the selected category and poll system status only while its category is open.
+
+Prepared locally, not published.
+
 # 1.12.0
 
 - Replace the embedded location map with an interactive, subdued Leaflet map that adapts to light/dark themes, with a SMARTi marker and zoom controls.

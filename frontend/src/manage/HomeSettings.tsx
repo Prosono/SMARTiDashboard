@@ -64,21 +64,32 @@ export type System = {
       }[]
     | null;
 };
-export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
+export function HomeSettings({
+  lang,
+  home,
+  section = "household",
+}: {
+  lang: string;
+  home: Home;
+  section?: "household" | "backups" | "network" | "system";
+}) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
   const system = useQuery({
     queryKey: ["settings", "system"],
     queryFn: () => api<System>("manage/settings/system"),
-    refetchInterval: 30000,
+    refetchInterval: section === "system" ? 30000 : false,
+    enabled: section !== "household",
   });
   const location = useQuery({
     queryKey: ["settings", "location"],
+    enabled: section === "household",
     queryFn: () => api<Location>("manage/settings/home"),
     retry: false,
   });
   const people = useQuery({
     queryKey: ["settings", "people"],
+    enabled: section === "household",
     queryFn: () =>
       api<{ people: Person[]; trackers: { id: string; name: string }[] }>(
         "manage/settings/people",
@@ -118,162 +129,180 @@ export function HomeSettings({ lang, home }: { lang: string; home: Home }) {
   return (
     <section className="home-settings">
       <div className="section-heading">
-        <h2>{t("Hjem og hjemmesentral", "Home and controller")}</h2>
+        <h2>
+          {section === "household"
+            ? t("Hjem og personer", "Home and people")
+            : section === "backups"
+              ? t("Sikkerhetskopiering", "Backups")
+              : section === "network"
+                ? t("Nettverk", "Network")
+                : "System"}
+        </h2>
         <button
           onClick={() => {
-            void system.refetch();
-            void location.refetch();
-            void people.refetch();
+            if (section === "household") {
+              void location.refetch();
+              void people.refetch();
+              void qc.invalidateQueries({ queryKey: ["settings", "zones"] });
+            } else void system.refetch();
           }}
         >
           {t("Oppdater", "Refresh")}
         </button>
       </div>
-      <div className="settings-personal-grid">
-        <section className="settings-panel location-panel">
-          <h3>
-            <MapPin />{" "}
-            {t("Hjemmets plassering og soner", "Home location and zones")}
-          </h3>
-          {location.data ? (
-            <>
-              <HomeMap
-                latitude={location.data.latitude}
-                longitude={location.data.longitude}
-                name={location.data.location_name}
-                lang={lang}
-              />
-              <strong>{location.data.location_name}</strong>
+      {section === "household" && (
+        <div className="settings-personal-grid">
+          <section className="settings-panel location-panel">
+            <h3>
+              <MapPin />{" "}
+              {t("Hjemmets plassering og soner", "Home location and zones")}
+            </h3>
+            {location.data ? (
+              <>
+                <HomeMap
+                  latitude={location.data.latitude}
+                  longitude={location.data.longitude}
+                  name={location.data.location_name}
+                  lang={lang}
+                />
+                <strong>{location.data.location_name}</strong>
+                <p>
+                  {location.data.latitude}, {location.data.longitude} ·{" "}
+                  {location.data.time_zone}
+                </p>
+                <button
+                  onClick={() => {
+                    setError("");
+                    setPlace({ ...location.data! });
+                  }}
+                >
+                  <Pencil size={17} />
+                  {t("Endre plassering", "Edit location")}
+                </button>
+                <Zones
+                  latitude={location.data.latitude}
+                  longitude={location.data.longitude}
+                  lang={lang}
+                />
+              </>
+            ) : (
               <p>
-                {location.data.latitude}, {location.data.longitude} ·{" "}
-                {location.data.time_zone}
+                {t(
+                  "Plassering krever forbindelse til hjemmesentralen og er utilgjengelig i demo.",
+                  "Location requires a connected controller and is unavailable in demo.",
+                )}
               </p>
-              <button
-                onClick={() => {
-                  setError("");
-                  setPlace({ ...location.data! });
-                }}
-              >
-                <Pencil size={17} />
-                {t("Endre plassering", "Edit location")}
-              </button>
-              <Zones
-                latitude={location.data.latitude}
-                longitude={location.data.longitude}
+            )}
+          </section>
+          <Accounts
+            lang={lang}
+            people={people.data?.people}
+            onPerson={(p) => {
+              setError("");
+              setPerson({ ...p });
+            }}
+          >
+            {people.isError && (
+              <p role="alert">
+                {t(
+                  "Personer kunne ikke hentes fra sentralen.",
+                  "Could not load people from the controller.",
+                )}
+              </p>
+            )}
+            <details className="household-presence">
+              <summary>
+                {t(
+                  "Hvem vises på hjemskjermen?",
+                  "Who appears on the home screen?",
+                )}
+              </summary>
+              <Presence
+                home={home}
+                offline={!home.connected}
                 lang={lang}
+                admin={true}
               />
-            </>
-          ) : (
-            <p>
-              {t(
-                "Plassering krever forbindelse til hjemmesentralen og er utilgjengelig i demo.",
-                "Location requires a connected controller and is unavailable in demo.",
-              )}
-            </p>
-          )}
-        </section>
-        <Accounts
-          lang={lang}
-          people={people.data?.people}
-          onPerson={(p) => {
-            setError("");
-            setPerson({ ...p });
-          }}
-        >
-          {people.isError && (
-            <p role="alert">
-              {t(
-                "Personer kunne ikke hentes fra sentralen.",
-                "Could not load people from the controller.",
-              )}
-            </p>
-          )}
-          <details className="household-presence">
-            <summary>
-              {t(
-                "Hvem vises på hjemskjermen?",
-                "Who appears on the home screen?",
-              )}
-            </summary>
-            <Presence
-              home={home}
-              offline={!home.connected}
-              lang={lang}
-              admin={true}
-            />
-          </details>
-        </Accounts>
-      </div>
-      {system.isError && (
+            </details>
+          </Accounts>
+        </div>
+      )}
+      {section !== "household" && system.isError && (
         <p role="alert">
           {t("Kunne ikke hente systemstatus.", "Could not load system status.")}
         </p>
       )}
-      {system.isPending && (
+      {section !== "household" && system.isPending && (
         <p role="status">
           {t("Henter systemstatus …", "Loading system status …")}
         </p>
       )}
-      {s && (
+      {s && section !== "household" && (
         <>
-          <HubStatus
-            system={s}
-            home={home}
-            lang={lang}
-            stale={system.isError}
-          />
-          {s.unavailable.length > 0 && (
-            <p className="note">
-              {t(
-                "Enkelte systemdata er utilgjengelige. Målinger, nettverk og sikkerhetskopier krever SMARTi-appen på en Supervisor-basert hjemmesentral. Demo viser ikke oppdiktede systemtall.",
-                "Some system data is unavailable. Metrics, network and backups require the SMARTi app on a Supervisor-based controller. Demo does not invent system values.",
-              )}
-            </p>
-          )}
-          <p className="muted">
-            {t(
-              "Historikk samles mens statusvisningen er åpen, og beholdes i inntil 24 timer. Pek på grafen for detaljer.",
-              "History is collected while this view is open and retained for up to 24 hours. Point at a graph for details.",
-            )}
-          </p>
-          <div className="settings-layout">
-            <section className="settings-panel">
-              <h3>
-                <Network /> {t("Nettverk", "Network")}
-              </h3>
-              {s.network === null ? (
-                <p>
+          {section === "system" && (
+            <>
+              <HubStatus
+                system={s}
+                home={home}
+                lang={lang}
+                stale={system.isError}
+              />
+              {s.unavailable.length > 0 && (
+                <p className="note">
                   {t(
-                    "Nettverksstatus utilgjengelig",
-                    "Network status unavailable",
+                    "Enkelte systemdata er utilgjengelige. Målinger, nettverk og sikkerhetskopier krever SMARTi-appen på en Supervisor-basert hjemmesentral. Demo viser ikke oppdiktede systemtall.",
+                    "Some system data is unavailable. Metrics, network and backups require the SMARTi app on a Supervisor-based controller. Demo does not invent system values.",
                   )}
                 </p>
-              ) : (
-                s.network.map((n) => (
-                  <div className="system-list-row" key={n.interface}>
-                    <SystemActions lang={lang} network={n.interface} />
-                    <div>
-                      <strong>
-                        {n.interface}{" "}
-                        {n.primary
-                          ? "· " + t("Hovedforbindelse", "Primary")
-                          : ""}
-                      </strong>
-                      <small>
-                        {n.type} · {n.addresses.join(", ") || "—"}
-                      </small>
-                    </div>
-                    <span>
-                      {n.connected
-                        ? t("Tilkoblet", "Connected")
-                        : t("Frakoblet", "Disconnected")}
-                    </span>
-                  </div>
-                ))
               )}
-            </section>
-          </div>
-          <Backups items={s.backups} lang={lang} />
+              <p className="muted">
+                {t(
+                  "Historikk samles mens statusvisningen er åpen, og beholdes i inntil 24 timer. Pek på grafen for detaljer.",
+                  "History is collected while this view is open and retained for up to 24 hours. Point at a graph for details.",
+                )}
+              </p>
+            </>
+          )}
+          {section === "network" && (
+            <div className="settings-layout">
+              <section className="settings-panel">
+                <h3>
+                  <Network /> {t("Nettverk", "Network")}
+                </h3>
+                {s.network === null ? (
+                  <p>
+                    {t(
+                      "Nettverksstatus utilgjengelig",
+                      "Network status unavailable",
+                    )}
+                  </p>
+                ) : (
+                  s.network.map((n) => (
+                    <div className="system-list-row" key={n.interface}>
+                      <SystemActions lang={lang} network={n.interface} />
+                      <div>
+                        <strong>
+                          {n.interface}{" "}
+                          {n.primary
+                            ? "· " + t("Hovedforbindelse", "Primary")
+                            : ""}
+                        </strong>
+                        <small>
+                          {n.type} · {n.addresses.join(", ") || "—"}
+                        </small>
+                      </div>
+                      <span>
+                        {n.connected
+                          ? t("Tilkoblet", "Connected")
+                          : t("Frakoblet", "Disconnected")}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </section>
+            </div>
+          )}
+          {section === "backups" && <Backups items={s.backups} lang={lang} />}
         </>
       )}
       {(place || person || remove) && (

@@ -15,9 +15,12 @@ test("home settings location and household editing stay in dialogs", async ({ pa
  await page.getByLabel("Brukernavn",{exact:true}).fill("tester");
  await page.getByLabel("Passord",{exact:true}).fill("test-password-not-for-live");
  await page.getByRole("button",{name:"Logg inn",exact:true}).click();
- await page.getByRole("navigation").getByRole("button",{name:"Mer",exact:true}).click();
+ await page.getByRole("navigation").getByRole("button",{name:"Innstillinger",exact:true}).click();
+ await page.getByRole("button",{name:"Sikkerhetskopiering",exact:true}).click();
  await expect(page.getByText("SMARTi backup",{exact:true})).toBeVisible();
+ await page.getByRole("button",{name:"Nettverk",exact:true}).click();
  await expect(page.getByText("192.168.1.2/24",{exact:false})).toBeVisible();
+ await page.getByRole("button",{name:"Hjem og personer",exact:true}).click();
  await page.getByRole("button",{name:"Endre plassering"}).click();
  const dialog=page.getByRole("dialog",{name:"Hjemmets plassering"});
  await dialog.getByLabel("Hjemmets navn").fill("Huset vårt");

@@ -192,7 +192,7 @@ test("integration device opens details, statistics and gap-preserving history", 
   );
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Integrasjoner", exact: true })

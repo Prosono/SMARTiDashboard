@@ -6,16 +6,18 @@ test.beforeEach(async({page})=>{
  await page.route('**/api/manage/settings/**',async route=>{const url=route.request().url();if(url.endsWith('/zones'))return route.fulfill({json:[]});if(url.endsWith('/system'))return route.fulfill({json:system});if(url.endsWith('/home'))return route.fulfill({json:{location_name:'Mitt hjem',latitude:58,longitude:8,elevation:1,time_zone:'Europe/Oslo'}});if(url.endsWith('/people'))return route.fulfill({json:{people:[],trackers:[]}});return route.fallback();});
  await page.route('**/api/manage/accounts',r=>r.fulfill({json:[]}));
  await page.route('**/api/manage/accounts/pending',r=>r.fulfill({json:[]}));
- await page.goto('/');await page.getByLabel('Brukernavn',{exact:true}).fill('tester');await page.getByLabel('Passord',{exact:true}).fill('test-password-not-for-live');await page.getByRole('button',{name:'Logg inn',exact:true}).click();await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
+ await page.goto('/');await page.getByLabel('Brukernavn',{exact:true}).fill('tester');await page.getByLabel('Passord',{exact:true}).fill('test-password-not-for-live');await page.getByRole('button',{name:'Logg inn',exact:true}).click();await page.getByRole('navigation').getByRole('button',{name:'Innstillinger',exact:true}).click();
 });
-test('system charts precede settings and automation cards are absent',async({page})=>{
+test('system category contains charts without household or automation panels',async({page})=>{
+ await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
  await expect(page.locator('.system-graph')).toHaveCount(3);
  await page.locator('.system-graph').first().focus();await page.keyboard.press('ArrowLeft');await expect(page.locator('.system-graph output').first()).toContainText('%');
- const positions=await page.evaluate(()=>({metrics:document.querySelector('.system-metrics')!.getBoundingClientRect().top,appearance:document.querySelector('select')!.getBoundingClientRect().top}));expect(positions.metrics).toBeLessThan(positions.appearance);
+ await expect(page.locator('.settings-personal-grid')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Automasjoner',exact:true})).toHaveCount(0);
  await page.locator('.system-metrics').screenshot({path:`test-results/system-charts-${test.info().project.name}.png`});
 });
 test('backup requires saved password and keeps activity after closing',async({page})=>{
+ await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'Sikkerhetskopiering',exact:true}).click();
  let requests=0, operation:any;
  await page.route('**/api/manage/settings/operations',r=>r.fulfill({json:operation?[operation]:[]}));
  await page.route('**/api/manage/settings/backups',route=>{requests++;const body=route.request().postDataJSON();expect(body.password).toBe('backup-test-password');operation={request_id:body.request_id,kind:'backup',created:Date.now()/1000,status:'accepted',job_id:'job1'};return route.fulfill({json:operation});});
@@ -26,6 +28,7 @@ test('backup requires saved password and keeps activity after closing',async({pa
  await d.getByRole('checkbox').check();await d.getByRole('button',{name:'Start sikkerhetskopiering'}).click();await d.getByRole('button',{name:'Vis aktivitet'}).click();await expect(page.locator('.backup-activity')).toContainText('Fullført');expect(requests).toBe(1);
 });
 test('network requires review before applying static configuration',async({page})=>{
+ await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'Nettverk',exact:true}).click();
  let changes=0;
  await page.route('**/api/manage/settings/network/eth0',route=>{if(route.request().method()==='PUT'){changes++;expect(route.request().postDataJSON().ipv4).toEqual({method:'static',address:['192.168.1.50/24'],gateway:'192.168.1.1',nameservers:['1.1.1.1']});return route.fulfill({json:{status:'accepted'}});}return route.fulfill({json:{interface:'eth0',type:'ethernet',revision:'a'.repeat(64),ipv4:{method:'auto',address:[],gateway:'',nameservers:[]}}});});
  await page.getByRole('button',{name:'Endre nettverk'}).click();const d=page.getByRole('dialog',{name:'Nettverk · eth0'});await d.getByLabel('IP-oppsett').selectOption('static');await d.getByLabel('IP-adresse med nettmaske').fill('192.168.1.50/24');await d.getByLabel('Gateway',{exact:true}).fill('192.168.1.1');await d.getByLabel('DNS-servere').fill('1.1.1.1');await d.getByRole('button',{name:'Se over endringen'}).click();expect(changes).toBe(0);await expect(d).toContainText('Dette kan koble fra SMARTi');await d.getByRole('button',{name:'Bekreft og endre nettverk'}).click();await expect(d).toContainText('Endringen er sendt');expect(changes).toBe(1);
@@ -38,6 +41,7 @@ test('paired account onboarding includes photo role review and no premature crea
  await d.getByLabel('Last opp profilbilde').setInputFiles(path.resolve('public/brand/smarti-logo.png'));await expect(d.getByAltText('Forhåndsvisning av profilbilde')).toBeVisible();await d.getByRole('button',{name:'Neste',exact:true}).click();expect(creates).toBe(0);await page.screenshot({path:`test-results/account-onboarding-${test.info().project.name}.png`});await d.getByRole('button',{name:'Opprett bruker',exact:true}).click();await expect(d).toContainText('Brukeren er klar');expect(creates).toBe(1);
 });
 test('restore reviews contents and download remains a direct file link',async({page})=>{
+ await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'Sikkerhetskopiering',exact:true}).click();
  const backup={slug:'copy1',name:'Min kopi',date:'2026-10-14T09:00:00Z',size:120,type:'full',protected:true};let writes=0;
  await page.route('**/api/manage/settings/system',r=>r.fulfill({json:{...system,backups:[backup]}}));
  await page.route('**/api/manage/settings/backups/copy1/info',r=>r.fulfill({json:{...backup,homeassistant:{version:'1'},addons:[{slug:'smarti',name:'SMARTi'}],folders:['share']}}));
@@ -55,25 +59,28 @@ test('updates hide current and non-installable entries',async({page})=>{
 test('linked household account and person share one row',async({page})=>{
  await page.route('**/api/manage/accounts',r=>r.fulfill({json:[{id:2,name:'ola',display_name:'Ola',role:'admin',linked:true,ha_user_id:'ha2',photo:false}]}));
  await page.route('**/api/manage/settings/people',r=>r.fulfill({json:{people:[{id:'ola',name:'Ola',user_id:'ha2',editable:true,device_trackers:['device_tracker.phone']}],trackers:[{id:'device_tracker.phone',name:'Telefon'}]}}));
- await page.reload();await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
+ await page.reload();await page.getByRole('navigation').getByRole('button',{name:'Innstillinger',exact:true}).click();
  const household=page.locator('.account-management');await expect(household.getByText('Ola',{exact:true})).toHaveCount(1);await expect(household).toContainText('Administrator');await household.getByRole('button',{name:/Person og tilstedeværelse/}).click();const d=page.getByRole('dialog',{name:'Rediger person'});await expect(d.getByLabel('Telefon',{exact:true})).toBeChecked();
 });
-test('personal panels precede hub, real profile photo and usage levels',async({page})=>{
+test('personal panels show photos and system category shows usage levels',async({page})=>{
  await page.route('https://tile.openstreetmap.org/**',r=>r.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=','base64')}));
  await page.route('**/api/manage/accounts',r=>r.fulfill({json:[{id:2,name:'ola',display_name:'Ola',role:'admin',linked:true,ha_user_id:'ha2',photo:true}]}));
  await page.route('**/api/manage/accounts/2/photo*',r=>r.fulfill({path:path.resolve('public/brand/smarti-logo.png'),contentType:'image/png'}));
  let cpu=39.9,memory=40,used=71;
  await page.route('**/api/manage/settings/system',r=>r.fulfill({json:{...system,core:{...system.core,cpu_percent:cpu,memory_percent:memory},host:{...system.host,disk_total:100,disk_used:used,disk_free:100-used}}}));
- await page.reload();await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
+ await page.reload();await page.getByRole('navigation').getByRole('button',{name:'Innstillinger',exact:true}).click();
  await expect(page.locator('.account-person img')).toHaveAttribute('src',/accounts\/2\/photo/);
  await expect(page.getByLabel('Kart · Mitt hjem')).toBeVisible();
  await expect(page.locator('.smarti-map-pin')).toBeVisible();
+ await expect(page.locator('.hub-overview')).toHaveCount(0);
+ await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
  await expect(page.locator('[data-metric="cpu"]')).toHaveClass(/metric-good/);await expect(page.locator('[data-metric="memory"]')).toHaveClass(/metric-moderate/);await expect(page.locator('[data-metric="storage"]')).toHaveClass(/metric-high/);
- const positions=await page.evaluate(()=>({personal:document.querySelector('.settings-personal-grid')!.getBoundingClientRect().bottom,hub:document.querySelector('.hub-overview')!.getBoundingClientRect().top,columns:getComputedStyle(document.querySelector('.settings-personal-grid')!).gridTemplateColumns.split(' ').length}));expect(positions.personal).toBeLessThan(positions.hub);expect(positions.columns).toBe(test.info().project.name==='mobile'?1:2);
+
  await page.locator('.home-settings').screenshot({path:`test-results/personal-hub-${test.info().project.name}.png`});
  cpu=40;memory=70;used=0;await page.getByRole('button',{name:'Oppdater',exact:true}).click();await expect(page.locator('[data-metric="cpu"]')).toHaveClass(/metric-moderate/);await expect(page.locator('[data-metric="memory"]')).toHaveClass(/metric-moderate/);await expect(page.locator('[data-metric="storage"]')).toHaveClass(/metric-good/);
 });
 test('hub product image stays uncropped in dark palette',async({page})=>{
+ await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
  await page.getByRole('button',{name:'Mørkt',exact:true}).click();
  const image=page.locator('.hub-product > img');await expect(image).toBeVisible();
  await expect.poll(()=>image.evaluate((el:HTMLImageElement)=>el.naturalWidth)).toBe(1774);
@@ -105,4 +112,21 @@ test('map edits are drafts and zones support create edit and confirmed delete',a
  await d.getByLabel('Navn på sonen').fill('Kontoret');await d.getByRole('button',{name:'Lagre sone'}).click();await expect(d).toHaveCount(0);
  await page.getByRole('button',{name:'Endre Kontoret'}).click();d=page.getByRole('dialog');await d.getByRole('button',{name:'Slett sone',exact:true}).click();expect(deletes).toBe(0);
  await expect(d).toContainText('Automasjoner som bruker denne sonen');await d.getByRole('button',{name:'Slett sone',exact:true}).click();await expect(d).toHaveCount(0);expect(deletes).toBe(1);
+});
+test('main destinations and five settings categories are separate',async({page})=>{
+ const main=page.getByRole('navigation',{name:'Hovedmeny'});
+ for(const name of ['Automasjoner','Integrasjoner','Oppdateringer']){
+   await main.getByRole('button',{name,exact:true}).click();
+   await expect(main.getByRole('button',{name,exact:true})).toHaveAttribute('aria-current','page');
+   await expect(page.getByRole('navigation',{name:'Innstillingskategorier'})).toHaveCount(0);
+ }
+ await main.getByRole('button',{name:'Innstillinger',exact:true}).click();
+ const categories=page.getByRole('navigation',{name:'Innstillingskategorier'});
+ await expect(categories.getByRole('button')).toHaveText(['Hjem og personer','Sikkerhetskopiering','Nettverk','System','Tema og utseende']);
+ await categories.getByRole('button',{name:'Tema og utseende'}).click();
+ await expect(page.locator('.home-settings')).toHaveCount(0);
+ await expect(page.getByRole('heading',{name:'Tema og utseende'})).toBeVisible();
+ await expect(categories.getByRole('button',{name:'Tema og utseende'})).toHaveAttribute('aria-current','page');
+ await expect(categories.getByRole('button',{name:'Hjem og personer'})).not.toHaveClass('selected');
+ await page.screenshot({animations:'disabled',path:`test-results/settings-navigation-${test.info().project.name}.png`});
 });

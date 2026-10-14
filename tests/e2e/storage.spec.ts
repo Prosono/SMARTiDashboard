@@ -34,7 +34,7 @@ for (const failure of ["quota", "blocked"] as const) {
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page
       .getByRole("navigation")
-      .getByRole("button", { name: "Mer", exact: true })
+      .getByRole("button", { name: "Innstillinger", exact: true })
       .click();
     await page.getByLabel("Språk").selectOption("en");
     await expect(

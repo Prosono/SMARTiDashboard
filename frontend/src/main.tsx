@@ -14,7 +14,9 @@ import {
   House,
   LayoutGrid,
   SlidersHorizontal,
-  Ellipsis,
+  Workflow,
+  Blocks,
+  DownloadCloud,
   Plus,
   Search,
   ArrowUpRight,
@@ -64,7 +66,10 @@ const icons = {
   home: House,
   rooms: LayoutGrid,
   devices: SlidersHorizontal,
-  more: Ellipsis,
+  automations: Workflow,
+  integrations: Blocks,
+  updates: DownloadCloud,
+  more: Settings,
 };
 type Page = keyof typeof icons;
 function Logo() {
@@ -157,22 +162,28 @@ function App() {
       <aside className="sidebar">
         <Logo />
         <div className="sidebar-label">SMART LIVING, SIMPLIFIED.</div>
-        <nav>
-          {(Object.keys(icons) as Page[]).map((p) => {
-            const Icon = icons[p];
-            return (
-              <button
-                key={p}
-                className={page === p ? "nav-item active" : "nav-item"}
-                aria-current={page === p ? "page" : undefined}
-                onClick={() => navigate(p)}
-              >
-                <Icon size={21} />
-                <span>{t[p]}</span>
-                {page === p && <span className="nav-dot" />}
-              </button>
-            );
-          })}
+        <nav aria-label={lang === "en" ? "Main navigation" : "Hovedmeny"}>
+          {(Object.keys(icons) as Page[])
+            .filter(
+              (p) =>
+                session.role === "admin" ||
+                !["automations", "integrations", "updates"].includes(p),
+            )
+            .map((p) => {
+              const Icon = icons[p];
+              return (
+                <button
+                  key={p}
+                  className={page === p ? "nav-item active" : "nav-item"}
+                  aria-current={page === p ? "page" : undefined}
+                  onClick={() => navigate(p)}
+                >
+                  <Icon size={21} />
+                  <span>{t[p]}</span>
+                  {page === p && <span className="nav-dot" />}
+                </button>
+              );
+            })}
         </nav>
         <div className="sidebar-bottom">
           <AccountAvatar name={session.name} />
@@ -413,7 +424,7 @@ function Dashboard({
   const [room, setRoom] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [roomEditing, setRoomEditing] = useState(false);
-  const [more, setMore] = useState("overview");
+  const [settingsSection, setSettingsSection] = useState("household");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [protocol, setProtocol] = useState("all");
@@ -719,50 +730,76 @@ function Dashboard({
               </>
             )}
           </>
+        ) : page === "automations" && session.role === "admin" ? (
+          <Automations lang={lang} home={h} onDirty={onDirty} />
+        ) : page === "integrations" && session.role === "admin" ? (
+          <Integrations lang={lang} />
+        ) : page === "updates" && session.role === "admin" ? (
+          <Updates lang={lang} />
         ) : (
           <>
+            <div className="page-heading">
+              <span className="eyebrow">SMARTi</span>
+              <h1>{t.settings}</h1>
+            </div>
             <nav
-              className="management-tabs"
-              aria-label={lang === "en" ? "More sections" : "Flere funksjoner"}
+              className="management-tabs settings-sections"
+              aria-label={
+                lang === "en" ? "Settings sections" : "Innstillingskategorier"
+              }
             >
               {[
-                ["overview", lang === "en" ? "Settings" : "Innstillinger"],
                 ...(session.role === "admin"
                   ? [
-                      ["automations", t.automations],
                       [
-                        "integrations",
-                        lang === "en" ? "Integrations" : "Integrasjoner",
+                        "household",
+                        lang === "en" ? "Home and people" : "Hjem og personer",
                       ],
-                      ["updates", lang === "en" ? "Updates" : "Oppdateringer"],
+                      [
+                        "backups",
+                        lang === "en" ? "Backups" : "Sikkerhetskopiering",
+                      ],
+                      ["network", lang === "en" ? "Network" : "Nettverk"],
+                      ["system", "System"],
                     ]
                   : []),
+                [
+                  "appearance",
+                  lang === "en" ? "Theme and appearance" : "Tema og utseende",
+                ],
               ].map(([key, label]) => (
                 <button
                   key={key}
-                  className={more === key ? "selected" : ""}
-                  aria-current={more === key ? "page" : undefined}
-                  onClick={() => guard(() => setMore(key))}
+                  className={
+                    settingsSection === key ||
+                    (session.role !== "admin" && key === "appearance")
+                      ? "selected"
+                      : ""
+                  }
+                  aria-current={
+                    settingsSection === key ||
+                    (session.role !== "admin" && key === "appearance")
+                      ? "page"
+                      : undefined
+                  }
+                  onClick={() => guard(() => setSettingsSection(key))}
                 >
                   {label}
                 </button>
               ))}
             </nav>
-            {more === "automations" && session.role === "admin" ? (
-              <Automations lang={lang} home={h} onDirty={onDirty} />
-            ) : more === "integrations" && session.role === "admin" ? (
-              <Integrations lang={lang} />
-            ) : more === "updates" && session.role === "admin" ? (
-              <Updates lang={lang} />
+            {session.role === "admin" && settingsSection !== "appearance" ? (
+              <HomeSettings
+                key={settingsSection}
+                lang={lang}
+                home={h}
+                section={
+                  settingsSection as
+                    "household" | "backups" | "network" | "system"
+                }
+              />
             ) : (
               <>
-                <div className="page-heading">
-                  <span className="eyebrow">SMARTi</span>
-                  <h1>{t.settings}</h1>
-                </div>
-                {session.role === "admin" && (
-                  <HomeSettings lang={lang} home={h} />
-                )}
                 <div className="settings-layout">
                   {session.role !== "admin" && (
                     <section className="settings-panel">
@@ -793,7 +830,9 @@ function Dashboard({
                   <section className="settings-panel">
                     <h2>
                       <Settings size={21} />
-                      {t.settings}
+                      {lang === "en"
+                        ? "Theme and appearance"
+                        : "Tema og utseende"}
                     </h2>
                     <label>
                       {t.appearance}

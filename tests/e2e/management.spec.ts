@@ -59,7 +59,7 @@ test("automations create visually and preserve advanced configuration on edit", 
 }) => {
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
   await page
@@ -167,7 +167,7 @@ test("integrations and branded updates use explicit confirmation", async ({
 }) => {
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Integrasjoner", exact: true })
@@ -218,7 +218,7 @@ test("guided sensor transitions and sunset survive review without running device
 }) => {
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
   await page
@@ -305,7 +305,7 @@ test("flow cards add conditions and actions, reorder and preserve drafts across 
 }) => {
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
   await page
@@ -404,7 +404,7 @@ test("advanced branches render recursively and deep edits round trip unchanged s
 }) => {
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
   await page
@@ -620,7 +620,7 @@ test("integrations group connections and expand devices with logo fallback", asy
   );
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Integrasjoner", exact: true })
@@ -654,7 +654,7 @@ test("canvas moves cards with keyboard and pointer without changing automation l
 }) => {
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
   await page
@@ -757,7 +757,7 @@ test("canvas connects by dragging or keyboard and saves native sequence and para
 }) => {
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
   await page
@@ -909,7 +909,7 @@ test('platform integrations use SMARTi names and local logos without rewriting I
   }]}));
   let brandRequests=0;
   page.on('request',r=>{if(r.url().includes('integration-brands/hassio') || r.url().includes('brands.home-assistant.io/hassio')) brandRequests++;});
-  await page.getByRole('navigation').getByRole('button',{name:'Mer',exact:true}).click();
+  await page.getByRole('navigation').getByRole('button',{name:'Innstillinger',exact:true}).click();
   await page.getByRole('button',{name:'Integrasjoner',exact:true}).click();
   await page.getByLabel('Søk i integrasjoner').fill('SMARTi');
   const card=page.locator('.integration-card');

@@ -63,7 +63,7 @@ test("themes, language, no sensitive cache and responsive navigation", async ({
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page.getByLabel("Utseende").selectOption("dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -106,7 +106,7 @@ test("personalization persists rooms and favorites and has no dashboard builder"
   await expect(page.locator(".home-room-card")).toHaveCount(1);
   await page
     .getByRole("navigation")
-    .getByRole("button", { name: "Mer", exact: true })
+    .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await expect(
     page.getByRole("button", { name: "Dashbord", exact: true }),
