@@ -55,6 +55,23 @@ test("radio overview counts real states, searches manufacturers and sorts device
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
   await page.getByRole("button", { name: "Zigbee", exact: true }).click();
+  await expect(page.locator(".protocol-wordmark img")).toHaveAttribute(
+    "src",
+    /brand\/zigbee-logo.jpg$/,
+  );
+  await expect(
+    page
+      .locator(".protocol-row")
+      .filter({ hasText: "Koordinator" })
+      .locator("img"),
+  ).toHaveAttribute("src", /brand\/zigbee-logo.jpg$/);
+  expect(
+    await page
+      .locator(".protocol-wordmark img")
+      .evaluate(
+        (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
+      ),
+  ).toBe(true);
   await expect(page.locator(".protocol-stats dd")).toHaveText([
     "2",
     "0",
@@ -90,6 +107,16 @@ test("radio overview counts real states, searches manufacturers and sorts device
     "data-protocol",
     "zwave_js",
   );
+  await expect(page.locator(".protocol-wordmark img")).toHaveAttribute(
+    "src",
+    /brand\/zwave-logo.png$/,
+  );
+  await expect(
+    page
+      .locator(".protocol-row")
+      .filter({ hasText: "Koordinator" })
+      .locator("img"),
+  ).toHaveAttribute("src", /brand\/zwave-logo.png$/);
   await page.evaluate(() =>
     document.documentElement.setAttribute("data-theme", "dark"),
   );

@@ -1,3 +1,4 @@
+import { ProtocolLogo } from "./ProtocolLogo";
 import { RadioAdvanced } from "./RadioAdvanced";
 import { Apps } from "./manage/Apps";
 import { AccountAvatar } from "./manage/Accounts";
@@ -430,6 +431,7 @@ function Dashboard({
   const [pairedDevice, setPairedDevice] = useState<{
     id?: string;
     name?: string;
+    provider: string;
   } | null>(null);
   const [roomEditing, setRoomEditing] = useState(false);
   const [settingsSection, setSettingsSection] = useState("household");
@@ -440,8 +442,44 @@ function Dashboard({
     const stream = new EventSource(new URL("api/events", document.baseURI));
     stream.onopen = () => streamStatus(true);
     stream.onerror = () => streamStatus(false);
-    stream.onmessage = () => {
-      queryClient.invalidateQueries({ queryKey: ["home"] });
+    let homeRevision: number | undefined;
+    let radioRevision: number | undefined;
+    stream.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const homeChanged =
+          typeof data.revision === "number" && data.revision !== homeRevision;
+        const radioChanged =
+          typeof data.radio_revision === "number" &&
+          data.radio_revision !== radioRevision;
+        homeRevision = data.revision;
+        radioRevision = data.radio_revision;
+        // Let an in-flight fetch finish rather than cancelling it on busy networks.
+        if (homeChanged)
+          void queryClient.invalidateQueries(
+            { queryKey: ["home"] },
+            { cancelRefetch: false },
+          );
+        if (homeChanged || radioChanged) {
+          for (const key of [
+            "protocol-devices",
+            "device-detail",
+            "paired-device",
+          ]) {
+            void queryClient.invalidateQueries(
+              { queryKey: [key] },
+              { cancelRefetch: false },
+            );
+          }
+        }
+        if (radioChanged)
+          void queryClient.invalidateQueries(
+            { queryKey: ["zigbee-connection"] },
+            { cancelRefetch: false },
+          );
+      } catch {
+        /* Ignore incomplete event frames; polling remains a fallback. */
+      }
     };
     stream.addEventListener("expired", () => window.location.reload());
     return () => stream.close();
@@ -579,7 +617,7 @@ function Dashboard({
               setPairedDevice(device);
               setAdding(false);
               setPage("devices");
-              setProtocol("zigbee2mqtt");
+              setProtocol(device.provider);
               setSearch("");
               setRoom(null);
             }}
@@ -680,7 +718,11 @@ function Dashboard({
                     {id === "all" ? (
                       <LayoutGrid size={17} />
                     ) : (
-                      <SlidersHorizontal size={17} />
+                      <ProtocolLogo
+                        provider={id}
+                        className="protocol-tab-logo"
+                        label=""
+                      />
                     )}
                     {label}
                   </button>
@@ -697,7 +739,9 @@ function Dashboard({
               <ProtocolDevices
                 key={protocol}
                 provider={protocol}
-                pairedDevice={protocol === "zigbee2mqtt" ? pairedDevice : null}
+                pairedDevice={
+                  pairedDevice?.provider === protocol ? pairedDevice : null
+                }
                 lang={lang === "en" ? "en" : "nb"}
                 admin={session.role === "admin"}
               />

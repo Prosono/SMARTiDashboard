@@ -144,11 +144,12 @@ async def test_zwave_security_pin_not_persisted_and_no_premature_success(setup):
         assert "12345" not in setup.store.get("pairing_active")
         setup.zwave_event({"event": "device registered", "device": {"id": "other-device"}})
         assert setup.snapshot()["status"] == "interviewing"
-        setup.zwave_event({"event": "node added", "node": {"low_security": True}})
+        setup.zwave_event({"event": "node added", "node": {"low_security": True, "node_id": 7}})
         setup.zwave_event({"event": "interview completed"})
         await asyncio.sleep(0.6)
         assert setup.snapshot()["status"] == "paired"
         assert setup.snapshot()["low_security"] is True
+        assert setup.snapshot()["device_id"] == "zwave:7"
     finally:
         await setup.close()
 

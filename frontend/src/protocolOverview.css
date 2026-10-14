@@ -313,7 +313,8 @@
     font-size: 24px;
   }
   .protocol-summary h2 {
-    font-size: 20px; margin-bottom: 6px;
+    font-size: 20px;
+    margin-bottom: 6px;
   }
   .protocol-summary > p {
     margin-top: 0;
@@ -376,4 +377,43 @@
 }
 .protocol-devices .protocol-search input:focus-visible {
   outline: none;
+}
+.protocol-logo {
+  object-fit: contain;
+  background: #fff;
+  border-radius: 5px;
+  padding: 6px;
+  flex-shrink: 0;
+}
+.protocol-wordmark > .protocol-logo {
+  grid-column: 1/-1;
+  width: min(100%, 190px);
+  height: 84px;
+  padding: 12px;
+}
+.protocol-tab-logo {
+  width: 46px;
+  height: 26px;
+  padding: 3px;
+}
+.controller-protocol-logo {
+  width: 72px;
+  height: 56px;
+  padding: 5px;
+}
+@media (max-width: 600px) {
+  .protocol-wordmark > .protocol-logo {
+    width: 120px;
+    height: 58px;
+    padding: 8px;
+  }
+  .protocol-tab-logo {
+    width: 32px;
+    height: 22px;
+  }
+  .protocol-devices .controller-protocol-logo {
+    width: 40px;
+    height: 46px;
+    padding: 3px;
+  }
 }

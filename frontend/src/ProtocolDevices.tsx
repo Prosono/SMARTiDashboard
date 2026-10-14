@@ -1,3 +1,4 @@
+import { ProtocolLogo } from "./ProtocolLogo";
 import "./protocolOverview.css";
 import { ZigbeeStatus } from "./ZigbeeStatus";
 import { useState } from "react";
@@ -176,8 +177,7 @@ export function ProtocolDevices({
       )}
       <div className="protocol-banner">
         <div className="protocol-wordmark" aria-hidden="true">
-          <Radio strokeWidth={2.5} />
-          <strong>{zigbee ? "zigbee" : "Z-Wave"}</strong>
+          <ProtocolLogo provider={provider} />
           <span>{no ? "DITT NETTVERK" : "YOUR NETWORK"}</span>
         </div>
         <div className="protocol-summary">
@@ -353,7 +353,11 @@ export function ProtocolDevices({
               key={d.id}
             >
               <div className="protocol-device-icon">
-                <DevicePicture url={d.image_url} name={d.name} />
+                <DevicePicture
+                  url={d.image_url}
+                  name={d.name}
+                  protocol={d.controller ? provider : undefined}
+                />
               </div>
               <div className="protocol-identity">
                 <h3>

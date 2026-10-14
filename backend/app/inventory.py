@@ -19,11 +19,16 @@ class Inventory:
         self.devices = None
         self.telemetry = {}
         self.pending = {}
+        self.revision = 0
+
+    def changed(self):
+        self.revision += 1
 
     def reset(self):
         self.devices = None
         self.telemetry.clear()
         self.pending.clear()
+        self.changed()
 
     def event(self, event):
         base = self.setup.settings.zigbee2mqtt_base_topic + "/"
@@ -56,6 +61,7 @@ class Inventory:
             for key, device in self.devices.items():
                 values = self.pending.pop(device["name"], {})
                 self.telemetry.setdefault(key, {}).update(values)
+            self.changed()
         elif not topic.startswith("bridge/"):
             name = topic.removesuffix("/availability")
             values = {}
@@ -71,7 +77,10 @@ class Inventory:
                 return
             for key, device in (self.devices or {}).items():
                 if name == device["name"]:
-                    self.telemetry.setdefault(key, {}).update(values)
+                    current = self.telemetry.setdefault(key, {})
+                    if any(current.get(k) != v for k, v in values.items()):
+                        current.update(values)
+                        self.changed()
                     return
             # Retained delivery order is unspecified. Cache only bounded, safe diagnostics.
             if len(name) <= 200:
@@ -195,6 +204,8 @@ class Inventory:
         area = self.setup.ha.areas.get(registered.get("area_id"), {})
         return device | {
             "ha_device_id": registered.get("id"),
+            "name": registered.get("name_by_user") or device["name"],
+            "area_id": registered.get("area_id"),
             "area": area.get("name"),
             "firmware": device.get("firmware") or registered.get("sw_version"),
             "hardware": registered.get("hw_version"),

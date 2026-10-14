@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { PairingFinish, type PairedDevice } from "./PairingFinish";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowUpRight, Radio, LoaderCircle } from "lucide-react";
 import { api, ApiError } from "./api";
@@ -25,6 +26,7 @@ type Pairing = {
   grant?: { securityClasses: number[] };
   device_name?: string;
   device_id?: string;
+  setup_completed?: boolean;
   low_security?: boolean;
 };
 const copy = {
@@ -161,7 +163,7 @@ export function DeviceSetup({
 }: {
   lang: string;
   onBack: () => void;
-  onPaired: (device: { id?: string; name?: string }) => void;
+  onPaired: (device: PairedDevice) => void;
 }) {
   const t = lang === "en" ? copy.en : copy.nb;
   const providers = useQuery({
@@ -185,22 +187,7 @@ export function DeviceSetup({
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-  const tracked = useRef<string | null>(null);
-  const delivered = useRef<string | null>(null);
   const s = session.data;
-  useEffect(() => {
-    if (!s || s.provider !== "zigbee2mqtt" || s.operation === "remove") return;
-    if (["starting", "searching", "interviewing"].includes(s.status))
-      tracked.current = s.id;
-    if (
-      s.status === "paired" &&
-      tracked.current === s.id &&
-      delivered.current !== s.id
-    ) {
-      delivered.current = s.id;
-      onPaired({ id: s.device_id, name: s.device_name });
-    }
-  }, [s, onPaired]);
   useEffect(() => {
     if (s?.status === "stopped" && !s.radio_open) setError("");
   }, [s?.status, s?.radio_open]);
@@ -209,8 +196,7 @@ export function DeviceSetup({
     setStopping(path.endsWith("/stop"));
     setError("");
     try {
-      const result = await api<Pairing>(path, "POST", body);
-      if (path === "setup/sessions" && result?.id) tracked.current = result.id;
+      await api<Pairing>(path, "POST", body);
     } catch (e) {
       setError(
         e instanceof ApiError && e.code === "controller_busy"
@@ -234,6 +220,18 @@ export function DeviceSetup({
   }
   return (
     <section className="device-setup">
+      {s?.status === "paired" &&
+        !s.setup_completed &&
+        s.operation !== "remove" && (
+          <PairingFinish
+            key={s.id}
+            session={s}
+            lang={lang}
+            done={onPaired}
+            close={onBack}
+          />
+        )}
+
       <button className="text-button" onClick={onBack}>
         <ArrowLeft size={17} />
         {t.back}

@@ -122,6 +122,7 @@ class DeviceSetup:
         if event.get("event") == "smarti disconnected":
             self.mqtt_epoch = None
             self.mqtt_online = False
+            self.inventory.changed()
             if self.session and self.session["provider"] == "zigbee2mqtt":
                 self.interrupted()
             return
@@ -134,7 +135,10 @@ class DeviceSetup:
         }:
             return
         if topic.endswith("/bridge/state"):
-            self.mqtt_online = data == "online" or isinstance(data, dict) and data.get("state") == "online"
+            online = data == "online" or isinstance(data, dict) and data.get("state") == "online"
+            if online != self.mqtt_online:
+                self.mqtt_online = online
+                self.inventory.changed()
         elif topic.endswith("/bridge/info") and isinstance(data, dict):
             # Never retain or return the complete bridge config (can contain credentials).
             self.mqtt_info = {k: data.get(k) for k in ["version", "permit_join"]}
@@ -202,6 +206,15 @@ class DeviceSetup:
                 s["status"] = "failed" if kind == "exclusion failed" else "stopped"
                 self.schedule_stop()
         elif s["status"] in ACTIVE:
+            node_id = (event.get("node") or {}).get("node_id", event.get("node_id"))
+            if isinstance(node_id, int) and kind in {
+                "node found",
+                "node added",
+                "interview started",
+                "interview completed",
+            }:
+                s["node_id"] = node_id
+                s["device_id"] = f"{s['entry_id']}:{node_id}"
             if kind == "grant security classes":
                 grant = event.get("requested_grant", {})
                 classes = grant.get("securityClasses", [])

@@ -83,6 +83,7 @@ class ZigbeeFrontend:
                     self.error = "frontend_disconnected"
                 self.socket = None
                 self.setup.mqtt_online = False
+                self.setup.inventory.changed()
                 if self.setup.session and self.setup.session["provider"] == "zigbee2mqtt":
                     self.setup.interrupted()
                 for future in self.setup.responses.values():

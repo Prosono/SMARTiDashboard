@@ -71,6 +71,12 @@ class PairingStart(BaseModel):
     entry_id: str | None = Field(default=None, max_length=100)
 
 
+class PairingFinish(BaseModel):
+    model_config = {"extra": "forbid"}
+    name: str = Field(min_length=1, max_length=80)
+    area_id: str = Field(min_length=1, max_length=200)
+
+
 class DeviceImage(BaseModel):
     device_id: str = Field(min_length=1, max_length=200)
     image: str | None = Field(default=None, max_length=810_000)
@@ -388,19 +394,24 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             raise HTTPException(403, "origin_rejected")
 
         async def stream():
-            revision = -1
+            revision = (-1, -1)
             while not await request.is_disconnected():
                 try:
                     auth.session(request.cookies.get("smarti_session"))
                 except HTTPException:
                     yield "event: expired\ndata: {}\n\n"
                     return
-                if ha.revision != revision:
-                    revision = ha.revision
-                    yield "data: " + json.dumps({"revision": revision}) + "\n\n"
+                current_revision = (ha.revision, setup.inventory.revision)
+                if current_revision != revision:
+                    revision = current_revision
+                    yield (
+                        "data: "
+                        + json.dumps({"revision": revision[0], "radio_revision": revision[1]})
+                        + "\n\n"
+                    )
                 else:
                     yield ": heartbeat\n\n"
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.5)
 
         return StreamingResponse(
             stream(), media_type="text/event-stream", headers={"X-Accel-Buffering": "no"}
@@ -471,6 +482,30 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             return await setup.start(body.provider, body.entry_id, current["id"])
         except (HAError, TimeoutError):
             raise HTTPException(503, "pairing_provider_unavailable")
+
+    @app.post("/api/setup/sessions/{session_id}/finish")
+    async def finish_pairing(session_id: str, body: PairingFinish, current=Depends(admin)):
+        async with setup.lock:
+            s = setup.session
+            if not s or s["id"] != session_id or s["status"] != "paired" or s.get("operation") == "remove":
+                raise HTTPException(409, "pairing_not_complete")
+            if not body.name.strip() or body.area_id not in ha.areas:
+                raise HTTPException(422, "invalid_device_details")
+            if not s.get("device_id"):
+                raise HTTPException(409, "device_registration_pending")
+            device = await setup.inventory.detail(s["provider"], s["device_id"])
+            device_id = device.get("ha_device_id")
+            if not device_id or device_id not in ha.devices or device.get("controller"):
+                raise HTTPException(409, "device_registration_pending")
+            await management.ws(
+                "config/device_registry/update",
+                device_id=device_id,
+                name_by_user=body.name.strip(),
+                area_id=body.area_id,
+            )
+            s["setup_completed"] = True
+            s["device_name"] = body.name.strip()
+            return {"id": s["device_id"], "name": body.name.strip(), "provider": s["provider"]}
 
     @app.post("/api/setup/sessions/{session_id}/stop")
     async def stop_pairing(session_id: str, current=Depends(admin)):

@@ -209,3 +209,30 @@ async def test_extended_zwave_registry_identifier_matches_device(setup):
     setup.ha.devices["ha-device"]["identifiers"] = [["zwave_js", "123-2-271:2048:4097"]]
     detail = await setup.inventory.detail("zwave_js", "zwave:2")
     assert detail["ha_device_id"] == "ha-device" and detail["name"] == "Hall sensor"
+
+
+def test_radio_revision_notifies_real_changes_and_reconnect(tmp_path):
+    setup = DeviceSetup(InventoryRadio(), Settings(_env_file=None, mode="demo", data_dir=tmp_path))
+    inventory = setup.inventory
+    initial = inventory.revision
+    inventory.event(
+        {
+            "topic": "zigbee2mqtt/bridge/devices",
+            "payload": json.dumps([{"ieee_address": "lamp", "friendly_name": "room/lamp"}]),
+        }
+    )
+    assert inventory.revision > initial
+    current = inventory.revision
+    message = {"topic": "zigbee2mqtt/room/lamp/availability", "payload": json.dumps({"state": "online"})}
+    inventory.event(message)
+    assert inventory.revision == current + 1
+    inventory.event(message)
+    assert inventory.revision == current + 1  # identical availability does not flood the UI
+    inventory.event({"topic": "zigbee2mqtt/room/lamp", "payload": json.dumps({"linkquality": 180})})
+    assert inventory.revision == current + 2
+    setup.mqtt_event({"topic": "zigbee2mqtt/bridge/state", "payload": "online"})
+    assert inventory.revision == current + 3
+    setup.mqtt_event({"event": "smarti disconnected"})
+    assert inventory.revision == current + 4
+    inventory.reset()
+    assert inventory.revision == current + 5

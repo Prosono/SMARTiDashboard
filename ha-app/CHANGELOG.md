@@ -1,3 +1,28 @@
+# 1.18.1
+
+- Send radio inventory revisions over the existing authenticated event stream for Zigbee availability, link-quality samples, inventory changes and bridge disconnections, through both MQTT and the Zigbee2MQTT frontend/proxy transport.
+- Refresh active protocol lists and device details on radio/controller events instead of waiting for the five-second poll. Preserve polling as a fallback and avoid cancelling in-flight requests on busy networks.
+- Coalesce backend notifications at a half-second interval and avoid duplicate availability notifications. Do not infer online status before Zigbee2MQTT reports it.
+
+Prepared locally, not published. Simulated browser events verify visible status updates within 1.5 seconds of event delivery; live installation latency remains to be measured.
+
+# 1.18.0
+
+- Add a final name-and-room dialog after both Zigbee and Z-Wave pairing, including creation of a new room.
+- Wait for the exact paired device to appear in the controller registry before allowing save. Update device name and area together; retain entered values after an unconfirmed response.
+- Track the paired Z-Wave node ID, display registry names in Zigbee inventory and navigate to the matching protocol overview after saving.
+- Reopen unfinished setup when returning to the pairing wizard; closing the dialog does not unpair the device. Completed setup does not reopen.
+
+Prepared locally, not published. Tests use simulated devices; live hardware commissioning remains unverified.
+
+# 1.17.1
+
+- Use locally bundled original Zigbee and Z-Wave logos in protocol banners and tabs, replacing generic symbols and text approximations.
+- Use the protocol logo for coordinator/controller images when an actual model or custom image is absent or fails to load, including device details.
+- Preserve original brand colors with a neutral backing across themes and document asset provenance.
+
+Prepared locally, not published. Frontend build and mobile/desktop logo checks included.
+
 # 1.17.0
 
 - Redesign Zigbee and Z-Wave overviews with protocol-colored network banners, decorative illustrations and clearer device cards that adapt to light/dark themes and mobile screens.

@@ -1,3 +1,4 @@
+import { ProtocolLogo } from "./ProtocolLogo";
 import { Thermostat } from "./Thermostat";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,9 +9,11 @@ import type { Control } from "./types";
 export function DevicePicture({
   url,
   name,
+  protocol,
 }: {
   url?: string | null;
   name: string;
+  protocol?: string;
 }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [url]);
@@ -23,11 +26,18 @@ export function DevicePicture({
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
     />
+  ) : protocol ? (
+    <ProtocolLogo
+      provider={protocol}
+      className="controller-protocol-logo"
+      label={name}
+    />
   ) : (
     <Radio aria-label={name} size={30} />
   );
 }
 type Detail = {
+  controller?: boolean;
   name: string;
   model?: string;
   manufacturer?: string;
@@ -181,7 +191,11 @@ export function DeviceDetails({
       </div>
       <div className="device-dialog-title">
         <div className="device-dialog-picture">
-          <DevicePicture url={d?.image_url} name={name} />
+          <DevicePicture
+            url={d?.image_url}
+            name={name}
+            protocol={d?.controller ? provider : undefined}
+          />
         </div>
         <div>
           <h2 id="device-dialog-title">{d?.name || name}</h2>
