@@ -3,13 +3,15 @@
 import asyncio
 import hashlib
 import json
+import os
 import re
 import time
 from typing import Literal
 from urllib.parse import urlsplit
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, field_validator
 
 from .system_operations import Supervisor
@@ -96,6 +98,8 @@ def apps_router(m, admin, settings):
                     "update_available",
                     "system_managed",
                     "stage",
+                    "icon",
+                    "logo",
                 ]
             },
             "installed": installed,
@@ -243,6 +247,44 @@ def apps_router(m, admin, settings):
         value = {k: info.get(k) for k in ["options", "boot", "watchdog", "auto_update"]}
         value["revision"] = hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
         return value
+
+    @router.get("/{slug}/image")
+    async def image(slug: str, source: Literal["installed", "store"], kind: Literal["icon", "logo"] = "icon"):
+        info = await target(slug, source == "store")
+        if not info.get(kind):
+            raise HTTPException(404, "app_image_unavailable")
+        token = os.environ.get("SUPERVISOR_TOKEN")
+        if settings.mode == "demo" or not settings.ingress or not token:
+            raise HTTPException(503, "supervisor_unavailable")
+        path = f"/store/addons/{slug}/{kind}" if source == "store" else f"/addons/{slug}/{kind}"
+        try:
+            async with httpx.AsyncClient(timeout=15, trust_env=False, follow_redirects=False) as client:
+                async with client.stream(
+                    "GET", "http://supervisor" + path, headers={"Authorization": "Bearer " + token}
+                ) as response:
+                    response.raise_for_status()
+                    data = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        data.extend(chunk)
+                        if len(data) > 2_000_000:
+                            raise HTTPException(502, "app_image_unavailable")
+        except httpx.HTTPError:
+            raise HTTPException(502, "app_image_unavailable") from None
+        # Serve only raster images, never upstream HTML/SVG or response headers.
+        content = bytes(data)
+        if content.startswith(b"\x89PNG\r\n\x1a\n"):
+            mime = "image/png"
+        elif content.startswith(b"\xff\xd8\xff"):
+            mime = "image/jpeg"
+        elif content.startswith(b"RIFF") and content[8:12] == b"WEBP":
+            mime = "image/webp"
+        else:
+            raise HTTPException(502, "app_image_unavailable")
+        return Response(
+            content,
+            media_type=mime,
+            headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
+        )
 
     @router.get("/{slug}/configuration")
     async def configuration(slug: str):

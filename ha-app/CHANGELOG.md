@@ -1,3 +1,10 @@
+# 1.14.1
+
+- Show app icons in installed/library cards and larger logos in app dialogs, with icon/logo fallback and a neutral placeholder for missing images.
+- Fetch bounded raster images through authenticated fixed Supervisor routes; keep credentials server-side and retain SMARTi self-protection.
+
+Prepared locally, not published.
+
 # 1.14.0
 
 - Add an administrator Apps destination with installed apps, searchable app library and HTTPS repository registration.

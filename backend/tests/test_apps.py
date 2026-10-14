@@ -166,3 +166,50 @@ def test_apps_unavailable_without_supervisor(client):  # noqa: F811
         client.post("/api/manage/apps/core_test/actions", json=body() | {"action": "security"}).status_code
         == 422
     )
+
+
+def test_app_images_fixed_routes_bounded_raster_and_self_protection(client, supervisor, monkeypatch):  # noqa: F811
+    from types import SimpleNamespace
+
+    import httpx
+    from app.apps import apps_router
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    _, info, _ = supervisor
+    info.update(icon=True, logo=True)
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "private-test-token")
+    received = []
+    content = {"body": b"\x89PNG\r\n\x1a\nimage"}
+    real = httpx.AsyncClient
+
+    def response(request):
+        received.append(request)
+        assert request.headers["authorization"] == "Bearer private-test-token"
+        return httpx.Response(200, content=content["body"])
+
+    monkeypatch.setattr(
+        httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(response), **kw)
+    )
+    app = FastAPI()
+    app.include_router(
+        apps_router(
+            client.app.state.management, lambda: {"id": 1}, SimpleNamespace(mode="live", ingress=True)
+        )
+    )
+    with TestClient(app) as c:
+        for source, path in [
+            ("installed", "/addons/core_test/icon"),
+            ("store", "/store/addons/core_test/icon"),
+        ]:
+            r = c.get(f"/api/manage/apps/core_test/image?source={source}")
+            assert r.status_code == 200 and r.headers["content-type"] == "image/png"
+            assert received[-1].url.path == path
+            assert "private-test-token" not in str(r.headers)
+        assert c.get("/api/manage/apps/self/image?source=installed").status_code == 404
+        assert c.get("/api/manage/apps/renamed_instance/image?source=installed").status_code == 404
+        assert c.get("/api/manage/apps/core_test/image?source=store&kind=logs").status_code == 422
+        content["body"] = b"<html>Not an image</html>"
+        assert c.get("/api/manage/apps/core_test/image?source=installed").status_code == 502
+        content["body"] = b"\x89PNG\r\n\x1a\n" + b"a" * 2_000_001
+        assert c.get("/api/manage/apps/core_test/image?source=installed").status_code == 502

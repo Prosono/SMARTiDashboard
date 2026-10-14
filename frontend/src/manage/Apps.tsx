@@ -31,6 +31,8 @@ type AppItem = {
   update_available: boolean;
   system_managed: boolean;
   stage: string;
+  icon?: boolean;
+  logo?: boolean;
 };
 type Action = "install" | "start" | "stop" | "restart" | "update" | "uninstall";
 type Operation = {
@@ -59,6 +61,17 @@ const actionNames: Record<Action, [string, string]> = {
   update: ["Oppdater", "Update"],
   uninstall: ["Avinstaller", "Uninstall"],
 };
+function AppImage({ app, large = false }: { app: AppItem; large?: boolean }) {
+  const [failed, setFailed] = useState<string[]>([]);
+  const source = app.installed ? "installed" : "store";
+  const kinds = large ? ["logo", "icon"] : ["icon", "logo"];
+  const candidates = kinds.filter(kind => app[kind as "icon" | "logo"]).map(kind =>
+    new URL(`api/manage/apps/${encodeURIComponent(app.slug)}/image?source=${source}&kind=${kind}&v=${encodeURIComponent(app.version_latest || app.version || "")}`, document.baseURI).href);
+  const src = candidates.find(url => !failed.includes(url));
+  return <span className={`app-symbol${large ? " app-symbol-large" : ""}`}>
+    {src ? <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(previous => [...previous, src])} /> : <AppWindow size={large ? 32 : 24} aria-hidden="true" />}
+  </span>;
+}
 export function Apps({ lang }: { lang: string }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
@@ -278,9 +291,7 @@ export function Apps({ lang }: { lang: string }) {
             }}
           >
             <div className="app-card-top">
-              <span className="app-symbol">
-                <AppWindow size={24} />
-              </span>
+              <AppImage app={a} />
               <small data-running={a.state === "started"}>
                 {pending(a.slug)
                   ? t("Pågår …", "In progress …")
@@ -348,6 +359,7 @@ export function Apps({ lang }: { lang: string }) {
             setConfig(false);
           }}
         >
+          <AppImage key={selected.slug} app={selected} large />
           <p>{smartiName(selected.description || "")}</p>
           <p className="muted">
             {selected.installed

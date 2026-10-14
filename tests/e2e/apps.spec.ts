@@ -29,3 +29,12 @@ test('repository form and unavailable controller remain clear',async({page})=>{
  await page.getByRole('button',{name:'Appkilder',exact:true}).click();const d=page.getByRole('dialog');await d.getByLabel('Legg til appkilde',{exact:true}).fill('https://github.com/example/apps');await d.getByRole('button',{name:'Legg til kilde'}).click();await expect(d).toContainText('Min appkilde');await d.getByRole('button',{name:'Lukk innstillinger'}).click();
  await page.route('**/api/manage/apps',r=>r.fulfill({status:503,json:{detail:'supervisor_unavailable'}}));await page.reload();await page.getByRole('navigation',{name:'Hovedmeny'}).getByRole('button',{name:'Apper',exact:true}).click();await expect(page.getByRole('heading',{name:'Appadministrasjon er utilgjengelig'})).toBeVisible();await expect(page.locator('.app-card')).toHaveCount(0);
 });
+test('app images appear in cards and dialogs with graceful fallback',async({page})=>{
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=','base64');
+ await page.route('**/api/manage/apps',r=>r.fulfill({json:[{...installed,icon:true,logo:true},{...candidate,icon:true,logo:false}]}));
+ await page.route('**/api/manage/apps/*/image?*',r=>r.request().url().includes('community_music')?r.fulfill({status:404}):r.fulfill({contentType:'image/png',body:png}));
+ await page.reload();await page.getByRole('navigation',{name:'Hovedmeny'}).getByRole('button',{name:'Apper',exact:true}).click();
+ const icon=page.locator('.app-card img');await expect(icon).toHaveAttribute('src',/source=installed&kind=icon/);await expect.poll(()=>icon.evaluate((el:HTMLImageElement)=>el.naturalWidth)).toBe(1);
+ await page.getByRole('button',{name:/MQTT broker/}).click();await expect(page.getByRole('dialog').locator('.app-symbol img')).toHaveAttribute('src',/kind=logo/);await page.getByRole('button',{name:'Lukk innstillinger'}).click();
+ await page.getByRole('button',{name:'Appbibliotek',exact:true}).click();await expect(page.locator('.app-card .app-symbol svg')).toBeVisible();await expect(page.locator('.app-card img')).toHaveCount(0);
+});
