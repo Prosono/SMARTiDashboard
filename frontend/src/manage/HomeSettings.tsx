@@ -1,3 +1,4 @@
+import { RestartCore } from "./RestartCore";
 import { Zones } from "./Zones";
 import { HomeMap } from "./HomeMap";
 import { HubStatus } from "./HubStatus";
@@ -247,6 +248,7 @@ export function HomeSettings({
                 lang={lang}
                 stale={system.isError}
               />
+              <RestartCore lang={lang} demo={s.demo} />
               {s.unavailable.length > 0 && (
                 <p className="note">
                   {t(

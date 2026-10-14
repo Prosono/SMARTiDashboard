@@ -197,3 +197,20 @@ def test_backup_download_streams_private_file_and_requires_admin(tmp_path, monke
         download_client.post("/api/logout")
         login(download_client, "resident", "another long password")
         assert download_client.get("/api/manage/settings/backups/copy1/download").status_code == 403
+
+
+def test_core_restart_confirmation_idempotency_and_authorization(client, supervisor):  # noqa: F811
+    path = "/api/manage/settings/restart"
+    payload = {"request_id": str(uuid4()), "confirm": True}
+    assert client.post(path, json={"request_id": payload["request_id"]}).status_code == 422
+    assert client.post(path, json=payload | {"confirm": False}).status_code == 422
+    assert client.post(path, json=payload, headers={"x-csrf-token": "bad"}).status_code == 403
+    assert supervisor == []
+    first = client.post(path, json=payload)
+    assert first.json()["status"] == "accepted"
+    assert client.post(path, json=payload).json() == first.json()
+    assert supervisor == [("POST", "/core/restart", None)]
+    client.post("/api/users", json={"name": "viewer", "password": "another long password", "role": "user"})
+    client.post("/api/logout")
+    login(client, "viewer", "another long password")
+    assert client.post(path, json=payload).status_code == 403

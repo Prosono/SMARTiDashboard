@@ -17,6 +17,12 @@ from pydantic import BaseModel, Field, model_validator
 from starlette.background import BackgroundTask
 
 
+class RestartRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    request_id: UUID
+    confirm: Literal[True]
+
+
 class BackupRequest(BaseModel):
     model_config = {"extra": "forbid"}
     request_id: UUID
@@ -148,6 +154,15 @@ def system_operations_router(m, admin, settings):
                 pass
             m.store.set(key, json.dumps(state))
             return state
+
+    @router.post("/restart")
+    async def restart(body: RestartRequest, current=Depends(admin)):
+        return await operation(
+            body.request_id,
+            current,
+            "core_restart",
+            lambda: supervisor.request("POST", "/core/restart"),
+        )
 
     @router.post("/backups")
     async def backup(body: BackupRequest, current=Depends(admin)):

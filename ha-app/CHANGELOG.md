@@ -1,3 +1,11 @@
+# 1.16.1
+
+- Add an administrator-only restart button under Settings → System, with an explicit confirmation dialog and a demo-disabled state.
+- Restart the core service through Supervisor without rebooting the host or other apps. Persist the request ID before dispatch to prevent duplicate requests from restarting twice.
+- Distinguish accepted requests from unconfirmed responses after connection loss; never automatically retry or claim the controller has completed restarting.
+
+Prepared locally, not published. Validation uses simulated Supervisor responses; no live controller was restarted.
+
 # 1.16.0
 
 - Add administrator-only Advanced mode to Zigbee and Z-Wave device overviews, embedding the installed controller app's original web interface in a large SMARTi dialog.
