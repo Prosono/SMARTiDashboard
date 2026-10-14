@@ -163,6 +163,8 @@ class DeviceSetup:
                 s["status"] = {"started": "interviewing", "successful": "paired", "failed": "failed"}.get(
                     state, s["status"]
                 )
+                if isinstance(detail.get("ieee_address"), str):
+                    s["device_id"] = detail["ieee_address"]
                 s["device_name"] = str(detail.get("friendly_name") or detail.get("ieee_address") or "")[:120]
                 if state in {"successful", "failed"}:
                     self.schedule_stop()

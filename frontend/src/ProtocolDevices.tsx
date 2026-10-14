@@ -40,10 +40,12 @@ export function ProtocolDevices({
   provider,
   lang,
   admin,
+  pairedDevice,
 }: {
   provider: string;
   lang: "nb" | "en";
   admin: boolean;
+  pairedDevice?: { id?: string; name?: string } | null;
 }) {
   const no = lang === "nb";
   const [search, setSearch] = useState("");
@@ -122,17 +124,35 @@ export function ProtocolDevices({
       setBusy(false);
     }
   }
+  const isNew = (d: Device) =>
+    !!pairedDevice &&
+    (pairedDevice.id
+      ? d.id === pairedDevice.id
+      : !!pairedDevice.name &&
+        (d.name === pairedDevice.name || d.id === pairedDevice.name));
   const devices = (inventory.data?.devices ?? []).filter((d) =>
     `${d.name} ${d.model ?? ""} ${d.id}`
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
+  devices.sort((a, b) => Number(isNew(b)) - Number(isNew(a)));
   const stale = inventory.isError || inventory.data?.status !== "ready";
   return (
     <section
       className="protocol-devices"
       aria-label={provider === "zigbee2mqtt" ? "Zigbee" : "Z-Wave"}
     >
+      {pairedDevice && (
+        <p role="status" className="notice">
+          {devices.some(isNew)
+            ? no
+              ? "Ny enhet er lagt til og vises øverst i listen."
+              : "New device added and shown at the top of the list."
+            : no
+              ? "Enheten er paret. Venter på at enhetsoversikten oppdateres …"
+              : "Device paired. Waiting for the device list to update …"}
+        </p>
+      )}
       <div className="protocol-intro">
         <Radio size={24} />
         <div>
@@ -255,6 +275,9 @@ export function ProtocolDevices({
                     onClick={() => setSelected(d)}
                   >
                     {d.name}
+                    {isNew(d) && (
+                      <span>{no ? "Nylig lagt til" : "Recently added"}</span>
+                    )}
                     <span>{no ? "Se detaljer" : "View details"} →</span>
                   </button>
                 </h3>

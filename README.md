@@ -1,5 +1,7 @@
 # SMARTi
 
+[Huskeliste: utsatt arbeid](docs/TODO.md) – mobilapp/Matter, fjernaksess, HACS/Marketplace og Zigbee2MQTT/proxy.
+
 Local home control with Home Assistant underneath. React/TypeScript frontend, FastAPI backend, real HA WebSocket adapter and an explicitly separate demo mode. Design follows SMARTi's orange/charcoal identity and uses the original logo from smarti.no.
 
 A separate, unpublished [mobile/remote-access Docker pilot](docs/MOBILE_PILOT.md) now exercises one home with local HTTPS and an outbound encrypted tunnel. It is a demo foundation, not a distributed phone app or multi-customer cloud service.

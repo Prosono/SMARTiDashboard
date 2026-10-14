@@ -1,3 +1,11 @@
+# 1.15.1
+
+- After successful Zigbee pairing, automatically open the Zigbee device overview and place the new device first with a recently-added label.
+- Track the device IEEE address from the interview event and wait for inventory propagation without leaving the user in the pairing wizard.
+- Do not redirect for an old completed session when reopening the wizard, or for failed/stopped pairing and removal operations.
+
+Prepared locally, not published. Browser tests cover desktop/mobile with simulated Zigbee events and delayed inventory.
+
 # 1.15.0
 
 - Add Bluetooth and Matter to Add device with dedicated setup dialogs.

@@ -426,6 +426,10 @@ function Dashboard({
   const [streamConnected, streamStatus] = useState(true);
   const [room, setRoom] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [pairedDevice, setPairedDevice] = useState<{
+    id?: string;
+    name?: string;
+  } | null>(null);
   const [roomEditing, setRoomEditing] = useState(false);
   const [settingsSection, setSettingsSection] = useState("household");
   const [search, setSearch] = useState("");
@@ -567,7 +571,18 @@ function Dashboard({
         {roomEditing && page === "rooms" && session.role === "admin" ? (
           <RoomManager lang={lang} back={() => setRoomEditing(false)} />
         ) : adding ? (
-          <DeviceSetup lang={lang} onBack={() => setAdding(false)} />
+          <DeviceSetup
+            lang={lang}
+            onBack={() => setAdding(false)}
+            onPaired={(device) => {
+              setPairedDevice(device);
+              setAdding(false);
+              setPage("devices");
+              setProtocol("zigbee2mqtt");
+              setSearch("");
+              setRoom(null);
+            }}
+          />
         ) : page === "home" ? (
           <HomeOverview
             residentName={session.name}
@@ -669,6 +684,7 @@ function Dashboard({
               <ProtocolDevices
                 key={protocol}
                 provider={protocol}
+                pairedDevice={protocol === "zigbee2mqtt" ? pairedDevice : null}
                 lang={lang === "en" ? "en" : "nb"}
                 admin={session.role === "admin"}
               />
