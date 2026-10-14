@@ -533,8 +533,8 @@ export function Energy({
                   >
                     <defs>
                       <linearGradient id={gradient} x1="0" x2="0" y1="0" y2="1">
-                        <stop stopColor="#35a38a" />
-                        <stop offset="1" stopColor="#83c7ad" stopOpacity=".5" />
+                        <stop stopColor="var(--accent)" />
+                        <stop offset="1" stopColor="var(--accent)" stopOpacity=".5" />
                       </linearGradient>
                     </defs>
                     {[0, 0.5, 1].map((f) => (
@@ -618,7 +618,7 @@ export function Energy({
                               cx={x(i)}
                               cy={y(p.value)}
                               r={point === i ? 5 : 3}
-                              fill="#248c79"
+                              fill="var(--accent)"
                             />
                           )}
                           <title>

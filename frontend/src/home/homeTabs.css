@@ -38,7 +38,7 @@
   color: var(--surface);
 }
 .home-tabs [aria-selected="true"] svg {
-  color: #fca365;
+  color: var(--accent);
 }
 .home-tab-panel {
   touch-action: pan-y pinch-zoom;

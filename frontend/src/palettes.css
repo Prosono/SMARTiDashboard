@@ -1,3 +1,17 @@
+/* Roles shared by components, dialogs, media overlays and selected controls. */
+:root {
+  --on-primary: #241407;
+  --on-media: #f6f8f5;
+  --media-muted: #dce5e0;
+  --media-bg: color-mix(in srgb, var(--sidebar) 85%, var(--orange));
+  --media-accent: color-mix(in srgb, var(--orange) 65%, white);
+}
+html[data-palette]:not([data-palette="smarti"]) {
+  --on-primary: #fff;
+}
+html[data-theme="dark"][data-palette] {
+  --on-primary: #17201c;
+}
 html[data-palette="fjord"] {
   --bg: #eff4f8;
   --surface: #fafdff;
@@ -107,10 +121,10 @@ html[data-palette]:not([data-palette="smarti"]) .sidebar {
 }
 html[data-palette]:not([data-palette="smarti"]) .primary {
   background: var(--orange);
-  color: var(--surface);
+  color: var(--on-primary);
 }
 html[data-theme="dark"][data-palette]:not([data-palette="smarti"]) .primary {
-  color: var(--bg);
+  color: var(--on-primary);
 }
 html[data-palette]:not([data-palette="smarti"]) .device.is-on {
   background: color-mix(in srgb, var(--tint) 40%, var(--surface));
@@ -261,6 +275,12 @@ html[data-palette]:not([data-palette="smarti"]) .nav-item.active svg {
     color: var(--accent);
   }
 }
-@media(max-width:760px) {
- .palette-menu > .palette-picker { position:fixed; top:72px; right:16px; width:calc(100vw - 32px); max-height:calc(100dvh - 100px); }
+@media (max-width: 760px) {
+  .palette-menu > .palette-picker {
+    position: fixed;
+    top: 72px;
+    right: 16px;
+    width: calc(100vw - 32px);
+    max-height: calc(100dvh - 100px);
+  }
 }

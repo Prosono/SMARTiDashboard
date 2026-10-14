@@ -72,7 +72,7 @@
   margin-bottom: 1.2rem;
   overflow: hidden;
   border-radius: 23px;
-  background: #444c40;
+  background: var(--media-bg);
   color: #fff;
   box-shadow: 0 10px 25px #162c1910;
 }
@@ -91,8 +91,17 @@
   inset: 0;
   z-index: -2;
   background:
-    linear-gradient(90deg, #142320d9 0%, #17272189 42%, #18231b18 76%),
-    linear-gradient(0deg, #15201ac9 0%, transparent 65%);
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--media-bg) 92%, transparent) 0%,
+      color-mix(in srgb, var(--media-bg) 65%, transparent) 42%,
+      color-mix(in srgb, var(--media-bg) 22%, transparent) 76%
+    ),
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--media-bg) 85%, transparent) 0%,
+      transparent 65%
+    );
 }
 .home-welcome-content {
   min-width: 0;
@@ -102,7 +111,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  color: #eeeae0;
+  color: var(--media-muted);
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -111,7 +120,7 @@
 .home-hero-eyebrow > span {
   height: 5px;
   width: 5px;
-  background: #fba65c;
+  background: var(--media-accent);
   border-radius: 50%;
 }
 .home-welcome h1 {
@@ -123,7 +132,7 @@
   text-wrap: balance;
 }
 .home-welcome p {
-  color: #f0eee6;
+  color: var(--media-muted);
   font-size: 0.88rem;
   line-height: 1.5;
   max-width: 420px;
@@ -144,7 +153,7 @@
   padding: 18px 20px;
   border-radius: 17px;
   border: 1px solid #ffffff30;
-  background: #17231a80;
+  background: color-mix(in srgb, var(--media-bg) 75%, transparent);
   backdrop-filter: blur(16px);
   max-width: 220px;
 }
@@ -164,7 +173,7 @@
   font-size: 0.83rem;
 }
 .home-weather small {
-  color: #dfe7dc;
+  color: var(--media-muted);
   font-size: 0.7rem;
 }
 .home-modes {
@@ -180,8 +189,8 @@
   align-items: center;
   padding: 0.6rem 0.85rem;
   min-height: 44px;
-  background: #f6f5eced;
-  color: #26382f;
+  background: var(--surface);
+  color: var(--text);
   border: 1px solid #ffffff52;
   border-radius: 30px;
   text-align: left;
@@ -189,14 +198,14 @@
   box-shadow: 0 2px 7px #07160c0a;
 }
 .home-modes .mode-configured > svg {
-  color: #9a5513;
+  color: var(--accent);
 }
 .home-modes button:hover:not(:disabled) {
-  background: #fff;
+  background: var(--soft);
   transform: translateY(-1px);
 }
 .home-modes button:focus-visible {
-  outline-color: #ffd493;
+  outline-color: var(--media-accent);
 }
 .home-modes button:disabled {
   opacity: 0.65;
@@ -204,7 +213,7 @@
 .home-modes small {
   display: block;
   font-size: 9px;
-  color: #5b665e;
+  color: var(--muted);
   margin-top: 1px;
 }
 .home-status-grid {
@@ -351,8 +360,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  background: #dce4d5;
-  color: #54664d;
+  background: color-mix(in srgb, #dce4d5 20%, var(--soft));
+  color: var(--accent);
   overflow: hidden;
 }
 .home-room-art:not(.has-photo)::before {
@@ -369,16 +378,16 @@
     0 0 0 44px #ffffff15;
 }
 .room-tone-1 .home-room-art {
-  background: #e8dfd0;
-  color: #806a47;
+  background: color-mix(in srgb, #e8dfd0 20%, var(--soft));
+  color: var(--accent);
 }
 .room-tone-2 .home-room-art {
-  background: #dae4e9;
-  color: #4b6b80;
+  background: color-mix(in srgb, #dae4e9 20%, var(--soft));
+  color: var(--accent);
 }
 .room-tone-3 .home-room-art {
-  background: #e8d9d1;
-  color: #825d4d;
+  background: color-mix(in srgb, #e8d9d1 20%, var(--soft));
+  color: var(--accent);
 }
 .home-room-art img {
   position: absolute;
@@ -466,8 +475,8 @@
   box-shadow: var(--home-shadow);
 }
 .home-favorites .device.is-on {
-  border-color: #ecd4ae;
-  background: linear-gradient(130deg, #fff7e9, var(--surface) 75%);
+  border-color: var(--line);
+  background: linear-gradient(130deg, var(--tint), var(--surface) 75%);
 }
 .home-favorites .device-top {
   margin-bottom: 9px;
@@ -481,8 +490,8 @@
   background: var(--soft);
 }
 .home-favorites .is-on .device-icon {
-  background: #ffebc7;
-  color: #b26b16;
+  background: var(--tint);
+  color: var(--accent);
 }
 .home-favorites .device-title > span {
   font-size: 10px;
@@ -813,26 +822,35 @@
 }
 [data-theme="dark"] .home-welcome::before {
   background:
-    linear-gradient(90deg, #0b1715ed 0%, #0d2018a1 42%, #12251e45 76%),
-    linear-gradient(0deg, #081612eb 0%, transparent 80%);
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--media-bg) 96%, transparent) 0%,
+      color-mix(in srgb, var(--media-bg) 75%, transparent) 42%,
+      color-mix(in srgb, var(--media-bg) 35%, transparent) 76%
+    ),
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--media-bg) 95%, transparent) 0%,
+      transparent 80%
+    );
 }
 [data-theme="dark"] .home-hero-photo {
   filter: brightness(0.8) saturate(0.8);
 }
 [data-theme="dark"] .home-modes button {
-  background: #263a32bf;
-  color: #e5ebe4;
+  background: var(--surface);
+  color: var(--text);
   border-color: #ffffff26;
   backdrop-filter: blur(12px);
 }
 [data-theme="dark"] .home-modes .mode-configured > svg {
-  color: #f6b569;
+  color: var(--accent);
 }
 [data-theme="dark"] .home-modes small {
-  color: #c1d0c2;
+  color: var(--muted);
 }
 [data-theme="dark"] .home-modes button:hover:not(:disabled) {
-  background: #405446;
+  background: var(--soft);
 }
 
 [data-theme="dark"] .home-status {
@@ -856,28 +874,28 @@
   color: #e7c17b;
 }
 [data-theme="dark"] .home-room-art {
-  background: #314437;
-  color: #a9b7a2;
+  background: color-mix(in srgb, #314437 20%, var(--soft));
+  color: var(--accent);
 }
 [data-theme="dark"] .room-tone-1 .home-room-art {
-  background: #464133;
-  color: #c7b390;
+  background: color-mix(in srgb, #464133 20%, var(--soft));
+  color: var(--accent);
 }
 [data-theme="dark"] .room-tone-2 .home-room-art {
-  background: #30424e;
-  color: #9ebecb;
+  background: color-mix(in srgb, #30424e 20%, var(--soft));
+  color: var(--accent);
 }
 [data-theme="dark"] .room-tone-3 .home-room-art {
-  background: #483830;
-  color: #c3a695;
+  background: color-mix(in srgb, #483830 20%, var(--soft));
+  color: var(--accent);
 }
 [data-theme="dark"] .home-favorites .device.is-on {
   background: linear-gradient(135deg, #443a2533, transparent), var(--surface);
-  border-color: #605034;
+  border-color: var(--line);
 }
 [data-theme="dark"] .home-favorites .is-on .device-icon {
-  background: #483920;
-  color: #f0ba70;
+  background: var(--tint);
+  color: var(--accent);
 }
 @media (min-width: 1400px) {
   .home-insights {

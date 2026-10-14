@@ -15,8 +15,8 @@
   gap: 0.85rem;
 }
 .scene-card {
-  --scene-ink: #986530;
-  --scene-tint: #f8eedc;
+  --scene-ink: color-mix(in srgb, #986530 55%, var(--accent));
+  --scene-tint: color-mix(in srgb, var(--scene-ink) 12%, var(--surface));
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 17px;
@@ -24,16 +24,16 @@
   min-width: 0;
 }
 .scene-color-1 {
-  --scene-ink: #6176a2;
-  --scene-tint: #e9eef8;
+  --scene-ink: color-mix(in srgb, #6176a2 55%, var(--accent));
+  --scene-tint: color-mix(in srgb, var(--scene-ink) 12%, var(--surface));
 }
 .scene-color-2 {
-  --scene-ink: #a26c78;
-  --scene-tint: #f9e9ec;
+  --scene-ink: color-mix(in srgb, #a26c78 55%, var(--accent));
+  --scene-tint: color-mix(in srgb, var(--scene-ink) 12%, var(--surface));
 }
 .scene-color-3 {
-  --scene-ink: #3e7d63;
-  --scene-tint: #e3f1e9;
+  --scene-ink: color-mix(in srgb, #3e7d63 55%, var(--accent));
+  --scene-tint: color-mix(in srgb, var(--scene-ink) 12%, var(--surface));
 }
 .scene-symbol {
   display: grid;
@@ -340,26 +340,26 @@
 }
 .scene-editor-footer .scene-primary {
   background: var(--orange);
-  color: #231b13;
+  color: var(--on-primary);
 }
 .scene-delete {
   color: var(--muted);
 }
 [data-theme="dark"] .scene-card {
-  --scene-ink: #efbd79;
-  --scene-tint: #3d3324;
+  --scene-ink: color-mix(in srgb, #efbd79 55%, var(--accent));
+  --scene-tint: color-mix(in srgb, var(--scene-ink) 12%, var(--surface));
 }
 [data-theme="dark"] .scene-color-1 {
-  --scene-ink: #a6bced;
-  --scene-tint: #2a3448;
+  --scene-ink: color-mix(in srgb, #a6bced 55%, var(--accent));
+  --scene-tint: color-mix(in srgb, var(--scene-ink) 12%, var(--surface));
 }
 [data-theme="dark"] .scene-color-2 {
-  --scene-ink: #e7a9b8;
-  --scene-tint: #423039;
+  --scene-ink: color-mix(in srgb, #e7a9b8 55%, var(--accent));
+  --scene-tint: color-mix(in srgb, var(--scene-ink) 12%, var(--surface));
 }
 [data-theme="dark"] .scene-color-3 {
-  --scene-ink: #9bd5b9;
-  --scene-tint: #253f32;
+  --scene-ink: color-mix(in srgb, #9bd5b9 55%, var(--accent));
+  --scene-tint: color-mix(in srgb, var(--scene-ink) 12%, var(--surface));
 }
 @media (max-width: 600px) {
   .scene-strip {

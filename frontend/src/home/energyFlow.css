@@ -82,38 +82,31 @@
   align-items: center;
   gap: 0.4rem;
   border-radius: 100px;
-  background: #202c32ed;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   padding: 0.55rem 0.75rem;
 }
 .flow-visual-top button {
-  color: #bbcacd;
+  color: var(--muted);
   pointer-events: auto;
 }
 .flow-live {
-  color: #9ed7bd;
+  color: var(--flow-battery);
 }
 [data-theme="dark"] .flow-live {
-  color: #8ecaae;
+  color: var(--flow-battery);
 }
 .flow-waiting {
-  color: #bbcacd;
+  color: var(--muted);
 }
 .energy-scene-wrap {
-  /* The model has its own evening studio, independent of the app's reading theme. */
-  --surface: #202d33;
-  --soft: #29383e;
-  --line: #3b4d54;
-  --text: #e6eeee;
-  --muted: #afc0c3;
-  --accent: #ffc394;
-  --flow-solar: #ffd378;
-  --flow-home: #ffc09c;
-  --flow-ev: #c3a0ff;
-  --flow-battery: #66e2bb;
-  --flow-grid: #6fd8ef;
+  /* UI inherits the selected palette; energy-source colors retain their meaning. */
   color: var(--text);
   position: relative;
-  background: radial-gradient(ellipse at 50% 40%, #2a3a42, #182329 75%);
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    var(--soft),
+    var(--surface) 75%
+  );
 }
 .energy-scene-stage {
   position: relative;
@@ -303,8 +296,8 @@
   min-height: 440px;
   display: grid;
   place-items: center;
-  background: #182329;
-  color: #afc0c3;
+  background: var(--surface);
+  color: var(--muted);
 }
 .flow-measurements {
   display: grid;
@@ -993,25 +986,14 @@
 
 /* A single cinematic stage keeps the home and its live readings together. */
 .energy-flow.energy-flow-cinematic {
-  --surface: #151d23;
-  --soft: #202b32;
-  --line: #ffffff16;
-  --text: #f2f5f6;
-  --muted: #acb8bf;
-  --accent: #76e5bf;
-  --flow-solar: #f2cf69;
-  --flow-home: #efb288;
-  --flow-ev: #bf9fe8;
-  --flow-battery: #6bdfb8;
-  --flow-grid: #70c9db;
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 26px;
   background: radial-gradient(
     ellipse at 50% 38%,
-    #243039 0,
-    #141c22 54%,
-    #10181d 100%
+    var(--soft) 0,
+    var(--surface) 54%,
+    var(--bg) 100%
   );
   padding: 1.7rem 1.7rem 0.35rem;
   overflow: hidden;
@@ -1085,13 +1067,13 @@
   padding: 0;
   border-radius: 50%;
   justify-content: center;
-  border-color: #ffffff18;
+  border-color: var(--line);
   background: #ffffff04;
   color: var(--text);
 }
 .energy-flow-cinematic .flow-configure:hover {
   background: #ffffff0c;
-  border-color: #ffffff35;
+  border-color: var(--line);
 }
 .energy-flow-cinematic .flow-visual {
   overflow: visible;
@@ -1114,16 +1096,16 @@
 }
 .energy-flow-cinematic .flow-visual-top > span,
 .energy-flow-cinematic .flow-visual-top button {
-  background: #141d22d9;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
 }
 .energy-flow-cinematic .flow-live {
-  color: #91bdae;
+  color: var(--flow-battery);
 }
 .energy-flow-cinematic .flow-visual-top > button {
   position: absolute;
   top: 570px;
   right: 0.3rem;
-  border: 1px solid #a2b3be40;
+  border: 1px solid var(--line);
   border-radius: 13px;
   padding: 0.6rem 1rem;
   color: var(--text);
@@ -1140,13 +1122,17 @@
   padding: 0.9rem;
   border-radius: 17px;
   border: 1px solid color-mix(in srgb, var(--flow-color) 40%, transparent);
-  background: linear-gradient(120deg, #1e2930ee, #1b242bdc);
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--surface) 96%, transparent),
+    color-mix(in srgb, var(--soft) 96%, transparent)
+  );
   box-shadow:
     0 8px 25px #0000001a,
     inset 0 1px 0 #ffffff05;
 }
 .energy-flow-cinematic .energy-hotspot:hover {
-  background: #243139f5;
+  background: var(--soft);
   border-color: var(--flow-color);
 }
 .energy-flow-cinematic .energy-hotspot-icon {
@@ -1163,7 +1149,7 @@
   flex-shrink: 0;
 }
 .energy-flow-cinematic .energy-hotspot-copy > span {
-  color: #c5cfd4;
+  color: var(--muted);
   font-size: 0.78rem;
 }
 .energy-flow-cinematic .energy-hotspot-copy strong {
@@ -1186,7 +1172,7 @@
   opacity: 0.95;
 }
 .energy-flow-cinematic .energy-hotspot-anchor {
-  fill: #28343d;
+  fill: var(--surface);
   stroke-width: 2;
 }
 .energy-flow-cinematic .energy-hotspot-tether {
@@ -1203,8 +1189,8 @@
   width: 34px;
   height: 34px;
   min-height: 34px;
-  border-color: #ffffff16;
-  color: #aebfc8;
+  border-color: var(--line);
+  color: var(--muted);
   background: #ffffff03;
 }
 .flow-navigation {
@@ -1213,7 +1199,7 @@
   gap: 0.65rem;
   padding: 0.55rem 0.6rem;
   background: linear-gradient(180deg, #ffffff04, #ffffff01);
-  border: 1px solid #ffffff16;
+  border: 1px solid var(--line);
   border-radius: 18px;
   margin: 0 0 0.8rem;
 }
@@ -1225,7 +1211,7 @@
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: thin;
-  scrollbar-color: #ffffff22 transparent;
+  scrollbar-color: var(--line) transparent;
 }
 .energy-flow-cinematic .flow-measurement,
 .flow-nav-overview {
@@ -1304,7 +1290,7 @@
   align-items: center;
   gap: 0.25rem;
   padding: 0 0.55rem;
-  border: 1px solid #ffffff14;
+  border: 1px solid var(--line);
   border-radius: 100px;
   color: var(--muted);
   background: #ffffff03;
@@ -1320,14 +1306,14 @@
   min-height: 42px;
 }
 .flow-nav-period option {
-  color: #f2f5f6;
-  background: #202b32;
+  color: var(--text);
+  background: var(--surface);
 }
 .energy-flow-cinematic .flow-note {
   margin-block: 0.7rem;
   padding: 0;
   font-size: 0.61rem;
-  color: #92a1aa;
+  color: var(--muted);
 }
 .energy-flow-cinematic .flow-start {
   padding-inline: 0;
@@ -1337,14 +1323,14 @@
   margin-top: 1.2rem;
 }
 .energy-flow-cinematic .flow-settings {
-  border-color: #ffffff24;
+  border-color: var(--line);
   margin-top: 1.7rem;
 }
 .energy-flow-cinematic .flow-history-periods {
-  background: #0f181e;
+  background: var(--bg);
 }
 .energy-flow-cinematic .flow-history-periods button[aria-pressed="true"] {
-  background: #25323a;
+  background: var(--soft);
 }
 @container smarti-energy (max-width: 1100px) {
   .energy-flow-cinematic .energy-hotspot {
@@ -1539,7 +1525,7 @@
   }
 }
 .energy-flow-cinematic .energy-anchor-ring {
-  fill: color-mix(in srgb, var(--flow-color) 10%, #19242a);
+  fill: color-mix(in srgb, var(--flow-color) 10%, var(--surface));
   stroke: var(--flow-color);
   stroke-width: 1.2;
 }

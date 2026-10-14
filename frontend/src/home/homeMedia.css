@@ -1,5 +1,5 @@
 .home-energy.home-media-energy {
-  --energy-ink: #248c79;
+  --energy-ink: var(--accent);
   overflow: hidden;
 }
 .home-media-energy .energy-header {
@@ -164,8 +164,8 @@
   position: relative;
   aspect-ratio: 16/11;
   border: 1px solid #ffffff13;
-  background: #18292b;
-  color: #eaf2ef;
+  background: var(--media-bg);
+  color: var(--on-media);
   border-radius: 14px;
   padding: 0;
   isolation: isolate;
@@ -175,7 +175,7 @@
   min-height: 185px;
 }
 .home-media-camera .camera-preview:not(:disabled):hover {
-  background: #203539;
+  background: color-mix(in srgb, var(--media-bg) 90%, white);
 }
 .home-media-camera .camera-preview:disabled {
   opacity: 0.65;
@@ -197,10 +197,10 @@
   background: #f3fbf309;
   border: 1px solid #d4e8e31f;
   box-shadow: 0 0 0 7px #f3fbf304;
-  color: #c6ddd5;
+  color: var(--media-muted);
 }
 .home-media-camera .camera-preview-prompt small {
-  color: #a4bbb6;
+  color: var(--media-muted);
   font-size: 0.61rem;
   line-height: 1.4;
 }
@@ -213,7 +213,7 @@
   gap: 5px;
   color: #e1eeea;
   font-size: 0.6rem;
-  background: #102220bb;
+  background: color-mix(in srgb, var(--media-bg) 85%, transparent);
   border: 1px solid #e7f5ed17;
   border-radius: 5px;
   padding: 4px 6px;
@@ -243,7 +243,7 @@
   height: 29px;
   display: grid;
   place-items: center;
-  background: #102220bb;
+  background: color-mix(in srgb, var(--media-bg) 85%, transparent);
   border: 1px solid #e7f5ed2b;
   border-radius: 50%;
 }
@@ -294,7 +294,7 @@
   font-size: 0.8rem;
 }
 [data-theme="dark"] .home-energy.home-media-energy {
-  --energy-ink: #67c6a6;
+  --energy-ink: var(--accent);
 }
 @media (max-width: 600px) {
   .home-media-energy .energy-title h2 {
@@ -314,8 +314,8 @@
   min-height: 190px;
   overflow: hidden;
   border-radius: 14px;
-  background: #102321;
-  color: #e4eee8;
+  background: var(--media-bg);
+  color: var(--on-media);
 }
 .camera-live-preview video {
   width: 100%;
@@ -335,14 +335,14 @@
   gap: 8px;
   text-align: center;
   pointer-events: none;
-  background: #102321d9;
+  background: color-mix(in srgb, var(--media-bg) 92%, transparent);
 }
 .camera-live-overlay strong {
   font-size: 0.8rem;
   font-weight: 500;
 }
 .camera-live-overlay small {
-  color: #b7c8c0;
+  color: var(--media-muted);
   font-size: 0.68rem;
   max-width: 280px;
 }

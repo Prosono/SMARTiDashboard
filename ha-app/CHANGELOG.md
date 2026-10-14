@@ -1,3 +1,13 @@
+# 1.10.1
+
+- Connect home welcome/photo overlays, home modes, room views, camera overlays, scene tiles, login accents and primary controls to shared palette roles.
+- Remove isolated surface/text/accent palettes from the energy stage so it and its settings dialogs inherit the selected light/dark palette.
+- Theme energy chart accents and decorative room surfaces. Preserve energy-source, thermostat-mode and warning colors as semantic signals, and preserve brand assets.
+- Use a shared contrasting foreground for primary actions in each palette/mode combination.
+- Add mobile and desktop coverage for all five palettes in light and dark mode.
+
+Prepared locally; not published.
+
 # 1.10.0
 
 - Show only installable available updates and ongoing installations; hide up-to-date and unsupported update entries.

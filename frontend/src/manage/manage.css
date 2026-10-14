@@ -624,7 +624,7 @@ textarea:focus-visible {
 }
 .routine-steps [aria-current] > span {
   background: var(--orange);
-  color: #171b17;
+  color: var(--on-primary);
   border-color: var(--orange);
 }
 .routine-layout {
@@ -1376,13 +1376,13 @@ textarea:focus-visible {
 .integration-logo {
   width: 64px;
   height: 64px;
-  background: #fff;
+  background: var(--surface);
   border-radius: 12px;
   padding: 10px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  color: #292d29;
+  color: var(--text);
 }
 .integration-logo img {
   width: 100%;

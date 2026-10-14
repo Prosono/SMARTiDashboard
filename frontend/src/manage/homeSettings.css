@@ -199,7 +199,7 @@
 .account-management .row-actions button.primary {
   background: var(--orange);
   border-color: var(--orange);
-  color: #241407;
+  color: var(--on-primary);
 }
 
 .backup-manager {
