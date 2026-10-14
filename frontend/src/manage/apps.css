@@ -1,0 +1,162 @@
+.apps-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.apps-toolbar .management-tabs {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.apps-toolbar > button,
+.apps-page .heading-row > button,
+.app-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.apps-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 26px;
+  color: var(--muted);
+}
+.apps-search input {
+  border: 0;
+  background: transparent;
+  width: 100%;
+  padding: 14px 0;
+  color: var(--text);
+}
+.apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 18px;
+}
+.app-card {
+  text-align: left;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  color: var(--text);
+}
+.app-card:hover {
+  border-color: var(--orange);
+  background: var(--soft);
+}
+.app-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.app-symbol {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--tint);
+  color: var(--accent);
+}
+.app-card h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+.app-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.app-card small {
+  color: var(--muted);
+}
+.app-card small[data-running="true"] {
+  color: var(--accent);
+}
+.app-card footer {
+  padding: 12px 0 0;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  font-size: 0.78rem;
+  gap: 10px;
+}
+.app-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 24px 0;
+}
+.app-actions button {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: var(--soft);
+}
+.app-activity {
+  margin-top: 36px;
+}
+.app-activity > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.app-activity small,
+.app-repository small {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.app-repository {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.app-config {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+.app-config fieldset {
+  display: grid;
+  gap: 18px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.app-config textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: monospace;
+  background: var(--soft);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}
+@media (max-width: 600px) {
+  .app-activity > div {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+.app-card footer span { letter-spacing: normal; text-transform: none; font-size: .78rem; }

@@ -1,3 +1,4 @@
+import { Apps } from "./manage/Apps";
 import { AccountAvatar } from "./manage/Accounts";
 import { HomeSettings } from "./manage/HomeSettings";
 import { Thermostat } from "./Thermostat";
@@ -14,6 +15,7 @@ import {
   House,
   LayoutGrid,
   SlidersHorizontal,
+  AppWindow,
   Workflow,
   Blocks,
   DownloadCloud,
@@ -68,6 +70,7 @@ const icons = {
   devices: SlidersHorizontal,
   automations: Workflow,
   integrations: Blocks,
+  apps: AppWindow,
   updates: DownloadCloud,
   more: Settings,
 };
@@ -167,7 +170,7 @@ function App() {
             .filter(
               (p) =>
                 session.role === "admin" ||
-                !["automations", "integrations", "updates"].includes(p),
+                !["automations", "integrations", "apps", "updates"].includes(p),
             )
             .map((p) => {
               const Icon = icons[p];
@@ -734,6 +737,8 @@ function Dashboard({
           <Automations lang={lang} home={h} onDirty={onDirty} />
         ) : page === "integrations" && session.role === "admin" ? (
           <Integrations lang={lang} />
+        ) : page === "apps" && session.role === "admin" ? (
+          <Apps lang={lang} />
         ) : page === "updates" && session.role === "admin" ? (
           <Updates lang={lang} />
         ) : (

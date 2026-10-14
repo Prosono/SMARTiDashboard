@@ -1,3 +1,14 @@
+# 1.14.0
+
+- Add an administrator Apps destination with installed apps, searchable app library and HTTPS repository registration.
+- Install, start, stop, restart, update (optionally with backup), and uninstall other controller apps through explicit confirmation dialogs.
+- Hide SMARTi and deny all management/configuration operations against the running SMARTi app, self aliases, SMARTi slugs and names. Resolve the actual app identity through Supervisor and fail closed when unavailable.
+- Follow background installs/updates through persistent activity records, prevent duplicate request dispatch, and distinguish unconfirmed responses from completed jobs.
+- Add advanced JSON configuration, validated by Supervisor before saving, plus boot/watchdog/automatic update switches and stale-configuration protection.
+- Keep integration-managed apps protected from uninstall; preserve custom config folders when uninstalling other apps. Requires Supervisor; no fake demo apps.
+
+Prepared locally, not published. Supervisor integration verified with mocks; live hardware validation remains required.
+
 # 1.13.0
 
 - Promote Automations, Integrations and Updates to independent administrator destinations in the main navigation.
