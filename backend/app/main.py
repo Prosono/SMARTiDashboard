@@ -27,6 +27,7 @@ from .models import Command
 from .scenes import scenes_router
 from .setup import DeviceSetup
 from .storage import Store
+from .system_settings import system_settings_router
 from .vehicle import vehicle_router
 
 
@@ -159,6 +160,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     management = Management(ha, store, settings)
     app.state.management = management
     app.include_router(management_router(management, admin))
+    app.include_router(system_settings_router(management, admin, settings))
     app.include_router(integration_setup_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
     app.include_router(extras_router(store, user, ha, settings))

@@ -1,3 +1,4 @@
+import { HomeSettings } from "./manage/HomeSettings";
 import { Thermostat } from "./Thermostat";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -725,7 +726,7 @@ function Dashboard({
               aria-label={lang === "en" ? "More sections" : "Flere funksjoner"}
             >
               {[
-                ["overview", lang === "en" ? "Overview" : "Oversikt"],
+                ["overview", lang === "en" ? "Settings" : "Innstillinger"],
                 ...(session.role === "admin"
                   ? [
                       ["automations", t.automations],
@@ -757,7 +758,7 @@ function Dashboard({
               <>
                 <div className="page-heading">
                   <span className="eyebrow">SMARTi</span>
-                  <h1>{t.more}</h1>
+                  <h1>{t.settings}</h1>
                 </div>
                 <div className="settings-layout">
                   <section className="settings-panel">
@@ -828,6 +829,9 @@ function Dashboard({
                     <p className="muted">{t.automationHint}</p>
                     {cards(h.controls.filter((c) => c.domain === "automation"))}
                   </section>
+                )}
+                {session.role === "admin" && (
+                  <HomeSettings lang={lang} home={h} />
                 )}
                 {session.role === "admin" && <Users t={t} />}
               </>

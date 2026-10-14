@@ -168,3 +168,11 @@ The house has a pitched roof with aligned solar modules, fine vertical cladding,
 ## Dashboard settings dialogs (1.6.1)
 
 Home customization, people selection/photos, calendars, EV/charger bindings, energy display preferences and energy-flow setup now open over the dashboard in a dialog. Select an unconfigured component such as Elbil to edit its own power measurement; the energy toolbar opens the complete model/flow setup. Draft forms retain Save/Cancel, while Home and people preferences keep their existing immediate-save behavior. Close or Escape returns to the opener without saving drafts; closing is disabled while a save is pending. Scene and device dialogs retain their existing behavior.
+
+## Home and controller settings (1.8.0)
+
+**More → Settings** shows administrator-only controller health and home/person management. CPU and memory describe Core, not total host utilization. Disk sizes describe the host in GB; backup sizes are MB. Stats refresh every 30 seconds. Network addresses and registered backup metadata are read-only. No backup creation, restore, delete or network reconfiguration is performed.
+
+The app now requests Supervisor API access with the `homeassistant` role to read `/core/stats`, `/host/info`, `/network/info` and `/backups/info`. Credentials remain on the backend. Host monitoring is unavailable in standalone or demo mode and unavailable sections are labeled explicitly.
+
+Home name, latitude, longitude, elevation and time zone are saved in the controller; the SMARTi home name/time zone are synchronized after success. Household people can be created and edited with existing device trackers. Removing a person keeps their tracker devices and login accounts. YAML-managed persons are read-only. Existing profile-photo and visibility settings are also available here.

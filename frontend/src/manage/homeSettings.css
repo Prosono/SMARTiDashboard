@@ -1,0 +1,85 @@
+.home-settings {
+  margin-block: 2rem;
+  display: grid;
+  gap: 1.25rem;
+}
+.system-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.system-metrics article {
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+.system-metrics strong {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+.system-metrics small,
+.system-list-row small {
+  display: block;
+  opacity: 0.75;
+}
+.system-metrics progress {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.system-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.system-backups {
+  max-height: 340px;
+  overflow: auto;
+}
+.system-settings-form {
+  display: grid;
+  gap: 1rem;
+}
+.system-settings-form label {
+  display: grid;
+  gap: 0.4rem;
+}
+.system-settings-form .check-label {
+  display: flex;
+  align-items: center;
+}
+.system-settings-form fieldset {
+  max-height: 300px;
+  overflow: auto;
+  border: 1px solid var(--line);
+}
+.home-settings h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+@media (max-width: 650px) {
+  .system-metrics {
+    grid-template-columns: 1fr;
+  }
+  .system-list-row {
+    flex-wrap: wrap;
+  }
+}
+
+.home-settings > .section-heading button,
+.home-settings .settings-panel > button,
+.home-settings .system-list-row button {
+ display:inline-flex; align-items:center; gap:.5rem; min-height:44px;
+ padding:.65rem 1rem; border:1px solid var(--line); border-radius:.7rem;
+ background:var(--surface); margin-top:.5rem;
+}
+.system-metrics article { background:var(--surface); }
+.system-metrics progress { height:7px; border:0; border-radius:8px; overflow:hidden; }
+.system-metrics progress::-webkit-progress-bar { background:var(--line); }
+.system-metrics progress::-webkit-progress-value { background:var(--accent); }
+.system-metrics progress::-moz-progress-bar { background:var(--accent); }

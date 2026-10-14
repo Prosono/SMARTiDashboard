@@ -1,5 +1,5 @@
 name: SMARTi
-version: "1.7.0"
+version: "1.8.0"
 slug: smarti
 url: https://github.com/Prosono/SMARTiDashboard
 # Build-tested architecture only; hardware/HAOS validation still required.
@@ -11,6 +11,8 @@ startup: application
 boot: manual
 init: false
 homeassistant_api: true
+hassio_api: true
+hassio_role: homeassistant
 ingress: true
 ingress_port: 8099
 panel_icon: mdi:home-outline

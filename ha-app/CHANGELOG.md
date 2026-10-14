@@ -1,3 +1,12 @@
+# 1.8.0
+
+- Add administrator settings for controller CPU/memory, host storage, network interfaces and backup inventory, with explicit unavailable states and no simulated measurements.
+- Edit the home's name, coordinates, elevation and time zone in a dialog using the real controller configuration.
+- Create, rename, assign presence trackers and remove stored household people; preserve login accounts, existing picture/user associations and YAML-managed people. Reuse presence visibility and photo settings.
+- Enable Supervisor API access with the homeassistant role for Core stats and read-only info endpoints. Network configuration and backup creation/restoration are not exposed.
+
+Prepared locally; validation against physical Supervisor hardware remains pending.
+
 # 1.7.0
 
 - Add an integration catalog and modal setup wizard using the controller's real config flows, with translated labels, typed fields, menus, errors, progress, external sign-in, cancellation and completion.
