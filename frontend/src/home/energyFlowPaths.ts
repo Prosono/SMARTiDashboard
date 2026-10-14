@@ -11,10 +11,10 @@ export function createEnergyRoutes(): Record<FlowRole, Vector3[]> {
   return {
     // Roof array → a dedicated inverter on the rear part of the service facade.
     solar: points([
-      [1.625, 2.389, -0.66],
-      [1.88, 2.4, -0.66],
-      [2.06, 2.32, -0.66],
-      [2.08, 2.06, -0.66],
+      [1.669, 2.827, -0.66],
+      [1.88, 2.68, -0.66],
+      [2.025, 2.58, -0.66],
+      [2.08, 2.36, -0.66],
       [2.08, 1.08, -0.66],
       [2.04, 0.85, -0.66],
       [1.91, 0.79, -0.66],

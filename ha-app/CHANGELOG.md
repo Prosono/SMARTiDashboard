@@ -1,3 +1,16 @@
+# 1.6.0
+
+- Recompose Energy as one charcoal scene with a time-aware greeting, actual available weather, floating measurements with recorder-history previews, and compact source/period navigation.
+- Refine the pitched graphite house with detailed roof panels and cladding, full-height glazing, a furnished golden-lit living room, a rear annex, slate paving, branching trees and softly illuminated planting.
+- Keep physical measurement anchors and separate energy connections, editable equipment visibility, real live values, signed history, pause/reduced motion and WebGL fallback.
+
+Prepared locally; physical HA hardware and native mobile GPU validation remain pending.
+
+# 1.5.1
+
+- Give the graphite energy house a low asymmetric pitched roof, with solar modules and their activity contours fitted to its slope.
+- Add warm interior illumination visible through the glazing, retaining the dark site, simple architecture and independent energy connections. Interior lighting is part of the illustration, not a device-state indicator.
+
 # 1.5.0
 
 - Replace the pitched-roof miniature with a minimal graphite pavilion: stepped flat roofs, smoked glazing and restrained architectural lighting. Use a dark slate site and studio background in both app themes.

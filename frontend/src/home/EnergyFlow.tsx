@@ -19,8 +19,7 @@ import {
   Check,
   Pause,
   Play,
-  Plus,
-  ArrowUpRight,
+  CalendarDays,
   Zap,
   ChartNoAxesCombined,
 } from "lucide-react";
@@ -34,6 +33,7 @@ import {
   type FlowSnapshot,
 } from "./energyFlowModel";
 import { FlowHistory, type FlowHistoryData } from "./FlowHistory";
+import { EnergyWelcome } from "./EnergyWelcome";
 import "./energyFlow.css";
 const Scene = lazy(() => import("./EnergyScene"));
 class SceneBoundary extends Component<
@@ -262,28 +262,16 @@ export function EnergyFlow({
   }
   return (
     <section
-      className="energy-flow"
+      className="energy-flow energy-flow-cinematic"
       aria-label={t("Energiflyt", "Energy flow")}
     >
       <header className="flow-heading">
-        <div>
-          <span className="flow-kicker">
-            <Zap size={14} aria-hidden="true" />
-            <span className="eyebrow">
-              {t("Hjemmets energiflyt", "Your home's energy flow")}
-            </span>
-          </span>
-          <h1>{t("Se hvor strømmen går.", "See where your power goes.")}</h1>
-          <p>
-            {t(
-              "Hjemmet ditt, i flyt. Følg produksjon, lagring og forbruk.",
-              "Your home, in flow. Follow generation, storage and consumption.",
-            )}
-          </p>
-        </div>
+        <EnergyWelcome home={home} offline={offline} lang={lang} />
         <div className="flow-heading-actions">
           <button
             className="flow-configure"
+            aria-label={t("Rediger 3D-modell", "Edit 3D model")}
+            title={t("Rediger 3D-modell", "Edit 3D model")}
             disabled={!config.data || busy}
             onClick={() => {
               edit(structuredClone(config.data!));
@@ -294,11 +282,12 @@ export function EnergyFlow({
               );
             }}
           >
-            <House size={18} />
-            {t("Rediger 3D-modell", "Edit 3D model")}
+            <House size={20} aria-hidden="true" />
           </button>
           <button
             className="flow-configure"
+            aria-label={t("Konfigurer energiflyt", "Configure energy flow")}
+            title={t("Konfigurer energiflyt", "Configure energy flow")}
             disabled={!config.data || busy}
             aria-expanded={!!draft}
             onClick={() => {
@@ -307,8 +296,7 @@ export function EnergyFlow({
               setError("");
             }}
           >
-            <Settings2 size={18} />
-            {t("Konfigurer energiflyt", "Configure energy flow")}
+            <Settings2 size={20} aria-hidden="true" />
           </button>
         </div>
       </header>
@@ -560,6 +548,7 @@ export function EnergyFlow({
               }
               lang={lang}
               readings={readings}
+              historySeries={history.data?.series}
               onConfigure={(role) => {
                 if (!config.data?.[role].source) configure(role);
                 else {
@@ -575,79 +564,66 @@ export function EnergyFlow({
             />
           </Suspense>
         </SceneBoundary>
-        <div className="flow-measurements">
-          {flowRoles
-            .filter((r) => flows[r].visible)
-            .map((role) => {
-              const Icon = icons[role];
-              return (
-                <button
-                  key={role}
-                  className="flow-measurement"
-                  data-role={role}
-                  data-status={flows[role].status}
-                  aria-expanded={selected === role}
-                  onClick={() =>
-                    flows[role].status === "unconfigured"
-                      ? configure(role)
-                      : select(selected === role ? null : role)
-                  }
-                >
-                  <span className="flow-measurement-label">
-                    <span className="flow-measurement-icon">
-                      <Icon size={18} aria-hidden="true" />
-                    </span>
-                    {labels[role]}
-                    <ArrowUpRight
-                      className="flow-measurement-arrow"
-                      size={14}
-                      aria-hidden="true"
-                    />
-                  </span>
-                  <strong>{format(flows[role].watts)}</strong>
-                  <small
-                    className={
+        <nav
+          className="flow-navigation"
+          aria-label={t("Energioversikt", "Energy overview")}
+        >
+          <div className="flow-measurements">
+            <button
+              className="flow-nav-overview"
+              aria-pressed={selected === null}
+              onClick={() => select(null)}
+            >
+              <Zap size={23} aria-hidden="true" />
+              <span>{t("Energiflyt", "Energy flow")}</span>
+            </button>
+            {(["home", "solar", "battery", "ev", "grid"] as FlowRole[])
+              .filter((role) => flows[role].visible)
+              .map((role) => {
+                const Icon =
+                  role === "home" ? ChartNoAxesCombined : icons[role];
+                return (
+                  <button
+                    key={role}
+                    className="flow-measurement"
+                    data-role={role}
+                    data-status={flows[role].status}
+                    aria-expanded={selected === role}
+                    onClick={() =>
                       flows[role].status === "unconfigured"
-                        ? "flow-add-reading"
-                        : undefined
+                        ? configure(role)
+                        : select(selected === role ? null : role)
                     }
                   >
-                    {flows[role].status === "unconfigured" && (
-                      <Plus size={13} aria-hidden="true" />
-                    )}
-                    {direction(role)}
-                    {role === "battery" && batteryLevel && (
-                      <em> · {batteryLevel}</em>
-                    )}
-                  </small>
-                  <span className="flow-measurement-trend" aria-hidden="true">
-                    {history.data?.series[role]?.some(
-                      (p) => p.value !== null,
-                    ) ? (
-                      <FlowHistory
-                        compact
-                        lang={lang}
-                        points={history.data.series[role]!}
-                      />
-                    ) : (
-                      <span className="flow-trend-empty">
-                        <ChartNoAxesCombined size={18} />
-                        {t("Ingen historikk ennå", "No history yet")}
-                      </span>
-                    )}
-                  </span>
-                  <span className="flow-measurement-caption">
-                    {t("Timehistorikk", "Hourly history")}
-                    <span>
-                      {historyPeriod === "7d"
-                        ? t("7 dager", "7 days")
-                        : t("24 timer", "24 hours")}
+                    <span className="flow-measurement-label">
+                      <Icon size={22} aria-hidden="true" />
+                      {role === "home"
+                        ? t("Forbruk", "Consumption")
+                        : labels[role]}
                     </span>
-                  </span>
-                </button>
-              );
-            })}
-        </div>
+                    <strong>{format(flows[role].watts)}</strong>
+                    <small>
+                      {direction(role)}
+                      {role === "battery" && batteryLevel && (
+                        <em> · {batteryLevel}</em>
+                      )}
+                    </small>
+                  </button>
+                );
+              })}
+          </div>
+          <label className="flow-nav-period">
+            <CalendarDays size={18} aria-hidden="true" />
+            <select
+              aria-label={t("Historikkperiode", "History period")}
+              value={historyPeriod}
+              onChange={(e) => setHistoryPeriod(e.target.value)}
+            >
+              <option value="24h">{t("Siste døgn", "24 hours")}</option>
+              <option value="7d">{t("Siste uke", "7 days")}</option>
+            </select>
+          </label>
+        </nav>
         {selected && flows[selected].visible && (
           <>
             <section

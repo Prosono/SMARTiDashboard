@@ -21,12 +21,6 @@
   gap: 1.5rem;
   margin: 1.1rem 0 1.35rem;
 }
-.flow-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--accent);
-}
 .flow-heading .eyebrow {
   color: var(--muted);
   font-size: 0.65rem;
@@ -208,9 +202,7 @@
   border-color: var(--flow-color);
   background: var(--surface);
 }
-.energy-hotspot-icon,
-.flow-measurement-icon,
-.flow-binding-icon {
+.energy-hotspot-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -341,16 +333,6 @@
   font-size: 0.75rem;
   font-weight: 500;
 }
-.flow-measurement-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-}
-.flow-measurement-arrow {
-  margin-left: auto;
-  color: var(--muted);
-  opacity: 0.6;
-}
 .flow-measurement > strong {
   font-size: clamp(1.4rem, 2.1vw, 1.85rem);
   font-weight: 500;
@@ -372,9 +354,6 @@
 .flow-measurement em {
   font-size: inherit;
   font-style: normal;
-}
-.flow-measurement .flow-add-reading {
-  color: var(--flow-color);
 }
 .flow-measurement[aria-expanded="true"],
 .flow-measurement:hover {
@@ -501,9 +480,6 @@
   color: var(--surface);
 }
 @media (max-width: 900px) {
-  .flow-measurement-arrow {
-    display: none;
-  }
   .flow-measurement {
     padding-inline: 0.8rem;
   }
@@ -541,14 +517,6 @@
   }
   .flow-measurement-label {
     font-size: 0.67rem;
-  }
-  .flow-measurement-icon {
-    width: 23px;
-    height: 26px;
-    border-radius: 8px;
-  }
-  .flow-measurement-icon svg {
-    width: 16px;
   }
   .flow-measurement > strong {
     font-size: 1.3rem;
@@ -856,30 +824,6 @@
   fill: var(--surface);
   opacity: 0.8;
 }
-.flow-measurement-trend {
-  display: flex;
-  align-items: flex-end;
-  height: 49px;
-  margin-top: 0.25rem;
-  width: 100%;
-}
-.flow-measurement-caption {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  color: var(--muted);
-  font-size: 0.58rem;
-}
-.flow-trend-empty {
-  min-height: 43px;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  width: 100%;
-  color: var(--muted);
-  font-size: 0.63rem;
-  border-bottom: 1px dashed var(--line);
-}
 .flow-measurement[data-status="unavailable"] > small,
 .flow-measurement[data-status="stale"] > small,
 .flow-measurement[data-status="invalid"] > small {
@@ -946,9 +890,6 @@
   .flow-configure {
     justify-content: center;
   }
-  .flow-measurement-caption {
-    font-size: 0.55rem;
-  }
   .flow-measurement-label {
     font-size: 0.68rem;
   }
@@ -989,17 +930,8 @@
   .flow-measurement:last-child:nth-child(odd) {
     grid-column: 1 / -1;
   }
-  .flow-measurement:last-child:nth-child(odd) .flow-measurement-trend {
-    height: 39px;
-  }
   .flow-measurement:last-child:nth-child(odd) .flow-sparkline {
     height: 37px;
-  }
-  .flow-measurement-caption {
-    font-size: 0.59rem;
-  }
-  .flow-trend-empty {
-    font-size: 0.61rem;
   }
   .flow-chart-readout strong {
     font-size: 1.6rem;
@@ -1048,22 +980,608 @@
     grid-column: 1 / -1;
     border-right: 0;
   }
-  .flow-measurement:last-child:nth-child(odd) .flow-measurement-trend {
-    height: 39px;
-  }
   .flow-measurement:last-child:nth-child(odd) .flow-sparkline {
     height: 37px;
   }
   .flow-measurement-label {
     font-size: 0.72rem;
   }
-  .flow-measurement-caption {
-    font-size: 0.6rem;
-  }
-  .flow-measurement-caption > span {
-    white-space: nowrap;
-  }
   .flow-measurement > small {
     font-size: 0.66rem;
+  }
+}
+
+/* A single cinematic stage keeps the home and its live readings together. */
+.energy-flow.energy-flow-cinematic {
+  --surface: #151d23;
+  --soft: #202b32;
+  --line: #ffffff16;
+  --text: #f2f5f6;
+  --muted: #acb8bf;
+  --accent: #76e5bf;
+  --flow-solar: #f2cf69;
+  --flow-home: #efb288;
+  --flow-ev: #bf9fe8;
+  --flow-battery: #6bdfb8;
+  --flow-grid: #70c9db;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: radial-gradient(
+    ellipse at 50% 38%,
+    #243039 0,
+    #141c22 54%,
+    #10181d 100%
+  );
+  padding: 1.7rem 1.7rem 0.35rem;
+  overflow: hidden;
+}
+.energy-flow-cinematic .flow-heading {
+  margin: 0;
+  gap: 1.3rem;
+  align-items: flex-start;
+  position: relative;
+  z-index: 3;
+}
+.flow-welcome {
+  margin-right: auto;
+}
+.flow-welcome h1 {
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  margin: 0 0 0.45rem;
+  line-height: 1.25;
+}
+.flow-welcome h1 > span {
+  display: inline-block;
+  margin-left: 0.2rem;
+  font-size: 0.85em;
+}
+.flow-welcome p {
+  font-size: 0.81rem;
+  color: var(--muted);
+  margin: 0;
+}
+.flow-current-weather {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.flow-current-weather > svg {
+  color: var(--flow-solar);
+  margin-top: 0.25rem;
+}
+.flow-current-weather > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.flow-current-weather strong {
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.flow-current-weather span,
+.flow-current-weather small {
+  font-size: 0.69rem;
+  color: var(--muted);
+}
+.flow-current-weather small {
+  max-width: 20ch;
+  overflow-wrap: anywhere;
+}
+.energy-flow-cinematic .flow-heading-actions {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0.55rem;
+}
+.energy-flow-cinematic .flow-configure {
+  width: 45px;
+  height: 45px;
+  min-height: 45px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+  border-color: #ffffff18;
+  background: #ffffff04;
+  color: var(--text);
+}
+.energy-flow-cinematic .flow-configure:hover {
+  background: #ffffff0c;
+  border-color: #ffffff35;
+}
+.energy-flow-cinematic .flow-visual {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.energy-flow-cinematic .energy-scene-wrap {
+  background: transparent;
+}
+.energy-flow-cinematic .energy-scene {
+  height: 650px;
+}
+.energy-flow-cinematic .flow-visual-top {
+  left: 0;
+  right: 0;
+  top: 0.7rem;
+  font-size: 0.65rem;
+}
+.energy-flow-cinematic .flow-visual-top > span,
+.energy-flow-cinematic .flow-visual-top button {
+  background: #141d22d9;
+}
+.energy-flow-cinematic .flow-live {
+  color: #91bdae;
+}
+.energy-flow-cinematic .flow-visual-top > button {
+  position: absolute;
+  top: 570px;
+  right: 0.3rem;
+  border: 1px solid #a2b3be40;
+  border-radius: 13px;
+  padding: 0.6rem 1rem;
+  color: var(--text);
+  gap: 0.6rem;
+  font-size: 0.74rem;
+  min-width: 115px;
+  justify-content: center;
+}
+.energy-flow-cinematic .energy-hotspot {
+  width: 232px;
+  max-width: 232px;
+  height: 102px;
+  gap: 0.7rem;
+  padding: 0.9rem;
+  border-radius: 17px;
+  border: 1px solid color-mix(in srgb, var(--flow-color) 40%, transparent);
+  background: linear-gradient(120deg, #1e2930ee, #1b242bdc);
+  box-shadow:
+    0 8px 25px #0000001a,
+    inset 0 1px 0 #ffffff05;
+}
+.energy-flow-cinematic .energy-hotspot:hover {
+  background: #243139f5;
+  border-color: var(--flow-color);
+}
+.energy-flow-cinematic .energy-hotspot-icon {
+  width: 42px;
+  height: 47px;
+  border-radius: 14px;
+}
+.energy-flow-cinematic .energy-hotspot-icon svg {
+  width: 28px;
+  height: 28px;
+}
+.energy-flow-cinematic .energy-hotspot-copy {
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+.energy-flow-cinematic .energy-hotspot-copy > span {
+  color: #c5cfd4;
+  font-size: 0.78rem;
+}
+.energy-flow-cinematic .energy-hotspot-copy strong {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.energy-flow-cinematic .energy-hotspot-copy small {
+  font-size: 0.64rem;
+  max-width: 15ch;
+}
+.energy-hotspot-sparkline {
+  width: 60px;
+  min-width: 0;
+  margin-left: auto;
+  align-self: center;
+}
+.energy-hotspot-sparkline .flow-sparkline {
+  height: 36px;
+  opacity: 0.95;
+}
+.energy-flow-cinematic .energy-hotspot-anchor {
+  fill: #28343d;
+  stroke-width: 2;
+}
+.energy-flow-cinematic .energy-hotspot-tether {
+  stroke-width: 1;
+  opacity: 0.65;
+}
+.energy-flow-cinematic .energy-scene-tools {
+  justify-content: flex-start;
+  gap: 0.45rem;
+  padding: 0 0 1rem;
+  font-size: 0.61rem;
+}
+.energy-flow-cinematic .energy-scene-tools button {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  border-color: #ffffff16;
+  color: #aebfc8;
+  background: #ffffff03;
+}
+.flow-navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.6rem;
+  background: linear-gradient(180deg, #ffffff04, #ffffff01);
+  border: 1px solid #ffffff16;
+  border-radius: 18px;
+  margin: 0 0 0.8rem;
+}
+.energy-flow-cinematic .flow-measurements {
+  flex: 1;
+  display: flex;
+  background: transparent;
+  border: 0;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff22 transparent;
+}
+.energy-flow-cinematic .flow-measurement,
+.flow-nav-overview {
+  position: relative;
+  flex: 1 0 auto;
+  border: 0;
+  border-radius: 0;
+  padding: 0.7rem 0.85rem;
+  min-height: 59px;
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+}
+.energy-flow-cinematic .flow-measurement-label {
+  gap: 0.55rem;
+  color: inherit;
+  font-size: 0.69rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.energy-flow-cinematic .flow-measurement-label svg {
+  color: inherit;
+  flex-shrink: 0;
+}
+.energy-flow-cinematic .flow-measurement > strong {
+  margin: 0 0 0 30px;
+  font-size: 0.61rem;
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+.energy-flow-cinematic .flow-measurement > small {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.flow-nav-overview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  font-size: 0.73rem;
+}
+.flow-nav-overview > svg {
+  color: var(--flow-battery);
+}
+.energy-flow-cinematic .flow-measurement:hover,
+.flow-nav-overview:hover {
+  color: var(--text);
+  background: #ffffff04;
+}
+.energy-flow-cinematic .flow-measurement[aria-expanded="true"],
+.flow-nav-overview[aria-pressed="true"] {
+  color: var(--text);
+  background: transparent;
+}
+.energy-flow-cinematic .flow-measurement[aria-expanded="true"]::after,
+.flow-nav-overview[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0.55rem 0;
+  height: 2px;
+  background: var(--flow-color, var(--flow-battery));
+  box-shadow: 0 -3px 12px
+    color-mix(in srgb, var(--flow-color, var(--flow-battery)) 55%, transparent);
+}
+.flow-nav-period {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.55rem;
+  border: 1px solid #ffffff14;
+  border-radius: 100px;
+  color: var(--muted);
+  background: #ffffff03;
+}
+.flow-nav-period select {
+  color: var(--text);
+  min-width: 0;
+  width: 105px;
+  border: 0;
+  background: transparent;
+  font-size: 0.71rem;
+  padding: 0.5rem 0.25rem;
+  min-height: 42px;
+}
+.flow-nav-period option {
+  color: #f2f5f6;
+  background: #202b32;
+}
+.energy-flow-cinematic .flow-note {
+  margin-block: 0.7rem;
+  padding: 0;
+  font-size: 0.61rem;
+  color: #92a1aa;
+}
+.energy-flow-cinematic .flow-start {
+  padding-inline: 0;
+}
+.energy-flow-cinematic .flow-history-panel {
+  border-radius: 14px 14px 0 0;
+  margin-top: 1.2rem;
+}
+.energy-flow-cinematic .flow-settings {
+  border-color: #ffffff24;
+  margin-top: 1.7rem;
+}
+.energy-flow-cinematic .flow-history-periods {
+  background: #0f181e;
+}
+.energy-flow-cinematic .flow-history-periods button[aria-pressed="true"] {
+  background: #25323a;
+}
+@container smarti-energy (max-width: 1100px) {
+  .energy-flow-cinematic .energy-hotspot {
+    width: 198px;
+    max-width: 198px;
+    height: 94px;
+    gap: 0.5rem;
+    padding: 0.65rem;
+  }
+  .energy-flow-cinematic .energy-hotspot-icon {
+    width: 34px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .energy-flow-cinematic .energy-hotspot-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  .energy-flow-cinematic .energy-hotspot-copy > span {
+    font-size: 0.7rem;
+  }
+  .energy-flow-cinematic .energy-hotspot-copy strong {
+    font-size: 1.17rem;
+  }
+  .energy-flow-cinematic .energy-hotspot-copy small {
+    font-size: 0.6rem;
+  }
+  .energy-hotspot-sparkline {
+    width: 45px;
+  }
+  .flow-navigation {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .energy-flow-cinematic .flow-measurements {
+    flex-basis: 100%;
+  }
+  .flow-nav-period {
+    margin-left: auto;
+    margin-right: 0.35rem;
+  }
+  .energy-flow-cinematic .flow-heading {
+    flex-wrap: wrap;
+  }
+  .flow-current-weather {
+    gap: 0.45rem;
+  }
+}
+@container smarti-energy (max-width: 760px) {
+  .energy-flow-cinematic .energy-scene {
+    height: 560px;
+  }
+  .energy-flow-cinematic .flow-visual-top > button {
+    top: 555px;
+    min-height: 36px;
+    height: 36px;
+  }
+  .energy-flow-cinematic .energy-hotspot {
+    width: 112px;
+    max-width: 112px;
+    height: 66px;
+    gap: 0.35rem;
+    padding: 0.4rem;
+    border-radius: 12px;
+  }
+  .energy-flow-cinematic .energy-hotspot-icon {
+    width: 25px;
+    height: 30px;
+    border-radius: 9px;
+  }
+  .energy-flow-cinematic .energy-hotspot-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  .energy-flow-cinematic .energy-hotspot-copy > span {
+    font-size: 0.57rem;
+  }
+  .energy-flow-cinematic .energy-hotspot-copy strong {
+    font-size: 0.84rem;
+  }
+  .energy-flow-cinematic .energy-hotspot-copy small {
+    display: block;
+    font-size: 0.5rem;
+    max-width: 13ch;
+  }
+  .energy-hotspot-sparkline {
+    display: none;
+  }
+  .energy-flow-cinematic .flow-measurement {
+    padding: 0.7rem;
+    border: 0;
+    grid-column: auto;
+  }
+  .energy-flow-cinematic .flow-measurement:nth-child(n) {
+    border: 0;
+    grid-column: auto;
+  }
+  .flow-nav-overview {
+    padding-inline: 0.7rem;
+  }
+  .energy-flow-cinematic .flow-heading {
+    gap: 0.85rem;
+  }
+  .energy-flow-cinematic .flow-heading-actions {
+    margin-left: auto;
+  }
+  .flow-welcome {
+    flex: 1 0 65%;
+  }
+  .flow-current-weather {
+    margin-left: 0;
+  }
+  .flow-welcome h1 {
+    font-size: 1.5rem;
+  }
+  .flow-welcome p {
+    font-size: 0.71rem;
+  }
+}
+@container smarti-energy (max-width: 430px) {
+  .energy-flow-cinematic .energy-scene {
+    height: 440px;
+  }
+  .energy-flow-cinematic .flow-visual-top > button {
+    top: 437px;
+    min-height: 34px;
+    height: 34px;
+    right: 0;
+    min-width: 89px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.66rem;
+  }
+  .energy-flow-cinematic .flow-visual-top {
+    top: 0.3rem;
+    font-size: 0.57rem;
+  }
+  .energy-flow-cinematic .energy-hotspot {
+    width: 98px;
+    max-width: 98px;
+    height: 62px;
+  }
+  .energy-flow-cinematic .energy-hotspot-copy strong {
+    font-size: 0.8rem;
+  }
+  .energy-flow-cinematic .energy-hotspot-copy > span {
+    font-size: 0.54rem;
+  }
+  .energy-flow-cinematic .energy-hotspot-icon {
+    width: 22px;
+  }
+  .energy-flow-cinematic .energy-scene-tools {
+    padding-bottom: 0.65rem;
+    gap: 0.3rem;
+    font-size: 0.51rem;
+  }
+  .energy-flow-cinematic .energy-scene-tools button {
+    width: 28px;
+    min-height: 34px;
+  }
+  .flow-current-weather strong {
+    font-size: 1.05rem;
+  }
+  .flow-current-weather span,
+  .flow-current-weather small {
+    font-size: 0.59rem;
+  }
+  .flow-current-weather > svg {
+    width: 25px;
+    height: 25px;
+  }
+}
+@media (max-width: 700px) {
+  .energy-flow.energy-flow-cinematic {
+    border-radius: 19px;
+    padding: 1rem 0.6rem 0.3rem;
+  }
+  .energy-flow-cinematic .flow-heading {
+    flex-direction: row;
+  }
+  .energy-flow-cinematic .flow-heading-actions {
+    width: auto;
+  }
+  .energy-flow-cinematic .flow-configure {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+  .flow-nav-overview,
+  .energy-flow-cinematic .flow-measurement {
+    min-height: 58px;
+  }
+}
+.energy-flow-cinematic .energy-anchor-ring {
+  fill: color-mix(in srgb, var(--flow-color) 10%, #19242a);
+  stroke: var(--flow-color);
+  stroke-width: 1.2;
+}
+.energy-flow-cinematic .energy-anchor-core {
+  fill: var(--flow-color);
+  stroke: none;
+}
+@container smarti-energy (max-width: 760px) {
+  .energy-flow-cinematic .energy-hotspot {
+    width: min(112px, calc((100% - 50px) / 3));
+    max-width: 112px;
+  }
+  .energy-flow-cinematic .energy-hotspot[data-hotspot="solar"],
+  .energy-flow-cinematic .energy-hotspot[data-hotspot="grid"] {
+    width: 138px;
+    max-width: 138px;
+  }
+}
+@container smarti-energy (min-width: 900px) and (max-width: 1100px) {
+  .flow-navigation {
+    flex-wrap: nowrap;
+  }
+  .energy-flow-cinematic .flow-measurements {
+    flex-basis: auto;
+  }
+  .flow-nav-period {
+    margin: 0;
+  }
+}
+@container smarti-energy (max-width: 760px) {
+  .energy-flow-cinematic .energy-scene-tools button {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .energy-flow-cinematic .flow-visual-top > button {
+    min-height: 44px;
+    height: 44px;
+  }
+}
+@container smarti-energy (max-width: 430px) {
+  .energy-flow-cinematic .energy-scene-tools > span {
+    display: none;
   }
 }

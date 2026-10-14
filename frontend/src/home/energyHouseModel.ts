@@ -3,12 +3,16 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import type { FlowRole } from "./energyFlowModel";
 import { createEnergyVehicle } from "./energyVehicleModel";
 import { createEnergyRoutes } from "./energyFlowPaths";
+import { createEnergyLandscape } from "./energyLandscapeModel";
+import { mergeEnergyArchitecture } from "./mergeEnergyArchitecture";
 
 /** A small architectural model, in metres. The front of the home faces +Z. */
 export function createEnergyHouse() {
   const root = new THREE.Group();
   const geometries = new Set<THREE.BufferGeometry>();
   const materials = new Set<THREE.Material>();
+  const instancedMeshes = new Set<THREE.InstancedMesh>();
+  const lights = new Set<THREE.PointLight>();
   const components: Partial<Record<FlowRole, THREE.Group>> = {};
   const own = <T extends THREE.BufferGeometry>(geometry: T) => {
     geometries.add(geometry);
@@ -127,112 +131,512 @@ export function createEnergyHouse() {
   const vector = (x: number, y: number, z: number) =>
     new THREE.Vector3(x, y, z);
 
-  // A quiet, dark stone site. The dark substrate makes the energy light readable in any theme.
-  box(9.8, 0.2, 8.2, stone, 0, -0.14, 0.4, root, 0.085);
-  box(9.63, 0.08, 8.03, charcoal, 0, -0.275, 0.4, root, 0.035);
-  const paving = material(0x404c52, 0.94);
-  box(2.42, 0.025, 4.22, paving, -2.88, -0.022, 1.22, root, 0.035);
-  for (const z of [0.4, 1.8])
-    box(2.39, 0.004, 0.009, charcoal, -2.88, -0.006, z);
-  box(1.22, 0.09, 0.56, chalk, -1.04, 0.03, 1.91, root, 0.015);
-  box(1.36, 0.035, 0.48, paving, -1.04, -0.002, 2.17, root, 0.015);
+  const landscape = createEnergyLandscape();
+  root.add(landscape.root);
 
-  // Two interlocking pavilion volumes: a solid graphite rear block and a lower glazed living wing.
-  // Thin reveals, generous uninterrupted glass and low horizontal roofs replace the gabled miniature.
+  // A restrained graphite pavilion with an asymmetrical pitched roof and uninterrupted glazing.
   const building = new THREE.Group();
   root.add(building);
   box(3.67, 0.15, 3.38, charcoal, 0, 0.075, -0.05, building, 0.023);
-  const interiorFloor = material(0x4c5050, 0.79);
+  // The always-warm interior belongs to the architectural illustration, not a live lighting state.
+  const interiorFloor = material(0xa47a47, 0.85);
+  interiorFloor.emissive.setHex(0x9d511b);
+  interiorFloor.emissiveIntensity = 0.2;
+  const interiorPlaster = material(0xe2b57b, 0.9);
+  interiorPlaster.emissive.setHex(0xd68d39);
+  interiorPlaster.emissiveIntensity = 0.3;
   box(3.5, 0.08, 3.15, interiorFloor, 0, 0.185, -0.05, building);
-  box(3.58, 2.02, 0.15, wall, 0, 1.165, -1.62, building, 0.012);
-  box(0.16, 2.02, 2.16, wall, -1.71, 1.165, -0.62, building, 0.012);
+  box(3.58, 2.38, 0.15, wall, 0, 1.345, -1.62, building, 0.012);
+  box(0.16, 2.38, 2.16, wall, -1.71, 1.345, -0.62, building, 0.012);
   box(0.16, 0.89, 2.16, wall, 1.71, 0.61, -0.62, building);
-  box(0.16, 0.37, 2.16, wall, 1.71, 1.99, -0.62, building);
+  box(0.16, 0.49, 2.16, wall, 1.71, 2.29, -0.62, building);
   // A narrow full-height wall provides a real service bay for the battery.
-  box(0.16, 1.8, 0.78, wall, 1.71, 1.06, 1.0, building, 0.013);
-  box(0.16, 1.96, 0.11, wall, 1.71, 1.13, -1.67, building);
-  box(0.13, 1.96, 0.13, charcoal, 1.715, 1.13, 0.43, building);
-  // The taller rear roof has a slender silver reveal beneath its graphite fascia.
-  box(3.91, 0.15, 2.34, roofMaterial, 0, 2.23, -0.62, building, 0.024);
-  box(3.85, 0.025, 2.28, seamMaterial, 0, 2.143, -0.62, building, 0.012);
-  box(3.68, 0.025, 2.13, charcoal, 0, 2.121, -0.62, building);
-  box(3.58, 0.17, 0.12, wall, 0, 2.118, 0.442, building);
-  // A lower cantilever shades the glass front without masking the roof array.
-  box(3.91, 0.12, 1.32, roofMaterial, 0, 2.02, 1.03, building, 0.021);
-  box(3.8, 0.022, 1.23, seamMaterial, 0, 1.949, 1.035, building, 0.009);
-  box(3.57, 0.035, 1.07, charcoal, 0, 1.923, 1.05, building);
+  box(0.16, 2.34, 0.78, wall, 1.71, 1.33, 1.0, building, 0.013);
+  box(0.16, 2.36, 0.11, wall, 1.71, 1.34, -1.67, building);
+  box(0.13, 2.36, 0.13, charcoal, 1.715, 1.34, 0.43, building);
+  // A taller charcoal gable, with finely spaced folded-metal standing seams.
+  const ridgeX = -0.2,
+    ridgeY = 3.6,
+    eaveY = 2.535;
+  const rightPitch = Math.atan2(ridgeY - eaveY, 1.96 - ridgeX);
+  for (const side of [-1, 1]) {
+    const eaveX = side * 1.96;
+    const run = Math.abs(eaveX - ridgeX);
+    const roofLength = Math.hypot(run, ridgeY - eaveY);
+    const slope = new THREE.Group();
+    slope.position.set((eaveX + ridgeX) / 2, (ridgeY + eaveY) / 2, -0.04);
+    slope.rotation.z = side < 0 ? Math.atan2(ridgeY - eaveY, run) : -rightPitch;
+    building.add(slope);
+    box(roofLength, 0.1, 3.73, roofMaterial, 0, 0, 0, slope, 0.018);
+    box(
+      roofLength - 0.05,
+      0.017,
+      3.69,
+      seamMaterial,
+      0,
+      -0.059,
+      0,
+      slope,
+      0.007,
+    );
+    for (const z of [-1.865, 1.865])
+      box(roofLength, 0.13, 0.033, charcoal, 0, -0.009, z, slope, 0.006);
+    const foldMaterial = material(0x43515a, 0.41, 0.47);
+    for (let line = 0; line < 16; line++)
+      box(
+        roofLength - 0.025,
+        0.027,
+        0.016,
+        foldMaterial,
+        0,
+        0.062,
+        -1.76 + line * 0.234,
+        slope,
+      );
+  }
+  box(
+    0.075,
+    0.064,
+    3.78,
+    roofMaterial,
+    ridgeX,
+    ridgeY + 0.04,
+    -0.04,
+    building,
+    0.02,
+  );
+  const gable = new THREE.Shape();
+  gable.moveTo(-1.8, 2.46);
+  gable.lineTo(-1.8, 2.573);
+  gable.lineTo(ridgeX, 3.54);
+  gable.lineTo(1.8, 2.555);
+  gable.lineTo(1.8, 2.46);
+  gable.closePath();
+  const gableGeometry = new THREE.ExtrudeGeometry(gable, {
+    depth: 0.12,
+    bevelEnabled: false,
+  });
+  for (const z of [-1.7, 1.48]) mesh(gableGeometry, wall, 0, 0, z, building);
+  box(3.58, 0.14, 0.13, wall, 0, 2.465, 1.49, building);
+  box(0.16, 2.37, 1.08, wall, -1.71, 1.345, 1.02, building);
+  box(0.16, 0.14, 3.32, wall, 1.71, 2.465, -0.04, building);
   // Recessed entry is one calm dark plane, with a single warm light slit.
-  box(1.09, 1.8, 0.13, wall, -1.225, 1.07, 1.49, building, 0.015);
-  box(0.745, 1.61, 0.035, dark, -1.18, 1.055, 1.575, building, 0.014);
+  box(1.09, 2.34, 0.13, wall, -1.225, 1.33, 1.49, building, 0.015);
+  box(0.745, 2.15, 0.035, dark, -1.18, 1.325, 1.575, building, 0.014);
   box(0.021, 0.37, 0.042, seamMaterial, -0.896, 1.07, 1.608, building, 0.007);
-  box(0.018, 1.28, 0.012, warmWhite, -1.644, 1.18, 1.568, building, 0.005);
+  box(0.013, 1.67, 0.012, warmWhite, -1.644, 1.35, 1.568, building, 0.005);
 
-  const glass = material(0x496673, 0.12, 0.32);
+  const glass = material(0x8b9b99, 0.1, 0.13);
   glass.transparent = true;
-  glass.opacity = 0.34;
+  glass.opacity = 0.17;
+  glass.envMapIntensity = 0.2;
   glass.depthWrite = false;
-  // No decorative furniture: the open interior reveals the actual animated home circuit below.
-  box(2.36, 1.7, 0.055, material(0x333b3e, 0.67), 0.42, 1.08, 0.28, building);
-  box(2.12, 0.018, 0.02, warmWhite, 0.42, 1.755, 0.315, building, 0.005);
+  // Soft plaster catches real bounded light, leaving the floor circuit visible through the glass.
+  box(2.36, 2.14, 0.055, interiorPlaster, 0.42, 1.31, -0.69, building);
+  box(0.045, 1.22, 1.88, interiorPlaster, 1.36, 1.59, -0.64, building);
+  box(2.38, 0.034, 2.23, interiorPlaster, 0.45, 2.385, 0.405, building);
+  box(0.018, 0.017, 1.71, warmWhite, 1.394, 2.02, -0.64, building);
+  const livingLight = new THREE.PointLight(0xffb45e, 6.7, 2.85, 2);
+  livingLight.position.set(0.43, 2.18, 0.31);
+  building.add(livingLight);
+  lights.add(livingLight);
+  const sideLight = new THREE.PointLight(0xffb867, 1.45, 1.8, 2);
+  sideLight.position.set(1.61, 1.89, -0.65);
+  building.add(sideLight);
+  lights.add(sideLight);
+  for (const x of [0.1, 0.95])
+    cylinder(0.057, 0.073, 0.025, warmWhite, x, 2.355, 0.71, building);
+  box(2.12, 0.018, 0.02, warmWhite, 0.42, 2.275, -0.655, building, 0.005);
   const frontGlass = mesh(
-    new THREE.PlaneGeometry(2.39, 1.63),
+    new THREE.PlaneGeometry(2.39, 2.13),
     glass,
     0.47,
-    1.075,
+    1.325,
     1.603,
     building,
   );
   frontGlass.castShadow = false;
   glass.side = THREE.DoubleSide;
   for (const x of [-0.74, 0.45, 1.68])
-    box(0.035, 1.69, 0.08, charcoal, x, 1.074, 1.598, building);
-  for (const y of [0.239, 1.909])
+    box(0.04, 2.19, 0.09, charcoal, x, 1.324, 1.598, building);
+  for (const y of [0.239, 2.409])
     box(2.45, 0.027, 0.078, charcoal, 0.47, y, 1.598, building);
   const sideGlass = mesh(
-    new THREE.PlaneGeometry(1.85, 0.74),
+    new THREE.PlaneGeometry(1.85, 0.94),
     glass,
     1.801,
-    1.441,
+    1.541,
     -0.635,
     building,
   );
   sideGlass.rotation.y = Math.PI / 2;
   sideGlass.castShadow = false;
   for (const z of [-1.57, -0.645, 0.28])
-    box(0.055, 0.78, 0.024, charcoal, 1.8, 1.441, z, building);
-  for (const y of [1.065, 1.817])
+    box(0.055, 0.98, 0.024, charcoal, 1.8, 1.541, z, building);
+  for (const y of [1.065, 2.017])
     box(0.055, 0.026, 1.91, charcoal, 1.8, y, -0.645, building);
 
-  // Flush array on the taller roof. Equipment and service port share one independently hidden group.
+  // Fine vertical boards give the charcoal shell real relief without a noisy image texture.
+  const cladding = material(0x29353c, 0.7, 0.08);
+  const claddingShade = material(0x354047, 0.74, 0.07);
+  const boards: {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+    h: number;
+    d: number;
+  }[] = [];
+  for (let i = 0; i < 16; i++)
+    boards.push({
+      x: -1.756 + i * 0.064,
+      y: 1.341,
+      z: 1.621,
+      w: 0.049,
+      h: 2.333,
+      d: 0.026,
+    });
+  for (let i = 0; i < 55; i++) {
+    const x = -1.755 + i * 0.065;
+    const roofY =
+      ridgeY -
+      (Math.abs(x - ridgeX) * (ridgeY - eaveY)) /
+        Math.abs((x < ridgeX ? -1.96 : 1.96) - ridgeX) -
+      0.075;
+    const height = Math.max(0, roofY - 2.413);
+    boards.push({
+      x,
+      y: 2.413 + height / 2,
+      z: 1.618,
+      w: 0.05,
+      h: height,
+      d: 0.026,
+    });
+  }
+  for (let i = 0; i < 13; i++)
+    boards.push({
+      x: 1.81,
+      y: 1.332,
+      z: 0.626 + i * 0.061,
+      w: 0.026,
+      h: 2.32,
+      d: 0.046,
+    });
+  for (let i = 0; i < 28; i++) {
+    const z = -1.65 + i * 0.073;
+    boards.push({ x: 1.81, y: 0.61, z, w: 0.026, h: 0.89, d: 0.054 });
+    boards.push({ x: 1.81, y: 2.29, z, w: 0.026, h: 0.47, d: 0.054 });
+  }
+  const boardGeometry = own(new THREE.BoxGeometry(1, 1, 1));
+  for (const [surface, variant] of [
+    [cladding, 0],
+    [claddingShade, 1],
+  ] as const) {
+    const selected = boards.filter((_, i) => (i % 5 === 0 ? 1 : 0) === variant);
+    const instances = new THREE.InstancedMesh(
+      boardGeometry,
+      surface,
+      selected.length,
+    );
+    selected.forEach(({ x, y, z, w, h, d }, i) =>
+      instances.setMatrixAt(
+        i,
+        new THREE.Matrix4().compose(
+          vector(x, y, z),
+          new THREE.Quaternion(),
+          vector(w, h, d),
+        ),
+      ),
+    );
+    instancedMeshes.add(instances);
+    instances.castShadow = instances.receiveShadow = true;
+    building.add(instances);
+  }
+  box(0.021, 0.37, 0.046, aluminium, -0.896, 1.32, 1.654, building, 0.007);
+
+  // A furnished golden lounge: proportions remain legible through the full-height glass.
+  const linen = material(0xad8757, 0.94);
+  const cushion = material(0xe1b881, 0.95);
+  const accentFabric = material(0x80603a, 0.97);
+  const oak = material(0x88603d, 0.78);
+  const oakLight = material(0x9a7049, 0.77);
+  const upholsteryGlow = [linen, cushion, accentFabric];
+  upholsteryGlow.forEach((surface) => {
+    surface.emissive.setHex(0xc48136);
+    surface.emissiveIntensity = 0.19;
+  });
+  // Individual floorboards catch the light rather than reading as a flat beige square.
+  const floorBoards = new THREE.InstancedMesh(
+    own(new THREE.BoxGeometry(0.177, 0.014, 2.16)),
+    oakLight,
+    13,
+  );
+  for (let i = 0; i < 13; i++)
+    floorBoards.setMatrixAt(
+      i,
+      new THREE.Matrix4().makeTranslation(-0.668 + i * 0.183, 0.234, 0.48),
+    );
+  instancedMeshes.add(floorBoards);
+  floorBoards.receiveShadow = true;
+  building.add(floorBoards);
+  const rug = material(0x9d8b70, 0.99);
+  box(1.87, 0.013, 1.36, rug, 0.39, 0.249, 0.25, building, 0.045);
+  box(1.58, 0.25, 0.69, linen, 0.29, 0.477, -0.15, building, 0.07);
+  box(1.57, 0.6, 0.18, linen, 0.29, 0.718, -0.442, building, 0.057);
+  for (const x of [-0.406, 0.986])
+    box(0.17, 0.44, 0.73, linen, x, 0.576, -0.15, building, 0.058);
+  for (const x of [-0.04, 0.622]) {
+    box(0.625, 0.145, 0.52, cushion, x, 0.666, -0.083, building, 0.054);
+    const backCushion = box(
+      0.616,
+      0.36,
+      0.15,
+      cushion,
+      x,
+      0.851,
+      -0.303,
+      building,
+      0.047,
+    );
+    backCushion.rotation.x = -0.1;
+  }
+  for (const [x, tilt] of [
+    [-0.211, -0.12],
+    [0.788, 0.15],
+  ]) {
+    const pillow = box(
+      0.27,
+      0.276,
+      0.113,
+      accentFabric,
+      x,
+      0.809,
+      -0.024,
+      building,
+      0.045,
+    );
+    pillow.rotation.z = tilt;
+  }
+  for (const x of [-0.337, 0.917])
+    for (const z of [-0.4, 0.11])
+      cylinder(0.018, 0.025, 0.16, charcoal, x, 0.321, z, building);
+  // Low oak coffee table and a single reading chair leave the animated interior circuit clear.
+  box(0.66, 0.048, 0.43, oakLight, 0.255, 0.617, 0.713, building, 0.055);
+  for (const x of [0.006, 0.504])
+    for (const z of [0.57, 0.855])
+      box(0.024, 0.35, 0.024, oak, x, 0.424, z, building, 0.007);
+  box(0.22, 0.014, 0.14, cushion, 0.12, 0.654, 0.736, building, 0.005);
+  cylinder(0.055, 0.051, 0.041, charcoal, 0.393, 0.662, 0.711, building);
+  box(0.46, 0.22, 0.51, linen, 1.174, 0.477, 0.61, building, 0.068);
+  box(0.46, 0.48, 0.14, linen, 1.174, 0.677, 0.385, building, 0.057);
+  for (const x of [0.975, 1.373])
+    box(0.085, 0.34, 0.53, linen, x, 0.555, 0.612, building, 0.035);
+  for (const x of [1.012, 1.336])
+    for (const z of [0.41, 0.81])
+      cylinder(0.017, 0.021, 0.15, oak, x, 0.317, z, building);
+
+  const pot = material(0x727367, 0.84);
+  const leafSurface = material(0x456343, 0.89);
+  leafSurface.side = THREE.DoubleSide;
+  cylinder(0.11, 0.08, 0.255, pot, -0.615, 0.38, -0.19, building);
+  cylinder(0.098, 0.098, 0.014, dark, -0.615, 0.511, -0.19, building);
+  const leafShape = new THREE.Shape();
+  leafShape.moveTo(0, 0);
+  leafShape.bezierCurveTo(-0.105, 0.07, -0.085, 0.235, 0, 0.32);
+  leafShape.bezierCurveTo(0.085, 0.235, 0.105, 0.07, 0, 0);
+  const leafGeometry = own(new THREE.ShapeGeometry(leafShape, 9));
+  for (let n = 0; n < 11; n++) {
+    const angle = n * 2.39;
+    const height = 0.74 + (n % 4) * 0.13;
+    const end = vector(
+      -0.615 + Math.cos(angle) * 0.095,
+      height,
+      -0.19 + Math.sin(angle) * 0.095,
+    );
+    const stem = new THREE.CatmullRomCurve3([
+      vector(-0.615, 0.49, -0.19),
+      vector(-0.615, height - 0.19, -0.19),
+      end,
+    ]);
+    mesh(
+      new THREE.TubeGeometry(stem, 8, 0.006, 4, false),
+      leafSurface,
+      0,
+      0,
+      0,
+      building,
+    );
+    const leaf = mesh(leafGeometry, leafSurface, end.x, end.y, end.z, building);
+    leaf.rotation.set(0.17 + (n % 3) * 0.11, angle, Math.cos(angle) * 0.45);
+  }
+  // Pale linen curtains add depth to the reveal without covering the measurements inside.
+  for (let i = 0; i < 6; i++)
+    box(
+      0.024,
+      2.02,
+      0.05,
+      cushion,
+      -0.7 + i * 0.027,
+      1.37,
+      1.464 + (i % 2) * 0.015,
+      building,
+      0.009,
+    );
+
+  // The right-rear annex adds the reference's stepped architectural silhouette.
+  const annex = new THREE.Group();
+  building.add(annex);
+  box(1.5, 0.16, 1.09, charcoal, 2.55, 0.115, -1.31, annex, 0.021);
+  box(1.5, 1.75, 0.12, wall, 2.55, 1.065, -1.82, annex, 0.012);
+  box(0.12, 1.75, 1.09, wall, 3.24, 1.065, -1.31, annex, 0.012);
+  box(0.12, 1.75, 1.09, wall, 1.86, 1.065, -1.31, annex, 0.012);
+  box(0.41, 1.75, 0.11, wall, 2.005, 1.065, -0.785, annex);
+  box(0.335, 1.75, 0.11, wall, 3.132, 1.065, -0.785, annex);
+  box(1.5, 0.18, 0.11, wall, 2.55, 1.85, -0.785, annex);
+  box(1.72, 0.105, 1.32, roofMaterial, 2.55, 1.99, -1.31, annex, 0.02);
+  box(1.68, 0.018, 1.27, seamMaterial, 2.55, 1.927, -1.31, annex, 0.007);
+  for (let i = 0; i < 7; i++)
+    box(1.69, 0.018, 0.012, charcoal, 2.55, 2.05, -1.86 + i * 0.185, annex);
+  const annexWarm = luminous(0xc98e52, 0.26);
+  box(0.82, 1.48, 0.055, annexWarm, 2.6, 1.09, -1.28, annex);
+  const annexGlass = mesh(
+    new THREE.PlaneGeometry(0.76, 1.53),
+    glass,
+    2.592,
+    1.075,
+    -0.724,
+    annex,
+  );
+  annexGlass.castShadow = false;
+  for (const x of [2.199, 2.985])
+    box(0.035, 1.58, 0.075, charcoal, x, 1.075, -0.733, annex);
+  box(0.78, 0.035, 0.075, charcoal, 2.59, 0.3, -0.733, annex);
+  box(0.018, 0.21, 0.04, aluminium, 2.898, 1.028, -0.687, annex, 0.007);
+  for (let i = 0; i < 14; i++)
+    box(0.024, 1.71, 0.051, cladding, 3.309, 1.065, -1.803 + i * 0.075, annex);
+
+  // Warm wall sconces illuminate bounded areas; they are architectural accents, not device indicators.
+  const wash = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+    vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader: `varying vec2 vUv; void main(){float spread=.07+(1.-vUv.y)*.47;float side=exp(-pow((vUv.x-.5)/spread,2.)*3.5);float fade=smoothstep(0.,.2,vUv.y)*pow(vUv.y,.55);gl_FragColor=vec4(1.,.66,.32,side*fade*.19);
+      #include <colorspace_fragment>
+      }`,
+  });
+  materials.add(wash);
+  function sconce(
+    x: number,
+    y: number,
+    z: number,
+    side: boolean,
+    light: boolean,
+  ) {
+    const assembly = new THREE.Group();
+    assembly.position.set(x, y, z);
+    if (side) assembly.rotation.y = Math.PI / 2;
+    building.add(assembly);
+    box(0.083, 0.235, 0.063, charcoal, 0, 0, 0, assembly, 0.014);
+    box(0.027, 0.171, 0.01, warmWhite, 0, 0, 0.037, assembly, 0.006);
+    const pool = mesh(
+      new THREE.PlaneGeometry(0.69, 1.32),
+      wash,
+      0,
+      -0.71,
+      -0.012,
+      assembly,
+    );
+    pool.castShadow = pool.receiveShadow = false;
+    if (light) {
+      const glow = new THREE.PointLight(0xffbb75, 0.45, 0.88, 2);
+      glow.position.set(0, -0.05, 0.12);
+      assembly.add(glow);
+      lights.add(glow);
+    }
+  }
+  sconce(-0.802, 1.983, 1.684, false, true);
+  sconce(1.854, 1.997, 0.686, true, true);
+  sconce(3.117, 1.555, -0.706, false, false);
+
+  // Feathered light spill and contact shade ground the furniture without extra shadow maps.
+  function groundPatch(
+    color: number,
+    opacity: number,
+    width: number,
+    depth: number,
+    x: number,
+    y: number,
+    z: number,
+    additive: boolean,
+  ) {
+    const surface = new THREE.ShaderMaterial({
+      uniforms: {
+        tint: { value: new THREE.Color(color) },
+        opacity: { value: opacity },
+      },
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+      blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+      vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+      fragmentShader: `varying vec2 vUv; uniform vec3 tint; uniform float opacity;
+        void main(){vec2 p=(vUv-.5)*2.;float radius=length(p);float feather=exp(-dot(p,p)*1.45)*(1.-smoothstep(.73,1.,radius));gl_FragColor=vec4(tint,opacity*feather);
+          #include <colorspace_fragment>
+        }`,
+    });
+    materials.add(surface);
+    const patch = mesh(
+      new THREE.PlaneGeometry(width, depth),
+      surface,
+      x,
+      y,
+      z,
+      building,
+    );
+    patch.rotation.x = -Math.PI / 2;
+    patch.castShadow = patch.receiveShadow = false;
+  }
+  groundPatch(0xeab062, 0.2, 2.66, 1.12, 0.43, 0.034, 2.09, true);
+  groundPatch(0xf5bd71, 0.11, 2.15, 1.59, 0.42, 0.263, 0.52, true);
+  groundPatch(0x17120d, 0.24, 1.75, 0.89, 0.29, 0.266, -0.09, false);
+  groundPatch(0x17120d, 0.19, 0.82, 0.61, 0.255, 0.267, 0.713, false);
+  mergeEnergyArchitecture(building, own);
+
+  // The modules and their activity contours share the exact sloping roof transform.
   const solar = new THREE.Group();
   root.add(solar);
   components.solar = solar;
   const solarPanels = new THREE.Group();
-  solarPanels.position.set(0, 2.355, -0.66);
+  solarPanels.position.set(0.922, 3.151, -0.04);
+  solarPanels.rotation.z = -rightPitch;
   solar.add(solarPanels);
-  for (const z of [-0.38, 0.38])
-    box(3.13, 0.028, 0.045, dark, 0, -0.035, z, solarPanels);
+  for (const z of [-1.12, 0, 1.12])
+    box(1.55, 0.028, 0.045, dark, 0, -0.035, z, solarPanels);
   box(0.09, 0.43, 0.36, chalk, 1.85, 0.79, -0.66, solar, 0.035);
   box(0.016, 0.34, 0.277, dark, 1.902, 0.79, -0.66, solar, 0.015);
   box(0.019, 0.016, 0.113, aluminium, 1.912, 0.915, -0.66, solar, 0.004);
   const panelBlack = material(0x122b44, 0.2, 0.48);
-  const cellBlue = material(0x244e75, 0.23, 0.48);
-  const cellAlternate = material(0x315c82, 0.21, 0.55);
-  const cellGeometry = own(new THREE.BoxGeometry(0.142, 0.009, 0.144));
+  const cellBlue = material(0x174882, 0.22, 0.45);
+  const cellAlternate = material(0x235794, 0.2, 0.49);
+  const cellGeometry = own(new THREE.BoxGeometry(0.087, 0.009, 0.08));
+  box(1.644, 0.025, 3.05, aluminium, 0, -0.026, 0, solarPanels, 0.01);
   const cellMatrices: THREE.Matrix4[] = [];
   const alternateMatrices: THREE.Matrix4[] = [];
-  for (let row = 0; row < 4; row++) {
-    for (let column = 0; column < 2; column++) {
-      const x = (row - 1.5) * 0.82,
-        z = (column - 0.5) * 0.77;
-      box(0.775, 0.048, 0.715, aluminium, x, 0, z, solarPanels, 0.012);
-      box(0.733, 0.025, 0.672, panelBlack, x, 0.035, z, solarPanels, 0.006);
-      for (let u = 0; u < 4; u++)
-        for (let v = 0; v < 4; v++) {
+  for (let row = 0; row < 2; row++) {
+    for (let column = 0; column < 4; column++) {
+      const x = (row - 0.5) * 0.806,
+        z = (column - 1.5) * 0.754;
+      box(0.798, 0.048, 0.748, aluminium, x, 0, z, solarPanels, 0.012);
+      box(0.78, 0.025, 0.73, panelBlack, x, 0.035, z, solarPanels, 0.006);
+      for (let u = 0; u < 8; u++)
+        for (let v = 0; v < 8; v++) {
           const matrix = new THREE.Matrix4().makeTranslation(
-            x + (u - 1.5) * 0.172,
+            x + (u - 3.5) * 0.094,
             0.053,
-            z + (v - 1.5) * 0.158,
+            z + (v - 3.5) * 0.087,
           );
           ((u + v + column) % 3 ? cellMatrices : alternateMatrices).push(
             matrix,
@@ -250,19 +654,10 @@ export function createEnergyHouse() {
       transforms.length,
     );
     transforms.forEach((matrix, i) => cells.setMatrixAt(i, matrix));
+    instancedMeshes.add(cells);
     cells.receiveShadow = true;
     solarPanels.add(cells);
   }
-
-  // A matching floating carport canopy, open on all sides for a clean vehicle silhouette.
-  const carport = new THREE.Group();
-  root.add(carport);
-  box(2.34, 0.1, 3.18, roofMaterial, -2.89, 1.77, -0.05, carport, 0.026);
-  box(2.26, 0.018, 3.1, seamMaterial, -2.89, 1.711, -0.05, carport, 0.01);
-  box(0.021, 0.012, 2.49, warmWhite, -3.72, 1.694, -0.07, carport);
-  for (const x of [-3.97, -1.8])
-    for (const z of [-1.42, 1.35])
-      box(0.062, 1.7, 0.062, charcoal, x, 0.85, z, carport, 0.008);
 
   // A low, unbadged electric fastback with a compound-curved body and panoramic canopy.
   const ev = new THREE.Group();
@@ -362,29 +757,6 @@ export function createEnergyHouse() {
   box(0.11, 0.34, 0.29, chalk, 1.855, 0.48, 0.1, grid, 0.027);
   box(0.016, 0.19, 0.18, dark, 1.918, 0.51, 0.1, grid, 0.01);
 
-  // One low planter and a few slender leaves replace the toy-like row of round shrubs.
-  const planter = material(0x2b373d, 0.8);
-  const foliage = material(0x32594e, 0.83);
-  foliage.side = THREE.DoubleSide;
-  box(0.68, 0.18, 1.75, planter, 2.82, 0.06, -1.72, root, 0.035);
-  box(0.59, 0.022, 1.65, dark, 2.82, 0.155, -1.72, root, 0.022);
-  for (let n = 0; n < 9; n++) {
-    const leaf = new THREE.Shape();
-    const height = 0.36 + (n % 3) * 0.09;
-    leaf.moveTo(0, 0);
-    leaf.quadraticCurveTo(-0.075, height * 0.45, -0.14, height);
-    leaf.quadraticCurveTo(0.035, height * 0.55, 0.025, 0);
-    const blade = mesh(
-      new THREE.ShapeGeometry(leaf, 10),
-      foliage,
-      2.82 + ((n % 3) - 1) * 0.12,
-      0.16,
-      -2.16 + Math.floor(n / 3) * 0.43,
-    );
-    blade.rotation.y = n * 2.1;
-    blade.castShadow = false;
-  }
-
   // Activity follows the equipment's real perimeter. No plane fills over the solar cells,
   // no floating rectangles, and no glow at all for missing, stale or inactive readings.
   const activity = new Map<
@@ -459,14 +831,14 @@ export function createEnergyHouse() {
     corner([-x, -y + r], [-x, -y], [-x + r, -y]);
     return curve;
   }
-  for (let row = 0; row < 4; row++)
-    for (let column = 0; column < 2; column++) {
-      const x = (row - 1.5) * 0.82,
-        z = (column - 0.5) * 0.77;
+  for (let row = 0; row < 2; row++)
+    for (let column = 0; column < 4; column++) {
+      const x = (row - 0.5) * 0.806,
+        z = (column - 1.5) * 0.754;
       contour(
         "solar",
         0xffc257,
-        roundedContour(0.778, 0.718, 0.018, (u, v) =>
+        roundedContour(0.801, 0.751, 0.014, (u, v) =>
           vector(x + u, 0.029, z + v),
         ),
         solarPanels,
@@ -516,8 +888,8 @@ export function createEnergyHouse() {
   // The independent physical circuits are authored separately from the architecture.
   const routes = createEnergyRoutes();
   const anchors: Record<FlowRole, THREE.Vector3> = {
-    solar: vector(0, 2.414, -0.66),
-    home: vector(0.47, 1.18, 1.603),
+    solar: vector(0.948, 3.204, -0.04),
+    home: vector(0.47, 1.58, 1.603),
     ev: vector(-2.97, 0.565, 2.37),
     battery: vector(2.24, 0.98, 0.99),
     grid: vector(mastX, 3.3, mastZ),
@@ -535,7 +907,10 @@ export function createEnergyHouse() {
       });
     },
     dispose() {
+      instancedMeshes.forEach((instances) => instances.dispose());
+      lights.forEach((light) => light.dispose());
       vehicle.dispose();
+      landscape.dispose();
       geometries.forEach((geometry) => geometry.dispose());
       materials.forEach((surface) => surface.dispose());
     },

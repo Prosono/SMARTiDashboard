@@ -41,7 +41,7 @@ async function expectStillCanvas(page: Page, canvas: Locator, reason: string) {
 test("3D hotspots configure live measurements and preserve directions, freshness and persistence", async ({
   page,
 }) => {
-  test.setTimeout(90000);
+  test.setTimeout(120000);
   const renderingErrors: string[] = [];
   page.on("pageerror", (error) => renderingErrors.push(error.message));
   page.on("console", (message) => {
@@ -154,7 +154,12 @@ test("3D hotspots configure live measurements and preserve directions, freshness
                 value:
                   i === 5
                     ? null
-                    : (role === "battery" ? -1 : 1) * (900 + i * 15),
+                    : (role === "battery" ? -1 : 1) *
+                      (900 +
+                        i * 15 +
+                        (i === 0 || i === count - 1
+                          ? 0
+                          : Math.round(Math.sin((i % 24) / 2) * 220))),
               })),
             ]),
         ),
@@ -179,8 +184,38 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     attributes: { unit_of_measurement: "W", device_class: "power" },
     availability: "available",
   };
+  // Explicit weather fixture verifies that the cinematic header uses real payload data.
+  const weather = {
+    ...sensor,
+    id: "weather.energy_fixture",
+    entity_id: "weather.energy_fixture",
+    name: "Kristiansand",
+    domain: "weather",
+    state: "sunny",
+    attributes: { temperature: 12, temperature_unit: "°C" },
+  };
   await page.route("**/api/home", (r) =>
-    r.fulfill({ json: { ...base, controls: [...base.controls, sensor] } }),
+    r.fulfill({
+      json: {
+        ...base,
+        connected: online,
+        controls: [
+          ...base.controls.filter((c: any) => c.domain !== "weather"),
+          sensor,
+          weather,
+        ],
+      },
+    }),
+  );
+  await page.route("**/api/home/weather/weather.energy_fixture", (r) =>
+    r.fulfill({
+      json: {
+        days: {},
+        temperature_unit: "°C",
+        precipitation_unit: "mm",
+        wind_speed_unit: "km/h",
+      },
+    }),
   );
   // The whole-page visual fixture also populates the separate energy overview.
   await page.route("**/api/home/energy/preferences", (r) =>
@@ -239,13 +274,20 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
   const flow = page.getByRole("region", { name: "Energiflyt", exact: true });
   await expect(flow).toContainText("Gjør huset til ditt");
+  await expect(flow.locator(".flow-current-weather")).toContainText("12°C");
+  await expect(flow.locator(".flow-current-weather")).toContainText(
+    "Klar himmel",
+  );
+  await expect(flow.locator(".flow-current-weather")).toContainText(
+    "Kristiansand",
+  );
   const solar = flow.locator('.flow-measurement[data-role="solar"]');
   const grid = flow.locator('.flow-measurement[data-role="grid"]');
   const battery = flow.locator('.flow-measurement[data-role="battery"]');
   const solarHotspot = flow.locator('[data-hotspot="solar"]');
   const canvas = flow.locator("canvas");
   await expect(solar.locator("strong")).toHaveText("—");
-  await expect(solarHotspot).toContainText("—");
+  await expect(solarHotspot).toContainText("—", { timeout: 20000 });
   await expectStillCanvas(
     page,
     canvas,
@@ -266,6 +308,15 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(battery).toContainText("Lader batteriet");
   await expect(solar).toContainText("4,3 kW");
   await expect(solarHotspot).toContainText("4,3 kW");
+  // True hourly history is carried into the floating instrument card, including gaps.
+  await expect(
+    solarHotspot.locator(".energy-hotspot-sparkline svg"),
+  ).toHaveCount(1);
+  await expect
+    .poll(() =>
+      solarHotspot.locator(".energy-hotspot-sparkline path[stroke]").count(),
+    )
+    .toBeGreaterThan(1);
   await expect(flow.locator("canvas")).toBeVisible();
   // Native WebGL renderer must have allocated a non-empty drawing buffer.
   await expect
@@ -357,6 +408,19 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(
     historyPanel.getByRole("button", { name: "Siste uke", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
+  const bottomPeriod = flow.getByLabel("Historikkperiode", { exact: true });
+  await expect(bottomPeriod).toHaveValue("7d");
+  await bottomPeriod.selectOption("24h");
+  await expect(
+    historyPanel.getByRole("button", { name: "Siste døgn", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(historyPanel.locator(".flow-chart-readout strong")).toHaveText(
+    /[-−]1,25 kW/,
+  );
+  await bottomPeriod.selectOption("7d");
+  await expect(
+    historyPanel.getByRole("button", { name: "Siste uke", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await historyPanel.locator(".flow-history-svg").focus();
   await page.keyboard.press("Home");
   await expect(historyPanel.locator(".flow-chart-readout strong")).toHaveText(
@@ -389,6 +453,24 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   });
   if (test.info().project.name === "desktop") {
     const originalViewport = page.viewportSize()!;
+    await page.setViewportSize({ width: 1920, height: 1200 });
+    await flow
+      .getByLabel("Historikkperiode", { exact: true })
+      .selectOption("24h");
+    await flow.locator(".flow-nav-overview").click();
+    await expect(historyPanel).toHaveCount(0);
+    await flow
+      .getByRole("button", { name: "Drei huset mot venstre", exact: true })
+      .click();
+    await settleRendering(page);
+    await flow.screenshot({
+      animations: "disabled",
+      path: "../artifacts/wide-energy-reference.png",
+    });
+    await flow.locator('[data-hotspot="battery"]').click();
+    await flow
+      .getByRole("button", { name: "Drei huset mot høyre", exact: true })
+      .click();
     await page.setViewportSize({ width: 820, height: 1180 });
     await settleRendering(page);
     const clippedHotspots = await flow
@@ -488,6 +570,9 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     canvas,
     "Offline sensors must stop every energy flow",
   );
+  await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  await expect(flow.locator(".flow-current-weather")).toHaveCount(0);
 
   await flow
     .getByRole("button", { name: "Rediger 3D-modell", exact: true })

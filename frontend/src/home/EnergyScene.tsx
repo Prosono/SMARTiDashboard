@@ -12,6 +12,7 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { flowRoles, type FlowRole, type FlowSnapshot } from "./energyFlowModel";
 import { createEnergyHouse } from "./energyHouseModel";
+import { FlowHistory, type FlowPoint } from "./FlowHistory";
 
 const colors: Record<FlowRole, number> = {
   solar: 0xffba45,
@@ -120,6 +121,7 @@ export default function EnergyScene({
   animate,
   lang,
   readings,
+  historySeries,
   onConfigure,
   canConfigure,
 }: {
@@ -127,6 +129,7 @@ export default function EnergyScene({
   animate: boolean;
   lang: string;
   readings: Record<FlowRole, Reading>;
+  historySeries?: Partial<Record<FlowRole, FlowPoint[]>>;
   onConfigure: (role: FlowRole) => void;
   canConfigure: boolean;
 }) {
@@ -135,9 +138,7 @@ export default function EnergyScene({
     {},
   );
   const tethers = useRef<Partial<Record<FlowRole, SVGLineElement | null>>>({});
-  const anchors = useRef<Partial<Record<FlowRole, SVGCircleElement | null>>>(
-    {},
-  );
+  const anchors = useRef<Partial<Record<FlowRole, SVGGElement | null>>>({});
   const tetherLayer = useRef<SVGSVGElement>(null);
   const values = useRef({ flows, animate });
   values.current = { flows, animate };
@@ -155,9 +156,15 @@ export default function EnergyScene({
       fail(true);
       return;
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
+    renderer.setPixelRatio(
+      Math.min(Math.max(window.devicePixelRatio, 1.25), 1.7),
+    );
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Architecture and lighting stay still while ribbons animate. Reuse the
+    // shadow atlas until equipment visibility changes rather than redrawing it.
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.96;
@@ -170,7 +177,7 @@ export default function EnergyScene({
     const pmrem = new THREE.PMREMGenerator(renderer);
     const reflection = pmrem.fromScene(studio, 0.045);
     scene.environment = reflection.texture;
-    scene.environmentIntensity = 0.32;
+    scene.environmentIntensity = 0.28;
     studio.dispose();
     pmrem.dispose();
     const model = createEnergyHouse();
@@ -181,6 +188,16 @@ export default function EnergyScene({
     const corners: THREE.Vector3[] = [];
     model.root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
+      const originalBounds = object.userData.energyFitPoints as
+        THREE.Vector3[] | undefined;
+      if (originalBounds) {
+        corners.push(
+          ...originalBounds.map((point) =>
+            point.clone().applyMatrix4(object.matrixWorld),
+          ),
+        );
+        return;
+      }
       let bounds: THREE.Box3 | null;
       if (object instanceof THREE.InstancedMesh) {
         object.computeBoundingBox();
@@ -198,8 +215,8 @@ export default function EnergyScene({
             );
     });
 
-    scene.add(new THREE.HemisphereLight(0xc5d9e9, 0x35434a, 1.35));
-    const sun = new THREE.DirectionalLight(0xffeedb, 2.25);
+    scene.add(new THREE.HemisphereLight(0xb9cee0, 0x26343c, 0.9));
+    const sun = new THREE.DirectionalLight(0xe1e8f0, 1.7);
     sun.position.set(-3, 8, 5);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -211,7 +228,7 @@ export default function EnergyScene({
     sun.shadow.bias = -0.00015;
     sun.shadow.radius = 3;
     scene.add(sun);
-    const rim = new THREE.DirectionalLight(0xb4d2ec, 1.7);
+    const rim = new THREE.DirectionalLight(0xabc4da, 1.55);
     rim.position.set(5, 4, -5);
     scene.add(rim);
 
@@ -251,21 +268,23 @@ export default function EnergyScene({
         tetherLayer.current.style.display = small ? "none" : "block";
         tetherLayer.current.setAttribute("viewBox", `0 0 ${width} ${height}`);
       }
-      const offsets: Record<FlowRole, [number, number]> = {
-        solar: [-10, -96],
-        home: [-215, -30],
-        ev: [-165, 16],
-        battery: [-35, 145],
-        grid: [86, -30],
+      // Stable reading positions frame the house. The fine leaders keep their
+      // physical attachment as it rotates, without cards covering the rooms.
+      const desktopSlots: Record<FlowRole, [number, number]> = {
+        solar: [0.55, 0.23],
+        home: [0.18, 0.39],
+        ev: [0.12, 0.64],
+        battery: [0.54, 0.96],
+        grid: [0.86, 0.43],
       };
       // Phones put two labels above and three below the model. The architecture
       // remains unobscured; names and colors map to the visible equipment.
       const mobileSlots: Record<FlowRole, [number, number]> = {
-        solar: [0.27, 0.25],
-        grid: [0.73, 0.25],
-        ev: [0.17, 0.9],
-        home: [0.5, 0.9],
-        battery: [0.83, 0.9],
+        solar: [0.27, 0.24],
+        grid: [0.73, 0.24],
+        ev: [0.17, 0.96],
+        home: [0.5, 0.96],
+        battery: [0.83, 0.96],
       };
       const items = flowRoles.flatMap((role) => {
         const node = hotspots.current[role];
@@ -283,10 +302,10 @@ export default function EnergyScene({
             anchorY: ((1 - point.y) / 2) * height,
             x: small
               ? mobileSlots[role][0] * width
-              : ((point.x + 1) / 2) * width + offsets[role][0],
+              : desktopSlots[role][0] * width,
             y: small
               ? mobileSlots[role][1] * height
-              : ((1 - point.y) / 2) * height + offsets[role][1],
+              : desktopSlots[role][1] * height,
           },
         ];
       });
@@ -296,7 +315,7 @@ export default function EnergyScene({
       for (let pass = 0; pass < 8; pass++) {
         for (const a of items) {
           a.x = clamp(a.x, a.w / 2 + 12, width - a.w / 2 - 12);
-          a.y = clamp(a.y, a.h + 66, height - 16);
+          a.y = clamp(a.y, a.h + 48, height - 16);
         }
         for (let i = 0; i < items.length; i++)
           for (let j = i + 1; j < items.length; j++) {
@@ -315,7 +334,7 @@ export default function EnergyScene({
       }
       for (const item of items) {
         const x = clamp(item.x, item.w / 2 + 12, width - item.w / 2 - 12);
-        const y = clamp(item.y, item.h + 66, height - 16);
+        const y = clamp(item.y, item.h + 48, height - 16);
         item.node.style.left = `${x}px`;
         item.node.style.top = `${y}px`;
         item.node.dataset.positioned = "true";
@@ -333,8 +352,10 @@ export default function EnergyScene({
           line.setAttribute("y1", String(item.anchorY));
           line.setAttribute("x2", String(ex));
           line.setAttribute("y2", String(ey));
-          dot.setAttribute("cx", String(item.anchorX));
-          dot.setAttribute("cy", String(item.anchorY));
+          dot.setAttribute(
+            "transform",
+            `translate(${item.anchorX} ${item.anchorY})`,
+          );
         }
       }
     }
@@ -342,7 +363,7 @@ export default function EnergyScene({
       const width = element.clientWidth,
         height = Math.max(element.clientHeight, 1),
         aspect = width / height;
-      camera.position.set(12 * Math.sin(angle), 8.2, 12 * Math.cos(angle));
+      camera.position.set(12 * Math.sin(angle), 7.7, 12 * Math.cos(angle));
       camera.lookAt(0, 1, 0.45);
       camera.updateMatrixWorld(true);
       const cameraBounds = new THREE.Box3().setFromPoints(
@@ -350,8 +371,8 @@ export default function EnergyScene({
       );
       const size = cameraBounds.getSize(new THREE.Vector3());
       const viewHeight = Math.max(
-        size.y / (width < 600 ? 0.63 : 0.78),
-        size.x / (aspect * (width < 600 ? 0.97 : 0.91)),
+        size.y / (width < 600 ? 0.63 : 0.85),
+        size.x / (aspect * (width < 600 ? 0.97 : 0.94)),
       );
       const center = cameraBounds.getCenter(new THREE.Vector3());
       camera.left = center.x - (viewHeight * aspect) / 2;
@@ -395,7 +416,10 @@ export default function EnergyScene({
         const pulse = 0.5 + 0.5 * Math.cos((item.phase / 1.75) * Math.PI * 2);
         model.setActivity(item.role, flow.visible && active, pulse);
         const component = model.components[item.role];
-        if (component) component.visible = flow.visible;
+        if (component && component.visible !== flow.visible) {
+          component.visible = flow.visible;
+          renderer.shadowMap.needsUpdate = true;
+        }
         item.material.uniforms.direction.value = forward ? 1 : -1;
         item.material.uniforms.phase.value = item.phase;
       }
@@ -530,14 +554,16 @@ export default function EnergyScene({
                     className="energy-hotspot-tether"
                     data-role={role}
                   />
-                  <circle
+                  <g
                     ref={(node) => {
                       anchors.current[role] = node;
                     }}
                     className="energy-hotspot-anchor"
                     data-role={role}
-                    r="3"
-                  />
+                  >
+                    <circle className="energy-anchor-ring" r="9" />
+                    <circle className="energy-anchor-core" r="4.5" />
+                  </g>
                 </g>
               ))}
           </svg>
@@ -578,6 +604,16 @@ export default function EnergyScene({
                       <span>{reading.label}</span>
                       <strong>{reading.value}</strong>
                       <small>{reading.detail}</small>
+                    </span>
+                    <span
+                      className="energy-hotspot-sparkline"
+                      aria-hidden="true"
+                    >
+                      <FlowHistory
+                        points={historySeries?.[role] || []}
+                        lang={lang}
+                        compact
+                      />
                     </span>
                   </button>
                 );
