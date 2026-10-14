@@ -20,6 +20,7 @@ from .energy_flow import energy_flow_router
 from .ha import HAError, HomeAssistant
 from .home_extras import extras_router
 from .home_overview import home_router
+from .integration_setup import integration_setup_router
 from .management import Management, management_router
 from .mobile import MobileAuth
 from .models import Command
@@ -158,6 +159,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     management = Management(ha, store, settings)
     app.state.management = management
     app.include_router(management_router(management, admin))
+    app.include_router(integration_setup_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
     app.include_router(extras_router(store, user, ha, settings))
     app.include_router(calendar_router(store, user, ha, settings))

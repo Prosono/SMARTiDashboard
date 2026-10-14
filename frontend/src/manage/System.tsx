@@ -1,3 +1,5 @@
+import { IntegrationLogo } from "./IntegrationLogo";
+import { IntegrationSetup } from "./IntegrationSetup";
 import { IntegrationDevice } from "./IntegrationDevice";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +11,7 @@ import {
   ChevronUp,
   Box,
 } from "lucide-react";
-import { smartiName, isSmartiIntegration, integrationName } from "../branding";
+import { smartiName, integrationName } from "../branding";
 import { api } from "../api";
 import { Feedback, LoadError, useWork, words } from "./shared";
 type Integration = {
@@ -40,26 +42,6 @@ type Update = {
   can_backup: boolean;
   summary: string;
 };
-function IntegrationLogo({ domain }: { domain: string }) {
-  const [source, setSource] = useState(0);
-  if (isSmartiIntegration(domain))
-    return <img alt="SMARTi" src="./brand/smarti-logo.png" />;
-  if (source > 1 || !/^[a-z0-9_]+$/.test(domain))
-    return <Plug size={28} aria-label={integrationName(domain)} />;
-  return (
-    <img
-      alt={integrationName(domain)}
-      loading="lazy"
-      referrerPolicy="no-referrer"
-      src={
-        source === 0
-          ? `api/manage/integration-brands/${domain}`
-          : `https://brands.home-assistant.io/${domain}/icon.png`
-      }
-      onError={() => setSource((v) => v + 1)}
-    />
-  );
-}
 export function Integrations({ lang }: { lang: string }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const q = useQuery({
@@ -67,6 +49,7 @@ export function Integrations({ lang }: { lang: string }) {
     queryFn: () => api<Integration[]>("manage/integrations"),
     refetchInterval: 15000,
   });
+  const [adding, setAdding] = useState(false);
   const [selectedDevice, selectDevice] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -144,6 +127,9 @@ export function Integrations({ lang }: { lang: string }) {
   );
   return (
     <section>
+      {adding && (
+        <IntegrationSetup lang={lang} close={() => setAdding(false)} />
+      )}
       {selectedDevice && (
         <IntegrationDevice
           id={selectedDevice}
@@ -165,6 +151,10 @@ export function Integrations({ lang }: { lang: string }) {
       </div>
       <Feedback message={w.message} />
       <div className="device-toolbar">
+        <button className="primary compact" onClick={() => setAdding(true)}>
+          <Plug size={18} />
+          {t("Legg til integrasjon", "Add integration")}
+        </button>
         <input
           aria-label={t("Søk i integrasjoner", "Search integrations")}
           placeholder={t("Søk i integrasjoner …", "Search integrations …")}

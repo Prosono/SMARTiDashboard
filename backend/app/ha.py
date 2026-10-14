@@ -81,14 +81,20 @@ class HomeAssistant:
         finally:
             self.pending.pop(number, None)
 
-    async def rest(self, method, path, data=None):
+    async def rest(self, method, path, data=None, frontend_base=None):
         """Paths are built by dedicated backend handlers, never a browser-supplied proxy URL."""
         if not self.connected:
             raise HAError("disconnected")
         try:
             async with httpx.AsyncClient(timeout=30, follow_redirects=False, trust_env=False) as client:
                 response = await client.request(
-                    method, self.http_url + path, headers={"Authorization": "Bearer " + self.token}, json=data
+                    method,
+                    self.http_url + path,
+                    headers={
+                        "Authorization": "Bearer " + self.token,
+                        **({"HA-Frontend-Base": frontend_base} if frontend_base else {}),
+                    },
+                    json=data,
                 )
             if response.status_code == 404:
                 from fastapi import HTTPException
@@ -129,8 +135,11 @@ class HomeAssistant:
             raise HAError("camera_unavailable")
         try:
             async with httpx.AsyncClient(timeout=15, follow_redirects=False, trust_env=False) as client:
-                async with client.stream("GET", self.http_url + "camera_proxy/" + entity_id,
-                    headers={"Authorization": "Bearer " + self.token}) as response:
+                async with client.stream(
+                    "GET",
+                    self.http_url + "camera_proxy/" + entity_id,
+                    headers={"Authorization": "Bearer " + self.token},
+                ) as response:
                     if response.status_code != 200:
                         raise HAError("camera_unavailable")
                     data = bytearray()
@@ -165,8 +174,9 @@ class HomeAssistant:
         elif not current or timestamp(state.get("last_updated")) >= current_time:
             self.states[entity_id] = state
             if current and current.get("state") != state.get("state"):
-                self.activity.appendleft({"entity_id": entity_id, "state": state.get("state"),
-                    "time": state.get("last_updated")})
+                self.activity.appendleft(
+                    {"entity_id": entity_id, "state": state.get("state"), "time": state.get("last_updated")}
+                )
         self.changed()
 
     async def receive(self):

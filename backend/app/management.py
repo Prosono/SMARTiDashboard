@@ -135,10 +135,14 @@ class Management:
         except (HAError, TimeoutError):
             raise HTTPException(503, "ha_request_unconfirmed") from None
 
-    async def rest(self, method, path, data=None):
+    async def rest(self, method, path, data=None, frontend_base=None):
         self.connected()
         try:
-            return await self.ha.rest(method, path, data)
+            return (
+                await self.ha.rest(method, path, data, frontend_base=frontend_base)
+                if frontend_base
+                else await self.ha.rest(method, path, data)
+            )
         except (HAError, TimeoutError):
             raise HTTPException(503, "ha_request_unconfirmed") from None
 

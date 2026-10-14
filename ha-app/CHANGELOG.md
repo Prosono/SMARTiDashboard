@@ -1,3 +1,11 @@
+# 1.7.0
+
+- Add an integration catalog and modal setup wizard using the controller's real config flows, with translated labels, typed fields, menus, errors, progress, external sign-in, cancellation and completion.
+- Bind pending setup flows to the initiating administrator session; keep privileged credentials and completed config-entry data on the backend.
+- Unsupported specialized selectors are explicitly blocked with guidance to finish setup in the controller. Demo cannot install integrations.
+
+Prepared locally. Real hardware, vendor OAuth callbacks and version-specific integration schemas require validation on the target installation.
+
 # 1.6.2
 
 - Fix camera live-stream relay through Supervisor by preserving the `/core/api/` upstream prefix for playlists and video segments, including root-relative playlist links.

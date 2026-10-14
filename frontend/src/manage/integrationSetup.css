@@ -1,0 +1,75 @@
+.integration-setup {
+  display: grid;
+  gap: 1.2rem;
+}
+.integration-setup-search {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.integration-setup-search input {
+  flex: 1;
+  min-width: 0;
+}
+.integration-catalog {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  max-height: 48vh;
+  overflow: auto;
+}
+.integration-catalog button {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  text-align: left;
+  min-height: 68px;
+  padding: 0.7rem;
+}
+.integration-catalog button > span:nth-child(2) {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.integration-catalog .integration-logo {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+.integration-setup-title {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.integration-setup-title h3 {
+  margin: 0.2rem 0;
+}
+.integration-instructions {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+}
+.integration-setup form {
+  display: grid;
+  gap: 1rem;
+}
+.integration-setup form label {
+  display: grid;
+  gap: 0.4rem;
+}
+.integration-setup input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+}
+.integration-setup select[multiple] {
+  min-height: 120px;
+}
+.integration-success {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+@media (max-width: 560px) {
+  .integration-catalog {
+    grid-template-columns: 1fr;
+  }
+}
