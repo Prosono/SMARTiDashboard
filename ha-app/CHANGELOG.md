@@ -1,3 +1,8 @@
+## 1.28.3
+
+- Søk er samlet med statusfilter, romvalg og avslåing i lysverktøylinjen.
+- Responsiv plassering på desktop, nettbrett og mobil.
+
 ## 1.28.2
 
 - Samlet og redesignet hele verktøylinjen for lys: statusfilter, romvalg og avslåing.

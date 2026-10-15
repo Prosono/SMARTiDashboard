@@ -137,6 +137,12 @@ export function LightOverview({
             )}
           </p>
         </div>
+      </header>
+      <div
+        className="lighting-toolbar"
+        role="group"
+        aria-label={t("Filtrer og styr lys", "Filter and control lights")}
+      >
         <label className="lighting-search">
           <Search size={18} />
           <input
@@ -149,12 +155,6 @@ export function LightOverview({
             onChange={(e) => setSearch(e.target.value)}
           />
         </label>
-      </header>
-      <div
-        className="lighting-toolbar"
-        role="group"
-        aria-label={t("Filtrer og styr lys", "Filter and control lights")}
-      >
         <div
           className="lighting-state"
           aria-label={t("Lysstatus", "Light status")}

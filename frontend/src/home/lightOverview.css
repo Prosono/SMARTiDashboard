@@ -525,11 +525,11 @@
 /* A single control bar: status, room and whole-home action share one surface. */
 .lighting-toolbar {
   display: grid;
-  grid-template-columns: auto minmax(180px, 1fr) auto;
+  grid-template-columns: minmax(200px, 1.2fr) auto minmax(170px, 1fr) auto;
   gap: 16px;
   align-items: center;
   width: 100%;
-  max-width: 900px;
+  max-width: none;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -620,5 +620,62 @@
     grid-column: 2;
     grid-row: 2;
     padding: 8px 12px;
+  }
+}
+
+.lighting-toolbar .lighting-search {
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--soft);
+  margin: 0;
+}
+.lighting-toolbar .lighting-search svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.lighting-toolbar .lighting-search input {
+  font-size: 14px;
+  min-height: 44px;
+}
+@media (max-width: 1150px) {
+  .lighting-toolbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .lighting-toolbar .lighting-search {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .lighting-toolbar .lighting-state {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .lighting-toolbar .lighting-room-filter {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .lighting-toolbar .lighting-off {
+    grid-column: 3;
+    grid-row: 2;
+  }
+}
+@media (max-width: 800px) {
+  .lighting-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .lighting-toolbar .lighting-state {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .lighting-toolbar .lighting-room-filter {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .lighting-toolbar .lighting-off {
+    grid-column: 2;
+    grid-row: 3;
   }
 }
