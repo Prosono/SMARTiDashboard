@@ -1,0 +1,119 @@
+.control-groups > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 26px 0;
+  flex-wrap: wrap;
+}
+.control-groups h2 {
+  font-size: clamp(24px, 3vw, 36px);
+  margin: 10px 0;
+  letter-spacing: -0.035em;
+}
+.control-groups p,
+.control-groups small {
+  color: var(--muted);
+}
+.control-groups button,
+.group-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+}
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 18px;
+}
+.groups-grid article,
+.groups-empty {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px;
+  background: var(--surface);
+}
+.group-open {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 0 0 20px;
+  gap: 14px !important;
+}
+.group-open strong,
+.group-open small {
+  display: block;
+}
+.group-open strong {
+  font-size: 20px;
+}
+.group-open small {
+  margin-top: 5px;
+  font-size: 12px;
+}
+.group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.group-actions label {
+  font-size: 12px;
+}
+.group-members {
+  list-style: none;
+  padding: 0;
+}
+.group-members li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.group-editor {
+  display: grid;
+  gap: 18px;
+}
+.group-picker {
+  display: grid;
+  gap: 8px;
+  max-height: 42vh;
+  overflow: auto;
+}
+.group-picker label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.group-picker input {
+  width: 18px;
+  height: 18px;
+}
+.group-picker small {
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.group-actions > button {
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.group-actions > button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--tint);
+}
+.group-actions > button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

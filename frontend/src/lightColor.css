@@ -1,0 +1,93 @@
+.light-color-control {
+  grid-column: 1 / -1;
+}
+.light-color-control > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+.light-color-swatch {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 1px solid #8885;
+  box-shadow: 0 0 12px #ffffff20;
+}
+.light-color-editor {
+  display: grid;
+  gap: 24px;
+}
+.light-color-modes {
+  display: flex;
+  gap: 10px;
+}
+.light-color-modes button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.light-color-modes button[aria-pressed="true"] {
+  background: var(--tint);
+  border-color: var(--accent);
+}
+.light-color-editor input[type="color"] {
+  width: 100%;
+  height: 100px;
+  padding: 4px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.light-color-presets {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.light-color-presets button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+}
+.light-color-presets button[aria-pressed="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.room-image-library {
+  display: grid;
+  gap: 18px;
+}
+.room-image-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.room-image-grid button {
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+.room-image-grid img {
+  display: block;
+  width: 100%;
+  height: 145px;
+  object-fit: cover;
+}
+.room-image-grid span {
+  display: block;
+  padding: 12px 16px;
+}
+.room-image-library p {
+  color: var(--muted);
+}

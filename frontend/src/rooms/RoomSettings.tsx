@@ -58,6 +58,7 @@ export function RoomSettings({
       await action();
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["home"] }),
+        qc.invalidateQueries({ queryKey: ["home-preferences"] }),
         qc.invalidateQueries({ queryKey: ["manage", "rooms"] }),
         qc.invalidateQueries({ queryKey: ["room-view", room] }),
       ]);
@@ -87,6 +88,7 @@ export function RoomSettings({
           {[
             ["view", t("Favoritter og synlighet", "Favorites & visibility")],
             ["name", t("Romnavn", "Room name")],
+            ["images", t("Bildebank", "Image library")],
             ["devices", t("Legg til enheter", "Add devices")],
           ]
             .filter(([id]) => admin || id === "view")
@@ -104,6 +106,97 @@ export function RoomSettings({
             ))}
         </nav>
         {message && <p role={failed ? "alert" : "status"}>{message}</p>}
+        {tab === "images" && (
+          <section className="room-image-library">
+            <h3>
+              {t("Et bilde som passer rommet", "A picture for your room")}
+            </h3>
+            <p>
+              {t(
+                "Velg et bilde fra SMARTi-biblioteket, eller last opp ditt eget. Bildet gjelder hele hjemmet.",
+                "Choose an image from the SMARTi library or upload your own. The picture is shared across the home.",
+              )}
+            </p>
+            <div className="room-image-grid">
+              {[
+                ["living", "Stue", "Living room"],
+                ["bedroom", "Soverom", "Bedroom"],
+                ["kitchen", "Kjøkken", "Kitchen"],
+                ["bathroom", "Bad", "Bathroom"],
+              ].map(([id, nb, en]) => (
+                <button
+                  key={id}
+                  disabled={busy || !room}
+                  onClick={() =>
+                    void run(() =>
+                      api(
+                        `home/room-image/${encodeURIComponent(room)}`,
+                        "PUT",
+                        { bank: id },
+                      ),
+                    )
+                  }
+                >
+                  <img src={`./home/home-${id}.webp`} alt="" loading="lazy" />
+                  <span>{t(nb, en)}</span>
+                </button>
+              ))}
+            </div>
+            <label>
+              {t("Last opp eget bilde", "Upload your own image")}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={busy || !room}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  void run(async () => {
+                    if (
+                      !/^image\/(jpeg|png|webp)$/.test(file.type) ||
+                      file.size > 15000000
+                    )
+                      throw new Error("image");
+                    const image = await createImageBitmap(file);
+                    const scale = Math.min(
+                      1,
+                      1400 / Math.max(image.width, image.height),
+                    );
+                    const canvas = document.createElement("canvas");
+                    canvas.width = Math.round(image.width * scale);
+                    canvas.height = Math.round(image.height * scale);
+                    canvas
+                      .getContext("2d")!
+                      .drawImage(image, 0, 0, canvas.width, canvas.height);
+                    image.close();
+                    await api(
+                      `home/room-image/${encodeURIComponent(room)}`,
+                      "PUT",
+                      {
+                        data: canvas
+                          .toDataURL("image/jpeg", 0.78)
+                          .split(",")[1],
+                      },
+                    );
+                  });
+                }}
+              />
+            </label>
+            <button
+              disabled={busy || !room}
+              onClick={() =>
+                void run(() =>
+                  api(`home/room-image/${encodeURIComponent(room)}`, "PUT", {
+                    data: "",
+                  }),
+                )
+              }
+            >
+              {t("Bruk automatisk rombilde", "Use automatic room image")}
+            </button>
+          </section>
+        )}
         {tab === "name" && (
           <form
             onSubmit={(e) => {

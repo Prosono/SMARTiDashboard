@@ -27,7 +27,15 @@ class Demo(HomeAssistant):
                 "Pendellampe",
                 "living",
                 "on",
-                {"brightness": 184, "supported_color_modes": ["brightness"]},
+                {
+                    "brightness": 184,
+                    "supported_color_modes": ["rgb", "color_temp"],
+                    "color_mode": "rgb",
+                    "rgb_color": [255, 180, 90],
+                    "min_color_temp_kelvin": 2200,
+                    "max_color_temp_kelvin": 6500,
+                    "color_temp_kelvin": 3000,
+                },
                 "d1",
             ),
             (
@@ -126,6 +134,12 @@ class Demo(HomeAssistant):
         elif action == "set_brightness":
             state["attributes"]["brightness"] = round(value * 255 / 100)
             state["state"] = "on" if value else "off"
+        elif action == "set_rgb_color":
+            state["attributes"].update(rgb_color=list(value), color_mode="rgb")
+            state["state"] = "on"
+        elif action == "set_color_temp":
+            state["attributes"].update(color_temp_kelvin=int(value), color_mode="color_temp")
+            state["state"] = "on"
         elif action == "set_volume":
             state["attributes"]["volume_level"] = value / 100
         elif action == "set_mute":

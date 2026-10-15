@@ -1,3 +1,5 @@
+import { Groups } from "./Groups";
+import { LightColor } from "./LightColor";
 import { controlState } from "./controlState";
 import { ProtocolLogo } from "./ProtocolLogo";
 import { RadioAdvanced } from "./RadioAdvanced";
@@ -731,6 +733,7 @@ function Dashboard({
               >
                 {[
                   ["all", lang === "nb" ? "Alle kontroller" : "All controls"],
+                  ["groups", lang === "nb" ? "Grupper" : "Groups"],
                   ["zigbee2mqtt", "Zigbee"],
                   ["zwave_js", "Z-Wave"],
                 ].map(([id, label]) => (
@@ -740,7 +743,7 @@ function Dashboard({
                     className={protocol === id ? "selected" : ""}
                     onClick={() => setProtocol(id)}
                   >
-                    {id === "all" ? (
+                    {id === "all" || id === "groups" ? (
                       <LayoutGrid size={17} />
                     ) : (
                       <ProtocolLogo
@@ -752,15 +755,19 @@ function Dashboard({
                     {label}
                   </button>
                 ))}
-                {protocol !== "all" && session.role === "admin" && (
-                  <RadioAdvanced
-                    provider={protocol}
-                    lang={lang === "en" ? "en" : "nb"}
-                  />
-                )}
+                {protocol !== "all" &&
+                  protocol !== "groups" &&
+                  session.role === "admin" && (
+                    <RadioAdvanced
+                      provider={protocol}
+                      lang={lang === "en" ? "en" : "nb"}
+                    />
+                  )}
               </div>
             )}
-            {page === "devices" && protocol !== "all" ? (
+            {page === "devices" && protocol === "groups" ? (
+              <Groups home={h} lang={lang} admin={session.role === "admin"} />
+            ) : page === "devices" && protocol !== "all" ? (
               <ProtocolDevices
                 key={protocol}
                 provider={protocol}
@@ -1033,7 +1040,7 @@ function Device({
             : c.domain === "automation"
               ? Zap
               : Activity;
-  async function command(action: string, value?: number) {
+  async function command(action: string, value?: number | number[]) {
     const actionNames: Record<string, string> =
       document.documentElement.lang === "en"
         ? {
@@ -1206,6 +1213,14 @@ function Device({
               </button>
             ))}
         </div>
+      )}
+      {c.domain === "light" && (
+        <LightColor
+          c={c}
+          lang={document.documentElement.lang}
+          disabled={!can || busy}
+          change={(action, value) => void command(action, value)}
+        />
       )}
       {dim && (
         <label className="range-label">

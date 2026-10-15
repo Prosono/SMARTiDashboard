@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -42,10 +42,17 @@ class Command(BaseModel):
         "open_cover",
         "close_cover",
         "stop_cover",
-        "media_play", "media_pause", "media_stop", "media_next_track", "media_previous_track",
-        "set_volume", "set_mute",
+        "media_play",
+        "media_pause",
+        "media_stop",
+        "media_next_track",
+        "media_previous_track",
+        "set_volume",
+        "set_mute",
+        "set_rgb_color",
+        "set_color_temp",
     ]
-    value: float | None = Field(default=None, allow_inf_nan=False)
+    value: Annotated[float, Field(allow_inf_nan=False)] | tuple[int, int, int] | None = None
     confirmed: bool = False
 
 
@@ -84,6 +91,27 @@ def normalize(states, entities, devices):
                     kind="brightness", actions=["set_brightness"], minimum=0, maximum=100, step=1, unit="%"
                 )
             )
+        if domain == "light":
+            modes = set(a.get("supported_color_modes", []))
+            if modes & {"hs", "xy", "rgb", "rgbw", "rgbww"}:
+                caps.append(Capability(kind="color", actions=["set_rgb_color"]))
+            low, high = a.get("min_color_temp_kelvin"), a.get("max_color_temp_kelvin")
+            if (
+                "color_temp" in modes
+                and isinstance(low, (int, float))
+                and isinstance(high, (int, float))
+                and 1000 <= low <= high <= 40000
+            ):
+                caps.append(
+                    Capability(
+                        kind="color_temperature",
+                        actions=["set_color_temp"],
+                        minimum=low,
+                        maximum=high,
+                        step=1,
+                        unit="K",
+                    )
+                )
         if (
             domain == "climate"
             and a.get("supported_features", 0) & 1
@@ -122,13 +150,26 @@ def normalize(states, entities, devices):
         if domain == "media_player":
             features = a.get("supported_features", 0)
             features = features if isinstance(features, int) else 0
-            actions = [action for bit, action in [
-                (1, "media_pause"), (16, "media_previous_track"), (32, "media_next_track"),
-                (128, "turn_on"), (256, "turn_off"), (4096, "media_stop"), (16384, "media_play"),
-            ] if features & bit]
+            actions = [
+                action
+                for bit, action in [
+                    (1, "media_pause"),
+                    (16, "media_previous_track"),
+                    (32, "media_next_track"),
+                    (128, "turn_on"),
+                    (256, "turn_off"),
+                    (4096, "media_stop"),
+                    (16384, "media_play"),
+                ]
+                if features & bit
+            ]
             caps.append(Capability(kind="media", actions=actions))
             if features & 4:
-                caps.append(Capability(kind="volume", actions=["set_volume"], minimum=0, maximum=100, step=1, unit="%"))
+                caps.append(
+                    Capability(
+                        kind="volume", actions=["set_volume"], minimum=0, maximum=100, step=1, unit="%"
+                    )
+                )
             if features & 8:
                 caps.append(Capability(kind="mute", actions=["set_mute"], minimum=0, maximum=1, step=1))
         device_id = registry.get("device_id")

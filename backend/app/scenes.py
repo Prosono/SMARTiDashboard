@@ -151,8 +151,12 @@ def scenes_router(ha, store, user, settings):
                     raise HTTPException(422, "brightness_not_supported")
                 if draft.rgb_color is not None and not set(modes) & {"hs", "xy", "rgb", "rgbw", "rgbww"}:
                     raise HTTPException(422, "color_not_supported")
-                if draft.color_temp_kelvin is not None and "color_temp" not in modes:
-                    raise HTTPException(422, "color_not_supported")
+                if draft.color_temp_kelvin is not None:
+                    cap = next((v for v in c.capabilities if v.kind == "color_temperature"), None)
+                    if not cap or not cap.minimum <= draft.color_temp_kelvin <= cap.maximum:
+                        raise HTTPException(422, "invalid_color_temperature")
+                    if draft.rgb_color is not None:
+                        raise HTTPException(422, "choose_one_color_mode")
             if c.domain == "climate":
                 if draft.state not in c.attributes.get("hvac_modes", []):
                     raise HTTPException(422, "hvac_mode_not_supported")

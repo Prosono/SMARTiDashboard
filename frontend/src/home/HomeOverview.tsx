@@ -968,6 +968,9 @@ export function HomeOverview({
             renderControls={renderControls}
           />
         )}
+        {tab === "lights" && (
+          <Scenes home={h} offline={offline} admin={admin} lang={lang} />
+        )}
         {tab === "security" && (
           <header className="home-view-heading">
             <div>

@@ -2,6 +2,7 @@ import asyncio
 import base64
 import contextlib
 import json
+import math
 import secrets
 from contextlib import asynccontextmanager
 from typing import Literal
@@ -20,6 +21,7 @@ from .config import Settings
 from .demo import Demo
 from .energy import energy_router
 from .energy_flow import energy_flow_router
+from .groups import groups_router
 from .ha import HAError, HomeAssistant
 from .home_extras import extras_router
 from .home_overview import home_router
@@ -374,9 +376,16 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             raise HTTPException(422, "unsupported_action")
         if not ha.connected or control.availability != "available":
             raise HTTPException(409, "device_unavailable")
-        if body.action.startswith("set_"):
+        if body.action == "set_rgb_color":
+            if not isinstance(body.value, tuple) or any(not 0 <= v <= 255 for v in body.value):
+                raise HTTPException(422, "invalid_color")
+        elif body.action.startswith("set_"):
             value = body.value
-            if value is None or not capability.minimum <= value <= capability.maximum:
+            if (
+                not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or not capability.minimum <= value <= capability.maximum
+            ):
                 raise HTTPException(422, "invalid_value")
             if (
                 capability.step
@@ -393,6 +402,8 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             return await ha.command(entity_id, body.action, body.value)
         except (HAError, TimeoutError):
             raise HTTPException(504, "command_unconfirmed_do_not_retry_automatically")
+
+    app.include_router(groups_router(store, ha, user, admin, command))
 
     @app.get("/api/events")
     async def events(request: Request, current=Depends(user)):

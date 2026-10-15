@@ -1,3 +1,4 @@
+import { LightColor } from "../LightColor";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -87,7 +88,9 @@ function snapshot(c: Control): Target {
       ? { brightness: c.attributes.brightness }
       : {}),
     ...(c.domain === "light" &&
-    ["hs", "xy", "rgb", "rgbw", "rgbww"].includes(String(c.attributes.color_mode)) &&
+    ["hs", "xy", "rgb", "rgbw", "rgbww"].includes(
+      String(c.attributes.color_mode),
+    ) &&
     Array.isArray(c.attributes.rgb_color)
       ? { rgb_color: c.attributes.rgb_color as number[] }
       : {}),
@@ -646,6 +649,37 @@ function SceneEditor({
                                   </span>
                                 </label>
                               )}
+                            {c.domain === "light" && (
+                              <LightColor
+                                c={{
+                                  ...c,
+                                  attributes: {
+                                    ...c.attributes,
+                                    rgb_color: target.rgb_color,
+                                    color_temp_kelvin: target.color_temp_kelvin,
+                                    color_mode: target.color_temp_kelvin
+                                      ? "color_temp"
+                                      : "rgb",
+                                  },
+                                }}
+                                lang={lang}
+                                disabled={busy || offline}
+                                change={(action, value) =>
+                                  patch(
+                                    c.entity_id,
+                                    action === "set_rgb_color"
+                                      ? {
+                                          rgb_color: value as number[],
+                                          color_temp_kelvin: undefined,
+                                        }
+                                      : {
+                                          color_temp_kelvin: value as number,
+                                          rgb_color: undefined,
+                                        },
+                                  )
+                                }
+                              />
+                            )}
                             {c.domain === "climate" && cap && (
                               <label>
                                 {t("Temperatur", "Temperature")}

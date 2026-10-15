@@ -9,6 +9,7 @@ from typing import Literal
 from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from .ha import HAError
@@ -36,7 +37,9 @@ class Confirmation(BaseModel):
 
 
 class RoomImage(BaseModel):
-    data: str = Field(max_length=1_400_000)
+    model_config = {"extra": "forbid"}
+    data: str = Field(default="", max_length=1_400_000)
+    bank: Literal["living", "bedroom", "kitchen", "bathroom"] | None = None
 
 
 def home_router(store, user, ha, settings):
@@ -151,6 +154,11 @@ def home_router(store, user, ha, settings):
         admin(current)
         if id not in ha.areas:
             raise HTTPException(404, "area_not_found")
+        if body.bank:
+            if body.data:
+                raise HTTPException(422, "choose_one_image")
+            store.set("room_image:" + id, "bank:" + body.bank)
+            return {"saved": True}
         if body.data:
             try:
                 data = base64.b64decode(body.data, validate=True)
@@ -170,6 +178,14 @@ def home_router(store, user, ha, settings):
         data = store.get("room_image:" + id)
         if not data:
             raise HTTPException(404, "image_not_found")
+        if data.startswith("bank:"):
+            choice = data.removeprefix("bank:")
+            if choice not in {"living", "bedroom", "kitchen", "bathroom"}:
+                raise HTTPException(404, "image_not_found")
+            path = settings.static_dir / "home" / f"home-{choice}.webp"
+            if not path.is_file():
+                raise HTTPException(404, "image_not_found")
+            return FileResponse(path, media_type="image/webp", headers={"Cache-Control": "private, no-store"})
         raw = base64.b64decode(data)
         return Response(
             raw,

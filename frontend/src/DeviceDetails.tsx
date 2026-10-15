@@ -1,3 +1,4 @@
+import { LightColor } from "./LightColor";
 import { controlState } from "./controlState";
 import { ProtocolLogo } from "./ProtocolLogo";
 import { Thermostat } from "./Thermostat";
@@ -329,7 +330,7 @@ export function DeviceControl({
       : Number(c.attributes.temperature ?? numeric?.minimum ?? 0);
   const [value, setValue] = useState(current);
   useEffect(() => setValue(current), [current]);
-  async function command(action: string, amount?: number) {
+  async function command(action: string, amount?: number | number[]) {
     setBusy(true);
     setMessage("");
     try {
@@ -391,6 +392,14 @@ export function DeviceControl({
           lang={no ? "nb" : "en"}
           disabled={blocked}
           change={(v) => void command("set_temperature", v)}
+        />
+      )}
+      {c.domain === "light" && (
+        <LightColor
+          c={c}
+          lang={no ? "nb" : "en"}
+          disabled={blocked}
+          change={(action, value) => void command(action, value)}
         />
       )}
       {numeric && c.domain !== "climate" && (

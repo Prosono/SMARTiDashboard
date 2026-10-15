@@ -1,3 +1,10 @@
+## 1.27.0
+
+- Bildebank for rom med ferdige rombilder og opplasting av egne bilder.
+- Farge og hvittemperatur for kompatible lys, også når du lager scener.
+- Felles SMARTi-grupper under Enheter, med samlet styring av støttede handlinger.
+- Scener er nå også tilgjengelige fra lysfanen på Hjem.
+
 # 1.26.0
 
 - Add an administrator-only Debugging settings tab with an explicit warning and acknowledgement before opening the underlying Home Assistant interface.
