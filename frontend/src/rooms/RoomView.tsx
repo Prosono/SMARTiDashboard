@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -12,6 +12,8 @@ import {
   Search,
   Radio,
   Droplets,
+  LayoutGrid,
+  Leaf,
 } from "lucide-react";
 import type { Home, Control } from "../types";
 import { api } from "../api";
@@ -48,6 +50,12 @@ export function RoomView({
     t = (nb: string, english: string) => (en ? english : nb);
   const id = useId().replaceAll(":", "");
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  useEffect(() => {
+    setCategory("all");
+    setSearch("");
+    expand([]);
+  }, [room]);
   const [expanded, expand] = useState<string[]>([]);
   const prefs = useQuery({
     queryKey: ["home-preferences"],
@@ -156,6 +164,7 @@ export function RoomView({
     },
   ].filter((g) => g.items.length);
   const filtered = groups
+    .filter((g) => category === "all" || category === g.id)
     .map((g) => ({
       ...g,
       items: g.items.filter((c) =>
@@ -170,6 +179,13 @@ export function RoomView({
   const humidity = climates.find(
     (c) => c.attributes.device_class === "humidity" && usable(c),
   );
+  const air = climates.find(
+    (c) =>
+      ["carbon_dioxide", "aqi", "pm25"].includes(
+        String(c.attributes.device_class),
+      ) && usable(c),
+  );
+  const available = controls.filter(usable).length;
   return (
     <div className="room-detail home-overview">
       <div className="room-detail-toolbar">
@@ -191,12 +207,6 @@ export function RoomView({
             ))}
           </select>
         </label>
-        {admin && (
-          <button className="home-customize" onClick={manage}>
-            <Settings2 size={17} />
-            {t("Administrer rom", "Manage rooms")}
-          </button>
-        )}
       </div>
       <header
         className={`room-detail-hero ${photo && failedPhoto !== photo ? "has-photo" : ""}`}
@@ -216,8 +226,25 @@ export function RoomView({
                   "Venter på ferske data fra rommet.",
                   "Waiting for fresh room data.",
                 )
-              : `${controls.length} ${t("kontroller og målepunkter", "controls and readings")}`}
+              : t(
+                  "Lys, komfort og kontroll. Akkurat slik du vil ha det.",
+                  "Lighting, comfort and control. Just the way you like it.",
+                )}
           </p>
+          {admin && (
+            <button className="room-hero-settings" onClick={manage}>
+              <Settings2 size={17} />
+              {t("Administrer rom", "Manage rooms")}
+            </button>
+          )}
+        </div>
+        <div className="room-hero-summary">
+          <Icon size={24} />
+          <span>{t("Ditt rom, samlet", "Your room, connected")}</span>
+          <strong>{controls.length}</strong>
+          <small>
+            {t("kontroller og målepunkter", "controls and readings")}
+          </small>
         </div>
         {photo && failedPhoto !== photo && (
           <small className="room-photo-caption">
@@ -232,7 +259,7 @@ export function RoomView({
         aria-label={t("Romstatus", "Room status")}
       >
         {!!lights.length && (
-          <div>
+          <div data-kind="lights">
             <Lightbulb />
             <span>
               {t("Lys på", "Lights on")}
@@ -246,7 +273,7 @@ export function RoomView({
           </div>
         )}
         {tempControl && (
-          <div>
+          <div data-kind="temperature">
             <Thermometer />
             <span>
               {t("Temperatur", "Temperature")}
@@ -263,7 +290,7 @@ export function RoomView({
           </div>
         )}
         {humidity && (
-          <div>
+          <div data-kind="humidity">
             <Droplets />
             <span>
               {t("Luftfuktighet", "Humidity")}
@@ -271,7 +298,17 @@ export function RoomView({
             </span>
           </div>
         )}
-        <div>
+        {air && (
+          <div data-kind="air">
+            <Leaf />
+            <span>
+              {t("Luftkvalitet", "Air quality")}
+              <strong>{offline ? "—" : reading(air, lang)}</strong>
+              <small>{air.name}</small>
+            </span>
+          </div>
+        )}
+        <div data-kind="connection">
           <Radio />
           <span>
             {t("Tilkobling", "Connection")}
@@ -284,6 +321,11 @@ export function RoomView({
                     ? t("Tilgjengelig", "Available")
                     : t("Ingen enheter", "No devices")}
             </strong>
+            <small>
+              {offline
+                ? t("Venter på oppdatering", "Waiting for an update")
+                : `${available} / ${controls.length} ${t("tilgjengelige", "available")}`}
+            </small>
           </span>
         </div>
       </div>
@@ -299,16 +341,24 @@ export function RoomView({
       {!!groups.length && (
         <div className="room-navigation">
           <nav aria-label={t("Inndelinger i rommet", "Room sections")}>
+            <button
+              aria-pressed={category === "all"}
+              onClick={() => {
+                setCategory("all");
+                setSearch("");
+              }}
+            >
+              <LayoutGrid size={17} />
+              {t("Alle", "All")}
+              <span>{controls.length}</span>
+            </button>
             {groups.map((g) => (
               <button
                 key={g.id}
+                aria-pressed={category === g.id}
                 onClick={() => {
                   setSearch("");
-                  requestAnimationFrame(() =>
-                    document
-                      .getElementById(`${id}-${g.id}`)
-                      ?.scrollIntoView({ block: "start", behavior: "instant" }),
-                  );
+                  setCategory(g.id);
                 }}
               >
                 <g.Icon size={17} />

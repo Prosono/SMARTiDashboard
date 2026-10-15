@@ -1,3 +1,11 @@
+# 1.20.0
+
+- Refresh the room view with a large photo header, room-management action, individual colored status cards and compact lighting controls.
+- Add category filters with an All option; reset filters/search when changing rooms. Retain working dimmers, switches, cameras and climate controls.
+- Show air-quality readings when a suitable room sensor is available, without invented trends or comfort assessments. Adapt the layout to mobile and existing color palettes.
+
+Prepared locally, not published.
+
 # 1.19.2
 
 - Move controller status and diagnostics out of device setup. Show Zigbee diagnostics on the Zigbee page and Z-Wave controller status/recovery on the Z-Wave page.

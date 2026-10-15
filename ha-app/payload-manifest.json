@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "20a4278d4d8efc4d52709d6af0b633e464f73f9b94d8c0ebb517226aecf5ffbd",
+  "bundle_sha256": "c70d5fee3afebe570808c70404248f51d1e933f80804141b89e15541e5f270c9",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/accounts.py": "0fa5024cf9a49431c20de3a6f9a5f845aef7d9a9c99e84053b157d7951ca802c",
@@ -35,7 +35,7 @@
     "backend/app/wireless_setup.py": "2d07585f677c18e3c339179b17442d4c79fef54072bdf0679cc7e947b8c74e05",
     "backend/app/zigbee_frontend.py": "a7dade9b92bf6e05fe236c871499d088dca2a60670a5208677523b02b0192339",
     "backend/requirements.lock": "a132f7a5e88a758637a6c1c0976782ead209b68c3aaade959457391f7d89d4ff",
-    "frontend/dist/assets/EnergyScene-D81XTAiD.js": "7b891fe9fec7ceb4e3954bcedf9a0c4d23884c4a23ff8ffe8f1171b7469a9de1",
+    "frontend/dist/assets/EnergyScene-CgwtS_n2.js": "f25f5db40a00a4d354e04f076a23bcf13319b0c3cefca851b03688195fe1e99e",
     "frontend/dist/assets/bai-jamjuree-latin-400-normal-C8Ab1JOR.woff2": "5200faf54f32adc1dc47b8522adbd1399e739f4ce5c9236866806c04d6397b19",
     "frontend/dist/assets/bai-jamjuree-latin-400-normal-D7asZ9Ds.woff": "1f3c77498a55115c745d171a012976acca24e33cf51562c83b1b763596260e1d",
     "frontend/dist/assets/bai-jamjuree-latin-500-normal-B317a6-V.woff": "7a8f6f6671601a0adfac066e53fb42a61afdf51b48204a51d1207c28882c3b92",
@@ -69,8 +69,8 @@
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-B4ES4mUY.woff": "dd34fad57ed536134141ac3c4ad6697e8ce389aa1193d07ddabd2d1cb2fbaaa0",
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-Bt7Gqki8.woff2": "4900a39cfa8b2fe08bccd07eb2371519172b07ed9ce9765e5a4ad9097cb6759b",
     "frontend/dist/assets/hls-h6QHvJ3w.js": "eb729b4a5638b2bc913f41288655ef496c049debff24c2608550eaf5a2abb01e",
-    "frontend/dist/assets/index-B0K-gyzD.css": "9457e777826338df9050db6850cda8b4738bf203a806ebe95ac2778633961186",
-    "frontend/dist/assets/index-DWy43dSh.js": "06627e7c0cd56075bcae8660435119455e748b28507965c526cbe15c99815468",
+    "frontend/dist/assets/index-CpYN5hpF.js": "409e6f3f183147e20da32c9bba9b6aa7a533af2a9d66a285fb937b53bdcf99e9",
+    "frontend/dist/assets/index-D_f3iA0l.css": "5df8f5b93a25db6cce9be7c96574c4a88cd46ff0a7f24137d1a8395762a3f1e6",
     "frontend/dist/brand/Bai-Jamjuree-OFL.txt": "74b7deafa632a5ed301dc322fcc2867ac200402e06b6d0b0b01faf09b8514e3e",
     "frontend/dist/brand/README.md": "2f9cbea7346428cfdec3ff4b51ec47c08796f301a85733fc4895fa0d8382ca0f",
     "frontend/dist/brand/setup-devices.png": "d7deb5aa281876e44a52a0ffda9e968d713467a5b89c63953011ca102b70f34d",
@@ -83,7 +83,7 @@
     "frontend/dist/home/home-bedroom.webp": "6018e9787392cf19595cadb532327d2eefd6d4c085083757361039382c9d29ed",
     "frontend/dist/home/home-kitchen.webp": "7a1eb136515f328b2518b84787a639c59bb81f478a929e6b414f645b75378f7b",
     "frontend/dist/home/home-living.webp": "21f510933c56e907b480f765752973fb4430f5ef72ee993df7bc7927b965376e",
-    "frontend/dist/index.html": "31ce568d07f9e8ab7d079bb22251640dc4515c68cb81fd5b662261aaeb82e336"
+    "frontend/dist/index.html": "85ee92363f2e1ed1bd3657bad2a6cacae88cca38d7629709a0bcd19f37a4686e"
   },
   "sources": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -232,8 +232,8 @@
     "frontend/src/preferences.ts": "b2d618156a01db504b0cfba775fa31ae7c23eddcf111c1d9df6e3a6e1f7913ef",
     "frontend/src/protocolOverview.css": "b161cd5fda51846a9fafbd287ad630a8b3683ef47f6d120aab518ba967884f18",
     "frontend/src/radioAdvanced.css": "e2a81a4b342ac0b911e02f21bdc70ad06f5ef0d578d0a49085482d1e6f06de3b",
-    "frontend/src/rooms/RoomView.tsx": "891925a30aeeda5ac71dd551c15a5e9bb2c915236d337b08009023334b17444d",
-    "frontend/src/rooms/room.css": "28a15c48b9e26e25b44d0f1c0437ea1f75416356443499a7cee8451a63f82e5c",
+    "frontend/src/rooms/RoomView.tsx": "06aaa48c0ddc6cdb53269f1cf2ff5207cee7c7ae4901ba670ab4396119cbe85d",
+    "frontend/src/rooms/room.css": "e9aef8fcc69cfae76876f4cafce0617c942e32cfb24b186239970b4c04cc7d54",
     "frontend/src/style.css": "00aae5f8888240406b9318d99b2021876ffebf8abf112f6ae0440b22b1589269",
     "frontend/src/thermostat.css": "3b38cdbe52894e5c31a61a428a9c882dca31d9033952cdc99a76f6454d1da924",
     "frontend/src/types.ts": "590e8063a9906e130c57914d480993d2cee864b43141409e8d3e66f24eee8599",

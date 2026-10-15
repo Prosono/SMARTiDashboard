@@ -108,6 +108,16 @@ test("room groups, search, navigation and controls", async ({ page }) => {
     .click();
   await expect(room.getByLabel("Søk i rommet")).toHaveValue("");
   await expect(room.locator(".room-section-lights")).toBeVisible();
+  await expect(room.locator(".room-section-climate")).toHaveCount(0);
+  await expect(
+    room.getByRole("button", { name: /Lys & stemning/ }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await room
+    .getByRole("navigation", { name: "Inndelinger i rommet" })
+    .getByRole("button", { name: /^Alle/ })
+    .click();
+  await expect(room.locator(".room-section-climate")).toBeVisible();
+
   await room
     .getByLabel("Velg rom", { exact: true })
     .selectOption({ label: "Kjøkken" });

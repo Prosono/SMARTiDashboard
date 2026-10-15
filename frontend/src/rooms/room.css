@@ -41,7 +41,11 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--media-bg) 88%, transparent), color-mix(in srgb, var(--media-bg) 30%, transparent));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--media-bg) 88%, transparent),
+    color-mix(in srgb, var(--media-bg) 30%, transparent)
+  );
   z-index: -1;
 }
 .room-hero-copy {
@@ -241,5 +245,287 @@
   }
   .room-navigation {
     margin-bottom: 1.8rem;
+  }
+}
+/* Room workspace: photo-led header, distinct readings, compact controls. */
+.room-detail .room-detail-hero {
+  min-height: 255px;
+  border-radius: 20px;
+  align-items: center;
+  gap: 32px;
+  padding: 32px;
+}
+.room-hero-copy {
+  flex: 1;
+}
+.room-detail .room-detail-hero h1 {
+  font-size: clamp(2.3rem, 4vw, 3.8rem);
+  margin: 12px 0 8px;
+}
+.room-detail .room-detail-hero p {
+  font-size: 15px;
+  line-height: 1.6;
+}
+.room-hero-settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-top: 20px;
+  padding: 10px 16px;
+  border: 1px solid #ffffff40;
+  border-radius: 12px;
+  color: #fff;
+  background: #152a36c9;
+  backdrop-filter: blur(12px);
+}
+.room-hero-settings:hover {
+  background: #243d49;
+}
+.room-hero-summary {
+  display: grid;
+  gap: 8px;
+  width: 175px;
+  flex-shrink: 0;
+  padding: 22px;
+  border: 1px solid #ffffff26;
+  border-radius: 16px;
+  background: #13252dbd;
+  backdrop-filter: blur(16px);
+}
+.room-hero-summary > svg {
+  color: #c9e5f6;
+}
+.room-hero-summary span {
+  font-size: 12px;
+}
+.room-hero-summary strong {
+  font-size: 35px;
+  line-height: 1;
+  font-weight: 500;
+}
+.room-hero-summary small {
+  color: #d7e0e4;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.room-detail .room-at-a-glance {
+  gap: 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 16px 0 18px;
+  overflow: visible;
+}
+.room-detail .room-at-a-glance > div {
+  --room-color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  min-height: 102px;
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--room-color) 6%, var(--surface)),
+    var(--surface)
+  );
+}
+.room-at-a-glance > div[data-kind="temperature"],
+.room-at-a-glance > div[data-kind="humidity"] {
+  --room-color: #67b9ec;
+}
+.room-at-a-glance > div[data-kind="lights"] {
+  --room-color: #e6b34f;
+}
+.room-at-a-glance > div[data-kind="air"] {
+  --room-color: #41bd8e;
+}
+.room-detail .room-at-a-glance > div > svg {
+  width: 29px;
+  height: 29px;
+  color: var(--room-color);
+  filter: drop-shadow(
+    0 0 9px color-mix(in srgb, var(--room-color) 35%, transparent)
+  );
+}
+.room-detail .room-at-a-glance strong {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 4px 0;
+}
+.room-detail .room-navigation {
+  margin: 18px 0 24px;
+  gap: 12px;
+}
+.room-navigation nav {
+  flex-basis: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+.room-navigation nav button {
+  flex-shrink: 0;
+  padding: 10px 15px;
+  border-radius: 11px;
+}
+.room-navigation nav button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-ink, var(--bg));
+  border-color: var(--accent);
+}
+.room-navigation nav button[aria-pressed="true"] span {
+  color: inherit;
+}
+.room-detail-search {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px 14px;
+  background: var(--surface);
+}
+.room-detail-search input {
+  width: 100%;
+}
+.room-detail .room-sections {
+  gap: 30px;
+}
+.room-section > header {
+  margin-bottom: 12px;
+}
+.room-section h2 {
+  font-size: 20px;
+}
+.room-section p {
+  margin: 3px 0 0;
+}
+.room-detail .controls-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 12px;
+}
+.room-detail .device {
+  border-radius: 15px;
+  padding: 16px;
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--accent) 3%, var(--surface)),
+    var(--surface)
+  );
+}
+.room-detail .device.is-on {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+.room-detail .device-top {
+  margin-bottom: 8px;
+}
+.room-detail .device-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--soft);
+}
+.room-detail .is-on .device-icon {
+  color: var(--accent);
+  background: var(--tint);
+}
+.room-detail .device-title > span {
+  display: none;
+}
+.room-detail .device-title h3 {
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0;
+}
+.room-detail .device-value {
+  min-height: 42px;
+  margin-top: 4px;
+}
+.room-detail .range-label {
+  margin-top: 8px;
+}
+.room-detail .device-details {
+  margin-top: 10px;
+  font-size: 11px;
+}
+.room-section-lights .device {
+  position: relative;
+  padding-left: 76px;
+}
+.room-section-lights .device-top {
+  position: static;
+  justify-content: flex-end;
+  height: 18px;
+  margin-bottom: 4px;
+}
+.room-section-lights .device-icon {
+  position: absolute;
+  left: 13px;
+  top: 16px;
+  bottom: 16px;
+  width: 49px;
+  height: auto;
+  border-radius: 12px;
+  background: linear-gradient(150deg, var(--soft), var(--tint));
+}
+.room-section-lights .is-on .device-icon {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, #f2c879 26%, var(--surface)),
+    var(--soft)
+  );
+  color: #c58a2c;
+}
+.room-section-lights .device-icon svg {
+  width: 28px;
+  height: 28px;
+}
+.room-section-lights .star {
+  width: 28px;
+  height: 28px;
+}
+@media (min-width: 1500px) {
+  .room-detail .controls-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  .room-detail .room-detail-hero {
+    min-height: 245px;
+    padding: 24px;
+  }
+  .room-hero-copy {
+    max-width: 100%;
+  }
+  .room-hero-summary {
+    display: none;
+  }
+  .room-detail .room-detail-hero h1 {
+    font-size: 34px;
+  }
+  .room-detail .room-detail-hero p {
+    font-size: 13px;
+  }
+  .room-detail .room-at-a-glance > div {
+    padding: 14px;
+    min-height: 90px;
+    gap: 10px;
+  }
+  .room-detail .room-at-a-glance strong {
+    font-size: 18px;
+  }
+  .room-detail .room-at-a-glance > div > svg {
+    width: 23px;
+    height: 23px;
+  }
+  .room-detail .controls-grid {
+    grid-template-columns: 1fr;
+  }
+  .room-navigation nav {
+    max-width: 100%;
+  }
+  .room-detail-toolbar select {
+    max-width: 100%;
+    width: 100%;
   }
 }
