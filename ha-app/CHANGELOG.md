@@ -1,3 +1,12 @@
+# 1.26.0
+
+- Add an administrator-only Debugging settings tab with an explicit warning and acknowledgement before opening the underlying Home Assistant interface.
+- Embed the native interface within a large SMARTi dialog, with reload and return controls. Home Assistant retains its own login and permissions; existing HA sessions may be reused.
+- Use only the current ingress origin and a fixed /config/dashboard route. Do not expose Supervisor addresses or tokens. Explain unavailable access in demo/standalone mode.
+- Prevent opening a second debugging console from a SMARTi instance nested inside the underlying interface.
+
+Prepared locally, not published. Four backend permission/mode tests and four desktop/mobile browser tests passed. Browser tests use a simulated HA page; a live HA installation was not available for verification.
+
 # 1.25.1
 
 - Show Home highlight widgets on tablet and desktop (768px and wider) only. Unmount the carousel on smaller screens so streams, polling and rotation do not run in the background.

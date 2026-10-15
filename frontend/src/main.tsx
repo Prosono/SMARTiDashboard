@@ -3,6 +3,7 @@ import { ProtocolLogo } from "./ProtocolLogo";
 import { RadioAdvanced } from "./RadioAdvanced";
 import { Apps } from "./manage/Apps";
 import { AccountAvatar } from "./manage/Accounts";
+import { Debugging } from "./manage/Debugging";
 import { HomeSettings } from "./manage/HomeSettings";
 import { Thermostat } from "./Thermostat";
 import React, { useEffect, useState } from "react";
@@ -844,6 +845,7 @@ function Dashboard({
                       ],
                       ["network", lang === "en" ? "Network" : "Nettverk"],
                       ["system", "System"],
+                      ["debugging", "Debugging"],
                     ]
                   : []),
                 [
@@ -871,7 +873,9 @@ function Dashboard({
                 </button>
               ))}
             </nav>
-            {session.role === "admin" && settingsSection !== "appearance" ? (
+            {session.role === "admin" && settingsSection === "debugging" ? (
+              <Debugging lang={lang} />
+            ) : session.role === "admin" && settingsSection !== "appearance" ? (
               <HomeSettings
                 key={settingsSection}
                 lang={lang}

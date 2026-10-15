@@ -244,6 +244,13 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         )
         return session
 
+    @app.get("/api/manage/debugging/target")
+    async def debugging_target(current=Depends(admin)):
+        # Use the browser's existing HA origin through ingress. Never expose a
+        # Supervisor URL or token, and never proxy authenticated HA sessions.
+        available = settings.ingress and settings.mode == "live"
+        return {"available": available, "path": "/config/dashboard" if available else None}
+
     @app.get("/api/session")
     async def session(current=Depends(user)):
         return current

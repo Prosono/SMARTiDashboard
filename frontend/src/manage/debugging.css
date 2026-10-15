@@ -1,0 +1,103 @@
+.debugging-panel {
+  max-width: 900px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: clamp(22px, 4vw, 42px);
+  background: var(--surface);
+}
+.debugging-panel > .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.debugging-panel h2 {
+  margin: 16px 0 12px;
+  font-size: clamp(25px, 3vw, 36px);
+  letter-spacing: -0.035em;
+}
+.debugging-panel p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+.debugging-panel button,
+.debugging-actions button,
+.debugging-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+}
+.debugging-note {
+  display: flex;
+  gap: 16px;
+  padding: 22px;
+  margin: 28px 0;
+  border-radius: 16px;
+  background: var(--soft);
+}
+.debugging-note > svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.debugging-note p {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+.debugging-warning > svg {
+  color: var(--accent);
+}
+.debugging-warning h3 {
+  font-size: 24px;
+  margin: 18px 0;
+}
+.debugging-warning p {
+  line-height: 1.65;
+}
+.debugging-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+}
+.dashboard-settings-dialog:has(.debugging-console) {
+  width: min(1600px, calc(100vw - 24px));
+  max-height: 96dvh;
+}
+.debugging-console {
+  display: grid;
+  gap: 12px;
+}
+.debugging-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.debugging-toolbar p {
+  flex: 1 1 220px;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+.debugging-console iframe {
+  width: 100%;
+  height: 70dvh;
+  min-height: 260px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.debugging-console > small {
+  color: var(--muted);
+}
+@media (max-width: 600px) {
+  .dashboard-settings-dialog:has(.debugging-console)
+    .dashboard-settings-content {
+    padding: 12px;
+  }
+  .debugging-console iframe {
+    height: 60dvh;
+  }
+}
