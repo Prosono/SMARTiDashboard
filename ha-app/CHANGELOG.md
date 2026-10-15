@@ -1,3 +1,8 @@
+## 1.28.2
+
+- Samlet og redesignet hele verktøylinjen for lys: statusfilter, romvalg og avslåing.
+- Tydelig merking av at felles avslåing gjelder hele hjemmet.
+
 ## 1.28.1
 
 - Kompakt romvelger i lysoversikten uten horisontal rulleliste.

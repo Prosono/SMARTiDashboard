@@ -7,6 +7,7 @@ import {
   Sun,
   Sparkles,
   ChevronRight,
+  House,
 } from "lucide-react";
 import { api } from "../api";
 import type { Control, Home } from "../types";
@@ -149,7 +150,11 @@ export function LightOverview({
           />
         </label>
       </header>
-      <div className="lighting-toolbar">
+      <div
+        className="lighting-toolbar"
+        role="group"
+        aria-label={t("Filtrer og styr lys", "Filter and control lights")}
+      >
         <div
           className="lighting-state"
           aria-label={t("Lysstatus", "Light status")}
@@ -169,7 +174,7 @@ export function LightOverview({
           ))}
         </div>
         <label className="lighting-room-filter">
-          <span>{t("Rom", "Room")}</span>
+          <House size={18} aria-hidden="true" />
           <select
             aria-label={t("Velg rom", "Choose room")}
             value={room === null ? "all" : `room:${room}`}
@@ -193,7 +198,10 @@ export function LightOverview({
           onClick={() => void allOff()}
         >
           <Power size={18} />
-          {t("Slå av alle lys", "Turn off all lights")}
+          <span>
+            <strong>{t("Slå av alle lys", "Turn off all lights")}</strong>
+            <small>{t("I hele hjemmet", "Across your home")}</small>
+          </span>
         </button>
       </div>
       <div className="lighting-banner">

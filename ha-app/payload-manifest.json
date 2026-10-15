@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "41e02a96a2beaaeb34530a39fa1028b769a0a26af5d24766e4296ba3c90015e8",
+  "bundle_sha256": "a3f954aeadddc8e53e67a9f841d7c7fa12d1e305dde9751ebc43cad7318af2a4",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/accounts.py": "0fa5024cf9a49431c20de3a6f9a5f845aef7d9a9c99e84053b157d7951ca802c",
@@ -36,7 +36,7 @@
     "backend/app/wireless_setup.py": "2d07585f677c18e3c339179b17442d4c79fef54072bdf0679cc7e947b8c74e05",
     "backend/app/zigbee_frontend.py": "a7dade9b92bf6e05fe236c871499d088dca2a60670a5208677523b02b0192339",
     "backend/requirements.lock": "a132f7a5e88a758637a6c1c0976782ead209b68c3aaade959457391f7d89d4ff",
-    "frontend/dist/assets/EnergyScene-cJROQ1zl.js": "ec77e9c14f95b7628675ae73a892e9c677992cf20d6cd0962a9d551610f67cd9",
+    "frontend/dist/assets/EnergyScene-BtIVM7HV.js": "3b881565b05f51caff914ae323ee0e41b2f1bc11ef99df04bc48951d95acf377",
     "frontend/dist/assets/bai-jamjuree-latin-400-normal-C8Ab1JOR.woff2": "5200faf54f32adc1dc47b8522adbd1399e739f4ce5c9236866806c04d6397b19",
     "frontend/dist/assets/bai-jamjuree-latin-400-normal-D7asZ9Ds.woff": "1f3c77498a55115c745d171a012976acca24e33cf51562c83b1b763596260e1d",
     "frontend/dist/assets/bai-jamjuree-latin-500-normal-B317a6-V.woff": "7a8f6f6671601a0adfac066e53fb42a61afdf51b48204a51d1207c28882c3b92",
@@ -70,8 +70,8 @@
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-B4ES4mUY.woff": "dd34fad57ed536134141ac3c4ad6697e8ce389aa1193d07ddabd2d1cb2fbaaa0",
     "frontend/dist/assets/bai-jamjuree-vietnamese-700-normal-Bt7Gqki8.woff2": "4900a39cfa8b2fe08bccd07eb2371519172b07ed9ce9765e5a4ad9097cb6759b",
     "frontend/dist/assets/hls-h6QHvJ3w.js": "eb729b4a5638b2bc913f41288655ef496c049debff24c2608550eaf5a2abb01e",
-    "frontend/dist/assets/index-BW8E1o76.css": "8f998113c3d200d8825b8c978072a7675df64d36c5a105c0bfa49f50ca6ea280",
-    "frontend/dist/assets/index-xYt7xAzD.js": "b569ce653ae8bff602786b052f244c610a65c66f832bc7622e4cfb299f8a2eae",
+    "frontend/dist/assets/index-CVbQ8AxI.css": "fca16980a249e9534796020db568b12dbdf1a52f421dc22a71231db8cda5d76d",
+    "frontend/dist/assets/index-DOiI6c4V.js": "694c4255488b9856ad236213ed47287023cb0e157d4ade102b630f67a6279eab",
     "frontend/dist/brand/Bai-Jamjuree-OFL.txt": "74b7deafa632a5ed301dc322fcc2867ac200402e06b6d0b0b01faf09b8514e3e",
     "frontend/dist/brand/README.md": "0ef427a144a7a603be782bed3b75cf63d48c3daa4c316f647c94624af24bfffa",
     "frontend/dist/brand/setup-devices.png": "d7deb5aa281876e44a52a0ffda9e968d713467a5b89c63953011ca102b70f34d",
@@ -93,7 +93,7 @@
     "frontend/dist/home/home-office.webp": "23e2b91589f280d443a6f02191f8d4f95f36f7253c07cc11bb69392a4f0e8058",
     "frontend/dist/home/home-outdoor.webp": "d6480fb8beeb4e5ef939a45165f1064fe1cf744b043a24d518afc9b06b2440d9",
     "frontend/dist/home/home-storage.webp": "3211f2d1b3d4fb1a8e29a44cbfff89af5630c7608e09df7960ae10a425756fb8",
-    "frontend/dist/index.html": "a8585034beb8f7a098dfafe59ae7dd3b7df6e9b68716fa77fdb286e01a6a8cea"
+    "frontend/dist/index.html": "cf8b7e0ef46d6887a32e14ea7ebec372d9e173c0d50aaed9983a2b7a5270af99"
   },
   "sources": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -191,7 +191,7 @@
     "frontend/src/home/HomeOverview.tsx": "343779f149f3cf5f184553e8c1a6c207fd7907ffa4c034d7bd76efd424a9e7e1",
     "frontend/src/home/HomeRooms.tsx": "e7c4a15b894bf882991c629447484fd35bc0d275628706c09e0f1dfd04843c17",
     "frontend/src/home/HomeTabs.tsx": "8865b55fb52296822f232e334ae6c6ca59c87f91395927affecbed6d445cbcd1",
-    "frontend/src/home/LightOverview.tsx": "cca3392aba631c543f1f361b7864a05cd410d18324288f149f749736e01d6792",
+    "frontend/src/home/LightOverview.tsx": "1a94d1f48633f6dad690b43ab8d7e05ceb24721269924b2030ef9741e9cc8a08",
     "frontend/src/home/Multimedia.tsx": "149bedff2d2fe0c24fc2d3d42b8af5330e39f91cc349f7c2d35f0611a0d2c12c",
     "frontend/src/home/People.tsx": "026bce40dc98a4db5facc725793a35eb56d6a561a521e4b485a0993b437e51aa",
     "frontend/src/home/Scenes.tsx": "2d62bf3926026ccaad9fe96dbb54f352e675ab679a047c2e96650e07dae676e3",
@@ -214,7 +214,7 @@
     "frontend/src/home/homeModel.test.ts": "3d752b70e4fe24dddd65d87292b6f8a0e53d1342206dd1b80c4293cda9ac764a",
     "frontend/src/home/homeModel.ts": "8d71a55dad922401234ea00070f04f39764bc2d1c6740b5aacc7cabd8515868b",
     "frontend/src/home/homeTabs.css": "05a6b6a945e682cd53b307ce9efee07765490fa475eab86ae0a462bcfde04dc2",
-    "frontend/src/home/lightOverview.css": "8b7d0b1807a874a9ba4437fb9f00f976c12b075e790a1568181f6cdd9ef15403",
+    "frontend/src/home/lightOverview.css": "7b8ebafc48635978bc037dc777b828fe17fd1a4563473bd3dbd7cc57e6567522",
     "frontend/src/home/mergeEnergyArchitecture.ts": "19d4b367b1da9aa8a941253155758e595fe934a7ce71ad524ceb64a56157128f",
     "frontend/src/home/multimedia.css": "91c771eb682df31469c88434c981465fbfe1db4dc731ea1b6b392d2f5110f9a9",
     "frontend/src/home/scenes.css": "3a12860463ff653193af733585d0cfc9ec1270bc605e79191f7f4254adfa7b7c",

@@ -521,3 +521,104 @@
     margin-bottom: 12px;
   }
 }
+
+/* A single control bar: status, room and whole-home action share one surface. */
+.lighting-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  max-width: 900px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.lighting-toolbar .lighting-state {
+  padding: 4px;
+  gap: 2px;
+  border-radius: 11px;
+  background: var(--soft);
+}
+.lighting-toolbar .lighting-state button {
+  min-height: 44px;
+  padding: 9px 18px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+.lighting-toolbar .lighting-state button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-media);
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.lighting-toolbar .lighting-room-filter {
+  max-width: none;
+  min-height: 52px;
+  gap: 10px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  padding: 0 12px 0 18px;
+}
+.lighting-room-filter > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.lighting-toolbar .lighting-room-filter select {
+  font-size: 14px;
+  min-height: 44px;
+  padding: 6px 20px 6px 0;
+}
+.lighting-toolbar .lighting-off {
+  margin: 0;
+  min-height: 52px;
+  padding: 8px 16px;
+  border-radius: 11px;
+  background: var(--soft);
+  border: 1px solid transparent;
+  gap: 12px;
+}
+.lighting-off > span {
+  text-align: left;
+  display: grid;
+  gap: 1px;
+}
+.lighting-off strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.lighting-off small {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.lighting-toolbar .lighting-off:hover:not(:disabled) {
+  border-color: var(--orange);
+  background: var(--tint);
+}
+@media (max-width: 800px) {
+  .lighting-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .lighting-toolbar .lighting-state {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+  .lighting-toolbar .lighting-state button {
+    flex: 1;
+  }
+  .lighting-toolbar .lighting-room-filter {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 0 4px;
+    border: 0;
+  }
+  .lighting-toolbar .lighting-off {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 8px 12px;
+  }
+}
