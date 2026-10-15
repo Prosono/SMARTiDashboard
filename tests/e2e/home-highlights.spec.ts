@@ -1,4 +1,10 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+
+// Widgets are tablet/desktop only; exercise touch layout at tablet width.
+test.beforeEach(async ({ page }, info) => {
+  if (info.project.name === "mobile")
+    await page.setViewportSize({ width: 768, height: 1024 });
+});
 test("home highlights rotate, pause and open multimedia", async ({ page }) => {
   await page.route("**/api/home", async (r) => {
     const response = await r.fetch();
@@ -69,18 +75,33 @@ test("home highlights rotate, pause and open multimedia", async ({ page }) => {
   });
   const initial = await highlights.locator(".highlight-card").boundingBox();
   const nav = await highlights.locator(".highlight-navigation").boundingBox();
-  const heroHeight = await page.locator(".home-welcome").evaluate(e => e.getBoundingClientRect().height);
+  const heroHeight = await page
+    .locator(".home-welcome")
+    .evaluate((e) => e.getBoundingClientRect().height);
   const dots = highlights.locator(".highlight-dot");
-  for (let i = 0; i < await dots.count(); i++) {
+  for (let i = 0; i < (await dots.count()); i++) {
     await dots.nth(i).click();
     await page.clock.runFor(400);
     const box = await highlights.locator(".highlight-card").boundingBox();
-    const nextNav = await highlights.locator(".highlight-navigation").boundingBox();
-    await highlights.screenshot({path: `../artifacts/${test.info().project.name}-highlight-${i}.png`, animations: "disabled"});
+    const nextNav = await highlights
+      .locator(".highlight-navigation")
+      .boundingBox();
+    await highlights.screenshot({
+      path: `../artifacts/${test.info().project.name}-highlight-${i}.png`,
+      animations: "disabled",
+    });
     expect(box!.height).toBe(initial!.height);
-    expect(await page.locator(".home-welcome").evaluate(e => e.getBoundingClientRect().height)).toBe(heroHeight);
+    expect(
+      await page
+        .locator(".home-welcome")
+        .evaluate((e) => e.getBoundingClientRect().height),
+    ).toBe(heroHeight);
     expect(nextNav!.y - box!.y).toBe(nav!.y - initial!.y);
-    expect(await highlights.locator(".highlight-card").evaluate(e => e.scrollWidth <= e.clientWidth)).toBe(true);
+    expect(
+      await highlights
+        .locator(".highlight-card")
+        .evaluate((e) => e.scrollWidth <= e.clientWidth),
+    ).toBe(true);
   }
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(

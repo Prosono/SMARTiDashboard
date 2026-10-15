@@ -9,6 +9,8 @@
   --widget-muted: #d4e0e8;
   --widget-line: #ffffff26;
   --widget-height: 380px;
+  --widget-photo-shade: color-mix(in srgb, var(--sidebar) 78%, var(--orange));
+  --widget-photo-tint: color-mix(in srgb, var(--orange) 50%, var(--sidebar));
   min-width: 0;
   align-self: center;
   color: var(--widget-ink);
@@ -160,9 +162,16 @@
 /* Landscape is decorative; all weather measurements and forecast dates are real. */
 .highlight-weather {
   background:
-    linear-gradient(180deg, #18334c50 0%, #09273b10 50%, #0b2f4c95 100%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--widget-photo-shade) 56%, transparent),
+      color-mix(in srgb, var(--widget-photo-shade) 22%, transparent) 55%,
+      color-mix(in srgb, var(--widget-photo-shade) 68%, transparent)
+    ),
+    linear-gradient(var(--widget-photo-tint), var(--widget-photo-tint)),
     url("/brand/widget-fjord.jpg") center 60% / cover;
-  border-color: #a7c9eb66;
+  background-blend-mode: normal, color, normal;
+  border-color: color-mix(in srgb, var(--media-accent) 45%, transparent);
 }
 .hw-weather {
   height: 100%;
@@ -759,8 +768,14 @@
 /* Climate remains a measurement card when only a sensor is connected. */
 .highlight-climate {
   background:
-    linear-gradient(130deg, #172b36dd, #1f3033c0),
+    linear-gradient(
+      130deg,
+      color-mix(in srgb, var(--widget-photo-shade) 85%, transparent),
+      color-mix(in srgb, var(--widget-photo-shade) 65%, transparent)
+    ),
+    linear-gradient(var(--widget-photo-tint), var(--widget-photo-tint)),
     url("/home/home-bedroom.webp") center / cover;
+  background-blend-mode: normal, color, normal;
 }
 .highlight-climate .highlight-summary {
   align-items: center;
@@ -1119,4 +1134,37 @@
 }
 .hc-adjust {
   padding-block: 10px;
+}
+
+/* Tint only the decorative artwork, keeping text and live camera colors intact. */
+.hm-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--widget-photo-tint);
+  mix-blend-mode: color;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.hm-art > svg {
+  z-index: 1;
+}
+.hw-outlook {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--widget-photo-shade) 25%, transparent),
+    color-mix(in srgb, var(--widget-photo-shade) 65%, transparent)
+  );
+}
+.hw-symbol .hw-symbol-cloud {
+  fill: var(--widget-photo-shade);
+}
+html[data-theme="dark"] .home-highlights {
+  --widget-photo-shade: color-mix(in srgb, var(--sidebar) 90%, var(--orange));
+}
+/* CSS fallback during resizing; the component also unmounts below this width. */
+@media (max-width: 767px) {
+  .home-highlights {
+    display: none;
+  }
 }

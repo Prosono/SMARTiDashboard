@@ -1,5 +1,11 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
 
+// Widgets are tablet/desktop only; exercise touch layout at tablet width.
+test.beforeEach(async ({ page }, info) => {
+  if (info.project.name === "mobile")
+    await page.setViewportSize({ width: 768, height: 1024 });
+});
+
 test("rich home widgets keep their dimensions and use real device capabilities", async ({
   page,
 }) => {

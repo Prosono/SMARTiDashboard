@@ -28,21 +28,38 @@ type Slide = {
   name: string;
   c: Control;
 };
-export function HomeHighlights({
-  weather,
-  cameras,
-  controls,
-  offline,
-  lang,
-  open,
-}: {
+type HighlightProps = {
   weather?: Control;
   cameras: Control[];
   controls: Control[];
   offline: boolean;
   lang: string;
   open: (tab: "media" | "climate" | "energy") => void;
-}) {
+};
+
+// Do not mount streams, polling or rotation timers on phone-sized screens.
+export function HomeHighlights(props: HighlightProps) {
+  const [visible, setVisible] = useState(
+    () => matchMedia("(min-width: 768px)").matches,
+  );
+  useEffect(() => {
+    const viewport = matchMedia("(min-width: 768px)");
+    const update = () => setVisible(viewport.matches);
+    update();
+    viewport.addEventListener("change", update);
+    return () => viewport.removeEventListener("change", update);
+  }, []);
+  return visible ? <HighlightCarousel {...props} /> : null;
+}
+
+function HighlightCarousel({
+  weather,
+  cameras,
+  controls,
+  offline,
+  lang,
+  open,
+}: HighlightProps) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [selected, setSelected] = useState("");
   const [paused, setPaused] = useState(false),

@@ -1,3 +1,11 @@
+# 1.25.1
+
+- Show Home highlight widgets on tablet and desktop (768px and wider) only. Unmount the carousel on smaller screens so streams, polling and rotation do not run in the background.
+- Tint decorative weather, climate and music artwork using the active palette and dark/light mode. Preserve natural live-camera colors.
+- Verify phone/tablet boundary changes, palette updates and existing widget controls in browser tests.
+
+Prepared locally, not published.
+
 # 1.25.0
 
 - Rebuild Home highlight widgets around the supplied visual reference: scenic weather, a glass music player, immersive live-camera frame, theme-aware energy chart, and photographic indoor climate card.
