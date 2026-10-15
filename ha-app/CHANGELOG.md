@@ -1,3 +1,11 @@
+# 1.24.0
+
+- Redesign greeting highlights with a fixed-height viewport and stable navigation across weather, cameras, media, energy and indoor temperature.
+- Add capability-aware media transport and an energy measurement card with actual 24-hour history.
+- Keep missing forecasts, stream errors and long text inside the same card frame; preserve reduced-motion and pause behavior.
+
+Prepared locally, not published. Live camera and media hardware were not available for verification.
+
 # 1.23.0
 
 - Replace the greeting-panel weather widget with a stacked home-highlight carousel: weather, configured cameras, media players and a temperature reading when available.

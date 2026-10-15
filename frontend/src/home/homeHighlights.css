@@ -246,3 +246,88 @@
     min-width: 24px;
   }
 }
+
+/* A fixed viewport keeps the greeting, controls and pagination still for every
+   slide, including stream errors and missing forecasts. Content scrolls only
+   when text enlargement needs more space. */
+.home-highlights { --highlight-height: 370px; }
+.highlight-card {
+  height: var(--highlight-height);
+  min-height: 0;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 20px minmax(0, 1fr);
+  gap: 14px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--media-bg) 94%, transparent);
+}
+.highlight-label { margin: 0; align-items: center; }
+.highlight-content { min-height: 0; overflow: auto; scrollbar-width: thin; }
+.highlight-summary {
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  gap: 8px;
+  justify-content: flex-start;
+}
+.highlight-summary > button { margin-top: auto; flex-shrink: 0; width: 100%; justify-content: space-between; }
+.home-welcome .highlight-summary h2 {
+  font-size: 25px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.home-welcome .highlight-summary p { overflow-wrap: anywhere; }
+.highlight-track-head { display: flex; align-items: center; gap: 15px; width: 100%; min-width: 0; }
+.highlight-track-head > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.highlight-track-head small { display: block; margin-top: 5px; color: var(--media-muted); font-size: 11px; }
+.highlight-disc { flex-shrink: 0; width: 68px; height: 68px; color: var(--media-accent); }
+.highlight-player .highlight-track-head { margin-bottom: 8px; }
+.highlight-transport { display: flex; align-items: center; justify-content: center; gap: 16px; width: 100%; margin-top: auto; }
+.highlight-transport button { width: 46px; height: 46px; border-radius: 50%; background: #ffffff12; border: 1px solid #ffffff30; color: var(--media-text, white); display: grid; place-items: center; }
+.highlight-transport button:nth-child(2) { width: 54px; height: 54px; background: #ffffff28; }
+.highlight-player > small { min-height: 15px; font-size: 11px; color: var(--media-muted); }
+.highlight-energy-body { color: var(--media-text, white); }
+.highlight-energy-body .highlight-track-head > svg { color: #81dbbb; }
+.highlight-energy-body > strong { font-size: 43px; letter-spacing: -.04em; margin-top: 8px; }
+.highlight-energy-chart { width: 100%; height: 90px; flex: 0 0 90px; border-bottom: 1px solid #ffffff20; display: grid; align-items: center; }
+.highlight-energy-chart svg { width: 100%; height: 100%; fill: #81dbbb; }
+.highlight-energy-body > small { color: var(--media-muted); font-size: 11px; }
+.highlight-climate .highlight-summary { align-items: center; text-align: center; }
+.highlight-climate .highlight-summary > svg { width: 52px; height: 52px; margin-top: 12px; color: #ffc694; }
+.highlight-climate .highlight-summary > strong { font-size: 56px; letter-spacing: -.05em; margin: 12px 0; }
+.home-highlights .home-weather.weather-expanded { height: 100%; }
+.home-highlights .weather-location { font-size: 13px; margin-bottom: 20px; }
+.home-highlights .weather-days { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.home-highlights .weather-days > div { min-width: 0; padding: 12px 0; }
+.home-highlights .weather-days > div + div { border-left: 1px solid #ffffff24; padding-left: 16px; }
+.home-highlights .weather-days > div > svg { width: 46px; height: 46px; color: #ffd56e; margin: 12px 0; }
+.home-highlights .weather-days strong { font-size: 34px; letter-spacing: -.045em; white-space: nowrap; }
+.home-highlights .weather-days p { line-height: 1.5; }
+.home-highlights .weather-days small { display: flex; gap: 5px; align-items: center; margin-top: 9px; }
+.home-highlights .home-camera {
+  height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto;
+  border: 0; border-radius: 14px; overflow: hidden;
+}
+.home-highlights .camera-live-preview { height: 100%; min-height: 0; aspect-ratio: auto; }
+.home-highlights .camera-live-preview video { width: 100%; height: 100%; object-fit: cover; }
+.home-highlights .camera-caption { padding: 12px 0 0; min-width: 0; }
+.home-highlights .camera-caption strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.highlight-navigation { height: 44px; flex-wrap: nowrap; }
+.highlight-navigation > div { min-width: 0; flex-wrap: nowrap; }
+.highlight-navigation .highlight-dot { min-width: 20px; width: 24px; padding: 0; }
+@media (max-width: 700px) {
+  .home-highlights { --highlight-height: 370px; }
+}
+@media (max-width: 380px) {
+  .highlight-card { padding: 16px; }
+  .highlight-navigation { gap: 0; }
+  .highlight-navigation .highlight-dot { min-width: 17px; width: 17px; }
+  .home-highlights .weather-days { gap: 8px; }
+  .home-highlights .weather-days strong { font-size: 29px; }
+}
+.highlight-weather { background: radial-gradient(ellipse at 100% 0, #eeb86c24, transparent 65%), color-mix(in srgb, var(--media-bg) 85%, transparent); }
+.highlight-media { background: radial-gradient(ellipse at 0 0, #aaa1eb24, transparent 65%), color-mix(in srgb, var(--media-bg) 90%, transparent); }
+.highlight-energy { background: radial-gradient(ellipse at 100% 100%, #6ed8b52b, transparent 70%), color-mix(in srgb, var(--media-bg) 90%, transparent); }
+.highlight-climate { background: radial-gradient(ellipse at 50% 30%, #ffc69420, transparent 65%), color-mix(in srgb, var(--media-bg) 90%, transparent); }

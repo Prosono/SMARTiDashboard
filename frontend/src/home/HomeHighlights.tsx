@@ -7,7 +7,10 @@ import {
   Music2,
   Thermometer,
   ArrowUpRight,
+  Zap, SkipBack, SkipForward,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "../api";
 import type { Control } from "../types";
 import { Weather } from "./Weather";
 import { CameraCard } from "./HomeMedia";
@@ -16,7 +19,7 @@ import "./homeHighlights.css";
 
 type Slide = {
   id: string;
-  kind: "weather" | "camera" | "media" | "climate";
+  kind: "weather" | "camera" | "media" | "climate" | "energy";
   name: string;
   c: Control;
 };
@@ -33,7 +36,7 @@ export function HomeHighlights({
   controls: Control[];
   offline: boolean;
   lang: string;
-  open: (tab: "media" | "climate") => void;
+  open: (tab: "media" | "climate" | "energy") => void;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [selected, setSelected] = useState("");
@@ -67,6 +70,7 @@ export function HomeHighlights({
       c.attributes.device_class === "temperature" &&
       usable(c),
   );
+  const energy = controls.find(c => c.domain === "sensor" && !c.diagnostic && usable(c) && c.attributes.device_class === "power") || controls.find(c => c.domain === "sensor" && !c.diagnostic && usable(c) && c.attributes.device_class === "energy");
   const slides: Slide[] = [
     ...(weather && usable(weather)
       ? [
@@ -92,6 +96,7 @@ export function HomeHighlights({
       name: c.name,
       c,
     })),
+    ...(energy ? [{ id: `energy:${energy.id}`, kind: "energy" as const, name: t("Energi", "Energy"), c: energy }] : []),
     ...(climate
       ? [
           {
@@ -137,7 +142,7 @@ export function HomeHighlights({
     >
       <div className="highlight-stack" data-stacked={slides.length > 1}>
         <div
-          className="highlight-card"
+          className={`highlight-card highlight-${slide.kind}`}
           key={slide.id}
           role="group"
           aria-roledescription={t("Kort", "Slide")}
@@ -151,12 +156,13 @@ export function HomeHighlights({
                   ? t("Et blikk hjem", "A look home")
                   : slide.kind === "media"
                     ? t("Lyd & bilde", "Sound & vision")
-                    : t("Inneklima", "Indoor climate")}
+                    : slide.kind === "energy" ? t("Hjemmets energi", "Home energy") : t("Inneklima", "Indoor climate")}
             </span>
             <small>
               {index + 1} / {slides.length}
             </small>
           </div>
+          <div className="highlight-content">
           {offline ? (
             <div className="highlight-summary">
               <h2>{slide.name}</h2>
@@ -172,30 +178,9 @@ export function HomeHighlights({
           ) : slide.kind === "camera" ? (
             <CameraCard c={slide.c} offline={offline} lang={lang} />
           ) : slide.kind === "media" ? (
-            <div className="highlight-summary">
-              <div className="highlight-disc" aria-hidden="true">
-                <Music2 size={34} />
-              </div>
-              <span>
-                {slide.c.state === "playing"
-                  ? t("Spiller nå", "Now playing")
-                  : slide.c.state === "paused"
-                    ? t("På pause", "Paused")
-                    : t("Mediespiller", "Media player")}
-              </span>
-              <h2>{String(slide.c.attributes.media_title || slide.c.name)}</h2>
-              <p>
-                {String(
-                  slide.c.attributes.media_artist ||
-                    slide.c.attributes.app_name ||
-                    slide.c.name,
-                )}
-              </p>
-              <button onClick={() => open("media")}>
-                {t("Åpne Multimedia", "Open Multimedia")}
-                <ArrowUpRight size={16} />
-              </button>
-            </div>
+            <HighlightPlayer c={slide.c} lang={lang} open={() => open("media")} />
+          ) : slide.kind === "energy" ? (
+            <HighlightEnergy c={slide.c} lang={lang} open={() => open("energy")} />
           ) : (
             <div className="highlight-summary">
               <Thermometer size={35} />
@@ -208,6 +193,7 @@ export function HomeHighlights({
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
       {slides.length > 1 && (
@@ -257,4 +243,55 @@ export function HomeHighlights({
       )}
     </section>
   );
+}
+
+
+function HighlightPlayer({c, lang, open}: {c: Control; lang: string; open: () => void}) {
+  const en = lang === "en", qc = useQueryClient();
+  const [busy, setBusy] = useState(false), [message, setMessage] = useState("");
+  const actions = c.capabilities.flatMap(cap => cap.actions);
+  async function command(action: string) {
+    if (busy) return;
+    setBusy(true); setMessage("");
+    try {
+      const result = await api<{status: string}>(`controls/${encodeURIComponent(c.entity_id)}/commands`, "POST", {action});
+      setMessage(result.status === "state_updated" ? (en ? "Updated" : "Oppdatert") : (en ? "Sent to player" : "Sendt til spilleren"));
+      await qc.invalidateQueries({queryKey: ["home"]});
+    } catch { setMessage(en ? "Could not reach player" : "Kunne ikke nå spilleren"); }
+    finally { setBusy(false); }
+  }
+  const transport = [
+    ["media_previous_track", en ? "Previous" : "Forrige", SkipBack],
+    [c.state === "playing" ? "media_pause" : "media_play", c.state === "playing" ? "Pause" : (en ? "Play" : "Spill av"), c.state === "playing" ? Pause : Play],
+    ["media_next_track", en ? "Next" : "Neste", SkipForward],
+  ] as const;
+  return <div className="highlight-summary highlight-player">
+    <div className="highlight-track-head"><div className="highlight-disc"><Music2 size={34}/></div><span>{c.name}<small>{c.state === "playing" ? (en ? "Now playing" : "Spiller nå") : c.state === "paused" ? (en ? "Paused" : "På pause") : (en ? "Ready" : "Klar")}</small></span></div>
+    <h2>{String(c.attributes.media_title || c.name)}</h2>
+    <p>{String(c.attributes.media_artist || c.attributes.app_name || "")}</p>
+    <div className="highlight-transport">{transport.filter(([action]) => actions.includes(action)).map(([action,label,Icon]) => <button key={action} aria-label={label} disabled={busy || c.state === "off"} onClick={() => void command(action)}><Icon size={24}/></button>)}</div>
+    <small role="status">{message}</small>
+    <button onClick={open}>{en ? "Open Multimedia" : "Åpne Multimedia"}<ArrowUpRight size={16}/></button>
+  </div>;
+}
+
+function HighlightEnergy({c, lang, open}: {c: Control; lang: string; open: () => void}) {
+  const en = lang === "en";
+  const q = useQuery({
+    queryKey: ["highlight-energy", c.id],
+    queryFn: () => api<{series: {id: string; current: {points: {time: string; value: number | null}[]}}[]}>(`home/energy/statistics?${new URLSearchParams({period: "24h", ids: c.id})}`),
+    staleTime: 60000, refetchInterval: 300000, retry: false,
+  });
+  const points = q.data?.series.find(s => s.id === c.id)?.current.points || [];
+  const values = points.filter(p => p.value !== null);
+  const max = Math.max(1, ...values.map(p => Math.abs(p.value!)));
+  return <div className="highlight-summary highlight-energy-body">
+    <div className="highlight-track-head"><Zap size={30}/><span>{c.name}<small>{en ? "Latest reading" : "Siste måling"}</small></span></div>
+    <strong>{reading(c, lang)}</strong>
+    <div className="highlight-energy-chart" role="img" aria-label={en ? "Measurements over the last 24 hours" : "Målinger siste 24 timer"}>
+      {values.length ? <svg viewBox="0 0 300 90" preserveAspectRatio="none">{points.map((p,i) => p.value === null ? null : <rect key={p.time} x={i*300/points.length} y={88-Math.abs(p.value)/max*80} width={Math.max(1,300/points.length-2)} height={Math.max(1,Math.abs(p.value)/max*80)} rx="2"><title>{new Date(p.time).toLocaleString(en ? "en-GB" : "nb-NO")}: {p.value}</title></rect>)}</svg> : <p>{q.isPending ? (en ? "Loading history…" : "Henter historikk…") : (en ? "History unavailable" : "Historikk er ikke tilgjengelig")}</p>}
+    </div>
+    <small>{en ? "Last 24 hours" : "Siste 24 timer"}</small>
+    <button onClick={open}>{en ? "Explore energy" : "Se energi og innsikt"}<ArrowUpRight size={16}/></button>
+  </div>;
 }
