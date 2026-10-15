@@ -460,3 +460,53 @@
     transition: none;
   }
 }
+
+/* Match the room photography on the lighting overview, tinted by the active theme. */
+.climate-room-card .climate-room-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 78px;
+  margin: -8px -10px 0;
+  padding: 12px;
+  border-radius: 11px;
+  background: var(--soft);
+}
+.climate-room-banner > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+.climate-room-banner:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    var(--surface) 4%,
+    color-mix(in srgb, var(--surface) 90%, transparent) 35%,
+    color-mix(in srgb, var(--surface) 30%, transparent)
+  );
+}
+.climate-room-banner > strong {
+  text-shadow: 0 1px 8px var(--surface);
+}
+.climate-room-banner > .climate-room-icon {
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+}
+.climate-room-card .climate-room-banner > svg {
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  border-radius: 50%;
+  padding: 4px;
+  width: 26px;
+  height: 26px;
+  color: var(--text);
+}
+.is-list .climate-room-card .climate-room-banner {
+  margin: 0;
+  align-self: stretch;
+}

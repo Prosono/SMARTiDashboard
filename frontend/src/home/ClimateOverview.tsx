@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../api";
 import {
   Thermometer,
   Droplets,
@@ -14,7 +16,7 @@ import {
 } from "lucide-react";
 import type { Control, Home } from "../types";
 import { numeric, temperature, usable, reading } from "./homeModel";
-import { homeAsset, roomMood } from "./HomeOverview";
+import { homeAsset, roomMood, type HomePreferences } from "./HomeOverview";
 import { SettingsDialog } from "./SettingsDialog";
 import "./lightOverview.css";
 import "./climateOverview.css";
@@ -55,6 +57,11 @@ export function ClimateOverview({
   renderControls: (c: Control[]) => ReactNode;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const prefs = useQuery({
+    queryKey: ["home-preferences"],
+    queryFn: () => api<HomePreferences>("home/preferences"),
+  });
+  const [failedImages, setFailedImages] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState("all");
   const [room, setRoom] = useState("all");
@@ -247,7 +254,14 @@ export function ClimateOverview({
         className={`climate-room-grid ${layout === "list" ? "is-list" : ""}`}
       >
         {shown.map((a) => {
-          const Icon = roomMood(a.name).Icon;
+          const mood = roomMood(a.name),
+            Icon = mood.Icon;
+          const photo = prefs.data?.images[a.area_id]
+            ? new URL(
+                `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
+                document.baseURI,
+              ).href
+            : homeAsset(mood.photo || "home-living");
           const hvac = offline
             ? ""
             : String(a.thermostat?.attributes.hvac_action || "");
@@ -288,7 +302,17 @@ export function ClimateOverview({
               key={a.area_id}
               onClick={() => setOpened(a.area_id)}
             >
-              <header>
+              <header className="climate-room-banner">
+                {!failedImages.includes(photo) && (
+                  <img
+                    src={photo}
+                    alt=""
+                    loading="lazy"
+                    onError={() =>
+                      setFailedImages((previous) => [...previous, photo])
+                    }
+                  />
+                )}
                 <span className="climate-room-icon">
                   <Icon size={22} />
                 </span>

@@ -1,3 +1,7 @@
+## 1.29.1
+
+- Rombilder på klimakort, med valgte rombilder og tematilpasset toning.
+
 ## 1.29.0
 
 - Redesignet Klima med romkort, temperaturvisning og modusfarger.
