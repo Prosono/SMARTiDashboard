@@ -1,3 +1,10 @@
+## 1.29.0
+
+- Redesignet Klima med romkort, temperaturvisning og modusfarger.
+- Samlet verktøylinje med søk, romvalg, kategorier og kort-/listevisning.
+- Målt temperatur, fuktighet og CO₂ i oversikten; manglende data merkes tydelig.
+- Åpne romkort for eksisterende termostatstyring og sensordetaljer.
+
 ## 1.28.3
 
 - Søk er samlet med statusfilter, romvalg og avslåing i lysverktøylinjen.

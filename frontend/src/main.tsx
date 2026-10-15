@@ -1,3 +1,4 @@
+import { ClimateOverview } from "./home/ClimateOverview";
 import { LightOverview } from "./home/LightOverview";
 import { Groups } from "./Groups";
 import { LightColor } from "./LightColor";
@@ -691,7 +692,7 @@ function Dashboard({
             {!(
               page === "devices" &&
               protocol === "all" &&
-              filter === "light"
+              ["light", "climate"].includes(filter)
             ) && (
               <div className="page-heading">
                 <span className="eyebrow">{t.overview}</span>
@@ -789,7 +790,7 @@ function Dashboard({
             ) : (
               <>
                 <div className="device-toolbar">
-                  {filter !== "light" && (
+                  {!["light", "climate"].includes(filter) && (
                     <label className="search">
                       <Search size={19} />
                       <input
@@ -829,7 +830,15 @@ function Dashboard({
                     }}
                   />
                 )}
-                {filter !== "light" &&
+                {filter === "climate" && (
+                  <ClimateOverview
+                    home={h}
+                    offline={offline}
+                    lang={lang}
+                    renderControls={cards}
+                  />
+                )}
+                {!["light", "climate"].includes(filter) &&
                   (regular.length ? (
                     selected.length ? (
                       cards(selected)

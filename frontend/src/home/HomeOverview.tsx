@@ -44,7 +44,7 @@ import { Energy } from "./EnergyOverview";
 import { EnergyFlow } from "./EnergyFlow";
 import { Scenes } from "./Scenes";
 import { HomeTabs, type HomeTab } from "./HomeTabs";
-import { RoomControls } from "./HomeRooms";
+import { ClimateOverview } from "./ClimateOverview";
 import { Presence } from "./People";
 import { Calendar } from "./Calendar";
 import { Vehicle } from "./Vehicle";
@@ -973,10 +973,9 @@ export function HomeOverview({
           />
         )}
         {tab === "climate" && (
-          <RoomControls
+          <ClimateOverview
             key={tab}
             home={h}
-            kind={tab}
             offline={offline}
             lang={lang}
             renderControls={renderControls}
