@@ -1,3 +1,4 @@
+import { ControllerStatus } from "./ControllerStatus";
 import { ProtocolLogo } from "./ProtocolLogo";
 import "./protocolOverview.css";
 import { ZigbeeStatus } from "./ZigbeeStatus";
@@ -440,6 +441,14 @@ export function ProtocolDevices({
           </p>
         </details>
         {admin && provider === "zigbee2mqtt" && <ZigbeeStatus lang={lang} />}
+        {admin && provider === "zwave_js" && (
+          <ControllerStatus
+            lang={lang}
+            changed={() => {
+              void inventory.refetch();
+            }}
+          />
+        )}
       </div>
       {selected && (
         <DeviceDetails

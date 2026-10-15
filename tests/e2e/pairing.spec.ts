@@ -93,6 +93,9 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
     externalBusy = false;
     return r.fulfill({ json: controller() });
   });
+  await page.route("**/api/devices/zwave_js", (r) =>
+    r.fulfill({ json: { status: "ready", devices: [] } }),
+  );
   await page.goto("/");
   await page
     .getByRole("button", { name: "Legg til enhet", exact: true })
@@ -143,6 +146,15 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
   await expect(
     page.getByText("Kontrolleren er fortsatt opptatt.", { exact: false }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Sjekk kontrollerstatus" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Tilbake", exact: true }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Enheter", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Z-Wave", exact: true }).click();
   await page.getByRole("button", { name: "Sjekk kontrollerstatus" }).click();
   await page
     .getByRole("button", { name: "Stopp aktiv nettverksoperasjon" })
@@ -153,6 +165,10 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
     page.getByText("Kontrolleren er ledig. Du kan starte ny paring."),
   ).toBeVisible();
   expect(recoveryCalls).toBe(1);
+  await page
+    .getByRole("button", { name: /Legg til (ny )?enhet/, exact: false })
+    .first()
+    .click();
   await zwave.getByRole("button", { name: "Start paring" }).click();
   await expect(
     page.getByRole("heading", { name: "Bekreft sikkerheten" }),

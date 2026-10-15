@@ -1,3 +1,9 @@
+# 1.19.2
+
+- Move controller status and diagnostics out of device setup. Show Zigbee diagnostics on the Zigbee page and Z-Wave controller status/recovery on the Z-Wave page.
+
+Prepared locally, not published.
+
 # 1.19.1
 
 - Use shared, device-class-aware state labels in protocol and integration device dialogs, device cards, history tables, entity pickers and automation editors.

@@ -13,8 +13,6 @@ import {
 } from "lucide-react";
 import { api, ApiError } from "./api";
 import { WirelessDevices } from "./WirelessDevices";
-import { ZigbeeStatus } from "./ZigbeeStatus";
-import { ControllerStatus } from "./ControllerStatus";
 
 type Provider = {
   id: string;
@@ -62,7 +60,7 @@ const copy = {
       "Handlingen kunne ikke bekreftes. Kontroller forbindelsen før du prøver igjen.",
     busy: "SMARTi har en uavklart paring. Bruk «Stopp paring» og vent på bekreftelsen.",
     controllerBusy:
-      "Kontrolleren er fortsatt opptatt. Vent litt og prøv igjen. Hvis dette vedvarer, kontroller paringsstatus i SMARTi.",
+      "Kontrolleren er fortsatt opptatt. Vent litt og prøv igjen. Se kontrollerstatus under Enheter → Z-Wave hvis dette vedvarer.",
     stopping: "Stopper paringen …",
     stopPending:
       "Stopp er ikke bekreftet ennå. Vi sjekker status automatisk. Du kan forsøke å stoppe igjen når forbindelsen er tilbake.",
@@ -433,20 +431,6 @@ export function DeviceSetup({
           )}
         </div>
       )}
-      <div className="setup-diagnostics">
-        <h2>
-          {lang === "en" ? "Connection & support" : "Tilkobling og hjelp"}
-        </h2>
-        <ControllerStatus
-          lang={lang}
-          changed={() => {
-            setError("");
-            void session.refetch();
-            void providers.refetch();
-          }}
-        />
-        <ZigbeeStatus lang={lang} />
-      </div>
       <div className="setup-section-heading">
         <h2>{lang === "en" ? "Add devices" : "Legg til enheter"}</h2>
         <span>

@@ -86,28 +86,6 @@
   font-size: 12px;
   margin-top: 10px;
 }
-.setup-diagnostics {
-  margin: 18px 0 26px;
-}
-.setup-diagnostics > h2 {
-  display: none;
-}
-.device-setup .controller-status {
-  border-radius: 18px;
-  background: var(--surface);
-  padding: 24px;
-  margin: 0 0 14px;
-}
-.device-setup .controller-status > h2 {
-  font-size: 20px;
-}
-.device-setup .controller-status > button {
-  width: 100%;
-  margin-top: 16px;
-  text-align: left;
-  background: var(--soft);
-  border-radius: 10px;
-}
 .setup-section-heading {
   display: flex;
   justify-content: space-between;
@@ -364,12 +342,4 @@
   .device-setup .spin {
     animation: none;
   }
-}
-.device-setup .controller-status > button {
-  padding: 13px 16px;
-  min-height: 46px;
-  border: 1px solid var(--line);
-}
-.device-setup .controller-status > button:hover:not(:disabled) {
-  border-color: var(--orange);
 }
