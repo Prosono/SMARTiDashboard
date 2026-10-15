@@ -51,17 +51,20 @@ def person_image_path(value):
     return value
 
 
-def daily_forecasts(rows, timezone, now):
+def forecast_days(rows, timezone, now):
+    """Keep at most five local calendar days, without filling gaps with invented data."""
     zone = ZoneInfo(timezone)
     today = now.astimezone(zone).date()
     result = {}
     for row in rows[:40]:
+        if not isinstance(row, dict):
+            continue
         try:
             date = datetime.fromisoformat(row["datetime"])
             date = (date.replace(tzinfo=zone) if date.tzinfo is None else date.astimezone(zone)).date()
         except (ValueError, TypeError, KeyError):
             continue
-        if date not in {today, today + timedelta(days=1)}:
+        if not today <= date <= today + timedelta(days=4) or date in result:
             continue
         item = {"date": date.isoformat(), "condition": str(row.get("condition") or "unknown")[:80]}
         for key in ["temperature", "templow", "precipitation", "precipitation_probability", "wind_speed"]:
@@ -71,8 +74,16 @@ def daily_forecasts(rows, timezone, now):
                 if isinstance(value, (float, int)) and not isinstance(value, bool) and math.isfinite(value)
                 else None
             )
-        result["today" if date == today else "tomorrow"] = item
-    return result
+        result[date] = item
+    return [result[date] for date in sorted(result)]
+
+
+def daily_forecasts(rows, timezone, now):
+    today = now.astimezone(ZoneInfo(timezone)).date()
+    dates = {today.isoformat(): "today", (today + timedelta(days=1)).isoformat(): "tomorrow"}
+    return {
+        dates[day["date"]]: day for day in forecast_days(rows, timezone, now) if day["date"] in dates
+    }
 
 
 def extras_router(store, user, ha, settings):
@@ -204,6 +215,7 @@ def extras_router(store, user, ha, settings):
         return {
             "timezone": zone,
             "days": daily_forecasts(rows, zone, now),
+            "forecast": forecast_days(rows, zone, now),
             "temperature_unit": c.attributes.get("temperature_unit"),
             "precipitation_unit": c.attributes.get("precipitation_unit"),
             "wind_speed_unit": c.attributes.get("wind_speed_unit"),

@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
-from app.home_extras import daily_forecasts, extras_router, person_image_path
+from app.home_extras import daily_forecasts, extras_router, forecast_days, person_image_path
 from app.models import normalize
 from app.storage import Store
 from fastapi import FastAPI, HTTPException
@@ -72,6 +72,26 @@ def test_photo_paths_and_forecast_local_calendar():
     assert days["tomorrow"]["precipitation"] == 0
 
 
+def test_forecast_strip_is_bounded_sorted_and_preserves_missing_data():
+    now = datetime(2026, 10, 12, 23, 30, tzinfo=UTC)
+    rows = [
+        {"datetime": "2026-10-17T12:00:00+02:00", "temperature": 9, "templow": 3},
+        {"datetime": "2026-10-13T12:00:00+02:00", "temperature": 14, "precipitation": 0},
+        {"datetime": "2026-10-14T12:00:00+02:00", "temperature": float("nan"), "templow": False},
+        {"datetime": "2026-10-14T18:00:00+02:00", "temperature": 999},
+        {"datetime": "2026-10-18T12:00:00+02:00", "temperature": 10},
+        {"datetime": "2026-10-12T12:00:00+02:00", "temperature": 10},
+        {"datetime": "invalid"},
+        None,
+    ]
+    days = forecast_days(rows, "Europe/Oslo", now)
+    assert [day["date"] for day in days] == ["2026-10-13", "2026-10-14", "2026-10-17"]
+    assert days[0]["temperature"] == 14 and days[0]["precipitation"] == 0
+    assert days[1]["temperature"] is None and days[1]["templow"] is None
+    assert days[2]["templow"] == 3
+    assert forecast_days([], "Europe/Oslo", now) == []
+
+
 @pytest.mark.parametrize("period", [None, "24", "168"])
 def test_live_forecast_and_device_history_contract(tmp_path, period):
     class HA:
@@ -109,7 +129,8 @@ def test_live_forecast_and_device_history_contract(tmp_path, period):
         extras_router(store, lambda: {"id": "user", "role": "admin"}, HA(), SimpleNamespace(mode="live"))
     )
     with TestClient(app) as c:
-        assert c.get("/api/home/weather/weather.home").json()["days"] == {}
+        forecast = c.get("/api/home/weather/weather.home").json()
+        assert forecast["days"] == {} and forecast["forecast"] == []
         assert c.get("/api/manage/device/one").json()["firmware"] == "1"
         url = "/api/manage/device/one/history?entity_id=sensor.temp"
         response = c.get(url + (f"&hours={period}" if period else ""))

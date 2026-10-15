@@ -1,3 +1,12 @@
+# 1.25.0
+
+- Rebuild Home highlight widgets around the supplied visual reference: scenic weather, a glass music player, immersive live-camera frame, theme-aware energy chart, and photographic indoor climate card.
+- Keep every card at the same 380px height, including unavailable/loading states; preserve carousel pause, focus and reduced-motion behavior.
+- Show up to five actual daily weather forecasts, playback progress and supported media controls, interactive 24-hour energy history, and bounded thermostat adjustment where supported.
+- Bundle an optimized decorative Nordic landscape locally; no external image dependency or fabricated camera preview.
+
+Prepared locally, not published. Verified with frontend build, backend weather tests and desktop/mobile browser tests. Live hardware was not available.
+
 # 1.24.0
 
 - Redesign greeting highlights with a fixed-height viewport and stable navigation across weather, cameras, media, energy and indoor temperature.

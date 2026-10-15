@@ -10,10 +10,12 @@ export function CameraCard({
   c,
   offline,
   lang,
+  compact = false,
 }: {
   c: Control;
   offline: boolean;
   lang: string;
+  compact?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const container = useRef<HTMLElement>(null),
@@ -134,7 +136,7 @@ export function CameraCard({
   return (
     <article
       ref={container}
-      className="home-camera home-media-camera camera-live-card"
+      className={`home-camera home-media-camera camera-live-card ${compact ? "camera-compact" : ""}`}
     >
       <div className="camera-live-preview">
         <video
@@ -210,6 +212,15 @@ export function CameraCard({
             ) : (
               <Square size={15} />
             )}
+            {compact && (
+              <span>
+                {paused
+                  ? t("Start live", "Start live")
+                  : status === "error"
+                    ? t("Prøv igjen", "Retry")
+                    : t("Stopp live", "Stop live")}
+              </span>
+            )}
           </button>
           <button
             className="camera-refresh"
@@ -225,6 +236,7 @@ export function CameraCard({
             }}
           >
             <Maximize size={17} />
+            {compact && <span>{t("Fullskjerm", "Fullscreen")}</span>}
           </button>
         </div>
       </div>
