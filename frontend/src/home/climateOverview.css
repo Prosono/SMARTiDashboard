@@ -203,7 +203,7 @@
 .climate-room-card[data-mode="cooling"] {
   --climate-mode: #459adb;
 }
-.climate-room-card header {
+.climate-room-card .climate-room-banner {
   display: flex;
   gap: 11px;
   align-items: center;
@@ -218,12 +218,12 @@
   flex-shrink: 0;
   color: var(--accent);
 }
-.climate-room-card header strong {
+.climate-room-card .climate-room-banner strong {
   font-size: 14px;
   flex: 1;
   overflow-wrap: anywhere;
 }
-.climate-room-card header > svg {
+.climate-room-card .climate-room-banner > svg {
   color: var(--muted);
   flex-shrink: 0;
 }
@@ -509,4 +509,69 @@
 .is-list .climate-room-card .climate-room-banner {
   margin: 0;
   align-self: stretch;
+}
+
+.climate-room-card {
+  cursor: default;
+}
+.climate-room-card button.climate-room-banner {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: calc(100% + 20px);
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.is-list .climate-room-card button.climate-room-banner {
+  width: 100%;
+}
+.climate-quick-temperature {
+  margin: 0 0 16px;
+}
+.climate-quick-temperature > small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+.climate-quick-temperature > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--soft);
+  border-radius: 12px;
+  padding: 5px;
+}
+.climate-quick-temperature button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.climate-quick-temperature button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.climate-quick-temperature span {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+}
+.climate-quick-temperature strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+}
+.is-list .climate-quick-temperature {
+  grid-column: 2;
+  margin: 0;
 }

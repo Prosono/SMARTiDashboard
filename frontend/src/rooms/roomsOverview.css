@@ -1,0 +1,222 @@
+.rooms-overview {
+  display: grid;
+  gap: 24px;
+  color: var(--text);
+  min-width: 0;
+}
+.rooms-overview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.rooms-overview-heading h1 {
+  font-size: clamp(30px, 3vw, 40px);
+  margin: 0;
+}
+.rooms-overview-heading p {
+  color: var(--muted);
+  margin: 5px 0 0;
+}
+.rooms-overview-heading > button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.rooms-overview-toolbar {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+.rooms-overview-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.rooms-overview-toolbar input {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  min-width: 0;
+  width: 100%;
+  padding: 8px 0;
+  font: inherit;
+}
+.rooms-overview-toolbar > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.rooms-overview-toolbar i {
+  height: 16px;
+  border-left: 1px solid var(--line);
+  margin: 0 6px;
+}
+.rooms-overview-toolbar select {
+  border: 0;
+  background: var(--soft);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 10px;
+  font: inherit;
+  font-size: 13px;
+  max-width: 100%;
+}
+.rooms-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.room-summary-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  min-width: 0;
+  transition: border-color 0.18s;
+}
+.room-summary-card:hover {
+  border-color: var(--accent);
+}
+.room-summary-photo {
+  height: 112px;
+  position: relative;
+  isolation: isolate;
+  background: var(--soft);
+  overflow: hidden;
+}
+.room-summary-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.room-summary-photo:after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--surface) 65%, transparent),
+    color-mix(in srgb, var(--accent) 12%, transparent)
+  );
+  pointer-events: none;
+}
+.room-summary-photo > span {
+  position: absolute;
+  bottom: 12px;
+  left: 18px;
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 37px;
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--accent);
+  z-index: 1;
+}
+.room-summary-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px 10px;
+  gap: 12px;
+}
+.room-summary-card h2 {
+  font-size: 18px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.room-summary-card small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.room-summary-readings {
+  display: flex;
+  gap: 24px;
+  padding: 5px 18px 18px;
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.room-summary-readings span,
+.room-summary-card footer span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.room-summary-card footer {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding: 13px 18px;
+  font-size: 12px;
+}
+.room-summary-card footer > span[data-active="true"] {
+  color: var(--accent);
+}
+.room-summary-card footer > span[data-active="true"] svg {
+  color: #df951c;
+}
+.rooms-overview-empty {
+  padding: 30px;
+  color: var(--muted);
+  text-align: center;
+}
+.rooms-overview button:focus-visible,
+.rooms-overview input:focus-visible,
+.rooms-overview select:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .rooms-overview-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .rooms-overview-toolbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .rooms-overview-toolbar label {
+    flex-basis: 100%;
+  }
+  .rooms-overview-toolbar select {
+    margin-left: auto;
+  }
+  .rooms-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .room-summary-photo {
+    height: 125px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .room-summary-card {
+    transition: none;
+  }
+}

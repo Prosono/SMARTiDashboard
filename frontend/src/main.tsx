@@ -1,3 +1,4 @@
+import { RoomsOverview } from "./rooms/RoomsOverview";
 import { ClimateOverview } from "./home/ClimateOverview";
 import { LightOverview } from "./home/LightOverview";
 import { Groups } from "./Groups";
@@ -686,6 +687,16 @@ function Dashboard({
             admin={session.role === "admin"}
             renderControls={cards}
             add={() => setAdding(true)}
+          />
+        ) : page === "rooms" && room === null ? (
+          <RoomsOverview
+            home={h}
+            lang={lang}
+            offline={offline}
+            openRoom={setRoom}
+            manage={
+              session.role === "admin" ? () => setRoomEditing(true) : undefined
+            }
           />
         ) : page === "devices" || page === "rooms" ? (
           <>

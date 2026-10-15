@@ -1,3 +1,9 @@
+## 1.30.0
+
+- Ny Alle rom-oversikt med rombilder, lysstatus og målinger per rom.
+- Søk og sortering av rom, med direkte åpning av romdetaljer.
+- Temperaturjustering med pluss/minus direkte på klimakort, med termostatens grenser og trinn.
+
 ## 1.29.1
 
 - Rombilder på klimakort, med valgte rombilder og tematilpasset toning.

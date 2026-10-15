@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import {
   Thermometer,
@@ -13,6 +13,8 @@ import {
   Snowflake,
   LayoutGrid,
   List,
+  Plus,
+  Minus,
 } from "lucide-react";
 import type { Control, Home } from "../types";
 import { numeric, temperature, usable, reading } from "./homeModel";
@@ -296,13 +298,17 @@ export function ClimateOverview({
                   ? 0
                   : Math.min(100, Math.max(0, ((a.temp - 5) / 30) * 100));
           return (
-            <button
+            <article
               className="climate-room-card"
               data-mode={heating ? "heating" : cooling ? "cooling" : "idle"}
               key={a.area_id}
-              onClick={() => setOpened(a.area_id)}
             >
-              <header className="climate-room-banner">
+              <button
+                type="button"
+                className="climate-room-banner"
+                onClick={() => setOpened(a.area_id)}
+                aria-label={`${t("Åpne klima for", "Open climate for")} ${a.name}`}
+              >
                 {!failedImages.includes(photo) && (
                   <img
                     src={photo}
@@ -318,7 +324,7 @@ export function ClimateOverview({
                 </span>
                 <strong>{a.name}</strong>
                 <ChevronRight size={18} />
-              </header>
+              </button>
               <div className="climate-room-reading">
                 <div>
                   <strong>{primary}</strong>
@@ -375,6 +381,25 @@ export function ClimateOverview({
                             ? t("Klimastyring", "Climate control")
                             : t("Sensorer", "Sensors")}
               </div>
+              {a.items
+                .filter(
+                  (c) =>
+                    c.domain === "climate" &&
+                    c.capabilities.some((cap) =>
+                      cap.actions.includes("set_temperature"),
+                    ),
+                )
+                .map((c) => (
+                  <QuickTemperature
+                    key={c.entity_id}
+                    c={c}
+                    lang={lang}
+                    offline={offline || !home.connected}
+                    showName={
+                      a.items.filter((c) => c.domain === "climate").length > 1
+                    }
+                  />
+                ))}
               <footer>
                 <span>
                   <Droplets size={16} />
@@ -387,7 +412,7 @@ export function ClimateOverview({
                     : t("Ingen luftmåling", "No air reading")}
                 </span>
               </footer>
-            </button>
+            </article>
           );
         })}
       </div>
@@ -420,5 +445,107 @@ export function ClimateOverview({
         </SettingsDialog>
       )}
     </section>
+  );
+}
+
+function QuickTemperature({
+  c,
+  lang,
+  offline,
+  showName,
+}: {
+  c: Control;
+  lang: string;
+  offline: boolean;
+  showName: boolean;
+}) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const cap = c.capabilities.find((v) => v.actions.includes("set_temperature"));
+  const target = c.attributes.temperature;
+  const min = cap?.minimum,
+    max = cap?.maximum,
+    step = cap?.step;
+  const valid =
+    typeof target === "number" &&
+    Number.isFinite(target) &&
+    typeof min === "number" &&
+    typeof max === "number" &&
+    typeof step === "number" &&
+    step > 0 &&
+    max > min;
+  const blocked = offline || !usable(c) || busy || !valid;
+  async function adjust(direction: number) {
+    if (blocked || !valid) return;
+    const value = Number(
+      Math.min(
+        max!,
+        Math.max(
+          min!,
+          min! + Math.round((target - min!) / step! + direction) * step!,
+        ),
+      ).toFixed(6),
+    );
+    setBusy(true);
+    setMessage("");
+    try {
+      const result = await api<{ status: string }>(
+        `controls/${encodeURIComponent(c.entity_id)}/commands`,
+        "POST",
+        { action: "set_temperature", value },
+      );
+      if (result.status === "accepted_unconfirmed")
+        setMessage(
+          t("Sendt – venter på bekreftelse.", "Sent – awaiting confirmation."),
+        );
+      if (result.status === "failed")
+        setMessage(
+          t("Kunne ikke endre temperaturen.", "Could not change temperature."),
+        );
+      await qc.invalidateQueries({ queryKey: ["home"] });
+    } catch {
+      setMessage(
+        t("Kunne ikke endre temperaturen.", "Could not change temperature."),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="climate-quick-temperature" aria-busy={busy}>
+      {showName && <small>{c.name}</small>}
+      <div>
+        <button
+          type="button"
+          aria-label={`${t("Senk temperatur", "Decrease temperature")} ${c.name}`}
+          disabled={blocked || (valid && target <= min!)}
+          onClick={() => void adjust(-1)}
+        >
+          <Minus size={17} />
+        </button>
+        <span>
+          {t("Ønsket", "Target")}{" "}
+          <strong>
+            {typeof target === "number" && usable(c) && !offline
+              ? target.toLocaleString(lang === "en" ? "en-GB" : "nb-NO", {
+                  maximumFractionDigits: 2,
+                })
+              : "—"}{" "}
+            {String(c.attributes.temperature_unit || cap?.unit || "°")}
+          </strong>
+        </span>
+        <button
+          type="button"
+          aria-label={`${t("Øk temperatur", "Increase temperature")} ${c.name}`}
+          disabled={blocked || (valid && target >= max!)}
+          onClick={() => void adjust(1)}
+        >
+          <Plus size={17} />
+        </button>
+      </div>
+      {message && <small role="status">{message}</small>}
+    </div>
   );
 }
