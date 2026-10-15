@@ -49,19 +49,13 @@
   gap: 12px;
   align-items: center;
 }
-.lighting-state,
-.lighting-rooms {
+.lighting-state {
   display: flex;
   align-items: center;
   gap: 4px;
   background: var(--surface);
   padding: 5px;
   border-radius: 13px;
-}
-.lighting-rooms {
-  flex: 1;
-  overflow: auto;
-  min-width: 0;
 }
 .light-overview button {
   display: inline-flex;
@@ -75,15 +69,13 @@
   background: var(--surface);
   cursor: pointer;
 }
-.lighting-state button,
-.lighting-rooms button {
+.lighting-state button {
   border: 0;
   background: transparent;
   white-space: nowrap;
   padding: 9px 15px;
 }
-.lighting-state button[aria-pressed="true"],
-.lighting-rooms button[aria-pressed="true"] {
+.lighting-state button[aria-pressed="true"] {
   background: var(--accent);
   color: var(--on-media);
 }
@@ -180,11 +172,15 @@
   padding: 10px 20px;
 }
 .lighting-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  columns: 2;
+  column-gap: 20px;
 }
 .lighting-room {
+  break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 20px;
+  vertical-align: top;
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 17px;
@@ -332,24 +328,14 @@
   text-align: center;
   color: var(--muted);
 }
-@media (min-width: 1500px) {
+@media (min-width: 1700px) {
   .lighting-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-  .lighting-room {
-    grid-column: span 3;
-  }
-  .lighting-room:nth-child(n + 5) {
-    grid-column: span 2;
+    columns: 3;
   }
 }
 @media (max-width: 1050px) {
   .lighting-toolbar {
     flex-wrap: wrap;
-  }
-  .lighting-rooms {
-    order: 3;
-    flex-basis: 100%;
   }
   .lighting-off {
     margin-left: auto;
@@ -364,7 +350,7 @@
     padding: 10px;
   }
   .lighting-grid {
-    gap: 12px;
+    column-gap: 12px;
   }
 }
 @media (max-width: 700px) {
@@ -380,7 +366,7 @@
     min-width: 0;
   }
   .lighting-grid {
-    grid-template-columns: 1fr;
+    columns: 1;
   }
   .lighting-banner {
     flex-wrap: wrap;
@@ -476,4 +462,62 @@
 .lighting-tile .light-color-control button {
   max-width: 100%;
   white-space: normal;
+}
+
+.lighting-room-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 340px;
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 5px 12px;
+}
+.lighting-room-filter > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.lighting-room-filter select {
+  min-width: 0;
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  padding: 6px 24px 6px 0;
+  text-overflow: ellipsis;
+}
+.lighting-room-filter select:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+  border-radius: 5px;
+}
+.lighting-off {
+  margin-left: auto;
+}
+@media (max-width: 700px) {
+  .lighting-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+  .lighting-state {
+    justify-content: space-between;
+  }
+  .lighting-room-filter {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    max-width: none;
+  }
+  .lighting-off {
+    padding: 10px;
+  }
+  .lighting-room {
+    margin-bottom: 12px;
+  }
 }

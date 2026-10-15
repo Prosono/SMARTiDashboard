@@ -1,3 +1,8 @@
+## 1.28.1
+
+- Kompakt romvelger i lysoversikten uten horisontal rulleliste.
+- Romkort får naturlig høyde og flyter tett i kolonner på desktop.
+
 ## 1.28.0
 
 - Ny lysoversikt med rombilder, kompakte brytere, dimmere og fargevalg.

@@ -168,24 +168,25 @@ export function LightOverview({
             </button>
           ))}
         </div>
-        <div className="lighting-rooms">
-          <button aria-pressed={room === null} onClick={() => setRoom(null)}>
-            {t("Alle rom", "All rooms")}
-          </button>
-          {rooms.map((a) => {
-            const Icon = roomMood(a.name).Icon;
-            return (
-              <button
-                key={a.area_id}
-                aria-pressed={room === a.area_id}
-                onClick={() => setRoom(a.area_id)}
-              >
-                <Icon size={17} />
-                {a.name}
-              </button>
-            );
-          })}
-        </div>
+        <label className="lighting-room-filter">
+          <span>{t("Rom", "Room")}</span>
+          <select
+            aria-label={t("Velg rom", "Choose room")}
+            value={room === null ? "all" : `room:${room}`}
+            onChange={(e) =>
+              setRoom(e.target.value === "all" ? null : e.target.value.slice(5))
+            }
+          >
+            <option value="all">
+              {t("Alle rom", "All rooms")} ({rooms.length})
+            </option>
+            {rooms.map((a) => (
+              <option key={a.area_id} value={`room:${a.area_id}`}>
+                {a.name} ({a.items.length})
+              </option>
+            ))}
+          </select>
+        </label>
         <button
           className="lighting-off"
           disabled={offline || !home.connected || !on || !!pending.length}

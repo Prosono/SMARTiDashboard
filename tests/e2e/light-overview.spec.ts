@@ -22,6 +22,10 @@ test("room lighting overview filters and controls lights", async ({ page }) => {
   await lights.getByLabel("Søk etter rom eller lys").fill("finnesikke");
   await expect(lights.locator(".lighting-room")).toHaveCount(0);
   await lights.getByLabel("Søk etter rom eller lys").fill("");
+  await lights.getByLabel("Velg rom", {exact:true}).selectOption({label:"Stue (2)"});
+  await expect(lights.locator(".lighting-room")).toHaveCount(1);
+  await lights.getByLabel("Velg rom", {exact:true}).selectOption("all");
+  await expect(lights.locator(".lighting-room")).toHaveCount(3);
   const toggle = lights.getByRole("switch", {
     name: "Pendellampe",
     exact: true,
