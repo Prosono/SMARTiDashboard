@@ -1,0 +1,479 @@
+.light-overview {
+  --light-warm: #e29a25;
+  display: grid;
+  gap: 22px;
+  color: var(--text);
+}
+.lighting-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.lighting-heading h1 {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: clamp(28px, 3vw, 40px);
+  margin: 0;
+}
+.lighting-heading h1 svg {
+  color: var(--light-warm);
+  width: 32px;
+  height: 32px;
+}
+.lighting-heading p {
+  color: var(--muted);
+  margin: 4px 0 0 50px;
+}
+.lighting-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 15px;
+  min-width: 260px;
+}
+.lighting-search input {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  min-width: 0;
+  width: 100%;
+  color: var(--text);
+}
+.lighting-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.lighting-state,
+.lighting-rooms {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface);
+  padding: 5px;
+  border-radius: 13px;
+}
+.lighting-rooms {
+  flex: 1;
+  overflow: auto;
+  min-width: 0;
+}
+.light-overview button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 42px;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.lighting-state button,
+.lighting-rooms button {
+  border: 0;
+  background: transparent;
+  white-space: nowrap;
+  padding: 9px 15px;
+}
+.lighting-state button[aria-pressed="true"],
+.lighting-rooms button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-media);
+}
+.lighting-off {
+  padding: 10px 17px;
+  white-space: nowrap;
+}
+.light-overview button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.light-overview button:focus-visible,
+.light-overview input:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
+}
+.lighting-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  padding: 24px 28px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  min-height: 140px;
+  background: var(--surface);
+}
+.lighting-banner > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 60%;
+  z-index: -2;
+}
+.lighting-banner:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    color-mix(in srgb, var(--surface) 90%, transparent) 47%,
+    color-mix(in srgb, var(--sidebar) 30%, transparent)
+  );
+}
+.lighting-banner h2 {
+  font-size: 22px;
+  line-height: 1.15;
+  margin: 0;
+}
+.lighting-banner p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+.lighting-summary {
+  border-left: 1px solid var(--line);
+  padding-left: 24px;
+  min-width: 220px;
+}
+.lighting-summary span {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.lighting-summary svg {
+  color: var(--light-warm);
+}
+.lighting-summary progress {
+  display: block;
+  width: 100%;
+  height: 7px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--line);
+  accent-color: var(--light-warm);
+}
+.lighting-summary progress::-webkit-progress-bar {
+  background: var(--line);
+}
+.lighting-summary progress::-webkit-progress-value {
+  background: var(--light-warm);
+}
+.lighting-banner > button {
+  margin-left: auto;
+  padding: 10px 20px;
+}
+.lighting-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.lighting-room {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--surface) 75%, var(--bg));
+  padding: 10px;
+  box-shadow: 0 5px 20px color-mix(in srgb, var(--text) 4%, transparent);
+}
+.lighting-room > header {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  overflow: hidden;
+  min-height: 76px;
+  border-radius: 11px;
+  padding: 12px 16px;
+}
+.lighting-room > header > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+.lighting-room > header:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--surface) 12%,
+    color-mix(in srgb, var(--surface) 90%, transparent) 32%,
+    color-mix(in srgb, var(--surface) 15%, transparent)
+  );
+  z-index: -1;
+}
+.lighting-room > header > svg {
+  flex-shrink: 0;
+}
+.lighting-room h2 {
+  font-size: 17px;
+  margin: 0;
+}
+.lighting-room small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.lighting-room > header button {
+  margin-left: auto;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  width: 42px;
+}
+.lighting-devices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+.lighting-tile {
+  padding: 14px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  min-width: 0;
+}
+.lighting-tile-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lighting-tile-top > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.lighting-tile[data-on="true"] .lighting-tile-top > svg {
+  color: var(--light-warm);
+  filter: drop-shadow(0 0 7px #e29a2533);
+}
+.lighting-tile strong {
+  font-size: 12px;
+  line-height: 1.3;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.lighting-switch {
+  border: 0 !important;
+  background: transparent !important;
+  min-width: 38px;
+  padding: 0;
+  position: relative;
+}
+.lighting-switch:before {
+  content: "";
+  position: absolute;
+  width: 32px;
+  height: 18px;
+  border-radius: 12px;
+  background: var(--muted);
+  opacity: 0.5;
+}
+.lighting-switch[aria-checked="true"]:before {
+  background: var(--light-warm);
+  opacity: 1;
+}
+.lighting-switch span {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fffaf2;
+  transform: translateX(-7px);
+  transition: transform 0.18s;
+}
+.lighting-switch[aria-checked="true"] span {
+  transform: translateX(7px);
+}
+.lighting-dimmer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.lighting-dimmer input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0;
+  accent-color: var(--light-warm);
+  cursor: pointer;
+}
+.lighting-dimmer output {
+  font-size: 12px;
+  min-width: 30px;
+  text-align: right;
+}
+.lighting-tile .light-color-control button {
+  font-size: 11px;
+  min-height: 32px;
+  padding: 4px 8px;
+  margin-top: 4px;
+}
+.lighting-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--muted);
+}
+@media (min-width: 1500px) {
+  .lighting-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .lighting-room {
+    grid-column: span 3;
+  }
+  .lighting-room:nth-child(n + 5) {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 1050px) {
+  .lighting-toolbar {
+    flex-wrap: wrap;
+  }
+  .lighting-rooms {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .lighting-off {
+    margin-left: auto;
+  }
+  .lighting-banner {
+    gap: 20px;
+  }
+  .lighting-summary {
+    min-width: 170px;
+  }
+  .lighting-banner > button {
+    padding: 10px;
+  }
+  .lighting-grid {
+    gap: 12px;
+  }
+}
+@media (max-width: 700px) {
+  .lighting-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .lighting-heading p {
+    margin-left: 0;
+  }
+  .lighting-search {
+    min-width: 0;
+  }
+  .lighting-grid {
+    grid-template-columns: 1fr;
+  }
+  .lighting-banner {
+    flex-wrap: wrap;
+    padding: 20px;
+    gap: 18px;
+  }
+  .lighting-banner h2 {
+    font-size: 20px;
+  }
+  .lighting-summary {
+    border: 0;
+    padding: 0;
+    flex: 1;
+  }
+  .lighting-banner > button {
+    margin-left: 0;
+  }
+  .lighting-devices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lighting-tile {
+    padding: 10px;
+  }
+  .lighting-off {
+    font-size: 12px;
+  }
+  .lighting-state button {
+    padding: 8px 12px;
+  }
+  .lighting-banner:after {
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lighting-switch span {
+    transition: none;
+  }
+}
+.lighting-dimmer input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.lighting-dimmer input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 8px;
+  background: linear-gradient(
+    to right,
+    var(--light-warm) var(--level),
+    var(--line) var(--level)
+  );
+}
+.lighting-dimmer input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 8px;
+  background: var(--line);
+}
+.lighting-dimmer input[type="range"]::-moz-range-progress {
+  height: 6px;
+  background: var(--light-warm);
+  border-radius: 8px;
+}
+.lighting-dimmer input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid var(--light-warm);
+  background: var(--surface);
+  border-radius: 50%;
+  margin-top: -3.5px;
+  box-shadow: 0 1px 3px #0002;
+}
+.lighting-dimmer input[type="range"]::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid var(--light-warm);
+  background: var(--surface);
+  border-radius: 50%;
+}
+.light-overview {
+  min-width: 0;
+}
+.light-overview {
+  grid-template-columns: minmax(0, 1fr);
+}
+.light-overview > *,
+.lighting-tile-top strong {
+  min-width: 0;
+}
+.lighting-tile .light-color-control button {
+  max-width: 100%;
+  white-space: normal;
+}

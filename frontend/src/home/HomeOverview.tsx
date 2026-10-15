@@ -1,3 +1,4 @@
+import { LightOverview } from "./LightOverview";
 import { Multimedia } from "./Multimedia";
 import { SettingsDialog } from "./SettingsDialog";
 import {
@@ -958,7 +959,20 @@ export function HomeOverview({
             <Scenes home={h} offline={offline} admin={admin} lang={lang} />
           </>
         )}
-        {(tab === "lights" || tab === "climate") && (
+        {tab === "lights" && (
+          <LightOverview
+            home={h}
+            offline={offline}
+            lang={lang}
+            openRoom={openRooms}
+            scenes={() =>
+              document
+                .getElementById("lighting-scenes")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+          />
+        )}
+        {tab === "climate" && (
           <RoomControls
             key={tab}
             home={h}
@@ -969,7 +983,9 @@ export function HomeOverview({
           />
         )}
         {tab === "lights" && (
-          <Scenes home={h} offline={offline} admin={admin} lang={lang} />
+          <div id="lighting-scenes">
+            <Scenes home={h} offline={offline} admin={admin} lang={lang} />
+          </div>
         )}
         {tab === "security" && (
           <header className="home-view-heading">

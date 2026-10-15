@@ -1,3 +1,4 @@
+import { LightOverview } from "./home/LightOverview";
 import { Groups } from "./Groups";
 import { LightColor } from "./LightColor";
 import { controlState } from "./controlState";
@@ -687,44 +688,52 @@ function Dashboard({
           />
         ) : page === "devices" || page === "rooms" ? (
           <>
-            <div className="page-heading">
-              <span className="eyebrow">{t.overview}</span>
-              <div className="heading-row">
-                <h1>
+            {!(
+              page === "devices" &&
+              protocol === "all" &&
+              filter === "light"
+            ) && (
+              <div className="page-heading">
+                <span className="eyebrow">{t.overview}</span>
+                <div className="heading-row">
+                  <h1>
+                    {page === "rooms"
+                      ? room === null
+                        ? t.rooms
+                        : roomName(room)
+                      : t.devices}
+                  </h1>
+                  {session.role === "admin" && (
+                    <button
+                      className="primary compact"
+                      onClick={() =>
+                        page === "rooms"
+                          ? setRoomEditing(true)
+                          : setAdding(true)
+                      }
+                    >
+                      <Plus size={18} />
+                      {page === "devices"
+                        ? lang === "nb"
+                          ? "Legg til ny enhet"
+                          : "Add new device"
+                        : lang === "en"
+                          ? "Manage rooms"
+                          : "Administrer rom"}
+                    </button>
+                  )}
+                </div>
+                <p>
                   {page === "rooms"
-                    ? room === null
-                      ? t.rooms
-                      : roomName(room)
-                    : t.devices}
-                </h1>
-                {session.role === "admin" && (
-                  <button
-                    className="primary compact"
-                    onClick={() =>
-                      page === "rooms" ? setRoomEditing(true) : setAdding(true)
-                    }
-                  >
-                    <Plus size={18} />
-                    {page === "devices"
+                    ? t.roomHint
+                    : protocol !== "all"
                       ? lang === "nb"
-                        ? "Legg til ny enhet"
-                        : "Add new device"
-                      : lang === "en"
-                        ? "Manage rooms"
-                        : "Administrer rom"}
-                  </button>
-                )}
+                        ? "Enheter gruppert etter protokoll"
+                        : "Devices grouped by protocol"
+                      : `${regular.length} ${t.controls} · ${h.areas.length} ${t.rooms.toLowerCase()}`}
+                </p>
               </div>
-              <p>
-                {page === "rooms"
-                  ? t.roomHint
-                  : protocol !== "all"
-                    ? lang === "nb"
-                      ? "Enheter gruppert etter protokoll"
-                      : "Devices grouped by protocol"
-                    : `${regular.length} ${t.controls} · ${h.areas.length} ${t.rooms.toLowerCase()}`}
-              </p>
-            </div>
+            )}
             {page === "devices" && (
               <div
                 className="tabs protocol-navigation"
@@ -780,15 +789,17 @@ function Dashboard({
             ) : (
               <>
                 <div className="device-toolbar">
-                  <label className="search">
-                    <Search size={19} />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder={t.search}
-                      aria-label={t.search}
-                    />
-                  </label>
+                  {filter !== "light" && (
+                    <label className="search">
+                      <Search size={19} />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder={t.search}
+                        aria-label={t.search}
+                      />
+                    </label>
+                  )}
                   <select
                     aria-label={t.devices}
                     value={filter}
@@ -807,15 +818,27 @@ function Dashboard({
                     ))}
                   </select>
                 </div>
-                {regular.length ? (
-                  selected.length ? (
-                    cards(selected)
-                  ) : (
-                    <p className="empty">{t.noResults}</p>
-                  )
-                ) : (
-                  <Empty t={t} add={() => setAdding(true)} />
+                {filter !== "light" ? null : (
+                  <LightOverview
+                    home={h}
+                    offline={offline}
+                    lang={lang}
+                    openRoom={(id) => {
+                      setPage("rooms");
+                      setRoom(id);
+                    }}
+                  />
                 )}
+                {filter !== "light" &&
+                  (regular.length ? (
+                    selected.length ? (
+                      cards(selected)
+                    ) : (
+                      <p className="empty">{t.noResults}</p>
+                    )
+                  ) : (
+                    <Empty t={t} add={() => setAdding(true)} />
+                  ))}
               </>
             )}
           </>

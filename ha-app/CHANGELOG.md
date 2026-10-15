@@ -1,3 +1,9 @@
+## 1.28.0
+
+- Ny lysoversikt med rombilder, kompakte brytere, dimmere og fargevalg.
+- Søk, romfilter og filtrering på på/av, samt felles avslåing.
+- Samme lysvisning på Hjem og under Enheter, tilpasset mobil og temaer.
+
 ## 1.27.2
 
 - Vis eksisterende grupper fra hjemmesentralen sammen med SMARTi-grupper.
