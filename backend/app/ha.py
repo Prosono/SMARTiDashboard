@@ -305,6 +305,10 @@ class HomeAssistant:
         service = "turn_on" if action == "activate" else action
         if action == "set_brightness":
             service, data = "turn_on", {"brightness_pct": value}
+        elif action == "set_volume":
+            service, data = "volume_set", {"volume_level": value / 100}
+        elif action == "set_mute":
+            service, data = "volume_mute", {"is_volume_muted": bool(value)}
         elif action == "set_temperature":
             data = {"temperature": value}
         response = await self.request(

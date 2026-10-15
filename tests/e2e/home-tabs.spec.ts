@@ -36,11 +36,11 @@ async function swipe(page: Page, selector: string, dx: number, dy = 0) {
   });
   await cdp.detach();
 }
-test("five views support keyboard, real touch swipes and control gesture isolation", async ({
+test("six views support keyboard, real touch swipes and control gesture isolation", async ({
   page,
 }) => {
   const tabs = page.getByRole("tablist", { name: "Visninger i Hjem" });
-  await expect(tabs.getByRole("tab")).toHaveCount(5);
+  await expect(tabs.getByRole("tab")).toHaveCount(6);
   await tabs.getByRole("tab", { name: "Oversikt", exact: true }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(
@@ -77,9 +77,9 @@ test("five views support keyboard, real touch swipes and control gesture isolati
   await page.getByRole("tab", { name: "Lys", exact: true }).focus();
   await page.keyboard.press("End");
   await expect(
-    page.getByRole("tab", { name: "Klima", exact: true }),
+    page.getByRole("tab", { name: "Multimedia", exact: true }),
   ).toBeFocused();
-  await expect(page.locator(".home-climate")).toContainText("Gulvvarme");
+  await expect(page.locator(".multimedia-view")).toBeVisible();
   await page.keyboard.press("Home");
   await expect(
     page.getByRole("tab", { name: "Oversikt", exact: true }),

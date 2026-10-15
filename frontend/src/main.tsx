@@ -608,6 +608,30 @@ function Dashboard({
             </span>
           </div>
         )}
+        {page === "rooms" && !roomEditing && !adding && (
+          <nav
+            className="tabs room-switcher"
+            aria-label={lang === "en" ? "Choose room" : "Velg rom"}
+          >
+            <button
+              className={room === null ? "selected" : ""}
+              aria-pressed={room === null}
+              onClick={() => setRoom(null)}
+            >
+              {t.allRooms}
+            </button>
+            {rooms.map((a) => (
+              <button
+                key={a.area_id}
+                className={room === a.area_id ? "selected" : ""}
+                aria-pressed={room === a.area_id}
+                onClick={() => setRoom(a.area_id)}
+              >
+                {a.name}
+              </button>
+            ))}
+          </nav>
+        )}
         {roomEditing && page === "rooms" && session.role === "admin" ? (
           <RoomManager lang={lang} back={() => setRoomEditing(false)} />
         ) : adding ? (
@@ -656,8 +680,7 @@ function Dashboard({
             lang={lang}
             admin={session.role === "admin"}
             renderControls={cards}
-            selectRoom={setRoom}
-            manage={() => setRoomEditing(true)}
+            add={() => setAdding(true)}
           />
         ) : page === "devices" || page === "rooms" ? (
           <>
@@ -748,25 +771,6 @@ function Dashboard({
               />
             ) : (
               <>
-                {page === "rooms" && (
-                  <div className="tabs">
-                    <button
-                      className={room === null ? "selected" : ""}
-                      onClick={() => setRoom(null)}
-                    >
-                      {t.allRooms}
-                    </button>
-                    {rooms.map((a) => (
-                      <button
-                        key={a.area_id}
-                        className={room === a.area_id ? "selected" : ""}
-                        onClick={() => setRoom(a.area_id)}
-                      >
-                        {a.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
                 <div className="device-toolbar">
                   <label className="search">
                     <Search size={19} />

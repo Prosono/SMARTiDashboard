@@ -136,3 +136,21 @@ def test_personal_preferences_are_isolated_and_mode_setup_is_admin_only(client):
     assert client.get("/api/home/preferences").json()["rooms"] == []
     assert client.put("/api/home/modes/night", json={"control_id": None}).status_code == 403
     assert client.put("/api/home/room-image/living", json={"data": ""}).status_code == 403
+
+
+def test_room_view_visibility_is_scoped_and_validated(client):
+    assert client.get("/api/home/room-view/living").json() == {"hidden": []}
+    entity = next(c.entity_id for c in client.app.state.ha.controls() if c.area_id == "living")
+    response = client.put("/api/home/room-view/living", json={"hidden": [entity, entity]})
+    assert response.status_code == 200
+    assert response.json() == {"hidden": [entity]}
+    assert client.get("/api/home/room-view/living").json() == {"hidden": [entity]}
+    assert client.put("/api/home/room-view/living", json={"hidden": ["light.nonexistent"]}).status_code == 422
+    assert client.get("/api/home/room-view/missing").status_code == 404
+    assert client.put("/api/home/preferences", json={"rooms": ["living"]}).status_code == 200
+    assert client.get("/api/home/room-view/living").json() == {"hidden": [entity]}
+    assert client.post("/api/users", json={"name": "second", "password": "another long password", "role": "user"}).status_code == 200
+    client.post("/api/logout")
+    from test_api import login
+    login(client, "second", "another long password")
+    assert client.get("/api/home/room-view/living").json() == {"hidden": []}

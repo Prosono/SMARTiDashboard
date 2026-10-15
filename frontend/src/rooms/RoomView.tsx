@@ -1,7 +1,7 @@
+import { RoomSettings } from "./RoomSettings";
 import { useId, useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   Settings2,
   Lightbulb,
   Thermometer,
@@ -33,8 +33,7 @@ export function RoomView({
   lang,
   admin,
   renderControls,
-  selectRoom,
-  manage,
+  add,
 }: {
   home: Home;
   room: string;
@@ -43,12 +42,18 @@ export function RoomView({
   lang: string;
   admin: boolean;
   renderControls: (controls: Control[]) => ReactNode;
-  selectRoom: (id: string | null) => void;
-  manage: () => void;
+  add: () => void;
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
   const id = useId().replaceAll(":", "");
+  const [editing, setEditing] = useState(false);
+  const view = useQuery({
+    queryKey: ["room-view", room],
+    queryFn: () =>
+      api<{ hidden: string[] }>(`home/room-view/${encodeURIComponent(room)}`),
+    enabled: !!room,
+  });
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   useEffect(() => {
@@ -167,11 +172,13 @@ export function RoomView({
     .filter((g) => category === "all" || category === g.id)
     .map((g) => ({
       ...g,
-      items: g.items.filter((c) =>
-        `${c.name} ${g.name}`
-          .toLocaleLowerCase()
-          .includes(search.toLocaleLowerCase()),
-      ),
+      items: g.items
+        .filter((c) => !view.data?.hidden.includes(c.entity_id))
+        .filter((c) =>
+          `${c.name} ${g.name}`
+            .toLocaleLowerCase()
+            .includes(search.toLocaleLowerCase()),
+        ),
     }))
     .filter((g) => g.items.length);
   const tempControl = climates.find((c) => temperature(c) !== null),
@@ -188,26 +195,22 @@ export function RoomView({
   const available = controls.filter(usable).length;
   return (
     <div className="room-detail home-overview">
-      <div className="room-detail-toolbar">
-        <button className="home-customize" onClick={() => selectRoom(null)}>
-          <ArrowLeft size={17} />
-          {t("Alle rom", "All rooms")}
-        </button>
-        <label>
-          <span className="sr-only">{t("Velg rom", "Choose room")}</span>
-          <select
-            aria-label={t("Velg rom", "Choose room")}
-            value={room}
-            onChange={(e) => selectRoom(e.target.value)}
-          >
-            {rooms.map((a) => (
-              <option key={a.area_id} value={a.area_id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      {editing && (
+        <RoomSettings
+          home={home}
+          room={room}
+          name={name}
+          controls={controls}
+          lang={lang}
+          admin={admin}
+          hidden={view.data?.hidden}
+          close={() => setEditing(false)}
+          add={() => {
+            setEditing(false);
+            add();
+          }}
+        />
+      )}
       <header
         className={`room-detail-hero ${photo && failedPhoto !== photo ? "has-photo" : ""}`}
       >
@@ -232,7 +235,10 @@ export function RoomView({
                 )}
           </p>
           {admin && (
-            <button className="room-hero-settings" onClick={manage}>
+            <button
+              className="room-hero-settings"
+              onClick={() => setEditing(true)}
+            >
               <Settings2 size={17} />
               {t("Administrer rom", "Manage rooms")}
             </button>
@@ -392,7 +398,7 @@ export function RoomView({
             )}
           </p>
           {admin && (
-            <button className="home-customize" onClick={manage}>
+            <button className="home-customize" onClick={() => setEditing(true)}>
               {t("Administrer rom", "Manage rooms")}
             </button>
           )}
@@ -400,7 +406,12 @@ export function RoomView({
       )}
       {!!controls.length && !filtered.length && (
         <p className="empty" role="status">
-          {t("Ingen enheter passer søket.", "No matching devices.")}
+          {search
+            ? t("Ingen enheter passer søket.", "No matching devices.")
+            : t(
+                "Ingen synlige kontroller her. Velg Administrer rom for å vise dem igjen.",
+                "No visible controls here. Use Manage room to show them again.",
+              )}
         </p>
       )}
       <div className="room-sections">

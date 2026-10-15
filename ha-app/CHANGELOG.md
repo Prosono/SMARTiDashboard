@@ -1,3 +1,35 @@
+# 1.23.0
+
+- Replace the greeting-panel weather widget with a stacked home-highlight carousel: weather, configured cameras, media players and a temperature reading when available.
+- Rotate every twelve seconds with previous/next, direct slide selection and a pause control. Pause on hover, focus, hidden document and offline state; disable auto rotation for reduced motion.
+- Mount only the active camera card and reuse the live-stream lifecycle. Media and climate cards open their corresponding Home tabs.
+
+Prepared locally, not published. Browser checks cover automatic rotation, manual pause, reduced motion and navigation on desktop/mobile. Live camera hardware was not available.
+
+# 1.22.0
+
+- Add a Multimedia home tab with room filtering, a featured currently playing device and responsive speaker/TV/player cards.
+- Include media players in the normalized device model and expose playback, previous/next, stop, power, volume and mute only when advertised by the integration.
+- Validate media commands server-side and convert volume percentages/mute values to the corresponding Home Assistant service payloads. Preserve unavailable/pending states.
+- Adapt home-tab keyboard navigation and mobile scrolling to six tabs.
+
+Prepared locally, not published. Mocked browser playback and backend service-mapping tests; live physical media players were not available for verification. Media browsing and source selection are not included.
+
+# 1.21.0
+
+- Open room management in a focused dialog, with room naming, favorites, personal control visibility and assignment of existing devices.
+- Start the device-pairing wizard from the dialog; the final pairing step still asks for name and room.
+- Persist room visibility per user and room. Hidden cards do not disable devices or suppress safety alerts; room metrics retain all controls.
+- Keep whole-home room administration available from the room overview.
+
+Prepared locally, not published.
+
+# 1.20.1
+
+- Keep the shared room selector visible above both the room overview and individual rooms, with the selected room highlighted and horizontal scrolling on narrow screens.
+
+Prepared locally, not published.
+
 # 1.20.0
 
 - Refresh the room view with a large photo header, room-management action, individual colored status cards and compact lighting controls.

@@ -21,6 +21,11 @@ class Preferences(BaseModel):
     cameras: list[str] = Field(default_factory=list, max_length=8)
 
 
+class RoomViewPreferences(BaseModel):
+    model_config = {"extra": "forbid"}
+    hidden: list[str] = Field(default_factory=list, max_length=500)
+
+
 class ModeBinding(BaseModel):
     model_config = {"extra": "forbid"}
     control_id: str | None = Field(default=None, max_length=200)
@@ -79,6 +84,25 @@ def home_router(store, user, ha, settings):
             raise HTTPException(422, "invalid_camera")
         store.set(f"home_preferences:{current['id']}", body.model_dump_json())
         return {"saved": True}
+
+    @router.get("/room-view/{id}")
+    async def room_view(id: str, current=Depends(user)):
+        if id not in ha.areas:
+            raise HTTPException(404, "area_not_found")
+        return RoomViewPreferences.model_validate_json(
+            store.get(f"room_view:{current['id']}:{id}", "{}")
+        ).model_dump()
+
+    @router.put("/room-view/{id}")
+    async def save_room_view(id: str, body: RoomViewPreferences, current=Depends(user)):
+        if id not in ha.areas:
+            raise HTTPException(404, "area_not_found")
+        allowed = {c.entity_id for c in ha.controls() if c.area_id == id}
+        if any(entity not in allowed for entity in body.hidden):
+            raise HTTPException(422, "entity_not_in_room")
+        body.hidden = list(dict.fromkeys(body.hidden))
+        store.set(f"room_view:{current['id']}:{id}", body.model_dump_json())
+        return body.model_dump()
 
     @router.put("/modes/{mode}")
     async def bind_mode(

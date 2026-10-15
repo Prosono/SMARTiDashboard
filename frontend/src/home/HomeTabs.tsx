@@ -1,11 +1,19 @@
 import { useEffect, useRef, type ReactNode, type CSSProperties } from "react";
-import { House, Lightbulb, Zap, Shield, Thermometer } from "lucide-react";
+import {
+  House,
+  Lightbulb,
+  Zap,
+  Shield,
+  Thermometer,
+  AudioLines,
+} from "lucide-react";
 export const homeTabs = [
   { id: "overview", nb: "Oversikt", en: "Overview", Icon: House },
   { id: "lights", nb: "Lys", en: "Lights", Icon: Lightbulb },
   { id: "energy", nb: "Energi", en: "Energy", Icon: Zap },
   { id: "security", nb: "Sikkerhet", en: "Security", Icon: Shield },
   { id: "climate", nb: "Klima", en: "Climate", Icon: Thermometer },
+  { id: "media", nb: "Multimedia", en: "Multimedia", Icon: AudioLines },
 ] as const;
 export type HomeTab = (typeof homeTabs)[number]["id"];
 // A gesture beginning on a control belongs to that control, never the pager.
@@ -68,13 +76,13 @@ export function HomeTabs({
             onKeyDown={(e) => {
               const next =
                 e.key === "ArrowRight"
-                  ? (index + 1) % 5
+                  ? (index + 1) % homeTabs.length
                   : e.key === "ArrowLeft"
-                    ? (index + 4) % 5
+                    ? (index + homeTabs.length - 1) % homeTabs.length
                     : e.key === "Home"
                       ? 0
                       : e.key === "End"
-                        ? 4
+                        ? homeTabs.length - 1
                         : null;
               if (next !== null) {
                 e.preventDefault();

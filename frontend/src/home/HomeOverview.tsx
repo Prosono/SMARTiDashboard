@@ -1,3 +1,4 @@
+import { Multimedia } from "./Multimedia";
 import { SettingsDialog } from "./SettingsDialog";
 import {
   useEffect,
@@ -46,7 +47,7 @@ import { RoomControls } from "./HomeRooms";
 import { Presence } from "./People";
 import { Calendar } from "./Calendar";
 import { Vehicle } from "./Vehicle";
-import { Weather } from "./Weather";
+import { HomeHighlights } from "./HomeHighlights";
 import "./home.css";
 import "./homeTabs.css";
 export type HomePreferences = {
@@ -269,6 +270,9 @@ export function HomeOverview({
         </button>
       </div>
       <HomeTabs tab={tab} change={setTab} lang={lang}>
+        {tab === "media" && (
+          <Multimedia home={h} lang={lang} offline={offline} />
+        )}
         {tab === "overview" && (
           <header className="home-welcome">
             <img
@@ -308,9 +312,14 @@ export function HomeOverview({
                         )}
               </p>
             </div>
-            {model.weather && !offline && (
-              <Weather c={model.weather} lang={lang} />
-            )}
+            <HomeHighlights
+              weather={model.weather}
+              cameras={displayedCameras}
+              controls={h.controls}
+              offline={offline}
+              lang={lang}
+              open={setTab}
+            />
             <nav
               className="home-modes"
               aria-label={t("Hjemmemoduser", "Home modes")}

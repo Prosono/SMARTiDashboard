@@ -126,6 +126,12 @@ class Demo(HomeAssistant):
         elif action == "set_brightness":
             state["attributes"]["brightness"] = round(value * 255 / 100)
             state["state"] = "on" if value else "off"
+        elif action == "set_volume":
+            state["attributes"]["volume_level"] = value / 100
+        elif action == "set_mute":
+            state["attributes"]["is_volume_muted"] = bool(value)
+        elif action in {"media_play", "media_pause", "media_stop"}:
+            state["state"] = {"media_play": "playing", "media_pause": "paused", "media_stop": "idle"}[action]
         elif action == "set_temperature":
             state["attributes"]["temperature"] = value
         state["last_updated"] = datetime.now(UTC).isoformat()

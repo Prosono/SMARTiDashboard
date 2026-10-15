@@ -118,9 +118,10 @@ test("room groups, search, navigation and controls", async ({ page }) => {
     .click();
   await expect(room.locator(".room-section-climate")).toBeVisible();
 
-  await room
-    .getByLabel("Velg rom", { exact: true })
-    .selectOption({ label: "Kjøkken" });
+  await page
+    .getByRole("navigation", { name: "Velg rom", exact: true })
+    .getByRole("button", { name: "Kjøkken", exact: true })
+    .click();
   await expect(
     room.getByRole("heading", { name: "Kjøkken", exact: true }),
   ).toBeVisible();
@@ -135,17 +136,19 @@ test("room groups, search, navigation and controls", async ({ page }) => {
     animations: "disabled",
   });
   await page.getByRole("button", { name: "Mørkt", exact: true }).click();
-  await room
-    .getByLabel("Velg rom", { exact: true })
-    .selectOption({ label: "Stue" });
+  await page
+    .getByRole("navigation", { name: "Velg rom", exact: true })
+    .getByRole("button", { name: "Stue", exact: true })
+    .click();
   await page.screenshot({
     path: `../artifacts/${test.info().project.name}-room-dark.png`,
     fullPage: true,
     animations: "disabled",
   });
-  await room
-    .getByLabel("Velg rom", { exact: true })
-    .selectOption({ label: "Soverom" });
+  await page
+    .getByRole("navigation", { name: "Velg rom", exact: true })
+    .getByRole("button", { name: "Soverom", exact: true })
+    .click();
   await expect(
     room.getByRole("switch", { name: "Nattbord: På", exact: true }),
   ).toBeDisabled();
@@ -155,6 +158,9 @@ test("room groups, search, navigation and controls", async ({ page }) => {
       .locator("body")
       .evaluate((el) => el.scrollWidth <= el.clientWidth),
   ).toBe(true);
-  await room.getByRole("button", { name: "Alle rom", exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "Velg rom", exact: true })
+    .getByRole("button", { name: "Alle rom", exact: true })
+    .click();
   await expect(room).toHaveCount(0);
 });

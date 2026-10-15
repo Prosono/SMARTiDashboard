@@ -1,6 +1,6 @@
 .home-tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 6px;
   padding: 6px;
   margin: 0 0 1.6rem;
@@ -288,4 +288,14 @@
 
 .home-welcome h1 {
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .home-tabs {
+    display: flex;
+    overflow-x: auto;
+  }
+  .home-tabs [role="tab"] {
+    flex: 0 0 82px;
+  }
 }
