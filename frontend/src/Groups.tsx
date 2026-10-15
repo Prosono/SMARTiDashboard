@@ -12,6 +12,7 @@ type Group = {
   name: string;
   entities: string[];
   revision: string;
+  source: "smarti" | "home_assistant";
   actions: string[];
   available: boolean;
 };
@@ -245,8 +246,8 @@ export function Groups({
           </h2>
           <p>
             {t(
-              "Samle kontroller på tvers av rom. Gruppene lagres i SMARTi og er felles for hjemmet.",
-              "Organize controls across rooms. Groups are stored in SMARTi and shared across the home.",
+              "Dine grupper fra hjemmesentralen og SMARTi, samlet på ett sted.",
+              "Your hub and SMARTi groups, together in one place.",
             )}
           </p>
         </div>
@@ -304,7 +305,10 @@ export function Groups({
               <span>
                 <strong>{g.name}</strong>
                 <small>
-                  {g.entities.length} {t("kontroller", "controls")} ·{" "}
+                  {g.source === "home_assistant"
+                    ? t("Fra hjemmesentralen", "From the hub")
+                    : "SMARTi"}{" "}
+                  · {g.entities.length} {t("kontroller", "controls")} ·{" "}
                   {g.available
                     ? t("Tilgjengelig", "Available")
                     : t(
@@ -342,7 +346,15 @@ export function Groups({
               );
             })}
           </ul>
-          {admin && (
+          {current.source === "home_assistant" && (
+            <p>
+              {t(
+                "Denne gruppen synkroniseres fra hjemmesentralen. Navn og medlemmer administreres der gruppen ble opprettet.",
+                "This group syncs from your hub. Manage its name and members where it was created.",
+              )}
+            </p>
+          )}
+          {admin && current.source !== "home_assistant" && (
             <div className="group-actions">
               <button
                 disabled={busy}

@@ -66,6 +66,7 @@ def test_room_bank_is_allowlisted_and_retrievable(client, tmp_path):  # noqa: F8
     from typing import get_args
 
     from app.home_overview import RoomImageBank
+
     for choice in get_args(RoomImageBank):
         response = client.put(path, json={"bank": choice})
         assert response.status_code == 200, response.text
@@ -106,3 +107,51 @@ def test_group_blocks_unsupported_color_and_offline_members(client):  # noqa: F8
     assert client.post(path, json={"action": "set_rgb_color", "value": [20, 30, 40]}).status_code == 422
     client.app.state.ha.states["light.kitchen"]["state"] = "unavailable"
     assert client.post(path, json={"action": "turn_on"}).status_code == 409
+
+
+def test_native_groups_are_live_and_control_group_entity(client):  # noqa: F811
+    login(client)
+    ha = client.app.state.ha
+    ha.states["light.all_lights"] = {
+        "entity_id": "light.all_lights",
+        "state": "on",
+        "attributes": {
+            "friendly_name": "Alle lys",
+            "entity_id": ["light.kitchen", "light.living_pendant"],
+            "supported_color_modes": ["brightness"],
+        },
+    }
+    ha.entities["light.all_lights"] = {"platform": "group"}
+    group = next(g for g in client.get("/api/groups").json() if g["id"] == "ha:light.all_lights")
+    assert group["name"] == "Alle lys"
+    assert group["source"] == "home_assistant"
+    assert group["entities"] == ["light.kitchen", "light.living_pendant"]
+    path = "/api/groups/" + group["id"]
+    result = client.post(path + "/commands", json={"action": "turn_off"})
+    assert result.status_code == 200, result.text
+    assert [r["entity_id"] for r in result.json()["results"]] == ["light.all_lights"]
+    assert client.delete(path, params={"revision": ""}).status_code == 409
+    assert client.put(path, json={"name": "Changed", "entities": ["light.kitchen"]}).status_code == 409
+    ha.states["light.all_lights"]["attributes"]["entity_id"] = ["light.kitchen"]
+    assert client.get("/api/groups").json()[0]["entities"] == ["light.kitchen"]
+    del ha.states["light.all_lights"]
+    assert client.get("/api/groups").json() == []
+
+
+def test_legacy_nested_groups_deduplicate_and_reject_cycles(client):  # noqa: F811
+    login(client)
+    ha = client.app.state.ha
+    for eid, members in [
+        ("group.inner", ["light.kitchen"]),
+        ("group.outer", ["group.inner", "light.kitchen", "light.living_pendant"]),
+    ]:
+        ha.states[eid] = {"entity_id": eid, "state": "on", "attributes": {"entity_id": members}}
+    response = client.post("/api/groups/ha:group.outer/commands", json={"action": "turn_on"})
+    assert response.status_code == 200, response.text
+    assert [r["entity_id"] for r in response.json()["results"]] == ["light.kitchen", "light.living_pendant"]
+    ha.states["group.inner"]["attributes"]["entity_id"] = ["group.outer"]
+    assert client.post("/api/groups/ha:group.outer/commands", json={"action": "turn_on"}).status_code == 422
+    ha.states["group.inner"]["attributes"]["entity_id"] = []
+    group = next(g for g in client.get("/api/groups").json() if g["id"] == "ha:group.inner")
+    assert group["actions"] == []
+    assert not group["available"]

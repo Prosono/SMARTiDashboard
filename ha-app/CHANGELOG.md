@@ -1,3 +1,9 @@
+## 1.27.2
+
+- Vis eksisterende grupper fra hjemmesentralen sammen med SMARTi-grupper.
+- Synkroniser navn og medlemslister automatisk, og styr støttede grupper direkte.
+- Håndter eldre og nestede grupper uten doble kommandoer.
+
 ## 1.27.1
 
 - Utvid bildebanken fra fire til tolv romtyper: loft, kjeller, garasje, uteområde, bod, vaskerom, kontor og gang er lagt til.

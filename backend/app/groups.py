@@ -41,28 +41,77 @@ def groups_router(store, ha, user, admin, execute):
     def groups():
         return json.loads(store.get("control_groups", "{}"))
 
+    def native_groups():
+        result = {}
+        for eid, state in ha.states.items():
+            attrs = state.get("attributes", {})
+            registry = ha.entities.get(eid, {})
+            members = attrs.get("entity_id", [])
+            domain = eid.split(".", 1)[0]
+            if registry.get("disabled_by") or not (
+                domain == "group"
+                or registry.get("platform") == "group"
+                or (domain in DOMAINS and isinstance(members, list) and members)
+            ):
+                continue
+            result["ha:" + eid] = {
+                "name": attrs.get("friendly_name") or registry.get("name") or eid,
+                "entities": list(dict.fromkeys(e for e in members if isinstance(e, str)))
+                if isinstance(members, list)
+                else [],
+                "revision": "",
+                "source": "home_assistant",
+                "entity_id": eid,
+            }
+        return result
+
     def get(id):
-        value = groups().get(id)
+        value = native_groups().get(id) if id.startswith("ha:") else groups().get(id)
         if not value:
             raise HTTPException(404, "group_not_found")
         return value
 
+    def targets(value):
+        eid = value.get("entity_id")
+        if eid and not eid.startswith("group."):
+            return [eid]
+        # Legacy groups may contain other groups. Expand without duplicate
+        # commands and reject cycles rather than executing a partial group.
+        native = native_groups()
+
+        def expand(members, visited):
+            result = []
+            for member in members:
+                if member in visited:
+                    return None
+                nested = native.get("ha:" + member) if member.startswith("group.") else None
+                expanded = expand(nested["entities"], visited | {member}) if nested else [member]
+                if expanded is None:
+                    return None
+                result.extend(expanded)
+            return list(dict.fromkeys(result))
+
+        return expand(value["entities"], {eid} if eid else set()) or []
+
     def describe(id, value):
         controls = {c.entity_id: c for c in ha.controls()}
-        members = [controls.get(eid) for eid in value["entities"]]
-        common = set(SAFE_ACTIONS)
+        members = [controls.get(eid) for eid in targets(value)]
+        common = set(SAFE_ACTIONS) if members else set()
         for c in members:
             common &= {action for cap in c.capabilities for action in cap.actions} if c else set()
         return {
             "id": id,
             **value,
+            "source": value.get("source", "smarti"),
             "actions": sorted(common),
-            "available": ha.connected and all(c and c.availability == "available" for c in members),
+            "available": bool(members)
+            and ha.connected
+            and all(c and c.availability == "available" for c in members),
         }
 
     @router.get("")
     async def listing(current=Depends(user)):
-        return [describe(id, value) for id, value in groups().items()]
+        return [describe(id, value) for id, value in {**groups(), **native_groups()}.items()]
 
     async def save(id, body):
         controls = {c.entity_id: c for c in ha.controls()}
@@ -92,10 +141,14 @@ def groups_router(store, ha, user, admin, execute):
 
     @router.put("/{id}")
     async def update(id: str, body: GroupDraft, current=Depends(admin)):
+        if id.startswith("ha:"):
+            raise HTTPException(409, "native_group_managed_externally")
         return await save(id, body)
 
     @router.delete("/{id}")
     async def delete(id: str, revision: str, current=Depends(admin)):
+        if id.startswith("ha:"):
+            raise HTTPException(409, "native_group_managed_externally")
         async with lock:
             saved = groups()
             value = get(id)
@@ -125,6 +178,6 @@ def groups_router(store, ha, user, admin, execute):
                 except HTTPException as exc:
                     return {"entity_id": eid, "status": "failed", "code": exc.status_code}
 
-        return {"results": await asyncio.gather(*(send(eid) for eid in value["entities"]))}
+        return {"results": await asyncio.gather(*(send(eid) for eid in targets(value)))}
 
     return router
