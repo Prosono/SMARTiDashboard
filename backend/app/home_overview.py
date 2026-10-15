@@ -5,7 +5,7 @@ import binascii
 import json
 import math
 from datetime import UTC, datetime, timedelta
-from typing import Literal
+from typing import Literal, get_args
 from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -36,10 +36,26 @@ class Confirmation(BaseModel):
     confirmed: Literal[True]
 
 
+RoomImageBank = Literal[
+    "living",
+    "bedroom",
+    "kitchen",
+    "bathroom",
+    "attic",
+    "basement",
+    "garage",
+    "outdoor",
+    "storage",
+    "laundry",
+    "office",
+    "hallway",
+]
+
+
 class RoomImage(BaseModel):
     model_config = {"extra": "forbid"}
     data: str = Field(default="", max_length=1_400_000)
-    bank: Literal["living", "bedroom", "kitchen", "bathroom"] | None = None
+    bank: RoomImageBank | None = None
 
 
 def home_router(store, user, ha, settings):
@@ -180,7 +196,7 @@ def home_router(store, user, ha, settings):
             raise HTTPException(404, "image_not_found")
         if data.startswith("bank:"):
             choice = data.removeprefix("bank:")
-            if choice not in {"living", "bedroom", "kitchen", "bathroom"}:
+            if choice not in get_args(RoomImageBank):
                 raise HTTPException(404, "image_not_found")
             path = settings.static_dir / "home" / f"home-{choice}.webp"
             if not path.is_file():

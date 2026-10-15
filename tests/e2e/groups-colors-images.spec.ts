@@ -9,8 +9,8 @@ test('room image library, color controls and shared groups', async ({ page }) =>
   await page.locator('.room-detail').getByRole('button', { name: 'Administrer rom', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: 'Bildebank', exact: true }).click();
-  await expect(dialog.locator('.room-image-grid img')).toHaveCount(4);
-  await dialog.getByRole('button', { name: 'Soverom', exact: true }).click();
+  await expect(dialog.locator('.room-image-grid img')).toHaveCount(12);
+  await dialog.getByRole('button', { name: 'Garasje', exact: true }).click();
   await expect(dialog.getByRole('status')).toContainText('lagret');
   await dialog.getByRole('button', { name: 'Lukk innstillinger' }).click();
   await page.getByRole('button', { name: 'Farge og hvitt lys', exact: true }).first().click();

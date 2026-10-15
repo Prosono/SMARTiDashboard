@@ -1,3 +1,8 @@
+## 1.27.1
+
+- Utvid bildebanken fra fire til tolv romtyper: loft, kjeller, garasje, uteområde, bod, vaskerom, kontor og gang er lagt til.
+- Bildene følger med appen og krever ingen ekstern bildetjeneste.
+
 ## 1.27.0
 
 - Bildebank for rom med ferdige rombilder og opplasting av egne bilder.

@@ -123,6 +123,14 @@ export function RoomSettings({
                 ["bedroom", "Soverom", "Bedroom"],
                 ["kitchen", "Kjøkken", "Kitchen"],
                 ["bathroom", "Bad", "Bathroom"],
+                ["attic", "Loft", "Attic"],
+                ["basement", "Kjeller", "Basement"],
+                ["garage", "Garasje", "Garage"],
+                ["outdoor", "Uteområde", "Outdoor area"],
+                ["storage", "Bod", "Storage room"],
+                ["laundry", "Vaskerom", "Laundry room"],
+                ["office", "Kontor", "Office"],
+                ["hallway", "Gang", "Hallway"],
               ].map(([id, nb, en]) => (
                 <button
                   key={id}

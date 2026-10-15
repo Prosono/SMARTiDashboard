@@ -63,11 +63,15 @@ def test_group_lifecycle_shared_commands_and_permissions(client):  # noqa: F811
 def test_room_bank_is_allowlisted_and_retrievable(client, tmp_path):  # noqa: F811
     login(client)
     path = "/api/home/room-image/living"
-    response = client.put(path, json={"bank": "bedroom"})
-    assert response.status_code == 200, response.text
-    response = client.get(path)
-    assert response.status_code == 200
-    assert response.headers["content-type"] == "image/webp"
+    from typing import get_args
+
+    from app.home_overview import RoomImageBank
+    for choice in get_args(RoomImageBank):
+        response = client.put(path, json={"bank": choice})
+        assert response.status_code == 200, response.text
+        response = client.get(path)
+        assert response.status_code == 200, choice
+        assert response.headers["content-type"] == "image/webp"
     assert client.put(path, json={"bank": "../secret"}).status_code == 422
     assert client.put(path, json={"bank": "living", "data": "abc"}).status_code == 422
     assert client.put(path, json={"data": ""}).status_code == 200

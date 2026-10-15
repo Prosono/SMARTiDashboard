@@ -1,5 +1,25 @@
 # Decorative Home photography
 
+## Extended room bank — 2026-10-15
+
+Generated with the built-in OpenAI image generation tool. Originals: 1536 × 1024 PNG; delivery: 1200 × 800 WebP, cwebp quality 82 / method 6. These are decorative AI-generated scenes. No compositing was applied.
+
+Shared prompt (replace SCENE with each description below):
+
+```text
+Use case: photorealistic-natural. Asset type: room image library background for SMARTi smart home application. Primary request: SCENE Architectural interior/exterior photography, premium but believable lived-in Norwegian home, warm natural materials, muted neutral colors, realistic detail, soft cinematic light. Wide landscape 3:2 composition, main subject centered to survive thumbnail cropping. No people, no text, no logos, no watermark. Single scene, no collage.
+```
+
+- `home-attic.webp`: A cozy Scandinavian attic lounge, clearly visible sloped timber ceiling, skylights, low reading chair, warm oak floor.
+- `home-basement.webp`: A stylish Norwegian basement lounge with small high-set windows, warm indirect lighting, sofa and a compact media nook, textured plaster walls.
+- `home-garage.webp`: A tidy modern residential garage with one anonymous dark electric car, organized wall tools, concrete floor and warm practical lighting.
+- `home-outdoor.webp`: A beautiful Scandinavian residential outdoor garden and terrace, wooden decking, comfortable lounge seating, grasses and trees at golden hour.
+- `home-storage.webp`: A tidy household storage room with wooden shelves, neutral storage boxes, folded blankets, baskets and household equipment, warm lighting.
+- `home-laundry.webp`: A Scandinavian laundry room with washer and dryer under an oak countertop, closed beige cabinetry and folded towels, soft daylight.
+- `home-office.webp`: A calm Scandinavian home office with oak desk, comfortable chair, monitor, shelving and window daylight.
+- `home-hallway.webp`: An inviting Scandinavian entrance hallway with oak bench, coat hooks, shoes neatly stored, pale walls and warm pendant lighting.
+
+
 Generated with the built-in OpenAI image generation tool on 2026-10-12 for SMARTi's Home interface. These are decorative, AI-generated interior photographs, not photographs of a customer's home or camera feeds. Room fallbacks should be labelled “Stemningsbilde”; user-uploaded room photos take precedence.
 
 All original outputs were 1672 × 941 PNG files. WebP delivery assets were resized proportionally and encoded with cwebp quality 82, method 6. No compositing or other image edits were applied. All four delivery images together are 316,802 bytes (about 309 KiB).
@@ -67,5 +87,4 @@ Primary request: a peaceful Scandinavian bathroom with pale warm limestone walls
 Style/medium: Architectural editorial photography with realistic textures, not a 3D render. Wide 16:9 landscape photograph. Warm natural late afternoon light, honey oak, oatmeal linen, muted olive and warm off-white, soft shadows. A welcoming contemporary Nordic home, premium without ostentation.
 Constraints: one continuous interior photograph, no collage, no user interface, no people, no text, no logos, no watermarks. Decorative stock-style imagery, not documentation of any user's real home.
 ```
-
 
