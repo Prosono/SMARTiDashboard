@@ -5,7 +5,9 @@ test.beforeEach(async ({ page }, info) => {
   if (info.project.name === "mobile")
     await page.setViewportSize({ width: 768, height: 1024 });
 });
-test("home highlights rotate, pause and open multimedia", async ({ page }) => {
+test("welcome shows only weather in normal and advanced modes", async ({
+  page,
+}) => {
   await page.route("**/api/home", async (r) => {
     const response = await r.fetch();
     const data = await response.json();
@@ -50,68 +52,44 @@ test("home highlights rotate, pause and open multimedia", async ({ page }) => {
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  const highlights = page.getByRole("region", { name: "Glimt fra hjemmet" });
-  await expect(
-    highlights.getByRole("region", { name: "Værmelding" }),
-  ).toBeVisible();
-  await page.mouse.move(0, 0);
-  await page.clock.runFor(12100);
-  await expect(highlights).toContainText("Kveldsmusikk");
-  await highlights.getByRole("button", { name: "Forrige kort" }).click();
-  await expect(
-    highlights.getByRole("region", { name: "Værmelding" }),
-  ).toBeVisible();
-  await page.mouse.move(0, 0);
-  await page.clock.runFor(25000);
-  await expect(
-    highlights.getByRole("region", { name: "Værmelding" }),
-  ).toBeVisible();
-  await expect(
-    highlights.getByRole("button", { name: "Start automatisk bytte" }),
-  ).toBeVisible();
-  await page.locator(".home-welcome").screenshot({
-    path: `../artifacts/${test.info().project.name}-home-highlights.png`,
-    animations: "disabled",
+  const highlights = page.getByRole("region", {
+    name: "Været hjemme",
+    exact: true,
   });
-  const initial = await highlights.locator(".highlight-card").boundingBox();
-  const nav = await highlights.locator(".highlight-navigation").boundingBox();
-  const heroHeight = await page
-    .locator(".home-welcome")
-    .evaluate((e) => e.getBoundingClientRect().height);
-  const dots = highlights.locator(".highlight-dot");
-  for (let i = 0; i < (await dots.count()); i++) {
-    await dots.nth(i).click();
-    await page.clock.runFor(400);
-    const box = await highlights.locator(".highlight-card").boundingBox();
-    const nextNav = await highlights
-      .locator(".highlight-navigation")
-      .boundingBox();
-    await highlights.screenshot({
-      path: `../artifacts/${test.info().project.name}-highlight-${i}.png`,
-      animations: "disabled",
-    });
-    expect(box!.height).toBe(initial!.height);
-    expect(
-      await page
-        .locator(".home-welcome")
-        .evaluate((e) => e.getBoundingClientRect().height),
-    ).toBe(heroHeight);
-    expect(nextNav!.y - box!.y).toBe(nav!.y - initial!.y);
+  for (const mode of ["Normal", "Avansert"]) {
+    await page
+      .getByRole("navigation")
+      .getByRole("button", { name: "Innstillinger", exact: true })
+      .click();
+    await page
+      .locator(".experience-picker")
+      .getByRole("button", { name: new RegExp("^" + mode) })
+      .click();
+    await page
+      .getByRole("navigation")
+      .getByRole("button", { name: "Hjem", exact: true })
+      .click();
+    await expect(
+      highlights.getByRole("region", { name: "Værmelding" }),
+    ).toBeVisible();
+    await expect(highlights.locator(".highlight-card")).toHaveCount(1);
+    await expect(highlights.locator(".highlight-navigation")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Vis mer informasjon", exact: true }),
+    ).toHaveCount(0);
     expect(
       await highlights
         .locator(".highlight-card")
-        .evaluate((e) => e.scrollWidth <= e.clientWidth),
-    ).toBe(true);
+        .evaluate((e) => getComputedStyle(e).backgroundImage),
+    ).toBe("none");
+    await page.clock.runFor(25000);
+    await expect(highlights).not.toContainText("Kveldsmusikk");
+    await page
+      .locator(".home-welcome")
+      .screenshot({
+        path: `../artifacts/weather-only-${mode}-${test.info().project.name}.png`,
+      });
   }
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(
-    highlights.getByRole("button", { name: "Start automatisk bytte" }),
-  ).toHaveCount(0);
-  await highlights.getByRole("button", { name: "Vis Stuehøyttaler" }).click();
-  await highlights.getByRole("button", { name: "Åpne Multimedia" }).click();
-  await expect(
-    page.getByRole("tab", { name: "Multimedia", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
   expect(
     await page.locator("body").evaluate((e) => e.scrollWidth <= e.clientWidth),
   ).toBe(true);

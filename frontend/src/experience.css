@@ -83,7 +83,6 @@
 [data-experience="simple"] .device .big-value {
   font-size: 2rem;
 }
-[data-overview-detail="false"] .home-highlights,
 [data-overview-detail="false"] .home-insights {
   display: none;
 }
@@ -102,8 +101,7 @@
   margin-top: 20px;
 }
 .simple-shortcuts button,
-.simple-power,
-.overview-detail-toggle {
+.simple-power {
   padding: 12px 20px;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -113,9 +111,6 @@
 .simple-power {
   font-weight: 600;
   border-color: var(--accent);
-}
-.overview-detail-toggle {
-  margin-bottom: 16px;
 }
 .device-color-options summary {
   cursor: pointer;

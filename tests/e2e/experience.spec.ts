@@ -102,13 +102,9 @@ test("personal experience modes simplify navigation and survive reload", async (
     page.getByRole("button", { name: "Administrasjon", exact: true }),
   ).toHaveCount(0);
   await home().click();
-  await page
-    .getByRole("button", { name: "Vis mer informasjon", exact: true })
-    .click();
-  await expect(page.locator(".home-overview")).toHaveAttribute(
-    "data-overview-detail",
-    "true",
-  );
+  await expect(
+    page.getByRole("button", { name: "Vis mer informasjon", exact: true }),
+  ).toHaveCount(0);
   await settings().click();
   await page
     .locator(".experience-picker")

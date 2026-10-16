@@ -159,19 +159,41 @@
   white-space: nowrap;
 }
 
-/* Landscape is decorative; all weather measurements and forecast dates are real. */
+/* A quiet, theme-aware weather surface without decorative imagery. */
 .highlight-weather {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--widget-photo-shade) 56%, transparent),
-      color-mix(in srgb, var(--widget-photo-shade) 22%, transparent) 55%,
-      color-mix(in srgb, var(--widget-photo-shade) 68%, transparent)
-    ),
-    linear-gradient(var(--widget-photo-tint), var(--widget-photo-tint)),
-    url("/brand/widget-fjord.jpg") center 60% / cover;
-  background-blend-mode: normal, color, normal;
-  border-color: color-mix(in srgb, var(--media-accent) 45%, transparent);
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+  --widget-muted: var(--muted);
+  --widget-line: var(--line);
+}
+.highlight-weather .highlight-label small,
+.highlight-weather .hw-details {
+  color: var(--muted);
+}
+.home-welcome .highlight-weather .hw-current p,
+.highlight-weather .hw-details dd svg,
+.highlight-weather .hw-symbol {
+  color: var(--text);
+}
+.highlight-weather .hw-symbol-sun,
+.highlight-weather .hw-symbol-rays {
+  color: #e8a120;
+}
+.highlight-weather .hw-symbol .hw-symbol-cloud {
+  fill: var(--surface);
+}
+.highlight-weather .hw-details,
+.highlight-weather .hw-outlook {
+  border-color: var(--line);
+}
+.highlight-weather .hw-outlook {
+  background: transparent;
+}
+.highlight-weather .hw-empty button {
+  border-color: var(--line);
+  background: var(--soft);
+  color: var(--text);
 }
 .hw-weather {
   height: 100%;

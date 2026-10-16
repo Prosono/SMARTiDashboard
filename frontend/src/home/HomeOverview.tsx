@@ -106,7 +106,6 @@ export function HomeOverview({
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const mode = useExperience();
-  const [moreOverview, setMoreOverview] = useState(false);
   const qc = useQueryClient();
   const [tab, setTab] = useState<HomeTab>("overview");
   const canView = (feature: string) =>
@@ -281,26 +280,8 @@ export function HomeOverview({
       setBusy(false);
     }
   }
-  const displayedCameras = pref?.cameras.length
-    ? model.cameras.filter((c) => pref.cameras.includes(c.id))
-    : model.cameras;
   return (
-    <div
-      className="home-overview"
-      data-overview-detail={mode === "advanced" || moreOverview}
-    >
-      {mode === "normal" && (
-        <button
-          className="overview-detail-toggle"
-          aria-pressed={moreOverview}
-          onClick={() => setMoreOverview(!moreOverview)}
-        >
-          {t(
-            moreOverview ? "Vis mindre" : "Vis mer informasjon",
-            moreOverview ? "Show less" : "Show more information",
-          )}
-        </button>
-      )}
+    <div className="home-overview" data-overview-detail={mode === "advanced"}>
       <div className="home-toolbar">
         <div className="home-location">
           <MapPin size={15} />
@@ -371,11 +352,8 @@ export function HomeOverview({
             </div>
             <HomeHighlights
               weather={model.weather}
-              cameras={displayedCameras}
-              controls={h.controls}
               offline={offline}
               lang={lang}
-              open={setTab}
             />
             <nav
               className="home-modes"

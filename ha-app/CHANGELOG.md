@@ -1,3 +1,10 @@
+## 1.35.1
+
+- Velkomstbanneret viser kun værkort i Normal og Avansert, uten karusell eller automatisk bytting.
+- Værkortet har en ensfarget bakgrunn som følger valgt tema, med ekte værdata og prognose.
+- Fjernet «Vis mer informasjon». Værkortet er fortsatt skjult på mobil.
+- Tydelig beskjed når værdata mangler eller forbindelsen er borte.
+
 ## 1.35.0
 
 - Generell støtte for robotstøvsugere via hjemmesentralens vacuum-enheter, uavhengig av merke.
