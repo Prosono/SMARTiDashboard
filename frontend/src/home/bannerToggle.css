@@ -1,0 +1,39 @@
+.banner-heading {
+  position: relative;
+  min-height: 44px;
+  padding-right: 52px;
+}
+.banner-heading .banner-toggle {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.banner-heading .banner-toggle:hover {
+  color: var(--accent);
+  background: var(--soft);
+}
+.banner-heading .banner-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+[data-collapsible-banner][hidden] {
+  display: none !important;
+}
+@media (max-width: 800px) {
+  .banner-heading .banner-toggle {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+}

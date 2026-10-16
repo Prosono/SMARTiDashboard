@@ -1,3 +1,4 @@
+import { BannerToggle, useBannerDisclosure } from "./BannerToggle";
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -66,6 +67,7 @@ export function SecurityOverview({
   offline: boolean;
   renderControls: (c: Control[]) => ReactNode;
 }) {
+  const banner = useBannerDisclosure();
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [tab, setTab] = useState("all"),
     [search, setSearch] = useState(""),
@@ -230,7 +232,7 @@ export function SecurityOverview({
   }
   return (
     <section className="security-overview">
-      <header className="security-heading">
+      <header className="security-heading banner-heading">
         <Shield size={36} />
         <div>
           <h1>{t("Sikkerhet", "Security")}</h1>
@@ -241,6 +243,7 @@ export function SecurityOverview({
             )}
           </p>
         </div>
+        <BannerToggle {...banner} lang={lang} />
       </header>
       <div
         className="lighting-toolbar security-toolbar"
@@ -290,7 +293,13 @@ export function SecurityOverview({
           ))}
         </nav>
       </div>
-      <section className="security-summary" data-alert={alerts.length > 0}>
+      <section
+        className="security-summary"
+        id={banner.id}
+        hidden={!banner.expanded}
+        data-collapsible-banner
+        data-alert={alerts.length > 0}
+      >
         <img src={homeAsset("home-security")} alt="" />
         <div>
           <small>{t("SIKKERHET I HJEMMET", "HOME SECURITY")}</small>

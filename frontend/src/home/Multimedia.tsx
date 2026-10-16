@@ -1,3 +1,4 @@
+import { BannerToggle, useBannerDisclosure } from "./BannerToggle";
 import { allViews } from "../access";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -294,6 +295,7 @@ export function Multimedia({
   offline: boolean;
   admin: boolean;
 }) {
+  const banner = useBannerDisclosure();
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [room, setRoom] = useState("all");
   const [search, setSearch] = useState("");
@@ -340,7 +342,7 @@ export function Multimedia({
   );
   return (
     <section className="multimedia-view">
-      <header className="multimedia-heading">
+      <header className="multimedia-heading banner-heading">
         <AudioLines size={36} />
         <div>
           <h1>{t("Multimedia", "Multimedia")}</h1>
@@ -351,6 +353,7 @@ export function Multimedia({
             )}
           </p>
         </div>
+        <BannerToggle {...banner} lang={lang} />
       </header>
       <div
         className="lighting-toolbar climate-toolbar media-toolbar"
@@ -451,7 +454,12 @@ export function Multimedia({
           </button>
         </div>
       </div>
-      <div className="media-overview-banner">
+      <div
+        className="media-overview-banner"
+        id={banner.id}
+        hidden={!banner.expanded}
+        data-collapsible-banner
+      >
         <img src={homeAsset("home-multimedia")} alt="" />
         <div className="media-banner-copy">
           <span className="eyebrow">{t("LYD OG BILDE", "SOUND & VISION")}</span>

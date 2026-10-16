@@ -1,3 +1,8 @@
+## 1.35.3
+
+- Bannerne på Lys, Klima, Sikkerhet og Multimedia er lukket som standard.
+- Felles utvid-/skjul-ikon på tittelraden, sentrert på desktop og til høyre på mindre skjermer.
+
 ## 1.35.2
 
 - Scener-knapp i verktøylinjen på Lys åpner scenene i en dialog, som under Multimedia.

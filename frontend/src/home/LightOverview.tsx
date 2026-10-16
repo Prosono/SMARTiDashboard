@@ -1,3 +1,4 @@
+import { BannerToggle, useBannerDisclosure } from "./BannerToggle";
 import { useState, type CSSProperties } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -29,6 +30,7 @@ export function LightOverview({
   openRoom?: (id: string) => void;
   scenes?: () => void;
 }) {
+  const banner = useBannerDisclosure();
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
   const prefs = useQuery({
@@ -124,7 +126,7 @@ export function LightOverview({
     .filter((a) => a.items.length);
   return (
     <section className="light-overview">
-      <header className="lighting-heading">
+      <header className="lighting-heading banner-heading">
         <div>
           <h1>
             <Lightbulb />
@@ -137,6 +139,7 @@ export function LightOverview({
             )}
           </p>
         </div>
+        <BannerToggle {...banner} lang={lang} />
       </header>
       <div
         className="lighting-toolbar"
@@ -210,7 +213,12 @@ export function LightOverview({
           </span>
         </button>
       </div>
-      <div className="lighting-banner">
+      <div
+        className="lighting-banner"
+        id={banner.id}
+        hidden={!banner.expanded}
+        data-collapsible-banner
+      >
         <img src={homeAsset("home-lighting")} alt="" />
         <div>
           <h2>
