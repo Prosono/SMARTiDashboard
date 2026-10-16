@@ -1,3 +1,10 @@
+## 1.32.0
+
+- Ny multimediaoversikt med rombilder, statusbanner og kompakte spillerkort.
+- Samlet verktøylinje med søk, romfilter, avspillingsfilter og kort-/listevisning.
+- Rapporterte avspillingstider, volum og støttede kontroller på hvert spillerkort.
+- Oversikt over aktive kilder og grupperte spillere, samt scener i dialog.
+
 ## 1.31.1
 
 - Gjenopprett liveforbindelsen automatisk etter nettverksbrudd, dvale og hengende forbindelser.

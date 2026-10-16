@@ -270,7 +270,7 @@ export function HomeOverview({
       </div>
       <HomeTabs tab={tab} change={setTab} lang={lang}>
         {tab === "media" && (
-          <Multimedia home={h} lang={lang} offline={offline} />
+          <Multimedia home={h} lang={lang} offline={offline} admin={admin} />
         )}
         {tab === "overview" && (
           <header className="home-welcome">

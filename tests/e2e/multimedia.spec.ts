@@ -24,6 +24,9 @@ test("multimedia filters players and sends supported playback commands", async (
       media_title: "Evening sessions",
       media_artist: "Living room collection",
       volume_level: 0.35,
+      media_duration: 236,
+      media_position: 84,
+      source: "Radio",
       is_volume_muted: false,
     },
     capabilities: [
@@ -64,7 +67,7 @@ test("multimedia filters players and sends supported playback commands", async (
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   await page.getByRole("tab", { name: "Multimedia", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Sett stemningen." }),
+    page.getByRole("heading", { name: "Multimedia", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".media-player-card")).toHaveCount(2);
   await expect(
@@ -80,10 +83,15 @@ test("multimedia filters players and sends supported playback commands", async (
     page.locator(".media-state").filter({ hasText: "På pause" }),
   ).toBeVisible();
   expect(commands[0]).toEqual({ action: "media_pause" });
+  await page.getByLabel("Søk i multimedia").fill("finnesikke");
+  await expect(page.locator(".media-player-card")).toHaveCount(0);
+  await page.getByLabel("Søk i multimedia").fill("");
+  await page.getByRole("button", { name: "Liste", exact: true }).click();
+  await expect(page.locator(".media-player-grid")).toHaveClass(/is-list/);
+  await page.getByRole("button", { name: "Kort", exact: true }).click();
   await page
-    .getByRole("navigation", { name: "Multimedia-rom" })
-    .getByRole("button", { name: "Stue", exact: true })
-    .click();
+    .getByLabel("Multimedia-rom", { exact: true })
+    .selectOption("living");
   await expect(page.locator(".media-player-card")).toHaveCount(1);
   await page.screenshot({
     path: `../artifacts/${test.info().project.name}-multimedia.png`,

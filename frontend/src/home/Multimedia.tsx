@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AudioLines,
   Speaker,
@@ -13,23 +13,32 @@ import {
   Volume2,
   VolumeX,
   Music2,
+  Search,
+  LayoutGrid,
+  List,
+  Layers,
+  Radio,
+  Sparkles,
 } from "lucide-react";
 import { api } from "../api";
 import type { Home, Control } from "../types";
 import "./multimedia.css";
+import { homeAsset, roomMood, type HomePreferences } from "./HomeOverview";
+import { Scenes } from "./Scenes";
+import { SettingsDialog } from "./SettingsDialog";
 
 function MediaCard({
   c,
   home,
   lang,
   offline,
-  featured = false,
+  photo,
 }: {
   c: Control;
   home: Home;
   lang: string;
   offline: boolean;
-  featured?: boolean;
+  photo: string;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
@@ -93,6 +102,7 @@ function MediaCard({
     supports(action) && (
       <button
         key={action}
+        data-action={action}
         title={label}
         aria-label={`${c.name}: ${label}`}
         disabled={blocked || (c.state === "off" && action !== "turn_on")}
@@ -102,33 +112,19 @@ function MediaCard({
       </button>
     );
   return (
-    <article
-      className={`media-player-card ${featured ? "media-featured" : ""}`}
-      data-playing={playing}
-    >
-      <div className="media-art" aria-hidden="true">
-        {tv ? (
-          <Tv />
-        ) : (
-          <div className="media-record">
-            <Music2 />
-          </div>
-        )}
-        <span className="media-art-caption">
-          {tv ? "SMARTi CINEMA" : "SMARTi AUDIO"}
-        </span>
+    <article className="media-player-card" data-playing={playing}>
+      <div className="media-art">
+        <img src={photo} alt="" loading="lazy" />
+        <div>
+          <strong>{c.name}</strong>
+          <span>
+            {home.areas.find((a) => a.area_id === c.area_id)?.name ||
+              t("Uten rom", "Unassigned")}
+          </span>
+        </div>
+        <Icon size={24} />
       </div>
       <div className="media-player-content">
-        <header>
-          <div>
-            <span className="eyebrow">
-              {home.areas.find((a) => a.area_id === c.area_id)?.name ||
-                t("Uten rom", "Unassigned")}
-            </span>
-            <h2>{c.name}</h2>
-          </div>
-          <Icon size={23} />
-        </header>
         <span className="media-state">
           <i />
           {unavailable
@@ -136,34 +132,61 @@ function MediaCard({
             : states[c.state] || c.state}
         </span>
         <div className="media-track">
-          <h3>
-            {unavailable
-              ? t("Venter på forbindelse", "Waiting for connection")
-              : String(
-                  c.attributes.media_title ||
-                    (playing
-                      ? t("Avspilling pågår", "Playback in progress")
-                      : t(
-                          "Tid for noe du liker.",
-                          "Time for something you love.",
-                        )),
-                )}
-          </h3>
-          <p>
-            {unavailable
-              ? "—"
-              : String(
-                  c.attributes.media_artist ||
-                    c.attributes.media_series_title ||
-                    c.attributes.app_name ||
-                    c.attributes.source ||
-                    t(
-                      "Velg innhold i spillerens app",
-                      "Choose content in the player's app",
-                    ),
-                )}
-          </p>
+          <span className="media-track-symbol">
+            <Music2 size={26} />
+          </span>
+          <div>
+            <h3>
+              {unavailable
+                ? t("Venter på forbindelse", "Waiting for connection")
+                : String(
+                    c.attributes.media_title ||
+                      (playing
+                        ? t("Avspilling pågår", "Playback in progress")
+                        : t(
+                            "Tid for noe du liker.",
+                            "Time for something you love.",
+                          )),
+                  )}
+            </h3>
+            <p>
+              {unavailable
+                ? "—"
+                : String(
+                    c.attributes.media_artist ||
+                      c.attributes.media_series_title ||
+                      c.attributes.app_name ||
+                      c.attributes.source ||
+                      t(
+                        "Velg innhold i spillerens app",
+                        "Choose content in the player's app",
+                      ),
+                  )}
+            </p>
+          </div>
         </div>
+        {typeof c.attributes.media_duration === "number" &&
+          c.attributes.media_duration > 0 &&
+          typeof c.attributes.media_position === "number" &&
+          !unavailable && (
+            <div
+              className="media-progress"
+              aria-label={t(
+                "Rapportert avspillingsposisjon",
+                "Reported playback position",
+              )}
+            >
+              <span>{clock(c.attributes.media_position)}</span>
+              <progress
+                max={c.attributes.media_duration}
+                value={Math.min(
+                  c.attributes.media_position,
+                  c.attributes.media_duration,
+                )}
+              />
+              <span>{clock(c.attributes.media_duration)}</span>
+            </div>
+          )}
         <div className="media-transport">
           {button("media_previous_track", t("Forrige", "Previous"), SkipBack)}
           {playing
@@ -251,121 +274,323 @@ function MediaCard({
     </article>
   );
 }
+
+function clock(seconds: number) {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
 export function Multimedia({
   home,
   lang,
   offline,
+  admin,
 }: {
   home: Home;
   lang: string;
   offline: boolean;
+  admin: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [room, setRoom] = useState("all");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [layout, setLayout] = useState("cards");
+  const [scenes, showScenes] = useState(false);
+  const prefs = useQuery({
+    queryKey: ["home-preferences"],
+    queryFn: () => api<HomePreferences>("home/preferences"),
+  });
   const players = home.controls.filter(
     (c) => c.domain === "media_player" && !c.diagnostic,
   );
+  const available = (c: Control) => !offline && c.availability === "available";
+  const playing = players.filter((c) => available(c) && c.state === "playing");
+  const grouped = (c: Control) =>
+    Array.isArray(c.attributes.group_members) &&
+    c.attributes.group_members.length > 1;
   const shown = players.filter(
-    (c) => room === "all" || (c.area_id || "") === room,
+    (c) =>
+      (room === "all" || (c.area_id || "") === room) &&
+      `${c.name} ${home.areas.find((a) => a.area_id === c.area_id)?.name || ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase()) &&
+      (filter === "all" ||
+        (filter === "playing"
+          ? available(c) && c.state === "playing"
+          : filter === "tv"
+            ? ["tv", "projector"].includes(String(c.attributes.device_class))
+            : grouped(c))),
   );
-  const active = shown.find(
-    (c) => c.state === "playing" && c.availability === "available" && !offline,
+  const photo = (c: Control) =>
+    c.area_id && prefs.data?.images[c.area_id]
+      ? new URL(
+          `api/home/room-image/${encodeURIComponent(c.area_id)}?v=${prefs.dataUpdatedAt}`,
+          document.baseURI,
+        ).href
+      : homeAsset(
+          roomMood(home.areas.find((a) => a.area_id === c.area_id)?.name || "")
+            .photo || "home-living",
+        );
+  const sources = shown.filter(
+    (c) => available(c) && (c.attributes.source || c.attributes.app_name),
   );
   return (
     <section className="multimedia-view">
       <header className="multimedia-heading">
+        <AudioLines size={36} />
         <div>
-          <span className="eyebrow">
-            <AudioLines size={16} />
-            {t("LYD & BILDE", "SOUND & VISION")}
-          </span>
-          <h1>{t("Sett stemningen.", "Set the mood.")}</h1>
+          <h1>{t("Multimedia", "Multimedia")}</h1>
           <p>
             {t(
-              "Musikk i kjøkkenet. Film i stuen. Alt samlet her.",
-              "Music in the kitchen. Movies in the living room. All together here.",
+              "Musikk, film og lyd i hele hjemmet.",
+              "Music, movies and sound throughout your home.",
             )}
           </p>
         </div>
-        <span className="media-device-count">
-          <Speaker size={20} />
-          {players.length} {t("spillere", "players")}
-        </span>
       </header>
-      {!!players.length && (
-        <nav
-          className="media-room-filter"
-          aria-label={t("Multimedia-rom", "Multimedia rooms")}
-        >
+      <div className="media-overview-banner">
+        <img src={homeAsset("home-living")} alt="" />
+        <div className="media-banner-copy">
+          <span className="eyebrow">{t("LYD OG BILDE", "SOUND & VISION")}</span>
+          <h2>
+            {t(
+              "Nyt underholdning i hele hjemmet",
+              "Enjoy entertainment throughout your home",
+            )}
+          </h2>
+          <p>
+            {t(
+              "Dine rom. Din musikk. Alt innen rekkevidde.",
+              "Your rooms. Your music. Everything within reach.",
+            )}
+          </p>
+        </div>
+        <div className="media-metrics">
           {[
-            { area_id: "all", name: t("Alle rom", "All rooms") },
-            ...home.areas.filter((a) =>
-              players.some((c) => c.area_id === a.area_id),
-            ),
-            ...(players.some((c) => !c.area_id)
-              ? [{ area_id: "", name: t("Uten rom", "Unassigned") }]
-              : []),
-          ].map((a) => (
+            {
+              Icon: Music2,
+              value: offline ? "—" : playing.length,
+              label: t("Spiller nå", "Playing now"),
+            },
+            {
+              Icon: Speaker,
+              value: players.length,
+              label: t("Spillere", "Players"),
+            },
+            {
+              Icon: Tv,
+              value: offline
+                ? "—"
+                : players.filter(
+                    (c) =>
+                      available(c) &&
+                      ["tv", "projector"].includes(
+                        String(c.attributes.device_class),
+                      ) &&
+                      !["off", "standby"].includes(c.state),
+                  ).length,
+              label: t("TV på", "TVs on"),
+            },
+            {
+              Icon: Volume2,
+              value: offline
+                ? "—"
+                : players.filter(
+                    (c) =>
+                      available(c) && c.attributes.is_volume_muted === true,
+                  ).length,
+              label: t("Dempet", "Muted"),
+            },
+          ].map(({ Icon, value, label }) => (
+            <div key={label}>
+              <Icon size={24} />
+              <span>
+                <strong>{value}</strong>
+                <small>{label}</small>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="media-toolbar">
+        <label className="media-search">
+          <Search size={19} />
+          <input
+            aria-label={t("Søk i multimedia", "Search multimedia")}
+            placeholder={t(
+              "Søk etter rom eller spiller…",
+              "Search rooms or players…",
+            )}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+        <select
+          aria-label={t("Multimedia-rom", "Multimedia room")}
+          value={room}
+          onChange={(e) => setRoom(e.target.value)}
+        >
+          <option value="all">{t("Alle rom", "All rooms")}</option>
+          {home.areas
+            .filter((a) => players.some((c) => c.area_id === a.area_id))
+            .map((a) => (
+              <option key={a.area_id} value={a.area_id}>
+                {a.name}
+              </option>
+            ))}
+          {players.some((c) => !c.area_id) && (
+            <option value="">{t("Uten rom", "Unassigned")}</option>
+          )}
+        </select>
+        <div className="media-view-switch">
+          <button
+            aria-label={t("Kort", "Cards")}
+            aria-pressed={layout === "cards"}
+            onClick={() => setLayout("cards")}
+          >
+            <LayoutGrid size={18} />
+          </button>
+          <button
+            aria-label={t("Liste", "List")}
+            aria-pressed={layout === "list"}
+            onClick={() => setLayout("list")}
+          >
+            <List size={18} />
+          </button>
+        </div>
+        <nav aria-label={t("Multimediafilter", "Multimedia filters")}>
+          {[
+            ["all", t("Alle spillere", "All players")],
+            ["playing", t("Spiller nå", "Playing now")],
+            ["tv", t("TV og film", "TV & movies")],
+            ["groups", t("Grupperte spillere", "Grouped players")],
+          ].map(([id, label]) => (
             <button
-              key={a.area_id}
-              aria-pressed={room === a.area_id}
-              onClick={() => setRoom(a.area_id)}
+              key={id}
+              aria-pressed={filter === id}
+              onClick={() => setFilter(id)}
             >
-              {a.name}
+              {label}
             </button>
           ))}
         </nav>
-      )}
-      {!players.length ? (
+        <button
+          className="media-scenes-button"
+          onClick={() => showScenes(true)}
+        >
+          <Sparkles size={18} />
+          {t("Scener", "Scenes")}
+        </button>
+      </div>
+      <div
+        className={`media-player-grid ${layout === "list" ? "is-list" : ""}`}
+      >
+        {shown.map((c) => (
+          <MediaCard
+            key={c.id}
+            c={c}
+            home={home}
+            lang={lang}
+            offline={offline}
+            photo={photo(c)}
+          />
+        ))}
+      </div>
+      {!shown.length && (
         <div className="media-empty">
-          <AudioLines size={52} />
-          <h2>{t("Gi hjemmet en lydside.", "Give your home a soundtrack.")}</h2>
+          <AudioLines size={40} />
+          <h2>
+            {players.length
+              ? t("Ingen spillere i dette utvalget", "No matching players")
+              : t("Gi hjemmet en lydside.", "Give your home a soundtrack.")}
+          </h2>
           <p>
-            {t(
-              "Høyttalere, TV-er og mediespillere dukker opp her når de er koblet til hjemmesentralen. Legg til produsentens integrasjon under Integrasjoner.",
-              "Speakers, TVs and media players appear here once connected to your home controller. Add the manufacturer's integration under Integrations.",
-            )}
+            {players.length
+              ? t(
+                  "Prøv et annet rom eller filter.",
+                  "Try a different room or filter.",
+                )
+              : t(
+                  "Legg til høyttalere og TV-er under Integrasjoner. De vises automatisk her.",
+                  "Add speakers and TVs under Integrations. They appear here automatically.",
+                )}
           </p>
         </div>
-      ) : (
-        <>
-          {active && (
-            <>
-              <h2 className="media-section-title">
-                {t("Spiller nå", "Now playing")}
-              </h2>
-              <MediaCard
-                key={active.entity_id}
-                c={active}
-                home={home}
-                lang={lang}
-                offline={offline}
-                featured
-              />
-            </>
-          )}
-          <h2 className="media-section-title">
-            {t("Dine spillere", "Your players")}
-          </h2>
-          <div className="media-player-grid">
-            {shown
-              .filter((c) => c !== active)
-              .map((c) => (
-                <MediaCard
-                  key={c.entity_id}
-                  c={c}
-                  home={home}
-                  lang={lang}
-                  offline={offline}
-                />
-              ))}
-          </div>
-          {!shown.length && (
+      )}
+      {!!players.length && (
+        <div className="media-bottom-panels">
+          <section>
+            <h2>
+              <Radio size={21} />
+              {t("Aktive kilder", "Active sources")}
+            </h2>
+            {sources.length ? (
+              sources.map((c) => (
+                <div className="media-source-row" key={c.id}>
+                  <Music2 size={19} />
+                  <span>
+                    <strong>
+                      {String(c.attributes.source || c.attributes.app_name)}
+                    </strong>
+                    <small>{c.name}</small>
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p>
+                {t(
+                  "Spillerne rapporterer ingen aktiv kilde i dette utvalget.",
+                  "No active source reported by these players.",
+                )}
+              </p>
+            )}
+          </section>
+          <section>
+            <h2>
+              <Layers size={21} />
+              {t("Lyd i flere rom", "Multi-room audio")}
+            </h2>
             <p>
-              {t("Ingen spillere i dette rommet.", "No players in this room.")}
+              {t(
+                "Spillere som allerede er gruppert, finner du samlet med filteret Grupperte spillere.",
+                "Find players already grouped together using the Grouped players filter.",
+              )}
             </p>
-          )}
-        </>
+            <button
+              onClick={() => {
+                setFilter("groups");
+                setRoom("all");
+                setSearch("");
+              }}
+            >
+              {t("Vis grupperte spillere", "Show grouped players")}
+            </button>
+          </section>
+          <section>
+            <h2>
+              <Sparkles size={21} />
+              {t("Sett stemningen", "Set the mood")}
+            </h2>
+            <p>
+              {t(
+                "Samle hjemmets innstillinger i scener for filmkvelden eller en rolig morgen.",
+                "Bring your home settings together in scenes for movie night or a quiet morning.",
+              )}
+            </p>
+            <button onClick={() => showScenes(true)}>
+              {t("Åpne scener", "Open scenes")}
+            </button>
+          </section>
+        </div>
+      )}
+      {scenes && (
+        <SettingsDialog
+          title={t("Scener", "Scenes")}
+          lang={lang}
+          onClose={() => showScenes(false)}
+        >
+          <Scenes home={home} lang={lang} offline={offline} admin={admin} />
+        </SettingsDialog>
       )}
     </section>
   );
