@@ -184,14 +184,18 @@ async def test_live_hls_rewrites_every_uri_and_rejects_external_urls(monkeypatch
     observed = []
     content = b'#EXTM3U\n#EXT-X-MAP:URI="init.mp4"\n#EXT-X-PART:DURATION=0.5,URI="segment/1.0.m4s"\nsegment/1.m4s\nplaylist.m3u8\n'
     original = httpx.AsyncClient
+    clients = []
 
     def reply(request):
         observed.append(request)
         return httpx.Response(200, content=content)
 
-    monkeypatch.setattr(
-        httpx, "AsyncClient", lambda **kw: original(transport=httpx.MockTransport(reply), **kw)
-    )
+    def make_client(**kw):
+        pooled_client = original(transport=httpx.MockTransport(reply), **kw)
+        clients.append(pooled_client)
+        return pooled_client
+
+    monkeypatch.setattr(httpx, "AsyncClient", make_client)
 
     async def request(kind, **data):
         assert kind == "camera/stream" and data["format"] == "hls"
@@ -228,6 +232,9 @@ async def test_live_hls_rewrites_every_uri_and_rejects_external_urls(monkeypatch
     content = b"#EXTM3U\nhttps://evil.test/video.m3u8\n"
     with pytest.raises(HTTPException):
         await streams.fetch(session, rid, {})
+    assert len(clients) == 1  # Reuse one pool for playlists and segments.
+    await streams.close()
+    assert clients[0].is_closed
     session["used"] -= 121
     with pytest.raises(HTTPException):
         streams.session(sid, (1, "session1"))
@@ -244,3 +251,42 @@ def test_stream_start_is_authenticated_and_demo_does_not_fake_live(client):  # n
     client.post("/api/logout")
     assert client.post("/api/home/camera/camera.front/live").status_code == 401
     assert client.get("/api/home/camera-stream/unknown/unknown").status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_camera_starts_run_in_parallel_and_reserve_capacity():
+    import asyncio
+
+    release = asyncio.Event()
+    all_started = asyncio.Event()
+    entered = []
+
+    async def request(kind, **data):
+        entered.append(data["entity_id"])
+        if len(entered) == 4:
+            all_started.set()
+        await release.wait()
+        return {"url": "/api/hls/abcdef/master_playlist.m3u8"}
+
+    ha = SimpleNamespace(connected=True, http_url="http://ha/api/", token="secret", request=request)
+    streams = CameraStreams(ha)
+    tasks = [asyncio.create_task(streams.start(f"camera.test{i}", (1, "session"))) for i in range(4)]
+    try:
+        await asyncio.wait_for(all_started.wait(), 1)
+        with pytest.raises(HTTPException) as error:
+            await streams.start("camera.fifth", (1, "session"))
+        assert error.value.status_code == 429
+        tasks[0].cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await tasks[0]
+        assert len(streams.pending) == 3
+        release.set()
+        results = await asyncio.gather(*tasks[1:])
+        assert len({r["id"] for r in results}) == 3
+        assert not streams.pending
+        assert len(streams.sessions) == 3
+    finally:
+        release.set()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await streams.close()
+    assert streams.client.is_closed

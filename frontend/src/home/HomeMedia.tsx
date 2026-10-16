@@ -30,14 +30,20 @@ export function CameraCard({
   const available = !offline && usable(c),
     active = available && visible && foreground && !paused;
   useEffect(() => {
+    let leaveTimer: ReturnType<typeof setTimeout> | undefined;
     const observer = new IntersectionObserver(
-      ([e]) => setVisible(e.isIntersecting),
+      ([e]) => {
+        clearTimeout(leaveTimer);
+        if (e.isIntersecting) setVisible(true);
+        else leaveTimer = setTimeout(() => setVisible(false), 1500);
+      },
       { threshold: 0.1 },
     );
     if (container.current) observer.observe(container.current);
     const onVisibility = () => setForeground(!document.hidden);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
+      clearTimeout(leaveTimer);
       observer.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
@@ -68,6 +74,9 @@ export function CameraCard({
     };
     void (async () => {
       try {
+        const native = !!element.canPlayType("application/vnd.apple.mpegurl");
+        // Download the player while HA prepares the stream, not afterwards.
+        const hlsModule = native ? null : import("hls.js").catch(() => null);
         const stream = await api<{ id: string; path: string }>(
           `home/camera/${encodeURIComponent(c.id)}/live`,
           "POST",
@@ -83,11 +92,13 @@ export function CameraCard({
             if (!cancelled) setStatus("blocked");
           });
         };
-        if (element.canPlayType("application/vnd.apple.mpegurl")) {
+        if (native) {
           element.src = src;
           play();
         } else {
-          const { default: Hls } = await import("hls.js");
+          const module = await hlsModule;
+          if (!module) throw new Error("hls_unavailable");
+          const Hls = module.default;
           if (cancelled) {
             stop();
             return;

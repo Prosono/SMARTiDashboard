@@ -1,3 +1,9 @@
+## 1.30.1
+
+- Kameraer starter parallelt uten å vente på hverandre, med samme sesjonsgrenser.
+- Gjenbruk forbindelser til hjemmesentralen for videodeler og spillelister.
+- Last avspilleren parallelt med strømoppstart og unngå omstart ved kort rulling ut av bildet.
+
 ## 1.30.0
 
 - Ny Alle rom-oversikt med rombilder, lysstatus og målinger per rom.

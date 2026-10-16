@@ -5,6 +5,7 @@ import re
 import secrets
 import time
 from collections import OrderedDict
+from contextlib import asynccontextmanager
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 import httpx
@@ -18,6 +19,16 @@ class CameraStreams:
         self.ha, self.demo = ha, demo
         self.sessions = {}
         self.lock = asyncio.Lock()
+        self.pending = {}
+        self.client = httpx.AsyncClient(
+            timeout=25,
+            follow_redirects=False,
+            trust_env=False,
+            limits=httpx.Limits(max_connections=64, max_keepalive_connections=32),
+        )
+
+    async def close(self):
+        await self.client.aclose()
 
     def prune(self):
         now = time.monotonic()
@@ -36,12 +47,17 @@ class CameraStreams:
         return urlunsplit(parsed)
 
     async def start(self, entity_id, owner):
+        sid = secrets.token_urlsafe(24)
         async with self.lock:
             self.prune()
             if self.demo or not self.ha.connected:
                 raise HTTPException(503, "live_stream_unavailable")
-            if len(self.sessions) >= 32 or sum(s["owner"] == owner for s in self.sessions.values()) >= 4:
+            owners = [s["owner"] for s in self.sessions.values()] + list(self.pending.values())
+            if len(owners) >= 32 or owners.count(owner) >= 4:
                 raise HTTPException(429, "stream_limit")
+            self.pending[sid] = owner
+        # Reserve capacity under the lock, but do not serialize camera startup.
+        try:
             try:
                 result = await self.ha.request("camera/stream", entity_id=entity_id, format="hls")
                 source = self.upstream_url(self.ha.http_url, result["url"])
@@ -58,7 +74,6 @@ class CameraStreams:
                     raise ValueError()
             except (HAError, TimeoutError, KeyError, TypeError, ValueError):
                 raise HTTPException(503, "live_stream_unavailable") from None
-            sid = secrets.token_urlsafe(24)
             now = time.monotonic()
             self.sessions[sid] = {
                 "owner": owner,
@@ -70,6 +85,8 @@ class CameraStreams:
             }
             rid = self.resource(self.sessions[sid], source, source)
             return {"id": sid, "path": f"home/camera-stream/{sid}/{rid}"}
+        finally:
+            self.pending.pop(sid, None)
 
     def session(self, sid, owner):
         self.prune()
@@ -118,17 +135,16 @@ class CameraStreams:
         playlist = parsed.path.endswith(".m3u8")
         limit = 512_000 if playlist else 16_000_000
         try:
-            async with httpx.AsyncClient(timeout=25, follow_redirects=False, trust_env=False) as client:
-                async with client.stream(
-                    "GET", url, headers={"Authorization": "Bearer " + self.ha.token}
-                ) as upstream:
-                    if upstream.status_code != 200:
-                        raise HAError("stream_unavailable")
-                    data = bytearray()
-                    async for chunk in upstream.aiter_bytes():
-                        data.extend(chunk)
-                        if len(data) > limit:
-                            raise HAError("stream_too_large")
+            async with self.client.stream(
+                "GET", url, headers={"Authorization": "Bearer " + self.ha.token}
+            ) as upstream:
+                if upstream.status_code != 200:
+                    raise HAError("stream_unavailable")
+                data = bytearray()
+                async for chunk in upstream.aiter_bytes():
+                    data.extend(chunk)
+                    if len(data) > limit:
+                        raise HAError("stream_too_large")
         except (httpx.HTTPError, HAError):
             raise HTTPException(502, "stream_unavailable") from None
         if not playlist:
@@ -152,8 +168,16 @@ class CameraStreams:
 
 
 def camera_router(ha, user, settings):
-    router = APIRouter(prefix="/api/home")
     streams = CameraStreams(ha, settings.mode == "demo")
+
+    @asynccontextmanager
+    async def lifespan(app):
+        try:
+            yield
+        finally:
+            await streams.close()
+
+    router = APIRouter(prefix="/api/home", lifespan=lifespan)
 
     def owner(current):
         return current["id"], current["csrf"]
