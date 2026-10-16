@@ -94,12 +94,29 @@ test("robot controls follow capabilities, update status and expose only mapped r
     coverCommands.push(route.request().postDataJSON().action);
     await route.fulfill({ json: { status: "accepted_unconfirmed" } });
   });
-  page.once("dialog", dialog => dialog.accept());
   await page
     .getByRole("region", { name: "Persienner, gardiner og markiser" })
     .getByRole("button", { name: "Lukk", exact: true })
     .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Bekreft", exact: true })
+    .click();
   await expect.poll(() => coverCommands).toEqual(["close_cover"]);
+  const sockets = page.getByRole("region", {
+    name: "Brytere og stikkontakter",
+  });
+  const socketButton = sockets.getByRole("button", {
+    name: /Slå (på|av): Stikkontakt/,
+  });
+  const wasOn = (await socketButton.getAttribute("aria-label"))?.includes(
+    "Slå av",
+  );
+  await socketButton.click();
+  await expect(socketButton).toHaveAttribute(
+    "aria-label",
+    wasOn ? "Slå på: Stikkontakt" : "Slå av: Stikkontakt",
+  );
   const card = page.locator(".vacuum-card").filter({
     has: page.getByRole("heading", {
       name: "Robot i første etasje",

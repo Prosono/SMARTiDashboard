@@ -1,3 +1,11 @@
+## 1.35.6
+
+- Diverse får bildebanner og enhetsoversikt i samme stil som de andre hjemmesidene.
+- Nytt robotstøvsugerikon.
+- Egne persiennekort med rapportert posisjon, visuell åpning og støttede åpne/stopp/lukk-knapper.
+- Egne bryter- og stikkontaktkort med tydelig status og stor av/på-knapp.
+- Bekreftelse av persiennebevegelse i popup; tilgang, utilgjengelighet og ventende kommandoer respekteres.
+
 ## 1.35.5
 
 - Rengjøring-fanen heter nå Diverse, også i Enkel-visningen.

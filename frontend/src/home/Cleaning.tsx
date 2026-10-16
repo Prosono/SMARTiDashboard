@@ -1,3 +1,4 @@
+import { RobotVacuumIcon } from "./RobotVacuumIcon";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -171,8 +172,7 @@ export function VacuumCard({
     >
       <header>
         <div className="vacuum-illustration" aria-hidden="true">
-          <span />
-          <Brush size={25} />
+          <RobotVacuumIcon size={50} />
         </div>
         <div>
           <small>

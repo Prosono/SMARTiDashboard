@@ -1,5 +1,8 @@
+import { RobotVacuumIcon } from "./RobotVacuumIcon";
+import { MiscDeviceCard } from "./MiscDeviceCard";
+import { homeAsset } from "./HomeOverview";
 import { useState, type ReactNode } from "react";
-import { LayoutGrid, Brush, Blinds, Plug, Search } from "lucide-react";
+import { LayoutGrid, Blinds, Plug, Search } from "lucide-react";
 import type { Control, Home } from "../types";
 import { VacuumCard } from "./Cleaning";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
@@ -36,7 +39,6 @@ export function Miscellaneous({
   home,
   lang,
   offline,
-  renderControls,
 }: {
   home: Home;
   lang: string;
@@ -51,7 +53,7 @@ export function Miscellaneous({
     {
       id: "cleaning",
       feature: "cleaning",
-      Icon: Brush,
+      Icon: RobotVacuumIcon,
       name: en ? "Robot vacuums" : "Robotstøvsugere",
     },
     {
@@ -134,6 +136,50 @@ export function Miscellaneous({
           <option value="none">{en ? "No room" : "Uten rom"}</option>
         </select>
       </div>
+      <div className="lighting-banner miscellaneous-banner">
+        <img src={homeAsset("home-office")} alt="" />
+        <div>
+          <h2>
+            {en ? "Small helpers." : "Små hjelpere."}
+            <br />
+            {en ? "A simpler everyday life." : "En enklere hverdag."}
+          </h2>
+          <p>
+            {en
+              ? "Cleaning, shade and power — at your fingertips."
+              : "Rengjøring, solskjerming og strøm – rett ved hånden."}
+          </p>
+        </div>
+        <div className="misc-banner-summary">
+          {[
+            {
+              Icon: RobotVacuumIcon,
+              kind: "cleaning",
+              label: en ? "Robots" : "Roboter",
+            },
+            {
+              Icon: Blinds,
+              kind: "covers",
+              label: en ? "Shades" : "Solskjerming",
+            },
+            {
+              Icon: Plug,
+              kind: "switches",
+              label: en ? "Switches" : "Brytere",
+            },
+          ].map(({ Icon, kind, label }) => {
+            const count =
+              groups.find((g) => g.id === kind)?.controls.length || 0;
+            return count > 0 ? (
+              <div key={kind}>
+                <Icon size={23} />
+                <strong>{count}</strong>
+                <small>{label}</small>
+              </div>
+            ) : null;
+          })}
+        </div>
+      </div>
       {groups.map(({ id, Icon, name, controls }) => (
         <section className="miscellaneous-section" key={id} aria-label={name}>
           <header>
@@ -154,7 +200,17 @@ export function Miscellaneous({
               ))}
             </div>
           ) : (
-            renderControls(controls)
+            <div className="misc-device-grid">
+              {controls.map((c) => (
+                <MiscDeviceCard
+                  key={c.id}
+                  c={c}
+                  home={home}
+                  lang={lang}
+                  offline={offline}
+                />
+              ))}
+            </div>
           )}
         </section>
       ))}
