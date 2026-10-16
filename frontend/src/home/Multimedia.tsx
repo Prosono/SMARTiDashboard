@@ -2,6 +2,7 @@ import { allViews } from "../access";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  House,
   AudioLines,
   Speaker,
   Tv,
@@ -23,6 +24,8 @@ import {
 } from "lucide-react";
 import { api } from "../api";
 import type { Home, Control } from "../types";
+import "./lightOverview.css";
+import "./climateOverview.css";
 import "./multimedia.css";
 import { homeAsset, roomMood, type HomePreferences } from "./HomeOverview";
 import { Scenes } from "./Scenes";
@@ -349,8 +352,12 @@ export function Multimedia({
           </p>
         </div>
       </header>
-      <div className="media-toolbar">
-        <label className="media-search">
+      <div
+        className="lighting-toolbar climate-toolbar media-toolbar"
+        role="group"
+        aria-label={t("Filtrer multimedia", "Filter multimedia")}
+      >
+        <label className="lighting-search">
           <Search size={19} />
           <input
             aria-label={t("Søk i multimedia", "Search multimedia")}
@@ -362,63 +369,87 @@ export function Multimedia({
             onChange={(e) => setSearch(e.target.value)}
           />
         </label>
-        <select
-          aria-label={t("Multimedia-rom", "Multimedia room")}
-          value={room}
-          onChange={(e) => setRoom(e.target.value)}
-        >
-          <option value="all">{t("Alle rom", "All rooms")}</option>
-          {home.areas
-            .filter((a) => players.some((c) => c.area_id === a.area_id))
-            .map((a) => (
-              <option key={a.area_id} value={a.area_id}>
-                {a.name}
-              </option>
-            ))}
-          {players.some((c) => !c.area_id) && (
-            <option value="">{t("Uten rom", "Unassigned")}</option>
-          )}
-        </select>
-        <div className="media-view-switch">
+        <label className="lighting-room-filter">
+          <House size={18} />
+          <select
+            aria-label={t("Multimedia-rom", "Multimedia room")}
+            value={room}
+            onChange={(e) => setRoom(e.target.value)}
+          >
+            <option value="all">
+              {t("Alle rom", "All rooms")} (
+              {
+                home.areas.filter((a) =>
+                  players.some((c) => c.area_id === a.area_id),
+                ).length
+              }
+              )
+            </option>
+            {home.areas
+              .filter((a) => players.some((c) => c.area_id === a.area_id))
+              .map((a) => (
+                <option key={a.area_id} value={a.area_id}>
+                  {a.name}
+                </option>
+              ))}
+            {players.some((c) => !c.area_id) && (
+              <option value="">{t("Uten rom", "Unassigned")}</option>
+            )}
+          </select>
+        </label>
+        <div className="lighting-state media-view-switch">
           <button
             aria-label={t("Kort", "Cards")}
             aria-pressed={layout === "cards"}
             onClick={() => setLayout("cards")}
           >
-            <LayoutGrid size={18} />
+            <LayoutGrid size={16} />
+            {t("Kort", "Cards")}
           </button>
           <button
             aria-label={t("Liste", "List")}
             aria-pressed={layout === "list"}
             onClick={() => setLayout("list")}
           >
-            <List size={18} />
+            <List size={16} />
+            {t("Liste", "List")}
           </button>
         </div>
-        <nav aria-label={t("Multimediafilter", "Multimedia filters")}>
-          {[
-            ["all", t("Alle spillere", "All players")],
-            ["playing", t("Spiller nå", "Playing now")],
-            ["tv", t("TV og film", "TV & movies")],
-            ["groups", t("Grupperte spillere", "Grouped players")],
-          ].map(([id, label]) => (
-            <button
-              key={id}
-              aria-pressed={filter === id}
-              onClick={() => setFilter(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
-        <button
-          disabled={!allViews(home)}
-          className="media-scenes-button"
-          onClick={() => showScenes(true)}
-        >
-          <Sparkles size={18} />
-          {t("Scener", "Scenes")}
-        </button>
+        <div className="climate-tabs media-filter-row">
+          <nav aria-label={t("Multimediafilter", "Multimedia filters")}>
+            {[
+              ["all", t("Alle spillere", "All players")],
+              ["playing", t("Spiller nå", "Playing now")],
+              ["tv", t("TV og film", "TV & movies")],
+              ["groups", t("Grupperte spillere", "Grouped players")],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                aria-pressed={filter === id}
+                onClick={() => setFilter(id)}
+              >
+                {id === "all" ? (
+                  <LayoutGrid size={17} />
+                ) : id === "playing" ? (
+                  <Music2 size={17} />
+                ) : id === "tv" ? (
+                  <Tv size={17} />
+                ) : (
+                  <Layers size={17} />
+                )}
+                {label}
+              </button>
+            ))}
+          </nav>
+          <button
+            disabled={!allViews(home)}
+            className="media-scenes-button"
+            onClick={() => showScenes(true)}
+          >
+            <Sparkles size={18} />
+            {t("Scener", "Scenes")}
+          </button>
+        </div>
       </div>
       <div className="media-overview-banner">
         <img src={homeAsset("home-multimedia")} alt="" />
