@@ -1,3 +1,11 @@
+## 1.31.0
+
+- Redesignet sikkerhetsoversikt med statusbanner, kategorier, søk og romfilter.
+- Stort livekamera med kameravelger og forhåndsvisninger; bare valgt kamera starter strøm.
+- Egne paneler for låser, alarmer, sensorer og observerte hendelser.
+- Hurtigtilgang til enhetskontroller i dialoger, med eksisterende bekreftelser.
+- Tilpasset mobil og alle fargetemaer.
+
 ## 1.30.1
 
 - Kameraer starter parallelt uten å vente på hverandre, med samme sesjonsgrenser.

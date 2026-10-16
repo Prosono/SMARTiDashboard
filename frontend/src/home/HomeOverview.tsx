@@ -1,3 +1,4 @@
+import { SecurityOverview } from "./SecurityOverview";
 import { LightOverview } from "./LightOverview";
 import { Multimedia } from "./Multimedia";
 import { SettingsDialog } from "./SettingsDialog";
@@ -39,7 +40,6 @@ import { api } from "../api";
 import type { Home, Control } from "../types";
 import { entityState } from "../manage/entityWords";
 import { overview, reading, temperature, usable } from "./homeModel";
-import { CameraCard } from "./HomeMedia";
 import { Energy } from "./EnergyOverview";
 import { EnergyFlow } from "./EnergyFlow";
 import { Scenes } from "./Scenes";
@@ -120,8 +120,6 @@ export function HomeOverview({
   });
   const [configuring, configure] = useState(false),
     [search, searchFor] = useState("");
-  const [allCameras, showAllCameras] = useState(false),
-    [allSecurity, showAllSecurity] = useState(false);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   const [clock, setClock] = useState(new Date());
@@ -987,28 +985,12 @@ export function HomeOverview({
           </div>
         )}
         {tab === "security" && (
-          <header className="home-view-heading">
-            <div>
-              <span className="home-view-eyebrow">
-                {t("FØLG MED PÅ HJEMMET", "KEEP AN EYE ON HOME")}
-              </span>
-              <h1>
-                <Shield size={27} />
-                {t("Sikkerhet i hjemmet", "Home security")}
-              </h1>
-              <p>
-                {offline
-                  ? t(
-                      "Venter på ferske data fra hjemmet.",
-                      "Waiting for fresh data from your home.",
-                    )
-                  : t(
-                      "Kameraer, låser og varsler — samlet på ett sted.",
-                      "Cameras, locks and alerts — all in one place.",
-                    )}
-              </p>
-            </div>
-          </header>
+          <SecurityOverview
+            home={h}
+            lang={lang}
+            offline={offline}
+            renderControls={renderControls}
+          />
         )}
         {tab === "energy" && (
           <EnergyFlow home={h} offline={offline} lang={lang} />
@@ -1027,22 +1009,6 @@ export function HomeOverview({
             </p>
           </section>
         )}
-        {tab === "security" &&
-          !model.security.length &&
-          !model.cameras.length && (
-            <section className="home-empty-view">
-              <Shield size={32} />
-              <h2>
-                {t("Ingen sikkerhetsenheter ennå", "No security devices yet")}
-              </h2>
-              <p>
-                {t(
-                  "Kameraer, låser og kompatible sensorer vises når de er koblet til SMARTi.",
-                  "Cameras, locks and compatible sensors appear when connected to SMARTi.",
-                )}
-              </p>
-            </section>
-          )}
         <div className="home-insights">
           {tab === "energy" && model.meters.length > 0 && (
             <div id="home-energy">
@@ -1056,99 +1022,6 @@ export function HomeOverview({
               />
             </div>
           )}
-          {tab === "security" && model.cameras.length > 0 && (
-            <section
-              className={
-                "home-panel home-cameras" +
-                (allCameras ? " show-all-cameras" : "")
-              }
-            >
-              <header className="home-section-heading">
-                <h2>
-                  <Camera size={20} />
-                  {t("Kameraer", "Cameras")}
-                </h2>
-                <button onClick={() => showAllCameras(!allCameras)}>
-                  {t(
-                    allCameras ? "Vis utvalgte" : "Vis alle kameraer",
-                    allCameras ? "Show selected" : "View all cameras",
-                  )}
-                </button>
-              </header>
-              <div className="home-camera-grid">
-                {(allCameras
-                  ? model.cameras
-                  : displayedCameras.slice(0, 3)
-                ).map((c) => (
-                  <CameraCard key={c.id} c={c} offline={offline} lang={lang} />
-                ))}
-              </div>
-            </section>
-          )}
-          {tab === "security" && model.security.length > 0 && (
-            <section
-              id="home-security"
-              className="home-panel home-security-panel"
-            >
-              <header className="home-section-heading">
-                <h2>
-                  <Shield size={20} />
-                  {t("Sikkerhet & åpninger", "Security & openings")}
-                </h2>
-                <button onClick={() => showAllSecurity(!allSecurity)}>
-                  {t(
-                    allSecurity ? "Vis færre" : "Vis alle",
-                    allSecurity ? "Show less" : "Show all",
-                  )}
-                </button>
-              </header>
-              <ul className="home-signal-list">
-                {(allSecurity
-                  ? model.security
-                  : model.security.slice(0, 5)
-                ).map((c) => (
-                  <li key={c.id}>
-                    <span
-                      className={
-                        "home-signal-icon " +
-                        (offline || model.alerts.includes(c)
-                          ? "signal-warning"
-                          : model.open.includes(c)
-                            ? "signal-open"
-                            : "signal-clear")
-                      }
-                    >
-                      <Shield size={16} />
-                    </span>
-                    <span>
-                      {c.name}
-                      <small>
-                        {h.areas.find((a) => a.area_id === c.area_id)?.name}
-                      </small>
-                    </span>
-                    <strong>
-                      {offline
-                        ? t("Ukjent", "Unknown")
-                        : entityState(c.entity_id, c.state, h, lang)}
-                    </strong>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          {tab === "security" &&
-            model.security.some((c) =>
-              c.capabilities.some((cap) => cap.actions.length),
-            ) && (
-              <section className="home-security-controls">
-                <h2>{t("Låser og porter", "Locks and gates")}</h2>
-                {renderControls(
-                  model.security.filter((c) =>
-                    ["lock", "cover"].includes(c.domain),
-                  ),
-                )}
-              </section>
-            )}
           {tab === "energy" && (
             <Vehicle home={h} offline={offline} lang={lang} />
           )}
