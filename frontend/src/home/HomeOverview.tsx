@@ -1,4 +1,4 @@
-import { Cleaning } from "./Cleaning";
+import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
 import { useExperience } from "../Experience";
 import { SecurityOverview } from "./SecurityOverview";
 import { LightOverview } from "./LightOverview";
@@ -135,9 +135,12 @@ export function HomeOverview({
         "security",
         "climate",
         "media",
-        ...(h.controls.some((c) => c.domain === "vacuum") ? ["cleaning"] : []),
+        ...(hasMiscellaneous(h) ? ["misc"] : []),
       ] as HomeTab[]
-    ).filter((f) => canView(f) || (f === "security" && canView("cameras"))),
+    ).filter(
+      (f) =>
+        f === "misc" || canView(f) || (f === "security" && canView("cameras")),
+    ),
   ];
   useEffect(() => {
     if (!allowedTabs.includes(tab)) setTab("overview");
@@ -306,8 +309,13 @@ export function HomeOverview({
         </button>
       </div>
       <HomeTabs tab={tab} change={setTab} lang={lang} allowed={allowedTabs}>
-        {tab === "cleaning" && (
-          <Cleaning home={h} lang={lang} offline={offline} />
+        {tab === "misc" && (
+          <Miscellaneous
+            home={h}
+            lang={lang}
+            offline={offline}
+            renderControls={renderControls}
+          />
         )}
         {tab === "media" && (
           <Multimedia home={h} lang={lang} offline={offline} admin={admin} />

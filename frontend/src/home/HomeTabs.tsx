@@ -6,7 +6,7 @@ import {
   Shield,
   Thermometer,
   AudioLines,
-  Brush,
+  LayoutGrid,
 } from "lucide-react";
 export const homeTabs = [
   { id: "overview", nb: "Oversikt", en: "Overview", Icon: House },
@@ -15,7 +15,7 @@ export const homeTabs = [
   { id: "security", nb: "Sikkerhet", en: "Security", Icon: Shield },
   { id: "climate", nb: "Klima", en: "Climate", Icon: Thermometer },
   { id: "media", nb: "Multimedia", en: "Multimedia", Icon: AudioLines },
-  { id: "cleaning", nb: "Rengjøring", en: "Cleaning", Icon: Brush },
+  { id: "misc", nb: "Diverse", en: "More", Icon: LayoutGrid },
 ] as const;
 export type HomeTab = (typeof homeTabs)[number]["id"];
 // A gesture beginning on a control belongs to that control, never the pager.

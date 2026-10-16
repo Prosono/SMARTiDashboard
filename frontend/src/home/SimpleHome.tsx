@@ -1,4 +1,4 @@
-import { Cleaning } from "./Cleaning";
+import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
 import { SettingsDialog } from "./SettingsDialog";
 import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
@@ -66,8 +66,13 @@ export function SimpleHome({
         <button onClick={() => setView("devices")}>
           {en ? "← Back to my home" : "← Tilbake til hjemmet"}
         </button>
-        {view === "cleaning" ? (
-          <Cleaning home={home} lang={lang} offline={offline} />
+        {view === "misc" ? (
+          <Miscellaneous
+            home={home}
+            lang={lang}
+            offline={offline}
+            renderControls={renderControls}
+          />
         ) : view === "media" ? (
           <Multimedia home={home} lang={lang} offline={offline} admin={false} />
         ) : (
@@ -181,9 +186,9 @@ export function SimpleHome({
         </section>
       )}
       <div className="simple-shortcuts">
-        {home.controls.some((c) => c.domain === "vacuum") && (
-          <button onClick={() => setView("cleaning")}>
-            {en ? "Cleaning" : "Rengjøring"}
+        {hasMiscellaneous(home) && (
+          <button onClick={() => setView("misc")}>
+            {en ? "More" : "Diverse"}
           </button>
         )}
         {home.controls.some((c) => c.domain === "media_player") && (

@@ -1,0 +1,41 @@
+.miscellaneous-view {
+  display: grid;
+  gap: 28px;
+  min-width: 0;
+}
+.miscellaneous-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr);
+  gap: 12px;
+}
+.miscellaneous-toolbar select {
+  min-height: 48px;
+  min-width: 0;
+  padding: 10px 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.miscellaneous-section > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.miscellaneous-section > header > svg {
+  color: var(--accent);
+}
+.miscellaneous-section h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.miscellaneous-section > header > span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 600px) {
+  .miscellaneous-toolbar {
+    grid-template-columns: 1fr;
+  }
+}

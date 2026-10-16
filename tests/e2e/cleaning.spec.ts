@@ -46,6 +46,21 @@ test("robot controls follow capabilities, update status and expose only mapped r
           robot,
           {
             ...robot,
+            id: "blind",
+            entity_id: "cover.blind",
+            name: "Persienne på kontoret",
+            domain: "cover",
+            state: "open",
+            attributes: { device_class: "blind", current_position: 70 },
+            capabilities: [
+              {
+                kind: "cover",
+                actions: ["open_cover", "close_cover", "stop_cover"],
+              },
+            ],
+          },
+          {
+            ...robot,
             id: "offline",
             entity_id: "vacuum.offline",
             name: "Robot uten kontakt",
@@ -70,23 +85,33 @@ test("robot controls follow capabilities, update status and expose only mapped r
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await page.getByRole("tab", { name: "Rengjøring", exact: true }).click();
-  const card = page
-    .locator(".vacuum-card")
-    .filter({
-      has: page.getByRole("heading", {
-        name: "Robot i første etasje",
-        exact: true,
-      }),
-    });
-  const offline = page
-    .locator(".vacuum-card")
-    .filter({
-      has: page.getByRole("heading", {
-        name: "Robot uten kontakt",
-        exact: true,
-      }),
-    });
+  await page.getByRole("tab", { name: "Diverse", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Persienner, gardiner og markiser" }),
+  ).toContainText("Persienne på kontoret");
+  const coverCommands: string[] = [];
+  await page.route("**/api/controls/cover.blind/commands", async (route) => {
+    coverCommands.push(route.request().postDataJSON().action);
+    await route.fulfill({ json: { status: "accepted_unconfirmed" } });
+  });
+  page.once("dialog", dialog => dialog.accept());
+  await page
+    .getByRole("region", { name: "Persienner, gardiner og markiser" })
+    .getByRole("button", { name: "Lukk", exact: true })
+    .click();
+  await expect.poll(() => coverCommands).toEqual(["close_cover"]);
+  const card = page.locator(".vacuum-card").filter({
+    has: page.getByRole("heading", {
+      name: "Robot i første etasje",
+      exact: true,
+    }),
+  });
+  const offline = page.locator(".vacuum-card").filter({
+    has: page.getByRole("heading", {
+      name: "Robot uten kontakt",
+      exact: true,
+    }),
+  });
   await expect(
     offline.getByRole("button", { name: "Start rengjøring", exact: true }),
   ).toBeDisabled();

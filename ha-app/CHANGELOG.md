@@ -1,3 +1,10 @@
+## 1.35.5
+
+- Rengjøring-fanen heter nå Diverse, også i Enkel-visningen.
+- Egne seksjoner for robotstøvsugere, persienner/gardiner/markiser og brytere/stikkontakter.
+- Eksisterende tilgangsstyring og enhetskontroller gjenbrukes. Garasjeporter og dører forblir under Sikkerhet.
+- Samlet søk og romfilter bak utvid-ikonet.
+
 ## 1.35.4
 
 - Bildebannerne vises alltid på Lys, Klima, Sikkerhet og Multimedia.
