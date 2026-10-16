@@ -109,9 +109,10 @@
   z-index: -1;
   background: linear-gradient(
     90deg,
-    var(--surface) 25%,
-    color-mix(in srgb, var(--surface) 90%, transparent) 47%,
-    color-mix(in srgb, var(--sidebar) 30%, transparent)
+    color-mix(in srgb, var(--surface) 96%, transparent) 0%,
+    color-mix(in srgb, var(--surface) 88%, transparent) 30%,
+    color-mix(in srgb, var(--surface) 35%, transparent) 52%,
+    color-mix(in srgb, var(--sidebar) 8%, transparent) 75%
   );
 }
 .climate-summary h2 {

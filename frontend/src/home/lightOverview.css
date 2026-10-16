@@ -121,9 +121,10 @@
   z-index: -1;
   background: linear-gradient(
     90deg,
-    var(--surface) 25%,
-    color-mix(in srgb, var(--surface) 90%, transparent) 47%,
-    color-mix(in srgb, var(--sidebar) 30%, transparent)
+    color-mix(in srgb, var(--surface) 96%, transparent) 0%,
+    color-mix(in srgb, var(--surface) 88%, transparent) 30%,
+    color-mix(in srgb, var(--surface) 35%, transparent) 52%,
+    color-mix(in srgb, var(--sidebar) 8%, transparent) 75%
   );
 }
 .lighting-banner h2 {
@@ -397,7 +398,12 @@
     padding: 8px 12px;
   }
   .lighting-banner:after {
-    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    background: linear-gradient(
+      110deg,
+      color-mix(in srgb, var(--surface) 90%, transparent),
+      color-mix(in srgb, var(--surface) 70%, transparent) 45%,
+      color-mix(in srgb, var(--sidebar) 8%, transparent)
+    );
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -678,4 +684,12 @@
     grid-column: 2;
     grid-row: 3;
   }
+}
+
+/* Keep measurements readable without washing out the whole photograph. */
+.lighting-banner .lighting-summary {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 18px;
 }

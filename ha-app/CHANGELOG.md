@@ -1,3 +1,8 @@
+## 1.32.4
+
+- Tydeligere bannerbilder på lys, klima, sikkerhet og multimedia med mindre slør over bildemotivet.
+- Lokal skjerming bak lysmålinger i stedet for et kraftig filter over hele bildet.
+
 ## 1.32.3
 
 - Samme bildefilter som lyssiden på klima, multimedia og sikkerhet, med tydeligere bilder og mindre hvitt slør.
