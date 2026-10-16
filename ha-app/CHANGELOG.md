@@ -1,3 +1,7 @@
+## 1.32.2
+
+- Egne, unike bannerbilder for sikkerhet, klima og multimedia med eksisterende temafiltre.
+
 ## 1.32.1
 
 - Eget stemningsbilde med varm belysning for banneret på lyssiden.

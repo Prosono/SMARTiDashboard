@@ -291,7 +291,7 @@ export function SecurityOverview({
         </nav>
       </div>
       <section className="security-summary" data-alert={alerts.length > 0}>
-        <img src={homeAsset("home-outdoor")} alt="" />
+        <img src={homeAsset("home-security")} alt="" />
         <div>
           <small>{t("SIKKERHET I HJEMMET", "HOME SECURITY")}</small>
           <h2>

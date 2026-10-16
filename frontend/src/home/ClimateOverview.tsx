@@ -205,7 +205,7 @@ export function ClimateOverview({
         </div>
       </div>
       <div className="climate-summary">
-        <img src={homeAsset("home-outdoor")} alt="" />
+        <img src={homeAsset("home-climate")} alt="" />
         <div className="climate-summary-intro">
           <h2>{t("Inneklimaet akkurat nå", "Your indoor climate now")}</h2>
           <p>

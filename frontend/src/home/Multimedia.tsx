@@ -349,7 +349,7 @@ export function Multimedia({
         </div>
       </header>
       <div className="media-overview-banner">
-        <img src={homeAsset("home-living")} alt="" />
+        <img src={homeAsset("home-multimedia")} alt="" />
         <div className="media-banner-copy">
           <span className="eyebrow">{t("LYD OG BILDE", "SOUND & VISION")}</span>
           <h2>
