@@ -1,0 +1,57 @@
+.access-editor {
+  display: grid;
+  gap: 18px;
+}
+.access-editor > p {
+  line-height: 1.6;
+  color: var(--muted);
+  font-size: 14px;
+}
+.access-editor > label {
+  display: grid;
+  gap: 8px;
+}
+.access-editor select {
+  width: 100%;
+  padding: 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.access-matrix {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.access-matrix > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 60px 60px;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  min-height: 54px;
+}
+.access-matrix > div:last-child {
+  border: 0;
+}
+.access-matrix > div > :not(:first-child) {
+  justify-self: center;
+}
+.access-matrix input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.access-matrix-head {
+  background: var(--soft);
+}
+.access-editor .access-note {
+  font-size: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--soft);
+}

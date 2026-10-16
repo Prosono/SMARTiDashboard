@@ -24,12 +24,15 @@ export function HomeTabs({
   change,
   lang,
   children,
+  allowed,
 }: {
   tab: HomeTab;
   change: (tab: HomeTab) => void;
   lang: string;
   children: ReactNode;
+  allowed?: HomeTab[];
 }) {
+  const tabs = homeTabs.filter((t) => !allowed || allowed.includes(t.id));
   const nav = useRef<HTMLDivElement>(null);
   const gesture = useRef<{
     id: number;
@@ -37,7 +40,7 @@ export function HomeTabs({
     y: number;
     time: number;
   } | null>(null);
-  const index = homeTabs.findIndex((t) => t.id === tab);
+  const index = tabs.findIndex((t) => t.id === tab);
   const previous = useRef(index);
   useEffect(() => {
     if (
@@ -49,8 +52,8 @@ export function HomeTabs({
     previous.current = index;
   }, [index]);
   function select(next: number, focus = false) {
-    if (next < 0 || next >= homeTabs.length || next === index) return;
-    change(homeTabs[next].id);
+    if (next < 0 || next >= tabs.length || next === index) return;
+    change(tabs[next].id);
     if (focus)
       nav.current
         ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
@@ -60,11 +63,12 @@ export function HomeTabs({
     <>
       <div
         className="home-tabs"
+        style={{ "--home-tab-count": tabs.length } as CSSProperties}
         ref={nav}
         role="tablist"
         aria-label={lang === "en" ? "Home views" : "Visninger i Hjem"}
       >
-        {homeTabs.map(({ id, nb, en, Icon }, i) => (
+        {tabs.map(({ id, nb, en, Icon }, i) => (
           <button
             key={id}
             id={`home-tab-${id}`}
@@ -76,13 +80,13 @@ export function HomeTabs({
             onKeyDown={(e) => {
               const next =
                 e.key === "ArrowRight"
-                  ? (index + 1) % homeTabs.length
+                  ? (index + 1) % tabs.length
                   : e.key === "ArrowLeft"
-                    ? (index + homeTabs.length - 1) % homeTabs.length
+                    ? (index + tabs.length - 1) % tabs.length
                     : e.key === "Home"
                       ? 0
                       : e.key === "End"
-                        ? homeTabs.length - 1
+                        ? tabs.length - 1
                         : null;
               if (next !== null) {
                 e.preventDefault();

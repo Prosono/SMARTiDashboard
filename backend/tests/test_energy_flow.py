@@ -145,7 +145,7 @@ def test_flow_history_native_query_and_failures(tmp_path):
     app = FastAPI()
     app.include_router(
         energy_flow_router(
-            Store(tmp_path / "flow.sqlite"), lambda: {"id": 1}, ha, SimpleNamespace(mode="live")
+            Store(tmp_path / "flow.sqlite"), lambda: {"id": 1, "role": "admin"}, ha, SimpleNamespace(mode="live")
         )
     )
     with TestClient(app) as c:

@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from .access import all_views, visible
 from .ha import HAError
 
 
@@ -78,11 +79,16 @@ def home_router(store, user, ha, settings):
                 row[0][11:]: bool(row[1])
                 for row in db.execute("SELECT key,length(value) FROM settings WHERE key LIKE 'room_image:%'")
             }
+        pref = Preferences.model_validate_json(
+            store.get(f"home_preferences:{current['id']}", "{}")
+        ).model_dump()
+        allowed = {key for c in ha.controls() if visible(current, c) for key in (c.id, c.entity_id)}
+        pref["cameras"] = [id for id in pref["cameras"] if id in allowed]
+        if pref.get("energy") not in allowed:
+            pref["energy"] = None
         return {
-            **Preferences.model_validate_json(
-                store.get(f"home_preferences:{current['id']}", "{}")
-            ).model_dump(),
-            "modes": json.loads(store.get("home_modes", "{}")),
+            **pref,
+            "modes": json.loads(store.get("home_modes", "{}")) if all_views(current) else {},
             "images": {id: images.get(id, False) for id in ha.areas},
         }
 
@@ -266,7 +272,7 @@ def home_router(store, user, ha, settings):
             config = await ha.request("energy/get_prefs")
         except (HAError, TimeoutError):
             return []
-        controls = {c.entity_id: c for c in ha.controls()}
+        controls = {c.entity_id: c for c in ha.controls() if visible(current, c)}
         result = []
         for source in (config or {}).get("energy_sources", []):
             if source.get("type") not in {"solar", "battery"}:
@@ -283,7 +289,7 @@ def home_router(store, user, ha, settings):
 
     @router.get("/activity")
     async def activity(current=Depends(user)):
-        controls = {c.entity_id: c for c in ha.controls()}
+        controls = {c.entity_id: c for c in ha.controls() if visible(current, c)}
         return [
             e
             for e in ha.activity

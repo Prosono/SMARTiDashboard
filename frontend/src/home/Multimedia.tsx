@@ -1,3 +1,4 @@
+import { allViews } from "../access";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -475,6 +476,7 @@ export function Multimedia({
           ))}
         </nav>
         <button
+          disabled={!allViews(home)}
           className="media-scenes-button"
           onClick={() => showScenes(true)}
         >
@@ -577,7 +579,7 @@ export function Multimedia({
                 "Bring your home settings together in scenes for movie night or a quiet morning.",
               )}
             </p>
-            <button onClick={() => showScenes(true)}>
+            <button disabled={!allViews(home)} onClick={() => showScenes(true)}>
               {t("Åpne scener", "Open scenes")}
             </button>
           </section>

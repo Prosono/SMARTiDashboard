@@ -104,6 +104,32 @@ export function HomeOverview({
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
   const [tab, setTab] = useState<HomeTab>("overview");
+  const canView = (feature: string) =>
+    !h.permissions || h.permissions.includes(feature + ".view");
+  const canScenes =
+    !h.permissions ||
+    [
+      "lights",
+      "climate",
+      "media",
+      "security",
+      "cameras",
+      "energy",
+      "people",
+      "calendar",
+      "other",
+      "scenes",
+    ].every((f) => canView(f));
+  const allowedTabs: HomeTab[] = [
+    "overview",
+    ...(
+      ["lights", "energy", "security", "climate", "media"] as HomeTab[]
+    ).filter((f) => canView(f) || (f === "security" && canView("cameras"))),
+  ];
+  useEffect(() => {
+    if (!allowedTabs.includes(tab)) setTab("overview");
+  }, [h.permissions, tab]);
+
   const prefs = useQuery({
     queryKey: ["home-preferences"],
     queryFn: () => api<HomePreferences>("home/preferences"),
@@ -268,7 +294,7 @@ export function HomeOverview({
           {t("Tilpass Hjem", "Personalize Home")}
         </button>
       </div>
-      <HomeTabs tab={tab} change={setTab} lang={lang}>
+      <HomeTabs tab={tab} change={setTab} lang={lang} allowed={allowedTabs}>
         {tab === "media" && (
           <Multimedia home={h} lang={lang} offline={offline} admin={admin} />
         )}
@@ -616,7 +642,9 @@ export function HomeOverview({
         )}
         {tab === "overview" && (
           <>
-            <Presence home={h} offline={offline} lang={lang} admin={admin} />
+            {canView("people") && (
+              <Presence home={h} offline={offline} lang={lang} admin={admin} />
+            )}
             {!!model.alerts.length && (
               <button
                 className="home-alert-banner"
@@ -953,8 +981,10 @@ export function HomeOverview({
                 </button>
               )}
             </section>
-            <Calendar lang={lang} offline={offline} />
-            <Scenes home={h} offline={offline} admin={admin} lang={lang} />
+            {canView("calendar") && <Calendar lang={lang} offline={offline} />}
+            {canScenes && (
+              <Scenes home={h} offline={offline} admin={admin} lang={lang} />
+            )}
           </>
         )}
         {tab === "lights" && (
@@ -981,7 +1011,9 @@ export function HomeOverview({
         )}
         {tab === "lights" && (
           <div id="lighting-scenes">
-            <Scenes home={h} offline={offline} admin={admin} lang={lang} />
+            {canScenes && (
+              <Scenes home={h} offline={offline} admin={admin} lang={lang} />
+            )}
           </div>
         )}
         {tab === "security" && (

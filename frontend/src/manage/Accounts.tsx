@@ -1,3 +1,4 @@
+import { AccessEditor } from "./AccessEditor";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,6 +15,8 @@ type Account = {
   name: string;
   display_name: string;
   role: string;
+  profile?: string;
+  permissions?: string[];
   linked: boolean;
   ha_user_id?: string;
   photo: boolean;
@@ -92,6 +95,7 @@ export function Accounts({
     queryKey: ["account-pending"],
     queryFn: () => api<Result[]>("manage/accounts/pending"),
   });
+  const [access, setAccess] = useState<Account | null>(null);
   const [open, setOpen] = useState(false),
     [step, setStep] = useState(0),
     [id, setId] = useState(""),
@@ -285,7 +289,11 @@ export function Accounts({
                 {a.name} ·{" "}
                 {a.role === "admin"
                   ? t("Administrator", "Administrator")
-                  : t("Bruker", "User")}{" "}
+                  : a.profile === "viewer"
+                    ? t("Lesetilgang", "Viewer")
+                    : a.profile === "custom"
+                      ? t("Tilpasset tilgang", "Custom access")
+                      : t("Beboer", "Resident")}{" "}
                 ·{" "}
                 {a.linked
                   ? t("Innlogging i app og sentral", "App and controller login")
@@ -294,6 +302,10 @@ export function Accounts({
             </div>
           </div>
           <div className="row-actions">
+            <button onClick={() => setAccess(a)}>
+              <Shield size={16} />
+              {t("Tilgang", "Access")}
+            </button>
             {people
               .filter((p) => !!p.user_id && p.user_id === a.ha_user_id)
               .map((p) => (
@@ -367,6 +379,13 @@ export function Accounts({
           </button>
         </div>
       ))}
+      {access && (
+        <AccessEditor
+          account={access}
+          lang={lang}
+          onClose={() => setAccess(null)}
+        />
+      )}
       {open && (
         <SettingsDialog
           lang={lang}

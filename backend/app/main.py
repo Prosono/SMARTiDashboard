@@ -12,6 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from .access import access_router, controllable, feature, policy, require, route_access, visible
 from .accounts import accounts_router
 from .apps import apps_router
 from .auth import Auth, hasher
@@ -175,6 +176,8 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             request.headers.get("x-csrf-token", ""), result["csrf"]
         ):
             raise HTTPException(403, "csrf_rejected")
+        result.update(policy(store, result))
+        route_access(request, result, ha)
         return result
 
     def admin(current=Depends(user)):
@@ -182,6 +185,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             raise HTTPException(403, "admin_required")
         return current
 
+    app.include_router(access_router(store, admin))
     management = Management(ha, store, settings)
     app.state.management = management
     wireless = WirelessSetup(management, settings)
@@ -278,9 +282,12 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         return {"status": "created"}
 
     def snapshot(current):
-        controls = ha.controls()
+        current = current | policy(store, current)
+        controls = [c for c in ha.controls() if visible(current, c)]
         physical = []
         for did, device in ha.devices.items():
+            if not any(c.device_id == did for c in controls):
+                continue
             statuses = {c.availability for c in controls if c.device_id == did}
             availability = (
                 next(iter(statuses))
@@ -323,7 +330,13 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             "revision": ha.revision,
             "areas": list(ha.areas.values()),
             "devices": physical,
-            "controls": [c.model_dump() for c in controls],
+            "permissions": current["permissions"],
+            "access_profile": current["profile"],
+            "controls": [
+                c.model_dump()
+                | {"capabilities": c.model_dump()["capabilities"] if controllable(current, c) else []}
+                for c in controls
+            ],
             "favorites": favorites,
         }
 
@@ -367,6 +380,14 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         control = next((c for c in ha.controls() if c.entity_id == entity_id), None)
         if not control:
             raise HTTPException(404, "entity_not_found")
+        current = current | policy(store, current)
+        require(current, feature(control) + ".view")
+        require(current, feature(control) + ".control")
+        if control.domain in {"scene", "script", "automation"} and current["role"] != "admin":
+            from .access import ALL
+
+            if not ALL.issubset(set(current["permissions"])):
+                raise HTTPException(403, "permission_denied")
         if control.domain == "automation" and current["role"] != "admin":
             raise HTTPException(403, "admin_required")
         if body.action in {"activate", "lock", "unlock", "open_cover", "close_cover"} and not body.confirmed:
@@ -539,7 +560,8 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         header = request.headers.get("authorization", "")
         if not header.startswith("Bearer ") or len(header) > 256:
             raise HTTPException(401, "mobile_authentication_required")
-        return mobile.session(header[7:])
+        result = mobile.session(header[7:])
+        return result | policy(store, result)
 
     if settings.mobile_enabled and not mobile_only:
 

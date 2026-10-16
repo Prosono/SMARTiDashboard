@@ -1,3 +1,12 @@
+## 1.33.0
+
+- Tilgangsstyring per bruker under Hjem og personer: administrator, beboer, lesetilgang eller tilpasset profil.
+- Separate rettigheter for å se og styre funksjoner, håndhevet på serveren og i hjemoversikten.
+- Skjulte enheter filtreres fra hjemdata; kommandoer, kameraer, historikk og direkte API-kall kontrolleres.
+- Endrede rettigheter gjelder også eksisterende innlogginger. Beskyttelse mot å fjerne egen/siste administratortilgang.
+- Grupper, scener og rutiner kan ikke omgå begrensninger for andre funksjoner.
+- Direkte Home Assistant-innlogging har fortsatt egne rettigheter.
+
 ## 1.32.4
 
 - Tydeligere bannerbilder på lys, klima, sikkerhet og multimedia med mindre slør over bildemotivet.

@@ -1,3 +1,4 @@
+import { allViews, allControls } from "./access";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Layers, Pencil, Trash2 } from "lucide-react";
@@ -35,6 +36,7 @@ export function Groups({
     qc = useQueryClient();
   const q = useQuery({
     queryKey: ["groups"],
+    enabled: allViews(home),
     queryFn: () => api<Group[]>("groups"),
     refetchInterval: 15000,
   });
@@ -158,7 +160,8 @@ export function Groups({
     }
   }
   const actions = (g: Group) => {
-    const blocked = busy || !home.connected || !g.available;
+    const blocked =
+      !allControls(home) || busy || !home.connected || !g.available;
     const colorControl: Control = {
       id: g.id,
       entity_id: g.id,
@@ -236,6 +239,7 @@ export function Groups({
       </div>
     );
   };
+  if (!allViews(home)) return null;
   return (
     <section className="control-groups">
       <header>

@@ -3,6 +3,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from .access import visible
+
 
 class VehiclePreferences(BaseModel):
     model_config = {"extra": "forbid"}
@@ -24,7 +26,7 @@ def vehicle_router(store, user, ha):
 
     @router.put("")
     async def save(body: VehiclePreferences, current=Depends(user)):
-        controls = {c.entity_id: c for c in ha.controls()}
+        controls = {c.entity_id: c for c in ha.controls() if visible(current, c)}
         units = {"battery": {"%"}, "range": {"km", "mi"}, "power": {"W", "kW"}, "energy": {"Wh", "kWh"}}
         for kind in ["battery", "range", "power", "energy", "status", "switch"]:
             id = getattr(body, kind)

@@ -149,6 +149,26 @@ function App() {
       .catch(() => {})
       .finally(() => setChecking(false));
   }, []);
+  useEffect(() => {
+    if (!session) return;
+    let active = true;
+    const refresh = () => {
+      void api<Session>("session")
+        .then((v) => {
+          if (!active) return;
+          setSession(v);
+          updateSession(v);
+        })
+        .catch(() => {});
+    };
+    const timer = setInterval(refresh, 15000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [session?.name]);
   function signedIn(v: Session) {
     setSession(v);
     updateSession(v);

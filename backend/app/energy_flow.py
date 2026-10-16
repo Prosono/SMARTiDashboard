@@ -7,6 +7,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from .access import visible
 from .ha import HAError
 
 ROLES = ("solar", "grid", "battery", "home", "ev")
@@ -69,7 +70,7 @@ def energy_flow_router(store, user, ha, settings):
 
     @router.put("/preferences")
     async def save(body: FlowPreferences, current=Depends(user)):
-        controls = {c.entity_id: c for c in ha.controls()}
+        controls = {c.entity_id: c for c in ha.controls() if visible(current, c)}
 
         def validate(id, units):
             c = controls.get(id)
@@ -95,7 +96,7 @@ def energy_flow_router(store, user, ha, settings):
     @router.get("/live")
     async def live(current=Depends(user)):
         pref = prefs(current)
-        controls = {c.entity_id: c for c in ha.controls()}
+        controls = {c.entity_id: c for c in ha.controls() if visible(current, c)}
         now = datetime.now(UTC)
         result = {}
         for role in ROLES:
@@ -147,7 +148,7 @@ def energy_flow_router(store, user, ha, settings):
     @router.get("/history")
     async def history(period: Literal["24h", "7d"] = "24h", current=Depends(user)):
         pref = prefs(current)
-        controls = {c.entity_id: c for c in ha.controls()}
+        controls = {c.entity_id: c for c in ha.controls() if visible(current, c)}
         bindings = {role: getattr(pref, role) for role in ROLES}
         ids = sorted(
             {

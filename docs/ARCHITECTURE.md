@@ -16,7 +16,7 @@ The browser only calls SMARTi. The backend owns the HA credential, cache, author
 
 A single HA WebSocket receiver routes request IDs and subscriptions. Subscribe before fetching a snapshot, buffer events during synchronization, merge newer state timestamps, then expose the synchronized cache. Registry changes trigger a fresh, atomic registry snapshot. A generation counter prevents registry events during refresh from being lost. Reconnection re-subscribes once per event type. Commands are never queued or retried.
 
-The browser receives authenticated SSE invalidations, then fetches the current model using TanStack Query. Browser-to-backend WebSockets are unnecessary; HA-to-backend WebSockets provide real-time state. The SSE session is revalidated every second. All supported users may read all rooms; there is no claim of per-room access. Automation changes and user creation require administrator role. Lock control is intentionally unavailable.
+The browser receives authenticated SSE invalidations, then fetches the current model using TanStack Query. Browser-to-backend WebSockets are unnecessary; HA-to-backend WebSockets provide real-time state. The SSE session is revalidated every second. Room navigation remains installation-wide; function-level permissions filter entity data and commands, without per-room restrictions. Automation changes and user creation require administrator role. Lock control is intentionally unavailable.
 
 Device IDs come from the HA registry. Controls retain entity and device linkage; channels are separate controls. Entity area overrides device area. Diagnostic and configuration entities are omitted from daily cards. HA domains select capability schemas, never physical identity. Unknown/missing values retain their meaning. Timestamps denote HA state updates, not physical radio contact.
 
@@ -24,7 +24,7 @@ Device IDs come from the HA registry. Controls retain entity and device linkage;
 - No independent automation engine or thermostat loop; stopping SMARTi does not stop HA automation.
 - External setup guidance until radio APIs and actual controllers are verified.
 - Account creation is resumable at the installation level: existing users prevent bootstrap, and the original HA installation is automatically imported.
-- Admin/user roles apply to the whole installation. No guest/per-room authorization.
+- Function-level access profiles are stored per SMARTi account; admin role remains installation-wide. No per-room authorization. See SECURITY.md.
 - HA Ingress and standalone LAN HTTPS use separate deployment modes/listeners. The HA app exposes no LAN port. Concurrent LAN ingress for that same HA app is a later integration step.
 
 ## Management boundary

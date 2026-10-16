@@ -1,3 +1,4 @@
+import { allViews, allControls } from "../access";
 import { LightColor } from "../LightColor";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -117,7 +118,7 @@ export function Scenes({
   const scenes = useQuery({
     queryKey: ["scenes"],
     queryFn: () => api<Scene[]>("scenes"),
-    enabled: !offline,
+    enabled: !offline && allViews(home),
     refetchInterval: 15000,
   });
   const [editor, setEditor] = useState<{
@@ -185,6 +186,7 @@ export function Scenes({
       setBusy(false);
     }
   }
+  if (!allViews(home)) return null;
   return (
     <section className="home-scenes">
       <header className="home-section-heading">
@@ -298,7 +300,9 @@ export function Scenes({
                   </small>
                   <div className="scene-card-actions">
                     <button
-                      disabled={offline || busy || !s.available}
+                      disabled={
+                        offline || busy || !s.available || !allControls(home)
+                      }
                       onClick={() => void activate(s)}
                     >
                       <Play size={15} />

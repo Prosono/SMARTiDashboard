@@ -13,6 +13,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, field_validator
 
+from .access import policy
 from .auth import hasher
 from .home_extras import image_type
 
@@ -102,6 +103,7 @@ def accounts_router(m, admin, user):
         with m.store.connect() as db:
             rows = [dict(r) for r in db.execute("SELECT id,name,role FROM users ORDER BY name")]
         for row in rows:
+            row.update(policy(m.store, row))
             info = json.loads(m.store.get(f"account:{row['id']}", "{}"))
             row.update(
                 display_name=info.get("display_name", row["name"]),

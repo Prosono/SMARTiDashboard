@@ -22,6 +22,8 @@ export type Control = {
   diagnostic: boolean;
 };
 export type Home = {
+  permissions?: string[];
+  access_profile?: string;
   home_name: string;
   mode: "demo" | "live";
   connected: boolean;
