@@ -2,6 +2,31 @@ import { test, expect } from "../../frontend/node_modules/@playwright/test";
 test("personal experience modes simplify navigation and survive reload", async ({
   page,
 }) => {
+  await page.route("**/api/home", async (route) => {
+    const response = await route.fetch();
+    const data = await response.json();
+    await route.fulfill({
+      json: {
+        ...data,
+        controls: [
+          ...data.controls,
+          {
+            id: "smoke-test",
+            entity_id: "binary_sensor.smoke_test",
+            name: "Røyk i kjøkken",
+            domain: "binary_sensor",
+            area_id: "kitchen",
+            device_id: null,
+            state: "on",
+            availability: "available",
+            attributes: { device_class: "smoke" },
+            capabilities: [],
+            diagnostic: false,
+          },
+        ],
+      },
+    });
+  });
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
   await page
@@ -17,11 +42,9 @@ test("personal experience modes simplify navigation and survive reload", async (
       .getByRole("navigation")
       .getByRole("button", { name: "Hjem", exact: true });
   await settings().click();
-  await page
-    .locator(".experience-picker")
-    .screenshot({
-      path: `../artifacts/experience-picker-${test.info().project.name}.png`,
-    });
+  await page.locator(".experience-picker").screenshot({
+    path: `../artifacts/experience-picker-${test.info().project.name}.png`,
+  });
   await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Enkel/ })
@@ -36,6 +59,14 @@ test("personal experience modes simplify navigation and survive reload", async (
       .getByRole("button", { name: "Integrasjoner", exact: true }),
   ).toHaveCount(0);
   await home().click();
+  const alertButton = page
+    .locator(".simple-welcome")
+    .getByRole("button", { name: /Trenger din oppmerksomhet/ });
+  await alertButton.click();
+  await expect(page.getByRole("dialog")).toContainText("Røyk i kjøkken");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(alertButton).toBeFocused();
   await expect(
     page.getByRole("heading", { name: "Hva vil du gjøre hjemme?" }),
   ).toHaveCount(0);

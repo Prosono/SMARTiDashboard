@@ -1,8 +1,9 @@
+import { SettingsDialog } from "./SettingsDialog";
 import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
 import { SecurityOverview } from "./SecurityOverview";
 import { useState, type ReactNode } from "react";
-import { House, Search, Star } from "lucide-react";
+import { TriangleAlert, House, Search, Star } from "lucide-react";
 import type { Home, Control } from "../types";
 export function SimpleHome({
   home,
@@ -19,6 +20,7 @@ export function SimpleHome({
   const [room, setRoom] = useState("welcome"),
     [search, setSearch] = useState(""),
     [limit, setLimit] = useState(4);
+  const [showAlerts, setShowAlerts] = useState(false);
   const [view, setView] = useState("devices");
   const controls = home.controls.filter(
     (c) =>
@@ -88,6 +90,20 @@ export function SimpleHome({
               : "Hva vil du gjøre hjemme?"}
           </p>
         </div>
+        {alerts.length > 0 && (
+          <div className="simple-warning" role="alert">
+            <button
+              className="simple-warning-button"
+              aria-label={`${en ? "Needs your attention" : "Trenger din oppmerksomhet"}: ${alerts.length}`}
+              title={en ? "Show alerts" : "Vis varsler"}
+              aria-haspopup="dialog"
+              onClick={() => setShowAlerts(true)}
+            >
+              <TriangleAlert size={26} aria-hidden="true" />
+              <span aria-hidden="true">{alerts.length}</span>
+            </button>
+          </div>
+        )}
       </header>
       {offline && (
         <p role="status">
@@ -96,17 +112,43 @@ export function SimpleHome({
             : "Hjemmet er frakoblet. Tallene kan være gamle, og styringen er satt på pause."}
         </p>
       )}
-      {alerts.length > 0 && (
-        <div className="simple-alert" role="alert">
-          <strong>
-            {en ? "Needs your attention" : "Trenger din oppmerksomhet"}
-          </strong>
-          {alerts.map((c) => (
-            <p key={c.id}>
-              {c.name}: {en ? "Alarm detected" : "Varsel registrert"}
+      {showAlerts && (
+        <SettingsDialog
+          title={en ? "Needs your attention" : "Trenger din oppmerksomhet"}
+          lang={lang}
+          onClose={() => setShowAlerts(false)}
+          compact
+        >
+          {offline && (
+            <p>
+              {en
+                ? "Connection lost. These are the last reported alerts."
+                : "Forbindelsen er brutt. Dette er de sist rapporterte varslene."}
             </p>
-          ))}
-        </div>
+          )}
+          {alerts.length ? (
+            <ul className="simple-warning-list">
+              {alerts.map((c) => (
+                <li key={c.id}>
+                  <TriangleAlert size={22} aria-hidden="true" />
+                  <div>
+                    <strong>{c.name}</strong>
+                    <p>
+                      {home.areas.find((a) => a.area_id === c.area_id)?.name}
+                    </p>
+                    <span>{en ? "Alarm detected" : "Varsel registrert"}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>
+              {en
+                ? "No active alerts reported."
+                : "Ingen aktive varsler rapportert."}
+            </p>
+          )}
+        </SettingsDialog>
       )}
       {room === "welcome" && !search && (
         <section className="simple-room-section">
