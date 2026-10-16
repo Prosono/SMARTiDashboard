@@ -349,70 +349,6 @@ export function Multimedia({
           </p>
         </div>
       </header>
-      <div className="media-overview-banner">
-        <img src={homeAsset("home-multimedia")} alt="" />
-        <div className="media-banner-copy">
-          <span className="eyebrow">{t("LYD OG BILDE", "SOUND & VISION")}</span>
-          <h2>
-            {t(
-              "Nyt underholdning i hele hjemmet",
-              "Enjoy entertainment throughout your home",
-            )}
-          </h2>
-          <p>
-            {t(
-              "Dine rom. Din musikk. Alt innen rekkevidde.",
-              "Your rooms. Your music. Everything within reach.",
-            )}
-          </p>
-        </div>
-        <div className="media-metrics">
-          {[
-            {
-              Icon: Music2,
-              value: offline ? "—" : playing.length,
-              label: t("Spiller nå", "Playing now"),
-            },
-            {
-              Icon: Speaker,
-              value: players.length,
-              label: t("Spillere", "Players"),
-            },
-            {
-              Icon: Tv,
-              value: offline
-                ? "—"
-                : players.filter(
-                    (c) =>
-                      available(c) &&
-                      ["tv", "projector"].includes(
-                        String(c.attributes.device_class),
-                      ) &&
-                      !["off", "standby"].includes(c.state),
-                  ).length,
-              label: t("TV på", "TVs on"),
-            },
-            {
-              Icon: Volume2,
-              value: offline
-                ? "—"
-                : players.filter(
-                    (c) =>
-                      available(c) && c.attributes.is_volume_muted === true,
-                  ).length,
-              label: t("Dempet", "Muted"),
-            },
-          ].map(({ Icon, value, label }) => (
-            <div key={label}>
-              <Icon size={24} />
-              <span>
-                <strong>{value}</strong>
-                <small>{label}</small>
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
       <div className="media-toolbar">
         <label className="media-search">
           <Search size={19} />
@@ -483,6 +419,70 @@ export function Multimedia({
           <Sparkles size={18} />
           {t("Scener", "Scenes")}
         </button>
+      </div>
+      <div className="media-overview-banner">
+        <img src={homeAsset("home-multimedia")} alt="" />
+        <div className="media-banner-copy">
+          <span className="eyebrow">{t("LYD OG BILDE", "SOUND & VISION")}</span>
+          <h2>
+            {t(
+              "Nyt underholdning i hele hjemmet",
+              "Enjoy entertainment throughout your home",
+            )}
+          </h2>
+          <p>
+            {t(
+              "Dine rom. Din musikk. Alt innen rekkevidde.",
+              "Your rooms. Your music. Everything within reach.",
+            )}
+          </p>
+        </div>
+        <div className="media-metrics">
+          {[
+            {
+              Icon: Music2,
+              value: offline ? "—" : playing.length,
+              label: t("Spiller nå", "Playing now"),
+            },
+            {
+              Icon: Speaker,
+              value: players.length,
+              label: t("Spillere", "Players"),
+            },
+            {
+              Icon: Tv,
+              value: offline
+                ? "—"
+                : players.filter(
+                    (c) =>
+                      available(c) &&
+                      ["tv", "projector"].includes(
+                        String(c.attributes.device_class),
+                      ) &&
+                      !["off", "standby"].includes(c.state),
+                  ).length,
+              label: t("TV på", "TVs on"),
+            },
+            {
+              Icon: Volume2,
+              value: offline
+                ? "—"
+                : players.filter(
+                    (c) =>
+                      available(c) && c.attributes.is_volume_muted === true,
+                  ).length,
+              label: t("Dempet", "Muted"),
+            },
+          ].map(({ Icon, value, label }) => (
+            <div key={label}>
+              <Icon size={24} />
+              <span>
+                <strong>{value}</strong>
+                <small>{label}</small>
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
       <div
         className={`media-player-grid ${layout === "list" ? "is-list" : ""}`}
