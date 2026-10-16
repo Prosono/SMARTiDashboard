@@ -1,31 +1,31 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useId, useState } from "react";
-import "./bannerToggle.css";
+import "./toolbarToggle.css";
 
-export function useBannerDisclosure() {
+export function useToolbarDisclosure() {
   const [expanded, setExpanded] = useState(false);
   const id = useId();
   return { expanded, id, toggle: () => setExpanded((value) => !value) };
 }
 
-export function BannerToggle({
+export function ToolbarToggle({
   expanded,
   id,
   toggle,
   lang,
-}: ReturnType<typeof useBannerDisclosure> & { lang: string }) {
+}: ReturnType<typeof useToolbarDisclosure> & { lang: string }) {
   const label =
     lang === "en"
       ? expanded
-        ? "Collapse banner"
-        : "Expand banner"
+        ? "Hide search and filters"
+        : "Show search and filters"
       : expanded
-        ? "Skjul banner"
-        : "Utvid banner";
+        ? "Skjul søk og filtre"
+        : "Vis søk og filtre";
   const Icon = expanded ? ChevronUp : ChevronDown;
   return (
     <button
-      className="banner-toggle"
+      className="toolbar-toggle"
       type="button"
       aria-label={label}
       title={label}

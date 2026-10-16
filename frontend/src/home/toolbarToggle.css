@@ -1,9 +1,9 @@
-.banner-heading {
+.toolbar-heading {
   position: relative;
   min-height: 44px;
   padding-right: 52px;
 }
-.banner-heading .banner-toggle {
+.toolbar-heading .toolbar-toggle {
   position: absolute;
   left: 50%;
   top: 0;
@@ -19,19 +19,19 @@
   color: var(--muted);
   cursor: pointer;
 }
-.banner-heading .banner-toggle:hover {
+.toolbar-heading .toolbar-toggle:hover {
   color: var(--accent);
   background: var(--soft);
 }
-.banner-heading .banner-toggle:focus-visible {
+.toolbar-heading .toolbar-toggle:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
-[data-collapsible-banner][hidden] {
+[data-collapsible-toolbar][hidden] {
   display: none !important;
 }
 @media (max-width: 800px) {
-  .banner-heading .banner-toggle {
+  .toolbar-heading .toolbar-toggle {
     left: auto;
     right: 0;
     transform: none;

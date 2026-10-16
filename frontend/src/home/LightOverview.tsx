@@ -1,4 +1,4 @@
-import { BannerToggle, useBannerDisclosure } from "./BannerToggle";
+import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { useState, type CSSProperties } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -30,7 +30,7 @@ export function LightOverview({
   openRoom?: (id: string) => void;
   scenes?: () => void;
 }) {
-  const banner = useBannerDisclosure();
+  const toolbar = useToolbarDisclosure();
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
   const prefs = useQuery({
@@ -126,7 +126,7 @@ export function LightOverview({
     .filter((a) => a.items.length);
   return (
     <section className="light-overview">
-      <header className="lighting-heading banner-heading">
+      <header className="lighting-heading toolbar-heading">
         <div>
           <h1>
             <Lightbulb />
@@ -139,10 +139,13 @@ export function LightOverview({
             )}
           </p>
         </div>
-        <BannerToggle {...banner} lang={lang} />
+        <ToolbarToggle {...toolbar} lang={lang} />
       </header>
       <div
         className="lighting-toolbar"
+        id={toolbar.id}
+        hidden={!toolbar.expanded}
+        data-collapsible-toolbar
         role="group"
         aria-label={t("Filtrer og styr lys", "Filter and control lights")}
       >
@@ -213,12 +216,7 @@ export function LightOverview({
           </span>
         </button>
       </div>
-      <div
-        className="lighting-banner"
-        id={banner.id}
-        hidden={!banner.expanded}
-        data-collapsible-banner
-      >
+      <div className="lighting-banner">
         <img src={homeAsset("home-lighting")} alt="" />
         <div>
           <h2>

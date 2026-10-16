@@ -1,4 +1,4 @@
-import { BannerToggle, useBannerDisclosure } from "./BannerToggle";
+import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
@@ -59,7 +59,7 @@ export function ClimateOverview({
   lang: string;
   renderControls: (c: Control[]) => ReactNode;
 }) {
-  const banner = useBannerDisclosure();
+  const toolbar = useToolbarDisclosure();
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const prefs = useQuery({
     queryKey: ["home-preferences"],
@@ -135,7 +135,7 @@ export function ClimateOverview({
   ];
   return (
     <section className="climate-overview">
-      <header className="climate-heading banner-heading">
+      <header className="climate-heading toolbar-heading">
         <Thermometer size={34} />
         <div>
           <h1>{t("Klima", "Climate")}</h1>
@@ -143,10 +143,13 @@ export function ClimateOverview({
             {t("Et behagelig hjem. Alltid.", "A comfortable home. Always.")}
           </p>
         </div>
-        <BannerToggle {...banner} lang={lang} />
+        <ToolbarToggle {...toolbar} lang={lang} />
       </header>
       <div
         className="lighting-toolbar climate-toolbar"
+        id={toolbar.id}
+        hidden={!toolbar.expanded}
+        data-collapsible-toolbar
         role="group"
         aria-label={t("Filtrer klima", "Filter climate")}
       >
@@ -207,12 +210,7 @@ export function ClimateOverview({
           ))}
         </div>
       </div>
-      <div
-        className="climate-summary"
-        id={banner.id}
-        hidden={!banner.expanded}
-        data-collapsible-banner
-      >
+      <div className="climate-summary">
         <img src={homeAsset("home-climate")} alt="" />
         <div className="climate-summary-intro">
           <h2>{t("Inneklimaet akkurat nå", "Your indoor climate now")}</h2>

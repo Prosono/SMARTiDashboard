@@ -1,3 +1,8 @@
+## 1.35.4
+
+- Bildebannerne vises alltid på Lys, Klima, Sikkerhet og Multimedia.
+- Utvid-ikonet viser og skjuler i stedet verktøylinjen med søk og filtre, som er lukket som standard.
+
 ## 1.35.3
 
 - Bannerne på Lys, Klima, Sikkerhet og Multimedia er lukket som standard.

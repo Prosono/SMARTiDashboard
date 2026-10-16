@@ -1,6 +1,6 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
 
-test("section banners start collapsed and can be expanded and collapsed", async ({
+test("search toolbars start collapsed while image banners stay visible", async ({
   page,
 }) => {
   await page.goto("/");
@@ -11,26 +11,32 @@ test("section banners start collapsed and can be expanded and collapsed", async 
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   for (const name of ["Lys", "Klima", "Sikkerhet", "Multimedia"]) {
     await page.getByRole("tab", { name, exact: true }).click();
+    const imageBanner = page.locator(
+      ".lighting-banner, .climate-summary, .security-summary, .media-overview-banner",
+    );
+    await expect(imageBanner).toBeVisible();
     const toggle = page.getByRole("button", {
-      name: "Utvid banner",
+      name: "Vis søk og filtre",
       exact: true,
     });
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
     const id = await toggle.getAttribute("aria-controls");
     const banner = page
-      .locator("[data-collapsible-banner]")
+      .locator("[data-collapsible-toolbar]")
       .filter({ visible: false });
     await expect(banner).toHaveCount(1);
     await toggle.click();
     const collapse = page.getByRole("button", {
-      name: "Skjul banner",
+      name: "Skjul søk og filtre",
       exact: true,
     });
     await expect(collapse).toHaveAttribute("aria-expanded", "true");
-    await expect(page.locator("[data-collapsible-banner]")).toBeVisible();
+    await expect(page.locator("[data-collapsible-toolbar]")).toBeVisible();
     expect(await collapse.getAttribute("aria-controls")).toBe(id);
+    await expect(imageBanner).toBeVisible();
     await collapse.click();
-    await expect(page.locator("[data-collapsible-banner]")).toBeHidden();
+    await expect(page.locator("[data-collapsible-toolbar]")).toBeHidden();
+    await expect(imageBanner).toBeVisible();
     expect(
       await page
         .locator("body")
