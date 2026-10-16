@@ -32,3 +32,17 @@ Device IDs come from the HA registry. Controls retain entity and device linkage;
 `management.py` exposes dedicated administrator-only operations, not a generic HA service or HTTP proxy. HA WebSocket APIs handle registries/config entries/services; narrowly constructed backend REST paths handle editable automation files and integration reload. Unknown advanced automation fields survive editing, and configs use a content revision check. The HA token remains in the backend. Update names/logo are mapped at presentation time, while entity IDs and installed/latest versions retain their actual identities. No successful request is presented as verified physical execution or completed installation.
 
 `home_overview.py` stores personal room/camera/meter choices and admin-managed room images/mode bindings. The fixed Home layout is assembled from registry-backed capabilities, with bounded visible content and reusable controls. Photos and camera stills require authentication; camera tokens never leave the backend. Mode execution requires explicit configuration and confirmation. History is read-only and source-specific. Dashboard CRUD returns 410; inert legacy database rows remain for nondestructive upgrades.
+
+
+### Personal experience levels
+
+`GET/PUT /api/home/experience` stores `simple`, `normal` or `advanced` in
+`settings` under `experience:{user_id}`. Existing users default to advanced.
+The preference is separate from authorization; all existing access checks and
+confirmation requirements apply regardless of presentation. Users can change
+only their own level, including accounts with restricted function permissions.
+Simple uses an everyday home/room view with search, favorites, bounded device
+lists and a reduced navigation. Camera/security and media controls remain
+available on demand. Normal uses existing feature pages with optional overview
+details and an administration menu. Advanced preserves the full navigation.
+This preference does not change Home Assistant account privileges.

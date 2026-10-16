@@ -16,6 +16,11 @@ from .access import all_views, visible
 from .ha import HAError
 
 
+class ExperiencePreference(BaseModel):
+    model_config = {"extra": "forbid"}
+    mode: Literal["simple", "normal", "advanced"] = "advanced"
+
+
 class Preferences(BaseModel):
     model_config = {"extra": "forbid"}
     rooms: list[str] = Field(default_factory=list, max_length=12)
@@ -71,6 +76,15 @@ def home_router(store, user, ha, settings):
         if not found:
             raise HTTPException(404, "entity_not_found")
         return found
+
+    @router.get("/experience")
+    async def experience(current=Depends(user)):
+        return ExperiencePreference.model_validate_json(store.get(f"experience:{current['id']}", "{}"))
+
+    @router.put("/experience")
+    async def save_experience(body: ExperiencePreference, current=Depends(user)):
+        store.set(f"experience:{current['id']}", body.model_dump_json())
+        return body
 
     @router.get("/preferences")
     async def preferences(current=Depends(user)):

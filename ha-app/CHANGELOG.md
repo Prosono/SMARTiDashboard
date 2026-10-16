@@ -1,3 +1,11 @@
+## 1.34.0
+
+- Personlige visningsnivåer: Enkel, Normal og Avansert, lagret per SMARTi-bruker på hjemmesentralen.
+- Enkel: rolig startside, romvalg, søk, favoritter, store av/på-knapper og flere enheter ved behov. Varsler for røyk, gass og lekkasje vises uavhengig av romfilter.
+- Normal: daglige funksjoner med ekstra oversiktsinformasjon og teknisk administrasjon bak egne valg.
+- Avansert beholder dagens komplette grensesnitt. Bytt nivå under Innstillinger; tilgangsstyringen er uendret i alle nivåer.
+- Multimedia har verktøylinjen over oppsummeringsbanneret, som de andre sidene.
+
 ## 1.33.0
 
 - Tilgangsstyring per bruker under Hjem og personer: administrator, beboer, lesetilgang eller tilpasset profil.

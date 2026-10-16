@@ -1,3 +1,4 @@
+import { useExperience } from "../Experience";
 import { SecurityOverview } from "./SecurityOverview";
 import { LightOverview } from "./LightOverview";
 import { Multimedia } from "./Multimedia";
@@ -102,6 +103,8 @@ export function HomeOverview({
   add: () => void;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const mode = useExperience();
+  const [moreOverview, setMoreOverview] = useState(false);
   const qc = useQueryClient();
   const [tab, setTab] = useState<HomeTab>("overview");
   const canView = (feature: string) =>
@@ -272,7 +275,22 @@ export function HomeOverview({
     ? model.cameras.filter((c) => pref.cameras.includes(c.id))
     : model.cameras;
   return (
-    <div className="home-overview">
+    <div
+      className="home-overview"
+      data-overview-detail={mode === "advanced" || moreOverview}
+    >
+      {mode === "normal" && (
+        <button
+          className="overview-detail-toggle"
+          aria-pressed={moreOverview}
+          onClick={() => setMoreOverview(!moreOverview)}
+        >
+          {t(
+            moreOverview ? "Vis mindre" : "Vis mer informasjon",
+            moreOverview ? "Show less" : "Show more information",
+          )}
+        </button>
+      )}
       <div className="home-toolbar">
         <div className="home-location">
           <MapPin size={15} />

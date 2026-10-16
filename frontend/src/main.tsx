@@ -1,3 +1,10 @@
+import {
+  Experience,
+  ExperiencePicker,
+  useExperience,
+  useExperiencePreference,
+} from "./Experience";
+import { SimpleHome } from "./home/SimpleHome";
 import { liveConnection } from "./liveConnection";
 import { RoomsOverview } from "./rooms/RoomsOverview";
 import { ClimateOverview } from "./home/ClimateOverview";
@@ -115,6 +122,9 @@ function App() {
   }, [palette]);
   const t = lang === "en" ? en : nb;
   const [session, updateSession] = useState<Session | null>(null);
+  const experience = useExperiencePreference(!!session);
+  const mode = experience.data?.mode || "advanced";
+  const [administration, showAdministration] = useState(false);
   const [checking, setChecking] = useState(true);
   const [page, setPage] = useState<Page>("home");
   const [dirty, setDirty] = useState(false);
@@ -131,6 +141,12 @@ function App() {
     setDirty(false);
     work();
   }
+  useEffect(() => {
+    setPage((p) =>
+      mode === "simple" && !["home", "rooms", "more"].includes(p) ? "home" : p,
+    );
+    showAdministration(false);
+  }, [mode]);
   const navigate = (p: Page) => guard(() => setPage(p));
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -180,7 +196,7 @@ function App() {
     updateSession(null);
     client.clear();
   }
-  if (checking)
+  if (checking || (session && experience.isLoading))
     return (
       <div className="loading">
         <Logo />
@@ -191,66 +207,87 @@ function App() {
   if (!session)
     return <Login t={t} lang={lang} language={language} signedIn={signedIn} />;
   return (
-    <div className="shell">
-      <aside className="sidebar">
-        <Logo />
-        <div className="sidebar-label">SMART LIVING, SIMPLIFIED.</div>
-        <nav aria-label={lang === "en" ? "Main navigation" : "Hovedmeny"}>
-          {(Object.keys(icons) as Page[])
-            .filter(
-              (p) =>
-                session.role === "admin" ||
-                !["automations", "integrations", "apps", "updates"].includes(p),
-            )
-            .map((p) => {
-              const Icon = icons[p];
-              return (
-                <button
-                  key={p}
-                  className={page === p ? "nav-item active" : "nav-item"}
-                  aria-current={page === p ? "page" : undefined}
-                  onClick={() => navigate(p)}
-                >
-                  <Icon size={21} />
-                  <span>{t[p]}</span>
-                  {page === p && <span className="nav-dot" />}
-                </button>
-              );
-            })}
-        </nav>
-        <div className="sidebar-bottom">
-          <AccountAvatar name={session.name} />
-          <div>
-            <strong>{session.name}</strong>
-            <small>{session.role === "admin" ? t.admin : t.user}</small>
+    <Experience.Provider value={mode}>
+      <div className="shell" data-experience={mode}>
+        <aside className="sidebar">
+          <Logo />
+          <div className="sidebar-label">SMART LIVING, SIMPLIFIED.</div>
+          <nav aria-label={lang === "en" ? "Main navigation" : "Hovedmeny"}>
+            {mode === "normal" && session.role === "admin" && (
+              <button
+                className="nav-item"
+                aria-expanded={administration}
+                onClick={() => showAdministration(!administration)}
+              >
+                {lang === "en" ? "Administration" : "Administrasjon"}
+              </button>
+            )}
+            {(Object.keys(icons) as Page[])
+              .filter(
+                (p) =>
+                  session.role === "admin" ||
+                  !["automations", "integrations", "apps", "updates"].includes(
+                    p,
+                  ),
+              )
+              .filter(
+                (p) =>
+                  mode === "advanced" ||
+                  (mode === "simple"
+                    ? ["home", "rooms", "more"].includes(p)
+                    : administration ||
+                      !["integrations", "apps", "updates"].includes(p)),
+              )
+              .map((p) => {
+                const Icon = icons[p];
+                return (
+                  <button
+                    key={p}
+                    className={page === p ? "nav-item active" : "nav-item"}
+                    aria-current={page === p ? "page" : undefined}
+                    onClick={() => navigate(p)}
+                  >
+                    <Icon size={21} />
+                    <span>{t[p]}</span>
+                    {page === p && <span className="nav-dot" />}
+                  </button>
+                );
+              })}
+          </nav>
+          <div className="sidebar-bottom">
+            <AccountAvatar name={session.name} />
+            <div>
+              <strong>{session.name}</strong>
+              <small>{session.role === "admin" ? t.admin : t.user}</small>
+            </div>
+            <button
+              className="icon-button"
+              aria-label={t.logout}
+              onClick={logout}
+            >
+              <LogOut size={18} />
+            </button>
           </div>
-          <button
-            className="icon-button"
-            aria-label={t.logout}
-            onClick={logout}
-          >
-            <LogOut size={18} />
-          </button>
+        </aside>
+        <div className="workspace">
+          <Dashboard
+            t={t}
+            session={session}
+            page={page}
+            setPage={navigate}
+            guard={guard}
+            onDirty={setDirty}
+            palette={palette}
+            setPalette={setPalette}
+            theme={theme}
+            setTheme={setTheme}
+            lang={lang}
+            language={language}
+            logout={logout}
+          />
         </div>
-      </aside>
-      <div className="workspace">
-        <Dashboard
-          t={t}
-          session={session}
-          page={page}
-          setPage={navigate}
-          guard={guard}
-          onDirty={setDirty}
-          palette={palette}
-          setPalette={setPalette}
-          theme={theme}
-          setTheme={setTheme}
-          lang={lang}
-          language={language}
-          logout={logout}
-        />
       </div>
-    </div>
+    </Experience.Provider>
   );
 }
 function Login({
@@ -448,6 +485,7 @@ function Dashboard({
   language: (s: string) => void;
   logout: () => void;
 }) {
+  const mode = useExperience();
   const queryClient = useQueryClient();
   const home = useQuery({
     queryKey: ["home"],
@@ -642,7 +680,7 @@ function Dashboard({
             </span>
           </div>
         )}
-        {page === "rooms" && !roomEditing && !adding && (
+        {mode !== "simple" && page === "rooms" && !roomEditing && !adding && (
           <nav
             className="tabs room-switcher"
             aria-label={lang === "en" ? "Choose room" : "Velg rom"}
@@ -666,7 +704,14 @@ function Dashboard({
             ))}
           </nav>
         )}
-        {roomEditing && page === "rooms" && session.role === "admin" ? (
+        {mode === "simple" && ["home", "rooms"].includes(page) ? (
+          <SimpleHome
+            home={h}
+            lang={lang}
+            offline={offline}
+            renderControls={cards}
+          />
+        ) : roomEditing && page === "rooms" && session.role === "admin" ? (
           <RoomManager lang={lang} back={() => setRoomEditing(false)} />
         ) : adding ? (
           <DeviceSetup
@@ -904,6 +949,7 @@ function Dashboard({
               <span className="eyebrow">SMARTi</span>
               <h1>{t.settings}</h1>
             </div>
+            <ExperiencePicker lang={lang} />
             <nav
               className="management-tabs settings-sections"
               aria-label={
@@ -911,7 +957,7 @@ function Dashboard({
               }
             >
               {[
-                ...(session.role === "admin"
+                ...(session.role === "admin" && mode !== "simple"
                   ? [
                       [
                         "household",
@@ -923,7 +969,9 @@ function Dashboard({
                       ],
                       ["network", lang === "en" ? "Network" : "Nettverk"],
                       ["system", "System"],
-                      ["debugging", "Debugging"],
+                      ...(mode === "advanced"
+                        ? [["debugging", "Debugging"]]
+                        : []),
                     ]
                   : []),
                 [
@@ -935,13 +983,15 @@ function Dashboard({
                   key={key}
                   className={
                     settingsSection === key ||
-                    (session.role !== "admin" && key === "appearance")
+                    ((session.role !== "admin" || mode === "simple") &&
+                      key === "appearance")
                       ? "selected"
                       : ""
                   }
                   aria-current={
                     settingsSection === key ||
-                    (session.role !== "admin" && key === "appearance")
+                    ((session.role !== "admin" || mode === "simple") &&
+                      key === "appearance")
                       ? "page"
                       : undefined
                   }
@@ -951,9 +1001,14 @@ function Dashboard({
                 </button>
               ))}
             </nav>
-            {session.role === "admin" && settingsSection === "debugging" ? (
+            {mode === "advanced" &&
+            session.role === "admin" &&
+            settingsSection === "debugging" ? (
               <Debugging lang={lang} />
-            ) : session.role === "admin" && settingsSection !== "appearance" ? (
+            ) : mode !== "simple" &&
+              session.role === "admin" &&
+              settingsSection !== "appearance" &&
+              settingsSection !== "debugging" ? (
               <HomeSettings
                 key={settingsSection}
                 lang={lang}
@@ -1070,6 +1125,7 @@ function Device({
   roomName: string;
   admin: boolean;
 }) {
+  const mode = useExperience();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -1220,14 +1276,28 @@ function Device({
         )}
         {power && (
           <button
-            className="toggle"
+            className={mode === "simple" ? "simple-power" : "toggle"}
             role="switch"
             aria-checked={c.state === "on"}
             aria-label={`${c.name}: ${c.state === "on" ? t.off : t.on}`}
             disabled={!can || busy}
             onClick={() => command(c.state === "on" ? "turn_off" : "turn_on")}
           >
-            <span />
+            {mode === "simple" ? (
+              document.documentElement.lang === "en" ? (
+                c.state === "on" ? (
+                  "Turn off"
+                ) : (
+                  "Turn on"
+                )
+              ) : c.state === "on" ? (
+                "Slå av"
+              ) : (
+                "Slå på"
+              )
+            ) : (
+              <span />
+            )}
           </button>
         )}
       </div>
@@ -1286,12 +1356,22 @@ function Device({
         </div>
       )}
       {c.domain === "light" && (
-        <LightColor
-          c={c}
-          lang={document.documentElement.lang}
-          disabled={!can || busy}
-          change={(action, value) => void command(action, value)}
-        />
+        <details
+          className="device-color-options"
+          open={mode === "advanced" ? true : undefined}
+        >
+          <summary>
+            {document.documentElement.lang === "en"
+              ? "Light colour"
+              : "Farge på lyset"}
+          </summary>
+          <LightColor
+            c={c}
+            lang={document.documentElement.lang}
+            disabled={!can || busy}
+            change={(action, value) => void command(action, value)}
+          />
+        </details>
       )}
       {dim && (
         <label className="range-label">
@@ -1330,15 +1410,17 @@ function Device({
         </label>
       )}
 
-      <button
-        className="device-details"
-        aria-expanded={details}
-        onClick={() => showDetails(!details)}
-      >
-        {t.details}
-        <ChevronRight size={14} />
-      </button>
-      {details && (
+      {mode !== "simple" && (
+        <button
+          className="device-details"
+          aria-expanded={details}
+          onClick={() => showDetails(!details)}
+        >
+          {t.details}
+          <ChevronRight size={14} />
+        </button>
+      )}
+      {details && mode !== "simple" && (
         <dl className="details">
           <dt>SMARTi</dt>
           <dd>{c.entity_id}</dd>
