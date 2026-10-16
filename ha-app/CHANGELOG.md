@@ -1,3 +1,7 @@
+## 1.32.1
+
+- Eget stemningsbilde med varm belysning for banneret på lyssiden.
+
 ## 1.32.0
 
 - Ny multimediaoversikt med rombilder, statusbanner og kompakte spillerkort.

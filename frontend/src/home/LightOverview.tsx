@@ -205,7 +205,7 @@ export function LightOverview({
         </button>
       </div>
       <div className="lighting-banner">
-        <img src={homeAsset("home-living")} alt="" />
+        <img src={homeAsset("home-lighting")} alt="" />
         <div>
           <h2>
             {t("God stemning", "A good atmosphere")}

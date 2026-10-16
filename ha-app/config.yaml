@@ -1,5 +1,5 @@
 name: SMARTi
-version: "1.32.0"
+version: "1.32.1"
 slug: smarti
 url: https://github.com/Prosono/SMARTiDashboard
 # Build-tested architecture only; hardware/HAOS validation still required.

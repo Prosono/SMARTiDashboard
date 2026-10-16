@@ -88,3 +88,11 @@ Style/medium: Architectural editorial photography with realistic textures, not a
 Constraints: one continuous interior photograph, no collage, no user interface, no people, no text, no logos, no watermarks. Decorative stock-style imagery, not documentation of any user's real home.
 ```
 
+
+## Lighting banner — 2026-10-16
+
+`home-lighting.webp` is a unique decorative image for the Light overview banner, generated with the built-in image_gen tool. Converted to 1600px-wide WebP with cwebp quality 82, method 6. No compositing. Existing theme overlays apply.
+
+Final prompt:
+
+> Create a unique premium photographic website banner background for SMARTi smart home lighting. Wide landscape 3:1 image. Scandinavian architectural interior at blue hour, entirely focused on beautiful layered warm artificial lighting: on the RIGHT two thirds sculptural brushed bronze pendant lights above a low oak sideboard, a softly glowing opal table lamp, concealed warm LED illumination washing textured plaster and oak slats, partial cream sofa at far right. Quiet luxurious lived-in interior, subtle amber light against desaturated blue-gray evening tones. LEFT third calm softly lit plaster wall with very little detail reserved for UI text. Wide horizontal composition, most important lighting fixtures near middle vertical band so it crops well to a shallow banner. Photorealistic architectural photography, elegant natural materials and believable lighting, no people, no lettering, no watermark, no logos. This is a background asset only, not a screenshot or interface.
