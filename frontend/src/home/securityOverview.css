@@ -109,9 +109,9 @@
   inset: 0;
   background: linear-gradient(
     90deg,
-    var(--surface) 10%,
-    color-mix(in srgb, var(--surface) 95%, transparent) 50%,
-    color-mix(in srgb, var(--surface) 55%, transparent)
+    var(--surface) 25%,
+    color-mix(in srgb, var(--surface) 90%, transparent) 47%,
+    color-mix(in srgb, var(--sidebar) 30%, transparent)
   );
   z-index: -1;
 }

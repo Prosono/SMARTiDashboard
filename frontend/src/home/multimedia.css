@@ -50,10 +50,10 @@
   inset: 0;
   z-index: -1;
   background: linear-gradient(
-    100deg,
-    var(--surface) 30%,
-    color-mix(in srgb, var(--surface) 92%, transparent) 60%,
-    color-mix(in srgb, var(--surface) 35%, transparent)
+    90deg,
+    var(--surface) 25%,
+    color-mix(in srgb, var(--surface) 90%, transparent) 47%,
+    color-mix(in srgb, var(--sidebar) 30%, transparent)
   );
 }
 .media-banner-copy h2 {

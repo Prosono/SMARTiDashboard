@@ -109,9 +109,9 @@
   z-index: -1;
   background: linear-gradient(
     90deg,
-    var(--surface) 15%,
-    color-mix(in srgb, var(--surface) 96%, transparent) 50%,
-    color-mix(in srgb, var(--surface) 78%, transparent)
+    var(--surface) 25%,
+    color-mix(in srgb, var(--surface) 90%, transparent) 47%,
+    color-mix(in srgb, var(--sidebar) 30%, transparent)
   );
 }
 .climate-summary h2 {
@@ -131,7 +131,9 @@
   gap: 12px;
   align-items: center;
   border-left: 1px solid var(--line);
-  padding-left: 20px;
+  padding: 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
   min-width: 0;
 }
 .climate-metric > svg {

@@ -1,3 +1,8 @@
+## 1.32.3
+
+- Samme bildefilter som lyssiden på klima, multimedia og sikkerhet, med tydeligere bilder og mindre hvitt slør.
+- Egen bakgrunn bak klimamålingene for lesbarhet i alle temaer.
+
 ## 1.32.2
 
 - Egne, unike bannerbilder for sikkerhet, klima og multimedia med eksisterende temafiltre.
