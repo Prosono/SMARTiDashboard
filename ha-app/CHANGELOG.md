@@ -1,3 +1,13 @@
+## 1.35.0
+
+- Generell støtte for robotstøvsugere via hjemmesentralens vacuum-enheter, uavhengig av merke.
+- Rengjøring-fane vises når en robot finnes, samt snarvei i Enkel og robotkort i rom/enhetsvisninger og favoritter.
+- Status, batteri når tilgjengelig, start/fortsett, pause og retur til ladestasjon. Kun støttede handlinger vises.
+- Detaljdialog med sugestyrke, stopp, finn roboten og punktrengjøring når integrasjonen støtter det.
+- Romrengjøring bruker eksisterende HA-romkoblinger og clean_area-støtte; eldre integrasjoner får grunnstyring.
+- Separate rettigheter for å se og styre rengjøring, kontrollert på serveren.
+- Ingen automatisk gjentakelse av ubekreftede kommandoer. Kart og produsentspesifikke moppe-/stasjonsfunksjoner er ikke med i denne versjonen.
+
 ## 1.34.1
 
 - Mer innbydende Enkel-visning med rombilder og favoritter først.

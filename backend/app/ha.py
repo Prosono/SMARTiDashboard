@@ -207,12 +207,37 @@ class HomeAssistant:
                         self.refresh_task = asyncio.create_task(self.refresh_registries())
         raise HAError("disconnected")
 
+    async def vacuum_options(self, entities):
+        # HA's list response can omit options; fetch only vacuum entries to read
+        # existing area mappings. Older/limited integrations still get basic controls.
+        semaphore = asyncio.Semaphore(4)
+
+        async def enrich(entry):
+            if (
+                not entry.get("entity_id", "").startswith("vacuum.")
+                or entry.get("disabled_by")
+                or "options" in entry
+            ):
+                return
+            async with semaphore:
+                try:
+                    detail = await asyncio.wait_for(
+                        self.request("config/entity_registry/get", entity_id=entry["entity_id"]), 5
+                    )
+                except (HAError, TimeoutError):
+                    return
+                if isinstance(detail, dict) and isinstance(detail.get("options"), dict):
+                    entry["options"] = {"vacuum": detail["options"].get("vacuum", {})}
+
+        await asyncio.gather(*(enrich(entry) for entry in entities))
+
     async def registries(self):
         while True:
             generation = self.registry_generation
             areas, devices, entities = await asyncio.gather(
                 *(self.request(op) for op in REGISTRY_OPERATIONS.values())
             )
+            await self.vacuum_options(entities)
             if generation == self.registry_generation:
                 self.areas = {v["area_id"]: v for v in areas}
                 self.devices = {v["id"]: v for v in devices}
@@ -303,7 +328,11 @@ class HomeAssistant:
         domain = entity_id.split(".")[0]
         data = {}
         service = "turn_on" if action == "activate" else action
-        if action == "set_brightness":
+        if action == "set_fan_speed":
+            data = {"fan_speed": value}
+        elif action == "clean_area":
+            data = {"cleaning_area_id": value}
+        elif action == "set_brightness":
             service, data = "turn_on", {"brightness_pct": value}
         elif action == "set_rgb_color":
             service, data = "turn_on", {"rgb_color": list(value)}

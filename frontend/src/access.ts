@@ -3,6 +3,7 @@ const features = [
   "lights",
   "climate",
   "media",
+  "cleaning",
   "security",
   "cameras",
   "energy",
@@ -11,7 +12,15 @@ const features = [
   "other",
   "scenes",
 ];
-const controls = ["lights", "climate", "media", "security", "other", "scenes"];
+const controls = [
+  "lights",
+  "climate",
+  "media",
+  "cleaning",
+  "security",
+  "other",
+  "scenes",
+];
 export const canView = (home: Home, feature: string) =>
   !home.permissions || home.permissions.includes(feature + ".view");
 export const allViews = (home: Home) => features.every((f) => canView(home, f));

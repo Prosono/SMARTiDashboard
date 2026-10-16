@@ -6,6 +6,12 @@ import "./accessEditor.css";
 const functions = [
   ["lights", "Lys", "Lights", true],
   ["climate", "Klima og luft", "Climate and air", true],
+  [
+    "cleaning",
+    "Rengjøring og robotstøvsugere",
+    "Cleaning and robot vacuums",
+    true,
+  ],
   ["media", "Multimedia", "Multimedia", true],
   [
     "security",

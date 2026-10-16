@@ -32,6 +32,14 @@ class Control(BaseModel):
 class Command(BaseModel):
     model_config = {"extra": "forbid"}
     action: Literal[
+        "start",
+        "pause",
+        "stop",
+        "return_to_base",
+        "locate",
+        "clean_spot",
+        "set_fan_speed",
+        "clean_area",
         "turn_on",
         "turn_off",
         "set_temperature",
@@ -53,6 +61,8 @@ class Command(BaseModel):
         "set_color_temp",
     ]
     value: Annotated[float, Field(allow_inf_nan=False)] | tuple[int, int, int] | None = None
+    fan_speed: str | None = Field(default=None, max_length=100)
+    area_ids: list[str] = Field(default_factory=list, max_length=100)
     confirmed: bool = False
 
 
@@ -79,6 +89,7 @@ def normalize(states, entities, devices):
             "script",
             "person",
             "media_player",
+            "vacuum",
         }:
             continue
         a = state.get("attributes", {})
@@ -147,6 +158,42 @@ def normalize(states, entities, devices):
                     ],
                 )
             )
+        if domain == "vacuum":
+            features = a.get("supported_features", 0)
+            features = features if isinstance(features, int) else 0
+            actions = [
+                action
+                for bit, action in [
+                    (1, "turn_on"),
+                    (2, "turn_off"),
+                    (4, "pause"),
+                    (8, "stop"),
+                    (16, "return_to_base"),
+                    (512, "locate"),
+                    (1024, "clean_spot"),
+                    (8192, "start"),
+                ]
+                if features & bit
+            ]
+            speeds = a.get("fan_speed_list")
+            if features & 32 and isinstance(speeds, list) and any(isinstance(v, str) for v in speeds):
+                actions.append("set_fan_speed")
+            options = registry.get("options")
+            options = options.get("vacuum") if isinstance(options, dict) else None
+            mapping = options.get("area_mapping", {}) if isinstance(options, dict) else {}
+            mapped = (
+                [
+                    key
+                    for key, segments in mapping.items()
+                    if isinstance(key, str) and isinstance(segments, list) and segments
+                ]
+                if isinstance(mapping, dict)
+                else []
+            )
+            a = {**a, "smarti_cleaning_areas": mapped}
+            if features & 16384 and mapped:
+                actions.append("clean_area")
+            caps.append(Capability(kind="vacuum", actions=actions))
         if domain == "media_player":
             features = a.get("supported_features", 0)
             features = features if isinstance(features, int) else 0

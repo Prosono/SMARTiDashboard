@@ -1,0 +1,160 @@
+.cleaning-view {
+  display: grid;
+  gap: 24px;
+}
+.cleaning-heading,
+.vacuum-card header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.cleaning-heading > svg {
+  color: var(--accent);
+}
+.cleaning-heading h1 {
+  margin: 0;
+}
+.cleaning-heading p {
+  color: var(--muted);
+}
+.cleaning-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.cleaning-search input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+.cleaning-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.vacuum-card {
+  padding: 24px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  min-width: 0;
+}
+.vacuum-card h3 {
+  margin: 4px 0;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.vacuum-card small {
+  color: var(--muted);
+}
+.vacuum-card header > button {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.vacuum-card button[aria-pressed="true"] {
+  color: var(--accent);
+}
+.vacuum-illustration {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border: 5px solid var(--line);
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--accent);
+}
+.vacuum-illustration > span {
+  position: absolute;
+  width: 16px;
+  height: 8px;
+  border-radius: 6px;
+  background: var(--accent);
+  top: 3px;
+}
+.vacuum-card.is-cleaning .vacuum-illustration {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+.vacuum-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 24px 0;
+}
+.vacuum-status span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+}
+.vacuum-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+}
+.vacuum-actions button,
+.vacuum-rooms button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+  color: var(--text);
+}
+.vacuum-actions button:first-child {
+  background: var(--accent);
+  color: var(--on-media, white);
+}
+.vacuum-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.vacuum-rooms {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.vacuum-rooms label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+.vacuum-rooms input {
+  width: 20px;
+  height: 20px;
+}
+.vacuum-dialog-status {
+  font-size: 20px;
+  font-weight: 600;
+}
+@media (max-width: 600px) {
+  .vacuum-card {
+    padding: 18px;
+  }
+  .vacuum-actions button {
+    flex: 1 1 auto;
+  }
+}

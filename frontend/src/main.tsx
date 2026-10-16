@@ -1,3 +1,4 @@
+import { VacuumCard } from "./home/Cleaning";
 import {
   Experience,
   ExperiencePicker,
@@ -581,17 +582,27 @@ function Dashboard({
   function cards(controls: Control[]) {
     return (
       <div className="controls-grid">
-        {controls.map((c) => (
-          <Device
-            key={c.id}
-            c={c}
-            t={t}
-            h={h}
-            offline={offline}
-            roomName={roomName(c.area_id)}
-            admin={session.role === "admin"}
-          />
-        ))}
+        {controls.map((c) =>
+          c.domain === "vacuum" ? (
+            <VacuumCard
+              key={c.id}
+              c={c}
+              home={h}
+              lang={lang}
+              offline={offline}
+            />
+          ) : (
+            <Device
+              key={c.id}
+              c={c}
+              t={t}
+              h={h}
+              offline={offline}
+              roomName={roomName(c.area_id)}
+              admin={session.role === "admin"}
+            />
+          ),
+        )}
       </div>
     );
   }

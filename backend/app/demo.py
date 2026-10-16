@@ -129,7 +129,19 @@ class Demo(HomeAssistant):
     async def command(self, entity_id, action, value=None):
         await asyncio.sleep(0.2)
         state = self.states[entity_id]
-        if action in {"turn_on", "turn_off"}:
+        if entity_id.startswith("vacuum."):
+            if action in {"start", "clean_area", "clean_spot", "turn_on"}:
+                state["state"] = "cleaning"
+            elif action in {"pause", "stop", "return_to_base", "turn_off"}:
+                state["state"] = {
+                    "pause": "paused",
+                    "stop": "idle",
+                    "return_to_base": "returning",
+                    "turn_off": "idle",
+                }[action]
+            elif action == "set_fan_speed":
+                state["attributes"]["fan_speed"] = value
+        elif action in {"turn_on", "turn_off"}:
             state["state"] = "on" if action == "turn_on" else "off"
         elif action == "set_brightness":
             state["attributes"]["brightness"] = round(value * 255 / 100)

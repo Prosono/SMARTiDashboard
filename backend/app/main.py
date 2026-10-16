@@ -397,7 +397,30 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             raise HTTPException(422, "unsupported_action")
         if not ha.connected or control.availability != "available":
             raise HTTPException(409, "device_unavailable")
-        if body.action == "set_rgb_color":
+        if body.action != "set_fan_speed" and body.fan_speed is not None:
+            raise HTTPException(422, "unexpected_fan_speed")
+        if body.action != "clean_area" and body.area_ids:
+            raise HTTPException(422, "unexpected_area_ids")
+        command_value = body.value
+        if body.action == "set_fan_speed":
+            if (
+                body.value is not None
+                or not body.fan_speed
+                or body.fan_speed not in control.attributes.get("fan_speed_list", [])
+            ):
+                raise HTTPException(422, "invalid_fan_speed")
+            command_value = body.fan_speed
+        elif body.action == "clean_area":
+            if (
+                body.value is not None
+                or not body.area_ids
+                or not set(body.area_ids).issubset(
+                    set(control.attributes.get("smarti_cleaning_areas", [])) & set(ha.areas)
+                )
+            ):
+                raise HTTPException(422, "invalid_cleaning_areas")
+            command_value = list(dict.fromkeys(body.area_ids))
+        elif body.action == "set_rgb_color":
             if not isinstance(body.value, tuple) or any(not 0 <= v <= 255 for v in body.value):
                 raise HTTPException(422, "invalid_color")
         elif body.action.startswith("set_"):
@@ -420,7 +443,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         elif body.value is not None:
             raise HTTPException(422, "unexpected_value")
         try:
-            return await ha.command(entity_id, body.action, body.value)
+            return await ha.command(entity_id, body.action, command_value)
         except (HAError, TimeoutError):
             raise HTTPException(504, "command_unconfirmed_do_not_retry_automatically")
 

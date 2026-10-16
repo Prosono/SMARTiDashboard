@@ -50,3 +50,20 @@ This preference does not change Home Assistant account privileges.
 `GET/PUT /api/home/language` stores `nb` or `en` under `language:{user_id}`.
 Authenticated UI language follows this preference; the login screen retains its
 browser-local language choice. Users may only update their own language.
+
+
+### Robot vacuums
+
+Vacuum entities use the existing normalized controls and command route, shared
+by browser and mobile clients. Supported-feature flags gate each action on both
+client and server. Suction selections must match the integration's fan_speed_list.
+Area cleaning accepts only current home areas present in the vacuum registry's
+existing options.vacuum.area_mapping. Registry refresh fetches extended vacuum
+entries when the list response lacks options, with bounded concurrency and a
+basic-control fallback on unsupported requests. SMARTi does not alter the mapping.
+Commands are forwarded through the HA vacuum service domain, never a manufacturer
+cloud. Generic arbitrary send_command is not exposed. Cleaning has its own view
+and control permissions; custom profiles do not gain these permissions implicitly.
+Resident/viewer presets include new functions according to their preset semantics.
+Maps and vendor-specific mop/dock maintenance controls are not yet implemented.
+Reference: https://developers.home-assistant.io/docs/core/entity/vacuum/

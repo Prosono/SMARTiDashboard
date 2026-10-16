@@ -1,3 +1,4 @@
+import { Cleaning } from "./Cleaning";
 import { useExperience } from "../Experience";
 import { SecurityOverview } from "./SecurityOverview";
 import { LightOverview } from "./LightOverview";
@@ -116,6 +117,7 @@ export function HomeOverview({
       "lights",
       "climate",
       "media",
+      "cleaning",
       "security",
       "cameras",
       "energy",
@@ -127,7 +129,14 @@ export function HomeOverview({
   const allowedTabs: HomeTab[] = [
     "overview",
     ...(
-      ["lights", "energy", "security", "climate", "media"] as HomeTab[]
+      [
+        "lights",
+        "energy",
+        "security",
+        "climate",
+        "media",
+        ...(h.controls.some((c) => c.domain === "vacuum") ? ["cleaning"] : []),
+      ] as HomeTab[]
     ).filter((f) => canView(f) || (f === "security" && canView("cameras"))),
   ];
   useEffect(() => {
@@ -315,6 +324,9 @@ export function HomeOverview({
         </button>
       </div>
       <HomeTabs tab={tab} change={setTab} lang={lang} allowed={allowedTabs}>
+        {tab === "cleaning" && (
+          <Cleaning home={h} lang={lang} offline={offline} />
+        )}
         {tab === "media" && (
           <Multimedia home={h} lang={lang} offline={offline} admin={admin} />
         )}

@@ -63,6 +63,17 @@ export function controlState(
   const en = lang === "en";
   if (state == null || state === "unknown") return en ? "Unknown" : "Ukjent";
   if (state === "unavailable") return en ? "Unavailable" : "Utilgjengelig";
+  if (control?.domain === "vacuum") {
+    const vacuum: Record<string, [string, string]> = {
+      cleaning: ["Rengjør", "Cleaning"],
+      docked: ["I ladestasjonen", "At the dock"],
+      returning: ["På vei til ladestasjonen", "Returning to dock"],
+      paused: ["På pause", "Paused"],
+      idle: ["Klar", "Idle"],
+      error: ["Trenger hjelp", "Needs help"],
+    };
+    if (vacuum[String(state)]) return vacuum[String(state)][en ? 1 : 0];
+  }
   if (state === "on" || state === "off") {
     const labels =
       control?.domain === "binary_sensor"

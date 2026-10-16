@@ -1,3 +1,4 @@
+import { Cleaning } from "./Cleaning";
 import { SettingsDialog } from "./SettingsDialog";
 import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
@@ -65,7 +66,9 @@ export function SimpleHome({
         <button onClick={() => setView("devices")}>
           {en ? "← Back to my home" : "← Tilbake til hjemmet"}
         </button>
-        {view === "media" ? (
+        {view === "cleaning" ? (
+          <Cleaning home={home} lang={lang} offline={offline} />
+        ) : view === "media" ? (
           <Multimedia home={home} lang={lang} offline={offline} admin={false} />
         ) : (
           <SecurityOverview
@@ -178,6 +181,11 @@ export function SimpleHome({
         </section>
       )}
       <div className="simple-shortcuts">
+        {home.controls.some((c) => c.domain === "vacuum") && (
+          <button onClick={() => setView("cleaning")}>
+            {en ? "Cleaning" : "Rengjøring"}
+          </button>
+        )}
         {home.controls.some((c) => c.domain === "media_player") && (
           <button onClick={() => setView("media")}>
             {en ? "Music and TV" : "Musikk og TV"}

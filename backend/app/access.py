@@ -9,6 +9,7 @@ FEATURES = (
     "lights",
     "climate",
     "media",
+    "cleaning",
     "security",
     "cameras",
     "energy",
@@ -17,7 +18,7 @@ FEATURES = (
     "other",
     "scenes",
 )
-CONTROL_FEATURES = ("lights", "climate", "media", "security", "other", "scenes")
+CONTROL_FEATURES = ("lights", "climate", "media", "cleaning", "security", "other", "scenes")
 ALL = {f"{f}.view" for f in FEATURES} | {f"{f}.control" for f in CONTROL_FEATURES}
 
 
@@ -46,6 +47,10 @@ def policy(store, current):
         return {"profile": "resident", "permissions": sorted(ALL)}
     try:
         data = AccessDraft.model_validate_json(raw)
+        if data.profile == "resident":
+            return {"profile": "resident", "permissions": sorted(ALL)}
+        if data.profile == "viewer":
+            return {"profile": "viewer", "permissions": sorted(p for p in ALL if p.endswith(".view"))}
         return {"profile": data.profile, "permissions": sorted(set(data.permissions) & ALL)}
     except (ValueError, TypeError):
         return {"profile": "custom", "permissions": []}
@@ -69,6 +74,7 @@ def feature(c):
         "fan": "climate",
         "humidifier": "climate",
         "media_player": "media",
+        "vacuum": "cleaning",
         "camera": "cameras",
         "lock": "security",
         "alarm_control_panel": "security",
