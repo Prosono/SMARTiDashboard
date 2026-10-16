@@ -108,6 +108,7 @@ export function HomeOverview({
   const mode = useExperience();
   const qc = useQueryClient();
   const [tab, setTab] = useState<HomeTab>("overview");
+  const [lightScenes, showLightScenes] = useState(false);
   const canView = (feature: string) =>
     !h.permissions || h.permissions.includes(feature + ".view");
   const canScenes =
@@ -1003,11 +1004,7 @@ export function HomeOverview({
             offline={offline}
             lang={lang}
             openRoom={openRooms}
-            scenes={() =>
-              document
-                .getElementById("lighting-scenes")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
+            scenes={canScenes ? () => showLightScenes(true) : undefined}
           />
         )}
         {tab === "climate" && (
@@ -1019,12 +1016,14 @@ export function HomeOverview({
             renderControls={renderControls}
           />
         )}
-        {tab === "lights" && (
-          <div id="lighting-scenes">
-            {canScenes && (
-              <Scenes home={h} offline={offline} admin={admin} lang={lang} />
-            )}
-          </div>
+        {tab === "lights" && lightScenes && canScenes && (
+          <SettingsDialog
+            title={t("Scener", "Scenes")}
+            lang={lang}
+            onClose={() => showLightScenes(false)}
+          >
+            <Scenes home={h} offline={offline} admin={admin} lang={lang} />
+          </SettingsDialog>
         )}
         {tab === "security" && (
           <SecurityOverview

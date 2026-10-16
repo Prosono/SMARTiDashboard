@@ -1,3 +1,8 @@
+## 1.35.2
+
+- Scener-knapp i verktøylinjen på Lys åpner scenene i en dialog, som under Multimedia.
+- Tilgangen følger brukerens eksisterende scenerettigheter.
+
 ## 1.35.1
 
 - Velkomstbanneret viser kun værkort i Normal og Avansert, uten karusell eller automatisk bytting.

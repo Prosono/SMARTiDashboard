@@ -192,6 +192,12 @@ export function LightOverview({
             ))}
           </select>
         </label>
+        {scenes && (
+          <button className="lighting-scenes" onClick={scenes}>
+            <Sparkles size={18} />
+            {t("Scener", "Scenes")}
+          </button>
+        )}
         <button
           className="lighting-off"
           disabled={offline || !home.connected || !on || !!pending.length}
