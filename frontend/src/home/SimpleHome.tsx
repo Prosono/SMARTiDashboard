@@ -1,3 +1,4 @@
+import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
 import { SecurityOverview } from "./SecurityOverview";
 import { useState, type ReactNode } from "react";
@@ -15,9 +16,9 @@ export function SimpleHome({
   renderControls: (c: Control[]) => ReactNode;
 }) {
   const en = lang === "en";
-  const [room, setRoom] = useState("all"),
+  const [room, setRoom] = useState("welcome"),
     [search, setSearch] = useState(""),
-    [limit, setLimit] = useState(8);
+    [limit, setLimit] = useState(4);
   const [view, setView] = useState("devices");
   const controls = home.controls.filter(
     (c) =>
@@ -35,7 +36,8 @@ export function SimpleHome({
   const shown = controls.filter(
     (c) =>
       (room === "all" ||
-        (room === "favorites"
+        (room === "welcome" && !!search) ||
+        (["favorites", "welcome"].includes(room)
           ? home.favorites.includes(c.entity_id)
           : (c.area_id || "none") === room)) &&
       c.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
@@ -75,7 +77,8 @@ export function SimpleHome({
     );
   return (
     <section className="simple-home">
-      <header>
+      <header className="simple-welcome">
+        <img src={homeAsset("home-living")} alt="" />
         <House size={32} />
         <div>
           <h1>{home.home_name}</h1>
@@ -105,6 +108,33 @@ export function SimpleHome({
           ))}
         </div>
       )}
+      {room === "welcome" && !search && (
+        <section className="simple-room-section">
+          <h2>
+            {en ? "Where would you like to start?" : "Hvor vil du begynne?"}
+          </h2>
+          <div className="simple-room-tiles">
+            {home.areas.slice(0, 6).map((a) => {
+              const { Icon, photo } = roomMood(a.name);
+              return (
+                <button
+                  key={a.area_id}
+                  onClick={() => {
+                    setRoom(a.area_id);
+                    setLimit(4);
+                  }}
+                >
+                  <img src={homeAsset(photo || "home-living")} alt="" />
+                  <span>
+                    <Icon size={20} />
+                    {a.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
       <div className="simple-shortcuts">
         {home.controls.some((c) => c.domain === "media_player") && (
           <button onClick={() => setView("media")}>
@@ -129,6 +159,7 @@ export function SimpleHome({
               setLimit(8);
             }}
           >
+            <option value="welcome">{en ? "My home" : "Mitt hjem"}</option>
             <option value="all">{en ? "All rooms" : "Alle rom"}</option>
             <option value="favorites">
               {en ? "My favorites" : "Mine favoritter"}
@@ -156,6 +187,15 @@ export function SimpleHome({
           />
         </label>
       </div>
+      <h2>
+        {["welcome", "favorites"].includes(room) && !search
+          ? en
+            ? "Your favorites"
+            : "Dine favoritter"
+          : en
+            ? "Your devices"
+            : "Dine enheter"}
+      </h2>
       <p className="simple-help">
         <Star size={18} />
         {en
@@ -172,7 +212,9 @@ export function SimpleHome({
         <p>
           {en
             ? "No devices here. Choose another room or change your search."
-            : "Ingen enheter her. Velg et annet rom eller endre søket."}
+            : room === "welcome" && !search
+              ? "Velg et rom over for å finne enhetene dine. Stjernemerk dem du bruker ofte, så vises de her."
+              : "Ingen enheter her. Velg et annet rom eller endre søket."}
         </p>
       )}
       {shown.length > limit && (

@@ -1,3 +1,4 @@
+import { Heart, LayoutGrid, SlidersHorizontal, Check } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
@@ -80,15 +81,72 @@ export function ExperiencePicker({ lang }: { lang: string }) {
             aria-pressed={mode === o.id}
             onClick={() => void choose(o.id)}
           >
-            <strong>
-              {o.title}
-              {mode === o.id ? " ✓" : ""}
-            </strong>
+            <div className="experience-option-top">
+              <span className="experience-symbol">
+                {o.id === "simple" ? (
+                  <Heart size={24} />
+                ) : o.id === "normal" ? (
+                  <LayoutGrid size={24} />
+                ) : (
+                  <SlidersHorizontal size={24} />
+                )}
+              </span>
+              <span className="experience-check" aria-hidden="true">
+                {mode === o.id && <Check size={16} />}
+              </span>
+            </div>
+            <strong>{o.title}</strong>
             <span>{o.text}</span>
           </button>
         ))}
       </div>
       {error && <p role="alert">{error}</p>}
     </section>
+  );
+}
+
+export function UserLanguagePicker({ lang }: { lang: string }) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  async function save(language: string) {
+    setBusy(true);
+    setError("");
+    try {
+      const value = await api<{ language: string }>("home/language", "PUT", {
+        language,
+      });
+      qc.setQueryData(["user-language"], value);
+    } catch {
+      setError(
+        lang === "en"
+          ? "Could not save language. Try again."
+          : "Kunne ikke lagre språket. Prøv igjen.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div>
+      <label>
+        {lang === "en" ? "Your language" : "Ditt språk"}
+        <select
+          aria-label={lang === "en" ? "Your language" : "Ditt språk"}
+          value={lang}
+          disabled={busy}
+          onChange={(e) => void save(e.target.value)}
+        >
+          <option value="nb">Norsk bokmål</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <p className="note">
+        {lang === "en"
+          ? "Follows your account on all devices."
+          : "Følger kontoen din på alle enheter."}
+      </p>
+      {error && <p role="alert">{error}</p>}
+    </div>
   );
 }

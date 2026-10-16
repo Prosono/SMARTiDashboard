@@ -16,6 +16,7 @@ import {
   Moon,
   Briefcase,
   Plane,
+  Settings,
   Settings2,
   Star,
   ArrowUpRight,
@@ -304,12 +305,13 @@ export function HomeOverview({
           </span>
         </div>
         <button
-          className="home-customize"
+          className="home-customize home-customize-icon"
+          aria-label={t("Tilpass Hjem", "Personalize Home")}
+          title={t("Tilpass Hjem", "Personalize Home")}
           aria-expanded={configuring}
           onClick={() => configure(!configuring)}
         >
-          <Settings2 size={16} />
-          {t("Tilpass Hjem", "Personalize Home")}
+          <Settings size={20} />
         </button>
       </div>
       <HomeTabs tab={tab} change={setTab} lang={lang} allowed={allowedTabs}>

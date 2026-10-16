@@ -1,3 +1,12 @@
+## 1.34.1
+
+- Mer innbydende Enkel-visning med rombilder og favoritter først.
+- Redesignet velger for Enkel, Normal og Avansert.
+- Administrasjon-knappen er fjernet fra sidemenyen i Normal.
+- Norsk bokmål og engelsk lagres per SMARTi-bruker under Tema og utseende og følger kontoen mellom enheter.
+- Tilpass Hjem vises som et tannhjul med tilgjengelig navn.
+- Multimedia-verktøylinjen følger samme design som Lys og Klima.
+
 ## 1.34.0
 
 - Personlige visningsnivåer: Enkel, Normal og Avansert, lagret per SMARTi-bruker på hjemmesentralen.

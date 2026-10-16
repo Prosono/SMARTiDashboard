@@ -44,5 +44,9 @@ only their own level, including accounts with restricted function permissions.
 Simple uses an everyday home/room view with search, favorites, bounded device
 lists and a reduced navigation. Camera/security and media controls remain
 available on demand. Normal uses existing feature pages with optional overview
-details and an administration menu. Advanced preserves the full navigation.
+details; technical administration destinations are omitted from its sidebar. Advanced preserves the full navigation.
 This preference does not change Home Assistant account privileges.
+
+`GET/PUT /api/home/language` stores `nb` or `en` under `language:{user_id}`.
+Authenticated UI language follows this preference; the login screen retains its
+browser-local language choice. Users may only update their own language.

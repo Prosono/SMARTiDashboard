@@ -1,6 +1,7 @@
 import {
   Experience,
   ExperiencePicker,
+  UserLanguagePicker,
   useExperience,
   useExperiencePreference,
 } from "./Experience";
@@ -103,7 +104,7 @@ function Logo() {
   );
 }
 function App() {
-  const [lang, language] = useState(() =>
+  const [guestLang, language] = useState(() =>
     readPreference("smarti-language", "nb", ["nb", "en"]),
   );
   const [theme, setTheme] = useState(() =>
@@ -120,11 +121,16 @@ function App() {
     document.documentElement.dataset.palette = palette;
     writePreference("smarti-palette", palette);
   }, [palette]);
-  const t = lang === "en" ? en : nb;
   const [session, updateSession] = useState<Session | null>(null);
+  const userLanguage = useQuery({
+    queryKey: ["user-language"],
+    queryFn: () => api<{ language: string }>("home/language"),
+    enabled: !!session,
+  });
+  const lang = session ? userLanguage.data?.language || "nb" : guestLang;
+  const t = lang === "en" ? en : nb;
   const experience = useExperiencePreference(!!session);
   const mode = experience.data?.mode || "advanced";
-  const [administration, showAdministration] = useState(false);
   const [checking, setChecking] = useState(true);
   const [page, setPage] = useState<Page>("home");
   const [dirty, setDirty] = useState(false);
@@ -145,7 +151,6 @@ function App() {
     setPage((p) =>
       mode === "simple" && !["home", "rooms", "more"].includes(p) ? "home" : p,
     );
-    showAdministration(false);
   }, [mode]);
   const navigate = (p: Page) => guard(() => setPage(p));
   useEffect(() => {
@@ -213,15 +218,6 @@ function App() {
           <Logo />
           <div className="sidebar-label">SMART LIVING, SIMPLIFIED.</div>
           <nav aria-label={lang === "en" ? "Main navigation" : "Hovedmeny"}>
-            {mode === "normal" && session.role === "admin" && (
-              <button
-                className="nav-item"
-                aria-expanded={administration}
-                onClick={() => showAdministration(!administration)}
-              >
-                {lang === "en" ? "Administration" : "Administrasjon"}
-              </button>
-            )}
             {(Object.keys(icons) as Page[])
               .filter(
                 (p) =>
@@ -235,8 +231,7 @@ function App() {
                   mode === "advanced" ||
                   (mode === "simple"
                     ? ["home", "rooms", "more"].includes(p)
-                    : administration ||
-                      !["integrations", "apps", "updates"].includes(p)),
+                    : !["integrations", "apps", "updates"].includes(p)),
               )
               .map((p) => {
                 const Icon = icons[p];
@@ -1069,16 +1064,7 @@ function Dashboard({
                       change={setPalette}
                       lang={lang}
                     />
-                    <label>
-                      {t.language}
-                      <select
-                        value={lang}
-                        onChange={(e) => language(e.target.value)}
-                      >
-                        <option value="nb">Norsk bokmål</option>
-                        <option value="en">English</option>
-                      </select>
-                    </label>
+                    <UserLanguagePicker lang={lang} />
                     <button className="text-button" onClick={logout}>
                       <LogOut size={17} />
                       {t.logout}

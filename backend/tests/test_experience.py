@@ -26,3 +26,16 @@ def test_restricted_user_can_choose_mode_without_gaining_permissions(client):  #
         assert client.get("/api/manage/accounts").status_code == 403
     client.headers.pop("x-csrf-token")
     assert client.put("/api/home/experience", json={"mode": "simple"}).status_code == 403
+
+
+def test_language_is_personal_and_validated(client):  # noqa: F811
+    resident(client)
+    assert client.get("/api/home/language").json() == {"language": "nb"}
+    assert client.put("/api/home/language", json={"language": "en"}).status_code == 200
+    assert client.put("/api/home/language", json={"language": "bad"}).status_code == 422
+    sign_in(client)
+    assert client.get("/api/home/language").json() == {"language": "nb"}
+    login(client)
+    assert client.get("/api/home/language").json() == {"language": "en"}
+    client.headers.pop("x-csrf-token")
+    assert client.put("/api/home/language", json={"language": "nb"}).status_code == 403

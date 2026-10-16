@@ -19,6 +19,11 @@ test("personal experience modes simplify navigation and survive reload", async (
   await settings().click();
   await page
     .locator(".experience-picker")
+    .screenshot({
+      path: `../artifacts/experience-picker-${test.info().project.name}.png`,
+    });
+  await page
+    .locator(".experience-picker")
     .getByRole("button", { name: /^Enkel/ })
     .click();
   await expect(page.locator(".shell")).toHaveAttribute(
@@ -62,6 +67,9 @@ test("personal experience modes simplify navigation and survive reload", async (
     "data-experience",
     "normal",
   );
+  await expect(
+    page.getByRole("button", { name: "Administrasjon", exact: true }),
+  ).toHaveCount(0);
   await home().click();
   await page
     .getByRole("button", { name: "Vis mer informasjon", exact: true })
@@ -84,4 +92,26 @@ test("personal experience modes simplify navigation and survive reload", async (
       .getByRole("navigation")
       .getByRole("button", { name: "Integrasjoner", exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+  await page.getByLabel("Ditt språk", { exact: true }).selectOption("en");
+  await expect(page.getByLabel("Your language", { exact: true })).toHaveValue(
+    "en",
+  );
+  await page.reload();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Settings", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Theme and appearance", exact: true })
+    .click();
+  await expect(page.getByLabel("Your language", { exact: true })).toHaveValue(
+    "en",
+  );
+  await page.getByLabel("Your language", { exact: true }).selectOption("nb");
+  await expect(page.getByLabel("Ditt språk", { exact: true })).toHaveValue(
+    "nb",
+  );
 });

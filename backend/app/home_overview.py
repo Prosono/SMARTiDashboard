@@ -16,6 +16,11 @@ from .access import all_views, visible
 from .ha import HAError
 
 
+class LanguagePreference(BaseModel):
+    model_config = {"extra": "forbid"}
+    language: Literal["nb", "en"] = "nb"
+
+
 class ExperiencePreference(BaseModel):
     model_config = {"extra": "forbid"}
     mode: Literal["simple", "normal", "advanced"] = "advanced"
@@ -76,6 +81,15 @@ def home_router(store, user, ha, settings):
         if not found:
             raise HTTPException(404, "entity_not_found")
         return found
+
+    @router.get("/language")
+    async def language(current=Depends(user)):
+        return LanguagePreference.model_validate_json(store.get(f"language:{current['id']}", "{}"))
+
+    @router.put("/language")
+    async def save_language(body: LanguagePreference, current=Depends(user)):
+        store.set(f"language:{current['id']}", body.model_dump_json())
+        return body
 
     @router.get("/experience")
     async def experience(current=Depends(user)):

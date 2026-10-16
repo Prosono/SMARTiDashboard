@@ -139,3 +139,151 @@
 [data-experience="simple"] .controls-grid {
   align-items: start;
 }
+
+/* Quiet, tactile choices with a clear selected state. */
+.experience-picker {
+  padding: clamp(20px, 3vw, 32px);
+}
+.experience-picker > p {
+  max-width: 62ch;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+.experience-picker button {
+  position: relative;
+  padding: 22px;
+  border-radius: 18px;
+  transition:
+    border-color 0.18s,
+    background 0.18s;
+}
+.experience-picker button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.experience-picker button[aria-pressed="true"] {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+.experience-option-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.experience-picker .experience-symbol {
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+}
+.experience-picker .experience-check {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+.experience-picker button[aria-pressed="true"] .experience-check {
+  background: var(--accent);
+  color: var(--on-media, white);
+  border-color: var(--accent);
+}
+.experience-picker button > span {
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 15px;
+}
+.simple-home .simple-welcome {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 210px;
+  padding: 32px;
+  border-radius: 24px;
+  background: var(--surface);
+}
+.simple-welcome > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+  opacity: 0.5;
+}
+.simple-welcome::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--surface) 15%,
+    color-mix(in srgb, var(--surface) 85%, transparent) 45%,
+    transparent
+  );
+  z-index: -1;
+}
+.simple-welcome h1 {
+  margin-top: 0;
+}
+.simple-room-section {
+  margin: 28px 0;
+}
+.simple-room-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.simple-room-tiles button {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: var(--text);
+  background: var(--surface);
+  text-align: left;
+}
+.simple-room-tiles img {
+  display: block;
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+}
+.simple-room-tiles span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  font-weight: 600;
+}
+.simple-help {
+  color: var(--muted);
+  font-size: 15px;
+}
+.home-customize.home-customize-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+@media (max-width: 700px) {
+  .simple-room-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .simple-room-tiles img {
+    height: 85px;
+  }
+  .simple-room-tiles span {
+    padding: 12px;
+    font-size: 16px;
+  }
+  .simple-home .simple-welcome {
+    padding: 22px;
+    min-height: 180px;
+  }
+}
