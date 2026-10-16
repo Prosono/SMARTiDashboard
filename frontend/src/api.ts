@@ -65,6 +65,9 @@ export async function api<T>(
     method,
     credentials: "same-origin",
     cache: "no-store",
+    ...(method === "GET" && path === "home"
+      ? { signal: AbortSignal.timeout(20000) }
+      : {}),
     headers: {
       "Content-Type": "application/json",
       ...(session ? { "X-CSRF-Token": session.csrf } : {}),

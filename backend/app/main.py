@@ -428,7 +428,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
                         + "\n\n"
                     )
                 else:
-                    yield ": heartbeat\n\n"
+                    yield "event: heartbeat\ndata: {}\n\n"
                 await asyncio.sleep(0.5)
 
         return StreamingResponse(

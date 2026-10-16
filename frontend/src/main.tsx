@@ -1,3 +1,4 @@
+import { liveConnection } from "./liveConnection";
 import { RoomsOverview } from "./rooms/RoomsOverview";
 import { ClimateOverview } from "./home/ClimateOverview";
 import { LightOverview } from "./home/LightOverview";
@@ -431,6 +432,7 @@ function Dashboard({
   const home = useQuery({
     queryKey: ["home"],
     queryFn: () => api<Home>("home"),
+    refetchInterval: 30000,
   });
   const [streamConnected, streamStatus] = useState(true);
   const [room, setRoom] = useState<string | null>(null);
@@ -446,12 +448,9 @@ function Dashboard({
   const [filter, setFilter] = useState("all");
   const [protocol, setProtocol] = useState("all");
   useEffect(() => {
-    const stream = new EventSource(new URL("api/events", document.baseURI));
-    stream.onopen = () => streamStatus(true);
-    stream.onerror = () => streamStatus(false);
     let homeRevision: number | undefined;
     let radioRevision: number | undefined;
-    stream.onmessage = (event) => {
+    const onMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         const homeChanged =
@@ -488,8 +487,17 @@ function Dashboard({
         /* Ignore incomplete event frames; polling remains a fallback. */
       }
     };
-    stream.addEventListener("expired", () => window.location.reload());
-    return () => stream.close();
+    return liveConnection(
+      streamStatus,
+      onMessage,
+      () => {
+        void queryClient.invalidateQueries(
+          { queryKey: ["home"] },
+          { cancelRefetch: false },
+        );
+      },
+      () => window.location.reload(),
+    );
   }, [queryClient]);
   useEffect(() => {
     setAdding(false);

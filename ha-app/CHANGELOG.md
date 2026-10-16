@@ -1,3 +1,10 @@
+## 1.31.1
+
+- Gjenopprett liveforbindelsen automatisk etter nettverksbrudd, dvale og hengende forbindelser.
+- Hent fersk status ved gjenoppkobling, nettverksretur og når appen åpnes igjen.
+- Periodisk reservehenting av hjemstatus og tidsgrense på hengende statusforespørsler.
+- Kommandoer til enheter sendes aldri automatisk på nytt.
+
 ## 1.31.0
 
 - Redesignet sikkerhetsoversikt med statusbanner, kategorier, søk og romfilter.
