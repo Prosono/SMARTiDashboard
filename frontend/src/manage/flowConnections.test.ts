@@ -56,8 +56,9 @@ describe("real canvas connections", () => {
     ]);
   });
   it("groups two cards into native parallel sequences, preserving data and other actions", () => {
-    const c = fixture(),
-      before = structuredClone(c);
+    const c = fixture();
+    c.actions[0].data = { brightness: 120 } as any;
+    const before = structuredClone(c);
     const p = planConnection(
       c,
       id("actions", 0),
@@ -72,6 +73,107 @@ describe("real canvas connections", () => {
       c.actions[1],
     ]);
     expect(c).toEqual(before);
+  });
+  it.each([
+    { condition: "state", entity_id: "light.a", state: "on" },
+    { and: [{ condition: "state", entity_id: "light.a", state: "on" }] },
+    { or: [] },
+    { not: [] },
+    { sequence: [{ action: "light.turn_on" }] },
+    { if: [], then: [{ action: "light.turn_on" }] },
+    { choose: [], default: [] },
+    { repeat: { count: 2, sequence: [] } },
+    { parallel: [{ action: "light.turn_on" }] },
+    { wait_template: "{{ ready }}" },
+    {
+      wait_for_trigger: [
+        { trigger: "state", entity_id: "binary_sensor.motion" },
+      ],
+    },
+    { variables: { response: 4 } },
+    { stop: "Done", enabled: false },
+    { action: "calendar.get_events", response_variable: "events" },
+    { action: "light.turn_on", data: { brightness: "{{ wait.remaining }}" } },
+    { action: "light.turn_on", target: { entity_id: "{{ lamp }}" } },
+    { action: "light.turn_on", enabled: "{{ should_run }}" },
+    { action: "light.turn_on", data_template: { brightness: "{{ level }}" } },
+    { delay: "{{ delay }}" },
+    { delay: { minutes: "{{ duration }}" } },
+    { action: "light.turn_on", unknown_option: true },
+  ])(
+    "does not move scope-sensitive blocks into parallel or cross them: %j",
+    (row) => {
+      for (const actions of [
+        [row, { action: "light.turn_off" }],
+        [{ action: "light.turn_on" }, row, { action: "light.turn_off" }],
+      ]) {
+        const config = { triggers: [], conditions: [], actions };
+        const before = structuredClone(config);
+        for (const [from, to] of [
+          [0, actions.length - 1],
+          [actions.length - 1, 0],
+        ]) {
+          const plan = planConnection(
+            config,
+            id("actions", from),
+            id("actions", to),
+            "parallel",
+            "nb",
+          );
+          expect(plan.ok).toBe(false);
+        }
+        expect(config).toEqual(before);
+      }
+    },
+  );
+  it("can group static legacy actions and delays without changing their fields", () => {
+    const config = {
+      triggers: [],
+      conditions: [],
+      actions: [
+        {
+          service: "switch.turn_off",
+          entity_id: ["switch.a"],
+          alias: "Sockets",
+          enabled: false,
+        },
+        { delay: { seconds: 3 }, note: "Pause" },
+      ],
+    };
+    const plan = planConnection(
+      config,
+      id("actions", 0),
+      id("actions", 1),
+      "parallel",
+      "nb",
+    );
+    expect(plan.ok && plan.patch.actions[0].parallel).toEqual([
+      { sequence: [config.actions[0]] },
+      { sequence: [config.actions[1]] },
+    ]);
+  });
+  it("allows connecting after a stop whose enabled template can skip it", () => {
+    const config = {
+      triggers: [],
+      conditions: [],
+      actions: [
+        { stop: "Conditional stop", enabled: "{{ stop_now }}" },
+        { delay: 1 },
+        { delay: 2 },
+      ],
+    };
+    const plan = planConnection(
+      config,
+      id("actions", 0),
+      id("actions", 2),
+      "sequence",
+      "nb",
+    );
+    expect(plan.ok && plan.patch.actions).toEqual([
+      config.actions[0],
+      config.actions[2],
+      config.actions[1],
+    ]);
   });
   it("does not bypass global requirements or connect actions back to triggers", () => {
     const c = {

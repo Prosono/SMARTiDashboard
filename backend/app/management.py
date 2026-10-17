@@ -194,6 +194,29 @@ class Management:
             return self.demo_automations[id]
         return await self.rest("GET", "config/automation/config/" + quote(id, safe=""))
 
+    async def automation_preview(self, entity_id):
+        """Read HA's resolved runtime config; never treat it as an editable file."""
+        self.connected()
+        if not entity_id.startswith("automation.") or entity_id not in self.ha.states:
+            raise HTTPException(404, "not_found")
+        if self.demo:
+            config_id = self.ha.states[entity_id].get("attributes", {}).get("id")
+            value = self.demo_automations.get(config_id)
+        else:
+            result = await self.ws("automation/config", entity_id=entity_id)
+            value = result.get("config") if isinstance(result, dict) else None
+        # A missing runtime configuration or unresolved blueprint must not look
+        # like an empty automation. Keep the file/config endpoint authoritative
+        # for inputs and saving, and deliberately omit a save revision here.
+        if (
+            not isinstance(value, dict)
+            or "use_blueprint" in value
+            or not isinstance(value.get("triggers", value.get("trigger")), (dict, list))
+            or not isinstance(value.get("actions", value.get("action")), (dict, list))
+        ):
+            raise HTTPException(502, "automation_preview_unavailable")
+        return {"entity_id": entity_id, "config": value, "read_only": True}
+
     def automations(self):
         self.connected()
         return [
@@ -318,10 +341,17 @@ def management_router(service, admin):
         return await m.rooms()
 
     @router.get("/entities")
-    async def entities():
+    async def entities(details: bool = False):
         m.connected()
         return [
             {"entity_id": eid, "name": state.get("attributes", {}).get("friendly_name") or eid}
+            | ({
+                "domain": eid.split(".", 1)[0],
+                "state": state.get("state", "unknown"),
+                "attributes": {key: state.get("attributes", {})[key] for key in ("device_class", "unit_of_measurement") if key in state.get("attributes", {})},
+                "device_id": m.ha.entities.get(eid, {}).get("device_id"),
+                "area_id": m.ha.entities.get(eid, {}).get("area_id") or m.ha.devices.get(m.ha.entities.get(eid, {}).get("device_id"), {}).get("area_id"),
+            } if details else {})
             for eid, state in m.ha.states.items()
         ]
 
@@ -341,6 +371,10 @@ def management_router(service, admin):
     async def config(id: str):
         value = await m.automation_config(id)
         return {"config": value, "revision": revision(value)}
+
+    @router.get("/automation-preview/{entity_id}")
+    async def automation_preview(entity_id: str):
+        return await m.automation_preview(entity_id)
 
     @router.post("/automations")
     async def create_automation(body: AutomationBody):
@@ -365,6 +399,8 @@ def management_router(service, admin):
             existing = await m.automation_config(id)
             if revision(existing) != body.revision:
                 raise HTTPException(409, "revision_conflict")
+            if existing.get("use_blueprint") and not body.config.get("use_blueprint"):
+                raise HTTPException(409, "blueprint_conversion_not_supported")
             value = body.config | {"id": id}
             if m.demo:
                 m.demo_automations[id] = value

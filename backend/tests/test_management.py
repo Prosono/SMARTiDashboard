@@ -60,7 +60,10 @@ def test_management_admin_csrf_and_room_registry_semantics(client):
     client.post("/api/users", json={"name": "resident", "password": "another long password", "role": "user"})
     client.post("/api/logout")
     login(client, "resident", "another long password")
-    for path in ["rooms", "automations", "integrations", "updates", "entities"]:
+    for path in [
+        "rooms", "automations", "integrations", "updates", "entities",
+        "automation-preview/automation.evening",
+    ]:
         assert client.get("/api/manage/" + path).status_code == 403
     assert client.post("/api/manage/rooms", json={"name": "No"}).status_code == 403
 
@@ -113,6 +116,11 @@ class LiveContract(Demo):
         self.calls.append((kind, data))
         if kind == "get_states":
             return list(self.states.values())
+        if kind == "automation/config":
+            response = getattr(self, "preview_response", {"config": self.config})
+            if isinstance(response, Exception):
+                raise response
+            return response
         if kind == "config_entries/get":
             return [
                 {
@@ -206,11 +214,170 @@ def test_live_api_contracts_and_update_branding(live):
     ) in ha.calls
 
 
+def test_detailed_entity_catalog_includes_helpers_with_safe_metadata(live):
+    client, ha = live
+    ha.devices["catalog_device"] = {
+        "id": "catalog_device", "area_id": "living", "secret": "never-return-device",
+    }
+    ha.states["input_number.target_temperature"] = {
+        "entity_id": "input_number.target_temperature",
+        "state": "21.5",
+        "attributes": {
+            "friendly_name": "Target temperature",
+            "device_class": "temperature",
+            "unit_of_measurement": "°C",
+            "api_token": "never-return-state",
+            "nested": {"password": "never-return-nested"},
+        },
+    }
+    ha.entities["input_number.target_temperature"] = {
+        "entity_id": "input_number.target_temperature",
+        "device_id": "catalog_device",
+        "area_id": "bedroom",
+        "secret": "never-return-registry",
+    }
+    ha.states["device_tracker.phone"] = {
+        "entity_id": "device_tracker.phone",
+        "state": "home",
+        "attributes": {"friendly_name": "Phone", "latitude": 59.0},
+    }
+    ha.entities["device_tracker.phone"] = {
+        "entity_id": "device_tracker.phone", "device_id": "catalog_device",
+    }
+    ha.states["input_boolean.guest_mode"] = {
+        "entity_id": "input_boolean.guest_mode", "state": "off", "attributes": {},
+    }
+    # Helpers and trackers need not be supported dashboard controls to remain
+    # available as automation inputs, conditions or targets.
+    assert not any(
+        control.entity_id in {
+            "input_number.target_temperature", "device_tracker.phone", "input_boolean.guest_mode",
+        }
+        for control in ha.controls()
+    )
+    response = client.get("/api/manage/entities?details=true")
+    assert response.status_code == 200
+    catalog = {row["entity_id"]: row for row in response.json()}
+    assert catalog["input_number.target_temperature"] == {
+        "entity_id": "input_number.target_temperature",
+        "name": "Target temperature",
+        "domain": "input_number",
+        "state": "21.5",
+        "attributes": {"device_class": "temperature", "unit_of_measurement": "°C"},
+        "device_id": "catalog_device",
+        "area_id": "bedroom",
+    }
+    assert catalog["device_tracker.phone"] == {
+        "entity_id": "device_tracker.phone", "name": "Phone", "domain": "device_tracker",
+        "state": "home", "attributes": {}, "device_id": "catalog_device", "area_id": "living",
+    }
+    assert catalog["input_boolean.guest_mode"] == {
+        "entity_id": "input_boolean.guest_mode", "name": "input_boolean.guest_mode",
+        "domain": "input_boolean", "state": "off", "attributes": {},
+        "device_id": None, "area_id": None,
+    }
+    assert "never-return" not in response.text
+    assert "latitude" not in response.text
+    # Opting out keeps the original compact endpoint contract.
+    compact = {row["entity_id"]: row for row in client.get("/api/manage/entities").json()}
+    assert compact["input_number.target_temperature"] == {
+        "entity_id": "input_number.target_temperature", "name": "Target temperature",
+    }
+
+
 def test_disconnected_cannot_mutate(live):
     client, ha = live
     ha.connected = False
     assert client.post("/api/manage/rooms", json={"name": "No"}).status_code == 503
     assert client.get("/api/manage/updates").status_code == 503
+
+
+def test_automation_preview_is_resolved_read_only_and_preserves_blueprint(live):
+    client, ha = live
+    ha.config = {
+        "id": "file-id",
+        "alias": "Motion blueprint",
+        "use_blueprint": {
+            "path": "homeassistant/motion_light.yaml",
+            "input": {
+                "motion_entity": "binary_sensor.motion",
+                "light_target": {"area_id": ["living"]},
+                "custom_template": "{{ untouched }}",
+            },
+        },
+    }
+    resolved = {
+        "id": "file-id",
+        "alias": "Motion blueprint",
+        "triggers": [{"trigger": "state", "entity_id": "binary_sensor.motion", "to": "on"}],
+        "actions": [{"action": "light.turn_on", "target": {"area_id": ["living"]}}],
+        "variables": {"keep": "{{ untouched }}"},
+    }
+    ha.preview_response = {"config": resolved}
+    original = client.get("/api/manage/automations/file-id").json()
+    before = len(ha.calls)
+    response = client.get("/api/manage/automation-preview/automation.evening")
+    assert response.status_code == 200
+    assert response.json() == {
+        "entity_id": "automation.evening", "config": resolved, "read_only": True,
+    }
+    assert ha.calls[before:] == [("automation/config", {"entity_id": "automation.evening"})]
+    assert client.get("/api/manage/automations/file-id").json() == original
+    assert client.put(
+        "/api/manage/automation-preview/automation.evening", json={"config": resolved},
+    ).status_code == 405
+    # Even with the original file's revision, a resolved preview cannot replace
+    # the linked blueprint. Editing normal blueprint inputs still works.
+    result = client.put(
+        "/api/manage/automations/file-id",
+        json={"config": resolved, "revision": original["revision"]},
+    )
+    assert result.status_code == 409
+    assert result.json()["detail"] == "blueprint_conversion_not_supported"
+    assert client.get("/api/manage/automations/file-id").json() == original
+    original["config"]["alias"] = "Renamed blueprint"
+    updated = client.put("/api/manage/automations/file-id", json=original)
+    assert updated.status_code == 200
+    assert updated.json()["config"]["use_blueprint"] == original["config"]["use_blueprint"]
+
+
+@pytest.mark.parametrize("payload", [
+    None, [], {}, {"config": None}, {"config": []},
+    {"config": {"alias": "Missing steps"}},
+    {"config": {"triggers": [], "actions": [], "use_blueprint": {"path": "unresolved.yaml"}}},
+    {"config": {"triggers": "unexpected", "actions": []}},
+])
+def test_automation_preview_rejects_malformed_response(live, payload):
+    client, ha = live
+    ha.preview_response = payload
+    result = client.get("/api/manage/automation-preview/automation.evening")
+    assert result.status_code == 502
+    assert result.json()["detail"] == "automation_preview_unavailable"
+
+
+def test_automation_preview_checks_entity_connection_and_redacts_errors(live):
+    client, ha = live
+    before = len(ha.calls)
+    for entity_id in ["light.living_pendant", "automation.missing"]:
+        assert client.get("/api/manage/automation-preview/" + entity_id).status_code == 404
+    assert len(ha.calls) == before
+    for error in [HAError("upstream secret"), TimeoutError("upstream secret")]:
+        ha.preview_response = error
+        result = client.get("/api/manage/automation-preview/automation.evening")
+        assert result.status_code == 503
+        assert result.json()["detail"] == "ha_request_unconfirmed"
+        assert "upstream secret" not in result.text
+    ha.connected = False
+    assert client.get("/api/manage/automation-preview/automation.evening").status_code == 503
+
+
+def test_demo_automation_preview_uses_stored_config(client):
+    original = client.get("/api/manage/automations/evening").json()
+    result = client.get("/api/manage/automation-preview/automation.evening")
+    assert result.status_code == 200
+    assert result.json()["config"] == original["config"]
+    assert result.json()["read_only"] is True
+    assert "revision" not in result.json()
 
 
 @pytest.mark.asyncio

@@ -18,13 +18,9 @@ import {
 import type { Home } from "../types";
 import { planConnection, type ConnectionMode } from "./flowConnections";
 import { canvasModel } from "./flowCanvasModel";
-import {
-  readFlowPath,
-  structureSummary,
-  flowGroups,
-  type FlowPath,
-} from "./flowStructure";
-import { flowSummary, type FlowKey } from "./AutomationFlow";
+import { readFlowPath, flowGroups, type FlowPath } from "./flowStructure";
+import { flowNarrative as flowSummary } from "./flowNarrative";
+import { flowIcon, type FlowKind as FlowKey } from "./flowPresentation";
 export function FlowCanvas({
   config,
   home,
@@ -93,13 +89,7 @@ export function FlowCanvas({
     const n = graph.nodes.find((n) => n.id === id);
     if (!n?.path) return n?.label || t("Start", "Start");
     const row = readFlowPath(config, n.path);
-    return (
-      row?.alias ||
-      (
-        structureSummary(row, lang) ||
-        flowSummary(row, n.kind as FlowKey, home, lang)
-      ).title
-    );
+    return row?.alias || flowSummary(row, n.kind as FlowKey, home, lang).title;
   }
   const suppressClick = useRef(false);
   const pan = useRef<{
@@ -429,9 +419,13 @@ export function FlowCanvas({
                         "Events are alternative starting points.",
                       ),
                     }
-                  : structureSummary(row, lang) ||
-                    flowSummary(row, n.kind as FlowKey, home, lang);
+                  : flowSummary(row, n.kind as FlowKey, home, lang);
               const branches = n.path ? flowGroups(row, n.path, lang) : [];
+              const CardIcon = flowIcon(
+                row,
+                n.kind === "gate" ? "triggers" : n.kind,
+                home,
+              );
               return (
                 <article
                   className={
@@ -540,7 +534,10 @@ export function FlowCanvas({
                     disabled={!n.path}
                     onClick={() => n.path && onSelect(n.path)}
                   >
-                    <strong>{row?.alias || summary.title}</strong>
+                    <span className="canvas-card-icon">
+                      <CardIcon size={22} />
+                    </span>
+                    <strong>{summary.title}</strong>
                     <span>{summary.detail}</span>
                     {branches.length > 0 && (
                       <small>

@@ -36,7 +36,27 @@ export function flowGroups(
     if (value !== undefined)
       groups.push({ label, path: [...path, ...keys], value, kind });
   };
+  if (Array.isArray(row)) {
+    add(
+      t("Alle krav må stemme", "All requirements must match"),
+      [],
+      "conditions",
+    );
+    return groups;
+  }
   if (!record(row)) return groups;
+  if (Array.isArray(row.condition))
+    add(
+      t("Alle krav må stemme", "All requirements must match"),
+      ["condition"],
+      "conditions",
+    );
+  if (has(row, "triggers"))
+    add(
+      t("Én av disse hendelsene", "Any of these events"),
+      ["triggers"],
+      "triggers",
+    );
   if (Array.isArray(row.choose)) {
     row.choose.forEach((branch: any, i: number) => {
       add(
@@ -140,15 +160,28 @@ export function structureSummary(
     value = (v: any) => (typeof v === "string" ? v : JSON.stringify(v));
   if (typeof row === "string")
     return { title: t("Malbetingelse", "Template condition"), detail: row };
+  if (Array.isArray(row) || Array.isArray(row?.condition))
+    return {
+      title: t("Alle krav må stemme", "All requirements must match"),
+      detail: t(
+        "Hvert krav nedenfor må være oppfylt.",
+        "Each requirement below must be met.",
+      ),
+    };
   if (!record(row)) return null;
   if (has(row, "trigger") || has(row, "platform")) return null;
   if (has(row, "choose"))
     return {
       title: t("Velg en vei", "Choose a path"),
-      detail: t(
-        "Første valg som passer kjøres. Ellers brukes reserveveien.",
-        "The first matching option runs. Otherwise the fallback runs.",
-      ),
+      detail: has(row, "default")
+        ? t(
+            "Første valg som passer kjøres. Ellers brukes reserveveien.",
+            "The first matching option runs. Otherwise the fallback runs.",
+          )
+        : t(
+            "Første valg som passer kjøres. Uten treff fortsetter rutinen etter valget.",
+            "The first matching option runs. With no match, the routine continues after the choice.",
+          ),
     };
   if (has(row, "if"))
     return {

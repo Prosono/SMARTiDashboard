@@ -1,21 +1,9 @@
 import { useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  GitBranch,
-  Clock,
-  Repeat,
-  Layers,
-  Pencil,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Pencil, Eye } from "lucide-react";
 import type { Home } from "../types";
-import {
-  flowGroups,
-  has,
-  structureSummary,
-  type FlowPath,
-} from "./flowStructure";
-import { flowSummary, type FlowKey } from "./AutomationFlow";
+import { flowGroups, has, type FlowPath } from "./flowStructure";
+import { flowNarrative } from "./flowNarrative";
+import { flowIcon, type FlowKind as FlowKey } from "./flowPresentation";
 export function FlowTree({
   row,
   path,
@@ -25,6 +13,7 @@ export function FlowTree({
   onSelect,
   onAppend,
   depth = 0,
+  readOnly = false,
 }: {
   row: any;
   path: FlowPath;
@@ -34,21 +23,13 @@ export function FlowTree({
   onSelect: (p: FlowPath) => void;
   onAppend: (p: FlowPath, kind: FlowKey) => void;
   depth?: number;
+  readOnly?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [open, setOpen] = useState(depth < 3);
-  const summary =
-    structureSummary(row, lang) || flowSummary(row, kind, home, lang);
+  const summary = flowNarrative(row, kind, home, lang);
   const groups = flowGroups(row, path, lang);
-  const Icon = has(row, "repeat")
-    ? Repeat
-    : has(row, "delay") ||
-        has(row, "wait_template") ||
-        has(row, "wait_for_trigger")
-      ? Clock
-      : has(row, "parallel")
-        ? Layers
-        : GitBranch;
+  const Icon = flowIcon(row, kind, home);
   const extras = [
     "for",
     "from",
@@ -60,30 +41,34 @@ export function FlowTree({
   return (
     <article
       className={
-        "flow-tree-node" + (row?.enabled === false ? " flow-node-disabled" : "")
+        "flow-tree-node flow-node-" +
+        kind +
+        (row?.enabled === false ? " flow-node-disabled" : "")
       }
     >
       <div className="flow-node-heading">
-        <Icon size={18} />
+        <span className="flow-node-icon">
+          <Icon size={20} />
+        </span>
         <button
           type="button"
           className="flow-node-title"
           onClick={() => onSelect(path)}
         >
           <strong>{row?.alias || summary.title}</strong>
-          <span>
-            {row?.alias ? summary.title + " · " : ""}
-            {summary.detail}
-          </span>
+          <span>{summary.detail}</span>
         </button>
         <button
           type="button"
           aria-label={
-            t("Rediger steg: ", "Edit step: ") + (row?.alias || summary.title)
+            (readOnly
+              ? t("Vis steg: ", "View step: ")
+              : t("Rediger steg: ", "Edit step: ")) +
+            (row?.alias || summary.title)
           }
           onClick={() => onSelect(path)}
         >
-          <Pencil size={16} />
+          {readOnly ? <Eye size={16} /> : <Pencil size={16} />}
         </button>
         {groups.length > 0 && (
           <button
@@ -115,7 +100,21 @@ export function FlowTree({
           </summary>
           {extras.map((k) => (
             <p key={k}>
-              {k}: {display(row[k])}
+              {
+                (
+                  {
+                    for: t("Varighet", "Duration"),
+                    from: t("Fra tilstand", "From state"),
+                    attribute: t("Egenskap", "Attribute"),
+                    timeout: t("Tidsgrense", "Timeout"),
+                    continue_on_error: t(
+                      "Fortsett ved feil",
+                      "Continue on error",
+                    ),
+                  } as Record<string, string>
+                )[k]
+              }
+              : {display(row[k])}
             </p>
           ))}
         </details>
@@ -141,6 +140,7 @@ export function FlowTree({
                       onSelect={onSelect}
                       onAppend={onAppend}
                       depth={depth + 1}
+                      readOnly={readOnly}
                     />
                   ))
                 ) : (
@@ -163,9 +163,10 @@ export function FlowTree({
                   onSelect={onSelect}
                   onAppend={onAppend}
                   depth={depth + 1}
+                  readOnly={readOnly}
                 />
               )}
-              {Array.isArray(g.value) && (
+              {!readOnly && Array.isArray(g.value) && (
                 <button
                   className="flow-branch-add"
                   type="button"

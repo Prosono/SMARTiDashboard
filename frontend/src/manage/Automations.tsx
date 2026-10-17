@@ -1,8 +1,9 @@
+import { BlueprintPreview } from "./BlueprintPreview";
+import { FlowInspector } from "./FlowInspector";
+import { flowLibrary, newFlowStep } from "./flowLibrary";
 import { AutomationIcon, AutomationTrigger } from "./AutomationDetails";
 import "./automations.css";
 import { homeAsset } from "../home/HomeOverview";
-import { entityState } from "./entityWords";
-import { EntityPicker } from "./EntityPicker";
 import { AutomationFlow } from "./AutomationFlow";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -25,7 +26,7 @@ import {
 } from "lucide-react";
 import { AutomationGuide } from "./AutomationGuide";
 import { api } from "../api";
-import type { Home } from "../types";
+import type { Home, Control } from "../types";
 import { Feedback, LoadError, useWork, words } from "./shared";
 type Config = Record<string, any>;
 type Automation = {
@@ -51,7 +52,7 @@ export function normalizedConfig(value: Config): Config {
 }
 export function Automations({
   lang,
-  home,
+  home: sourceHome,
   onDirty,
 }: {
   lang: string;
@@ -59,6 +60,42 @@ export function Automations({
   onDirty: (v: boolean) => void;
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
+  const catalog = useQuery({
+    queryKey: ["manage", "automation-entities"],
+    queryFn: () =>
+      api<
+        Pick<
+          Control,
+          | "entity_id"
+          | "name"
+          | "domain"
+          | "state"
+          | "attributes"
+          | "area_id"
+          | "device_id"
+        >[]
+      >("manage/entities?details=true"),
+    staleTime: 60_000,
+  });
+  const known = new Set(sourceHome.controls.map((c) => c.entity_id));
+  const home: Home = {
+    ...sourceHome,
+    controls: [
+      ...sourceHome.controls,
+      ...(catalog.data || [])
+        .filter((c) => !known.has(c.entity_id))
+        .map((c) => ({
+          ...c,
+          id: c.entity_id,
+          capabilities: [],
+          availability: c.state === "unavailable" ? "unavailable" : "unknown",
+          updated_at: null,
+          integration: null,
+          diagnostic: false,
+        })),
+    ],
+  };
+
   const q = useQuery({
     queryKey: ["manage", "automations"],
     queryFn: () => api<Automation[]>("manage/automations"),
@@ -75,6 +112,7 @@ export function Automations({
   const [guideReady, setGuideReady] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [raw, setRaw] = useState("");
+  const [formValidity, setFormValidity] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sort, setSort] = useState("name");
@@ -83,6 +121,8 @@ export function Automations({
   const [runConfirm, setRunConfirm] = useState<string | null>(null);
   const w = useWork(lang);
   const c = editing?.config;
+  const standardInvalid =
+    !flow && !advanced && Object.values(formValidity).some((v) => !v);
   useEffect(() => {
     onDirty(!!editing && dirty);
     return () => onDirty(false);
@@ -100,7 +140,7 @@ export function Automations({
       setEditing({ ...editing, config: { ...editing.config, ...value } });
   }
   function rawMode() {
-    if (advanced) return;
+    if (advanced || standardInvalid) return;
     setRaw(JSON.stringify(c, null, 2));
     setAdvanced(true);
   }
@@ -114,67 +154,13 @@ export function Automations({
     }
   }
   const usable = advanced ? parsed : c;
-  const labels: Record<string, string> = {
-    time: t("Klokkeslett", "Time"),
-    state: t("Tilstand", "State"),
-    sun: t("Sol", "Sun"),
-    numeric_state: t("Tallverdi", "Numeric value"),
-    "light.turn_on": t("Slå på lys", "Turn on lights"),
-    "light.turn_off": t("Slå av lys", "Turn off lights"),
-    "switch.turn_on": t("Slå på bryter", "Turn on switch"),
-    "switch.turn_off": t("Slå av bryter", "Turn off switch"),
-    "climate.set_temperature": t("Still temperatur", "Set temperature"),
-    "scene.turn_on": t("Aktiver scene", "Activate scene"),
-  };
-  const catalog = useQuery({
-    queryKey: ["manage", "entities"],
-    queryFn: () =>
-      api<{ entity_id: string; name: string }[]>("manage/entities"),
-  });
-  const options = catalog.data || home.controls;
-  function entitySelect(
-    value: string,
-    onChange: (v: string) => void,
-    label = t("Enhet eller sensor", "Device or sensor"),
-    domain?: string,
-  ) {
-    if (value && typeof value !== "string")
-      return (
-        <button type="button" onClick={rawMode}>
-          {t(
-            "Flere enheter eller mal · åpne avansert",
-            "Multiple entities or template · open advanced",
-          )}
-        </button>
-      );
-    return (
-      <EntityPicker
-        value={value || ""}
-        onChange={onChange}
-        choices={
-          domain
-            ? options.filter((o) => o.entity_id.startsWith(domain + "."))
-            : options
-        }
-        home={home}
-        lang={lang}
-        label={label}
-      />
-    );
-  }
-  function updateRow(key: string, i: number, value: Config) {
-    patch({
-      [key]: c![key].map((v: Config, j: number) => (j === i ? value : v)),
-    });
-  }
   function section(
     key: "triggers" | "conditions" | "actions",
     index: string,
     title: string,
     intro: string,
-    selectedIndex?: number,
   ) {
-    const rows: Config[] = c![key];
+    const rows = c![key];
     return (
       <section className="automation-section">
         <div className="automation-step">
@@ -184,394 +170,95 @@ export function Automations({
             <p>{intro}</p>
           </div>
         </div>
-        {rows.map((row, i) => {
-          if (selectedIndex !== undefined && selectedIndex !== i) return null;
-          const kind =
-            row?.trigger ||
-            row?.platform ||
-            row?.condition ||
-            row?.action ||
-            row?.service;
-          const update = (v: Config) => updateRow(key, i, { ...row, ...v });
-          const supported =
-            row &&
-            typeof row === "object" &&
-            (key === "triggers"
-              ? ["time", "state", "sun"].includes(kind)
-              : key === "conditions"
-                ? ["state", "numeric_state"].includes(kind)
-                : typeof kind === "string" && kind.includes("."));
-          return (
-            <div className="automation-block" key={i}>
-              <div className="block-top">
-                <strong>
-                  {i + 1}.{" "}
-                  {labels[kind] ||
-                    kind ||
-                    t("Avansert blokk", "Advanced block")}
-                </strong>
-                <div className="row-actions">
-                  <button
-                    type="button"
-                    aria-label={t("Flytt opp", "Move up")}
-                    disabled={i === 0}
-                    onClick={() => {
-                      const next = [...rows];
-                      [next[i - 1], next[i]] = [next[i], next[i - 1]];
-                      patch({ [key]: next });
-                    }}
-                  >
-                    <ChevronUp size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={t("Flytt ned", "Move down")}
-                    disabled={i === rows.length - 1}
-                    onClick={() => {
-                      const next = [...rows];
-                      [next[i + 1], next[i]] = [next[i], next[i + 1]];
-                      patch({ [key]: next });
-                    }}
-                  >
-                    <ChevronDown size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={t("Fjern blokk", "Remove block")}
-                    onClick={() =>
-                      patch({ [key]: rows.filter((_, j) => j !== i) })
-                    }
-                  >
-                    <Trash2 size={17} />
-                  </button>
-                </div>
-              </div>
-              {!supported ? (
-                <>
-                  <p>
-                    {t(
-                      "Denne blokken beholdes uendret. Åpne avansert redigering for å endre den.",
-                      "This block is preserved. Open advanced editing to change it.",
-                    )}
-                  </p>
-                  <pre>{JSON.stringify(row, null, 2)}</pre>
-                  <button type="button" onClick={rawMode}>
-                    {t("Avansert redigering", "Advanced editing")}
-                  </button>
-                </>
-              ) : (
-                <div className="form-grid">
-                  {key === "triggers" && kind === "time" && (
-                    <label>
-                      {t("Klokkeslett", "Time")}
-                      <input
-                        type={
-                          typeof row.at === "string" &&
-                          /^\d\d:\d\d/.test(row.at)
-                            ? "time"
-                            : "text"
-                        }
-                        step="1"
-                        value={
-                          typeof row.at === "string"
-                            ? row.at
-                            : JSON.stringify(row.at)
-                        }
-                        onChange={(e) => update({ at: e.target.value })}
-                      />
-                    </label>
-                  )}
-                  {key === "triggers" && kind === "sun" && (
-                    <label>
-                      {t("Solhendelse", "Sun event")}
-                      <select
-                        value={row.event}
-                        onChange={(e) => update({ event: e.target.value })}
-                      >
-                        <option value="sunset">
-                          {t("Solnedgang", "Sunset")}
-                        </option>
-                        <option value="sunrise">
-                          {t("Soloppgang", "Sunrise")}
-                        </option>
-                      </select>
-                    </label>
-                  )}
-                  {(kind === "state" || kind === "numeric_state") && (
-                    <>
-                      <label>
-                        {t("Enhet eller sensor", "Device or sensor")}
-                        {typeof row.entity_id === "string" ||
-                        row.entity_id == null ? (
-                          entitySelect(row.entity_id, (v) =>
-                            update({ entity_id: v }),
-                          )
-                        ) : (
-                          <button type="button" onClick={rawMode}>
-                            {t(
-                              "Flere entiteter – rediger avansert",
-                              "Multiple entities – edit advanced",
-                            )}
-                          </button>
-                        )}
-                      </label>
-                      {kind === "state" ? (
-                        <label>
-                          {key === "triggers"
-                            ? t("Blir", "Becomes")
-                            : t("Er", "Is")}
-                          {home.controls.some(
-                            (x) =>
-                              x.entity_id === row.entity_id &&
-                              ["binary_sensor", "light", "switch"].includes(
-                                x.domain,
-                              ),
-                          ) &&
-                          ["on", "off"].includes(
-                            key === "triggers" ? row.to : row.state,
-                          ) ? (
-                            <select
-                              value={key === "triggers" ? row.to : row.state}
-                              onChange={(e) =>
-                                update({
-                                  [key === "triggers" ? "to" : "state"]:
-                                    e.target.value,
-                                  ...(key === "triggers" &&
-                                  ["on", "off"].includes(row.from)
-                                    ? {
-                                        from:
-                                          e.target.value === "on"
-                                            ? "off"
-                                            : "on",
-                                      }
-                                    : {}),
-                                })
-                              }
-                            >
-                              {["on", "off"].map((state) => (
-                                <option key={state} value={state}>
-                                  {entityState(
-                                    row.entity_id,
-                                    state,
-                                    home,
-                                    lang,
-                                  )}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              value={
-                                (key === "triggers" ? row.to : row.state) ?? ""
-                              }
-                              placeholder="on / off"
-                              onChange={(e) =>
-                                update({
-                                  [key === "triggers" ? "to" : "state"]:
-                                    e.target.value,
-                                })
-                              }
-                            />
-                          )}
-                        </label>
-                      ) : (
-                        <>
-                          <label>
-                            {t("Over", "Above")}
-                            <input
-                              value={row.above ?? ""}
-                              onChange={(e) => {
-                                const next = { ...row };
-                                if (e.target.value === "") delete next.above;
-                                else
-                                  next.above = Number.isFinite(
-                                    Number(e.target.value),
-                                  )
-                                    ? Number(e.target.value)
-                                    : e.target.value;
-                                updateRow(key, i, next);
-                              }}
-                            />
-                          </label>
-                          <label>
-                            {t("Under", "Below")}
-                            <input
-                              value={row.below ?? ""}
-                              onChange={(e) => {
-                                const next = { ...row };
-                                if (e.target.value === "") delete next.below;
-                                else
-                                  next.below = Number.isFinite(
-                                    Number(e.target.value),
-                                  )
-                                    ? Number(e.target.value)
-                                    : e.target.value;
-                                updateRow(key, i, next);
-                              }}
-                            />
-                          </label>
-                        </>
-                      )}
-                    </>
-                  )}
-                  {key === "actions" && (
-                    <>
-                      <label>
-                        {t("Handling", "Action")}
-                        <select
-                          value={kind}
-                          onChange={(e) => {
-                            const next: Config = {
-                              ...row,
-                              action: e.target.value,
-                            };
-                            delete next.service;
-                            updateRow(key, i, next);
-                          }}
-                        >
-                          {![
-                            "light.turn_on",
-                            "light.turn_off",
-                            "switch.turn_on",
-                            "switch.turn_off",
-                            "climate.set_temperature",
-                            "scene.turn_on",
-                          ].includes(kind) && (
-                            <option value={kind}>{kind}</option>
-                          )}
-                          {[
-                            "light.turn_on",
-                            "light.turn_off",
-                            "switch.turn_on",
-                            "switch.turn_off",
-                            "climate.set_temperature",
-                            "scene.turn_on",
-                          ].map((v) => (
-                            <option key={v} value={v}>
-                              {labels[v] || v}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        {t("Mål", "Target")}
-                        {!row.target ||
-                        typeof row.target.entity_id === "string" ? (
-                          entitySelect(
-                            row.target?.entity_id,
-                            (v) =>
-                              update({
-                                target: { ...row.target, entity_id: v },
-                              }),
-                            t("Mål", "Target"),
-                            kind.split(".")[0],
-                          )
-                        ) : (
-                          <button type="button" onClick={rawMode}>
-                            {t(
-                              "Rediger mål i avansert visning",
-                              "Edit target in advanced view",
-                            )}
-                          </button>
-                        )}
-                      </label>
-                      {kind === "climate.set_temperature" && (
-                        <label>
-                          {t("Temperatur", "Temperature")}
-                          <input
-                            type="number"
-                            step="0.5"
-                            value={row.data?.temperature ?? 22}
-                            onChange={(e) =>
-                              update({
-                                data: {
-                                  ...row.data,
-                                  temperature: Number(e.target.value),
-                                },
-                              })
-                            }
-                          />
-                        </label>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-              {supported && (
-                <details className="flow-settings">
-                  <summary>
-                    {t(
-                      "Alle innstillinger for denne blokken",
-                      "All settings for this block",
-                    )}
-                  </summary>
-                  <pre>{JSON.stringify(row, null, 2)}</pre>
-                  <button type="button" onClick={rawMode}>
-                    {t(
-                      "Rediger avanserte innstillinger",
-                      "Edit advanced settings",
-                    )}
-                  </button>
-                </details>
-              )}
-            </div>
-          );
-        })}
-        {selectedIndex === undefined && (
-          <div className="block-add">
-            {(key === "triggers"
-              ? [
-                  ["time", t("Klokkeslett", "Time")],
-                  ["state", t("Tilstand", "State")],
-                  ["sun", t("Sol", "Sun")],
-                ]
-              : key === "conditions"
-                ? [
-                    ["state", t("Tilstand", "State")],
-                    ["numeric_state", t("Tallverdi", "Numeric value")],
-                  ]
-                : [["light.turn_on", t("Handling", "Action")]]
-            ).map(([kind, label]) => (
+        {rows.map((row: Config, i: number) => (
+          <div className="automation-block" key={i}>
+            <FlowInspector
+              row={row}
+              kind={key}
+              home={home}
+              lang={lang}
+              onAdvanced={rawMode}
+              onValidityChange={(valid) =>
+                setFormValidity((old) =>
+                  old[`${key}:${i}`] === valid
+                    ? old
+                    : { ...old, [`${key}:${i}`]: valid },
+                )
+              }
+              onChange={(value) =>
+                patch({
+                  [key]: rows.map((current: Config, j: number) =>
+                    i === j ? value : current,
+                  ),
+                })
+              }
+            />
+            <div className="row-actions">
               <button
                 type="button"
-                key={kind}
-                onClick={() =>
+                aria-label={t("Flytt opp", "Move up")}
+                disabled={i === 0 || standardInvalid}
+                onClick={() => {
+                  const next = [...rows];
+                  [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                  patch({ [key]: next });
+                }}
+              >
+                <ChevronUp size={17} />
+              </button>
+              <button
+                type="button"
+                aria-label={t("Flytt ned", "Move down")}
+                disabled={i === rows.length - 1 || standardInvalid}
+                onClick={() => {
+                  const next = [...rows];
+                  [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                  patch({ [key]: next });
+                }}
+              >
+                <ChevronDown size={17} />
+              </button>
+              <button
+                type="button"
+                disabled={Object.entries(formValidity).some(
+                  ([field, valid]) => field !== `${key}:${i}` && !valid,
+                )}
+                onClick={() => {
                   patch({
-                    [key]: [
-                      ...rows,
-                      key === "triggers"
-                        ? {
-                            trigger: kind,
-                            ...(kind === "time"
-                              ? { at: "20:00:00" }
-                              : kind === "sun"
-                                ? { event: "sunset" }
-                                : { entity_id: "", to: "on" }),
-                          }
-                        : key === "conditions"
-                          ? {
-                              condition: kind,
-                              entity_id: "",
-                              ...(kind === "state"
-                                ? { state: "on" }
-                                : { above: 0 }),
-                            }
-                          : { action: kind, target: { entity_id: "" } },
-                    ],
-                  })
+                    [key]: rows.filter((_: unknown, j: number) => j !== i),
+                  });
+                  setFormValidity({});
+                }}
+              >
+                <Trash2 size={16} />
+                {t("Fjern steg", "Remove step")}
+              </button>
+            </div>
+          </div>
+        ))}
+        <details className="flow-settings">
+          <summary>{t("Legg til steg", "Add step")}</summary>
+          <div className="block-add">
+            {flowLibrary(key, lang).map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                onClick={() =>
+                  patch({ [key]: [...rows, newFlowStep(key, item.id)] })
                 }
               >
                 <Plus size={16} />
-                {label}
+                {item.title}
               </button>
             ))}
           </div>
-        )}
+        </details>
       </section>
     );
   }
   async function edit(a: Automation) {
     if (!a.id) return;
+    setFormValidity({});
     await w.run(async () => {
       const v = await api<{ config: Config; revision: string }>(
         `manage/automations/${encodeURIComponent(a.id!)}`,
@@ -613,7 +300,15 @@ export function Automations({
           className={guided || (flow && !advanced) ? "guided-form" : undefined}
           onSubmit={(e) => {
             e.preventDefault();
-            if (!usable || (guided && !guideReady)) return;
+            if (
+              !usable ||
+              (guided && !guideReady) ||
+              e.currentTarget.querySelector("dialog[open]") ||
+              (!advanced &&
+                !flow &&
+                Object.values(formValidity).some((v) => !v))
+            )
+              return;
             void w.run(async () => {
               const saved = await api<{
                 id: string;
@@ -666,7 +361,11 @@ export function Automations({
               <button
                 type="button"
                 aria-pressed={flow && !advanced}
-                disabled={!!usable?.use_blueprint || (advanced && !parsed)}
+                disabled={
+                  !!usable?.use_blueprint ||
+                  (advanced && !parsed) ||
+                  standardInvalid
+                }
                 onClick={() => {
                   if (advanced && parsed)
                     setEditing({
@@ -695,7 +394,12 @@ export function Automations({
               >
                 {t("Vanlig editor", "Standard editor")}
               </button>
-              <button type="button" aria-pressed={advanced} onClick={rawMode}>
+              <button
+                type="button"
+                aria-pressed={advanced}
+                onClick={rawMode}
+                disabled={standardInvalid}
+              >
                 {t("Avansert redigering (JSON)", "Advanced editing (JSON)")}
               </button>
             </div>
@@ -707,15 +411,6 @@ export function Automations({
               lang={lang}
               patch={patch}
               onAdvanced={rawMode}
-              editor={(key, i) =>
-                section(
-                  key,
-                  String(i + 1),
-                  t("Innstillinger", "Settings"),
-                  "",
-                  i,
-                )
-              }
             />
           )}
           {!advanced && !guided && !flow && (
@@ -788,47 +483,64 @@ export function Automations({
           )}
           {advanced && (
             <div className="advanced-editor">
-              <p>
-                {t(
-                  "Hele konfigurasjonen beholdes, inkludert maler, blueprints og avanserte handlinger.",
-                  "The full configuration is preserved, including templates, blueprints and advanced actions.",
-                )}
-              </p>
-              <label>
-                {t("Konfigurasjon (JSON)", "Configuration (JSON)")}
-                <textarea
-                  className="code-editor"
-                  rows={22}
-                  spellCheck={false}
-                  value={raw}
-                  onChange={(e) => {
-                    setRaw(e.target.value);
+              {parsed?.use_blueprint && (
+                <BlueprintPreview
+                  config={parsed}
+                  entityId={q.data?.find((a) => a.id === editing.id)?.entity_id}
+                  home={home}
+                  lang={lang}
+                  onChange={(value) => {
+                    setRaw(JSON.stringify(value, null, 2));
                     setDirty(true);
-                    w.setMessage("");
                   }}
                 />
-              </label>
-              {!parsed && (
-                <p role="alert">
-                  {t("JSON er ikke gyldig ennå.", "JSON is not valid yet.")}
-                </p>
               )}
-              <button
-                type="button"
-                disabled={!parsed || !!parsed.use_blueprint}
-                onClick={() => {
-                  if (parsed) {
-                    setEditing({
-                      ...editing,
-                      config: normalizedConfig(parsed),
-                    });
-                    setAdvanced(false);
-                    setFlow(false);
-                  }
-                }}
-              >
-                {t("Vis byggeklosser", "Show blocks")}
-              </button>
+              <details open={!parsed?.use_blueprint}>
+                <summary>
+                  {t("Hele konfigurasjonen", "Full configuration")}
+                </summary>
+                <p>
+                  {t(
+                    "Hele konfigurasjonen beholdes, inkludert maler, blueprints og avanserte handlinger.",
+                    "The full configuration is preserved, including templates, blueprints and advanced actions.",
+                  )}
+                </p>
+                <label>
+                  {t("Konfigurasjon (JSON)", "Configuration (JSON)")}
+                  <textarea
+                    className="code-editor"
+                    rows={22}
+                    spellCheck={false}
+                    value={raw}
+                    onChange={(e) => {
+                      setRaw(e.target.value);
+                      setDirty(true);
+                      w.setMessage("");
+                    }}
+                  />
+                </label>
+                {!parsed && (
+                  <p role="alert">
+                    {t("JSON er ikke gyldig ennå.", "JSON is not valid yet.")}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={!parsed || !!parsed.use_blueprint}
+                  onClick={() => {
+                    if (parsed) {
+                      setEditing({
+                        ...editing,
+                        config: normalizedConfig(parsed),
+                      });
+                      setAdvanced(false);
+                      setFlow(false);
+                    }
+                  }}
+                >
+                  {t("Vis byggeklosser", "Show blocks")}
+                </button>
+              </details>
             </div>
           )}
           <div className="editor-footer">
@@ -839,6 +551,9 @@ export function Automations({
                   w.busy ||
                   !usable ||
                   (guided && !guideReady) ||
+                  (!advanced &&
+                    !flow &&
+                    Object.values(formValidity).some((v) => !v)) ||
                   !String(usable.alias || "").trim()
                 }
               >

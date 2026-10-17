@@ -1,3 +1,12 @@
+## 1.35.13
+
+- Ny flow-redigering med tydelige hendelser, krav og handlinger, forståelige ikoner, farger og forklaringer. Velg mellom stegvis oversikt og fri arbeidsflate.
+- Sammensatte automasjoner viser valg, hvis/ellers, gjentakelser, venting og parallelle løp med de opprinnelige grenene og rekkefølgen.
+- Rediger hvert steg i en popup med relevante felt, enhetsvelger, validering og mulighet til å forkaste endringer. Maluttrykk og ukjente felt bevares.
+- Flere HA-entiteter, også hjelpere, kan velges i automasjoner. Eldre og nyere syntaks får forståelige beskrivelser.
+- Blueprint-automasjoner får redigerbare enkle inndataverdier og en separat, skrivebeskyttet forhåndsvisning av den oppløste flyten når hjemmesentralen leverer den. Oppskriftskoblingen beholdes.
+- Forbindelser på arbeidsflaten kontrolleres strengere for å hindre at omkobling endrer variabelomfang eller betinget kjøring utilsiktet.
+
 ## 1.35.12
 
 - Velg mellom 16 ikoner for automasjoner i en egen popup. Ikonvalget lagres i SMARTi uten å endre HA-logikken.

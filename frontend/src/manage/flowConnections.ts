@@ -1,9 +1,53 @@
-import { canvasModel } from "./flowCanvasModel";
+import { canvasModel, isUnconditionalStop } from "./flowCanvasModel";
 
 export type ConnectionMode = "sequence" | "parallel";
 export type ConnectionPlan =
   | { ok: false; message: string }
   | { ok: true; message: string; patch: Record<string, any> };
+
+// Only move literal, independent actions into a new parallel scope. A template
+// may read `wait`, `repeat` or a response variable from a previous step; without
+// evaluating HA's runtime we cannot prove that moving it preserves that scope.
+const literal = (value: any): boolean => {
+  if (typeof value === "string") return !/\{[{%#]/.test(value);
+  if (Array.isArray(value)) return value.every(literal);
+  if (value && typeof value === "object")
+    return Object.values(value).every(literal);
+  return true;
+};
+function parallelSafe(row: any): boolean {
+  if (!row || typeof row !== "object" || Array.isArray(row)) return false;
+  if (row.enabled !== undefined && typeof row.enabled !== "boolean")
+    return false;
+  if (
+    row.continue_on_error !== undefined &&
+    typeof row.continue_on_error !== "boolean"
+  )
+    return false;
+  const common = ["alias", "note", "metadata", "enabled", "continue_on_error"];
+  if (Object.hasOwn(row, "delay"))
+    return (
+      Object.keys(row).every((key) => [...common, "delay"].includes(key)) &&
+      literal(row.delay)
+    );
+  const action = row.action ?? row.service;
+  if (
+    typeof action !== "string" ||
+    !/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(action) ||
+    (Object.hasOwn(row, "action") && Object.hasOwn(row, "service"))
+  )
+    return false;
+  return (
+    Object.keys(row).every((key) =>
+      [...common, "action", "service", "target", "entity_id", "data"].includes(
+        key,
+      ),
+    ) &&
+    literal(row.target) &&
+    literal(row.entity_id) &&
+    literal(row.data)
+  );
+}
 
 // Translate gestures to HA's native lists/parallel block. Never store decorative
 // edges that imply a different execution graph than the saved automation.
@@ -40,16 +84,16 @@ export function planConnection(
       );
     const a = source.path![1] as number,
       b = target.path![1] as number;
-    // A stop/variables/condition can change meaning or scope when moved into
-    // a parallel branch. Offer sequence only for these blocks.
-    const parallelSafe = (row: any) =>
-      row &&
-      typeof row === "object" &&
-      !["stop", "variables", "condition"].some((k) => Object.hasOwn(row, k));
-    if (!parallelSafe(config.actions[a]) || !parallelSafe(config.actions[b]))
+    // Also check intervening steps: moving a later action before an existing
+    // condition, wait or variable assignment could bypass its requirement.
+    if (
+      !config.actions
+        .slice(Math.min(a, b), Math.max(a, b) + 1)
+        .every(parallelSafe)
+    )
       return fail(
-        "Stopp, variabler og handlingskrav må kobles i rekkefølge.",
-        "Stop, variables and action conditions must be connected in sequence.",
+        "Disse stegene bruker krav, venting, beregninger eller verdier fra andre steg. Behold rekkefølgen, eller lag en egen Samtidig-gren og velg innholdet der.",
+        "These steps use requirements, waits, calculations or values from other steps. Keep their order, or create a separate parallel block and choose its contents there.",
       );
     const actions = config.actions.flatMap((row: any, index: number) =>
       index === a
@@ -99,11 +143,7 @@ export function planConnection(
   const sourceIndex = source.path?.[1] as number | undefined;
   let insertAfter: number;
   if (source.kind === key) {
-    if (
-      key === "actions" &&
-      Object.hasOwn(rows[sourceIndex!] || {}, "stop") &&
-      rows[sourceIndex!].enabled !== false
-    )
+    if (key === "actions" && isUnconditionalStop(rows[sourceIndex!]))
       return fail(
         "Et aktivt Stopp-kort avslutter løpet. Koble fra et annet kort.",
         "An active Stop ends the run. Connect from a different card.",

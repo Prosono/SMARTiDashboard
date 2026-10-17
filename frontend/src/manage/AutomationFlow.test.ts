@@ -24,14 +24,14 @@ describe("flow descriptions preserve source configuration", () => {
     const copy = structuredClone(row);
     expect(flowSummary(row, "triggers", home, "nb")).toEqual({
       title: "Ytterdør",
-      detail: "Endres til åpen",
+      detail: "Fra Lukket · Til Åpen · I minst 5 min",
     });
     expect(row).toEqual(copy);
     expect(entityState("binary_sensor.door", "off", home, "en")).toBe("Closed");
   });
   it("keeps complex blocks and multiple targets visible", () => {
     expect(flowSummary({ choose: [] }, "actions", home, "nb").title).toBe(
-      "Velg mellom handlinger",
+      "Velg første vei som passer",
     );
     expect(
       flowSummary(
@@ -43,9 +43,34 @@ describe("flow descriptions preserve source configuration", () => {
         home,
         "nb",
       ).detail,
-    ).toBe("Flere mål");
+    ).toBe("light.one, light.two");
+    const nested = {
+      choose: [
+        {
+          conditions: [
+            {
+              condition: "state",
+              entity_id: "binary_sensor.door",
+              state: "off",
+            },
+          ],
+          sequence: [
+            {
+              action: "light.turn_on",
+              target: { entity_id: ["light.one", "light.two"] },
+              data: { brightness_pct: 35, transition: 2 },
+            },
+          ],
+        },
+      ],
+      default: [{ delay: "00:05:00" }],
+    };
+    const before = structuredClone(nested);
+    const summary = flowSummary(nested, "actions", home, "nb");
+    expect(summary.detail).toContain("reserveveien");
+    expect(nested).toEqual(before);
     expect(flowSummary(null, "actions", home, "nb").title).toBe(
-      "Avansert blokk",
+      "Ukjent oppsett",
     );
   });
 });

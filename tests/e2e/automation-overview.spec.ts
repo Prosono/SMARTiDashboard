@@ -22,7 +22,7 @@ test("automation overview filters, layouts and editor", async ({ page }) => {
     .getByRole("button", { name: "Vis utløsere", exact: true })
     .first()
     .click();
-  await expect(page.getByRole("dialog")).toContainText("Klokken er 20:00:00");
+  await expect(page.getByRole("dialog")).toContainText("20:00:00");
   await page.getByRole("button", { name: "Lukk innstillinger" }).click();
   await root
     .getByRole("button", { name: /^Velg ikon for/ })

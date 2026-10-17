@@ -8,6 +8,15 @@ export type CanvasNode = {
   y: number;
 };
 export type CanvasEdge = { from: string; to: string; label: string };
+const record = (row: any) =>
+  row !== null && typeof row === "object" && !Array.isArray(row);
+export function isUnconditionalStop(row: any): boolean {
+  return (
+    record(row) &&
+    Object.hasOwn(row, "stop") &&
+    (row.enabled === undefined || row.enabled === true)
+  );
+}
 export function canvasModel(config: Record<string, any>, lang: string) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const nodes: CanvasNode[] = [],
@@ -45,6 +54,19 @@ export function canvasModel(config: Record<string, any>, lang: string) {
     previous = id;
   }
   const x = 710 + (config.conditions?.length || 0) * 340;
+  const nextLabel = (row: any) => {
+    if (!record(row)) return t("Deretter", "Next");
+    if (row.enabled === false) return t("Hoppes over", "Skipped");
+    if (Object.hasOwn(row, "stop"))
+      return t("Hvis steget hoppes over", "If the step is skipped");
+    if (
+      ["condition", "and", "or", "not"].some((key) => Object.hasOwn(row, key))
+    )
+      return row.enabled !== undefined && row.enabled !== true
+        ? t("Hvis oppfylt eller hoppet over", "If satisfied or skipped")
+        : t("Hvis oppfylt", "If satisfied");
+    return t("Deretter", "Next");
+  };
   for (const [i] of (config.actions || []).entries()) {
     const id = add("actions", ["actions", i], x + i * 340, 60);
     if (previous)
@@ -56,15 +78,9 @@ export function canvasModel(config: Record<string, any>, lang: string) {
             ? config.conditions?.length
               ? t("Ja", "Yes")
               : t("Gjør", "Then")
-            : t("Deretter", "Next"),
+            : nextLabel(config.actions[i - 1]),
       });
-    previous =
-      Object.hasOwn(config.actions[i] || {}, "stop") &&
-      config.actions[i].enabled !== false
-        ? ""
-        : previous
-          ? id
-          : "";
+    previous = isUnconditionalStop(config.actions[i]) ? "" : previous ? id : "";
   }
   return { nodes, edges };
 }

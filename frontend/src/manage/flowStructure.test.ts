@@ -79,6 +79,61 @@ describe("lossless advanced flow projection", () => {
     ] as const)
       expect(flowGroups(row, [], "nb")).toHaveLength(count);
   });
+  it("projects nested trigger lists without flattening the source", () => {
+    const row = {
+      triggers: [
+        { trigger: "state", entity_id: "light.a" },
+        { trigger: "sun", event: "sunset" },
+      ],
+    };
+    const groups = flowGroups(row, ["triggers", 2], "nb");
+    expect(groups).toHaveLength(1);
+    expect(groups[0].path).toEqual(["triggers", 2, "triggers"]);
+    expect(groups[0].kind).toBe("triggers");
+    expect(groups[0].value).toBe(row.triggers);
+    const changed = replaceFlowPath(
+      row,
+      ["triggers", 0, "entity_id"],
+      "light.b",
+    );
+    expect(row.triggers[0].entity_id).toBe("light.a");
+    expect(changed.triggers[0].entity_id).toBe("light.b");
+  });
+  it("preserves paths through action condition lists and implicit AND arrays", () => {
+    const config = {
+      actions: [
+        {
+          condition: [
+            { condition: "state", entity_id: "light.a", state: "on" },
+            [{ condition: "numeric_state", entity_id: "sensor.a", above: 0 }],
+          ],
+        },
+      ],
+    };
+    const outer = flowGroups(config.actions[0], ["actions", 0], "nb");
+    expect(outer[0].path).toEqual(["actions", 0, "condition"]);
+    expect(outer[0].kind).toBe("conditions");
+    const nested = flowGroups(
+      config.actions[0].condition[1],
+      ["actions", 0, "condition", 1],
+      "nb",
+    );
+    expect(nested[0].path).toEqual(["actions", 0, "condition", 1]);
+    expect(nested[0].value).toBe(config.actions[0].condition[1]);
+    const path = [...nested[0].path, 0, "above"];
+    const changed = replaceFlowPath(config, path, 5);
+    expect(readFlowPath(changed, path)).toBe(5);
+    expect(readFlowPath(config, path)).toBe(0);
+    expect(changed.actions[0].condition[0]).toEqual(
+      config.actions[0].condition[0],
+    );
+    expect(structureSummary(config.actions[0], "nb")?.title).toBe(
+      "Alle krav må stemme",
+    );
+    expect(structureSummary(config.actions[0].condition[1], "nb")?.title).toBe(
+      "Alle krav må stemme",
+    );
+  });
   it("recognizes falsy values and explicit timeout behavior", () => {
     expect(structureSummary({ delay: 0 }, "nb")?.detail).toBe("0 sekunder");
     expect(structureSummary({ stop: "" }, "nb")?.title).toBe("Stopp her");

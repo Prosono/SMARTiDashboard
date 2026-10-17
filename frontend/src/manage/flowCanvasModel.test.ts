@@ -29,4 +29,72 @@ describe("canvas preserves HA control flow", () => {
     );
     expect(graph.edges.some((e) => e.from === '["actions",0]')).toBe(false);
   });
+  it.each([
+    [{ condition: "state", entity_id: "light.a", state: "on" }, "Hvis oppfylt"],
+    [
+      { and: [{ condition: "state", entity_id: "light.a", state: "on" }] },
+      "Hvis oppfylt",
+    ],
+    [{ or: [] }, "Hvis oppfylt"],
+    [{ not: [] }, "Hvis oppfylt"],
+    [
+      { condition: "template", value_template: "{{ ready }}", enabled: false },
+      "Hoppes over",
+    ],
+    [
+      {
+        condition: "template",
+        value_template: "{{ ready }}",
+        enabled: "{{ use_check }}",
+      },
+      "Hvis oppfylt eller hoppet over",
+    ],
+  ])(
+    "labels a condition action's continuation accurately: %j",
+    (condition, label) => {
+      const config = {
+        triggers: [],
+        conditions: [],
+        actions: [condition, { delay: 1 }],
+      };
+      const before = structuredClone(config);
+      const graph = canvasModel(config, "nb");
+      expect(
+        graph.edges.find((edge) => edge.from === '["actions",0]')?.label,
+      ).toBe(label);
+      expect(config).toEqual(before);
+    },
+  );
+  it("keeps a conditional continuation after a templated stop", () => {
+    const config = {
+      triggers: [],
+      conditions: [],
+      actions: [
+        { stop: "Only when enabled", enabled: "{{ should_stop }}" },
+        { delay: 1 },
+        { action: "light.turn_on" },
+      ],
+    };
+    const graph = canvasModel(config, "en");
+    expect(
+      graph.edges.find((edge) => edge.from === '["actions",0]')?.label,
+    ).toBe("If the step is skipped");
+    expect(graph.edges.find((edge) => edge.from === '["actions",1]')?.to).toBe(
+      '["actions",2]',
+    );
+  });
+  it("continues after disabled stops but not explicitly enabled stops", () => {
+    for (const enabled of [false, true]) {
+      const graph = canvasModel(
+        {
+          triggers: [],
+          conditions: [],
+          actions: [{ stop: "Done", enabled }, { delay: 1 }],
+        },
+        "nb",
+      );
+      const edge = graph.edges.find((item) => item.from === '["actions",0]');
+      expect(edge?.label).toBe(enabled ? undefined : "Hoppes over");
+    }
+  });
 });

@@ -39,6 +39,11 @@ export function SettingsDialog({
       aria-busy={busy}
       tabIndex={-1}
       onKeyDown={(event) => {
+        if (
+          (event.target as HTMLElement).closest("dialog") !==
+          event.currentTarget
+        )
+          return;
         if (event.key !== "Tab") return;
         const dialog = event.currentTarget;
         const targets = Array.from(
@@ -72,6 +77,7 @@ export function SettingsDialog({
         }
       }}
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         if (!busy) onClose();
       }}
