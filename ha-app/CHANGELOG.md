@@ -1,3 +1,8 @@
+## 1.35.15
+
+- Sidemenyen kan trekkes sammen til en smal ikonmeny på nettbrett og datamaskin. Valget huskes per bruker i nettleseren.
+- Mobilens bunnmeny beholdes med synlige navn og automatisk rulling til valgt side.
+
 ## 1.35.14
 
 - Lokale adresser til hjemmesentralen godkjennes automatisk gjennom bekreftet informasjon fra Supervisor. Nettbrett og telefoner trenger ingen individuell godkjenning.

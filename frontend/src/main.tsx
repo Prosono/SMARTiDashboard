@@ -31,6 +31,8 @@ import {
 } from "@tanstack/react-query";
 import {
   House,
+  PanelLeftClose,
+  PanelLeftOpen,
   LayoutGrid,
   SlidersHorizontal,
   AppWindow,
@@ -129,6 +131,26 @@ function App() {
   const t = lang === "en" ? en : nb;
   const experience = useExperiencePreference(!!session);
   const mode = experience.data?.mode || "advanced";
+  const sidebarKey = `smarti-sidebar:${session?.name || "guest"}`;
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  useLayoutEffect(() => {
+    setSidebarCollapsed(
+      readPreference(sidebarKey, "expanded", ["expanded", "collapsed"]) ===
+        "collapsed",
+    );
+  }, [sidebarKey]);
+  function toggleSidebar() {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    writePreference(sidebarKey, next ? "collapsed" : "expanded");
+  }
+  const sidebarLabel = sidebarCollapsed
+    ? lang === "en"
+      ? "Expand sidebar"
+      : "Utvid sidemenyen"
+    : lang === "en"
+      ? "Collapse sidebar"
+      : "Trekk sammen sidemenyen";
   const [checking, setChecking] = useState(true);
   const [page, setPage] = useState<Page>("home");
   const [dirty, setDirty] = useState(false);
@@ -237,11 +259,31 @@ function App() {
     return <Login t={t} lang={lang} language={language} signedIn={signedIn} />;
   return (
     <Experience.Provider value={mode}>
-      <div className="shell" data-experience={mode}>
+      <div
+        className="shell"
+        data-experience={mode}
+        data-sidebar={sidebarCollapsed ? "collapsed" : "expanded"}
+      >
         <aside className="sidebar">
           <Logo />
           <div className="sidebar-label">SMART LIVING, SIMPLIFIED.</div>
+          <button
+            className="sidebar-toggle"
+            onClick={toggleSidebar}
+            aria-label={sidebarLabel}
+            title={sidebarLabel}
+            aria-expanded={!sidebarCollapsed}
+            aria-controls="main-navigation"
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen size={20} />
+            ) : (
+              <PanelLeftClose size={20} />
+            )}
+            <span>{lang === "en" ? "Collapse menu" : "Trekk sammen"}</span>
+          </button>
           <nav
+            id="main-navigation"
             ref={mainNav}
             aria-label={lang === "en" ? "Main navigation" : "Hovedmeny"}
           >
@@ -266,6 +308,8 @@ function App() {
                   <button
                     key={p}
                     className={page === p ? "nav-item active" : "nav-item"}
+                    aria-label={t[p]}
+                    title={sidebarCollapsed ? t[p] : undefined}
                     aria-current={page === p ? "page" : undefined}
                     onClick={() => navigate(p)}
                   >
@@ -285,6 +329,7 @@ function App() {
             <button
               className="icon-button"
               aria-label={t.logout}
+              title={t.logout}
               onClick={logout}
             >
               <LogOut size={18} />

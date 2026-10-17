@@ -1536,3 +1536,58 @@ footer span:last-child {
   .settings-sections { overflow-x: auto; flex-wrap: nowrap; }
   .settings-sections button { flex-shrink: 0; white-space: nowrap; }
 }
+
+/* The compact rail is a desktop preference; mobile keeps its bottom navigation. */
+.sidebar-toggle {
+  display: none;
+}
+@media (min-width: 761px) {
+  .sidebar-label { margin-bottom: 18px; }
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-height: 44px;
+    padding: 10px 15px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    color: var(--media-muted);
+    font-size: 12px;
+  }
+  .sidebar-toggle:hover {
+    background: #ffffff0e;
+    color: #fff;
+  }
+  .sidebar nav { overflow-y: auto; min-height: 0; }
+  .sidebar-bottom { flex-shrink: 0; }
+  [data-sidebar="collapsed"] .sidebar {
+    width: 80px;
+    padding-inline: 12px;
+  }
+  [data-sidebar="collapsed"] .workspace {
+    margin-left: 80px;
+    width: calc(100% - 80px);
+  }
+  [data-sidebar="collapsed"] .sidebar .brand {
+    padding: 0;
+    justify-content: center;
+    margin-bottom: 18px;
+  }
+  [data-sidebar="collapsed"] .sidebar .brand > span,
+  [data-sidebar="collapsed"] .sidebar-label,
+  [data-sidebar="collapsed"] .sidebar-toggle > span,
+  [data-sidebar="collapsed"] .nav-item > span,
+  [data-sidebar="collapsed"] .sidebar-bottom > div:nth-child(2) {
+    display: none;
+  }
+  [data-sidebar="collapsed"] .sidebar-toggle,
+  [data-sidebar="collapsed"] .nav-item {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  [data-sidebar="collapsed"] .sidebar-bottom {
+    flex-direction: column;
+    gap: 12px;
+  }
+  [data-sidebar="collapsed"] .sidebar-bottom .icon-button { margin: 0; }
+}
