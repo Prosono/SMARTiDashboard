@@ -1,3 +1,4 @@
+import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

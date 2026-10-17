@@ -1,3 +1,8 @@
+## 1.35.8
+
+- Valgt Hjem-fane sentreres automatisk i den horisontale mobilmenyen.
+- Følger trykk, sveiping og tastaturnavigasjon, tilpasser seg skjermbredde og respekterer redusert bevegelse.
+
 ## 1.35.7
 
 - Husillustrasjonen i innloggingsvinduet er erstattet med den originale SMARTi-logoen.

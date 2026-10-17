@@ -1,3 +1,4 @@
+import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { useState, type CSSProperties } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -262,7 +263,7 @@ export function LightOverview({
           return (
             <article className="lighting-room" key={a.area_id}>
               <header>
-                <img src={photo} alt="" loading="lazy" />
+                <RoomArtwork src={photo} alt="" loading="lazy" />
                 <Icon size={24} />
                 <div>
                   <h2>{a.name}</h2>

@@ -1,3 +1,4 @@
+import { RoomArtwork } from "../rooms/RoomArtwork";
 import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
 import { useExperience } from "../Experience";
 import { SecurityOverview } from "./SecurityOverview";
@@ -60,6 +61,7 @@ export type HomePreferences = {
   cameras: string[];
   modes: Record<string, string | null>;
   images: Record<string, boolean>;
+  icons?: Record<string, string>;
 };
 const modes = [
   { id: "home", nb: "Hjemme", en: "Home", Icon: House },

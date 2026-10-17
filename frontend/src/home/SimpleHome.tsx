@@ -1,3 +1,4 @@
+import { RoomArtwork } from "../rooms/RoomArtwork";
 import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
 import { SettingsDialog } from "./SettingsDialog";
 import { homeAsset, roomMood } from "./HomeOverview";
@@ -174,7 +175,11 @@ export function SimpleHome({
                     setLimit(4);
                   }}
                 >
-                  <img src={homeAsset(photo || "home-living")} alt="" />
+                  <RoomArtwork
+                    roomId={a.area_id}
+                    src={homeAsset(photo || "home-living")}
+                    alt=""
+                  />
                   <span>
                     <Icon size={20} />
                     {a.name}

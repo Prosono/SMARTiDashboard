@@ -67,6 +67,7 @@ class RoomImage(BaseModel):
     model_config = {"extra": "forbid"}
     data: str = Field(default="", max_length=1_400_000)
     bank: RoomImageBank | None = None
+    icon: RoomImageBank | None = None
 
 
 def home_router(store, user, ha, settings):
@@ -118,6 +119,11 @@ def home_router(store, user, ha, settings):
             **pref,
             "modes": json.loads(store.get("home_modes", "{}")) if all_views(current) else {},
             "images": {id: images.get(id, False) for id in ha.areas},
+            "icons": {
+                id: store.get("room_image:" + id).removeprefix("icon:")
+                for id in ha.areas
+                if (store.get("room_image:" + id) or "").startswith("icon:")
+            },
         }
 
     @router.put("/preferences")
@@ -204,6 +210,11 @@ def home_router(store, user, ha, settings):
         admin(current)
         if id not in ha.areas:
             raise HTTPException(404, "area_not_found")
+        if sum(bool(value) for value in (body.data, body.bank, body.icon)) > 1:
+            raise HTTPException(422, "choose_one_room_visual")
+        if body.icon:
+            store.set("room_image:" + id, "icon:" + body.icon)
+            return {"saved": True}
         if body.bank:
             if body.data:
                 raise HTTPException(422, "choose_one_image")
@@ -228,6 +239,16 @@ def home_router(store, user, ha, settings):
         data = store.get("room_image:" + id)
         if not data:
             raise HTTPException(404, "image_not_found")
+        if data.startswith("icon:"):
+            choice = data.removeprefix("icon:")
+            if choice not in get_args(RoomImageBank):
+                raise HTTPException(404, "image_not_found")
+            path = settings.static_dir / "room-icons" / f"{choice}.svg"
+            if not path.is_file():
+                raise HTTPException(404, "image_not_found")
+            return FileResponse(
+                path, media_type="image/svg+xml", headers={"Cache-Control": "private, no-store"}
+            )
         if data.startswith("bank:"):
             choice = data.removeprefix("bank:")
             if choice not in get_args(RoomImageBank):

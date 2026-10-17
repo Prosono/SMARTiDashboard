@@ -615,3 +615,23 @@
     flex-direction: column;
   }
 }
+
+.room-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.room-icon-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.room-icon-grid img { width: 48px; height: 48px; }
+img[data-room-icon="true"] { background: var(--soft); }

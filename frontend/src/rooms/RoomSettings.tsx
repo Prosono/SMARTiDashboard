@@ -88,7 +88,7 @@ export function RoomSettings({
           {[
             ["view", t("Favoritter og synlighet", "Favorites & visibility")],
             ["name", t("Romnavn", "Room name")],
-            ["images", t("Bildebank", "Image library")],
+            ["images", t("Bilde eller ikon", "Image or icon")],
             ["devices", t("Legg til enheter", "Add devices")],
           ]
             .filter(([id]) => admin || id === "view")
@@ -117,6 +117,41 @@ export function RoomSettings({
                 "Choose an image from the SMARTi library or upload your own. The picture is shared across the home.",
               )}
             </p>
+            <h3>{t("Velg et romikon", "Choose a room icon")}</h3>
+            <div className="room-icon-grid">
+              {[
+                ["living", "Stue", "Living room"],
+                ["bedroom", "Soverom", "Bedroom"],
+                ["kitchen", "Kjøkken", "Kitchen"],
+                ["bathroom", "Bad", "Bathroom"],
+                ["attic", "Loft", "Attic"],
+                ["basement", "Kjeller", "Basement"],
+                ["garage", "Garasje", "Garage"],
+                ["outdoor", "Uteområde", "Outdoor"],
+                ["storage", "Bod", "Storage"],
+                ["laundry", "Vaskerom", "Laundry"],
+                ["office", "Kontor", "Office"],
+                ["hallway", "Gang", "Hallway"],
+              ].map(([id, nb, en]) => (
+                <button
+                  key={id}
+                  disabled={busy || !room}
+                  onClick={() =>
+                    void run(() =>
+                      api(
+                        `home/room-image/${encodeURIComponent(room)}`,
+                        "PUT",
+                        { icon: id },
+                      ),
+                    )
+                  }
+                >
+                  <img src={`./room-icons/${id}.svg`} alt="" />
+                  <span>{t(nb, en)}</span>
+                </button>
+              ))}
+            </div>
+            <h3>{t("Eller velg et bilde", "Or choose an image")}</h3>
             <div className="room-image-grid">
               {[
                 ["living", "Stue", "Living room"],

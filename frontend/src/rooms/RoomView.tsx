@@ -1,3 +1,4 @@
+import { RoomArtwork } from "./RoomArtwork";
 import { RoomSettings } from "./RoomSettings";
 import { useId, useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";

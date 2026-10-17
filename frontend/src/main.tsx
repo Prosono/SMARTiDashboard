@@ -21,7 +21,7 @@ import { AccountAvatar } from "./manage/Accounts";
 import { Debugging } from "./manage/Debugging";
 import { HomeSettings } from "./manage/HomeSettings";
 import { Thermostat } from "./Thermostat";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   QueryClient,
@@ -150,9 +150,35 @@ function App() {
   }
   useEffect(() => {
     setPage((p) =>
-      mode === "simple" && !["home", "rooms", "more"].includes(p) ? "home" : p,
+      mode === "simple" && !["home", "more"].includes(p) ? "home" : p,
     );
   }, [mode]);
+  const mainNav = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const nav = mainNav.current;
+    if (!nav) return;
+    const center = () => {
+      const selected = nav.querySelector<HTMLElement>('[aria-current="page"]');
+      if (!selected || nav.scrollWidth <= nav.clientWidth) return;
+      const item = selected.getBoundingClientRect(),
+        box = nav.getBoundingClientRect();
+      nav.scrollTo({
+        left:
+          nav.scrollLeft +
+          item.left -
+          box.left -
+          nav.clientLeft +
+          item.width / 2 -
+          nav.clientWidth / 2,
+        behavior: "instant",
+      });
+    };
+    center();
+    const observer = new ResizeObserver(center);
+    observer.observe(nav);
+    nav.querySelectorAll("button").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [page, mode, lang, session?.role]);
   const navigate = (p: Page) => guard(() => setPage(p));
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -218,7 +244,10 @@ function App() {
         <aside className="sidebar">
           <Logo />
           <div className="sidebar-label">SMART LIVING, SIMPLIFIED.</div>
-          <nav aria-label={lang === "en" ? "Main navigation" : "Hovedmeny"}>
+          <nav
+            ref={mainNav}
+            aria-label={lang === "en" ? "Main navigation" : "Hovedmeny"}
+          >
             {(Object.keys(icons) as Page[])
               .filter(
                 (p) =>
@@ -231,7 +260,7 @@ function App() {
                 (p) =>
                   mode === "advanced" ||
                   (mode === "simple"
-                    ? ["home", "rooms", "more"].includes(p)
+                    ? ["home", "more"].includes(p)
                     : !["integrations", "apps", "updates"].includes(p)),
               )
               .map((p) => {

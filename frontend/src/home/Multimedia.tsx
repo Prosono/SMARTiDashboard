@@ -1,3 +1,4 @@
+import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { allViews } from "../access";
 import { useEffect, useState } from "react";
@@ -119,7 +120,7 @@ function MediaCard({
   return (
     <article className="media-player-card" data-playing={playing}>
       <div className="media-art">
-        <img src={photo} alt="" loading="lazy" />
+        <RoomArtwork src={photo} alt="" loading="lazy" />
         <div>
           <strong>{c.name}</strong>
           <span>

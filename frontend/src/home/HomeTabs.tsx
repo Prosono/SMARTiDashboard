@@ -1,4 +1,10 @@
-import { useEffect, useRef, type ReactNode, type CSSProperties } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 import {
   House,
   Lightbulb,
@@ -53,13 +59,53 @@ export function HomeTabs({
       nav.current.scrollIntoView({ block: "start", behavior: "instant" });
     previous.current = index;
   }, [index]);
+  const tabSignature = tabs.map((item) => item.id).join("|");
+  useLayoutEffect(() => {
+    const container = nav.current;
+    if (!container) return;
+    function centerSelected() {
+      const selected = container!.querySelector<HTMLElement>(
+        '[aria-selected="true"]',
+      );
+      if (!selected || container!.scrollWidth <= container!.clientWidth) return;
+      const box = container!.getBoundingClientRect();
+      const item = selected.getBoundingClientRect();
+      const left =
+        container!.scrollLeft +
+        item.left -
+        box.left -
+        container!.clientLeft +
+        item.width / 2 -
+        container!.clientWidth / 2;
+      const target = Math.max(
+        0,
+        Math.min(left, container!.scrollWidth - container!.clientWidth),
+      );
+      if (Math.abs(target - container!.scrollLeft) < 1) return;
+      container!.scrollTo({
+        left: target,
+        behavior: "instant",
+      });
+    }
+    centerSelected();
+    const frame = requestAnimationFrame(centerSelected);
+    const observer = new ResizeObserver(centerSelected);
+    observer.observe(container);
+    container
+      .querySelectorAll('[role="tab"]')
+      .forEach((item) => observer.observe(item));
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [tab, tabSignature, lang]);
   function select(next: number, focus = false) {
     if (next < 0 || next >= tabs.length || next === index) return;
     change(tabs[next].id);
     if (focus)
       nav.current
         ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-        [next]?.focus();
+        [next]?.focus({ preventScroll: true });
   }
   return (
     <>
