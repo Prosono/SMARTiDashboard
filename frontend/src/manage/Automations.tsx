@@ -1,3 +1,4 @@
+import { AutomationIcon, AutomationTrigger } from "./AutomationDetails";
 import "./automations.css";
 import { homeAsset } from "../home/HomeOverview";
 import { entityState } from "./entityWords";
@@ -33,6 +34,7 @@ type Automation = {
   name: string;
   state: string;
   last_triggered: string | null;
+  icon?: string;
 };
 export function normalizedConfig(value: Config): Config {
   const c = structuredClone(value);
@@ -1082,11 +1084,12 @@ export function Automations({
           )
           .map((a) => (
             <article className="automation-item" key={a.entity_id}>
-              <span
-                className={`automation-symbol ${a.state === "on" ? "active" : ""}`}
-              >
-                <Workflow size={24} />
-              </span>
+              <AutomationIcon
+                entityId={a.entity_id}
+                name={a.name}
+                icon={a.icon}
+                lang={lang}
+              />
               <div className="automation-identity">
                 <h2>{a.name}</h2>
                 <p
@@ -1100,6 +1103,7 @@ export function Automations({
                       : t("Utilgjengelig", "Unavailable")}
                 </p>
               </div>
+              <AutomationTrigger id={a.id} home={home} lang={lang} />
               <div className="automation-last-run">
                 <span>
                   <Clock3 size={14} />

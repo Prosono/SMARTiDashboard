@@ -49,6 +49,14 @@ class AutomationBody(BaseModel):
         return value
 
 
+class AutomationAppearance(BaseModel):
+    model_config = {"extra": "forbid"}
+    icon: Literal[
+        "auto", "light", "sun", "moon", "home", "climate", "shield", "lock",
+        "door", "motion", "music", "energy", "clock", "leaf", "blinds", "vacuum",
+    ]
+
+
 class AutomationAction(BaseModel):
     action: Literal["turn_on", "turn_off", "trigger"]
 
@@ -195,6 +203,7 @@ class Management:
                 "name": s.get("attributes", {}).get("friendly_name", eid),
                 "state": s["state"],
                 "last_triggered": s.get("attributes", {}).get("last_triggered"),
+                "icon": self.store.get("automation_icon:" + eid) or "auto",
             }
             for eid, s in self.ha.states.items()
             if eid.startswith("automation.")
@@ -319,6 +328,14 @@ def management_router(service, admin):
     @router.get("/automations")
     async def automations():
         return m.automations()
+
+    @router.put("/automation-appearance/{entity_id}")
+    async def automation_appearance(entity_id: str, body: AutomationAppearance):
+        m.connected()
+        if not entity_id.startswith("automation.") or entity_id not in m.ha.states:
+            raise HTTPException(404, "not_found")
+        m.store.set("automation_icon:" + entity_id, body.icon)
+        return {"icon": body.icon}
 
     @router.get("/automations/{id}")
     async def config(id: str):

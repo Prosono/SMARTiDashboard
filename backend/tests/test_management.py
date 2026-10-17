@@ -2,12 +2,13 @@ import json
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
+from test_api import ORIGIN, SECRET, login
+
 from app.config import Settings
 from app.demo import Demo
 from app.ha import HAError, HomeAssistant
 from app.main import create_app
-from fastapi.testclient import TestClient
-from test_api import ORIGIN, SECRET, login
 
 
 @pytest.fixture
@@ -279,3 +280,19 @@ async def test_brand_image_bounded_authenticated_no_redirects(monkeypatch):
         png = body
         with pytest.raises(HAError):
             await ha.brand_image("hue")
+
+
+def test_automation_icon_saved_without_changing_config(client):
+    row = client.get('/api/manage/automations').json()[0]
+    path = '/api/manage/automation-appearance/' + row['entity_id']
+    original = client.get('/api/manage/automations/' + row['id']).json()
+    assert client.put(path, json={'icon': 'moon'}).status_code == 200
+    saved = client.get('/api/manage/automations').json()[0]
+    assert saved['icon'] == 'moon'
+    assert client.get('/api/manage/automations/' + row['id']).json() == original
+    assert client.put(path, json={'icon': '<script>'}).status_code == 422
+    assert client.put('/api/manage/automation-appearance/light.missing', json={'icon': 'sun'}).status_code == 404
+    client.post('/api/users', json={'name': 'viewer', 'password': 'another long password', 'role': 'user'})
+    client.post('/api/logout')
+    login(client, 'viewer', 'another long password')
+    assert client.put(path, json={'icon': 'sun'}).status_code == 403

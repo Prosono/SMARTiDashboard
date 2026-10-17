@@ -1,3 +1,9 @@
+## 1.35.12
+
+- Velg mellom 16 ikoner for automasjoner i en egen popup. Ikonvalget lagres i SMARTi uten å endre HA-logikken.
+- Eget utløserfelt med ikoner og forklaring fra automasjonens oppsett. Trykk for å se flere utløsere.
+- Utløserdetaljer lastes ved behov og mellomlagres.
+
 ## 1.35.11
 
 - Redesignet automasjonsoversikt med bildebanner, reelle status-tall, søk, statusfiltre og sortering.

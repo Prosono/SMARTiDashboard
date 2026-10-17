@@ -15,6 +15,27 @@ test("automation overview filters, layouts and editor", async ({ page }) => {
   await nav.getByRole("button", { name: "Automasjoner", exact: true }).click();
   const root = page.locator(".automation-overview");
   await expect(root.locator(".automation-item").first()).toBeVisible();
+  await expect(root.locator(".automation-trigger").first()).toContainText(
+    "20:00:00",
+  );
+  await root
+    .getByRole("button", { name: "Vis utløsere", exact: true })
+    .first()
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Klokken er 20:00:00");
+  await page.getByRole("button", { name: "Lukk innstillinger" }).click();
+  await root
+    .getByRole("button", { name: /^Velg ikon for/ })
+    .first()
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Natt", exact: true })
+    .click();
+  await expect(root.locator(".automation-icon-button").first()).toHaveAttribute(
+    "data-icon",
+    "moon",
+  );
   await root.getByRole("button", { name: "Kort", exact: true }).click();
   await expect(root.locator(".automation-results")).toHaveClass(/grid/);
   await root

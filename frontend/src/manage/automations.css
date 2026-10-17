@@ -456,3 +456,198 @@
     font-size: 26px;
   }
 }
+.automation-item {
+  grid-template-columns: 50px minmax(150px, 1fr) minmax(170px, 0.8fr) minmax(
+      130px,
+      0.6fr
+    ) auto;
+}
+.automation-icon-button {
+  position: relative;
+  border: 1px solid
+    color-mix(in srgb, var(--icon-color, var(--accent)) 18%, transparent);
+  color: var(--icon-color, var(--accent));
+  background: color-mix(
+    in srgb,
+    var(--icon-color, var(--accent)) 10%,
+    var(--surface)
+  );
+}
+[data-icon="light"],
+[data-icon="sun"],
+[data-icon="energy"] {
+  --icon-color: #cc860e;
+}
+[data-icon="moon"],
+[data-icon="music"] {
+  --icon-color: #9873c9;
+}
+[data-icon="shield"],
+[data-icon="leaf"],
+[data-icon="lock"] {
+  --icon-color: #159f72;
+}
+[data-icon="climate"],
+[data-icon="clock"],
+[data-icon="blinds"] {
+  --icon-color: #398ab1;
+}
+.automation-icon-edit {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  box-sizing: content-box;
+  padding: 3px;
+  color: var(--muted);
+}
+.automation-icon-button:hover {
+  border-color: currentColor;
+}
+.automation-icon-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.automation-icon-picker button {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  min-height: 84px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--soft);
+  padding: 12px 4px;
+}
+.automation-icon-picker button svg {
+  color: var(--icon-color, var(--accent));
+}
+.automation-icon-picker button span {
+  font-size: 12px;
+}
+.automation-icon-picker button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.automation-field-label {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 5px;
+}
+.automation-trigger {
+  min-width: 0;
+}
+.automation-trigger-summary {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 10px;
+  padding: 0;
+  min-height: 44px;
+  width: 100%;
+}
+.automation-trigger-summary:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.automation-trigger-summary > svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.automation-trigger-summary strong {
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+  overflow-wrap: anywhere;
+}
+.automation-trigger-summary small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.automation-trigger-summary em {
+  font-style: normal;
+  color: var(--accent);
+  font-size: 11px;
+  display: block;
+  margin-top: 4px;
+}
+.automation-trigger-summary:not(:disabled):hover strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.automation-trigger-list > div {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.automation-trigger-list svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.automation-trigger-list p,
+.automation-trigger-list small {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.automation-results.grid .automation-trigger {
+  grid-column: 1/-1;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.automation-results.grid .automation-last-run {
+  grid-row: auto;
+}
+@media (max-width: 1400px) {
+  .automation-item {
+    grid-template-columns: 48px minmax(130px, 1fr) minmax(150px, 1fr);
+  }
+  .automation-item .automation-trigger {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .automation-item .automation-last-run {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .automation-item .row-actions {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .automation-results.grid .automation-trigger,
+  .automation-results.grid .automation-last-run,
+  .automation-results.grid .row-actions {
+    grid-column: 1/-1;
+    grid-row: auto;
+  }
+}
+@media (max-width: 650px) {
+  .automation-item {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+  .automation-item .automation-trigger {
+    grid-column: 2;
+    grid-row: auto;
+  }
+  .automation-item .automation-last-run {
+    grid-column: 2;
+    grid-row: auto;
+  }
+  .automation-item .row-actions {
+    grid-column: 1/-1;
+    grid-row: auto;
+  }
+  .automation-icon-picker {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
