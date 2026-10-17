@@ -161,7 +161,7 @@ export function RoomsOverview({
             >
               <div className="room-summary-photo">
                 {!failed.includes(photo) && (
-                  <img
+                  <RoomArtwork
                     src={photo}
                     alt=""
                     loading="lazy"

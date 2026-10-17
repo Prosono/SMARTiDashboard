@@ -216,7 +216,11 @@ export function RoomView({
         className={`room-detail-hero ${photo && failedPhoto !== photo ? "has-photo" : ""}`}
       >
         {photo && failedPhoto !== photo && (
-          <img src={photo} alt="" onError={() => setFailedPhoto(photo)} />
+          <RoomArtwork
+            src={photo}
+            alt=""
+            onError={() => setFailedPhoto(photo)}
+          />
         )}
         <div className="room-hero-copy">
           <span className="room-eyebrow">

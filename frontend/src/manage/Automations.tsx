@@ -1,9 +1,19 @@
+import "./automations.css";
+import { homeAsset } from "../home/HomeOverview";
 import { entityState } from "./entityWords";
 import { EntityPicker } from "./EntityPicker";
 import { AutomationFlow } from "./AutomationFlow";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Workflow,
+  Search,
+  Pause,
+  Clock3,
+  LayoutGrid,
+  List,
+  Pencil,
+  CircleAlert,
   ArrowLeft,
   Plus,
   Play,
@@ -64,6 +74,9 @@ export function Automations({
   const [advanced, setAdvanced] = useState(false);
   const [raw, setRaw] = useState("");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sort, setSort] = useState("name");
+  const [layout, setLayout] = useState("list");
   const [confirm, setConfirm] = useState<"delete" | "leave" | null>(null);
   const [runConfirm, setRunConfirm] = useState<string | null>(null);
   const w = useWork(lang);
@@ -884,13 +897,24 @@ export function Automations({
       </section>
     );
   return (
-    <section>
+    <section className="automation-overview">
       <div className="page-heading">
         <span className="eyebrow">
           {t("Små rutiner, enklere dager", "Small routines, easier days")}
         </span>
         <div className="heading-row">
-          <h1>{t("Automasjoner", "Automations")}</h1>
+          <div className="automation-title">
+            <Workflow size={36} />
+            <div>
+              <h1>{t("Automasjoner", "Automations")}</h1>
+              <p>
+                {t(
+                  "Gjør hjemmet smartere med automatiske rutiner.",
+                  "Make home smarter with automatic routines.",
+                )}
+              </p>
+            </div>
+          </div>
           <button
             className="primary compact"
             onClick={() => {
@@ -919,46 +943,192 @@ export function Automations({
         </div>
       </div>
       <Feedback message={w.message} />
-      <input
-        className="wide-input"
-        placeholder={t("Søk i automasjoner …", "Search automations …")}
-        aria-label={t("Søk i automasjoner", "Search automations")}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="automation-banner">
+        <img src={homeAsset("home-living")} alt="" />
+        <div className="automation-banner-copy">
+          <span className="eyebrow">
+            {t("SMARTE RUTINER", "SMART ROUTINES")}
+          </span>
+          <h2>
+            {t(
+              "Automasjoner som jobber for deg",
+              "Automations that work for you",
+            )}
+          </h2>
+          <p>
+            {t(
+              "Små rutiner, store forskjeller. La hjemmet ta seg av hverdagen.",
+              "Small routines, big differences. Let your home take care of the everyday.",
+            )}
+          </p>
+        </div>
+        <div className="automation-metrics">
+          {[
+            {
+              icon: Play,
+              label: t("Aktive", "Enabled"),
+              value: q.data?.filter((a) => a.state === "on").length,
+              tone: "active",
+            },
+            {
+              icon: Pause,
+              label: t("Deaktivert", "Disabled"),
+              value: q.data?.filter((a) => a.state === "off").length,
+              tone: "paused",
+            },
+            {
+              icon: CircleAlert,
+              label: t("Utilgjengelige", "Unavailable"),
+              value: q.data?.filter((a) => !["on", "off"].includes(a.state))
+                .length,
+              tone: "unknown",
+            },
+            {
+              icon: Workflow,
+              label: t("Totalt", "Total"),
+              value: q.data?.length,
+              tone: "total",
+            },
+          ].map(({ icon: Icon, label, value, tone }) => (
+            <div className={`automation-metric ${tone}`} key={tone}>
+              <Icon size={24} />
+              <div>
+                <strong>{value ?? "—"}</strong>
+                <span>{label}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="automation-toolbar">
+        <div
+          className="automation-status-filters"
+          aria-label={t("Filtrer automasjoner", "Filter automations")}
+        >
+          {(
+            [
+              ["all", t("Alle", "All"), LayoutGrid],
+              ["on", t("Aktive", "Enabled"), Play],
+              ["off", t("Deaktivert", "Disabled"), Pause],
+              ["unavailable", t("Utilgjengelige", "Unavailable"), CircleAlert],
+            ] as const
+          ).map(([value, label, Icon]) => (
+            <button
+              key={String(value)}
+              aria-pressed={statusFilter === value}
+              onClick={() => setStatusFilter(String(value))}
+            >
+              <Icon size={17} />
+              {String(label)}
+            </button>
+          ))}
+        </div>
+        <div className="automation-tools">
+          <label className="automation-search">
+            <Search size={19} />
+            <input
+              placeholder={t("Søk i automasjoner …", "Search automations …")}
+              aria-label={t("Søk i automasjoner", "Search automations")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
+          <select
+            aria-label={t("Sorter automasjoner", "Sort automations")}
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
+            <option value="name">{t("Navn (A–Å)", "Name (A–Z)")}</option>
+            <option value="recent">{t("Sist kjørt", "Last run")}</option>
+          </select>
+          <div className="automation-view">
+            <button
+              aria-pressed={layout === "grid"}
+              onClick={() => setLayout("grid")}
+            >
+              <LayoutGrid size={17} />
+              {t("Kort", "Cards")}
+            </button>
+            <button
+              aria-pressed={layout === "list"}
+              onClick={() => setLayout("list")}
+            >
+              <List size={17} />
+              {t("Liste", "List")}
+            </button>
+          </div>
+        </div>
+      </div>
       {q.isError && <LoadError lang={lang} retry={() => void q.refetch()} />}
       {q.isPending && (
         <p>{t("Henter automasjoner …", "Loading automations …")}</p>
       )}
-      <div className="management-rows">
+      <div className={`automation-results ${layout}`}>
         {q.data
-          ?.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
+          ?.filter(
+            (a) =>
+              a.name.toLowerCase().includes(search.trim().toLowerCase()) &&
+              (statusFilter === "all" ||
+                (statusFilter === "unavailable"
+                  ? !["on", "off"].includes(a.state)
+                  : a.state === statusFilter)),
+          )
+          .sort((a, b) =>
+            sort === "recent"
+              ? (Date.parse(b.last_triggered || "") || 0) -
+                  (Date.parse(a.last_triggered || "") || 0) ||
+                a.name.localeCompare(b.name, lang)
+              : a.name.localeCompare(b.name, lang),
+          )
           .map((a) => (
-            <article className="system-row" key={a.entity_id}>
-              <Zap size={24} />
-              <div>
+            <article className="automation-item" key={a.entity_id}>
+              <span
+                className={`automation-symbol ${a.state === "on" ? "active" : ""}`}
+              >
+                <Workflow size={24} />
+              </span>
+              <div className="automation-identity">
                 <h2>{a.name}</h2>
-                <p>
+                <p
+                  className={`automation-state ${a.state === "on" ? "active" : ""}`}
+                >
+                  <i />
                   {a.state === "on"
                     ? t("Aktiv", "Enabled")
                     : a.state === "off"
                       ? t("Avslått", "Disabled")
                       : t("Utilgjengelig", "Unavailable")}
                 </p>
-                {a.last_triggered && (
-                  <small>
-                    {t("Sist kjørt: ", "Last run: ")}
-                    {new Date(a.last_triggered).toLocaleString(
-                      lang === "en" ? "en-GB" : "nb-NO",
-                    )}
-                  </small>
-                )}
+              </div>
+              <div className="automation-last-run">
+                <span>
+                  <Clock3 size={14} />
+                  {t("Sist kjørt", "Last run")}
+                </span>
+                <strong>
+                  {a.last_triggered
+                    ? new Date(a.last_triggered).toLocaleString(
+                        lang === "en" ? "en-GB" : "nb-NO",
+                        {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )
+                    : t("Ingen registrert kjøring", "No recorded run")}
+                </strong>
               </div>
               <div className="row-actions">
                 <button disabled={w.busy || !a.id} onClick={() => void edit(a)}>
+                  <Pencil size={15} />
                   {t("Rediger", "Edit")}
                 </button>
                 <button
+                  className="automation-switch"
+                  role="switch"
+                  aria-checked={a.state === "on"}
+                  aria-label={`${t("Aktiver", "Enable")} ${a.name}`}
                   disabled={w.busy || !["on", "off"].includes(a.state)}
                   onClick={() =>
                     void w.run(() =>
@@ -970,12 +1140,10 @@ export function Automations({
                     )
                   }
                 >
-                  {a.state === "on"
-                    ? t("Slå av", "Disable")
-                    : t("Slå på", "Enable")}
+                  <span />
                 </button>
                 <button
-                  disabled={w.busy}
+                  disabled={w.busy || !["on", "off"].includes(a.state)}
                   onClick={() => setRunConfirm(a.entity_id)}
                 >
                   <Play size={15} />
@@ -1022,6 +1190,31 @@ export function Automations({
             </article>
           ))}
       </div>
+      {q.data &&
+        q.data.length > 0 &&
+        !q.data.some(
+          (a) =>
+            a.name.toLowerCase().includes(search.trim().toLowerCase()) &&
+            (statusFilter === "all" ||
+              (statusFilter === "unavailable"
+                ? !["on", "off"].includes(a.state)
+                : a.state === statusFilter)),
+        ) && (
+          <p className="empty">
+            {t(
+              "Ingen automasjoner passer med søket og filteret.",
+              "No automations match your search and filter.",
+            )}{" "}
+            <button
+              onClick={() => {
+                setSearch("");
+                setStatusFilter("all");
+              }}
+            >
+              {t("Nullstill filtre", "Reset filters")}
+            </button>
+          </p>
+        )}
       {q.data?.length === 0 && (
         <p className="empty">
           {t(

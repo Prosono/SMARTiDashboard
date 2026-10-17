@@ -1,3 +1,19 @@
+## 1.35.11
+
+- Redesignet automasjonsoversikt med bildebanner, reelle status-tall, søk, statusfiltre og sortering.
+- Kort- og listevisning, tydelig aktiveringsbryter og rask tilgang til kjøring og eksisterende redigering.
+- Tilpasset mobil, nettbrett og valgte fargetemaer.
+
+## 1.35.10
+
+- Tema- og lys/mørk-velgerne er fjernet fra toppbaren. Valgene finnes under Innstillinger → Tema og utseende.
+
+## 1.35.9
+
+- Bunnmenyen på mobil sentrerer den aktive siden.
+- Rom er fjernet fra menyen i Enkel-modus; romtilgangen ligger på Hjem.
+- Velg mellom rombilde og tolv romikoner under Administrer rom → Bilde eller ikon. Valget gjelder hele hjemmet.
+
 ## 1.35.8
 
 - Valgt Hjem-fane sentreres automatisk i den horisontale mobilmenyen.

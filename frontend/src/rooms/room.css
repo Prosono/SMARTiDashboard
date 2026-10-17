@@ -633,5 +633,15 @@
   border: 1px solid var(--line);
   border-radius: 12px;
 }
-.room-icon-grid img { width: 48px; height: 48px; }
-img[data-room-icon="true"] { background: var(--soft); }
+.room-icon-grid img {
+  width: 48px;
+  height: 48px;
+}
+img[data-room-icon="true"] {
+  background: var(--soft);
+}
+
+.room-icon-grid button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--soft);
+}

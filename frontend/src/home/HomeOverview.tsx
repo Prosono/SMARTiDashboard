@@ -924,7 +924,7 @@ export function HomeOverview({
                             strokeWidth={1}
                           />
                           {photo && (
-                            <img
+                            <RoomArtwork
                               key={photo}
                               src={photo}
                               alt=""

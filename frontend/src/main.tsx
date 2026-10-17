@@ -30,7 +30,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
-  Palette,
   House,
   LayoutGrid,
   SlidersHorizontal,
@@ -42,8 +41,6 @@ import {
   Search,
   ArrowUpRight,
   ArrowLeft,
-  Sun,
-  Moon,
   Star,
   Lightbulb,
   Plug,
@@ -664,33 +661,10 @@ function Dashboard({
           <span>{t[page]}</span>
         </div>
         <div className="top-actions">
-          <details
-            className="palette-menu"
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.currentTarget.open = false;
-                e.currentTarget.querySelector("summary")?.focus();
-              }
-            }}
-          >
-            <summary
-              aria-label={lang === "en" ? "Choose palette" : "Velg fargepalett"}
-            >
-              <Palette size={19} />
-            </summary>
-            <PalettePicker value={palette} change={setPalette} lang={lang} />
-          </details>
           <span className={"connection " + (offline ? "warning" : "")}>
             <span />
             {h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}
           </span>
-          <button
-            className="icon-button"
-            aria-label={theme === "light" ? t.dark : t.light}
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          >
-            {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
         </div>
       </header>
       <main>

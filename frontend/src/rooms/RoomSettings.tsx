@@ -1,3 +1,4 @@
+import type { HomePreferences } from "../home/HomeOverview";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Star, Eye, Search } from "lucide-react";
@@ -37,6 +38,10 @@ export function RoomSettings({
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
+  const prefs = useQuery({
+    queryKey: ["home-preferences"],
+    queryFn: () => api<HomePreferences>("home/preferences"),
+  });
   const [tab, setTab] = useState("view"),
     [draft, setDraft] = useState(name),
     [search, setSearch] = useState("");
@@ -109,7 +114,10 @@ export function RoomSettings({
         {tab === "images" && (
           <section className="room-image-library">
             <h3>
-              {t("Et bilde som passer rommet", "A picture for your room")}
+              {t(
+                "Bilde eller ikon for rommet",
+                "An image or icon for your room",
+              )}
             </h3>
             <p>
               {t(
@@ -135,6 +143,7 @@ export function RoomSettings({
               ].map(([id, nb, en]) => (
                 <button
                   key={id}
+                  aria-pressed={prefs.data?.icons?.[room] === id}
                   disabled={busy || !room}
                   onClick={() =>
                     void run(() =>

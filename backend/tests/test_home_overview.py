@@ -154,3 +154,16 @@ def test_room_view_visibility_is_scoped_and_validated(client):
     from test_api import login
     login(client, "second", "another long password")
     assert client.get("/api/home/room-view/living").json() == {"hidden": []}
+
+
+def test_room_icon_selection_validation_and_replacement(client):
+    assert client.put("/api/home/room-image/living", json={"icon": "bedroom"}).status_code == 200
+    prefs = client.get("/api/home/preferences").json()
+    assert prefs["icons"]["living"] == "bedroom"
+    assert prefs["images"]["living"] is True
+    assert client.put("/api/home/room-image/living", json={"icon": "../secret"}).status_code == 422
+    assert client.put("/api/home/room-image/living", json={"icon": "living", "bank": "bedroom"}).status_code == 422
+    assert client.put("/api/home/room-image/living", json={"bank": "living"}).status_code == 200
+    assert "living" not in client.get("/api/home/preferences").json()["icons"]
+    assert client.put("/api/home/room-image/living", json={"data": ""}).status_code == 200
+    assert client.get("/api/home/preferences").json()["images"]["living"] is False

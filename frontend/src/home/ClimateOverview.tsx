@@ -317,7 +317,7 @@ export function ClimateOverview({
                 aria-label={`${t("Åpne klima for", "Open climate for")} ${a.name}`}
               >
                 {!failedImages.includes(photo) && (
-                  <img
+                  <RoomArtwork
                     src={photo}
                     alt=""
                     loading="lazy"
