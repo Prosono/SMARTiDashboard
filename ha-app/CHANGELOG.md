@@ -1,3 +1,10 @@
+## 1.35.14
+
+- Lokale adresser til hjemmesentralen godkjennes automatisk gjennom bekreftet informasjon fra Supervisor. Nettbrett og telefoner trenger ingen individuell godkjenning.
+- Oppdager aktive lokale IPv4-/IPv6-adresser og lokale vertsnavn med hjemmesentralens faktiske HTTP-/HTTPS-port. Adressene oppdateres hvert minutt.
+- Beholder krav om brukernavn, passord, tilgangsstyring og CSRF-beskyttelse. Fremmede nettsider og andre enheter på samme nettverk godkjennes ikke som SMARTi-adresser.
+- Automatisk oppdagelse kan slås av med auto_local_origins. Egendefinerte og eksterne adresser kan fortsatt legges til manuelt.
+
 ## 1.35.13
 
 - Ny flow-redigering med tydelige hendelser, krav og handlinger, forståelige ikoner, farger og forklaringer. Velg mellom stegvis oversikt og fri arbeidsflate.

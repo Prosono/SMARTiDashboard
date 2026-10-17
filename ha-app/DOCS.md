@@ -10,15 +10,17 @@ Requires Home Assistant OS with the app store and a configured Home Assistant UR
 
 ```yaml
 origin: "https://your-external-home-assistant-address"
-additional_origins:
-  - "http://homeassistant.local:8123"
-allow_http_ingress: true
+additional_origins: []
+auto_local_origins: true
+allow_http_ingress: false
 bootstrap_secret: "a-long-random-secret-from-your-password-manager"
 ```
 
-`origin` is exactly the scheme, hostname and port used in the browser address bar, without a path or trailing slash. Example: `https://ha.example.net:8123`. Add each additional local or external address to `additional_origins`. Existing installations can keep their `origin` unchanged and add the other address. Save and restart SMARTi after changes. HTTPS certificates must be trusted by the browser.
+`origin` is exactly the scheme, hostname and port used in the browser address bar, without a path or trailing slash. Example: `https://ha.example.net:8123`. Custom aliases, reverse-proxy addresses and external addresses belong in `additional_origins`. Ordinary local hub addresses are discovered automatically. Existing installations can keep their `origin` unchanged and add the other address. Save and restart SMARTi after changes. HTTPS certificates must be trusted by the browser.
 
-Local HTTP Ingress requires `allow_http_ingress: true` (default false). HTTP sends credentials and sessions unencrypted on the LAN; use it only on a trusted network, and prefer HTTPS where available. HTTPS logins always retain Secure cookies. Sessions are separate for each hostname, but both addresses use the same SMARTi accounts and home. Standalone deployments still require HTTPS.
+`auto_local_origins` defaults to true, including when upgrading an existing installation. SMARTi asks the authenticated Supervisor for active LAN interface addresses, the host name, and Core’s actual port and TLS mode. Only those exact local addresses are accepted, never every device on the subnet or browser-supplied proxy headers. Discovery runs at startup and every minute; changed addresses replace the previous set. If discovery fails, the last verified set expires after five minutes; manually configured addresses remain usable. No device approval is needed, but every user must sign in and retains their existing permissions. Set `auto_local_origins: false` to use only the manual allowlist.
+
+Discovered local HTTP Ingress addresses work automatically. Manually configured HTTP origins still require `allow_http_ingress: true` (default false). HTTP sends credentials and sessions unencrypted on the LAN; use it only on a trusted network, and prefer HTTPS where available. HTTPS logins always retain Secure cookies. Sessions are separate for each hostname, but both addresses use the same SMARTi accounts and home. Standalone deployments still require HTTPS.
 
 Choose a unique random `bootstrap_secret` of at least 24 characters, using a password manager. Do not use the example above as the actual secret. This setup secret establishes the first SMARTi owner; it is not your HA password or token.
 

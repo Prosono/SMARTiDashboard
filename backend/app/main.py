@@ -30,6 +30,7 @@ from .integration_setup import integration_setup_router
 from .management import Management, management_router
 from .mobile import MobileAuth
 from .models import Command
+from .origins import OriginPolicy
 from .scenes import scenes_router
 from .setup import DeviceSetup
 from .storage import Store
@@ -105,13 +106,22 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     ha = adapter or (Demo() if settings.mode == "demo" else HomeAssistant(settings.ha_url, settings.ha_token))
 
     setup = DeviceSetup(ha, settings, store)
+    origins = OriginPolicy(settings)
 
     @asynccontextmanager
     async def lifespan(app):
         task = asyncio.create_task(ha.run())
+        discovery = None
         try:
+            if not mobile_only and origins.enabled:
+                await origins.refresh()
+                discovery = asyncio.create_task(origins.run())
             yield
         finally:
+            if discovery:
+                discovery.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await discovery
             try:
                 await wireless.close()
                 await setup.close()
@@ -135,6 +145,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     app.state.ha, app.state.auth, app.state.store = ha, auth, store
     app.state.mobile = mobile
     app.state.setup = setup
+    app.state.origins = origins
 
     @app.middleware("http")
     async def boundary(request, call_next):
@@ -157,7 +168,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             )
         if not mobile_only and request.method not in {"GET", "HEAD", "OPTIONS"}:
             origin = request.headers.get("origin")
-            if origin not in settings.allowed_origins:
+            if len(request.headers.getlist("origin")) != 1 or not origins.accepts(origin):
                 return JSONResponse(
                     {"detail": "origin_rejected"}, status_code=403, headers={"Cache-Control": "no-store"}
                 )
@@ -452,7 +463,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     @app.get("/api/events")
     async def events(request: Request, current=Depends(user)):
         origin = request.headers.get("origin")
-        if origin and origin not in settings.allowed_origins:
+        if len(request.headers.getlist("origin")) > 1 or (origin and not origins.accepts(origin)):
             raise HTTPException(403, "origin_rejected")
 
         async def stream():

@@ -10,6 +10,7 @@ if options_file.exists():
         'SMARTI_MODE': 'live',
         'SMARTI_ORIGIN': options['origin'],
         'SMARTI_ADDITIONAL_ORIGINS': json.dumps(options.get('additional_origins', [])),
+        'SMARTI_AUTO_LOCAL_ORIGINS': str(options.get('auto_local_origins', True)).lower(),
         'SMARTI_ALLOW_HTTP_INGRESS': str(options.get('allow_http_ingress', False)).lower(),
         'SMARTI_ZIGBEE2MQTT_BASE_TOPIC': options.get('zigbee2mqtt_base_topic', 'zigbee2mqtt'),
         'SMARTI_ZIGBEE2MQTT_TRANSPORT': options.get('zigbee2mqtt_transport', 'ha_mqtt'),

@@ -69,7 +69,7 @@ export const nb = {
     "Kommandoen kunne ikke bekreftes. Sjekk enhetens tilstand før du prøver igjen.",
   loginError: "Kunne ikke logge inn. Kontroller brukernavn og passord.",
   originError:
-    "SMARTi-adressen er ikke godkjent i SMARTi-konfigurasjonen. Legg adressen fra nettleseren i origin eller additional_origins (http(s)://vertsnavn og eventuell port, uten sti), lagre og start SMARTi på nytt.",
+    "SMARTi-adressen er ikke godkjent ennå. Lokale adresser til hjemmesentralen oppdages automatisk; prøv igjen om ett minutt. Bruker du en egen nettadresse, må administrator legge den i origin eller additional_origins i SMARTi-konfigurasjonen (http(s)://vertsnavn og eventuell port, uten sti), lagre og starte SMARTi på nytt.",
   secretError:
     "Engangshemmeligheten stemmer ikke med bootstrap_secret i SMARTi-konfigurasjonen, eller er ikke konfigurert med minst 24 tegn. Lagre riktig verdi, start SMARTi på nytt og bruk den samme verdien her.",
   alreadyConfigured:
@@ -205,7 +205,7 @@ export const en: typeof nb = {
     "The command could not be confirmed. Check the device state before trying again.",
   loginError: "Could not sign in. Check your username and password.",
   originError:
-    "The SMARTi address is not allowed in SMARTi configuration. Add the browser address to origin or additional_origins (http(s)://hostname and optional port, without a path), save and restart SMARTi.",
+    "The SMARTi address is not approved yet. Local hub addresses are discovered automatically; try again in one minute. For a custom address, an administrator must add it to origin or additional_origins in SMARTi configuration (http(s)://hostname and optional port, without a path), save and restart SMARTi.",
   secretError:
     "The setup secret does not match bootstrap_secret in SMARTi configuration, or it is not configured with at least 24 characters. Save the correct value, restart SMARTi and use the same value here.",
   alreadyConfigured:

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     bootstrap_secret: str = ""
     origin: str = "https://localhost:8443"
     additional_origins: list[str] = []
+    auto_local_origins: bool = True
     allow_http_ingress: bool = False
     development: bool = False
     ingress: bool = False

@@ -24,7 +24,7 @@ Trust `ca.crt` on clients, transfer only `server.crt` and `server.key` to the hu
 
 Install through the built-in app manager: Settings → Apps → App store → menu → Repositories. Add `https://github.com/Prosono/SMARTiDashboard`, find SMARTi and select Install. Older HA versions label apps as add-ons. See [the complete UI instructions](../ha-app/DOCS.md).
 
-Configure `origin` as the exact browser origin used to open HA (including a nonstandard port), and add other local/external addresses to `additional_origins`. Local HTTP Ingress also requires `allow_http_ingress: true`; prefer HTTPS to protect credentials on the LAN. Set `bootstrap_secret` as a unique random secret of at least 24 characters from a password manager. Start, open the web UI and create a SMARTi owner. Clear the secret after setup. Supervisor provides HA authentication automatically.
+Configure `origin` as the exact browser origin used to open HA (including a nonstandard port), and add custom aliases/external addresses to `additional_origins`. With `auto_local_origins: true` (the default), active local hub IP addresses and local hostnames are discovered through Supervisor with the actual Core port/TLS mode, including local HTTP. Manually configured HTTP origins still require `allow_http_ingress: true`; prefer HTTPS to protect credentials on the LAN. Set `bootstrap_secret` as a unique random secret of at least 24 characters from a password manager. Start, open the web UI and create a SMARTi owner. Clear the secret after setup. Supervisor provides HA authentication automatically.
 
 The app uses `/data` for SQLite and Supervisor's HA proxy with `homeassistant_api`. It requests no host devices, privileged mode, Docker socket or write access to HA configuration. Its ingress listener is 8099 and is not published to LAN. A separate LAN entry point for this same HA app instance is planned; standalone HTTPS works now. HAOS end-to-end deployment still requires a real installation test.
 
@@ -39,3 +39,5 @@ Stop SMARTi before a filesystem backup, then copy `smarti-live.sqlite3` (or `sma
 ## Zigbee2MQTT transport
 
 Version 0.2.5 supports HA MQTT (default) and a direct connection to an external Zigbee2MQTT frontend, including setups using Zigbee2MQTT Proxy. See [transport configuration and verification](../ha-app/DOCS.md#zigbee2mqtt-ha-mqtt-or-an-external-server--proxy). Standalone deployments use `SMARTI_ZIGBEE2MQTT_TRANSPORT=frontend`, `SMARTI_ZIGBEE2MQTT_SERVER=http://your-zigbee2mqtt-host:8080` and optional `SMARTI_ZIGBEE2MQTT_AUTH_TOKEN`. These are server-side settings; don't use the coordinator's TCP socket address. HA entity controls continue to use the HA integration.
+
+Automatic local-address discovery uses the authenticated [Supervisor Core API](https://contributors.home-assistant.io/apps/supervisor-api/core/) and [Host/network API](https://contributors.home-assistant.io/apps/supervisor-api/host/). Custom reverse proxies remain explicitly configured.
