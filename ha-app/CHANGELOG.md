@@ -1,3 +1,7 @@
+## 1.35.7
+
+- Husillustrasjonen i innloggingsvinduet er erstattet med den originale SMARTi-logoen.
+
 ## 1.35.6
 
 - Diverse får bildebanner og enhetsoversikt i samme stil som de andre hjemmesidene.

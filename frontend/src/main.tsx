@@ -350,11 +350,8 @@ function Login({
         <div>
           <span className="eyebrow">SMART LIVING, SIMPLIFIED.</span>
           <h1>{t.loginTitle}</h1>
-          <div className="house-art">
-            <House strokeWidth={0.65} />
-            <span className="orbit one" />
-            <span className="orbit two" />
-            <span className="art-dot" />
+          <div className="login-logo-art">
+            <img src="./brand/smarti-logo.png" alt="SMARTi" />
           </div>
         </div>
         <small>SMARTi · {t.live}</small>
