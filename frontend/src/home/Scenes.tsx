@@ -494,6 +494,7 @@ function SceneEditor({
         id ? `scenes/config/${encodeURIComponent(id)}` : "scenes",
         id ? "PUT" : "POST",
         body,
+        AbortSignal.timeout(35000),
       );
       await saved();
     } catch (e) {
@@ -503,10 +504,20 @@ function SceneEditor({
               "Scenen er endret et annet sted. Lukk og åpne den på nytt før du lagrer.",
               "Scene changed elsewhere. Close and reopen before saving.",
             )
-          : t(
-              "Kunne ikke bekrefte lagringen. Kontroller scenelisten før du prøver igjen.",
-              "Could not confirm the save. Check the scene list before retrying.",
-            ),
+          : e instanceof ApiError && e.status === 422
+            ? t(
+                "En av innstillingene kan ikke lagres. Gå tilbake til Enheter og kontroller tilstand, temperatur, lysstyrke og volum.",
+                "One of the settings cannot be saved. Go back to Devices and check state, temperature, brightness and volume.",
+              )
+            : e instanceof ApiError && e.status === 403
+              ? t(
+                  "Du har ikke tilgang til å lagre scener.",
+                  "You do not have permission to save scenes.",
+                )
+              : t(
+                  "Kunne ikke bekrefte lagringen. Kontroller scenelisten før du prøver igjen.",
+                  "Could not confirm the save. Check the scene list before retrying.",
+                ),
       );
     } finally {
       setBusy(false);
@@ -884,6 +895,14 @@ function SceneEditor({
       {offline && (
         <p role="alert">
           {t("Hjemmet er frakoblet.", "Home is disconnected.")}
+        </p>
+      )}
+      {busy && (
+        <p role="status" aria-live="polite" className="notice">
+          {t(
+            "Lagrer scenen og venter på bekreftelse fra hjemmesentralen…",
+            "Saving the scene and waiting for confirmation from the home hub…",
+          )}
         </p>
       )}
       {error && (

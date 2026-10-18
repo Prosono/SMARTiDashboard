@@ -1,3 +1,9 @@
+## 1.35.29
+
+- Scenelagring har avgrenset ventetid og tydelig fremdrift, slik at redigeringen ikke blir stående låst ved et manglende svar.
+- Ved avbrutt lagring kontrolleres den lagrede scenen før resultatet meldes tilbake. Ingen automatisk gjentakelse av lagringen.
+- Utkastet beholdes ved feil, med tydeligere meldinger for ugyldige innstillinger og manglende tilgang.
+
 ## 1.35.28
 
 - Scener og grupper får egne ikoner i fanene og nye kort med tydelige handlinger, innhold og redigering.

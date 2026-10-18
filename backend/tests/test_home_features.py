@@ -333,3 +333,39 @@ def test_scene_combines_domains_and_rejects_unsupported_controls(client):  # noq
         ).status_code
         == 422
     )
+
+
+@pytest.mark.parametrize("persisted", [True, False])
+def test_scene_stalled_save_reads_back_without_retry(tmp_path, monkeypatch, persisted):
+    import asyncio
+
+    from app.demo import Demo
+
+    monkeypatch.setattr("app.scenes.SAVE_TIMEOUT", 0.01)
+    ha = Demo()
+    written = {}
+    calls = []
+
+    async def rest(method, path, data=None):
+        calls.append(method)
+        if method == "POST":
+            written.update(data)
+            await asyncio.sleep(60)
+        return written if persisted else {}
+
+    ha.rest = rest
+    app = FastAPI()
+    app.include_router(
+        scenes_router(
+            ha,
+            Store(tmp_path / "test.sqlite"),
+            lambda: {"id": 1, "role": "admin"},
+            SimpleNamespace(mode="live"),
+        )
+    )
+    with TestClient(app) as c:
+        response = c.post("/api/scenes", json=scene_body())
+    assert response.status_code == (200 if persisted else 503)
+    if not persisted:
+        assert response.json()["detail"] == "scene_save_unconfirmed"
+    assert calls == ["POST", "GET"]

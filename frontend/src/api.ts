@@ -60,6 +60,7 @@ export async function api<T>(
   path: string,
   method = "GET",
   body?: unknown,
+  signal?: AbortSignal,
 ): Promise<T> {
   const response = await fetch(new URL(`api/${path}`, document.baseURI), {
     method,
@@ -68,6 +69,7 @@ export async function api<T>(
     ...(method === "GET" && path === "home"
       ? { signal: AbortSignal.timeout(20000) }
       : {}),
+    ...(signal ? { signal } : {}),
     headers: {
       "Content-Type": "application/json",
       ...(session ? { "X-CSRF-Token": session.csrf } : {}),

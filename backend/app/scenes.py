@@ -14,6 +14,9 @@ from pydantic import BaseModel, Field, field_validator
 from .ha import HAError
 from .management import revision
 
+SAVE_TIMEOUT = 20
+VERIFY_TIMEOUT = 5
+
 EDITABLE = {"light", "switch", "climate", "cover", "media_player"}
 FIELDS = {"state", "brightness", "temperature", "rgb_color", "color_temp_kelvin", "volume_level"}
 
@@ -137,7 +140,7 @@ def scenes_router(ha, store, user, settings):
             c = controls.get(eid)
             if not c or c.domain not in EDITABLE:
                 raise HTTPException(422, "scene_entity_not_supported")
-            value = draft.model_dump(exclude_none=True)
+            value = draft.model_dump(mode="json", exclude_none=True)
             actions = {a for cap in c.capabilities for a in cap.actions}
             if c.domain == "cover":
                 action = {"open": "open_cover", "closed": "close_cover"}.get(draft.state)
@@ -207,8 +210,17 @@ def scenes_router(ha, store, user, settings):
             ha.changed()
         else:
             try:
-                await ha.rest("POST", "config/scene/config/" + quote(id, safe=""), value)
+                path = "config/scene/config/" + quote(id, safe="")
+                await asyncio.wait_for(ha.rest("POST", path, value), SAVE_TIMEOUT)
             except (HAError, TimeoutError):
+                # HA may write scenes.yaml before its reload/HTTP response completes.
+                # Read back the exact scene instead of retrying a write or creating a duplicate.
+                try:
+                    stored = await asyncio.wait_for(ha.rest("GET", path), VERIFY_TIMEOUT)
+                    if all(stored.get(key) == value[key] for key in ("name", "icon", "entities")):
+                        return
+                except (HAError, TimeoutError, HTTPException, AttributeError):
+                    pass
                 raise HTTPException(503, "scene_save_unconfirmed") from None
 
     @router.get("")

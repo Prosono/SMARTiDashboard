@@ -243,3 +243,24 @@ test("real HLS decoding starts only in view and stop releases the session", asyn
   await expect(card).toHaveCount(0);
   await expect.poll(() => stops).toBe(2);
 });
+
+test("scene save failure keeps the draft and allows a successful retry", async ({ page }) => {
+  await page.getByRole("button", { name: "Lag scene", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Din nye scene" });
+  await dialog.getByLabel("Hva skal scenen hete?").fill("Behold utkast");
+  await dialog.getByRole("button", { name: "Neste", exact: true }).click();
+  await dialog.getByRole("checkbox", { name: /Pendellampe/ }).check();
+  await dialog.getByRole("button", { name: "Neste", exact: true }).click();
+  await page.route("**/api/scenes", async route => {
+    if (route.request().method() === "POST")
+      await route.fulfill({status:503, contentType:"application/json", body:JSON.stringify({detail:"scene_save_unconfirmed"})});
+    else await route.continue();
+  });
+  await dialog.getByRole("button", { name: "Lagre scene", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Kunne ikke bekrefte lagringen");
+  await expect(dialog).toContainText("Behold utkast");
+  await expect(dialog.getByRole("button", { name: "Lagre scene", exact: true })).toBeEnabled();
+  await page.unroute("**/api/scenes");
+  await dialog.getByRole("button", { name: "Lagre scene", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+});
