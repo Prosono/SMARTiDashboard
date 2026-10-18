@@ -131,6 +131,37 @@ def integration_setup_router(m, admin):
                 flows[result["flow_id"]] = item
             return await present(result, item)
 
+    discovery_sources = {
+        "bluetooth",
+        "dhcp",
+        "zeroconf",
+        "ssdp",
+        "usb",
+        "homekit",
+        "hassio",
+        "discovery",
+        "mqtt",
+    }
+
+    @router.get("/discoveries")
+    async def discoveries():
+        if m.demo:
+            return []
+        live()
+        progress = await m.ws("config_entries/flow/progress")
+        return [
+            {
+                "id": f["flow_id"],
+                "domain": f["handler"],
+                "name": f.get("context", {}).get("title_placeholders", {}).get("name") or f["handler"],
+                "source": f["context"]["source"],
+            }
+            for f in progress
+            if f.get("context", {}).get("source") in discovery_sources
+            and isinstance(f.get("handler"), str)
+            and f.get("flow_id")
+        ]
+
     @router.get("/bluetooth")
     async def bluetooth():
         live()
@@ -149,8 +180,9 @@ def integration_setup_router(m, admin):
             ],
         }
 
+    @router.post("/discoveries/{id}/claim")
     @router.post("/bluetooth/{id}/claim")
-    async def claim_bluetooth(id: str, body: StartIntegration, current=Depends(admin)):
+    async def claim_bluetooth(id: str, body: StartIntegration, request: Request, current=Depends(admin)):
         live()
         async with lock:
             existing = flows.get(id)
@@ -165,7 +197,8 @@ def integration_setup_router(m, admin):
                     for f in progress
                     if f.get("flow_id") == id
                     and f.get("handler") == body.domain
-                    and f.get("context", {}).get("source") == "bluetooth"
+                    and f.get("context", {}).get("source")
+                    in ({"bluetooth"} if "/bluetooth/" in request.url.path else discovery_sources)
                 ),
                 None,
             )

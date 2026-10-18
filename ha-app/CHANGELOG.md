@@ -1,3 +1,9 @@
+## 1.35.23
+
+- Integrasjoner viser automatisk oppdagede enheter med navn, logo og oppsettknapp. Listen oppdateres automatisk.
+- Fullfør eksisterende oppsett fra hjemmesentralen direkte i SMARTi. Bluetooth, nettverksoppdagelse og USB støttes når integrasjonen tilbyr et oppsett.
+- Lukking bevarer oppdagelsen for senere oppsett. Manuelle oppsett og ny innlogging blandes ikke inn i listen, og oppsett krever administratortilgang.
+
 ## 1.35.22
 
 - Appkonfigurasjon får et oversiktlig skjema med feltgrupper, brytere, nedtrekksvalg og redigerbare lister.

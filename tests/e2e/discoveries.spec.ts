@@ -1,0 +1,22 @@
+import { test, expect } from "../../frontend/node_modules/@playwright/test";
+test("discovered device opens existing setup and remains available after closing", async ({ page }) => {
+  let claims = 0;
+  await page.route("**/api/manage/integration-setup/discoveries", r => r.fulfill({json:[{id:"found", domain:"reolink", name:"Inngangskamera", source:"zeroconf"}]}));
+  await page.route("**/api/manage/integration-setup/catalog*", r => r.fulfill({json:[]}));
+  await page.route("**/api/manage/integration-setup/discoveries/found/claim", r => {claims++; expect(r.request().postDataJSON().domain).toBe("reolink"); return r.fulfill({json:{type:"form",flow_id:"found",domain:"reolink",step_id:"confirm",data_schema:[],translations:{}}});});
+  await page.route("**/api/manage/integration-setup/flows/found", r => r.fulfill({json:{cancelled:true}}));
+  await page.goto("/");
+  await page.getByLabel("Brukernavn",{exact:true}).fill("tester");
+  await page.getByLabel("Passord",{exact:true}).fill("test-password-not-for-live");
+  await page.getByRole("button",{name:"Logg inn",exact:true}).click();
+  await page.getByRole("navigation",{name:"Hovedmeny"}).getByRole("button",{name:"Integrasjoner",exact:true}).click();
+  const panel=page.getByRole("region",{name:"Oppdagede enheter"});
+  await expect(panel).toContainText("Inngangskamera");
+  await panel.getByRole("button",{name:"Sett opp",exact:true}).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("button",{name:"Fortsett",exact:true})).toBeVisible();
+  expect(claims).toBe(1);
+  await page.getByRole("dialog").getByRole("button",{name:/Lukk/}).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(panel).toContainText("Inngangskamera");
+});

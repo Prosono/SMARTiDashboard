@@ -9,6 +9,7 @@ test("integration wizard searches, validates credentials, completes and cancels"
   }, data_schema: [{ name: "host", type: "string", required: true }, { name: "password", selector: { text: { type: "password" } }, required: true }] };
   await page.route("**/api/manage/integration-setup/**", async route => {
     const req = route.request();
+    if (req.url().endsWith("/discoveries")) return route.fulfill({ json: [] });
     if (req.method() === "DELETE") { cancelled++; return route.fulfill({ json: { cancelled: true } }); }
     if (req.url().includes("catalog")) return route.fulfill({ json: [{ domain: "reolink", name: "Reolink" }, { domain: "hue", name: "Philips Hue" }] });
     if (req.url().endsWith("/flows")) return route.fulfill({ json: form });

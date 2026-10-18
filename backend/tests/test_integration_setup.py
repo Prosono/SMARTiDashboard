@@ -87,3 +87,42 @@ def test_flow_owner_admin_csrf_and_demo(client):  # noqa: F811
     login(client, "resident", "another long password")
     assert client.get("/api/manage/integration-setup/catalog").status_code == 403
     assert client.post("/api/manage/integration-setup/flows", json={"domain": "reolink"}).status_code == 403
+
+
+def test_discoveries_only_claim_discovery_flows_and_preserve_on_close(client):  # noqa: F811
+    calls = setup_fake(client)
+    m = client.app.state.management
+    old_ws = m.ws
+
+    async def ws(kind, **kwargs):
+        if kind == "config_entries/flow/progress":
+            return [
+                {
+                    "flow_id": "abc",
+                    "handler": "reolink",
+                    "context": {
+                        "source": "zeroconf",
+                        "title_placeholders": {"name": "Front door"},
+                        "secret": "hidden",
+                    },
+                },
+                {"flow_id": "manual", "handler": "reolink", "context": {"source": "user"}},
+                {"flow_id": "repair", "handler": "reolink", "context": {"source": "reauth"}},
+            ]
+        return await old_ws(kind, **kwargs)
+
+    m.ws = ws
+    result = client.get("/api/manage/integration-setup/discoveries")
+    assert result.status_code == 200
+    assert result.json() == [{"id": "abc", "domain": "reolink", "name": "Front door", "source": "zeroconf"}]
+    base = "/api/manage/integration-setup/"
+    assert client.post(base + "discoveries/manual/claim", json={"domain": "reolink"}).status_code == 404
+    assert client.post(base + "discoveries/abc/claim", json={"domain": "other"}).status_code == 404
+    assert client.post(base + "bluetooth/abc/claim", json={"domain": "reolink"}).status_code == 404
+    assert client.post(base + "discoveries/abc/claim", json={"domain": "reolink"}).status_code == 200
+    assert client.delete(base + "flows/abc").status_code == 200
+    assert not any(c[0] == "DELETE" for c in calls)
+    client.post("/api/users", json={"name": "resident", "password": "another long password", "role": "user"})
+    client.post("/api/logout")
+    login(client, "resident", "another long password")
+    assert client.get(base + "discoveries").status_code == 403

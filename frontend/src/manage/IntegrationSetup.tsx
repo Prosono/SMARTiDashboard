@@ -75,7 +75,7 @@ export function IntegrationSetup({
   lang: string;
   close: () => void;
   initialSearch?: string;
-  discovery?: { id: string; domain: string };
+  discovery?: { id: string; domain: string; source?: string };
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const qc = useQueryClient();
@@ -153,7 +153,7 @@ export function IntegrationSetup({
       claimed.current = true;
       void run(() =>
         api<Flow>(
-          `manage/integration-setup/bluetooth/${encodeURIComponent(discovery.id)}/claim`,
+          `manage/integration-setup/${discovery.source ? "discoveries" : "bluetooth"}/${encodeURIComponent(discovery.id)}/claim`,
           "POST",
           { domain: discovery.domain, language: lang === "en" ? "en" : "nb" },
         ),
