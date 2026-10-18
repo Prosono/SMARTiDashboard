@@ -3,6 +3,15 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./homeMap.css";
 
+export type MapZone = {
+  id?: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  passive: boolean;
+};
+const noZones: MapZone[] = [];
 type Point = { latitude: number; longitude: number };
 export function HomeMap({
   latitude,
@@ -11,16 +20,19 @@ export function HomeMap({
   lang,
   radius,
   onChange,
+  zones = noZones,
 }: Point & {
   name: string;
   lang: string;
   radius?: number;
+  zones?: MapZone[];
   onChange?: (point: Point) => void;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const marker = useRef<L.Marker | null>(null);
   const circle = useRef<L.Circle | null>(null);
+  const zoneLayers = useRef<L.FeatureGroup | null>(null);
   const change = useRef(onChange);
   change.current = onChange;
   const [failed, setFailed] = useState(false);
@@ -59,6 +71,7 @@ export function HomeMap({
       }),
     }).addTo(m);
     marker.current = pin;
+    zoneLayers.current = L.featureGroup().addTo(m);
     circle.current = L.circle([latitude, longitude], {
       radius: radius ?? 0,
       color: "var(--orange)",
@@ -90,7 +103,13 @@ export function HomeMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editable]);
   useEffect(() => {
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return;
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 ||
+      Math.abs(longitude) > 180
+    )
+      return;
     const p: L.LatLngExpression = [latitude, longitude];
     marker.current?.setLatLng(p);
     circle.current
@@ -99,6 +118,45 @@ export function HomeMap({
     if (map.current && !map.current.getBounds().contains(p))
       map.current.panTo(p, { animate: false });
   }, [latitude, longitude, radius]);
+  useEffect(() => {
+    const layers = zoneLayers.current;
+    const m = map.current;
+    if (!layers || !m) return;
+    layers.clearLayers();
+    for (const zone of zones) {
+      if (
+        !Number.isFinite(zone.latitude) ||
+        !Number.isFinite(zone.longitude) ||
+        Math.abs(zone.latitude) > 90 ||
+        Math.abs(zone.longitude) > 180 ||
+        !Number.isFinite(zone.radius) ||
+        zone.radius < 0
+      )
+        continue;
+      const label = document.createElement("span");
+      label.textContent = `${zone.name} · ${zone.radius} m${zone.passive ? (lang === "en" ? " · Automations only" : " · Kun automasjoner") : ""}`;
+      L.circle([zone.latitude, zone.longitude], {
+        radius: zone.radius,
+        color: "var(--accent)",
+        weight: 2,
+        fillOpacity: 0.16,
+        dashArray: zone.passive ? "5 5" : undefined,
+        className: "smarti-map-zone",
+        bubblingMouseEvents: false,
+      })
+        .bindTooltip(label, {
+          permanent: true,
+          direction: "top",
+          className: "smarti-zone-label",
+        })
+        .addTo(layers);
+    }
+    if (!editable && layers.getLayers().length) {
+      const bounds = layers.getBounds();
+      if (marker.current) bounds.extend(marker.current.getLatLng());
+      m.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false });
+    }
+  }, [zones, editable, lang, latitude, longitude]);
   return (
     <div className="home-location-map">
       <div
@@ -126,10 +184,31 @@ export function HomeMap({
         </small>
         <button
           type="button"
-          disabled={!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180}
-          onClick={() => map.current?.setView([latitude, longitude], 15)}
+          disabled={
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude) ||
+            Math.abs(latitude) > 90 ||
+            Math.abs(longitude) > 180
+          }
+          onClick={() => {
+            const layers = zoneLayers.current;
+            if (!editable && layers?.getLayers().length) {
+              const bounds = layers.getBounds().extend([latitude, longitude]);
+              map.current?.fitBounds(bounds, {
+                padding: [40, 40],
+                maxZoom: 15,
+                animate: false,
+              });
+            } else map.current?.setView([latitude, longitude], 15);
+          }}
         >
-          {lang === "en" ? "Center" : "Sentrer"}
+          {!editable && zones.length
+            ? lang === "en"
+              ? "Show all zones"
+              : "Vis alle soner"
+            : lang === "en"
+              ? "Center"
+              : "Sentrer"}
         </button>
       </div>
     </div>

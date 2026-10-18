@@ -1,7 +1,8 @@
 import { RestartCore } from "./RestartCore";
 import { Zones } from "./Zones";
-import { HomeMap } from "./HomeMap";
+import { HomeMap, type MapZone } from "./HomeMap";
 import { HubStatus } from "./HubStatus";
+import { PersonPhotoEditor } from "./PersonPhotoEditor";
 import { Accounts } from "./Accounts";
 import { Backups } from "./Backups";
 import { SystemActions } from "./SystemActions";
@@ -22,6 +23,7 @@ type Location = {
   time_zone: string;
 };
 type Person = {
+  entity_id?: string;
   id: string;
   name: string;
   device_trackers: string[];
@@ -86,6 +88,12 @@ export function HomeSettings({
     queryKey: ["settings", "location"],
     enabled: section === "household",
     queryFn: () => api<Location>("manage/settings/home"),
+    retry: false,
+  });
+  const zones = useQuery({
+    queryKey: ["settings", "zones"],
+    enabled: section === "household",
+    queryFn: () => api<MapZone[]>("manage/settings/zones"),
     retry: false,
   });
   const people = useQuery({
@@ -161,6 +169,7 @@ export function HomeSettings({
             {location.data ? (
               <>
                 <HomeMap
+                  zones={zones.data}
                   latitude={location.data.latitude}
                   longitude={location.data.longitude}
                   name={location.data.location_name}
@@ -346,6 +355,7 @@ export function HomeSettings({
                 )}
               </p>
               <HomeMap
+                zones={zones.data}
                 latitude={place.latitude}
                 longitude={place.longitude}
                 name={place.location_name}
@@ -425,6 +435,15 @@ export function HomeSettings({
                 );
               }}
             >
+              {person.entity_id && (
+                <PersonPhotoEditor
+                  key={person.entity_id}
+                  entityId={person.entity_id}
+                  name={person.name}
+                  lang={lang}
+                  disabled={busy}
+                />
+              )}
               <label>
                 {t("Navn", "Name")}
                 <input

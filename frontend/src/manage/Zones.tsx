@@ -182,6 +182,9 @@ export function Zones({
                 </label>
                 <HomeMap
                   {...draft}
+                  zones={query.data?.filter(
+                    (zone) => !draft.id || zone.id !== draft.id,
+                  )}
                   lang={lang}
                   onChange={(point) => {
                     if (!busy) setDraft({ ...draft, ...point });

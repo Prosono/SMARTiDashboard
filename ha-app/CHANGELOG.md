@@ -1,3 +1,13 @@
+## 1.35.19
+
+- Sonekartet viser alle sonene i soneoversikten med navn og radius, og tilpasser utsnittet automatisk.
+- Passive soner markeres med stiplet kant. Andre soner vises som referanse ved redigering, og kartet oppdateres etter lagring.
+
+## 1.35.18
+
+- Profilbildet kan byttes direkte i Rediger person, også for personer uten SMARTi-innlogging.
+- Forhåndsvis nytt bilde før lagring, eller velg å bruke systembildet igjen. Personoversikten oppdateres etter lagring.
+
 ## 1.35.17
 
 - Ryddigere side for nye enheter: fjernet generell tekst om søkevinduet og mellomoverskriften Andre tilkoblinger.

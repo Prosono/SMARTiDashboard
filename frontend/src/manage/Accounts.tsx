@@ -30,7 +30,7 @@ type Result = {
   local_id?: number;
   ha_user_id?: string;
 };
-async function readPhoto(file: File) {
+export async function readPhoto(file: File) {
   if (
     !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
     file.size > 10000000
@@ -64,7 +64,7 @@ export type HouseholdPerson = {
   user_id?: string;
   entity_id?: string;
 };
-function HouseholdPhoto({ src, name }: { src?: string; name: string }) {
+export function HouseholdPhoto({ src, name }: { src?: string; name: string }) {
   const [failed, setFailed] = useState("");
   return src && failed !== src ? (
     <img src={src} alt={name} onError={() => setFailed(src)} />
@@ -110,6 +110,11 @@ export function Accounts({
     [result, setResult] = useState<Result | null>(null),
     [editing, setEditing] = useState<Account | null>(null),
     [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const refresh = () => setRevision((v) => v + 1);
+    window.addEventListener("smarti-profile-photo", refresh);
+    return () => window.removeEventListener("smarti-profile-photo", refresh);
+  }, []);
   function close() {
     setOpen(false);
     setPassword("");
