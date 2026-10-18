@@ -290,3 +290,46 @@ async def test_camera_starts_run_in_parallel_and_reserve_capacity():
         await asyncio.gather(*tasks, return_exceptions=True)
         await streams.close()
     assert streams.client.is_closed
+
+
+def test_scene_combines_domains_and_rejects_unsupported_controls(client):  # noqa: F811
+    login(client)
+    ha = client.app.state.ha
+    ha.states["cover.blinds"] = {
+        "entity_id": "cover.blinds",
+        "state": "open",
+        "attributes": {"supported_features": 3},
+    }
+    ha.states["media_player.speaker"] = {
+        "entity_id": "media_player.speaker",
+        "state": "playing",
+        "attributes": {"supported_features": 1 | 4 | 128 | 256 | 16384},
+    }
+    entities = {
+        "light.living_pendant": {"state": "off"},
+        "cover.blinds": {"state": "closed"},
+        "media_player.speaker": {"state": "paused", "volume_level": 0.25},
+    }
+    result = client.post(
+        "/api/scenes", json={"name": "God natt", "icon": "mdi:weather-night", "entities": entities}
+    )
+    assert result.status_code == 200, result.text
+    saved = client.get("/api/scenes/config/" + result.json()["id"]).json()
+    assert saved["entities"] == entities
+    assert set(client.get("/api/scenes").json()[0]["entities"]) == set(entities)
+    assert ha.states["cover.blinds"]["state"] == "open"
+    assert ha.states["media_player.speaker"]["state"] == "playing"
+    for invalid in [
+        {"cover.blinds": {"state": "on"}},
+        {"light.living_pendant": {"state": "on", "volume_level": 0.2}},
+        {"media_player.speaker": {"state": "paused", "volume_level": 2}},
+    ]:
+        assert client.post("/api/scenes", json={"name": "Invalid", "entities": invalid}).status_code == 422
+    ha.states["media_player.speaker"]["attributes"]["supported_features"] = 0
+    assert (
+        client.post(
+            "/api/scenes",
+            json={"name": "Unsupported", "entities": {"media_player.speaker": {"state": "paused"}}},
+        ).status_code
+        == 422
+    )

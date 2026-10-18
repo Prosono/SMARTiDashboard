@@ -1,0 +1,21 @@
+import {test, expect} from "../../frontend/node_modules/@playwright/test";
+test("group icon persists and members are visible before opening", async ({page}) => {
+  const name = `Kveldslys ${test.info().project.name} ${Date.now()}`;
+  await page.goto("/");
+  await page.getByLabel("Brukernavn",{exact:true}).fill("tester");
+  await page.getByLabel("Passord",{exact:true}).fill("test-password-not-for-live");
+  await page.getByRole("button",{name:"Logg inn",exact:true}).click();
+  await page.getByRole("navigation",{name:"Hovedmeny"}).getByRole("button",{name:"Enheter",exact:true}).click();
+  await page.getByRole("button",{name:"Grupper",exact:true}).click();
+  await page.getByRole("button",{name:"Lag gruppe",exact:true}).click();
+  const d=page.getByRole("dialog");
+  await d.getByLabel("Gruppenavn").fill(name);
+  await d.getByRole("button",{name:"Natt",exact:true}).click();
+  await d.getByRole("checkbox",{name:/Pendellampe/}).check();
+  await d.getByRole("button",{name:"Lagre gruppe",exact:true}).click();
+  const card=page.locator(".groups-grid article").filter({hasText:name});
+  await expect(card.locator(".group-preview")).toContainText("Pendellampe");
+  await card.screenshot({path:`test-results/group-card-${test.info().project.name}.png`});
+  await card.getByRole("button",{name:"Rediger gruppe",exact:true}).click();
+  await expect(d.getByRole("button",{name:"Natt",exact:true})).toHaveAttribute("aria-pressed","true");
+});

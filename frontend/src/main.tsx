@@ -41,6 +41,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  Layers,
+  Clapperboard,
   House,
   Menu,
   LayoutGrid,
@@ -928,7 +930,11 @@ function Dashboard({
                     className={protocol === id ? "selected" : ""}
                     onClick={() => setProtocol(id)}
                   >
-                    {id === "all" || id === "groups" || id === "scenes" ? (
+                    {id === "groups" ? (
+                      <Layers size={18} />
+                    ) : id === "scenes" ? (
+                      <Clapperboard size={18} />
+                    ) : id === "all" ? (
                       <LayoutGrid size={17} />
                     ) : (
                       <ProtocolLogo

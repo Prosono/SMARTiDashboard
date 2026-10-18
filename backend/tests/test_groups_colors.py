@@ -155,3 +155,15 @@ def test_legacy_nested_groups_deduplicate_and_reject_cycles(client):  # noqa: F8
     group = next(g for g in client.get("/api/groups").json() if g["id"] == "ha:group.inner")
     assert group["actions"] == []
     assert not group["available"]
+
+
+def test_group_icon_persists_across_edit(client):  # noqa: F811
+    login(client)
+    body = {"name": "Media", "entities": ["light.living_pendant"], "icon": "mdi:music"}
+    group = client.post("/api/groups", json=body).json()
+    assert group["icon"] == "mdi:music"
+    updated = client.put(
+        "/api/groups/" + group["id"], json=body | {"icon": "mdi:home", "revision": group["revision"]}
+    )
+    assert updated.status_code == 200
+    assert updated.json()["icon"] == "mdi:home"

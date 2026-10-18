@@ -1,14 +1,16 @@
+import {
+  collectionIcons as icons,
+  collectionIconName,
+  domainIcons,
+  domainName,
+} from "../collectionIcons";
 import { allViews, allControls } from "../access";
 import { LightColor } from "../LightColor";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Clapperboard,
-  Moon,
-  Utensils,
   Sofa,
-  Lightbulb,
-  PartyPopper,
   Plus,
   Play,
   Pencil,
@@ -29,10 +31,12 @@ type Scene = {
   name: string;
   icon: string;
   available: boolean;
+  entities?: string[];
   last_activated: string | null;
 };
 type Target = {
   state: string;
+  volume_level?: number;
   brightness?: number;
   temperature?: number;
   rgb_color?: number[];
@@ -45,14 +49,6 @@ type Draft = {
   revision: string;
   preserved: string[];
 };
-const icons = {
-  "mdi:movie-open": Clapperboard,
-  "mdi:weather-night": Moon,
-  "mdi:food": Utensils,
-  "mdi:sofa": Sofa,
-  "mdi:lightbulb-group": Lightbulb,
-  "mdi:party-popper": PartyPopper,
-};
 const empty: Draft = {
   name: "",
   icon: "mdi:sofa",
@@ -62,6 +58,11 @@ const empty: Draft = {
 };
 function stateLabel(value: string, lang: string) {
   const labels: Record<string, [string, string]> = {
+    open: ["Åpen", "Open"],
+    closed: ["Lukket", "Closed"],
+    playing: ["Spill", "Play"],
+    paused: ["Pause", "Pause"],
+    idle: ["Stopp", "Stop"],
     on: ["På", "On"],
     off: ["Av", "Off"],
     heat: ["Varme", "Heat"],
@@ -73,7 +74,39 @@ function stateLabel(value: string, lang: string) {
   };
   return labels[value]?.[lang === "en" ? 1 : 0] || value;
 }
+function statesFor(c: Control): string[] {
+  const actions = c.capabilities.flatMap((cap) => cap.actions);
+  if (c.domain === "climate")
+    return (c.attributes.hvac_modes as string[]) || [];
+  if (c.domain === "cover")
+    return [
+      ["open", "open_cover"],
+      ["closed", "close_cover"],
+    ]
+      .filter(([, a]) => actions.includes(a))
+      .map(([s]) => s);
+  if (c.domain === "media_player")
+    return [
+      ["on", "turn_on"],
+      ["off", "turn_off"],
+      ["playing", "media_play"],
+      ["paused", "media_pause"],
+      ["idle", "media_stop"],
+    ]
+      .filter(([, a]) => actions.includes(a))
+      .map(([s]) => s);
+  return ["on", "off"];
+}
 function snapshot(c: Control): Target {
+  if (["cover", "media_player"].includes(c.domain))
+    return {
+      state: statesFor(c).includes(c.state) ? c.state : statesFor(c)[0],
+      ...(c.domain === "media_player" &&
+      c.capabilities.some((cap) => cap.kind === "volume") &&
+      typeof c.attributes.volume_level === "number"
+        ? { volume_level: c.attributes.volume_level }
+        : {}),
+    };
   if (c.domain === "climate")
     return {
       state: ((c.attributes.hvac_modes as string[]) || []).includes(c.state)
@@ -194,7 +227,7 @@ export function Scenes({
       <header className="home-section-heading">
         <h2>
           <Clapperboard size={20} />
-          {t("Scener for hverdagen", "Scenes for everyday life")}
+          {t("Scener for hele hjemmet", "Scenes for your whole home")}
         </h2>
         <div className="scene-header-actions">
           {rows.length > 0 && (
@@ -217,8 +250,8 @@ export function Scenes({
       </header>
       <p className="scene-help">
         {t(
-          "Lag en scene for å lagre en ønsket stemning. Rediger bestemmer hva enhetene skal gjøre; Aktiver utfører scenen i hjemmet.",
-          "Create a scene to save a mood. Edit sets what devices should do; Activate runs the scene in your home.",
+          "Kombiner lys, klima, persienner, brytere og media. Velg en ønsket tilstand for hver enhet, og aktiver alt med ett trykk.",
+          "Combine lights, climate, blinds, switches and media. Choose a target state for each device and activate them together.",
         )}
       </p>
       {message && (
@@ -306,6 +339,30 @@ export function Scenes({
                       ? t("Klar til å aktiveres", "Ready to activate")
                       : t("Utilgjengelig", "Unavailable")}
                   </small>
+                  <div className="collection-domains">
+                    {Array.from(
+                      new Set((s.entities || []).map((e) => e.split(".")[0])),
+                    ).map((domain) => {
+                      const Icon = domainIcons[domain] || icons["mdi:group"];
+                      return (
+                        <span key={domain}>
+                          <Icon size={14} />
+                          {domainName(domain, lang)}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <p className="collection-summary">
+                    {s.entities?.length
+                      ? t(
+                          `${s.entities.length} enheter i én scene`,
+                          `${s.entities.length} devices in one scene`,
+                        )
+                      : t(
+                          "En samlet handling for hjemmet",
+                          "One action for your home",
+                        )}
+                  </p>
                   <div className="scene-card-actions">
                     <button
                       disabled={
@@ -327,7 +384,14 @@ export function Scenes({
                       </button>
                     )}
                   </div>
-                  {admin && !s.id && <small>{t("Styres av integrasjonen – kan aktiveres her, men redigeres i kilden.", "Managed by its integration — activate here, edit at the source.")}</small>}
+                  {admin && !s.id && (
+                    <small>
+                      {t(
+                        "Styres av integrasjonen – kan aktiveres her, men redigeres i kilden.",
+                        "Managed by its integration — activate here, edit at the source.",
+                      )}
+                    </small>
+                  )}
                 </article>
               );
             },
@@ -405,7 +469,12 @@ function SceneEditor({
       close();
   };
   const candidates = home.controls.filter(
-    (c) => !c.diagnostic && ["light", "switch", "climate"].includes(c.domain),
+    (c) =>
+      !c.diagnostic &&
+      ["light", "switch", "climate", "cover", "media_player"].includes(
+        c.domain,
+      ) &&
+      statesFor(c).length > 0,
   );
   const selected = Object.entries(draft.entities);
   const room = (c: Control) =>
@@ -443,14 +512,6 @@ function SceneEditor({
       setBusy(false);
     }
   }
-  const iconNames = [
-    t("Filmkveld", "Movie night"),
-    t("Natt", "Night"),
-    t("Middag", "Dinner"),
-    t("Avslapping", "Relax"),
-    t("Lys", "Lights"),
-    t("Feiring", "Celebration"),
-  ];
   return (
     <dialog
       ref={dialog}
@@ -483,7 +544,7 @@ function SceneEditor({
       </header>
       <ol className="scene-steps">
         {[
-          t("Stemning", "Mood"),
+          t("Navn og ikon", "Name and icon"),
           t("Enheter", "Devices"),
           t("Se over", "Review"),
         ].map((label, i) => (
@@ -517,19 +578,19 @@ function SceneEditor({
                 {Object.entries(icons).map(([key, Icon], i) => (
                   <button
                     key={key}
-                    aria-label={iconNames[i]}
+                    aria-label={collectionIconName(i, lang)}
                     aria-pressed={draft.icon === key}
                     onClick={() => setDraft({ ...draft, icon: key })}
                   >
                     <Icon size={24} />
-                    <span>{iconNames[i]}</span>
+                    <span>{collectionIconName(i, lang)}</span>
                   </button>
                 ))}
               </div>
               <p className="scene-explainer">
                 {t(
-                  "En scene lagrer hvordan du vil ha det. Du velger selv når den aktiveres.",
-                  "A scene saves how you want things. You decide when to activate it.",
+                  "Én scene kan dempe lyset, justere temperaturen, lukke persiennene og sette musikken på pause. Velg det som passer hjemmet ditt.",
+                  "One scene can dim lights, adjust temperature, close blinds and pause music. Choose what suits your home.",
                 )}
               </p>
             </>
@@ -547,8 +608,8 @@ function SceneEditor({
                 <input
                   aria-label={t("Søk etter sceneenhet", "Search scene devices")}
                   placeholder={t(
-                    "Finn lys, rom eller temperatur…",
-                    "Find lights, rooms or temperature…",
+                    "Finn lys, klima, persienner eller media …",
+                    "Find lights, climate, blinds or media …",
                   )}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -576,6 +637,7 @@ function SceneEditor({
                         .includes(search.toLowerCase()),
                   )
                   .map((c) => {
+                    const DeviceIcon = domainIcons[c.domain] || Sofa;
                     const target = draft.entities[c.entity_id],
                       cap = c.capabilities.find(
                         (x) => x.kind === "temperature",
@@ -597,7 +659,10 @@ function SceneEditor({
                             }
                           />
                           <span>
-                            <strong>{c.name}</strong>
+                            <strong>
+                              <DeviceIcon size={16} aria-hidden="true" />{" "}
+                              {c.name}
+                            </strong>
                             <small>
                               {room(c)}
                               {!usable(c)
@@ -625,7 +690,7 @@ function SceneEditor({
                                         target.state,
                                       ]),
                                     )
-                                  : ["on", "off"]
+                                  : statesFor(c)
                                 ).map((v) => (
                                   <option value={v} key={v}>
                                     {stateLabel(v, lang)}
@@ -694,6 +759,40 @@ function SceneEditor({
                                 }
                               />
                             )}
+                            {c.domain === "media_player" &&
+                              target.state !== "off" &&
+                              c.capabilities.some(
+                                (cap) => cap.kind === "volume",
+                              ) && (
+                                <label>
+                                  {t("Volum", "Volume")}
+                                  <input
+                                    type="number"
+                                    aria-label={`${c.name}: ${t("Volum", "Volume")}`}
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    placeholder={t(
+                                      "Ikke endre",
+                                      "Keep current",
+                                    )}
+                                    value={
+                                      target.volume_level === undefined
+                                        ? ""
+                                        : Math.round(target.volume_level * 100)
+                                    }
+                                    onChange={(e) =>
+                                      patch(c.entity_id, {
+                                        volume_level:
+                                          e.target.value === ""
+                                            ? undefined
+                                            : Number(e.target.value) / 100,
+                                      })
+                                    }
+                                  />
+                                  <span>%</span>
+                                </label>
+                              )}
                             {c.domain === "climate" && cap && (
                               <label>
                                 {t("Temperatur", "Temperature")}
@@ -752,6 +851,9 @@ function SceneEditor({
                       {stateLabel(target.state, lang)}
                       {target.brightness !== undefined
                         ? ` · ${Math.round((target.brightness / 255) * 100)}%`
+                        : ""}
+                      {target.volume_level !== undefined
+                        ? ` · ${Math.round(target.volume_level * 100)}% ${t("volum", "volume")}`
                         : ""}
                       {target.temperature !== undefined
                         ? ` · ${target.temperature}°`

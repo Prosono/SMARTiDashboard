@@ -14,13 +14,14 @@ from pydantic import BaseModel, Field, field_validator
 from .ha import HAError
 from .management import revision
 
-EDITABLE = {"light", "switch", "climate"}
-FIELDS = {"state", "brightness", "temperature", "rgb_color", "color_temp_kelvin"}
+EDITABLE = {"light", "switch", "climate", "cover", "media_player"}
+FIELDS = {"state", "brightness", "temperature", "rgb_color", "color_temp_kelvin", "volume_level"}
 
 
 class SceneState(BaseModel):
     model_config = {"extra": "forbid"}
     state: str = Field(min_length=1, max_length=80)
+    volume_level: float | None = Field(default=None, ge=0, le=1)
     brightness: int | None = Field(default=None, ge=0, le=255)
     temperature: float | None = None
     rgb_color: tuple[int, int, int] | None = None
@@ -137,6 +138,23 @@ def scenes_router(ha, store, user, settings):
             if not c or c.domain not in EDITABLE:
                 raise HTTPException(422, "scene_entity_not_supported")
             value = draft.model_dump(exclude_none=True)
+            actions = {a for cap in c.capabilities for a in cap.actions}
+            if c.domain == "cover":
+                action = {"open": "open_cover", "closed": "close_cover"}.get(draft.state)
+                if not action or action not in actions:
+                    raise HTTPException(422, "unsupported_cover_scene_state")
+            if c.domain == "media_player":
+                action = {
+                    "on": "turn_on",
+                    "off": "turn_off",
+                    "playing": "media_play",
+                    "paused": "media_pause",
+                    "idle": "media_stop",
+                }.get(draft.state)
+                if not action or action not in actions:
+                    raise HTTPException(422, "unsupported_media_scene_state")
+            if draft.volume_level is not None and (c.domain != "media_player" or "set_volume" not in actions):
+                raise HTTPException(422, "unsupported_scene_volume")
             if c.domain in {"light", "switch"} and draft.state not in {"on", "off"}:
                 raise HTTPException(422, "invalid_scene_state")
             if c.domain != "light" and any(
@@ -168,6 +186,12 @@ def scenes_router(ha, store, user, settings):
                 raise HTTPException(422, "invalid_scene_temperature")
             # Preserve advanced fields in the original native scene, including colors not edited here.
             previous = old.get(eid, {})
+            if c.domain == "cover" and isinstance(previous, dict) and previous.get("state") != draft.state:
+                previous = {
+                    k: v
+                    for k, v in previous.items()
+                    if k not in {"current_position", "current_tilt_position"}
+                }
             entities[eid] = (
                 {k: v for k, v in previous.items() if k not in FIELDS} if isinstance(previous, dict) else {}
             ) | value
@@ -197,6 +221,7 @@ def scenes_router(ha, store, user, settings):
                 "name": s.get("attributes", {}).get("friendly_name", eid),
                 "icon": s.get("attributes", {}).get("icon"),
                 "available": ha.connected and s.get("state") != "unavailable",
+                "entities": s.get("attributes", {}).get("entity_id", []),
                 "last_activated": s.get("state") if str(s.get("state", "")).startswith("20") else None,
             }
             for eid, s in ha.states.items()

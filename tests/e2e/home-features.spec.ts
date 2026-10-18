@@ -37,6 +37,7 @@ test("scenes create without execution, edit targets, favorite and confirm activa
   await expect(dialog).not.toBeVisible();
   expect(activations).toBe(0);
   const card = page.locator(".scene-card").filter({ hasText: sceneName });
+  await card.screenshot({path:`test-results/scene-card-${test.info().project.name}.png`});
   await card.getByRole("button", { name: /Favorittscene:/ }).click();
   await expect(
     card.getByRole("button", { name: /Favorittscene:/ }),

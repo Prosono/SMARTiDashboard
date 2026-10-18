@@ -1,8 +1,13 @@
+import {
+  collectionIcons,
+  collectionIconName,
+  domainIcons,
+} from "./collectionIcons";
 import { IntegrationSetup } from "./manage/IntegrationSetup";
 import { allViews, allControls } from "./access";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Layers, Pencil, Trash2 } from "lucide-react";
+import { Plus, Layers, Pencil, Trash2, Power, PowerOff } from "lucide-react";
 import { api, ApiError } from "./api";
 import type { Home, Control } from "./types";
 import { SettingsDialog } from "./home/SettingsDialog";
@@ -13,6 +18,7 @@ type Group = {
   id: string;
   name: string;
   entities: string[];
+  icon?: string;
   revision: string;
   source: "smarti" | "home_assistant";
   config_entry_id?: string | null;
@@ -23,6 +29,7 @@ type Draft = {
   id?: string;
   name: string;
   entities: string[];
+  icon?: string;
   revision: string;
 };
 export function Groups({
@@ -50,6 +57,7 @@ export function Groups({
     if (g.source === "home_assistant") editNative(g.id.slice(3));
     else
       edit({
+        icon: g.icon || "mdi:group",
         id: g.id,
         name: g.name,
         entities: g.entities,
@@ -208,11 +216,13 @@ export function Groups({
       <div className="group-actions">
         {g.actions.includes("turn_on") && (
           <button disabled={blocked} onClick={() => void send(g, "turn_on")}>
+            <Power size={16} />
             {t("Slå på alle", "Turn all on")}
           </button>
         )}
         {g.actions.includes("turn_off") && (
           <button disabled={blocked} onClick={() => void send(g, "turn_off")}>
+            <PowerOff size={16} />
             {t("Slå av alle", "Turn all off")}
           </button>
         )}
@@ -266,8 +276,8 @@ export function Groups({
           </h2>
           <p>
             {t(
-              "Dine grupper fra hjemmesentralen og SMARTi, samlet på ett sted.",
-              "Your hub and SMARTi groups, together in one place.",
+              "Samle enheter som skal betjenes sammen. En gruppe gir felles styring; en scene lagrer ulike innstillinger for hver enhet.",
+              "Bring devices together for shared control. A group controls them together; a scene saves individual settings for each device.",
             )}
           </p>
         </div>
@@ -277,7 +287,7 @@ export function Groups({
             onClick={() => {
               setError("");
               setSearch("");
-              edit({ name: "", entities: [], revision: "" });
+              edit({ name: "", icon: "mdi:group", entities: [], revision: "" });
             }}
           >
             <Plus size={18} />
@@ -312,45 +322,69 @@ export function Groups({
         </div>
       )}
       <div className="groups-grid">
-        {q.data?.map((g) => (
-          <article key={g.id}>
-            <button
-              className="group-open"
-              onClick={() => {
-                setMessage("");
-                setOpened(g.id);
-              }}
-            >
-              <Layers size={24} />
-              <span>
-                <strong>{g.name}</strong>
-                <small>
-                  {g.source === "home_assistant"
-                    ? t("Fra hjemmesentralen", "From the hub")
-                    : "SMARTi"}{" "}
-                  · {g.entities.length} {t("kontroller", "controls")} ·{" "}
-                  {g.available
-                    ? t("Tilgjengelig", "Available")
-                    : t(
-                        "Noen enheter er utilgjengelige",
-                        "Some devices unavailable",
-                      )}
-                </small>
-              </span>
-            </button>
-            {actions(g)}
-            {admin && (g.source !== "home_assistant" || g.config_entry_id) && (
+        {q.data?.map((g) => {
+          const Icon =
+            collectionIcons[g.icon as keyof typeof collectionIcons] || Layers;
+          return (
+            <article key={g.id}>
               <button
-                className="group-edit-button"
-                onClick={() => openEditor(g)}
-                disabled={busy}
+                className="group-open"
+                onClick={() => {
+                  setMessage("");
+                  setOpened(g.id);
+                }}
               >
-                <Pencil size={16} />
-                {t("Rediger gruppe", "Edit group")}
+                <span className="group-symbol">
+                  <Icon size={27} />
+                </span>
+                <span>
+                  <strong>{g.name}</strong>
+                  <small>
+                    {g.source === "home_assistant"
+                      ? t("Fra hjemmesentralen", "From the hub")
+                      : "SMARTi"}{" "}
+                    · {g.entities.length} {t("kontroller", "controls")} ·{" "}
+                    {g.available
+                      ? t("Tilgjengelig", "Available")
+                      : t(
+                          "Noen enheter er utilgjengelige",
+                          "Some devices unavailable",
+                        )}
+                  </small>
+                </span>
               </button>
-            )}
-          </article>
-        ))}
+              <div className="group-preview">
+                {g.entities.slice(0, 3).map((eid) => {
+                  const c = home.controls.find((c) => c.entity_id === eid);
+                  const MemberIcon = domainIcons[eid.split(".")[0]] || Layers;
+                  return (
+                    <span key={eid}>
+                      <MemberIcon size={15} />
+                      {c?.name || eid}
+                    </span>
+                  );
+                })}
+                {g.entities.length > 3 && (
+                  <small>
+                    +{g.entities.length - 3} {t("til", "more")}
+                  </small>
+                )}
+              </div>
+              {actions(g)}
+              {admin &&
+                (g.source !== "home_assistant" || g.config_entry_id) && (
+                  <button
+                    className="group-edit-button"
+                    onClick={() => openEditor(g)}
+                    disabled={busy}
+                  >
+                    <Pencil size={16} />
+                    {t("Rediger gruppe", "Edit group")}
+                  </button>
+                )}
+            </article>
+          );
+        })}
       </div>
       {current && (
         <SettingsDialog
@@ -396,6 +430,7 @@ export function Groups({
                 disabled={busy}
                 onClick={() => {
                   edit({
+                    icon: current.icon || "mdi:group",
                     id: current.id,
                     name: current.name,
                     entities: current.entities,
@@ -457,6 +492,23 @@ export function Groups({
                 onChange={(e) => edit({ ...editor, name: e.target.value })}
               />
             </label>
+            <fieldset className="collection-icon-field">
+              <legend>{t("Velg ikon", "Choose icon")}</legend>
+              <div className="scene-icon-picker">
+                {Object.entries(collectionIcons).map(([key, Icon], i) => (
+                  <button
+                    type="button"
+                    key={key}
+                    aria-label={collectionIconName(i, lang)}
+                    aria-pressed={(editor.icon || "mdi:group") === key}
+                    onClick={() => edit({ ...editor, icon: key })}
+                  >
+                    <Icon size={22} />
+                    <span>{collectionIconName(i, lang)}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
             <label>
               {t("Søk etter enhet", "Search devices")}
               <input

@@ -18,6 +18,7 @@ class GroupDraft(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     entities: list[str] = Field(min_length=1, max_length=50)
     revision: str = Field(default="", max_length=40)
+    icon: str = Field(default="mdi:group", pattern=r"^mdi:[a-z0-9-]{1,60}$")
 
     @field_validator("name")
     @classmethod
@@ -61,6 +62,7 @@ def groups_router(store, ha, user, admin, execute):
                 else [],
                 "revision": "",
                 "source": "home_assistant",
+                "icon": attrs.get("icon") or "mdi:group",
                 "entity_id": eid,
                 "config_entry_id": registry.get("config_entry_id")
                 if registry.get("platform") == "group"
@@ -133,7 +135,12 @@ def groups_router(store, ha, user, admin, execute):
             elif len(saved) >= 100:
                 raise HTTPException(409, "group_limit")
             id = id or uuid.uuid4().hex
-            value = {"name": body.name, "entities": body.entities, "revision": uuid.uuid4().hex}
+            value = {
+                "name": body.name,
+                "entities": body.entities,
+                "icon": body.icon,
+                "revision": uuid.uuid4().hex,
+            }
             saved[id] = value
             store.set("control_groups", json.dumps(saved))
             return describe(id, value)

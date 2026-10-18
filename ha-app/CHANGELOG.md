@@ -1,3 +1,10 @@
+## 1.35.28
+
+- Scener og grupper får egne ikoner i fanene og nye kort med tydelige handlinger, innhold og redigering.
+- SMARTi-grupper får ikonvelger og viser medlemmer direkte på kortet. Importerte grupper viser sitt eksisterende ikon når det støttes.
+- Scener får flere ikoner og viser hvilke enhetstyper de samler. Sceneoppsettet omfatter lys, brytere, klima, åpne/lukke persienner og støttede medietilstander og volum.
+- Sceneinnstillinger valideres mot enhetens funksjoner. Lagring aktiverer ikke scenen.
+
 ## 1.35.27
 
 - Grupper får en synlig redigeringsknapp på kortene. Grupper opprettet som hjelpere i hjemmesentralen kan redigere medlemmer og innstillinger gjennom sitt eksisterende oppsett.
