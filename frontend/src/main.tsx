@@ -31,8 +31,7 @@ import {
 } from "@tanstack/react-query";
 import {
   House,
-  PanelLeftClose,
-  PanelLeftOpen,
+  Menu,
   LayoutGrid,
   SlidersHorizontal,
   AppWindow,
@@ -265,8 +264,6 @@ function App() {
         data-sidebar={sidebarCollapsed ? "collapsed" : "expanded"}
       >
         <aside className="sidebar">
-          <Logo />
-          <div className="sidebar-label">SMART LIVING, SIMPLIFIED.</div>
           <button
             className="sidebar-toggle"
             onClick={toggleSidebar}
@@ -275,13 +272,10 @@ function App() {
             aria-expanded={!sidebarCollapsed}
             aria-controls="main-navigation"
           >
-            {sidebarCollapsed ? (
-              <PanelLeftOpen size={20} />
-            ) : (
-              <PanelLeftClose size={20} />
-            )}
-            <span>{lang === "en" ? "Collapse menu" : "Trekk sammen"}</span>
+            <Menu size={24} aria-hidden="true" />
           </button>
+          <Logo />
+          <div className="sidebar-label">SMART LIVING, SIMPLIFIED.</div>
           <nav
             id="main-navigation"
             ref={mainNav}

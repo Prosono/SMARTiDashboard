@@ -1546,13 +1546,15 @@ footer span:last-child {
   .sidebar-toggle {
     display: flex;
     align-items: center;
-    gap: 13px;
-    min-height: 44px;
-    padding: 10px 15px;
-    margin-bottom: 12px;
-    border-radius: 12px;
+    justify-content: center;
+    align-self: flex-start;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: -14px 0 18px 6px;
+    border-radius: 50%;
     color: var(--media-muted);
-    font-size: 12px;
   }
   .sidebar-toggle:hover {
     background: #ffffff0e;
@@ -1569,13 +1571,10 @@ footer span:last-child {
     width: calc(100% - 80px);
   }
   [data-sidebar="collapsed"] .sidebar .brand {
-    padding: 0;
-    justify-content: center;
-    margin-bottom: 18px;
+    display: none;
   }
   [data-sidebar="collapsed"] .sidebar .brand > span,
   [data-sidebar="collapsed"] .sidebar-label,
-  [data-sidebar="collapsed"] .sidebar-toggle > span,
   [data-sidebar="collapsed"] .nav-item > span,
   [data-sidebar="collapsed"] .sidebar-bottom > div:nth-child(2) {
     display: none;

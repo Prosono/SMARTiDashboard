@@ -1,3 +1,7 @@
+## 1.35.16
+
+- Sidemenyen åpnes og lukkes med et rent menyikon øverst til venstre, uten tekst.
+
 ## 1.35.15
 
 - Sidemenyen kan trekkes sammen til en smal ikonmeny på nettbrett og datamaskin. Valget huskes per bruker i nettleseren.
