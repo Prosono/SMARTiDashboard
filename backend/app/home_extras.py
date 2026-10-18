@@ -81,9 +81,7 @@ def forecast_days(rows, timezone, now):
 def daily_forecasts(rows, timezone, now):
     today = now.astimezone(ZoneInfo(timezone)).date()
     dates = {today.isoformat(): "today", (today + timedelta(days=1)).isoformat(): "tomorrow"}
-    return {
-        dates[day["date"]]: day for day in forecast_days(rows, timezone, now) if day["date"] in dates
-    }
+    return {dates[day["date"]]: day for day in forecast_days(rows, timezone, now) if day["date"] in dates}
 
 
 def extras_router(store, user, ha, settings):
@@ -237,6 +235,13 @@ def extras_router(store, user, ha, settings):
             "controls": controls,
         }
 
+    @router.get("/controls/{entity_id}/history")
+    async def control_history(entity_id: str, hours: Literal["6", "24", "168"] = "24", current=Depends(user)):
+        c = next((c for c in ha.controls() if c.entity_id == entity_id), None)
+        if not c:
+            raise HTTPException(404, "control_not_found")
+        return await read_history(c, hours)
+
     @router.get("/manage/device/{id}/history")
     async def device_history(
         id: str, entity_id: str, hours: Literal["24", "168"] = "24", current=Depends(user)
@@ -252,7 +257,11 @@ def extras_router(store, user, ha, settings):
         )
         if not c:
             raise HTTPException(404, "sensor_not_found")
-        if not ha.connected:
+        return await read_history(c, hours)
+
+    async def read_history(c, hours):
+        entity_id = c.entity_id
+        if settings.mode != "demo" and not ha.connected:
             raise HTTPException(503, "history_unavailable")
         start = datetime.now(UTC) - timedelta(hours=int(hours))
         if settings.mode == "demo":

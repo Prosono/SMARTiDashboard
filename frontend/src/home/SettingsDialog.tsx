@@ -1,6 +1,14 @@
-import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useId,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from "react";
 import { X } from "lucide-react";
 import "./settingsDialog.css";
+
+export const InSettingsDialog = createContext(false);
 
 /** Native top-layer dialog keeps focus inside and returns it to the opener. */
 export function SettingsDialog({
@@ -96,7 +104,11 @@ export function SettingsDialog({
           <X size={21} aria-hidden="true" />
         </button>
       </header>
-      <div className="dashboard-settings-content">{children}</div>
+      <div className="dashboard-settings-content">
+        <InSettingsDialog.Provider value={true}>
+          {children}
+        </InSettingsDialog.Provider>
+      </div>
     </dialog>
   );
 }

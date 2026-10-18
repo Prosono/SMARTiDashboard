@@ -1,0 +1,44 @@
+.app-config-back { color: var(--muted); min-height: 44px; margin-bottom: 12px; }
+.app-configuration { display: grid; gap: 22px; }
+.app-configuration-intro { display: flex; gap: 14px; align-items: flex-start; }
+.app-configuration-intro > svg { color: var(--accent); flex-shrink: 0; margin-top: 4px; }
+.app-configuration-intro h3 { font-size: 23px; }
+.app-configuration-intro p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+.app-configuration-body { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 24px; }
+.app-config-modes { display: flex; padding: 5px; gap: 5px; background: var(--soft); border-radius: 12px; }
+.app-config-modes button { display: flex; gap: 8px; align-items: center; justify-content: center; flex: 1; min-height: 44px; border-radius: 9px; font-size: 13px; }
+.app-config-modes button[aria-pressed="true"] { background: var(--surface); color: var(--accent); box-shadow: 0 1px 5px #0001; }
+.app-option-fields { display: grid; gap: 18px; }
+.app-option-field { min-width: 0; }
+.app-option-input label { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; font-weight: 500; }
+.app-option-input label small, .app-option-switch small, .app-option-unset small { display: block; color: var(--muted); font-size: 11px; font-weight: 400; overflow-wrap: anywhere; }
+.app-option-input-row { display: flex; gap: 8px; }
+.app-option-input-row input, .app-option-input-row select { min-width: 0; width: 100%; min-height: 46px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; }
+.app-option-input-row button { min-width: 44px; border-radius: 10px; background: var(--soft); display: grid; place-items: center; }
+.app-option-group { padding: 16px; border: 1px solid var(--line); border-radius: 14px; }
+.app-option-group summary { cursor: pointer; font-weight: 600; }
+.app-option-group summary small { margin-left: 12px; font-weight: 400; color: var(--muted); }
+.app-option-group[open] > .app-option-fields { margin-top: 20px; }
+.app-option-switch, .app-option-unset { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
+.app-option-switch input, .app-runtime-option input { width: 22px; height: 22px; accent-color: var(--accent); flex-shrink: 0; }
+.app-option-remove { margin-top: 6px; font-size: 12px; color: var(--muted); text-decoration: underline; min-height: 32px; }
+.app-option-unset button, .app-option-list > button { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--line); padding: 10px; border-radius: 9px; min-height: 44px; }
+.app-option-list header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.app-option-list header span { color: var(--muted); }
+.app-option-list-item { display: grid; grid-template-columns: minmax(0,1fr) 44px; gap: 10px; margin: 12px 0; }
+.app-option-list-item > button { align-self: start; min-height: 44px; border-radius: 10px; background: var(--soft); }
+.app-config-runtime { padding: 18px; background: var(--soft); border-radius: 16px; }
+.app-config-runtime header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.app-config-runtime h3 { font-size: 17px; }
+.app-runtime-option { display: flex; gap: 12px; align-items: center; padding: 16px 0; border-top: 1px solid var(--line); }
+.app-runtime-option > svg { flex-shrink: 0; color: var(--muted); }
+.app-runtime-option > span { flex: 1; min-width: 0; }
+.app-runtime-option strong { display: block; font-weight: 500; font-size: 14px; }
+.app-runtime-option small { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.app-config-save { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; position: sticky; bottom: -24px; background: var(--surface); padding: 16px 0; border-top: 1px solid var(--line); z-index: 1; }
+.app-configuration .app-config-save > span { margin-right: auto; color: var(--muted); font-size: 12px; letter-spacing: normal; text-transform: none; }
+.app-config-save button { min-height: 44px; padding: 10px 14px; border-radius: 10px; }
+.app-config-json textarea { width: 100%; margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--soft); color: var(--text); font: 13px/1.7 monospace; resize: vertical; }
+.app-config-json small { color: var(--muted); font-size: 12px; }
+.app-config-success { display: flex; align-items: center; gap: 10px; color: var(--accent); }
+@media(max-width: 500px) { .app-config-save > span { flex-basis: 100%; } .app-option-input label { flex-wrap: wrap; } .app-config-runtime { padding: 12px; } }

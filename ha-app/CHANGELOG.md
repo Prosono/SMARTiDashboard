@@ -1,3 +1,17 @@
+## 1.35.22
+
+- Appkonfigurasjon får et oversiktlig skjema med feltgrupper, brytere, nedtrekksvalg og redigerbare lister.
+- Passord skjules som standard. Avansert JSON-redigering er fortsatt tilgjengelig, og verdier bevares mellom visningene.
+- Oppstart og vedlikehold samles i en egen seksjon med forklaringer. Tydelig lagring, forkasting og varsel ved ulagrede endringer.
+- Tilpasset mobil og desktop, med håndtering av ugyldige innstillinger og endringer gjort andre steder.
+
+## 1.35.21
+
+- Enhetspopuper får et kompakt oppsett i full bredde med relevante ikoner, tydelig status, tilkobling, batteri og siste oppdatering.
+- Lyskort kan åpnes direkte for styring av lysstyrke og farger. Låser, vinduer og persienner får forståelige statusnavn og relevante kontroller.
+- Ny Historikk-knapp med valg av måling og tidsrom: 6 timer, ett døgn eller sju dager. Tallgrafer og tilstandstidslinjer kan leses med mus, berøring og piltaster.
+- Historikk følger funksjonstilgangene til brukeren, også for lesetilgang og enheter uten fysisk enhetsregistrering.
+
 ## 1.35.20
 
 - Paringssiden bruker de enkle protokollnavnene Zigbee og Z-Wave, også under aktiv paring.

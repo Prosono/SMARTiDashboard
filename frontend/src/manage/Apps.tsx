@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { AppConfiguration } from "./AppConfiguration";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AppWindow,
@@ -44,15 +45,6 @@ type Operation = {
   progress?: number;
   created: number;
 };
-type Config = {
-  options: Record<string, unknown>;
-  revision: string;
-  boot: "auto" | "manual";
-  watchdog: boolean;
-  auto_update: boolean;
-  boot_config: string;
-  schema: unknown;
-};
 const actionNames: Record<Action, [string, string]> = {
   install: ["Installer", "Install"],
   start: ["Start", "Start"],
@@ -65,12 +57,31 @@ function AppImage({ app, large = false }: { app: AppItem; large?: boolean }) {
   const [failed, setFailed] = useState<string[]>([]);
   const source = app.installed ? "installed" : "store";
   const kinds = large ? ["logo", "icon"] : ["icon", "logo"];
-  const candidates = kinds.filter(kind => app[kind as "icon" | "logo"]).map(kind =>
-    new URL(`api/manage/apps/${encodeURIComponent(app.slug)}/image?source=${source}&kind=${kind}&v=${encodeURIComponent(app.version_latest || app.version || "")}`, document.baseURI).href);
-  const src = candidates.find(url => !failed.includes(url));
-  return <span className={`app-symbol${large ? " app-symbol-large" : ""}`}>
-    {src ? <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(previous => [...previous, src])} /> : <AppWindow size={large ? 32 : 24} aria-hidden="true" />}
-  </span>;
+  const candidates = kinds
+    .filter((kind) => app[kind as "icon" | "logo"])
+    .map(
+      (kind) =>
+        new URL(
+          `api/manage/apps/${encodeURIComponent(app.slug)}/image?source=${source}&kind=${kind}&v=${encodeURIComponent(app.version_latest || app.version || "")}`,
+          document.baseURI,
+        ).href,
+    );
+  const src = candidates.find((url) => !failed.includes(url));
+  return (
+    <span className={`app-symbol${large ? " app-symbol-large" : ""}`}>
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed((previous) => [...previous, src])}
+        />
+      ) : (
+        <AppWindow size={large ? 32 : 24} aria-hidden="true" />
+      )}
+    </span>
+  );
 }
 export function Apps({ lang }: { lang: string }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
@@ -89,6 +100,16 @@ export function Apps({ lang }: { lang: string }) {
   });
   const [tab, setTab] = useState("installed"),
     [search, setSearch] = useState("");
+  const [configState, setConfigState] = useState({ dirty: false, busy: false });
+  const discardConfig = () =>
+    !configState.busy &&
+    (!configState.dirty ||
+      window.confirm(
+        t(
+          "Forkaste ulagrede appinnstillinger?",
+          "Discard unsaved app settings?",
+        ),
+      ));
   const [selected, select] = useState<AppItem | null>(null),
     [config, setConfig] = useState(false),
     [repositories, setRepositories] = useState(false);
@@ -353,78 +374,107 @@ export function Apps({ lang }: { lang: string }) {
       {selected && !confirm && (
         <SettingsDialog
           lang={lang}
-          title={smartiName(selected.name)}
+          title={
+            config
+              ? `${smartiName(selected.name)} · ${t("Konfigurasjon", "Configuration")}`
+              : smartiName(selected.name)
+          }
+          busy={configState.busy}
           onClose={() => {
+            if (!discardConfig()) return;
+            setConfigState({ dirty: false, busy: false });
             select(null);
             setConfig(false);
           }}
         >
-          <AppImage key={selected.slug} app={selected} large />
-          <p>{smartiName(selected.description || "")}</p>
-          <p className="muted">
-            {selected.installed
-              ? `${t("Installert versjon", "Installed version")}: ${selected.version || "—"}`
-              : `${t("Versjon", "Version")}: ${selected.version_latest || selected.version || "—"}`}
-          </p>
-          <p className="muted">{t("Appkilde", "Repository")}: {selected.repository || "—"}</p>
-          {selected.system_managed && (
-            <p>
-              {t(
-                "Denne appen administreres av en integrasjon og kan ikke avinstalleres her.",
-                "This app is managed by an integration and cannot be uninstalled here.",
+          {!config && (
+            <>
+              <AppImage key={selected.slug} app={selected} large />
+              <p>{smartiName(selected.description || "")}</p>
+              <p className="muted">
+                {selected.installed
+                  ? `${t("Installert versjon", "Installed version")}: ${selected.version || "—"}`
+                  : `${t("Versjon", "Version")}: ${selected.version_latest || selected.version || "—"}`}
+              </p>
+              <p className="muted">
+                {t("Appkilde", "Repository")}: {selected.repository || "—"}
+              </p>
+              {selected.system_managed && (
+                <p>
+                  {t(
+                    "Denne appen administreres av en integrasjon og kan ikke avinstalleres her.",
+                    "This app is managed by an integration and cannot be uninstalled here.",
+                  )}
+                </p>
               )}
-            </p>
+              <div className="app-actions">
+                {(selected.installed
+                  ? [
+                      [
+                        selected.state === "started" ? "stop" : "start",
+                        selected.state === "started" ? Square : Play,
+                      ],
+                      ["restart", RotateCw],
+                      ...(selected.update_available
+                        ? [["update", Download]]
+                        : []),
+                      ["uninstall", Trash2],
+                    ]
+                  : [["install", Download]]
+                ).map(([action, Icon]) => {
+                  const a = action as Action,
+                    C = Icon as typeof Play;
+                  return (
+                    <button
+                      key={a}
+                      disabled={
+                        pending(selected.slug) ||
+                        (a === "uninstall" && selected.system_managed) ||
+                        (a === "install" && selected.available === false)
+                      }
+                      onClick={() => ask(selected, a)}
+                    >
+                      <C size={18} />
+                      {label(a)}
+                    </button>
+                  );
+                })}
+                {selected.installed && (
+                  <button
+                    disabled={pending(selected.slug)}
+                    onClick={() => setConfig(!config)}
+                  >
+                    <Settings size={18} />
+                    {t("Konfigurasjon", "Configuration")}
+                  </button>
+                )}
+              </div>
+              {selected.available === false && !selected.installed && (
+                <p>
+                  {t(
+                    "Appen støttes ikke av denne hjemmesentralen.",
+                    "This app is unavailable for this controller.",
+                  )}
+                </p>
+              )}
+            </>
           )}
-          <div className="app-actions">
-            {(selected.installed
-              ? [
-                  [
-                    selected.state === "started" ? "stop" : "start",
-                    selected.state === "started" ? Square : Play,
-                  ],
-                  ["restart", RotateCw],
-                  ...(selected.update_available ? [["update", Download]] : []),
-                  ["uninstall", Trash2],
-                ]
-              : [["install", Download]]
-            ).map(([action, Icon]) => {
-              const a = action as Action,
-                C = Icon as typeof Play;
-              return (
-                <button
-                  key={a}
-                  disabled={
-                    pending(selected.slug) ||
-                    (a === "uninstall" && selected.system_managed) ||
-                    (a === "install" && selected.available === false)
-                  }
-                  onClick={() => ask(selected, a)}
-                >
-                  <C size={18} />
-                  {label(a)}
-                </button>
-              );
-            })}
-            {selected.installed && (
-              <button
-                disabled={pending(selected.slug)}
-                onClick={() => setConfig(!config)}
-              >
-                <Settings size={18} />
-                {t("Konfigurasjon", "Configuration")}
-              </button>
-            )}
-          </div>
-          {selected.available === false && !selected.installed && (
-            <p>
-              {t(
-                "Appen støttes ikke av denne hjemmesentralen.",
-                "This app is unavailable for this controller.",
-              )}
-            </p>
+          {config && (
+            <button
+              className="app-config-back"
+              onClick={() => {
+                if (discardConfig()) {
+                  setConfig(false);
+                  setConfigState({ dirty: false, busy: false });
+                }
+              }}
+            >
+              {t("← Tilbake til appen", "← Back to app")}
+            </button>
           )}
           {config && (
             <AppConfiguration
+              onStateChange={setConfigState}
               slug={selected.slug}
               lang={lang}
               onSaved={() => void apps.refetch()}
@@ -489,163 +539,6 @@ export function Apps({ lang }: { lang: string }) {
         />
       )}
     </section>
-  );
-}
-function AppConfiguration({
-  slug,
-  lang,
-  onSaved,
-}: {
-  slug: string;
-  lang: string;
-  onSaved: () => void;
-}) {
-  const t = (nb: string, en: string) => (lang === "en" ? en : nb);
-  const [value, setValue] = useState<Config | null>(null),
-    [text, setText] = useState(""),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false),
-    [saved, setSaved] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    api<Config>(`manage/apps/${encodeURIComponent(slug)}/configuration`)
-      .then((v) => {
-        if (!cancelled) {
-          setValue(v);
-          setText(JSON.stringify(v.options, null, 2));
-        }
-      })
-      .catch(() => {
-        if (!cancelled)
-          setError(
-            t(
-              "Kunne ikke hente konfigurasjonen.",
-              "Could not load configuration.",
-            ),
-          );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
-  return (
-    <form
-      className="app-config system-settings-form"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        if (!value) return;
-        setBusy(true);
-        setError("");
-        setSaved(false);
-        try {
-          const options = JSON.parse(text);
-          if (!options || Array.isArray(options) || typeof options !== "object")
-            throw Error();
-          await api(
-            `manage/apps/${encodeURIComponent(slug)}/configuration`,
-            "PUT",
-            {
-              options,
-              revision: value.revision,
-              boot: value.boot,
-              watchdog: !!value.watchdog,
-              auto_update: !!value.auto_update,
-            },
-          );
-          setSaved(true);
-          const next = await api<Config>(
-            `manage/apps/${encodeURIComponent(slug)}/configuration`,
-          );
-          setValue(next);
-          onSaved();
-        } catch (e) {
-          setError(
-            e instanceof ApiError && e.status === 409
-              ? t(
-                  "Konfigurasjonen er endret et annet sted. Lukk og åpne konfigurasjonen igjen før du lagrer.",
-                  "Configuration changed elsewhere. Close and reopen before saving.",
-                )
-              : t(
-                  "Kunne ikke bekrefte lagring. Kontroller JSON og appens felter. Hent konfigurasjonen på nytt før du prøver igjen.",
-                  "Could not confirm saving. Check JSON and the app fields. Reload configuration before retrying.",
-                ),
-          );
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      <h3>{t("Konfigurasjon", "Configuration")}</h3>
-      {error && <p role="alert">{error}</p>}
-      {!value && !error && <p>{t("Henter …", "Loading …")}</p>}
-      {value && (
-        <fieldset disabled={busy}>
-          <label>
-            {t("Appinnstillinger (JSON)", "App settings (JSON)")}
-            <textarea
-              spellCheck={false}
-              rows={12}
-              value={text}
-              onChange={(e) => {
-                setText(e.target.value);
-                setSaved(false);
-              }}
-            />
-          </label>
-          <small>
-            {t(
-              "Avansert oppsett fra appen. Kan inneholde passord og nøkler. Feltene valideres av hjemmesentralen før lagring.",
-              "Advanced app configuration. May contain passwords and keys. The controller validates fields before saving.",
-            )}
-          </small>
-          <label>
-            <input
-              type="checkbox"
-              checked={value.boot === "auto"}
-              disabled={value.boot_config === "manual_only"}
-              onChange={(e) =>
-                setValue({
-                  ...value,
-                  boot: e.target.checked ? "auto" : "manual",
-                })
-              }
-            />
-            {t("Start automatisk", "Start automatically")}
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={!!value.watchdog}
-              onChange={(e) =>
-                setValue({ ...value, watchdog: e.target.checked })
-              }
-            />
-            {t("Start på nytt ved feil", "Restart on failure")}
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={!!value.auto_update}
-              onChange={(e) =>
-                setValue({ ...value, auto_update: e.target.checked })
-              }
-            />
-            {t("Automatiske oppdateringer", "Automatic updates")}
-          </label>
-          <button className="primary compact" disabled={busy}>
-            {t("Lagre konfigurasjon", "Save configuration")}
-          </button>
-        </fieldset>
-      )}
-      {saved && (
-        <p role="status">
-          {t(
-            "Lagret. Start appen på nytt for å ta i bruk endringene.",
-            "Saved. Restart the app to apply changes.",
-          )}
-        </p>
-      )}
-    </form>
   );
 }
 function Repositories({

@@ -137,7 +137,15 @@ def route_access(request, current, ha):
         key = request.path_params.get("entity_id")
         c = next((c for c in ha.controls() if c.entity_id == key), None)
         if c:
-            require(current, feature(c) + (".view" if path.startswith("favorites/") else ".control"))
+            require(
+                current,
+                feature(c)
+                + (
+                    ".view"
+                    if path.startswith("favorites/") or (read and path.endswith("/history"))
+                    else ".control"
+                ),
+            )
             require(current, feature(c) + ".view")
         return
     if path.startswith(("home/camera/", "home/camera-stream/")):

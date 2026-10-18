@@ -1010,6 +1010,7 @@ export function HomeOverview({
         )}
         {tab === "lights" && (
           <LightOverview
+            renderControls={renderControls}
             home={h}
             offline={offline}
             lang={lang}

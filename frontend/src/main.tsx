@@ -1,3 +1,6 @@
+import { SettingsDialog, InSettingsDialog } from "./home/SettingsDialog";
+import { ControlHistory } from "./ControlHistory";
+import "./controlDetail.css";
 import { VacuumCard } from "./home/Cleaning";
 import {
   Experience,
@@ -21,7 +24,13 @@ import { AccountAvatar } from "./manage/Accounts";
 import { Debugging } from "./manage/Debugging";
 import { HomeSettings } from "./manage/HomeSettings";
 import { Thermostat } from "./Thermostat";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createRoot } from "react-dom/client";
 import {
   QueryClient,
@@ -47,6 +56,13 @@ import {
   Plug,
   Thermometer,
   DoorOpen,
+  LockKeyhole,
+  UnlockKeyhole,
+  PanelsTopLeft,
+  Blinds,
+  Droplets,
+  Flame,
+  History,
   Activity,
   WifiOff,
   ChevronRight,
@@ -950,6 +966,7 @@ function Dashboard({
                 </div>
                 {filter !== "light" ? null : (
                   <LightOverview
+                    renderControls={cards}
                     home={h}
                     offline={offline}
                     lang={lang}
@@ -1162,6 +1179,9 @@ function Device({
   admin: boolean;
 }) {
   const mode = useExperience();
+  const inDialog = useContext(InSettingsDialog);
+  const [history, showHistory] = useState(false);
+  const [expanded, expand] = useState(false);
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -1192,17 +1212,30 @@ function Device({
   const power = c.capabilities.some((v) => v.kind === "power");
   const dim = c.capabilities.find((v) => v.kind === "brightness");
   const Icon =
-    c.domain === "light"
-      ? Lightbulb
-      : c.domain === "switch"
-        ? Plug
-        : c.domain === "climate" || c.attributes.device_class === "temperature"
-          ? Thermometer
-          : c.domain === "binary_sensor"
-            ? DoorOpen
-            : c.domain === "automation"
-              ? Zap
-              : Activity;
+    c.domain === "lock"
+      ? c.state === "locked"
+        ? LockKeyhole
+        : UnlockKeyhole
+      : c.domain === "cover"
+        ? Blinds
+        : c.attributes.device_class === "window"
+          ? PanelsTopLeft
+          : ["humidity", "moisture"].includes(String(c.attributes.device_class))
+            ? Droplets
+            : c.attributes.device_class === "smoke"
+              ? Flame
+              : c.domain === "light"
+                ? Lightbulb
+                : c.domain === "switch"
+                  ? Plug
+                  : c.domain === "climate" ||
+                      c.attributes.device_class === "temperature"
+                    ? Thermometer
+                    : c.domain === "binary_sensor"
+                      ? DoorOpen
+                      : c.domain === "automation"
+                        ? Zap
+                        : Activity;
   async function command(action: string, value?: number | number[]) {
     const actionNames: Record<string, string> =
       document.documentElement.lang === "en"
@@ -1262,14 +1295,21 @@ function Device({
       setMessage(t.loadError);
     }
   }
-  const state = controlState(c, c.state, document.documentElement.lang);
+  const state = controlState(
+    c,
+    c.availability === "available" ? c.state : c.availability,
+    document.documentElement.lang,
+  );
   return (
     <article
       className={
         "device " +
+        (inDialog ? "control-detail " : "") +
         (c.state === "on" ? "is-on " : "") +
         (c.availability !== "available" ? "is-unavailable" : "")
       }
+      data-domain={c.domain}
+      data-state={c.state}
     >
       <div className="device-top">
         <span className="device-icon">
@@ -1289,8 +1329,57 @@ function Device({
       </div>
       <div className="device-title">
         <span>{roomName}</span>
-        <h3>{c.name}</h3>
+        <h3>
+          {inDialog ? (
+            c.name
+          ) : (
+            <button
+              className="device-open-detail"
+              onClick={() => expand(true)}
+              aria-label={`${t === en ? "Open" : "Åpne"} ${c.name}`}
+            >
+              {c.name}
+              <ChevronRight size={16} />
+            </button>
+          )}
+        </h3>
       </div>
+      {inDialog && (
+        <div className="control-detail-meta">
+          <span>
+            {offline
+              ? t === en
+                ? "Connection lost"
+                : "Mistet forbindelsen"
+              : c.availability === "available"
+                ? t === en
+                  ? "Connected"
+                  : "Tilkoblet"
+                : t === en
+                  ? "Unavailable"
+                  : "Utilgjengelig"}
+          </span>
+          {battery && (
+            <span>
+              {t.battery}:{" "}
+              {controlState(
+                battery,
+                battery.state,
+                document.documentElement.lang,
+              )}
+              {battery.availability === "available" ? "%" : ""}
+            </span>
+          )}
+        </div>
+      )}
+      {inDialog && c.updated_at && (
+        <small className="control-updated">
+          {t.lastUpdate}:{" "}
+          {new Date(c.updated_at).toLocaleString(
+            document.documentElement.lang === "en" ? "en-GB" : "nb-NO",
+          )}
+        </small>
+      )}
       <div className="device-value">
         {c.domain === "climate" ? (
           <Thermostat
@@ -1446,6 +1535,26 @@ function Device({
         </label>
       )}
 
+      {inDialog && (
+        <>
+          <button
+            className="control-history-toggle"
+            aria-expanded={history}
+            onClick={() => showHistory(!history)}
+          >
+            <History size={18} />
+            {t === en ? "History" : "Historikk"}
+            <ChevronRight size={16} />
+          </button>
+          {history && (
+            <ControlHistory
+              control={c}
+              home={h}
+              lang={document.documentElement.lang}
+            />
+          )}
+        </>
+      )}
       {mode !== "simple" && (
         <button
           className="device-details"
@@ -1497,6 +1606,24 @@ function Device({
         >
           {busy ? t.pending : message}
         </p>
+      )}
+      {expanded && !inDialog && (
+        <SettingsDialog
+          title={c.name}
+          lang={document.documentElement.lang}
+          onClose={() => expand(false)}
+        >
+          <div className="controls-grid">
+            <Device
+              c={c}
+              t={t}
+              h={h}
+              offline={offline}
+              roomName={roomName}
+              admin={admin}
+            />
+          </div>
+        </SettingsDialog>
       )}
     </article>
   );

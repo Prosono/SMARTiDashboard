@@ -83,8 +83,25 @@ export function controlState(
     return state === "on" ? (en ? "On" : "På") : en ? "Off" : "Av";
   }
   if (control?.domain === "lock") {
-    if (state === "locked") return en ? "Locked" : "Låst";
-    if (state === "unlocked") return en ? "Unlocked" : "Ulåst";
+    const labels: Record<string, [string, string]> = {
+      locked: ["Låst", "Locked"],
+      unlocked: ["Ulåst", "Unlocked"],
+      locking: ["Låser …", "Locking …"],
+      unlocking: ["Låser opp …", "Unlocking …"],
+      jammed: ["Låsen sitter fast", "Lock jammed"],
+      open: ["Åpen", "Open"],
+      opening: ["Åpner …", "Opening …"],
+    };
+    if (labels[String(state)]) return labels[String(state)][en ? 1 : 0];
+  }
+  if (control?.domain === "cover") {
+    const labels: Record<string, [string, string]> = {
+      open: ["Åpen", "Open"],
+      closed: ["Lukket", "Closed"],
+      opening: ["Åpner …", "Opening …"],
+      closing: ["Lukker …", "Closing …"],
+    };
+    if (labels[String(state)]) return labels[String(state)][en ? 1 : 0];
   }
   return String(state);
 }

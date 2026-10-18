@@ -1,6 +1,7 @@
+import { SettingsDialog } from "./SettingsDialog";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
-import { useState, type CSSProperties } from "react";
+import { useState, type ReactNode, type CSSProperties } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Lightbulb,
@@ -24,13 +25,17 @@ export function LightOverview({
   lang,
   openRoom,
   scenes,
+  renderControls,
 }: {
   home: Home;
   offline: boolean;
   lang: string;
   openRoom?: (id: string) => void;
   scenes?: () => void;
+  renderControls?: (controls: Control[]) => ReactNode;
 }) {
+  const [opened, open] = useState<string | null>(null);
+  const selected = home.controls.find((c) => c.entity_id === opened);
   const toolbar = useToolbarDisclosure();
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
@@ -294,6 +299,9 @@ export function LightOverview({
                     }
                     busy={pending.includes(c.entity_id)}
                     send={send}
+                    onOpen={
+                      renderControls ? () => open(c.entity_id) : undefined
+                    }
                   />
                 ))}
               </div>
@@ -314,6 +322,15 @@ export function LightOverview({
               )}
         </p>
       )}
+      {selected && renderControls && (
+        <SettingsDialog
+          title={selected.name}
+          lang={lang}
+          onClose={() => open(null)}
+        >
+          {renderControls([selected])}
+        </SettingsDialog>
+      )}
     </section>
   );
 }
@@ -323,11 +340,13 @@ function LightTile({
   blocked,
   busy,
   send,
+  onOpen,
 }: {
   c: Control;
   lang: string;
   blocked: boolean;
   busy: boolean;
+  onOpen?: () => void;
   send: (
     c: Control,
     action: string,
@@ -346,7 +365,20 @@ function LightTile({
     <div className="lighting-tile" data-on={on} aria-busy={busy}>
       <div className="lighting-tile-top">
         <Lightbulb size={18} />
-        <strong>{c.name}</strong>
+        <strong>
+          {onOpen ? (
+            <button
+              className="device-open-detail"
+              onClick={onOpen}
+              aria-label={`${lang === "en" ? "Open" : "Åpne"} ${c.name}`}
+            >
+              {c.name}
+              <ChevronRight size={14} />
+            </button>
+          ) : (
+            c.name
+          )}
+        </strong>
         <button
           className="lighting-switch"
           role="switch"

@@ -1,9 +1,8 @@
 import json
 
+from app.access import ALL
 from fastapi.testclient import TestClient
 from test_api import ORIGIN, app, client, login  # noqa: F401
-
-from app.access import ALL
 
 
 def resident(client):  # noqa: F811
@@ -146,3 +145,15 @@ def test_corrupt_policy_fails_closed(client, app):  # noqa: F811
     app.state.store.set(f"access:{id}", json.dumps({"profile": "custom", "permissions": ["madeup"]}))
     sign_in(client)
     assert client.get("/api/home").json()["controls"] == []
+
+
+def test_entity_history_requires_only_its_feature_view(client):  # noqa: F811
+    id = resident(client)
+    client.put(
+        f"/api/manage/accounts/{id}/access", json={"profile": "custom", "permissions": ["lights.view"]}
+    )
+    sign_in(client)
+    assert client.get("/api/controls/light.living_pendant/history?hours=6").status_code == 200
+    assert client.get("/api/controls/sensor.bedroom_temperature/history").status_code == 403
+    assert client.get("/api/controls/light.living_pendant/history?hours=999").status_code == 422
+    assert client.get("/api/controls/light.missing/history").status_code == 404

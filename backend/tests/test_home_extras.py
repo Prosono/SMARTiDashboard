@@ -140,6 +140,9 @@ def test_live_forecast_and_device_history_contract(tmp_path, period):
         assert abs(duration.total_seconds() - int(period or "24") * 3600) < 5
         assert history["minimum"] == 20 and history["maximum"] == 23
         assert history["points"][1]["value"] is None
+        direct = c.get("/api/controls/sensor.temp/history?hours=6")
+        assert direct.status_code == 200
+        assert direct.json()["points"] == history["points"]
         assert c.get("/api/manage/device/one/history?entity_id=sensor.other").status_code == 404
         assert c.get("/api/manage/device/one/history?entity_id=sensor.temp&hours=999").status_code == 422
 
@@ -189,3 +192,37 @@ def test_profile_proxy_keeps_supervisor_prefix_and_credentials_server_side(tmp_p
         states["person.ada"]["attributes"]["entity_picture"] = "https://untrusted.invalid/image"
         assert c.get("/api/home/people/person.ada/photo").status_code == 404
         assert len(seen) == 1
+
+
+def test_entity_history_keeps_lock_states_without_device_registry(tmp_path):
+    class HA:
+        connected = True
+
+        def controls(self):
+            return normalize({"lock.entry": {"state": "locked", "attributes": {}}}, {}, {})
+
+        async def rest(self, method, path):
+            assert "filter_entity_id=lock.entry" in path
+            return [
+                [
+                    {"state": "locked", "last_changed": "2026-10-18T00:00:00Z"},
+                    {"state": "unavailable", "last_changed": "2026-10-18T01:00:00Z"},
+                    {"state": "unlocked", "last_changed": "2026-10-18T02:00:00Z"},
+                ]
+            ]
+
+    app = FastAPI()
+    app.include_router(
+        extras_router(
+            Store(tmp_path / "history.sqlite3"),
+            lambda: {"id": 1, "role": "user"},
+            HA(),
+            SimpleNamespace(mode="live"),
+        )
+    )
+    with TestClient(app) as c:
+        response = c.get("/api/controls/lock.entry/history?hours=168")
+        assert response.status_code == 200
+        points = response.json()["points"]
+        assert [p["state"] for p in points] == ["locked", "unavailable", "unlocked"]
+        assert all(p["value"] is None for p in points)
