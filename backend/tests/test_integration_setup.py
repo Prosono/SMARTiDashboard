@@ -150,3 +150,39 @@ def test_all_ha_discovery_sources_are_listed_and_claimable(client):  # noqa: F81
             ).status_code
             == 200
         )
+
+
+def test_reauthentication_is_separate_named_and_resumable(client):  # noqa: F811
+    calls = setup_fake(client)
+    m = client.app.state.management
+    old_ws = m.ws
+
+    async def ws(kind, **kwargs):
+        if kind == "config_entries/flow/progress":
+            return [
+                {
+                    "flow_id": "abc",
+                    "handler": "reolink",
+                    "context": {"source": "reauth", "entry_id": "camera"},
+                }
+            ]
+        if kind == "config_entries/get":
+            return [{"entry_id": "camera", "title": "Kamera ved inngangen"}]
+        return await old_ws(kind, **kwargs)
+
+    m.ws = ws
+    base = "/api/manage/integration-setup/"
+    assert client.get(base + "discoveries").json() == []
+    assert client.get(base + "attention").json() == [
+        {"id": "abc", "domain": "reolink", "source": "reauth", "name": "Kamera ved inngangen"}
+    ]
+    assert client.post(base + "discoveries/abc/claim", json={"domain": "reolink"}).status_code == 404
+    assert client.post(base + "attention/abc/claim", json={"domain": "other"}).status_code == 404
+    assert client.post(base + "attention/abc/claim", json={"domain": "reolink"}).status_code == 200
+    assert client.delete(base + "flows/abc").status_code == 200
+    assert not any(call[0] == "DELETE" for call in calls)
+    client.post("/api/users", json={"name": "resident", "password": "another long password", "role": "user"})
+    client.post("/api/logout")
+    login(client, "resident", "another long password")
+    assert client.get(base + "attention").status_code == 403
+    assert client.post(base + "attention/abc/claim", json={"domain": "reolink"}).status_code == 403

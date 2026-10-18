@@ -1,3 +1,9 @@
+## 1.35.25
+
+- Integrasjoner får «Trenger oppmerksomhet» for integrasjoner som ber om ny innlogging, med navn, logo og «Koble til på nytt».
+- Rød varselsirkel ved Integrasjoner viser antall ventende forespørsler og oppdateres automatisk.
+- Oppsettet fortsetter i popup. Forespørsler beholdes hvis popupen lukkes, og antallet oppdateres etter fullført innlogging.
+
 ## 1.35.24
 
 - Oppdagede enheter flyttes fra Integrasjoner til Enheter. Menyen viser antall nye funn i en rød varselsirkel, også når sidebaren er sammenslått.

@@ -1,3 +1,4 @@
+import { DiscoveredDevices } from "./DiscoveredDevices";
 import { IntegrationLogo } from "./IntegrationLogo";
 import { IntegrationSetup } from "./IntegrationSetup";
 import { IntegrationDevice } from "./IntegrationDevice";
@@ -149,6 +150,7 @@ export function Integrations({ lang }: { lang: string }) {
           )}
         </p>
       </div>
+      <DiscoveredDevices lang={lang} attention />
       <Feedback message={w.message} />
       <div className="device-toolbar">
         <button className="primary compact" onClick={() => setAdding(true)}>

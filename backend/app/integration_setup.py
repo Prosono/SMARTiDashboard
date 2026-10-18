@@ -168,6 +168,35 @@ def integration_setup_router(m, admin):
             and f.get("flow_id")
         ]
 
+    @router.get("/attention")
+    async def attention():
+        if m.demo:
+            return []
+        live()
+        progress = await m.ws("config_entries/flow/progress")
+        pending = [
+            f
+            for f in progress
+            if f.get("context", {}).get("source") == "reauth"
+            and isinstance(f.get("handler"), str)
+            and f.get("flow_id")
+        ]
+        if not pending:
+            return []
+        entries = await m.ws("config_entries/get")
+        names = {entry["entry_id"]: entry.get("title") for entry in entries}
+        return [
+            {
+                "id": f["flow_id"],
+                "domain": f["handler"],
+                "source": "reauth",
+                "name": names.get(f.get("context", {}).get("entry_id"))
+                or f.get("context", {}).get("title_placeholders", {}).get("name")
+                or f["handler"],
+            }
+            for f in pending
+        ]
+
     @router.get("/bluetooth")
     async def bluetooth():
         live()
@@ -186,6 +215,7 @@ def integration_setup_router(m, admin):
             ],
         }
 
+    @router.post("/attention/{id}/claim")
     @router.post("/discoveries/{id}/claim")
     @router.post("/bluetooth/{id}/claim")
     async def claim_bluetooth(id: str, body: StartIntegration, request: Request, current=Depends(admin)):
@@ -204,7 +234,13 @@ def integration_setup_router(m, admin):
                     if f.get("flow_id") == id
                     and f.get("handler") == body.domain
                     and f.get("context", {}).get("source")
-                    in ({"bluetooth"} if "/bluetooth/" in request.url.path else discovery_sources)
+                    in (
+                        {"reauth"}
+                        if "/attention/" in request.url.path
+                        else {"bluetooth"}
+                        if "/bluetooth/" in request.url.path
+                        else discovery_sources
+                    )
                 ),
                 None,
             )

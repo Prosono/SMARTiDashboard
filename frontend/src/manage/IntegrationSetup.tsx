@@ -153,7 +153,7 @@ export function IntegrationSetup({
       claimed.current = true;
       void run(() =>
         api<Flow>(
-          `manage/integration-setup/${discovery.source ? "discoveries" : "bluetooth"}/${encodeURIComponent(discovery.id)}/claim`,
+          `manage/integration-setup/${discovery.source === "reauth" ? "attention" : discovery.source ? "discoveries" : "bluetooth"}/${encodeURIComponent(discovery.id)}/claim`,
           "POST",
           { domain: discovery.domain, language: lang === "en" ? "en" : "nb" },
         ),

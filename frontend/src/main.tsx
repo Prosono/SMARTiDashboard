@@ -138,6 +138,11 @@ function App() {
     writePreference("smarti-palette", palette);
   }, [palette]);
   const [session, updateSession] = useState<Session | null>(null);
+  const attention = useDiscoveries(session?.role === "admin", true);
+  const attentionCount =
+    session?.role === "admin" && !attention.isError
+      ? attention.data?.length || 0
+      : 0;
   const discoveries = useDiscoveries(session?.role === "admin");
   const discoveryCount =
     !discoveries.isError && session?.role === "admin"
@@ -331,12 +336,17 @@ function App() {
                   >
                     <Icon size={21} />
                     <span>{t[p]}</span>
-                    {p === "devices" && discoveryCount > 0 ? (
+                    {(p === "devices" && discoveryCount > 0) ||
+                    (p === "integrations" && attentionCount > 0) ? (
                       <span
                         className="nav-discovery-count"
-                        aria-label={`${discoveryCount} ${lang === "en" ? "new devices" : "nye enheter"}`}
+                        aria-label={
+                          p === "devices"
+                            ? `${discoveryCount} ${lang === "en" ? "new devices" : "nye enheter"}`
+                            : `${attentionCount} ${lang === "en" ? "integrations need attention" : "integrasjoner trenger oppmerksomhet"}`
+                        }
                       >
-                        {discoveryCount}
+                        {p === "devices" ? discoveryCount : attentionCount}
                       </span>
                     ) : (
                       page === p && <span className="nav-dot" />

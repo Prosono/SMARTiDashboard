@@ -12,66 +12,85 @@ export type Discovery = {
   name: string;
   source: string;
 };
-export function useDiscoveries(enabled = true) {
+export function useDiscoveries(enabled = true, attention = false) {
   return useQuery({
-    queryKey: ["integration-discoveries"],
-    queryFn: () => api<Discovery[]>("manage/integration-setup/discoveries"),
+    queryKey: [attention ? "integration-attention" : "integration-discoveries"],
+    queryFn: () =>
+      api<Discovery[]>(
+        `manage/integration-setup/${attention ? "attention" : "discoveries"}`,
+      ),
     enabled,
     refetchInterval: 15000,
     staleTime: 5000,
   });
 }
-export function DiscoveredDevices({ lang }: { lang: string }) {
+export function DiscoveredDevices({
+  lang,
+  attention = false,
+}: {
+  lang: string;
+  attention?: boolean;
+}) {
   const en = lang === "en";
   const qc = useQueryClient();
   const [selected, select] = useState<Discovery | null>(null);
-  const q = useDiscoveries();
+  const q = useDiscoveries(true, attention);
+  const title = attention
+    ? en
+      ? "Needs attention"
+      : "Trenger oppmerksomhet"
+    : en
+      ? "Discovered devices"
+      : "Oppdagede enheter";
   return (
-    <section
-      className="discovery-panel"
-      aria-label={en ? "Discovered devices" : "Oppdagede enheter"}
-    >
+    <section className="discovery-panel" aria-label={title}>
       <header>
-        <Radar size={24} />
+        {attention ? <RefreshCw size={24} /> : <Radar size={24} />}
         <div>
           <h2>
-            {en ? "Discovered devices" : "Oppdagede enheter"}
+            {title}
             {!!q.data?.length && <span>{q.data.length}</span>}
           </h2>
           <p>
-            {en
-              ? "Found automatically. Choose a device to finish setup."
-              : "Funnet automatisk. Velg en enhet for å fullføre oppsettet."}
+            {attention
+              ? en
+                ? "Reconnect integrations that need you to sign in again."
+                : "Koble til integrasjoner som trenger ny innlogging. Oppsettet åpnes her i SMARTi."
+              : en
+                ? "Found automatically. Choose a device to finish setup."
+                : "Funnet automatisk. Velg en enhet for å fullføre oppsettet."}
           </p>
         </div>
         <button
           className="compact"
           disabled={q.isFetching}
           onClick={() => void q.refetch()}
-          aria-label={en ? "Refresh discoveries" : "Oppdater oppdagede enheter"}
+          aria-label={attention ? (en ? "Refresh requests" : "Oppdater forespørsler") : en ? "Refresh discoveries" : "Oppdater oppdagede enheter"}
         >
           <RefreshCw size={18} />
         </button>
       </header>
       {q.isPending && (
         <p role="status">
-          {en
-            ? "Looking for discovered devices …"
-            : "Henter oppdagede enheter …"}
+          {en ? "Looking for discovered devices …" : "Henter forespørsler …"}
         </p>
       )}
       {q.isError && (
         <p role="alert">
           {en
             ? "Could not retrieve discoveries. Try refreshing."
-            : "Kunne ikke hente oppdagede enheter. Prøv å oppdatere."}
+            : "Kunne ikke hente forespørslene. Prøv å oppdatere."}
         </p>
       )}
       {!q.isError && q.data?.length === 0 && (
         <p className="discovery-empty">
-          {en
-            ? "No new devices found. You can still add an integration manually under Integrations."
-            : "Ingen nye enheter funnet. Du kan fortsatt legge til en integrasjon manuelt under Integrasjoner."}
+          {attention
+            ? en
+              ? "No integrations currently request a new sign-in."
+              : "Ingen integrasjoner ber om ny innlogging nå."
+            : en
+              ? "No new devices found. You can still add an integration manually under Integrations."
+              : "Ingen nye enheter funnet. Du kan fortsatt legge til en integrasjon manuelt under Integrasjoner."}
         </p>
       )}
       <div className="discovery-grid">
@@ -88,17 +107,27 @@ export function DiscoveredDevices({ lang }: { lang: string }) {
               </h3>
               <p>
                 {integrationName(d.domain)} ·{" "}
-                {d.source === "bluetooth"
-                  ? "Bluetooth"
-                  : d.source === "usb"
-                    ? "USB"
-                    : en
-                      ? "Automatic discovery"
-                      : "Automatisk oppdaget"}
+                {d.source === "reauth"
+                  ? en
+                    ? "Sign-in required"
+                    : "Ny innlogging kreves"
+                  : d.source === "bluetooth"
+                    ? "Bluetooth"
+                    : d.source === "usb"
+                      ? "USB"
+                      : en
+                        ? "Automatic discovery"
+                        : "Automatisk oppdaget"}
               </p>
             </div>
             <button className="primary compact" onClick={() => select(d)}>
-              {en ? "Set up" : "Sett opp"}
+              {attention
+                ? en
+                  ? "Reconnect"
+                  : "Koble til på nytt"
+                : en
+                  ? "Set up"
+                  : "Sett opp"}
               <ArrowRight size={16} />
             </button>
           </article>
