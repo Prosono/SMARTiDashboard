@@ -78,7 +78,6 @@ const copy = {
     countdown: "Søkevinduet lukkes om",
     seconds: "sekunder",
     closed: "Søkevinduet er lukket.",
-    auto: "Søkevinduet er begrenset til to minutter. Ved brudd kan du stoppe paringen her når forbindelsen er tilbake.",
     pairedHint:
       "SMARTi importerer enheten. Støttede funksjoner dukker opp under Enheter når importen er ferdig.",
     pinLabel: "De fem første sifrene i DSK-koden",
@@ -140,7 +139,6 @@ const copy = {
     countdown: "Search window closes in",
     seconds: "seconds",
     closed: "The search window is closed.",
-    auto: "The search window is limited to two minutes. After a disconnection, stop pairing here once the connection returns.",
     pairedHint:
       "SMARTi is importing the device. Supported controls appear under Devices when import finishes.",
     pinLabel: "First five digits of the DSK",
@@ -521,10 +519,6 @@ export function DeviceSetup({
             </button>
           </article>
         ))}
-      </div>
-      <p className="muted">{t.auto}</p>
-      <div className="setup-section-heading">
-        <h2>{lang === "en" ? "Other connections" : "Andre tilkoblinger"}</h2>
       </div>
       <WirelessDevices lang={lang} />
     </section>

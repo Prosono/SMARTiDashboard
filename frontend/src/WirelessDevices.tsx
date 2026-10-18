@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bluetooth, Network, ArrowUpRight, RefreshCw } from "lucide-react";
+import { Bluetooth, ArrowUpRight, RefreshCw } from "lucide-react";
 import { api } from "./api";
 import { smartiName } from "./branding";
 import { SettingsDialog } from "./home/SettingsDialog";
@@ -79,7 +79,11 @@ export function WirelessDevices({ lang }: { lang: string }) {
           </button>
         </article>
         <article className="pairing-provider" data-protocol="matter">
-          <Network size={24} />
+          <img
+            className="matter-protocol-logo"
+            src={new URL("brand/matter-icon.png", document.baseURI).href}
+            alt="Matter"
+          />
           <div>
             <h2>Matter</h2>
             <p className="muted">

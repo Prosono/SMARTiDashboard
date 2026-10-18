@@ -343,3 +343,17 @@
     animation: none;
   }
 }
+
+.device-setup .pairing-providers + .pairing-providers { margin-top: 12px; }
+.device-setup .matter-protocol-logo {
+  width: 76px;
+  height: 76px;
+  padding: 18px;
+  object-fit: contain;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #fff;
+}
+@media (max-width: 600px) {
+  .device-setup .matter-protocol-logo { width: 60px; height: 60px; padding: 14px; }
+}

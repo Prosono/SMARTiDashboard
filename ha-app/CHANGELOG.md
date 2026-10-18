@@ -1,3 +1,8 @@
+## 1.35.17
+
+- Ryddigere side for nye enheter: fjernet generell tekst om søkevinduet og mellomoverskriften Andre tilkoblinger.
+- Matter vises med det faktiske protokollsymbolet, med god kontrast i alle temaer.
+
 ## 1.35.16
 
 - Sidemenyen åpnes og lukkes med et rent menyikon øverst til venstre, uten tekst.
