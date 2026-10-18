@@ -1,3 +1,4 @@
+import type { Home } from "../types";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Plug, Search } from "lucide-react";
@@ -26,6 +27,11 @@ type Field = {
       max?: number;
       step?: number;
       multiple?: boolean;
+      domain?: string | string[];
+      exclude_entities?: string[];
+      include_entities?: string[];
+      filter?:
+        { domain?: string | string[] } | { domain?: string | string[] }[];
       options?: Option[];
     } | null
   >;
@@ -57,6 +63,7 @@ function supported(f: Field) {
     "multi_select",
     "text",
     "number",
+    "entity",
   ].includes(kind(f));
 }
 function choices(f: Field): Option[] {
@@ -71,16 +78,25 @@ export function IntegrationSetup({
   close,
   initialSearch = "",
   discovery,
+  groupEntity,
+  home,
 }: {
   lang: string;
   close: () => void;
   initialSearch?: string;
+  groupEntity?: string;
+  home?: Home;
   discovery?: { id: string; domain: string; source?: string };
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const qc = useQueryClient();
   const [search, setSearch] = useState(initialSearch);
   const [flow, setFlow] = useState<Flow | null>(null);
+  const entityHome = useQuery({
+    queryKey: ["home"],
+    queryFn: () => api<Home>("home"),
+    enabled: !home && !!flow?.data_schema?.some((f) => kind(f) === "entity"),
+  });
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -93,6 +109,7 @@ export function IntegrationSetup({
         `manage/integration-setup/catalog?language=${lang === "en" ? "en" : "nb"}`,
       ),
     retry: false,
+    enabled: !groupEntity,
   });
   useEffect(() => {
     alive.current = true;
@@ -149,7 +166,16 @@ export function IntegrationSetup({
   }
   const claimed = useRef(false);
   useEffect(() => {
-    if (discovery && !claimed.current) {
+    if (groupEntity && !claimed.current) {
+      claimed.current = true;
+      void run(() =>
+        api<Flow>(
+          `manage/integration-setup/group-options/${encodeURIComponent(groupEntity)}`,
+          "POST",
+          { domain: "group", language: lang === "en" ? "en" : "nb" },
+        ),
+      );
+    } else if (discovery && !claimed.current) {
       claimed.current = true;
       void run(() =>
         api<Flow>(
@@ -159,7 +185,7 @@ export function IntegrationSetup({
         ),
       );
     }
-  }, [discovery]);
+  }, [discovery, groupEntity]);
   async function dismiss() {
     if (!flowId.current) {
       close();
@@ -218,7 +244,11 @@ export function IntegrationSetup({
   const unsupported = fields.some((f) => !supported(f));
   return (
     <SettingsDialog
-      title={t("Legg til integrasjon", "Add integration")}
+      title={
+        groupEntity
+          ? t("Rediger gruppe", "Edit group")
+          : t("Legg til integrasjon", "Add integration")
+      }
       lang={lang}
       busy={busy}
       onClose={() => void dismiss()}
@@ -229,7 +259,7 @@ export function IntegrationSetup({
             {error}
           </p>
         )}
-        {!flow && discovery ? (
+        {!flow && (discovery || groupEntity) ? (
           <p role="status">
             {busy
               ? t("Åpner enhetsoppsettet …", "Opening device setup …")
@@ -333,14 +363,15 @@ export function IntegrationSetup({
                 <small>
                   {smartiName(
                     catalog.data?.find((i) => i.domain === flow.domain)?.name ||
-                      flow.domain,
+                      (groupEntity ? t("Gruppe", "Group") : flow.domain),
                   )}
                 </small>
                 <h3>
                   {text(
                     `step.${flow.step_id}.title`,
-                    flow.title ||
-                      t("Koble til hjemmet", "Connect to your home"),
+                    flow.title || groupEntity
+                      ? t("Medlemmer og innstillinger", "Members and settings")
+                      : t("Koble til hjemmet", "Connect to your home"),
                   )}
                 </h3>
               </div>
@@ -390,7 +421,87 @@ export function IntegrationSetup({
                     <label key={f.name}>
                       {label}
                       {f.required ? " *" : ""}
-                      {k === "boolean" ? (
+                      {k === "entity" ? (
+                        (() => {
+                          const selector = f.selector?.entity;
+                          const filters = selector?.filter
+                            ? Array.isArray(selector.filter)
+                              ? selector.filter
+                              : [selector.filter]
+                            : [{ domain: selector?.domain }];
+                          const selected = Array.isArray(values[f.name])
+                            ? (values[f.name] as string[])
+                            : values[f.name]
+                              ? [String(values[f.name])]
+                              : [];
+                          const candidates = (
+                            (home || entityHome.data)?.controls || []
+                          ).filter(
+                            (c) =>
+                              c.entity_id !== groupEntity &&
+                              !selector?.exclude_entities?.includes(
+                                c.entity_id,
+                              ) &&
+                              (!selector?.include_entities ||
+                                selector.include_entities.includes(
+                                  c.entity_id,
+                                )) &&
+                              filters.some(
+                                (filter) =>
+                                  !filter.domain ||
+                                  (Array.isArray(filter.domain)
+                                    ? filter.domain
+                                    : [filter.domain]
+                                  ).includes(c.domain),
+                              ),
+                          );
+                          return (
+                            <select
+                              multiple={!!selector?.multiple}
+                              required={f.required}
+                              disabled={busy}
+                              value={
+                                selector?.multiple
+                                  ? selected
+                                  : selected[0] || ""
+                              }
+                              onChange={(e) =>
+                                update(
+                                  selector?.multiple
+                                    ? Array.from(
+                                        e.target.selectedOptions,
+                                        (o) => o.value,
+                                      )
+                                    : e.target.value,
+                                )
+                              }
+                            >
+                              {!selector?.multiple && (
+                                <option value="">
+                                  {t("Velg …", "Choose …")}
+                                </option>
+                              )}
+                              {selected
+                                .filter(
+                                  (eid) =>
+                                    !candidates.some(
+                                      (c) => c.entity_id === eid,
+                                    ),
+                                )
+                                .map((eid) => (
+                                  <option key={eid} value={eid}>
+                                    {eid}
+                                  </option>
+                                ))}
+                              {candidates.map((c) => (
+                                <option key={c.entity_id} value={c.entity_id}>
+                                  {c.name}
+                                </option>
+                              ))}
+                            </select>
+                          );
+                        })()
+                      ) : k === "boolean" ? (
                         <input
                           type="checkbox"
                           checked={!!values[f.name]}
@@ -563,8 +674,12 @@ export function IntegrationSetup({
               <p className="integration-success">
                 <CheckCircle2 />
                 {t(
-                  "Integrasjonen er lagt til. Enheter vises når integrasjonen har startet.",
-                  "Integration added. Devices appear once it has started.",
+                  groupEntity
+                    ? "Gruppen er oppdatert. Endringene synkroniseres fra hjemmesentralen."
+                    : "Integrasjonen er lagt til. Enheter vises når integrasjonen har startet.",
+                  groupEntity
+                    ? "Group updated. Changes sync from your hub."
+                    : "Integration added. Devices appear once it has started.",
                 )}
               </p>
             )}

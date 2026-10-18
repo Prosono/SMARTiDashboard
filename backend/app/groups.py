@@ -62,6 +62,9 @@ def groups_router(store, ha, user, admin, execute):
                 "revision": "",
                 "source": "home_assistant",
                 "entity_id": eid,
+                "config_entry_id": registry.get("config_entry_id")
+                if registry.get("platform") == "group"
+                else None,
             }
         return result
 

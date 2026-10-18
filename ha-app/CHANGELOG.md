@@ -1,3 +1,10 @@
+## 1.35.27
+
+- Grupper får en synlig redigeringsknapp på kortene. Grupper opprettet som hjelpere i hjemmesentralen kan redigere medlemmer og innstillinger gjennom sitt eksisterende oppsett.
+- YAML- og integrasjonsstyrte grupper beholder forklaring om hvor de administreres.
+- Scener får egen fane under Enheter, med alle scener, tydelig «Lag scene» og tekst på redigeringsknappen. Lagring og aktivering er separate handlinger.
+- Gruppens oppsett kjøres med administrator- og sesjonskontroll og bevarer innstillingene som hjemmesentralen leverer.
+
 ## 1.35.26
 
 - Fikser horisontal scrollbar i sidebaren når varselsirkler vises. Menypunktene holder seg innenfor tilgjengelig bredde.

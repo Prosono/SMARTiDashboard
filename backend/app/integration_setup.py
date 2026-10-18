@@ -86,7 +86,7 @@ def integration_setup_router(m, admin):
                 if time.monotonic() - item["used"] > 1800:
                     if not item["terminal"] and not item.get("discovered"):
                         try:
-                            await m.rest("DELETE", prefix + "/" + quote(id, safe=""))
+                            await m.rest("DELETE", item.get("prefix", prefix) + "/" + quote(id, safe=""))
                         except HTTPException:
                             continue
                     del flows[id]
@@ -126,6 +126,45 @@ def integration_setup_router(m, admin):
                 "translations": translations,
                 "terminal": False,
                 "used": time.monotonic(),
+            }
+            if result.get("flow_id"):
+                flows[result["flow_id"]] = item
+            return await present(result, item)
+
+    @router.post("/group-options/{entity_id}")
+    async def group_options(entity_id: str, body: StartIntegration, current=Depends(admin)):
+        live()
+        entity = m.ha.entities.get(entity_id, {})
+        if body.domain != "group" or entity.get("platform") != "group" or not entity.get("config_entry_id"):
+            raise HTTPException(409, "group_not_editable")
+        async with lock:
+            if len(flows) >= 32:
+                raise HTTPException(429, "flow_limit")
+            entry_id = entity["config_entry_id"]
+            entries = await m.ws("config_entries/get")
+            if not any(e.get("entry_id") == entry_id and e.get("domain") == "group" for e in entries):
+                raise HTTPException(409, "group_not_editable")
+            try:
+                translations = (
+                    await m.ws(
+                        "frontend/get_translations",
+                        language=body.language,
+                        category="options",
+                        integration=["group"],
+                    )
+                )["resources"]
+            except HTTPException:
+                translations = {}
+            options_prefix = "config/config_entries/options/flow"
+            result = await m.rest("POST", options_prefix, {"handler": entry_id})
+            item = {
+                "frontend_base": None,
+                "owner": (current["id"], current["csrf"]),
+                "domain": "group",
+                "translations": {k.replace(".options.", ".config."): v for k, v in translations.items()},
+                "terminal": False,
+                "used": time.monotonic(),
+                "prefix": options_prefix,
             }
             if result.get("flow_id"):
                 flows[result["flow_id"]] = item
@@ -266,7 +305,7 @@ def integration_setup_router(m, admin):
                 "used": time.monotonic(),
                 "discovered": True,
             }
-            result = await m.rest("GET", prefix + "/" + quote(id, safe=""))
+            result = await m.rest("GET", item.get("prefix", prefix) + "/" + quote(id, safe=""))
             flows[id] = item
             return await present(result, item)
 
@@ -277,7 +316,11 @@ def integration_setup_router(m, admin):
             if item["terminal"]:
                 return item["result"]
             return await present(
-                await m.rest("GET", prefix + "/" + quote(id, safe=""), frontend_base=item["frontend_base"]),
+                await m.rest(
+                    "GET",
+                    item.get("prefix", prefix) + "/" + quote(id, safe=""),
+                    frontend_base=item["frontend_base"],
+                ),
                 item,
             )
 
@@ -291,7 +334,10 @@ def integration_setup_router(m, admin):
                 raise HTTPException(409, "flow_finished")
             return await present(
                 await m.rest(
-                    "POST", prefix + "/" + quote(id, safe=""), body, frontend_base=item["frontend_base"]
+                    "POST",
+                    item.get("prefix", prefix) + "/" + quote(id, safe=""),
+                    body,
+                    frontend_base=item["frontend_base"],
                 ),
                 item,
             )
@@ -302,7 +348,7 @@ def integration_setup_router(m, admin):
             item = owned(id, current)
             if not item["terminal"] and not item.get("discovered"):
                 try:
-                    await m.rest("DELETE", prefix + "/" + quote(id, safe=""))
+                    await m.rest("DELETE", item.get("prefix", prefix) + "/" + quote(id, safe=""))
                 except HTTPException as exc:
                     if exc.status_code != 404:
                         raise

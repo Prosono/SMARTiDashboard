@@ -186,3 +186,33 @@ def test_reauthentication_is_separate_named_and_resumable(client):  # noqa: F811
     login(client, "resident", "another long password")
     assert client.get(base + "attention").status_code == 403
     assert client.post(base + "attention/abc/claim", json={"domain": "reolink"}).status_code == 403
+
+
+def test_native_group_options_use_owned_options_flow(client):  # noqa: F811
+    setup_fake(client)
+    m = client.app.state.management
+    m.ha.entities["light.group"] = {"platform": "group", "config_entry_id": "entry-group"}
+    calls = []
+
+    async def ws(kind, **kwargs):
+        if kind == "config_entries/get":
+            return [{"entry_id": "entry-group", "domain": "group"}]
+        return {"resources": {"component.group.options.step.light.title": "Gruppemedlemmer"}}
+
+    async def rest(method, path, data=None, frontend_base=None):
+        calls.append((method, path, data))
+        return {"type": "form", "flow_id": "options-id", "step_id": "light", "data_schema": []}
+
+    m.ws, m.rest = ws, rest
+    base = "/api/manage/integration-setup/"
+    assert client.post(base + "group-options/light.missing", json={"domain": "group"}).status_code == 409
+    response = client.post(base + "group-options/light.group", json={"domain": "group"})
+    assert response.status_code == 200
+    assert response.json()["translations"]["component.group.config.step.light.title"] == "Gruppemedlemmer"
+    assert calls[-1] == ("POST", "config/config_entries/options/flow", {"handler": "entry-group"})
+    assert client.post(base + "flows/options-id", json={"entities": ["light.one"]}).status_code == 200
+    assert calls[-1][1] == "config/config_entries/options/flow/options-id"
+    assert client.get(base + "flows/options-id").status_code == 200
+    assert calls[-1][1] == "config/config_entries/options/flow/options-id"
+    assert client.delete(base + "flows/options-id").status_code == 200
+    assert calls[-1][:2] == ("DELETE", "config/config_entries/options/flow/options-id")

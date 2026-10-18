@@ -1,3 +1,4 @@
+import { Scenes } from "./home/Scenes";
 import { DiscoveredDevices, useDiscoveries } from "./manage/DiscoveredDevices";
 import { SettingsDialog, InSettingsDialog } from "./home/SettingsDialog";
 import { ControlHistory } from "./ControlHistory";
@@ -917,6 +918,7 @@ function Dashboard({
                 {[
                   ["all", lang === "nb" ? "Alle kontroller" : "All controls"],
                   ["groups", lang === "nb" ? "Grupper" : "Groups"],
+                  ["scenes", lang === "nb" ? "Scener" : "Scenes"],
                   ["zigbee2mqtt", "Zigbee"],
                   ["zwave_js", "Z-Wave"],
                 ].map(([id, label]) => (
@@ -926,7 +928,7 @@ function Dashboard({
                     className={protocol === id ? "selected" : ""}
                     onClick={() => setProtocol(id)}
                   >
-                    {id === "all" || id === "groups" ? (
+                    {id === "all" || id === "groups" || id === "scenes" ? (
                       <LayoutGrid size={17} />
                     ) : (
                       <ProtocolLogo
@@ -940,6 +942,7 @@ function Dashboard({
                 ))}
                 {protocol !== "all" &&
                   protocol !== "groups" &&
+                  protocol !== "scenes" &&
                   session.role === "admin" && (
                     <RadioAdvanced
                       provider={protocol}
@@ -948,7 +951,15 @@ function Dashboard({
                   )}
               </div>
             )}
-            {page === "devices" && protocol === "groups" ? (
+            {page === "devices" && protocol === "scenes" ? (
+              <Scenes
+                home={h}
+                lang={lang}
+                admin={session.role === "admin"}
+                offline={!h.connected}
+                manage
+              />
+            ) : page === "devices" && protocol === "groups" ? (
               <Groups home={h} lang={lang} admin={session.role === "admin"} />
             ) : page === "devices" && protocol !== "all" ? (
               <ProtocolDevices

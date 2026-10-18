@@ -1,3 +1,4 @@
+import { IntegrationSetup } from "./manage/IntegrationSetup";
 import { allViews, allControls } from "./access";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +15,7 @@ type Group = {
   entities: string[];
   revision: string;
   source: "smarti" | "home_assistant";
+  config_entry_id?: string | null;
   actions: string[];
   available: boolean;
 };
@@ -40,6 +42,20 @@ export function Groups({
     queryFn: () => api<Group[]>("groups"),
     refetchInterval: 15000,
   });
+  const [nativeEditor, editNative] = useState<string | null>(null);
+  function openEditor(g: Group) {
+    setOpened(null);
+    setError("");
+    setSearch("");
+    if (g.source === "home_assistant") editNative(g.id.slice(3));
+    else
+      edit({
+        id: g.id,
+        name: g.name,
+        entities: g.entities,
+        revision: g.revision,
+      });
+  }
   const [editor, edit] = useState<Draft | null>(null),
     [opened, setOpened] = useState<string | null>(null),
     [busy, setBusy] = useState(false),
@@ -323,6 +339,16 @@ export function Groups({
               </span>
             </button>
             {actions(g)}
+            {admin && (g.source !== "home_assistant" || g.config_entry_id) && (
+              <button
+                className="group-edit-button"
+                onClick={() => openEditor(g)}
+                disabled={busy}
+              >
+                <Pencil size={16} />
+                {t("Rediger gruppe", "Edit group")}
+              </button>
+            )}
           </article>
         ))}
       </div>
@@ -350,13 +376,19 @@ export function Groups({
               );
             })}
           </ul>
-          {current.source === "home_assistant" && (
+          {current.source === "home_assistant" && !current.config_entry_id && (
             <p>
               {t(
                 "Denne gruppen synkroniseres fra hjemmesentralen. Navn og medlemmer administreres der gruppen ble opprettet.",
                 "This group syncs from your hub. Manage its name and members where it was created.",
               )}
             </p>
+          )}
+          {admin && current.config_entry_id && (
+            <button onClick={() => openEditor(current)}>
+              <Pencil size={16} />
+              {t("Rediger gruppe", "Edit group")}
+            </button>
           )}
           {admin && current.source !== "home_assistant" && (
             <div className="group-actions">
@@ -384,6 +416,18 @@ export function Groups({
             </div>
           )}
         </SettingsDialog>
+      )}
+      {nativeEditor && (
+        <IntegrationSetup
+          lang={lang}
+          home={home}
+          groupEntity={nativeEditor}
+          close={() => {
+            editNative(null);
+            void q.refetch();
+            void qc.invalidateQueries({ queryKey: ["home"] });
+          }}
+        />
       )}
       {editor && (
         <SettingsDialog

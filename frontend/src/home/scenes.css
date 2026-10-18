@@ -399,3 +399,5 @@
     min-width: 100px;
   }
 }
+
+.scene-help { color: var(--muted); line-height: 1.6; font-size: 14px; margin: 0 0 20px; max-width: 75ch; }

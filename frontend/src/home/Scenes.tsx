@@ -107,11 +107,13 @@ export function Scenes({
   offline,
   admin,
   lang,
+  manage = false,
 }: {
   home: Home;
   offline: boolean;
   admin: boolean;
   lang: string;
+  manage?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb),
     qc = useQueryClient();
@@ -125,7 +127,7 @@ export function Scenes({
       id: string | null;
       draft: Draft;
     } | null>(null),
-    [all, setAll] = useState(false),
+    [all, setAll] = useState(manage),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   const rows = scenes.data || [],
@@ -198,8 +200,8 @@ export function Scenes({
           {rows.length > 0 && (
             <button onClick={() => setAll(!all)}>
               {all
-                ? t("Vis utvalgte", "Show selected")
-                : t("Velg scener", "Choose scenes")}
+                ? t("Vis favoritter", "Show favorites")
+                : t("Vis alle scener", "Show all scenes")}
             </button>
           )}
           {admin && (
@@ -213,6 +215,12 @@ export function Scenes({
           )}
         </div>
       </header>
+      <p className="scene-help">
+        {t(
+          "Lag en scene for å lagre en ønsket stemning. Rediger bestemmer hva enhetene skal gjøre; Aktiver utfører scenen i hjemmet.",
+          "Create a scene to save a mood. Edit sets what devices should do; Activate runs the scene in your home.",
+        )}
+      </p>
       {message && (
         <p role="status" className="notice">
           {message}
@@ -315,9 +323,11 @@ export function Scenes({
                         onClick={() => void edit(s)}
                       >
                         <Pencil size={16} />
+                        {t("Rediger", "Edit")}
                       </button>
                     )}
                   </div>
+                  {admin && !s.id && <small>{t("Styres av integrasjonen – kan aktiveres her, men redigeres i kilden.", "Managed by its integration — activate here, edit at the source.")}</small>}
                 </article>
               );
             },
