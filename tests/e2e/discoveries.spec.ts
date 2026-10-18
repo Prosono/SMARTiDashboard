@@ -9,7 +9,8 @@ test("discovered device opens existing setup and remains available after closing
   await page.getByLabel("Brukernavn",{exact:true}).fill("tester");
   await page.getByLabel("Passord",{exact:true}).fill("test-password-not-for-live");
   await page.getByRole("button",{name:"Logg inn",exact:true}).click();
-  await page.getByRole("navigation",{name:"Hovedmeny"}).getByRole("button",{name:"Integrasjoner",exact:true}).click();
+  await page.getByRole("navigation",{name:"Hovedmeny"}).getByRole("button",{name:"Enheter",exact:true}).click();
+  await expect(page.locator(".nav-discovery-count")).toHaveText("1");
   const panel=page.getByRole("region",{name:"Oppdagede enheter"});
   await expect(panel).toContainText("Inngangskamera");
   await panel.getByRole("button",{name:"Sett opp",exact:true}).click();

@@ -6,16 +6,26 @@ import { integrationName, smartiName } from "../branding";
 import { IntegrationLogo } from "./IntegrationLogo";
 import { IntegrationSetup } from "./IntegrationSetup";
 import "./discoveries.css";
-type Discovery = { id: string; domain: string; name: string; source: string };
+export type Discovery = {
+  id: string;
+  domain: string;
+  name: string;
+  source: string;
+};
+export function useDiscoveries(enabled = true) {
+  return useQuery({
+    queryKey: ["integration-discoveries"],
+    queryFn: () => api<Discovery[]>("manage/integration-setup/discoveries"),
+    enabled,
+    refetchInterval: 15000,
+    staleTime: 5000,
+  });
+}
 export function DiscoveredDevices({ lang }: { lang: string }) {
   const en = lang === "en";
   const qc = useQueryClient();
   const [selected, select] = useState<Discovery | null>(null);
-  const q = useQuery({
-    queryKey: ["integration-discoveries"],
-    queryFn: () => api<Discovery[]>("manage/integration-setup/discoveries"),
-    refetchInterval: selected ? false : 15000,
-  });
+  const q = useDiscoveries();
   return (
     <section
       className="discovery-panel"
@@ -60,8 +70,8 @@ export function DiscoveredDevices({ lang }: { lang: string }) {
       {!q.isError && q.data?.length === 0 && (
         <p className="discovery-empty">
           {en
-            ? "No new devices found. You can still add an integration manually below."
-            : "Ingen nye enheter funnet. Du kan fortsatt legge til en integrasjon manuelt nedenfor."}
+            ? "No new devices found. You can still add an integration manually under Integrations."
+            : "Ingen nye enheter funnet. Du kan fortsatt legge til en integrasjon manuelt under Integrasjoner."}
         </p>
       )}
       <div className="discovery-grid">

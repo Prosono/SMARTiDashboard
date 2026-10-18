@@ -131,7 +131,13 @@ def integration_setup_router(m, admin):
                 flows[result["flow_id"]] = item
             return await present(result, item)
 
+    # Match Home Assistant DISCOVERY_SOURCES, including integration and hardware discovery.
     discovery_sources = {
+        "integration_discovery",
+        "hardware",
+        "import",
+        "system",
+        "esphome",
         "bluetooth",
         "dhcp",
         "zeroconf",

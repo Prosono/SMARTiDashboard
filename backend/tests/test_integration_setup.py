@@ -126,3 +126,27 @@ def test_discoveries_only_claim_discovery_flows_and_preserve_on_close(client):  
     client.post("/api/logout")
     login(client, "resident", "another long password")
     assert client.get(base + "discoveries").status_code == 403
+
+
+def test_all_ha_discovery_sources_are_listed_and_claimable(client):  # noqa: F811
+    setup_fake(client)
+    m = client.app.state.management
+    old_ws = m.ws
+    sources = ["integration_discovery", "hardware", "system", "import", "esphome"]
+
+    async def ws(kind, **kwargs):
+        if kind == "config_entries/flow/progress":
+            return [
+                {"flow_id": source, "handler": "reolink", "context": {"source": source}} for source in sources
+            ]
+        return await old_ws(kind, **kwargs)
+
+    m.ws = ws
+    assert [d["source"] for d in client.get("/api/manage/integration-setup/discoveries").json()] == sources
+    for source in sources:
+        assert (
+            client.post(
+                f"/api/manage/integration-setup/discoveries/{source}/claim", json={"domain": "reolink"}
+            ).status_code
+            == 200
+        )

@@ -1,3 +1,9 @@
+## 1.35.24
+
+- Oppdagede enheter flyttes fra Integrasjoner til Enheter. Menyen viser antall nye funn i en rød varselsirkel, også når sidebaren er sammenslått.
+- Oppdagelser hentes på tvers av sider og oppdateres hvert 15. sekund for administratorer.
+- Retter et for snevert kildefilter som skjulte funn fra integrasjoner, maskinvare, system og import.
+
 ## 1.35.23
 
 - Integrasjoner viser automatisk oppdagede enheter med navn, logo og oppsettknapp. Listen oppdateres automatisk.

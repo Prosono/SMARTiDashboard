@@ -1,3 +1,4 @@
+import { DiscoveredDevices, useDiscoveries } from "./manage/DiscoveredDevices";
 import { SettingsDialog, InSettingsDialog } from "./home/SettingsDialog";
 import { ControlHistory } from "./ControlHistory";
 import "./controlDetail.css";
@@ -137,6 +138,11 @@ function App() {
     writePreference("smarti-palette", palette);
   }, [palette]);
   const [session, updateSession] = useState<Session | null>(null);
+  const discoveries = useDiscoveries(session?.role === "admin");
+  const discoveryCount =
+    !discoveries.isError && session?.role === "admin"
+      ? discoveries.data?.length || 0
+      : 0;
   const userLanguage = useQuery({
     queryKey: ["user-language"],
     queryFn: () => api<{ language: string }>("home/language"),
@@ -325,7 +331,16 @@ function App() {
                   >
                     <Icon size={21} />
                     <span>{t[p]}</span>
-                    {page === p && <span className="nav-dot" />}
+                    {p === "devices" && discoveryCount > 0 ? (
+                      <span
+                        className="nav-discovery-count"
+                        aria-label={`${discoveryCount} ${lang === "en" ? "new devices" : "nye enheter"}`}
+                      >
+                        {discoveryCount}
+                      </span>
+                    ) : (
+                      page === p && <span className="nav-dot" />
+                    )}
                   </button>
                 );
               })}
@@ -879,6 +894,9 @@ function Dashboard({
                       : `${regular.length} ${t.controls} · ${h.areas.length} ${t.rooms.toLowerCase()}`}
                 </p>
               </div>
+            )}
+            {page === "devices" && session.role === "admin" && (
+              <DiscoveredDevices lang={lang} />
             )}
             {page === "devices" && (
               <div

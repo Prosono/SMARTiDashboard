@@ -13,3 +13,16 @@
 .discovery-label h3 { font-size: 16px; }
 .discovery-grid button { flex-shrink: 0; min-height: 44px; }
 @media(max-width: 500px) { .discovery-panel { padding: 16px; } .discovery-grid article { flex-wrap: wrap; } .discovery-grid article > button { margin-left: 58px; } }
+
+.nav-item { position: relative; }
+.nav-item > .nav-discovery-count,
+.nav-item.active > .nav-discovery-count,
+[data-sidebar="collapsed"] .nav-item > .nav-discovery-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; padding: 0 6px; margin-left: auto;
+  border-radius: 999px; background: #c9343f; color: #fff;
+  font-size: 12px; font-weight: 600; line-height: 1;
+}
+@media(min-width: 901px) {
+  [data-sidebar="collapsed"] .nav-item > .nav-discovery-count { position: absolute; top: 1px; right: 1px; }
+}
