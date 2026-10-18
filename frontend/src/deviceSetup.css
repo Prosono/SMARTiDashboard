@@ -345,6 +345,7 @@
 }
 
 .device-setup .pairing-providers + .pairing-providers { margin-top: 12px; }
+.device-setup .bluetooth-protocol-logo,
 .device-setup .matter-protocol-logo {
   width: 76px;
   height: 76px;
@@ -355,5 +356,6 @@
   background: #fff;
 }
 @media (max-width: 600px) {
-  .device-setup .matter-protocol-logo { width: 60px; height: 60px; padding: 14px; }
+  .device-setup .bluetooth-protocol-logo,
+.device-setup .matter-protocol-logo { width: 60px; height: 60px; padding: 14px; }
 }

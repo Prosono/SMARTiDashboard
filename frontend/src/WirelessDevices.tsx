@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bluetooth, ArrowUpRight, RefreshCw } from "lucide-react";
+import { ArrowUpRight, RefreshCw } from "lucide-react";
 import { api } from "./api";
 import { smartiName } from "./branding";
 import { SettingsDialog } from "./home/SettingsDialog";
@@ -60,7 +60,11 @@ export function WirelessDevices({ lang }: { lang: string }) {
     <>
       <div className="pairing-providers">
         <article className="pairing-provider" data-protocol="bluetooth">
-          <Bluetooth size={24} />
+          <img
+            className="bluetooth-protocol-logo"
+            src={new URL("brand/bluetooth-icon.png", document.baseURI).href}
+            alt="Bluetooth"
+          />
           <div>
             <h2>Bluetooth</h2>
             <p className="muted">
@@ -141,7 +145,14 @@ export function WirelessDevices({ lang }: { lang: string }) {
           <div className="integration-catalog">
             {bluetooth.data?.discoveries.map((d) => (
               <button key={d.id} onClick={() => setup("", "bluetooth", d)}>
-                <Bluetooth size={20} />
+                <img
+                  src={
+                    new URL("brand/bluetooth-icon.png", document.baseURI).href
+                  }
+                  width={20}
+                  height={20}
+                  alt=""
+                />
                 <span>
                   {smartiName(d.name)}
                   <small>{d.domain.replaceAll("_", " ")}</small>

@@ -1,3 +1,8 @@
+## 1.35.20
+
+- Paringssiden bruker de enkle protokollnavnene Zigbee og Z-Wave, også under aktiv paring.
+- Bluetooth vises med det faktiske protokollsymbolet.
+
 ## 1.35.19
 
 - Sonekartet viser alle sonene i soneoversikten med navn og radius, og tilpasser utsnittet automatisk.

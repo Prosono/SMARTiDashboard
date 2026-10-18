@@ -330,7 +330,7 @@ export function DeviceSetup({
             )}
           </div>
           <span className="eyebrow">
-            {s.provider === "zigbee2mqtt" ? "Zigbee2MQTT" : "Z-Wave JS"}
+            {s.provider === "zigbee2mqtt" ? "Zigbee" : "Z-Wave"}
           </span>
           <h2>
             {stopping
@@ -445,7 +445,7 @@ export function DeviceSetup({
               <ProtocolLogo provider={p.id} />
             </div>
             <div>
-              <h2>{p.id === "zigbee2mqtt" ? "Zigbee2MQTT" : "Z-Wave JS"}</h2>
+              <h2>{p.id === "zigbee2mqtt" ? "Zigbee" : "Z-Wave"}</h2>
               <span
                 className="setup-provider-state"
                 data-ready={p.status === "ready"}

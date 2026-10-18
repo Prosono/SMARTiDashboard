@@ -102,7 +102,7 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
     .first()
     .click();
   const zwave = page.locator("article").filter({
-    has: page.getByRole("heading", { name: "Z-Wave JS", exact: true }),
+    has: page.getByRole("heading", { name: "Z-Wave", exact: true }),
   });
   await zwave.getByRole("button", { name: "Start paring" }).click();
   await expect(
