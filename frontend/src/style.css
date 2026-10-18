@@ -1560,7 +1560,15 @@ footer span:last-child {
     background: #ffffff0e;
     color: #fff;
   }
-  .sidebar nav { overflow-y: auto; min-height: 0; }
+  .sidebar nav { overflow-y: auto; overflow-x: hidden; min-height: 0; grid-template-columns: minmax(0, 1fr); }
+  .sidebar .nav-item { min-width: 0; }
+  .sidebar .nav-item > svg { flex-shrink: 0; }
+  .sidebar .nav-item > span:not(.nav-dot):not(.nav-discovery-count) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .sidebar-bottom { flex-shrink: 0; }
   [data-sidebar="collapsed"] .sidebar {
     width: 80px;

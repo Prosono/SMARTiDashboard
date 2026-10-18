@@ -1,3 +1,8 @@
+## 1.35.26
+
+- Fikser horisontal scrollbar i sidebaren når varselsirkler vises. Menypunktene holder seg innenfor tilgjengelig bredde.
+- Varselsirkler plasseres riktig også i sammenslått sidebar på nettbrettbredder.
+
 ## 1.35.25
 
 - Integrasjoner får «Trenger oppmerksomhet» for integrasjoner som ber om ny innlogging, med navn, logo og «Koble til på nytt».

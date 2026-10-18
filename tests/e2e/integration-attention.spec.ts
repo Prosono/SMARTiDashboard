@@ -16,6 +16,16 @@ test("reauthentication badge and popup clear when request is completed", async (
   const nav=page.getByRole("navigation",{name:"Hovedmeny"});
   const integrations=nav.getByRole("button",{name:"Integrasjoner",exact:true});
   await expect(integrations.locator(".nav-discovery-count")).toHaveText("1");
+  if (test.info().project.name === "desktop") {
+    for (const width of [800, 1100, 1440]) {
+      await page.setViewportSize({width, height: 800});
+      for (let i = 0; i < 2; i++) {
+        await expect.poll(() => nav.evaluate(el => el.scrollWidth - el.clientWidth)).toBe(0);
+        await expect(integrations.locator(".nav-discovery-count")).toBeVisible();
+        await page.locator(".sidebar-toggle").click();
+      }
+    }
+  }
   await integrations.click();
   const panel=page.getByRole("region",{name:"Trenger oppmerksomhet"});
   await expect(panel).toContainText("Kamera ved inngangen");
