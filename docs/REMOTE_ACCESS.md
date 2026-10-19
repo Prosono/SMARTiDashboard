@@ -409,3 +409,11 @@ Existing configured/owned homes are not offered as new hubs.
 Wi-Fi and Ethernet must share a multicast-capable LAN, Local Network permission
 must be enabled on iPhone, and HA uses host networking. No inbound configuration
 API is introduced. Internet is required to activate, not to discover.
+
+Validation for 1.35.50: 301 backend tests passed, including registration,
+wrong-secret rejection, ownership/CSRF/QR/PIN validation, encrypted delivery,
+heartbeat acknowledgement, automatic identity persistence and full setup against
+a simulated HA connection. The actual Swift HubDiscovery class discovered an
+unconfigured Python advertiser on macOS over Bonjour. Simulator build and signed
+iPhone archive succeeded. Physical iPhone-to-HAOS discovery remains a pilot check.
+The cloud service was deployed with a database backup and health check.

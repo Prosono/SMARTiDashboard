@@ -197,3 +197,7 @@ Select it, then scan the inventory QR inside the app and enter the separate PIN.
 The selected device is carried into activation; remote credentials are delivered
 directly to the hub over HTTPS, never via the phone. Existing homes remain private.
 Physical iPhone/HAOS multicast discovery still requires a pilot test.
+
+Build 6 uploaded successfully and App Store Connect confirmed **Testing** after
+assignment to **SMARTi intern test** on 2026-10-19. HA 1.35.50 is published and
+automatic enrollment is deployed at home.smarti.dev.
