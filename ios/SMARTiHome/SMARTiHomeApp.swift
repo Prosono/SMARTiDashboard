@@ -113,23 +113,37 @@ struct PhoneSettingsView: View {
     @Published var scanError: String?
 
     func openDiscoveredHub(_ hub: DiscoveredHub) {
-        guard UUID(uuidString: hub.id) != nil,
-              hub.proof.range(of: "^[0-9]{10}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else { return }
-        lastPage = URL(string: "https://home.smarti.dev/activate#" + hub.id + "." + hub.proof)!
+        guard UUID(uuidString: hub.id) != nil else { return }
+        if hub.state == "unconfigured" {
+            lastPage = URL(string: "https://home.smarti.dev/activate?device=" + hub.id)!
+        } else {
+            guard hub.proof.range(of: "^[0-9]{10}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else { return }
+            lastPage = URL(string: "https://home.smarti.dev/activate#" + hub.id + "." + hub.proof)!
+        }
         showDiscovery = false
         retry()
     }
 
+    private var selectedSetupDevice: String? {
+        guard let url = webView.url, url.host == "home.smarti.dev", url.path == "/activate",
+              let device = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "device" })?.value,
+              UUID(uuidString: device) != nil else { return nil }
+        return device
+    }
+
     func openSetup() {
-        lastPage = URL(string: "https://home.smarti.dev/activate")!
+        lastPage = URL(string: "https://home.smarti.dev/activate" + (selectedSetupDevice.map { "?device=" + $0 } ?? ""))!
         retry()
     }
-    @discardableResult func openActivation(_ value: String) -> Bool {
+    @discardableResult func openActivation(_ value: String, forSelectedHub: Bool = false) -> Bool {
         guard let url = URL(string: value), url.scheme == "https", url.host == "home.smarti.dev",
               url.port == nil, url.user == nil, url.password == nil, url.path == "/activate",
               let fragment = url.fragment,
               fragment.range(of: "^[0-9a-f-]{36}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else { return false }
-        lastPage = url
+        var destination = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+        // Only an explicit in-app scan retains the chosen LAN hub. External links never reuse a stale selection.
+        destination.queryItems = forSelectedHub ? selectedSetupDevice.map { [URLQueryItem(name: "device", value: $0)] } : nil
+        lastPage = destination.url!
         retry()
         return true
     }
@@ -266,7 +280,7 @@ struct HubScanner: View {
                 Text("Skann QR-koden under SMARTi-huben").font(.headline).padding()
                 if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
                     HubCameraScanner { value in
-                        if home.openActivation(value) { dismiss() }
+                        if home.openActivation(value, forSelectedHub: true) { dismiss() }
                         else { home.scanError = "Dette er ikke en SMARTi-hubetikett. Prøv koden under huben." }
                     }
                 } else {
@@ -310,6 +324,7 @@ struct HubCameraScanner: UIViewControllerRepresentable {
 struct DiscoveredHub: Identifiable {
     let id: String
     let proof: String
+    let state: String
     let model: String
     let serial: String
 }
@@ -357,12 +372,12 @@ struct DiscoveredHub: Identifiable {
     func netService(_ sender: NetService, didUpdateTXTRecord data: Data) {
         let record = NetService.dictionary(fromTXTRecord: data)
         func value(_ key: String) -> String { record[key].flatMap { String(data: $0, encoding: .utf8) } ?? "" }
-        let id = value("id"), proof = value("proof")
-        guard value("v") == "1", value("state") == "ready", UUID(uuidString: id) != nil,
-              proof.range(of: "^[0-9]{10}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else {
+        let id = value("id"), proof = value("proof"), state = value("state")
+        guard value("v") == "1", ["ready", "unconfigured"].contains(state), UUID(uuidString: id) != nil,
+              state == "unconfigured" || proof.range(of: "^[0-9]{10}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else {
             found.removeValue(forKey: sender.name); refresh(); return
         }
-        found[sender.name] = DiscoveredHub(id: id, proof: proof, model: String(value("model").prefix(80)), serial: String(value("serial").prefix(80)))
+        found[sender.name] = DiscoveredHub(id: id, proof: proof, state: state, model: String(value("model").prefix(80)), serial: String(value("serial").prefix(80)))
         refresh()
     }
     private func refresh() {
@@ -383,7 +398,7 @@ struct HubDiscoveryView: View {
                     Text("Koble huben til strøm og nettverkskabel. Bruk samme lokalnett på iPhone.")
                     Text(discovery.hint).foregroundStyle(.secondary).accessibilityIdentifier("discovery-status")
                 }
-                Section("Huber klare for oppsett") {
+                Section("Huber på nettverket") {
                     ForEach(discovery.hubs) { hub in
                         Button { home.openDiscoveredHub(hub) } label: {
                             HStack {
@@ -391,6 +406,7 @@ struct HubDiscoveryView: View {
                                 VStack(alignment: .leading) {
                                     Text(hub.model.isEmpty ? "SMARTi Hub" : hub.model).font(.headline)
                                     Text(hub.serial.isEmpty ? String(hub.id.suffix(8)) : hub.serial).font(.caption)
+                                    Text("Klar for oppsett").font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer(); Image(systemName: "chevron.right")
                             }.padding(.vertical, 8)
@@ -402,7 +418,7 @@ struct HubDiscoveryView: View {
                     Button("Søk på nytt") { discovery.start() }
                     Button("Bruk QR-kode eller skriv inn kode") { dismiss(); home.openSetup() }
                     Button("Åpne iPhone-innstillinger") { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) }
-                    Text("Kun leveringsklare huber uten eier vises. Eksisterende hjem åpner du fra Mine hjem. Internett kreves for aktivering.").font(.footnote).foregroundStyle(.secondary)
+                    Text("En ny hub vises automatisk når SMARTi er startet. Ingen forhåndskonfigurasjon er nødvendig. Internett kreves for å fullføre oppsettet.").font(.footnote).foregroundStyle(.secondary)
                 }
             }.navigationTitle("Finn SMARTi-huben")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Lukk") { dismiss() } } }

@@ -19,6 +19,8 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field, model_validator
 
+from .cloud_enrollment import install_enrollment
+
 
 def digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
@@ -50,6 +52,7 @@ class Heartbeat(BaseModel):
 class Activation(BaseModel):
     code: str = Field(min_length=32, max_length=128)
     pin: str = Field(pattern=r"^\d{8}$")
+    device: uuid.UUID | None = None
 
 
 class Room(BaseModel):
@@ -100,6 +103,8 @@ def install_onboarding(
           payload TEXT NOT NULL, status TEXT NOT NULL, step TEXT NOT NULL, error TEXT NOT NULL DEFAULT '',
           created REAL NOT NULL, updated REAL NOT NULL);
         """)
+
+    bind_enrollment = install_enrollment(app, db, throttle, secret)
 
     def admin(s=Depends(session)):
         if not is_admin(s["account"]):
@@ -272,6 +277,8 @@ def install_onboarding(
                 "UPDATE factory_hubs SET fingerprint=?,heartbeat=?,seen=? WHERE home=?",
                 (body.fingerprint, body.model_dump_json(), time.time(), home),
             )
+            # A validated heartbeat acknowledges durable receipt of the new identity.
+            c.execute("UPDATE hub_enrollments SET delivery=NULL WHERE home=?", (home,))
             job = c.execute(
                 "SELECT * FROM onboarding_plans WHERE home=? AND status IN ('queued','working')", (home,)
             ).fetchone()
@@ -345,6 +352,14 @@ def install_onboarding(
                 raise HTTPException(404, "activation_not_found")
             if row["owner"] and row["owner"] != s["account"]:
                 raise HTTPException(409, "home_has_an_owner")
+            if body.device:
+                # LAN selection supplies only a device locator; the printed QR and PIN above authorize binding.
+                if not secrets.compare_digest(label(row), body.code):
+                    raise HTTPException(404, "activation_not_found")
+                bind_enrollment(c, row, str(body.device))
+                row = c.execute(
+                    "SELECT f.*,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
+                ).fetchone()
             if not row["owner"]:
                 if (
                     row["phase"] != "ready"

@@ -187,3 +187,13 @@ Install HA 1.35.48 and use a factory-ready, unowned test hub with zero SMARTi us
 
 App Store Connect confirmed build 5 as **Testing** in **SMARTi intern test** on
 2026-10-19. Portal discovery support is deployed at home.smarti.dev.
+
+## Unconfigured hub discovery — build 0.1.0 (6)
+
+Requires HA 1.35.50 for automatic enrollment. Install/start the HA app with no
+SMARTi customer users and leave connection identity options empty. New Home
+discovers it immediately as ready for setup, even before internet is available.
+Select it, then scan the inventory QR inside the app and enter the separate PIN.
+The selected device is carried into activation; remote credentials are delivered
+directly to the hub over HTTPS, never via the phone. Existing homes remain private.
+Physical iPhone/HAOS multicast discovery still requires a pilot test.

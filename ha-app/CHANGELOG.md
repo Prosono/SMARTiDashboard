@@ -1,3 +1,9 @@
+## 1.35.50
+- Ukonfigurerte huber annonserer seg automatisk på lokalnettet ved oppstart, uten forhåndsutfylt tilkoblingsidentitet.
+- iPhone build 6 kan velge huben og knytte den til riktig QR-kode og eier.
+- Tilkoblingsidentiteten leveres automatisk og lagres privat etter bekreftet aktivering.
+- Lokal oppdagelse fortsetter også mens internett er utilgjengelig.
+
 ## 1.35.49
 - New-customer setup is accessible from the home login screen, including when iPhone remembers a previously selected home.
 - Clear new-home entry on the portal login page.

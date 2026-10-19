@@ -285,7 +285,7 @@ label. Print the QR label from the inventory; deliver the PIN separately inside
 the box. Labels use an HMAC derived from the persistent provisioning secret:
 retain/back up that secret; rotating it requires reprinting existing labels.
 
-Factory preparation, per physical hub:
+Legacy factory preparation (1.35.47–1.35.49; superseded by automatic enrollment below), per physical hub:
 1. Install/update HA OS, Supervisor, the SMARTi app (1.35.47+), Zigbee2MQTT and
    Z-Wave JS UI. Configure each radio's stable device path and connect both
    integrations to HA. Verify actual device communication, not just add-on state.
@@ -350,7 +350,7 @@ actual HA reset completion and Universal Links on a physical phone still require
 a pilot on a separate clean hub before shipping customer hardware.
 
 
-### Local discovery (HA 1.35.48 / iPhone build 5)
+### Legacy local discovery (HA 1.35.48 / iPhone build 5)
 
 The iPhone's New Home action browses `_smarti-setup._tcp.local.` after the user
 allows Local Network access. Factory heartbeat returns a five-minute HMAC proof
@@ -374,3 +374,38 @@ owned/customer hubs are intentionally absent from discovery. For a pilot, use a
 separate clean hub; do not reset a customer's live installation for discovery.
 Wi-Fi and Ethernet must share a multicast-capable LAN. Guest networks/VLANs may
 block discovery; QR is the fallback. Internet remains required for activation.
+
+### Automatic enrollment (HA 1.35.50 / iPhone build 6)
+
+Install and start SMARTi with working HA access and no SMARTi customer accounts.
+Do NOT install remote_installation_id or remote_credential. The hub generates a
+private enrollment secret on first start and immediately advertises
+_smarti-setup._tcp with state=unconfigured, a persistent device UUID and a short
+display identifier. Discovery works even before internet access is available.
+No private key, PIN or account data is advertised.
+
+The customer chooses this hub in the iPhone app, scans its printed inventory QR,
+enters the separately supplied PIN and signs in or creates an account. The portal
+binds that inventory record to the selected device after checking fresh outbound
+presence, HA connectivity, zero SMARTi users and existing ownership. Factory-ready
+approval is not required for this path. The hub receives its connection identity
+over its authenticated outbound poll and saves it with mode 0600; empty add-on
+options preserve it on restart. The normal setup wizard then configures the home.
+A hub cannot replace an already personalized inventory record.
+
+The outbound rendezvous uses a locally generated secret; the broadcast UUID is
+derived from that secret, preventing a LAN observer from reserving the same UUID
+with a different secret. Initial requests are rate-limited. Temporary unbound
+records expire after 24 hours. Credential delivery is encrypted at rest using the
+persistent provisioning secret and removed after the first authenticated hub
+heartbeat. Neither the browser nor Bonjour receives the connection credential.
+
+Factory staff still register hardware and print the QR/PIN kit, but no longer
+paste identity values into the hub. Clone base images BEFORE first SMARTi start:
+never clone enrollment-secret, factory-device-id or remote-identity.json.
+The chosen device is bound at customer activation, not physically attested.
+Existing configured/owned homes are not offered as new hubs.
+
+Wi-Fi and Ethernet must share a multicast-capable LAN, Local Network permission
+must be enabled on iPhone, and HA uses host networking. No inbound configuration
+API is introduced. Internet is required to activate, not to discover.

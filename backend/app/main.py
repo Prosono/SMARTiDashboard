@@ -156,7 +156,9 @@ def create_app(
             if not mobile_only and not remote_surface:
                 from .hub_onboarding import HubOnboarding
 
-                onboarding_task = asyncio.create_task(HubOnboarding(settings, ha, store, app.state.remote).run())
+                onboarding_task = asyncio.create_task(
+                    HubOnboarding(settings, ha, store, app.state.remote, start_remote=start_remote).run()
+                )
             yield
         finally:
             if onboarding_task:

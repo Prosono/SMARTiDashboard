@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import secrets
 import sqlite3
 import uuid
 
@@ -17,9 +18,10 @@ log = logging.getLogger(__name__)
 
 
 class HubOnboarding:
-    def __init__(self, settings, ha, store, remote, transport=None):
+    def __init__(self, settings, ha, store, remote, transport=None, start_remote=None):
         self.settings, self.ha, self.store, self.remote = settings, ha, store, remote
         self.transport = transport
+        self.start_remote = start_remote
         self.boot = uuid.uuid4().hex
         from .lan_discovery import HubAdvertisement
 
@@ -31,6 +33,58 @@ class HubOnboarding:
                 f.write(uuid.uuid4().hex)
             marker.chmod(0o600)
         self.fingerprint = hashlib.sha256(marker.read_bytes()).hexdigest()
+        enrollment_key = settings.data_dir / "enrollment-secret"
+        if not enrollment_key.exists():
+            import os
+
+            fd = os.open(enrollment_key, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "w") as f:
+                f.write(secrets.token_urlsafe(48))
+        self.enrollment_secret = enrollment_key.read_text().strip()
+        self.device = str(
+            uuid.UUID(bytes=hashlib.sha256(self.enrollment_secret.encode()).digest()[:16], version=4)
+        )
+
+    def unconfigured_discovery(self):
+        if not self.settings.ingress or self.settings.mode != "live" or self.settings.remote_identity_file:
+            return None
+        with self.store.connect() as c:
+            if c.execute("SELECT 1 FROM users LIMIT 1").fetchone():
+                return None
+        return {"id": self.device, "state": "unconfigured", "model": "SMARTi Hub", "serial": self.device[-8:]}
+
+    async def enroll(self):
+        # Rendezvous is outbound HTTPS. Discovery is already running even if internet is unavailable.
+        if not self.unconfigured_discovery():
+            return
+        async with httpx.AsyncClient(timeout=15, trust_env=False, transport=self.transport) as client:
+            response = await client.post(
+                CLOUD_ORIGIN + "/api/enrollment/poll",
+                json={
+                    "device": self.device,
+                    "secret": self.enrollment_secret,
+                    "fingerprint": self.fingerprint,
+                    "version": "1.35.50",
+                    "users": 0,
+                    "ha_connected": bool(self.ha.connected),
+                },
+            )
+            response.raise_for_status()
+            identity = response.json().get("identity")
+        if identity:
+            from .remote_options import configure_remote_identity
+
+            self.settings.remote_identity_file = configure_remote_identity(
+                {
+                    "remote_installation_id": identity["installation_id"],
+                    "remote_credential": identity["credential"],
+                },
+                self.settings.data_dir,
+                exclusive=True,
+            )
+            await self.advertisement.update(None)
+            if self.start_remote:
+                self.start_remote()
 
     async def call(self, action, body):
         home, credential = read_identity(self.settings.remote_identity_file)
@@ -196,7 +250,7 @@ class HubOnboarding:
             {
                 "boot_id": self.boot,
                 "fingerprint": self.fingerprint,
-                "version": "1.35.49",
+                "version": "1.35.50",
                 "users": users,
                 "ha_connected": bool(self.ha.connected),
                 "remote_ready": bool(self.remote.get("ready")),
@@ -209,14 +263,24 @@ class HubOnboarding:
     async def run(self):
         try:
             while True:
-                if self.settings.remote_identity_file:
-                    try:
+                # Advertise immediately, before any cloud request or HA connection is required.
+                local = self.unconfigured_discovery()
+                if local:
+                    await self.advertisement.update(local)
+                try:
+                    if self.settings.remote_identity_file:
                         await self.tick()
-                    except (httpx.HTTPError, OSError, ValueError, HAError, sqlite3.Error, KeyError):
+                    elif local:
+                        await self.enroll()
+                    else:
                         await self.advertisement.update(None)
-                        log.warning("Hub activation service unavailable; will retry")
-                else:
-                    await self.advertisement.update(None)
+                except (httpx.HTTPError, OSError, ValueError, HAError, sqlite3.Error, KeyError):
+                    # Losing internet must not hide an otherwise unconfigured hub from the LAN.
+                    if not local:
+                        await self.advertisement.update(None)
+                    log.warning(
+                        "Hub activation service unavailable; local discovery continues when unconfigured"
+                    )
                 await asyncio.sleep(20)
         finally:
             await self.advertisement.close()
