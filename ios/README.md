@@ -184,3 +184,6 @@ Simulator build, signed archive and Apple upload succeeded. Backend: 297 tests
 passed. macOS DNS-SD received the actual Python broadcaster's TXT announcement.
 Physical iPhone/HAOS discovery and denied-permission behavior need pilot testing.
 Install HA 1.35.48 and use a factory-ready, unowned test hub with zero SMARTi users.
+
+App Store Connect confirmed build 5 as **Testing** in **SMARTi intern test** on
+2026-10-19. Portal discovery support is deployed at home.smarti.dev.
