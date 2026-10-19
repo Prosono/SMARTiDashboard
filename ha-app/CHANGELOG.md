@@ -1,3 +1,16 @@
+## 1.35.31
+
+- Pilot for utgående fjernforbindelse på klargjorte huber, med separat HTTPS-inngang og hjemmets eksisterende innlogging og tilgangsregler.
+- Automatisk sertifikatutstedelse og fornyelse med private nøkler lagret på huben. Ingen portåpning i hjemmets ruter.
+- Fjerninnlogging bruker en egen sikker vertsbundet informasjonskapsel. Førstegangsoppsett og kontokobling krever fortsatt lokal tilgang.
+- Krever privat hub-identitet fra installatør. Aktiveres ikke på eksisterende installasjoner uten klargjøring; native app-onboarding gjenstår.
+
+## 1.35.30
+
+- Forbereder fjerntilgang med egen innstilling under System for kontokobling, engangskoder og av/på. Krever en separat klargjort hub-identitet; fjerntilgang aktiveres ikke automatisk.
+- Lokale administrator- og CSRF-kontroller gjelder for alle endringer av kontokoblingen. Hubens tilkoblingsnøkkel sendes aldri til nettleseren.
+- Konto- og tunnelgrunnlaget for flere hjem er testet separat. Produksjonsoppsett av tunnel, sertifikater og hub-tilkobling gjenstår.
+
 ## 1.35.29
 
 - Scenelagring har avgrenset ventetid og tydelig fremdrift, slik at redigeringen ikke blir stående låst ved et manglende svar.

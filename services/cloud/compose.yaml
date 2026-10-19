@@ -1,0 +1,29 @@
+name: smartihome
+services:
+  smartihome:
+    container_name: smartihome
+    build:
+      context: ../..
+      dockerfile: services/cloud/Dockerfile
+    ports:
+      - "127.0.0.1:18080:8080"
+    environment:
+      CLOUD_ORIGIN: https://home.smarti.dev
+      CLOUD_PROVISION_SECRET_FILE: /run/secrets/provision
+    secrets:
+      - provision
+    volumes:
+      - accounts:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+secrets:
+  provision:
+    file: ${SMARTI_PROVISION_SECRET_FILE:?Set the path to a random provisioning secret file}
+volumes:
+  accounts:

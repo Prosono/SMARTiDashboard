@@ -1,0 +1,20 @@
+home.smarti.dev {
+    encode zstd gzip
+    handle /relay/connect {
+        rewrite * /connector
+        reverse_proxy smartihome-relay:9443
+    }
+    handle {
+        reverse_proxy smartihome:8080
+    }
+}
+
+# HTTP-01 proofs only. Home HTTPS terminates on each hub, never here.
+http://*.home.smarti.dev {
+    handle /.well-known/acme-challenge/* {
+        reverse_proxy smartihome:8080
+    }
+    handle {
+        respond 404
+    }
+}

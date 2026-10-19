@@ -1,0 +1,13 @@
+# Prepend once to the existing Caddyfile. Trust only the fixed edge-router IP.
+{
+    servers :443 {
+        listener_wrappers {
+            proxy_protocol {
+                timeout 2s
+                allow 172.18.0.240/32
+                fallback_policy reject
+            }
+            tls
+        }
+    }
+}

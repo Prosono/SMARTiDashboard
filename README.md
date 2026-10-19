@@ -6,6 +6,8 @@ Local home control with Home Assistant underneath. React/TypeScript frontend, Fa
 
 A separate, unpublished [mobile/remote-access Docker pilot](docs/MOBILE_PILOT.md) now exercises one home with local HTTPS and an outbound encrypted tunnel. It is a demo foundation, not a distributed phone app or multi-customer cloud service.
 
+The multi-home account portal and remote-access work are documented in [REMOTE_ACCESS.md](docs/REMOTE_ACCESS.md). The portal is deployed; actual home access is still being integrated.
+
 ## Install in Home Assistant
 
 Add **https://github.com/Prosono/SMARTiDashboard** under **Settings → Apps → App store → menu → Repositories**, then install **SMARTi**.

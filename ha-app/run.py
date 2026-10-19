@@ -18,5 +18,9 @@ if options_file.exists():
         'SMARTI_ZIGBEE2MQTT_AUTH_TOKEN': options.get('zigbee2mqtt_auth_token', ''),
         'SMARTI_BOOTSTRAP_SECRET': options.get('bootstrap_secret', ''),
     })
+# Installer-owned identity; never accept credentials through browser headers/options.
+remote_identity = Path('/data/remote-identity.json')
+if remote_identity.is_file():
+    os.environ['SMARTI_REMOTE_IDENTITY_FILE'] = str(remote_identity)
 from app.run import main
 main()

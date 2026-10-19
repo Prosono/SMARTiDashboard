@@ -1,0 +1,5 @@
+# Merge into existing Caddy configuration; do not replace other sites.
+# Upstream assumes Caddy runs on the host.
+home.smarti.dev {
+    reverse_proxy 127.0.0.1:18080
+}

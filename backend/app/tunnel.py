@@ -24,7 +24,7 @@ class Tunnel:
     async def send(self, frame):
         await asyncio.wait_for(self.websocket.send(frame), 10)
 
-    async def add(self, reader, writer, stream_id=None):
+    async def add(self, reader, writer, stream_id=None, initial_data=b""):
         if len(self.streams) >= MAX_STREAMS:
             writer.close()
             return
@@ -33,6 +33,8 @@ class Tunnel:
         if self.target is None:
             try:
                 await self.send(b"O" + stream_id)
+                for offset in range(0, len(initial_data), CHUNK):
+                    await self.send(b"D" + stream_id + initial_data[offset : offset + CHUNK])
             except BaseException:
                 self.streams.pop(stream_id, None)
                 writer.close()

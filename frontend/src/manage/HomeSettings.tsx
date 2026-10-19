@@ -1,3 +1,4 @@
+import { RemoteAccess } from "./RemoteAccess";
 import { RestartCore } from "./RestartCore";
 import { Zones } from "./Zones";
 import { HomeMap, type MapZone } from "./HomeMap";
@@ -237,6 +238,7 @@ export function HomeSettings({
           </Accounts>
         </div>
       )}
+      {section === "system" && <RemoteAccess lang={lang} />}
       {section !== "household" && system.isError && (
         <p role="alert">
           {t("Kunne ikke hente systemstatus.", "Could not load system status.")}

@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     zigbee2mqtt_transport: Literal["ha_mqtt", "frontend"] = "ha_mqtt"
     zigbee2mqtt_server: str = ""
     zigbee2mqtt_auth_token: str = Field(default="", repr=False)
+    remote_identity_file: Path | None = Field(default=None, repr=False)
     mobile_enabled: bool = False
     mobile_url: str = ""
     session_hours: int = 12

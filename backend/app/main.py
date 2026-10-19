@@ -31,6 +31,7 @@ from .management import Management, management_router
 from .mobile import MobileAuth
 from .models import Command
 from .origins import OriginPolicy
+from .remote_access import remote_router
 from .scenes import scenes_router
 from .setup import DeviceSetup
 from .storage import Store
@@ -97,9 +98,14 @@ class PairingAnswer(BaseModel):
     pin: str | None = Field(default=None, pattern=r"^\d{5}$", max_length=5)
 
 
-def create_app(settings=None, adapter=None, *, mobile_only=False):
+def create_app(settings=None, adapter=None, *, mobile_only=False, remote_surface=False):
     settings = settings or Settings()
     settings.validate_runtime()
+    if remote_surface and (
+        mobile_only or settings.ingress or settings.auto_local_origins or settings.additional_origins
+    ):
+        raise ValueError("Remote surface requires isolated exact-origin settings")
+    session_cookie = "__Host-smarti_remote" if remote_surface else "smarti_session"
     store = Store(settings.database)
     auth = Auth(store, settings)
     mobile = MobileAuth(store)
@@ -112,12 +118,21 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
     async def lifespan(app):
         task = asyncio.create_task(ha.run())
         discovery = None
+        remote_task = None
         try:
             if not mobile_only and origins.enabled:
                 await origins.refresh()
                 discovery = asyncio.create_task(origins.run())
+            if settings.remote_identity_file and not mobile_only and not remote_surface:
+                from .remote_runtime import run_remote
+
+                remote_task = asyncio.create_task(run_remote(settings, ha, app.state.remote))
             yield
         finally:
+            if remote_task:
+                remote_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await remote_task
             if discovery:
                 discovery.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
@@ -143,12 +158,21 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         )
 
     app.state.ha, app.state.auth, app.state.store = ha, auth, store
+    app.state.remote = {"ready": False}
     app.state.mobile = mobile
     app.state.setup = setup
     app.state.origins = origins
 
     @app.middleware("http")
     async def boundary(request, call_next):
+        if remote_surface:
+            from urllib.parse import urlsplit
+
+            expected_host = urlsplit(settings.origin).netloc
+            if request.url.scheme != "https" or request.headers.getlist("host") != [expected_host]:
+                return JSONResponse({"detail": "remote_transport_rejected"}, status_code=403)
+            if request.url.path.startswith(("/api/bootstrap", "/api/remote", "/api/mobile/")):
+                return JSONResponse({"detail": "local_access_required"}, status_code=403)
         if mobile_only:
             if not settings.mobile_enabled or not request.url.path.startswith("/api/mobile/v1/"):
                 return JSONResponse({"detail": "not_found"}, status_code=404)
@@ -182,7 +206,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         return response
 
     def user(request: Request):
-        result = auth.session(request.cookies.get("smarti_session"))
+        result = auth.session(request.cookies.get(session_cookie))
         if request.method not in {"GET", "HEAD"} and not secrets.compare_digest(
             request.headers.get("x-csrf-token", ""), result["csrf"]
         ):
@@ -197,9 +221,12 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         return current
 
     app.include_router(access_router(store, admin))
+    if not mobile_only:
+        app.include_router(remote_router(settings, admin))
     management = Management(ha, store, settings)
     app.state.management = management
     wireless = WirelessSetup(management, settings)
+    app.state.wireless = wireless
     app.include_router(wireless.router(admin))
     app.include_router(management_router(management, admin))
     app.include_router(system_settings_router(management, admin, settings))
@@ -251,7 +278,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
         token, session = auth.login(body.name, body.password)
         auth.finish_successful_attempt(key)
         response.set_cookie(
-            "smarti_session",
+            session_cookie,
             token,
             httponly=True,
             secure=request.headers.get("origin", "").startswith("https://"),
@@ -274,8 +301,10 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
 
     @app.post("/api/logout")
     async def logout(request: Request, response: Response, current=Depends(user)):
-        auth.logout(request.cookies.get("smarti_session"))
-        response.delete_cookie("smarti_session", path=cookie_path(request))
+        auth.logout(request.cookies.get(session_cookie))
+        response.delete_cookie(
+            session_cookie, path=cookie_path(request), secure=remote_surface, httponly=True, samesite="strict"
+        )
         return {"status": "logged_out"}
 
     @app.post("/api/users")
@@ -470,7 +499,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False):
             revision = (-1, -1)
             while not await request.is_disconnected():
                 try:
-                    auth.session(request.cookies.get("smarti_session"))
+                    auth.session(request.cookies.get(session_cookie))
                 except HTTPException:
                     yield "event: expired\ndata: {}\n\n"
                     return
