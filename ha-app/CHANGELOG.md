@@ -1,3 +1,9 @@
+## 1.35.39
+
+- Enhetsoversikten viser opptil 48 kontroller per side for å redusere belastningen i store hjem. Søk og filtre søker fortsatt i hele listen.
+- Lange sensorverdier brytes innenfor kortene for å unngå at visningen presses utover skjermbredden.
+- Ny HA-pakke med oppdatert kode. Simulatorens WebKit-krasj er fortsatt under undersøkelse.
+
 ## 1.35.38
 
 - Retter 404 ved åpning av Zigbee2MQTT og Z-Wave JS UI via fjernaksess. Bruker Home Assistants nåværende app-rute i stedet for den gamle Hass.io-ruten.
