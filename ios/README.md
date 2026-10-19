@@ -215,3 +215,6 @@ button. PIN/account ownership checks remain required. Run
 `node scripts/test_onboarding_scan.cjs` from the repository root for the isolated
 mobile-browser regression test. Signed iPhone archive passed; physical camera
 capture still needs testing on the user's iPhone.
+
+Build 7 uploaded and confirmed **Testing** in **SMARTi intern test** on 2026-10-19.
+Portal QR/PIN progression is deployed; HA remains at 1.35.50.
