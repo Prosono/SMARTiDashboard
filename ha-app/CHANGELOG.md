@@ -1,3 +1,9 @@
+## 1.35.47
+- Factory hub heartbeat binds a prepared hub to its portal inventory record.
+- Apply owner-approved setup for location, floors, rooms and the first SMARTi user with resumable checkpoints.
+- Explicit customer reset revokes SMARTi sessions/phone registrations and requests HA history/statistics removal while retaining radio networks and technical accounts.
+- New iPhone QR onboarding requires app build 4. Existing installations are not enrolled or reset automatically.
+
 ## 1.35.46
 - Open support and pricing outside the Home Assistant ingress frame so portal security does not block navigation.
 - Keep portal frame protection enabled for login and remote assistance approval.

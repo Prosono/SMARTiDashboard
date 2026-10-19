@@ -155,3 +155,18 @@ the native build and hub update are installed.
 
 Build 0.1.0 (3) uploaded successfully and was assigned to SMARTi intern test;
 App Store Connect confirmed Testing. Hub 1.35.43 is pushed to main.
+
+## QR onboarding — build 0.1.0 (4)
+
+Adds native QR scanning (camera permission only on explicit scan), first-launch
+welcome, existing-home persistence, and validated Universal Links for
+`https://home.smarti.dev/activate#...`. Portal pages implement the customer wizard;
+hub 1.35.47 applies owner-approved setup with checkpoints. Associated Domains
+entitlement is `applinks:home.smarti.dev`; the portal serves AASA for
+`3T2Y4G6HVQ.dev.smarti.home`. Signed archive and simulator compilation succeeded.
+Physical QR capture and Universal Links require device validation after TestFlight
+installation; existing selected homes remain the default entry point.
+
+Xcode confirmed build 0.1.0 (4) upload succeeded on 2026-10-19. Apple processing
+and assignment to the existing manual internal-test group remain unverified;
+the user was actively using Firefox during the attempted App Store Connect check.

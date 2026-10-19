@@ -137,6 +137,7 @@ def create_app(
         task = asyncio.create_task(ha.run())
         discovery = None
         remote_task = None
+        onboarding_task = None
 
         def start_remote():
             nonlocal remote_task
@@ -152,8 +153,16 @@ def create_app(
                 await origins.refresh()
                 discovery = asyncio.create_task(origins.run())
             start_remote()
+            if not mobile_only and not remote_surface:
+                from .hub_onboarding import HubOnboarding
+
+                onboarding_task = asyncio.create_task(HubOnboarding(settings, ha, store, app.state.remote).run())
             yield
         finally:
+            if onboarding_task:
+                onboarding_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await onboarding_task
             if remote_task:
                 remote_task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):

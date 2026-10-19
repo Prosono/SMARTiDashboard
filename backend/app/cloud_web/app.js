@@ -27,6 +27,7 @@ async function showHomes() {
     const card=document.createElement("article"), title=document.createElement("h2"), detail=document.createElement("p");
     title.textContent=home.name; detail.textContent=home.remote_enabled ? (home.connected ? "Hjemmet er tilkoblet" : "Venter på tilkobling fra huben") : "Fjerntilgang er slått av";
     card.append(title,detail);
+    if (home.factory_managed) { const setup=document.createElement("a");setup.href="/activate?home="+encodeURIComponent(home.installation_id);setup.textContent="Oppsett av klargjort hub";card.append(setup); }
     if (home.connected && home.remote_enabled && /^[0-9a-f-]{36}$/.test(home.installation_id)) {
       const open=document.createElement("a");
       open.href="https://"+home.installation_id+".home.smarti.dev/";

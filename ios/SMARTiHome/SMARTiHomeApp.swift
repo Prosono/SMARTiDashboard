@@ -1,5 +1,7 @@
 import SwiftUI
 import WebKit
+import VisionKit
+import AVFoundation
 
 @main struct SMARTiHomeApp: App {
     @StateObject private var phone = PhoneModel()
@@ -25,6 +27,11 @@ import WebKit
             .ignoresSafeArea(.container)
             .sheet(isPresented: $home.showPhoneSettings) {
                 PhoneSettingsView(phone: phone, home: home)
+            }
+            .sheet(isPresented: $home.showScanner) { HubScanner(home: home) }
+            .onOpenURL { url in _ = home.openActivation(url.absoluteString) }
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                if let url = activity.webpageURL { _ = home.openActivation(url.absoluteString) }
             }
             .tint(Color(red: 0.87, green: 0.32, blue: 0.03))
             .alert("SMARTi", isPresented: Binding(get: { phone.error != nil }, set: { if !$0 { phone.error = nil } })) {
@@ -100,12 +107,39 @@ struct PhoneSettingsView: View {
     let webView: WKWebView
     @Published var failure: String?
     @Published var showPhoneSettings = false
+    @Published var showScanner = false
+    @Published var scanError: String?
+
+    func openSetup() {
+        lastPage = URL(string: "https://home.smarti.dev/activate")!
+        retry()
+    }
+    @discardableResult func openActivation(_ value: String) -> Bool {
+        guard let url = URL(string: value), url.scheme == "https", url.host == "home.smarti.dev",
+              url.port == nil, url.user == nil, url.password == nil, url.path == "/activate",
+              let fragment = url.fragment,
+              fragment.range(of: "^[0-9a-f-]{36}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else { return false }
+        lastPage = url
+        retry()
+        return true
+    }
+
 
     func openPortal() {
         lastPage = URL(string: "https://home.smarti.dev/")!
         retry()
     }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "smartiOnboarding", message.frameInfo.isMainFrame,
+           message.frameInfo.request.url?.host == "home.smarti.dev", webView.url?.host == "home.smarti.dev",
+           message.body as? String == "scan" {
+            Task {
+                let granted = await AVCaptureDevice.requestAccess(for: .video)
+                scanError = granted ? nil : "Kameratilgang er ikke tillatt. Du kan skrive inn koden manuelt."
+                showScanner = true
+            }
+            return
+        }
         guard message.name == "smartiPhoneSettings", message.frameInfo.isMainFrame,
               let url = message.frameInfo.request.url, MobileClient.isHome(url),
               webView.url?.host == url.host else { return }
@@ -116,7 +150,7 @@ struct PhoneSettingsView: View {
         }
     }
     private static let savedHomeKey = "smarti.lastSelectedHome"
-    private var lastPage = URL(string: "https://home.smarti.dev/")!
+    private var lastPage = URL(string: "https://home.smarti.dev/welcome")!
     private var recovery = WebRecoveryBudget()
 
     func retry() {
@@ -156,6 +190,7 @@ struct PhoneSettingsView: View {
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init()
         configuration.userContentController.add(self, name: "smartiPhoneSettings")
+        configuration.userContentController.add(self, name: "smartiOnboarding")
         webView.navigationDelegate = self
         webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.contentInsetAdjustmentBehavior = .never
@@ -208,5 +243,54 @@ struct BrowserView: UIViewRepresentable {
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: WKWebView, context: Context) -> CGSize? {
         guard let width = proposal.width, let height = proposal.height else { return nil }
         return CGSize(width: width, height: height)
+    }
+}
+
+struct HubScanner: View {
+    @ObservedObject var home: HomeBrowser
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 18) {
+                Text("Skann QR-koden under SMARTi-huben").font(.headline).padding()
+                if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
+                    HubCameraScanner { value in
+                        if home.openActivation(value) { dismiss() }
+                        else { home.scanError = "Dette er ikke en SMARTi-hubetikett. Prøv koden under huben." }
+                    }
+                } else {
+                    Image(systemName: "qrcode.viewfinder").font(.system(size: 64))
+                    Text("Kameraet er ikke tilgjengelig. Tillat kameratilgang i iPhone-innstillinger, eller skriv inn lenken fra etiketten.").padding()
+                }
+                if let error = home.scanError { Text(error).foregroundStyle(.red).padding() }
+                Button("Skriv inn koden i stedet") { dismiss(); home.openSetup() }.padding()
+            }.navigationTitle("Legg til hjem")
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Avbryt") { dismiss() } } }
+        }
+    }
+}
+
+struct HubCameraScanner: UIViewControllerRepresentable {
+    let found: (String) -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(found: found) }
+    func makeUIViewController(context: Context) -> DataScannerViewController {
+        let scanner = DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.qr])], qualityLevel: .balanced, recognizesMultipleItems: false, isGuidanceEnabled: true, isHighlightingEnabled: true)
+        scanner.delegate = context.coordinator
+        try? scanner.startScanning()
+        return scanner
+    }
+    func updateUIViewController(_ controller: DataScannerViewController, context: Context) {}
+    static func dismantleUIViewController(_ controller: DataScannerViewController, coordinator: Coordinator) { controller.stopScanning() }
+    class Coordinator: NSObject, DataScannerViewControllerDelegate {
+        let found: (String) -> Void
+        private var lastValue: String?
+        init(found: @escaping (String) -> Void) { self.found = found }
+        func dataScanner(_ scanner: DataScannerViewController, didAdd addedItems: [RecognizedItem], allItems: [RecognizedItem]) {
+            for item in addedItems {
+                if case .barcode(let barcode) = item, let value = barcode.payloadStringValue, value != lastValue {
+                    lastValue = value; found(value)
+                }
+            }
+        }
     }
 }

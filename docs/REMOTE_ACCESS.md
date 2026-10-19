@@ -273,3 +273,78 @@ support records: do not put passwords, keys or unnecessary personal data in them
 - Portal administration is live independently of hub releases. A hub update is
   required before support links can open the home. No email, SMS, push delivery
   or automatic billing is implemented; notifications are unread markers in the UI.
+
+## Factory hub registration and QR activation (1.35.47 / iPhone build 4)
+
+Use `https://home.smarti.dev/admin/hubs` as a portal administrator. Registration
+creates a new installation ID, its outbound credential, a unique QR label bound
+to the inventory record, and a separate eight-digit activation PIN. Download the
+JSON kit immediately: the credential and PIN are only returned at creation (or
+explicit reprovisioning while still preparing). Never put the credential on a
+label. Print the QR label from the inventory; deliver the PIN separately inside
+the box. Labels use an HMAC derived from the persistent provisioning secret:
+retain/back up that secret; rotating it requires reprinting existing labels.
+
+Factory preparation, per physical hub:
+1. Install/update HA OS, Supervisor, the SMARTi app (1.35.47+), Zigbee2MQTT and
+   Z-Wave JS UI. Configure each radio's stable device path and connect both
+   integrations to HA. Verify actual device communication, not just add-on state.
+2. Set up the HA technical owner/service access and SMARTi's HA connection. These
+   technical accounts remain on the hub; the customer does not need to configure
+   them. The SMARTi local users table must remain empty.
+3. Apply ONLY `remote_installation_id` and `remote_credential` from the kit to
+   SMARTi's HA add-on options and restart. Do not paste the entire kit into options.
+4. Wait for the factory heartbeat, confirm the model/serial and inspect all five
+   checklist items. The server also requires a recent heartbeat, HA connectivity
+   and zero SMARTi users before accepting "Godkjenn for levering".
+5. Remove test data/history and check the image for reused credentials. Clone
+   golden images BEFORE assigning per-hub identity: never clone `remote-identity.json`
+   or `factory-device-id` from a personalized hub. The first heartbeat binds that
+   installation identity to the registry. This is software identity, not hardware
+   attestation; model/serial/radio details are operator-entered and verified.
+6. Print/read back the label at the actual print size; attach it under the matching
+   hub. Put the matching PIN card inside the box. Keep the downloaded kit securely.
+
+The public QR opens `/activate#<home>.<code>`; the fragment is removed from browser
+history after reading and is never sent as a URL to the server. QR+PIN can identify
+the hub before login. Claiming requires an authenticated, CSRF-protected portal
+session, delivery readiness and a recent clean-hub heartbeat. A claimed hub cannot
+be taken by another account, even with its label and PIN. Existing legacy homes
+are not automatically registered or changed. Transfer to another owner is not an
+implemented self-service operation; do not use this flow to refurbish customer hubs.
+
+`/welcome` provides new home vs login. iPhone build 4 adds a native QR scanner,
+strict origin/path validation and Universal Links for `/activate`. Apple associated
+domains and `/.well-known/apple-app-site-association` must both be deployed. A
+remembered home continues to open directly. The public page explains that the app
+is currently distributed via TestFlight; the App Store link is labelled as future
+availability, not a claim of public release.
+
+An outbound worker polls every 20 seconds. A plan is bound to the cloud owner;
+submission requires their password again. It sets HA location/timezone, creates
+floors/rooms by name, and atomically creates the first SMARTi admin and preference.
+The local account receives the current portal password hash (not plaintext).
+Password changes are NOT subsequently synchronized. Existing mode skips these
+changes and requires an existing SMARTi user. The browser shows relay connectivity
+separately from "setup completed"; an offline relay is never displayed as ready.
+
+Reset is deliberately described as a CUSTOMER DATA reset, not factory erase. It
+requires exact typed confirmation and current owner password, revokes support
+access, deletes SMARTi users/sessions/mobile registrations/favorites/dashboards,
+and requests `recorder.purge(keep_days=0,repack=true)` and `recorder/clear_statistics`
+in HA. HA's recorder executes purge asynchronously. Radio networks, devices,
+HA accounts, existing rooms, automations/scenes, backup files and other add-on data
+remain. The UI explicitly lists this retained data. A physical, full factory wipe
+for resale must use a separate verified procedure; this reset is not suitable for it.
+
+Plans and stage checkpoints survive restart; room creation reconciles existing
+names after an interrupted response. Reset and user-creation checkpoints commit in
+the same local SQLite transaction as their corresponding deletion/insertion.
+Requests are not re-executed after completion; failed plans wait for explicit retry.
+Never test a reset against a real home without that owner's explicit confirmation.
+
+Validation: full backend suite (294 tests), isolated browser factory/activation/
+setup flow on desktop and mobile, simulated HA interruption/retry, unsigned
+simulator build and signed iPhone archive. Physical QR capture, radio checks,
+actual HA reset completion and Universal Links on a physical phone still require
+a pilot on a separate clean hub before shipping customer hardware.

@@ -20,6 +20,7 @@ from pwdlib import PasswordHash
 from pydantic import BaseModel, Field
 
 from app.cloud_admin import install_admin
+from app.cloud_onboarding import install_onboarding
 from app.cloud_support import install_support
 
 PASSWORDS = PasswordHash.recommended()
@@ -314,6 +315,9 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     @app.post("/api/hubs/{home_id}/claim-code")
     def issue(home_id: str, request: Request):
         home_auth(home_id, request)
+        with db() as c:
+            if c.execute("SELECT 1 FROM factory_hubs WHERE home=?", (home_id,)).fetchone():
+                raise HTTPException(409, "use_hub_activation")
         code = secrets.token_urlsafe(32)
         expires = time.time() + 300
         with db() as c:
@@ -371,13 +375,17 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
                     "connected": bool(row["remote_enabled"] and row["installation_id"] in connected),
                 }
                 for row in c.execute(
-                    "SELECT id AS installation_id,name,remote_enabled FROM homes WHERE owner=? ORDER BY name",
+                    "SELECT id AS installation_id,name,remote_enabled, EXISTS(SELECT 1 FROM factory_hubs f WHERE f.home=homes.id) AS factory_managed FROM homes WHERE owner=? ORDER BY name",
                     (s["account"],),
                 )
             ]
 
     is_admin = install_admin(app, db, session, relay_status_url)
     install_support(app, db, session, is_admin, home_auth, origin)
+
+    install_onboarding(
+        app, db, session, is_admin, home_auth, throttle, provision_secret, origin, PASSWORDS, relay_status_url
+    )
 
     static = Path(__file__).with_name("cloud_web")
     app.mount("/assets", StaticFiles(directory=static), name="assets")

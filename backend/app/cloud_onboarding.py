@@ -1,0 +1,425 @@
+"""Factory inventory and resumable, owner-bound hub activation."""
+
+import hashlib
+import hmac
+import io
+import json
+import secrets
+import sqlite3
+import time
+import uuid
+from pathlib import Path
+from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+import httpx
+import qrcode
+import qrcode.image.svg
+from fastapi import Depends, HTTPException, Request
+from fastapi.responses import FileResponse, Response
+from pydantic import BaseModel, Field, model_validator
+
+
+def digest(value):
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
+class FactoryHub(BaseModel):
+    serial: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9_.-]+$")
+    model: str = Field(min_length=2, max_length=120)
+    hardware: str = Field(min_length=2, max_length=1000)
+
+
+class Inspection(BaseModel):
+    ha: bool
+    zigbee: bool
+    zwave: bool
+    network: bool
+    clean: bool
+
+
+class Heartbeat(BaseModel):
+    boot_id: str = Field(max_length=80)
+    fingerprint: str = Field(min_length=32, max_length=128)
+    version: str = Field(max_length=40)
+    users: int = Field(ge=0)
+    ha_connected: bool
+    remote_ready: bool
+
+
+class Activation(BaseModel):
+    code: str = Field(min_length=32, max_length=128)
+    pin: str = Field(pattern=r"^\d{8}$")
+
+
+class Room(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    floor: str = Field(min_length=1, max_length=80)
+
+
+class Plan(BaseModel):
+    mode: Literal["new", "reset", "existing"]
+    name: str = Field(min_length=1, max_length=80)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    timezone: str = "Europe/Oslo"
+    rooms: list[Room] = Field(default_factory=list, max_length=80)
+    experience: Literal["simple", "normal", "advanced"] = "normal"
+    password: str = Field(min_length=1, max_length=256, repr=False)
+    confirmation: str = ""
+
+    @model_validator(mode="after")
+    def valid(self):
+        try:
+            ZoneInfo(self.timezone)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("invalid timezone") from None
+        if len({r.name.strip().casefold() for r in self.rooms}) != len(self.rooms):
+            raise ValueError("room names must be unique")
+        return self
+
+
+class Progress(BaseModel):
+    id: str
+    status: Literal["working", "completed", "failed"]
+    step: Literal["checking", "resetting", "location", "rooms", "user", "completed"]
+    error: Literal["", "ha_unavailable", "setup_failed", "existing_users", "reset_not_supported"] = ""
+
+
+def install_onboarding(
+    app, db, session, is_admin, home_auth, throttle, secret, origin, passwords, relay_status_url=None
+):
+    with db() as c:
+        c.executescript("""
+        CREATE TABLE IF NOT EXISTS factory_hubs(
+          home TEXT PRIMARY KEY REFERENCES homes(id), serial TEXT UNIQUE NOT NULL, model TEXT NOT NULL,
+          hardware TEXT NOT NULL, label_nonce TEXT NOT NULL, pin TEXT NOT NULL, phase TEXT NOT NULL,
+          fingerprint TEXT, heartbeat TEXT, seen REAL, inspection TEXT, created REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS onboarding_plans(
+          home TEXT PRIMARY KEY REFERENCES homes(id), id TEXT UNIQUE NOT NULL, owner TEXT NOT NULL,
+          payload TEXT NOT NULL, status TEXT NOT NULL, step TEXT NOT NULL, error TEXT NOT NULL DEFAULT '',
+          created REAL NOT NULL, updated REAL NOT NULL);
+        """)
+
+    def admin(s=Depends(session)):
+        if not is_admin(s["account"]):
+            raise HTTPException(403, "portal_admin_required")
+        return s
+
+    def audit(c, actor, action, home):
+        c.execute(
+            "INSERT INTO admin_audit(actor,action,target,created) VALUES(?,?,?,?)",
+            (actor, action, home, time.time()),
+        )
+
+    def pin_digest(pin):
+        # The short printed PIN cannot be brute-forced from a database-only leak.
+        return hmac.new(secret.encode(), ("activation-pin:" + pin).encode(), hashlib.sha256).hexdigest()
+
+    def label(row):
+        return hmac.new(
+            secret.encode(), ("hub-label:" + row["home"] + ":" + row["label_nonce"]).encode(), hashlib.sha256
+        ).hexdigest()
+
+    def view(row):
+        h = json.loads(row["heartbeat"] or "{}")
+        return {
+            "id": row["home"],
+            "serial": row["serial"],
+            "model": row["model"],
+            "hardware": row["hardware"],
+            "phase": row["phase"],
+            "online": bool(row["seen"] and row["seen"] > time.time() - 100),
+            "seen": row["seen"],
+            "checks": json.loads(row["inspection"] or "{}"),
+            "health": h,
+        }
+
+    def owned(c, home, s):
+        row = c.execute(
+            "SELECT f.*,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
+        ).fetchone()
+        if not row or row["owner"] != s["account"]:
+            raise HTTPException(404, "home_not_found")
+        return row
+
+    @app.get("/admin/hubs")
+    @app.get("/activate")
+    @app.get("/welcome")
+    def page():
+        return FileResponse(Path(__file__).with_name("cloud_web") / "onboarding.html")
+
+    @app.get("/.well-known/apple-app-site-association")
+    def association():
+        return {
+            "applinks": {
+                "details": [{"appIDs": ["3T2Y4G6HVQ.dev.smarti.home"], "components": [{"/": "/activate"}]}]
+            }
+        }
+
+    @app.get("/api/admin/hubs")
+    def inventory(s=Depends(admin)):
+        with db() as c:
+            return [view(r) for r in c.execute("SELECT * FROM factory_hubs ORDER BY created DESC")]
+
+    @app.post("/api/admin/hubs")
+    def create(body: FactoryHub, s=Depends(admin)):
+        home, credential, pin = (
+            str(uuid.uuid4()),
+            secrets.token_urlsafe(48),
+            f"{secrets.randbelow(100000000):08d}",
+        )
+        with db() as c:
+            try:
+                c.execute(
+                    "INSERT INTO homes(id,name,credential,owner) VALUES(?,?,?,NULL)",
+                    (home, body.serial, digest(credential)),
+                )
+                c.execute(
+                    "INSERT INTO factory_hubs(home,serial,model,hardware,label_nonce,pin,phase,created) VALUES(?,?,?,?,?,?,?,?)",
+                    (
+                        home,
+                        body.serial,
+                        body.model,
+                        body.hardware,
+                        secrets.token_hex(16),
+                        pin_digest(pin),
+                        "preparing",
+                        time.time(),
+                    ),
+                )
+                audit(c, s["account"], "factory_create", home)
+            except sqlite3.IntegrityError:
+                raise HTTPException(409, "serial_already_registered") from None
+        # One-time factory download; neither credential nor PIN appears on the label.
+        return {
+            "installation_id": home,
+            "remote_installation_id": home,
+            "remote_credential": credential,
+            "activation_pin": pin,
+        }
+
+    @app.post("/api/admin/hubs/{home}/reprovision")
+    def reprovision(home: str, s=Depends(admin)):
+        credential, pin = secrets.token_urlsafe(48), f"{secrets.randbelow(100000000):08d}"
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            row = c.execute(
+                "SELECT f.phase,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
+            ).fetchone()
+            if not row or row["owner"] or row["phase"] != "preparing":
+                raise HTTPException(409, "hub_not_preparing")
+            c.execute("UPDATE homes SET credential=? WHERE id=?", (digest(credential), home))
+            c.execute(
+                "UPDATE factory_hubs SET pin=?,fingerprint=NULL,heartbeat=NULL,seen=NULL,inspection=NULL WHERE home=?",
+                (pin_digest(pin), home),
+            )
+            audit(c, s["account"], "factory_reprovision", home)
+        return {
+            "installation_id": home,
+            "remote_installation_id": home,
+            "remote_credential": credential,
+            "activation_pin": pin,
+        }
+
+    @app.get("/api/admin/hubs/{home}/label")
+    def print_label(home: str, s=Depends(admin)):
+        with db() as c:
+            row = c.execute("SELECT * FROM factory_hubs WHERE home=?", (home,)).fetchone()
+            if not row:
+                raise HTTPException(404, "hub_not_found")
+        url = origin + "/activate#" + home + "." + label(row)
+        buf = io.BytesIO()
+        qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage).save(buf)
+        return Response(buf.getvalue(), media_type="image/svg+xml")
+
+    @app.post("/api/admin/hubs/{home}/ready")
+    def ready(home: str, body: Inspection, s=Depends(admin)):
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            row = c.execute(
+                "SELECT f.*,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
+            ).fetchone()
+            if not row or row["owner"] or row["phase"] != "preparing":
+                raise HTTPException(409, "hub_not_preparing")
+            health = json.loads(row["heartbeat"] or "{}")
+            if (
+                not all(body.model_dump().values())
+                or not row["seen"]
+                or row["seen"] < time.time() - 100
+                or health.get("users") != 0
+                or not health.get("ha_connected")
+            ):
+                raise HTTPException(409, "factory_checks_incomplete")
+            c.execute(
+                "UPDATE factory_hubs SET phase='ready',inspection=? WHERE home=?",
+                (body.model_dump_json(), home),
+            )
+            audit(c, s["account"], "factory_ready", home)
+        return {"ready": True}
+
+    @app.post("/api/hubs/{home}/onboarding/heartbeat")
+    def heartbeat(home: str, body: Heartbeat, request: Request):
+        home_auth(home, request)
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            row = c.execute("SELECT * FROM factory_hubs WHERE home=?", (home,)).fetchone()
+            if not row:
+                return {"managed": False}
+            if row["fingerprint"] and row["fingerprint"] != body.fingerprint:
+                raise HTTPException(409, "hardware_identity_mismatch")
+            c.execute(
+                "UPDATE factory_hubs SET fingerprint=?,heartbeat=?,seen=? WHERE home=?",
+                (body.fingerprint, body.model_dump_json(), time.time(), home),
+            )
+            job = c.execute(
+                "SELECT * FROM onboarding_plans WHERE home=? AND status IN ('queued','working')", (home,)
+            ).fetchone()
+            result = {"managed": True}
+            if job:
+                result["plan"] = json.loads(job["payload"]) | {"id": job["id"]}
+        return result
+
+    @app.post("/api/activation/{home}/identify")
+    def identify(home: str, body: Activation, request: Request):
+        throttle("activation:" + request.client.host)
+        with db() as c:
+            row = c.execute(
+                "SELECT f.*,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
+            ).fetchone()
+        if (
+            not row
+            or not secrets.compare_digest(label(row), body.code)
+            or not secrets.compare_digest(row["pin"], pin_digest(body.pin))
+        ):
+            raise HTTPException(404, "activation_not_found")
+        return {
+            "model": row["model"],
+            "serial": row["serial"],
+            "online": bool(row["seen"] and row["seen"] > time.time() - 100),
+            "claimed": bool(row["owner"]),
+        }
+
+    @app.post("/api/activation/{home}/claim")
+    def activate(home: str, body: Activation, s=Depends(session)):
+        throttle("activate-account:" + s["account"])
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            row = c.execute(
+                "SELECT f.*,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
+            ).fetchone()
+            if (
+                not row
+                or not secrets.compare_digest(label(row), body.code)
+                or not secrets.compare_digest(row["pin"], pin_digest(body.pin))
+            ):
+                raise HTTPException(404, "activation_not_found")
+            if row["owner"] and row["owner"] != s["account"]:
+                raise HTTPException(409, "home_has_an_owner")
+            if not row["owner"]:
+                if (
+                    row["phase"] != "ready"
+                    or json.loads(row["heartbeat"] or "{}").get("users") != 0
+                    or not row["seen"]
+                    or row["seen"] < time.time() - 100
+                ):
+                    raise HTTPException(409, "hub_not_ready_or_offline")
+                c.execute(
+                    "UPDATE homes SET owner=?,remote_enabled=1 WHERE id=? AND owner IS NULL",
+                    (s["account"], home),
+                )
+                c.execute("UPDATE factory_hubs SET phase='activated' WHERE home=?", (home,))
+                audit(c, s["account"], "hub_activated", home)
+            c.execute("DELETE FROM claims WHERE home=?", (home,))
+        return {"id": home, "linked": True}
+
+    @app.get("/api/onboarding/{home}")
+    def status(home: str, s=Depends(session)):
+        with db() as c:
+            row = owned(c, home, s)
+            plan = c.execute(
+                "SELECT id,status,step,error,payload FROM onboarding_plans WHERE home=?", (home,)
+            ).fetchone()
+        result = view(row)
+        result["remote_connected"] = False
+        if relay_status_url:
+            try:
+                with httpx.Client(timeout=2, trust_env=False, follow_redirects=False) as client:
+                    response = client.get(relay_status_url)
+                    response.raise_for_status()
+                    result["remote_connected"] = home in response.json()["connected"]
+            except (httpx.HTTPError, ValueError, KeyError, TypeError):
+                pass
+        if plan:
+            draft = json.loads(plan["payload"])
+            draft.pop("password_hash", None)
+            draft.pop("username", None)
+            result["plan"] = {
+                "id": plan["id"],
+                "status": plan["status"],
+                "step": plan["step"],
+                "error": plan["error"],
+                "draft": draft,
+            }
+        return result
+
+    @app.post("/api/onboarding/{home}")
+    def configure(home: str, body: Plan, s=Depends(session)):
+        throttle("setup:" + s["account"])
+        with db() as c:
+            account = c.execute("SELECT * FROM accounts WHERE id=?", (s["account"],)).fetchone()
+        if not passwords.verify(body.password, account["password"]):
+            raise HTTPException(403, "password_confirmation_failed")
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            row = owned(c, home, s)
+            current = c.execute("SELECT * FROM onboarding_plans WHERE home=?", (home,)).fetchone()
+            # Identical retry resumes the same operation, never queues a second reset.
+            payload = body.model_dump(exclude={"password", "confirmation"})
+            if body.mode != "existing":
+                payload.update(username=account["username"], password_hash=account["password"])
+            if current and json.loads(current["payload"]) == payload:
+                if current["status"] == "failed":
+                    c.execute("UPDATE onboarding_plans SET status='queued',error='' WHERE home=?", (home,))
+                return {"id": current["id"]}
+            if current and current["status"] in {"queued", "working"}:
+                raise HTTPException(409, "setup_in_progress")
+            users = json.loads(row["heartbeat"] or "{}").get("users")
+            if body.mode == "new" and users != 0:
+                raise HTTPException(409, "existing_users")
+            if body.mode == "existing" and not users:
+                raise HTTPException(409, "no_existing_user")
+            if body.mode == "reset" and body.confirmation != "SLETT BRUKERE OG HISTORIKK":
+                raise HTTPException(422, "reset_confirmation_required")
+            job = uuid.uuid4().hex
+            now = time.time()
+            c.execute(
+                "INSERT OR REPLACE INTO onboarding_plans VALUES(?,?,?,?,?,?,?,?,?)",
+                (home, job, s["account"], json.dumps(payload), "queued", "checking", "", now, now),
+            )
+            c.execute("UPDATE homes SET remote_enabled=1 WHERE id=?", (home,))
+            if body.mode != "existing":
+                c.execute("UPDATE homes SET name=? WHERE id=?", (body.name, home))
+            if body.mode == "reset":
+                c.execute(
+                    "UPDATE support_grants SET decision='revoked',expires=? WHERE home=? AND decision IN ('pending','approved')",
+                    (now, home),
+                )
+            audit(c, s["account"], "onboarding_" + body.mode, home)
+        return {"id": job}
+
+    @app.post("/api/hubs/{home}/onboarding/progress")
+    def progress(home: str, body: Progress, request: Request):
+        home_auth(home, request)
+        with db() as c:
+            changed = c.execute(
+                "UPDATE onboarding_plans SET status=?,step=?,error=?,updated=? WHERE home=? AND id=? AND status IN ('queued','working','failed')",
+                (body.status, body.step, body.error, time.time(), home, body.id),
+            ).rowcount
+            if not changed:
+                row = c.execute(
+                    "SELECT status FROM onboarding_plans WHERE home=? AND id=?", (home, body.id)
+                ).fetchone()
+                if not row or row["status"] != "completed":
+                    raise HTTPException(409, "stale_plan")
+        return {"saved": True}

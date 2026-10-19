@@ -15,11 +15,13 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>3</string>
+	<string>4</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Skann QR-koden på SMARTi-huben for å sette opp hjemmet ditt.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Del posisjon også når SMARTi er lukket, slik at hjemmet kan oppdatere tilstedeværelse og kjøre rutinene du har valgt.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
