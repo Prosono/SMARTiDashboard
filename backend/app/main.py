@@ -178,7 +178,12 @@ def create_app(settings=None, adapter=None, *, mobile_only=False, remote_surface
             expected_host = urlsplit(settings.origin).netloc
             if request.url.scheme != "https" or request.headers.getlist("host") != [expected_host]:
                 return JSONResponse({"detail": "remote_transport_rejected"}, status_code=403)
-            if request.url.path.startswith(("/api/bootstrap", "/api/remote", "/api/mobile/")):
+            # The login screen reads setup status before rendering its form.
+            # Only this read is public; provisioning remains local-only.
+            setup_status_read = request.method == "GET" and request.url.path == "/api/bootstrap"
+            if not setup_status_read and request.url.path.startswith(
+                ("/api/bootstrap", "/api/remote", "/api/mobile/")
+            ):
                 return JSONResponse({"detail": "local_access_required"}, status_code=403)
         if mobile_only:
             if not settings.mobile_enabled or not request.url.path.startswith("/api/mobile/v1/"):

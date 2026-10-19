@@ -1,3 +1,8 @@
+## 1.35.35
+
+- Retter fjerninnlogging som stoppet med «Kunne ikke hente hjemmet». Innloggingssiden kan nå lese om huben er klargjort via fjernforbindelsen.
+- Førstegangsoppsett, hub-identitet og lokal administrasjon av fjerntilgang er fortsatt blokkert eksternt.
+
 ## 1.35.34
 
 - Fjerntilgang-dialogen får tydelige knapper, bedre avstand og et eget felt for engangskoden.

@@ -26,6 +26,10 @@ def test_remote_browser_requires_local_login_exact_host_origin_and_csrf(tmp_path
     )
     app = create_app(settings, ha, remote_surface=True)
     remote = TestClient(app, base_url=origin, headers={"Origin": origin})
+    status = remote.get("/api/bootstrap")
+    assert status.status_code == 200
+    assert status.json() == {"configured": True, "mode": "demo"}
+    assert remote.get("/api/bootstrap/other").status_code == 403
     assert remote.get("/api/session").status_code == 401
     assert (
         remote.post("/api/bootstrap", json=credentials | {"secret": settings.bootstrap_secret}).status_code
