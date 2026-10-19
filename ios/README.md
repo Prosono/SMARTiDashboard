@@ -201,3 +201,17 @@ Physical iPhone/HAOS multicast discovery still requires a pilot test.
 Build 6 uploaded successfully and App Store Connect confirmed **Testing** after
 assignment to **SMARTi intern test** on 2026-10-19. HA 1.35.50 is published and
 automatic enrollment is deployed at home.smarti.dev.
+
+## Automatic QR transition — build 0.1.0 (7)
+
+Selecting a discovered hub now dismisses discovery before presenting the native
+QR camera. The selection is held in native state rather than depending on the
+activation page having finished loading. The camera starts in viewDidAppear via
+a containing UIViewController; startup and unavailable errors are surfaced.
+
+A valid QR automatically opens activation with the selected hub and hides the
+already-read label. Entering the eight-digit PIN advances once without another
+button. PIN/account ownership checks remain required. Run
+`node scripts/test_onboarding_scan.cjs` from the repository root for the isolated
+mobile-browser regression test. Signed iPhone archive passed; physical camera
+capture still needs testing on the user's iPhone.

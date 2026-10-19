@@ -34,7 +34,7 @@ $('discover-native').hidden=!nativeDiscovery;
 $('discover-native').onclick=()=>nativeDiscovery?.postMessage('discover');
 if(nativeDiscovery)$('new-home').onclick=e=>{e.preventDefault();nativeDiscovery.postMessage('discover');};
 $('scan-native').onclick=()=>window.webkit?.messageHandlers?.smartiOnboarding?.postMessage('scan');
-(async()=>{if(staff){if(await current()){show('factory');await run(inventory);}else show('auth');return;}if(location.pathname==='/welcome'){show('welcome');return;}const fragment=location.hash.slice(1);history.replaceState(null,'',location.pathname+location.search);if(fragment){$('identify').elements.label.value=fragment;if(/^[0-9a-f-]{36}\.[0-9]{10}\.[0-9a-f]{64}$/.test(fragment)){$('identify').elements.label.closest('label').hidden=true;$('identify').querySelector('button').textContent='Bekreft huben';}}active=new URLSearchParams(location.search).get('home')||'';if(active&&!/^[0-9a-f-]{36}$/.test(active))active='';if(active){if(await current())await run(status);else show('auth');}else show('scan');$('scan-native').hidden=!window.webkit?.messageHandlers?.smartiOnboarding;})();
+(async()=>{if(staff){if(await current()){show('factory');await run(inventory);}else show('auth');return;}if(location.pathname==='/welcome'){show('welcome');return;}const fragment=location.hash.slice(1);history.replaceState(null,'',location.pathname+location.search);if(fragment){try{parseLabel(fragment);$('identify').elements.label.value=fragment;$('identify').elements.label.closest('label').hidden=true;$('scan-title').textContent='QR-koden er lest.';$('scan-hint').textContent='Skriv aktiveringskoden fra kortet i esken. Vi fortsetter automatisk når alle åtte sifrene er fylt inn.';$('identify').querySelector('button').textContent='Fortsett';$('identify').elements.pin.focus();}catch{$('message').textContent='QR-koden kunne ikke leses. Skann etiketten under huben på nytt.';}}active=new URLSearchParams(location.search).get('home')||'';if(active&&!/^[0-9a-f-]{36}$/.test(active))active='';if(active){if(await current())await run(status);else show('auth');}else show('scan');$('scan-native').hidden=!window.webkit?.messageHandlers?.smartiOnboarding;})();
 setInterval(()=>{if(active&&csrf&&!busy&&!document.hidden&&!$('progress').hidden)status().catch(e=>{$('message').textContent=e.message;});},5000);
 
 const wizardSteps=['location-step','rooms-step','experience-step','review-step'];
@@ -43,3 +43,11 @@ function advance(){for(const input of $(wizardSteps[wizardStep]).querySelectorAl
 $('next-step').onclick=advance;$('back-step').onclick=()=>{wizardStep=Math.max(0,wizardStep-1);showStep();};
 
 function showKit(kit){if(kitURL)URL.revokeObjectURL(kitURL);kitURL=URL.createObjectURL(new Blob([JSON.stringify(kit,null,2)],{type:'application/json'}));$('download-kit').href=kitURL;$('download-kit').download='SMARTi-klargjoring-'+kit.installation_id+'.json';$('factory-kit').hidden=false;}
+
+// The QR supplies the label; completing the separate PIN advances without another tap.
+$('identify').elements.pin.addEventListener('input',()=>{
+ const form=$('identify');
+ if(!/^[0-9]{8}$/.test(form.elements.pin.value)||busy)return;
+ try{parseLabel(form.elements.label.value);}catch{return;}
+ form.requestSubmit();
+});

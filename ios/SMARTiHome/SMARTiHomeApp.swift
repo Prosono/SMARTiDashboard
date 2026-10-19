@@ -29,7 +29,7 @@ import AVFoundation
                 PhoneSettingsView(phone: phone, home: home)
             }
             .sheet(isPresented: $home.showScanner) { HubScanner(home: home) }
-            .sheet(isPresented: $home.showDiscovery) { HubDiscoveryView(home: home) }
+            .sheet(isPresented: $home.showDiscovery, onDismiss: { home.discoveryDismissed() }) { HubDiscoveryView(home: home) }
             .onOpenURL { url in _ = home.openActivation(url.absoluteString) }
             .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
                 if let url = activity.webpageURL { _ = home.openActivation(url.absoluteString) }
@@ -111,20 +111,40 @@ struct PhoneSettingsView: View {
     @Published var showScanner = false
     @Published var showDiscovery = false
     @Published var scanError: String?
+    private var pendingSetupDevice: String?
+    private var scanAfterDiscovery = false
+
+    func requestScanner() {
+        scanError = nil
+        Task {
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            scanError = granted ? nil : "Kameratilgang er ikke tillatt. Tillat kamera i iPhone-innstillinger, eller skriv inn koden."
+            showScanner = true
+        }
+    }
+
+    func discoveryDismissed() {
+        guard scanAfterDiscovery else { return }
+        scanAfterDiscovery = false
+        requestScanner()
+    }
 
     func openDiscoveredHub(_ hub: DiscoveredHub) {
         guard UUID(uuidString: hub.id) != nil else { return }
+        pendingSetupDevice = hub.state == "unconfigured" ? hub.id : nil
         if hub.state == "unconfigured" {
             lastPage = URL(string: "https://home.smarti.dev/activate?device=" + hub.id)!
         } else {
             guard hub.proof.range(of: "^[0-9]{10}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else { return }
             lastPage = URL(string: "https://home.smarti.dev/activate#" + hub.id + "." + hub.proof)!
         }
+        scanAfterDiscovery = true
         showDiscovery = false
         retry()
     }
 
     private var selectedSetupDevice: String? {
+        if let pendingSetupDevice { return pendingSetupDevice }
         guard let url = webView.url, url.host == "home.smarti.dev", url.path == "/activate",
               let device = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "device" })?.value,
               UUID(uuidString: device) != nil else { return nil }
@@ -143,6 +163,7 @@ struct PhoneSettingsView: View {
         var destination = URLComponents(url: url, resolvingAgainstBaseURL: false)!
         // Only an explicit in-app scan retains the chosen LAN hub. External links never reuse a stale selection.
         destination.queryItems = forSelectedHub ? selectedSetupDevice.map { [URLQueryItem(name: "device", value: $0)] } : nil
+        if !forSelectedHub { pendingSetupDevice = nil }
         lastPage = destination.url!
         retry()
         return true
@@ -150,6 +171,7 @@ struct PhoneSettingsView: View {
 
 
     func openPortal() {
+        pendingSetupDevice = nil
         lastPage = URL(string: "https://home.smarti.dev/")!
         retry()
     }
@@ -157,12 +179,8 @@ struct PhoneSettingsView: View {
         if message.name == "smartiOnboarding", message.frameInfo.isMainFrame,
            message.frameInfo.request.url?.host == "home.smarti.dev", webView.url?.host == "home.smarti.dev",
            ["scan", "discover"].contains(message.body as? String ?? "") {
-            if message.body as? String == "discover" { showDiscovery = true; return }
-            Task {
-                let granted = await AVCaptureDevice.requestAccess(for: .video)
-                scanError = granted ? nil : "Kameratilgang er ikke tillatt. Du kan skrive inn koden manuelt."
-                showScanner = true
-            }
+            if message.body as? String == "discover" { pendingSetupDevice = nil; showDiscovery = true; return }
+            requestScanner()
             return
         }
         guard message.name == "smartiPhoneSettings", message.frameInfo.isMainFrame,
@@ -279,10 +297,10 @@ struct HubScanner: View {
             VStack(spacing: 18) {
                 Text("Skann QR-koden under SMARTi-huben").font(.headline).padding()
                 if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
-                    HubCameraScanner { value in
+                    HubCameraScanner(found: { value in
                         if home.openActivation(value, forSelectedHub: true) { dismiss() }
                         else { home.scanError = "Dette er ikke en SMARTi-hubetikett. Prøv koden under huben." }
-                    }
+                    }, failed: { home.scanError = $0 })
                 } else {
                     Image(systemName: "qrcode.viewfinder").font(.system(size: 64))
                     Text("Kameraet er ikke tilgjengelig. Tillat kameratilgang i iPhone-innstillinger, eller skriv inn lenken fra etiketten.").padding()
@@ -295,21 +313,49 @@ struct HubScanner: View {
     }
 }
 
+// Start only once UIKit has presented the camera; failures must never disappear silently.
+final class HubScannerController: UIViewController {
+    let scanner = DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.qr])], qualityLevel: .balanced, recognizesMultipleItems: false, isGuidanceEnabled: true, isHighlightingEnabled: true)
+    var failed: ((String) -> Void)?
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        addChild(scanner)
+        scanner.view.frame = view.bounds
+        scanner.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(scanner.view)
+        scanner.didMove(toParent: self)
+    }
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        do { try scanner.startScanning() }
+        catch { failed?("Kameraet kunne ikke starte. Lukk skanneren og prøv igjen, eller skriv inn koden.") }
+    }
+    override func viewWillDisappear(_ animated: Bool) {
+        scanner.stopScanning()
+        super.viewWillDisappear(animated)
+    }
+}
+
 struct HubCameraScanner: UIViewControllerRepresentable {
     let found: (String) -> Void
-    func makeCoordinator() -> Coordinator { Coordinator(found: found) }
-    func makeUIViewController(context: Context) -> DataScannerViewController {
-        let scanner = DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.qr])], qualityLevel: .balanced, recognizesMultipleItems: false, isGuidanceEnabled: true, isHighlightingEnabled: true)
-        scanner.delegate = context.coordinator
-        try? scanner.startScanning()
-        return scanner
+    let failed: (String) -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(found: found, failed: failed) }
+    func makeUIViewController(context: Context) -> HubScannerController {
+        let controller = HubScannerController()
+        controller.scanner.delegate = context.coordinator
+        controller.failed = failed
+        return controller
     }
-    func updateUIViewController(_ controller: DataScannerViewController, context: Context) {}
-    static func dismantleUIViewController(_ controller: DataScannerViewController, coordinator: Coordinator) { controller.stopScanning() }
+    func updateUIViewController(_ controller: HubScannerController, context: Context) {}
+    static func dismantleUIViewController(_ controller: HubScannerController, coordinator: Coordinator) { controller.scanner.stopScanning() }
     class Coordinator: NSObject, DataScannerViewControllerDelegate {
         let found: (String) -> Void
         private var lastValue: String?
-        init(found: @escaping (String) -> Void) { self.found = found }
+        let failed: (String) -> Void
+        init(found: @escaping (String) -> Void, failed: @escaping (String) -> Void) { self.found = found; self.failed = failed }
+        func dataScanner(_ scanner: DataScannerViewController, becameUnavailableWithError error: DataScannerViewController.ScanningUnavailable) {
+            failed("Skanneren er ikke tilgjengelig nå. Prøv igjen, eller skriv inn koden fra etiketten.")
+        }
         func dataScanner(_ scanner: DataScannerViewController, didAdd addedItems: [RecognizedItem], allItems: [RecognizedItem]) {
             for item in addedItems {
                 if case .barcode(let barcode) = item, let value = barcode.payloadStringValue, value != lastValue {
