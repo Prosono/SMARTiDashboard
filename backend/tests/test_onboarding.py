@@ -231,3 +231,72 @@ def test_reprovision_only_unclaimed_preparing_hubs(tmp_path):
     activation["pin"] = renewed.json()["activation_pin"]
     ready_and_claim(staff, owner, hub, home, activation)
     assert staff.post(endpoint).status_code == 409
+
+
+def test_lan_discovery_proof_requires_pin_and_expires(tmp_path):
+    import time
+
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    endpoint = f"/api/hubs/{home}/onboarding/heartbeat"
+    assert "discovery" not in hub.post(endpoint, json=HEARTBEAT).json()
+    assert staff.post(f"/api/admin/hubs/{home}/ready", json=CHECKS).status_code == 200
+    discovery = hub.post(endpoint, json=HEARTBEAT).json()["discovery"]
+    assert discovery["id"] == home
+    assert kit["remote_credential"] not in json.dumps(discovery)
+    assert kit["activation_pin"] not in json.dumps(discovery)
+    assert "discovery" not in hub.post(endpoint, json=HEARTBEAT | {"users": 1}).json()
+    body = {"code": discovery["proof"], "pin": kit["activation_pin"]}
+    identify = f"/api/activation/{home}/identify"
+    bad_pin = "11111111" if body["pin"] != "11111111" else "22222222"
+    assert owner.post(identify, json=body | {"pin": bad_pin}).status_code == 404
+    expired = str(int(time.time()) - 301)
+    expired += (
+        "."
+        + hmac.new(
+            SECRET.encode(), ("lan-discovery:" + home + ":" + expired).encode(), hashlib.sha256
+        ).hexdigest()
+    )
+    assert owner.post(identify, json=body | {"code": expired}).status_code == 404
+    assert owner.post(identify, json=body | {"code": "0" * 64}).status_code == 404
+    assert owner.post(identify, json=body).status_code == 200
+    hub.post(endpoint, json=HEARTBEAT)
+    claim = f"/api/activation/{home}/claim"
+    assert owner.post(claim, json=body).status_code == 200
+    assert owner.post(claim, json=body).status_code == 200
+    assert other.post(claim, json=body).status_code == 409
+    assert "discovery" not in hub.post(endpoint, json=HEARTBEAT).json()
+
+
+@pytest.mark.asyncio
+async def test_bonjour_updates_and_stops(monkeypatch):
+    from app import lan_discovery
+
+    calls = []
+
+    class FakeZeroconf:
+        async def async_register_service(self, info):
+            calls.append(("register", info))
+
+        async def async_update_service(self, info):
+            calls.append(("update", info))
+
+        async def async_unregister_service(self, info):
+            calls.append(("remove", info))
+
+        async def async_close(self):
+            calls.append(("close", None))
+
+    monkeypatch.setattr(lan_discovery, "AsyncZeroconf", FakeZeroconf)
+    advertiser = lan_discovery.HubAdvertisement()
+    data = {
+        "id": "12345678-1234-1234-1234-123456789012",
+        "proof": "1234567890." + "a" * 64,
+        "model": "Ø" * 120,
+        "serial": "SM-001",
+    }
+    await advertiser.update(data)
+    await advertiser.update(data | {"proof": "1234567891." + "b" * 64})
+    await advertiser.update(None)
+    assert [c[0] for c in calls] == ["register", "update", "close"]
+    assert calls[0][1].properties[b"state"] == b"ready"
+    assert advertiser.zeroconf is None

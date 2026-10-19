@@ -1,5 +1,5 @@
 name: SMARTi
-version: "1.35.47"
+version: "1.35.48"
 slug: smarti
 url: https://github.com/Prosono/SMARTiDashboard
 # Build-tested architecture only; hardware/HAOS validation still required.
@@ -10,6 +10,8 @@ description: SMARTi home overview, controls, automations and rooms (development 
 startup: application
 boot: manual
 init: false
+# Bonjour must announce on the physical LAN. HTTP ingress remains proxy-restricted.
+host_network: true
 homeassistant_api: true
 hassio_api: true
 hassio_role: manager

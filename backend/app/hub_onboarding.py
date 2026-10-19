@@ -1,4 +1,4 @@
-"""Outbound factory heartbeat and checkpointed customer setup. No inbound LAN exposure."""
+"""Outbound factory heartbeat and checkpointed customer setup. LAN discovery carries no credentials and exposes no configuration endpoint."""
 
 import asyncio
 import hashlib
@@ -21,6 +21,9 @@ class HubOnboarding:
         self.settings, self.ha, self.store, self.remote = settings, ha, store, remote
         self.transport = transport
         self.boot = uuid.uuid4().hex
+        from .lan_discovery import HubAdvertisement
+
+        self.advertisement = HubAdvertisement()
         # Stable installation identity, bound on the factory server at its first heartbeat.
         marker = settings.data_dir / "factory-device-id"
         if not marker.exists():
@@ -193,20 +196,27 @@ class HubOnboarding:
             {
                 "boot_id": self.boot,
                 "fingerprint": self.fingerprint,
-                "version": "1.35.47",
+                "version": "1.35.48",
                 "users": users,
                 "ha_connected": bool(self.ha.connected),
                 "remote_ready": bool(self.remote.get("ready")),
             },
         )
+        await self.advertisement.update(result.get("discovery"))
         if result.get("plan"):
             await self.apply(result["plan"])
 
     async def run(self):
-        while True:
-            if self.settings.remote_identity_file:
-                try:
-                    await self.tick()
-                except (httpx.HTTPError, OSError, ValueError, HAError, sqlite3.Error, KeyError):
-                    log.warning("Hub activation service unavailable; will retry")
-            await asyncio.sleep(20)
+        try:
+            while True:
+                if self.settings.remote_identity_file:
+                    try:
+                        await self.tick()
+                    except (httpx.HTTPError, OSError, ValueError, HAError, sqlite3.Error, KeyError):
+                        await self.advertisement.update(None)
+                        log.warning("Hub activation service unavailable; will retry")
+                else:
+                    await self.advertisement.update(None)
+                await asyncio.sleep(20)
+        finally:
+            await self.advertisement.close()

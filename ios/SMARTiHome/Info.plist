@@ -15,12 +15,16 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>4</string>
+	<string>5</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
+	<key>NSLocalNetworkUsageDescription</key>
+    <string>Finn din nye SMARTi-hub på samme nettverk, slik at du enkelt kan sette opp hjemmet.</string>
+    <key>NSBonjourServices</key>
+    <array><string>_smarti-setup._tcp</string></array>
+    <key>NSCameraUsageDescription</key>
 	<string>Skann QR-koden på SMARTi-huben for å sette opp hjemmet ditt.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Del posisjon også når SMARTi er lukket, slik at hjemmet kan oppdatere tilstedeværelse og kjøre rutinene du har valgt.</string>

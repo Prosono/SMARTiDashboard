@@ -29,6 +29,7 @@ import AVFoundation
                 PhoneSettingsView(phone: phone, home: home)
             }
             .sheet(isPresented: $home.showScanner) { HubScanner(home: home) }
+            .sheet(isPresented: $home.showDiscovery) { HubDiscoveryView(home: home) }
             .onOpenURL { url in _ = home.openActivation(url.absoluteString) }
             .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
                 if let url = activity.webpageURL { _ = home.openActivation(url.absoluteString) }
@@ -108,7 +109,16 @@ struct PhoneSettingsView: View {
     @Published var failure: String?
     @Published var showPhoneSettings = false
     @Published var showScanner = false
+    @Published var showDiscovery = false
     @Published var scanError: String?
+
+    func openDiscoveredHub(_ hub: DiscoveredHub) {
+        guard UUID(uuidString: hub.id) != nil,
+              hub.proof.range(of: "^[0-9]{10}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else { return }
+        lastPage = URL(string: "https://home.smarti.dev/activate#" + hub.id + "." + hub.proof)!
+        showDiscovery = false
+        retry()
+    }
 
     func openSetup() {
         lastPage = URL(string: "https://home.smarti.dev/activate")!
@@ -132,7 +142,8 @@ struct PhoneSettingsView: View {
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "smartiOnboarding", message.frameInfo.isMainFrame,
            message.frameInfo.request.url?.host == "home.smarti.dev", webView.url?.host == "home.smarti.dev",
-           message.body as? String == "scan" {
+           ["scan", "discover"].contains(message.body as? String ?? "") {
+            if message.body as? String == "discover" { showDiscovery = true; return }
             Task {
                 let granted = await AVCaptureDevice.requestAccess(for: .video)
                 scanError = granted ? nil : "Kameratilgang er ikke tillatt. Du kan skrive inn koden manuelt."
@@ -291,6 +302,111 @@ struct HubCameraScanner: UIViewControllerRepresentable {
                     lastValue = value; found(value)
                 }
             }
+        }
+    }
+}
+
+
+struct DiscoveredHub: Identifiable {
+    let id: String
+    let proof: String
+    let model: String
+    let serial: String
+}
+
+@MainActor final class HubDiscovery: NSObject, ObservableObject, NetServiceBrowserDelegate, NetServiceDelegate {
+    @Published var hubs: [DiscoveredHub] = []
+    @Published var hint = "Søker etter huber på lokalnettet …"
+    private let browser = NetServiceBrowser()
+    private var services: [NetService] = []
+    private var found: [String: DiscoveredHub] = [:]
+    private var timeout: Task<Void, Never>?
+
+    func start() {
+        stop()
+        hint = "Søker etter huber på lokalnettet …"
+        browser.delegate = self
+        browser.searchForServices(ofType: "_smarti-setup._tcp.", inDomain: "local.")
+        timeout = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(12))
+            guard !Task.isCancelled, let self, self.hubs.isEmpty else { return }
+            self.hint = "Ingen hub funnet ennå. Kontroller strøm, nettverkskabel og at telefonen er på samme nettverk. Gjestenett kan blokkere søket."
+        }
+    }
+    func stop() {
+        timeout?.cancel(); timeout = nil
+        browser.stop()
+        for service in services { service.stopMonitoring(); service.stop() }
+        services.removeAll(); found.removeAll(); hubs = []
+    }
+    func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
+        guard services.count < 100 else { return }
+        services.append(service); service.delegate = self
+        // TXT monitoring avoids opening a connection or trusting a LAN-provided URL.
+        service.startMonitoring()
+    }
+    func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
+        found.removeValue(forKey: service.name)
+        services.removeAll { $0 == service }
+        service.stopMonitoring(); service.stop()
+        refresh()
+    }
+    func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
+        hint = "Lokalt søk er ikke tilgjengelig. Tillat Lokalnettverk under Innstillinger → SMARTi, eller bruk QR-koden."
+    }
+    func netService(_ sender: NetService, didUpdateTXTRecord data: Data) {
+        let record = NetService.dictionary(fromTXTRecord: data)
+        func value(_ key: String) -> String { record[key].flatMap { String(data: $0, encoding: .utf8) } ?? "" }
+        let id = value("id"), proof = value("proof")
+        guard value("v") == "1", value("state") == "ready", UUID(uuidString: id) != nil,
+              proof.range(of: "^[0-9]{10}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else {
+            found.removeValue(forKey: sender.name); refresh(); return
+        }
+        found[sender.name] = DiscoveredHub(id: id, proof: proof, model: String(value("model").prefix(80)), serial: String(value("serial").prefix(80)))
+        refresh()
+    }
+    private func refresh() {
+        hubs = Dictionary(found.values.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest }).values.sorted { $0.id < $1.id }
+        if !hubs.isEmpty { hint = "Velg huben din. Vi kontrollerer identiteten og ber om aktiveringskoden fra esken." }
+    }
+}
+
+struct HubDiscoveryView: View {
+    @ObservedObject var home: HomeBrowser
+    @StateObject private var discovery = HubDiscovery()
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Label("Et hjem begynner her", systemImage: "wifi.router").font(.title2.bold())
+                    Text("Koble huben til strøm og nettverkskabel. Bruk samme lokalnett på iPhone.")
+                    Text(discovery.hint).foregroundStyle(.secondary).accessibilityIdentifier("discovery-status")
+                }
+                Section("Huber klare for oppsett") {
+                    ForEach(discovery.hubs) { hub in
+                        Button { home.openDiscoveredHub(hub) } label: {
+                            HStack {
+                                Image(systemName: "house.fill").font(.title2)
+                                VStack(alignment: .leading) {
+                                    Text(hub.model.isEmpty ? "SMARTi Hub" : hub.model).font(.headline)
+                                    Text(hub.serial.isEmpty ? String(hub.id.suffix(8)) : hub.serial).font(.caption)
+                                }
+                                Spacer(); Image(systemName: "chevron.right")
+                            }.padding(.vertical, 8)
+                        }
+                    }
+                    if discovery.hubs.isEmpty { ProgressView("Leter etter huber …") }
+                }
+                Section {
+                    Button("Søk på nytt") { discovery.start() }
+                    Button("Bruk QR-kode eller skriv inn kode") { dismiss(); home.openSetup() }
+                    Button("Åpne iPhone-innstillinger") { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) }
+                    Text("Kun leveringsklare huber uten eier vises. Eksisterende hjem åpner du fra Mine hjem. Internett kreves for aktivering.").font(.footnote).foregroundStyle(.secondary)
+                }
+            }.navigationTitle("Finn SMARTi-huben")
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Lukk") { dismiss() } } }
+                .onAppear { discovery.start() }.onDisappear { discovery.stop() }
         }
     }
 }

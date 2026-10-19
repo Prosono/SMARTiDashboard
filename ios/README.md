@@ -170,3 +170,17 @@ installation; existing selected homes remain the default entry point.
 Xcode confirmed build 0.1.0 (4) upload succeeded on 2026-10-19. Apple processing
 and assignment to the existing manual internal-test group remain unverified;
 the user was actively using Firefox during the attempted App Store Connect check.
+
+## Local hub discovery — build 0.1.0 (5)
+
+New Home opens a native Bonjour browser for `_smarti-setup._tcp`. Permission is
+requested only after this action. TXT records are validated, capped and treated
+as untrusted until the fixed HTTPS portal verifies their short-lived signed proof
+and the separate activation PIN. No LAN URL or local configuration endpoint is
+opened. Discovery stops when dismissed; QR/manual setup remains available.
+Existing selected homes still open directly.
+
+Simulator build, signed archive and Apple upload succeeded. Backend: 297 tests
+passed. macOS DNS-SD received the actual Python broadcaster's TXT announcement.
+Physical iPhone/HAOS discovery and denied-permission behavior need pilot testing.
+Install HA 1.35.48 and use a factory-ready, unowned test hub with zero SMARTi users.

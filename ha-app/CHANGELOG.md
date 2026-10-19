@@ -1,3 +1,9 @@
+## 1.35.48
+- Bonjour discovery for factory-prepared hubs on the same LAN as the iPhone.
+- Short-lived discovery proofs, separate activation PIN and owner-checked cloud setup.
+- Stops advertising after ownership/setup; QR remains available.
+- Host networking enables multicast discovery; HTTP ingress still accepts only the Supervisor proxy.
+
 ## 1.35.47
 - Factory hub heartbeat binds a prepared hub to its portal inventory record.
 - Apply owner-approved setup for location, floors, rooms and the first SMARTi user with resumable checkpoints.

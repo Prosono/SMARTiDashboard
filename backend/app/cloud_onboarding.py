@@ -276,20 +276,48 @@ def install_onboarding(
                 "SELECT * FROM onboarding_plans WHERE home=? AND status IN ('queued','working')", (home,)
             ).fetchone()
             result = {"managed": True}
+            owner = c.execute("SELECT owner FROM homes WHERE id=?", (home,)).fetchone()[0]
+            if row["phase"] == "ready" and not owner and body.users == 0:
+                issued = str(int(time.time()))
+                proof = hmac.new(
+                    secret.encode(), ("lan-discovery:" + home + ":" + issued).encode(), hashlib.sha256
+                ).hexdigest()
+                result["discovery"] = {
+                    "id": home,
+                    "proof": issued + "." + proof,
+                    "model": row["model"],
+                    "serial": row["serial"],
+                }
+
             if job:
                 result["plan"] = json.loads(job["payload"]) | {"id": job["id"]}
         return result
 
+    def activation_proof(row, code):
+        if secrets.compare_digest(label(row), code):
+            return True
+        # A short-lived LAN discovery proof is never sufficient without the separate PIN.
+        try:
+            issued, digest = code.split(".", 1)
+            age = time.time() - int(issued)
+        except ValueError:
+            return False
+        expected = hmac.new(
+            secret.encode(), ("lan-discovery:" + row["home"] + ":" + issued).encode(), hashlib.sha256
+        ).hexdigest()
+        return 0 <= age <= 300 and secrets.compare_digest(expected, digest)
+
     @app.post("/api/activation/{home}/identify")
     def identify(home: str, body: Activation, request: Request):
         throttle("activation:" + request.client.host)
+        throttle("activation-hub:" + home)
         with db() as c:
             row = c.execute(
                 "SELECT f.*,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
             ).fetchone()
         if (
             not row
-            or not secrets.compare_digest(label(row), body.code)
+            or not activation_proof(row, body.code)
             or not secrets.compare_digest(row["pin"], pin_digest(body.pin))
         ):
             raise HTTPException(404, "activation_not_found")
@@ -303,6 +331,7 @@ def install_onboarding(
     @app.post("/api/activation/{home}/claim")
     def activate(home: str, body: Activation, s=Depends(session)):
         throttle("activate-account:" + s["account"])
+        throttle("activation-hub:" + home)
         with db() as c:
             c.execute("BEGIN IMMEDIATE")
             row = c.execute(
@@ -310,7 +339,7 @@ def install_onboarding(
             ).fetchone()
             if (
                 not row
-                or not secrets.compare_digest(label(row), body.code)
+                or not activation_proof(row, body.code)
                 or not secrets.compare_digest(row["pin"], pin_digest(body.pin))
             ):
                 raise HTTPException(404, "activation_not_found")

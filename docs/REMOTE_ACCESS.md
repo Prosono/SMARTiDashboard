@@ -348,3 +348,29 @@ setup flow on desktop and mobile, simulated HA interruption/retry, unsigned
 simulator build and signed iPhone archive. Physical QR capture, radio checks,
 actual HA reset completion and Universal Links on a physical phone still require
 a pilot on a separate clean hub before shipping customer hardware.
+
+
+### Local discovery (HA 1.35.48 / iPhone build 5)
+
+The iPhone's New Home action browses `_smarti-setup._tcp.local.` after the user
+allows Local Network access. Factory heartbeat returns a five-minute HMAC proof
+only for ready, unowned hubs with no SMARTi users. Bonjour TXT carries version,
+state, installation UUID, model, serial and that proof; it never carries the hub
+credential, PIN, account or home address. The app never opens a LAN-supplied URL
+or sends credentials to the advertised host. It passes the discovery proof to the
+fixed HTTPS portal. Separate activation PIN, portal login, readiness and ownership
+checks remain mandatory. Proof expiry prompts a new search. QR setup still works.
+
+HA uses host networking for multicast reachability; port 8099 retains its strict
+Supervisor-source ingress check, and remote listeners remain loopback-bound.
+An existing host service using 8099 must be moved before this version starts.
+No additional unauthenticated setup API is exposed. Advertisement is withdrawn
+on claim, heartbeat failure or shutdown; stale records also have a 60-second TTL.
+
+A hub must first be registered, have its per-hub credentials installed and pass
+Admin → Huber → Godkjenn for levering. Ordinary installed but unprovisioned HA
+instances cannot securely identify themselves and are not advertised. Existing
+owned/customer hubs are intentionally absent from discovery. For a pilot, use a
+separate clean hub; do not reset a customer's live installation for discovery.
+Wi-Fi and Ethernet must share a multicast-capable LAN. Guest networks/VLANs may
+block discovery; QR is the fallback. Internet remains required for activation.
