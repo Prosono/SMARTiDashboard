@@ -38,7 +38,7 @@ async function detail(id){const d=await api("admin/accounts/"+encodeURIComponent
  if(!d.notes.length)$("notes").textContent="Ingen supportnotater ennå.";
  $("detail").scrollIntoView({behavior:"auto",block:"start"});
 }
-async function audit(){const rows=await api("admin/audit");const names={overview:"Åpnet kundeoversikten",view_customer:"Åpnet kunde",add_note:"La til supportnotat"};$("audit-rows").replaceChildren(...rows.map(r=>{const n=el("div",undefined,"audit-row");n.append(el("span",r.actor+" · "+names[r.action]+(r.target?" · "+r.target:"")),el("small",date(r.created)));return n;}));}
+async function audit(){const rows=await api("admin/audit");const names={overview:"Åpnet kundeoversikten",view_customer:"Åpnet kunde",add_note:"La til supportnotat"};$("audit-rows").replaceChildren(...rows.map(r=>{const n=el("div",undefined,"audit-row");n.append(el("span",r.actor+" · "+(names[r.action]||r.action)+(r.target?" · "+r.target:"")),el("small",date(r.created)));return n;}));}
 function tab(v){view=v;$("customers").hidden=v!=="customers";$("audit").hidden=v!=="audit";$("search").hidden=v!=="customers";$("detail").hidden=true;$("customers-tab").setAttribute("aria-pressed",String(v==="customers"));$("audit-tab").setAttribute("aria-pressed",String(v==="audit"));}
 $("login").onsubmit=e=>{e.preventDefault();run(async()=>{csrf=(await api("login","POST",Object.fromEntries(new FormData($("login"))))).csrf;$("login").elements.password.value="";await overview();});};
 $("logout").onclick=()=>run(async()=>{await api("logout","POST");location.href="/admin";});
@@ -51,3 +51,6 @@ $("audit-tab").onclick=()=>run(async()=>{await audit();tab("audit");});
 $("close-detail").onclick=()=>{$("detail").hidden=true;selected=null;$("customers-tab").focus();};
 $("note-form").onsubmit=e=>{e.preventDefault();if(selected)run(async()=>{await api("admin/accounts/"+encodeURIComponent(selected)+"/notes","POST",{text:$("note").value});$("note").value="";await detail(selected);});};
 (async()=>{try{csrf=(await api("session")).csrf;await overview();}catch(e){if(csrf)$("message").textContent=e.message;}})();
+
+async function supportCount(){try{const cases=await api("admin/support/cases");const count=cases.filter(c=>c.unread||c.status==="new").length;$("support-count").textContent=count?"("+count+")":"";}catch{}}
+supportCount();setInterval(()=>{if(!document.hidden&&csrf)supportCount();},60000);

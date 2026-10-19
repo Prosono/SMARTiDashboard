@@ -243,3 +243,33 @@ For an existing account omit `--create`; use `--revoke` to revoke the role and
 its sessions. These commands require server access; no public provisioning API
 is added. Back up the SQLite database before deployment. Notes are internal
 support records: do not put passwords, keys or unnecessary personal data in them.
+
+## Support cases and owner-approved assistance
+
+- Customers use `/support`; staff use `/admin/support`. Categories, subject,
+  public conversation, status, assignee and unread markers are persisted in the
+  portal. Staff may claim a case and move it through new, reviewing, in progress,
+  waiting for customer, resolved and closed. Closing/resolving revokes access.
+- `/support/prices` lists hourly/simple/complex/advanced prices, including VAT.
+  Administrators can publish revised prices there. Each case stores its accepted
+  price snapshot, version and acceptance time. Submission itself is free; scope
+  and fixed price must be agreed before work. No invoice is issued automatically.
+- Only the portal account owning the case's home can approve a support request.
+  Approval is separate from billing consent, lasts 30 minutes, and can be revoked.
+  The requesting administrator receives a one-use code valid for two minutes.
+  The code is carried in a URL fragment, exchanged by the authenticated home, and
+  removed from browser history before redemption. Stored codes/session tokens
+  are hashed. Sessions are bound to the original home, grant, administrator role
+  and active portal login; ownership changes, logout, role removal, expiry and
+  case closure invalidate them. Hub requests fail closed if validation fails.
+- Hub 1.35.45 adds a separate temporary support cookie/principal and explicit
+  endpoint allowlist. No local user, password, mobile pairing or ordinary hub
+  session is created. SMARTi controls, rooms, scenes and automations are supported;
+  cameras/video, console, accounts, system and mobile administration are excluded.
+  Existing device command confirmations remain required. Mutating request paths
+  are logged as requests, not asserted successes; no command payloads are logged.
+  Each API request rechecks consent; event streams recheck within five seconds
+  and stop at their expiry. Previously completed configuration changes remain.
+- Portal administration is live independently of hub releases. A hub update is
+  required before support links can open the home. No email, SMS, push delivery
+  or automatic billing is implemented; notifications are unread markers in the UI.

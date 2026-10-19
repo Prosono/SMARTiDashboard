@@ -43,6 +43,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  LifeBuoy,
   Layers,
   Clapperboard,
   House,
@@ -111,6 +112,7 @@ const icons = {
   integrations: Blocks,
   apps: AppWindow,
   updates: DownloadCloud,
+  support: LifeBuoy,
   more: Settings,
 };
 type Page = keyof typeof icons;
@@ -200,7 +202,9 @@ function App() {
   }
   useEffect(() => {
     setPage((p) =>
-      mode === "simple" && !["home", "more"].includes(p) ? "home" : p,
+      mode === "simple" && !["home", "support", "more"].includes(p)
+        ? "home"
+        : p,
     );
   }, [mode]);
   const mainNav = useRef<HTMLElement>(null);
@@ -325,7 +329,7 @@ function App() {
                 (p) =>
                   mode === "advanced" ||
                   (mode === "simple"
-                    ? ["home", "more"].includes(p)
+                    ? ["home", "support", "more"].includes(p)
                     : !["integrations", "apps", "updates"].includes(p)),
               )
               .map((p) => {
@@ -765,6 +769,17 @@ function Dashboard({
         </div>
       </header>
       <main>
+        {session.support && (
+          <div className="support-session-banner" role="status">
+            Godkjent fjernhjelp · Tilgang utløper{" "}
+            {new Date(session.support.expires * 1000).toLocaleTimeString()}
+            <span>
+              {" "}
+              Kamera, konsoll, brukere og systemadministrasjon er ikke
+              tilgjengelig.
+            </span>
+          </div>
+        )}
         {h.mode === "demo" && (
           <div className="demo-strip">
             <span>DEMO</span>
@@ -1047,7 +1062,13 @@ function Dashboard({
                   (regular.length ? (
                     selected.length ? (
                       <PagedControls
-                        key={JSON.stringify([page, room, filter, search, protocol])}
+                        key={JSON.stringify([
+                          page,
+                          room,
+                          filter,
+                          search,
+                          protocol,
+                        ])}
                         controls={selected}
                         render={cards}
                         lang={lang}
@@ -1061,6 +1082,33 @@ function Dashboard({
               </>
             )}
           </>
+        ) : page === "support" ? (
+          <section className="support-home">
+            <LifeBuoy size={34} aria-hidden="true" />
+            <h1>{lang === "en" ? "Support" : "Support"}</h1>
+            <p>
+              {lang === "en"
+                ? "Create a case, follow progress and approve remote assistance when needed."
+                : "Opprett en sak, følg fremdriften og godkjenn fjernhjelp når det trengs."}
+            </p>
+            <a
+              className="primary-button"
+              href="https://home.smarti.dev/support"
+            >
+              {lang === "en"
+                ? "Open my support cases"
+                : "Åpne mine supportsaker"}{" "}
+              <ArrowUpRight size={18} />
+            </a>
+            <a href="https://home.smarti.dev/support/prices">
+              {lang === "en" ? "View prices" : "Se prislisten"}
+            </a>
+            <p className="muted">
+              {lang === "en"
+                ? "Sign in with the SMARTi account connected to your home."
+                : "Logg inn med SMARTi-kontoen som hjemmet er koblet til."}
+            </p>
+          </section>
         ) : page === "automations" && session.role === "admin" ? (
           <Automations lang={lang} home={h} onDirty={onDirty} />
         ) : page === "integrations" && session.role === "admin" ? (

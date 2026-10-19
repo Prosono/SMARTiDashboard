@@ -18,6 +18,6 @@ build:
 package: build
 	.venv/bin/python scripts/package.py
 container: package
-	docker build -t smarti:1.35.44 ha-app
+	docker build -t smarti:1.35.45 ha-app
 e2e:
 	cd frontend && npx playwright test

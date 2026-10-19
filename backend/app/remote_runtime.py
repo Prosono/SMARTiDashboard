@@ -43,7 +43,11 @@ async def serve_home(settings, adapter, certificates, state):
         }
     )
     app = create_app(
-        remote, adapter, remote_surface=True, console_settings=settings if settings.ingress else None
+        remote,
+        adapter,
+        remote_surface=True,
+        console_settings=settings if settings.ingress else None,
+        support_identity=settings.remote_identity_file,
     )
     served_app = app
     if settings.ingress and settings.mode == "live":

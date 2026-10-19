@@ -1,3 +1,8 @@
+## 1.35.45
+- New Support navigation opens cases and pricing in the SMARTi portal.
+- Owner-approved remote support uses one-use links and 30-minute, revocable sessions.
+- Support sessions cannot create users, register phones, open system consoles or access camera/video routes.
+
 ## 1.35.44
 - Package consistency for the new separately deployed portal administration. No hub update is required to use home.smarti.dev/admin.
 

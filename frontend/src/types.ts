@@ -36,4 +36,9 @@ export type Home = {
   controls: Control[];
   favorites: string[];
 };
-export type Session = { name: string; role: "admin" | "user"; csrf: string };
+export type Session = {
+  name: string;
+  role: "admin" | "user";
+  csrf: string;
+  support?: { expires: number; ticket: string };
+};

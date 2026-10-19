@@ -4,6 +4,7 @@ import contextlib
 import json
 import math
 import secrets
+import time
 from contextlib import asynccontextmanager
 from typing import Literal
 
@@ -104,7 +105,13 @@ class ConsoleTarget(BaseModel):
 
 
 def create_app(
-    settings=None, adapter=None, *, mobile_only=False, remote_surface=False, console_settings=None
+    settings=None,
+    adapter=None,
+    *,
+    mobile_only=False,
+    remote_surface=False,
+    console_settings=None,
+    support_identity=None,
 ):
     settings = settings or Settings()
     settings.validate_runtime()
@@ -115,6 +122,10 @@ def create_app(
     session_cookie = "__Host-smarti_remote" if remote_surface else "smarti_session"
     store = Store(settings.database)
     auth = Auth(store, settings)
+    from .support_access import COOKIE as support_cookie
+    from .support_access import SupportAccess, install_support_access
+
+    support = SupportAccess(support_identity) if remote_surface and support_identity else None
     mobile = MobileAuth(store)
     ha = adapter or (Demo() if settings.mode == "demo" else HomeAssistant(settings.ha_url, settings.ha_token))
 
@@ -174,6 +185,7 @@ def create_app(
     app.state.ha, app.state.auth, app.state.store = ha, auth, store
     app.state.remote = {"ready": False}
     app.state.mobile = mobile
+    app.state.support = support
     app.state.setup = setup
     app.state.origins = origins
 
@@ -228,7 +240,9 @@ def create_app(
             response.headers["Content-Security-Policy"] += f"; frame-src 'self' {console.origin}"
         return response
 
-    def user(request: Request):
+    async def user(request: Request):
+        if support and request.cookies.get(support_cookie):
+            return await support.user(request)
         result = auth.session(request.cookies.get(session_cookie))
         if request.method not in {"GET", "HEAD"} and not secrets.compare_digest(
             request.headers.get("x-csrf-token", ""), result["csrf"]
@@ -243,6 +257,8 @@ def create_app(
             raise HTTPException(403, "admin_required")
         return current
 
+    if support:
+        install_support_access(app, support)
     app.include_router(access_router(store, admin))
     if not mobile_only:
         app.include_router(remote_router(settings, admin))
@@ -299,6 +315,8 @@ def create_app(
         key = "login:" + request.client.host
         auth.throttle(key)
         token, session = auth.login(body.name, body.password)
+        if support:
+            response.delete_cookie(support_cookie, path="/", secure=True, httponly=True, samesite="strict")
         auth.finish_successful_attempt(key)
         response.set_cookie(
             session_cookie,
@@ -356,6 +374,8 @@ def create_app(
     @app.post("/api/logout")
     async def logout(request: Request, response: Response, current=Depends(user)):
         auth.logout(request.cookies.get(session_cookie))
+        if support:
+            response.delete_cookie(support_cookie, path="/", secure=True, httponly=True, samesite="strict")
         response.delete_cookie(
             session_cookie, path=cookie_path(request), secure=remote_surface, httponly=True, samesite="strict"
         )
@@ -551,9 +571,17 @@ def create_app(
 
         async def stream():
             revision = (-1, -1)
+            support_checked = 0.0
             while not await request.is_disconnected():
                 try:
-                    auth.session(request.cookies.get(session_cookie))
+                    if current.get("support"):
+                        if current["support"]["expires"] <= time.time():
+                            raise HTTPException(401, "support_access_expired")
+                        if time.monotonic() - support_checked >= 5:
+                            await support.user(request)
+                            support_checked = time.monotonic()
+                    else:
+                        auth.session(request.cookies.get(session_cookie))
                 except HTTPException:
                     yield "event: expired\ndata: {}\n\n"
                     return

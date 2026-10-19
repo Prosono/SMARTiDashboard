@@ -16,9 +16,11 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
-from app.cloud_admin import install_admin
 from pwdlib import PasswordHash
 from pydantic import BaseModel, Field
+
+from app.cloud_admin import install_admin
+from app.cloud_support import install_support
 
 PASSWORDS = PasswordHash.recommended()
 PASSWORD_WORKERS = threading.BoundedSemaphore(2)
@@ -375,6 +377,7 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
             ]
 
     is_admin = install_admin(app, db, session, relay_status_url)
+    install_support(app, db, session, is_admin, home_auth, origin)
 
     static = Path(__file__).with_name("cloud_web")
     app.mount("/assets", StaticFiles(directory=static), name="assets")
