@@ -344,7 +344,8 @@ def create_app(
                 or info.get("state") != "started"
             ):
                 raise HTTPException(404, "app_not_available")
-            path = "/hassio/ingress/" + slug
+            # HA owns ingress session creation and renewal through its app panel.
+            path = "/app/" + slug
         return {"url": console.launch(request.cookies.get(session_cookie), path)}
 
     @app.get("/api/session")

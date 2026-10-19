@@ -1,3 +1,8 @@
+## 1.35.38
+
+- Retter 404 ved åpning av Zigbee2MQTT og Z-Wave JS UI via fjernaksess. Bruker Home Assistants nåværende app-rute i stedet for den gamle Hass.io-ruten.
+- Home Assistant håndterer fortsatt innlogging og opprettelse/fornyelse av Ingress-tilgang.
+
 ## 1.35.37
 
 - Home Assistant og avansert visning for Zigbee2MQTT og Z-Wave JS UI kan åpnes inne i SMARTi via fjernaksess på HA-huber.

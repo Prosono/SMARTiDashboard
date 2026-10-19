@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "b14d911fc87a037685d18d44d37f03b8b944fd473711558963db2cac9b49afc1",
+  "bundle_sha256": "9e188c9efc67deca87198e79ff9fb15bf50b56e01bc1cf1cd9c8789d7a39d238",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/access.py": "c1fb8be81ea171fb93038d76e752cdbdd0782ad94f509841c8521a527ebd6be2",
@@ -25,7 +25,7 @@
     "backend/app/home_overview.py": "b0402fcb64a2fe5f8132f6e7bf64371aafdc1155f84c01b5c4dda1eec3c23dee",
     "backend/app/integration_setup.py": "56debf360745b783fad86fcced6b453a6cac0180dfb1928909c31ba5ab1fff88",
     "backend/app/inventory.py": "e1b1d84d7378ce564acb92ccbb979830381e778c599d10c22547c2629a34bdc6",
-    "backend/app/main.py": "dda5aab94ac9969c69303bcf4e3a82ec5b0c2180a1169ffb0814d1c0a9edd1a9",
+    "backend/app/main.py": "554a497cdf3ab66177100fe3a2316ece0b6870e2fb61c58a86ed42ccf1a7cb18",
     "backend/app/management.py": "6dfa8ead14f3ac09e4417d9cb79727814a683df80dfc15a34941fb5e0939ff2d",
     "backend/app/mobile.py": "a661f266905682172971cd8acab5b11b490c744ba71da62efab1e64c391a53c3",
     "backend/app/mobile_run.py": "df878c1c04e35cb225229bfe1df88eb5be075a00ae1b5cfe8b60f2ad772b1702",
@@ -152,7 +152,7 @@
     "backend/app/home_overview.py": "b0402fcb64a2fe5f8132f6e7bf64371aafdc1155f84c01b5c4dda1eec3c23dee",
     "backend/app/integration_setup.py": "56debf360745b783fad86fcced6b453a6cac0180dfb1928909c31ba5ab1fff88",
     "backend/app/inventory.py": "e1b1d84d7378ce564acb92ccbb979830381e778c599d10c22547c2629a34bdc6",
-    "backend/app/main.py": "dda5aab94ac9969c69303bcf4e3a82ec5b0c2180a1169ffb0814d1c0a9edd1a9",
+    "backend/app/main.py": "554a497cdf3ab66177100fe3a2316ece0b6870e2fb61c58a86ed42ccf1a7cb18",
     "backend/app/management.py": "6dfa8ead14f3ac09e4417d9cb79727814a683df80dfc15a34941fb5e0939ff2d",
     "backend/app/mobile.py": "a661f266905682172971cd8acab5b11b490c744ba71da62efab1e64c391a53c3",
     "backend/app/mobile_run.py": "df878c1c04e35cb225229bfe1df88eb5be075a00ae1b5cfe8b60f2ad772b1702",

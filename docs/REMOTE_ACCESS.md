@@ -215,7 +215,7 @@ The console proxies the HA frontend on `http://homeassistant:8123`, including
 HA's own authentication and ingress sessions. It never injects the Supervisor
 token, and strips SMARTi cookies and forwarded identity headers. HA admin
 credentials may be requested once inside the frame. Radio panels use HA's
-`/hassio/ingress/<slug>` view for installed, running ingress-enabled Zigbee2MQTT
+`/app/<slug>` view for installed, running ingress-enabled Zigbee2MQTT
 and Z-Wave apps. External standalone radio servers and HA Core installations
 using a custom internal port/TLS endpoint are not covered by this initial route.
 

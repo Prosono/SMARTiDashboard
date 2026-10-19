@@ -95,7 +95,7 @@ def test_provisioning_requires_local_admin_and_csrf(tmp_path):
     assert not (tmp_path / "remote-identity.json").exists()
 
 
-def test_remote_console_handoff_is_admin_and_csrf_protected(tmp_path):
+def test_remote_console_handoff_is_admin_and_csrf_protected(tmp_path, monkeypatch):
     from app.remote_console import RemoteConsole
 
     origin = f"https://{uuid.uuid4()}.home.smarti.dev"
@@ -124,6 +124,27 @@ def test_remote_console_handoff_is_admin_and_csrf_protected(tmp_path):
     assert response.json()["url"].startswith(origin.replace("https://", "https://ha-") + "/_smarti/launch#")
     assert remote.post(endpoint, json={"slug": "../evil"}).status_code == 422
     assert remote.post(endpoint, json={}, headers={"Origin": "https://evil.example"}).status_code == 403
+    from urllib.parse import urlsplit
+
+    from app.system_operations import Supervisor
+
+    async def addon_info(self, method, path, data=None):
+        assert method == "GET"
+        assert path.startswith("/addons/") and path.endswith("/info")
+        return {"ingress": True, "state": "started"}
+
+    monkeypatch.setattr(Supervisor, "request", addon_info)
+    console = TestClient(
+        app.state.console, base_url=app.state.console.origin, headers={"Origin": app.state.console.origin}
+    )
+    for slug in ("45df7312_zigbee2mqtt", "a0d7b954_zwavejs2mqtt"):
+        launch = remote.post(endpoint, json={"slug": slug})
+        assert launch.status_code == 200
+        ticket = urlsplit(launch.json()["url"]).fragment
+        opened = console.post("/_smarti/session", json={"ticket": ticket})
+        assert opened.status_code == 200
+        assert opened.json()["path"] == "/app/" + slug
+    assert remote.post(endpoint, json={"slug": "other_app"}).status_code == 404
     page = remote.get("/healthz")
     assert app.state.console.origin in page.headers["content-security-policy"]
     with app.state.store.connect() as db:
