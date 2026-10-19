@@ -1,4 +1,5 @@
 import { Scenes } from "./home/Scenes";
+import { PagedControls } from "./PagedControls";
 import { DiscoveredDevices, useDiscoveries } from "./manage/DiscoveredDevices";
 import { SettingsDialog, InSettingsDialog } from "./home/SettingsDialog";
 import { ControlHistory } from "./ControlHistory";
@@ -1044,7 +1045,12 @@ function Dashboard({
                 {!["light", "climate"].includes(filter) &&
                   (regular.length ? (
                     selected.length ? (
-                      cards(selected)
+                      <PagedControls
+                        key={JSON.stringify([page, room, filter, search, protocol])}
+                        controls={selected}
+                        render={cards}
+                        lang={lang}
+                      />
                     ) : (
                       <p className="empty">{t.noResults}</p>
                     )

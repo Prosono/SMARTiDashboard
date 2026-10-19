@@ -184,3 +184,18 @@ def test_valid_logins_do_not_consume_failure_budget(tmp_path):
         assert response.status_code == 200
         assert "__Host-smarti_cloud=" in response.headers["set-cookie"]
         assert "Domain=" not in response.headers["set-cookie"]
+
+
+def test_login_checks_existing_password_without_registration_length_rule(tmp_path):
+    from app.cloud import PASSWORDS
+
+    path = tmp_path / "cloud.sqlite"
+    app = create_cloud(path, SECRET)
+    c = TestClient(app, base_url=ORIGIN, headers={"Origin": ORIGIN})
+    body = {"username": "existing", "password": "short-test"}
+    assert c.post("/api/register", json=body).status_code == 422
+    with sqlite3.connect(path) as db:
+        db.execute("INSERT INTO accounts VALUES(?,?,?)", ("existing-id", "existing", PASSWORDS.hash(body["password"])))
+    assert c.post("/api/login", json={**body, "password": "wrong"}).status_code == 401
+    assert c.post("/api/login", json=body).status_code == 200
+    assert c.get("/api/session").status_code == 200

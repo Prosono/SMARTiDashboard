@@ -463,6 +463,21 @@ section + section {
   gap: 17px;
   align-items: start;
 }
+.control-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.control-pagination > span { margin-right: auto; color: var(--muted); }
+.control-pagination button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
 .device {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -511,6 +526,7 @@ section + section {
 }
 .device-value {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -519,6 +535,8 @@ section + section {
 }
 .state {
   display: flex;
+  min-width: 0;
+  overflow-wrap: anywhere;
   align-items: center;
   gap: 7px;
   font-size: 13px;
@@ -564,6 +582,9 @@ section + section {
   transform: translateX(20px);
 }
 .big-value {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-size: 34px;
   letter-spacing: -1px;
   font-weight: 400;

@@ -30,6 +30,10 @@ def digest(value):
 
 class Credentials(BaseModel):
     username: str = Field(min_length=3, max_length=80, pattern=r"^[a-zA-Z0-9_.@+-]+$")
+    password: str = Field(min_length=1, max_length=256)
+
+
+class Registration(Credentials):
     password: str = Field(min_length=12, max_length=256)
 
 
@@ -159,7 +163,7 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
         return {"status": "ok"}
 
     @app.post("/api/register", dependencies=[Depends(browser)])
-    def register(body: Credentials, request: Request):
+    def register(body: Registration, request: Request):
         throttle("register:" + request.client.host)
         with PASSWORD_WORKERS:
             hashed = PASSWORDS.hash(body.password)

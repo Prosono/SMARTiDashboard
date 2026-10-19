@@ -48,6 +48,8 @@ async function login() {
 $("login").onsubmit=e=>{e.preventDefault();run(login);};
 $("register").onclick=()=>run(async()=>{
   if (!$("login").reportValidity()) return;
+  if ($("login").elements.password.value.length < 12)
+    throw new Error("Nye kontoer må ha et passord med minst 12 tegn.");
   await api("register","POST",Object.fromEntries(new FormData($("login")))); await login();
 });
 $("claim").onsubmit=e=>{e.preventDefault();run(async()=>{
@@ -58,3 +60,5 @@ $("logout").onclick=()=>run(async()=>{await api("logout","POST");csrf="";$("acco
 (async()=>{try{csrf=(await api("session")).csrf;await showHomes();}catch{}})();
 
 setInterval(()=>{if(csrf && !document.hidden) showHomes().catch(()=>{});},15000);
+
+$("login").addEventListener("input", () => { $("message").textContent = ""; });
