@@ -1,3 +1,8 @@
+## 1.35.41
+
+- Gjeninnfører 3D-energimodellen på iPhone og iPad, inkludert animert strømflyt og interaktive målepunkter.
+- Fjerner den midlertidige iOS-begrensningen fra 1.35.40.
+
 ## 1.35.40
 
 - Energivisningen bruker en lettere oversikt uten 3D/WebGL på iPhone og iPad. Målinger, innstillinger og historikk beholdes.

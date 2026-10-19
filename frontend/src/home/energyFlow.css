@@ -7,26 +7,6 @@
   --flow-grid: #187da0;
   margin: 0 0 2rem;
 }
-.flow-lightweight {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 2rem 1.25rem;
-  color: var(--flow-home);
-}
-.flow-lightweight > svg {
-  flex-shrink: 0;
-}
-.flow-lightweight h2 {
-  font-size: 1.15rem;
-  margin: 0 0 0.5rem;
-}
-.flow-lightweight p {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin: 0;
-  max-width: 42ch;
-}
 [data-theme="dark"] .energy-flow {
   --flow-solar: #ffd378;
   --flow-home: #ffc09c;
