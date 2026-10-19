@@ -1,3 +1,10 @@
+## 1.35.37
+
+- Home Assistant og avansert visning for Zigbee2MQTT og Z-Wave JS UI kan åpnes inne i SMARTi via fjernaksess på HA-huber.
+- Egen kontrollpaneladresse per hjem med HTTP- og WebSocket-støtte. Åpning krever SMARTi-administrator; Home Assistants egen innlogging beholdes.
+- Kortvarig engangstilgang åpner panelet uten å dele SMARTi-informasjonskapsler eller Supervisor-nøkler med Home Assistant.
+- Krever oppdatert SMARTi-relé og sertifikat med kontrollpaneladressen; huben oppdaterer sertifikatet ved oppstart.
+
 ## 1.35.36
 
 - Kontaktvarselet vises først etter 10 sekunder med sammenhengende brudd, slik at korte gjenoppkoblinger ikke gir blinkende varsler. Varselet fjernes straks forbindelsen er tilbake.

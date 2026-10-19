@@ -25,7 +25,9 @@ def run_hook(action, environ=None, transport=None):
     home, credential = read_identity(environ["SMARTI_REMOTE_IDENTITY_FILE"])
     identifier = environ.get("CERTBOT_IDENTIFIER", environ.get("CERTBOT_DOMAIN"))
     token = environ["CERTBOT_TOKEN"]
-    if identifier != f"{home}.home.smarti.dev" or not re.fullmatch(r"[A-Za-z0-9_-]{22,128}", token):
+    if identifier not in {f"{home}.home.smarti.dev", f"ha-{home}.home.smarti.dev"} or not re.fullmatch(
+        r"[A-Za-z0-9_-]{22,128}", token
+    ):
         raise ValueError("Certificate identifier rejected")
     endpoint = f"{CLOUD_ORIGIN}/api/hubs/{home}/certificate-challenge"
     with httpx.Client(timeout=15, trust_env=False, follow_redirects=False, transport=transport) as client:

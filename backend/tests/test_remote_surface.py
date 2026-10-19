@@ -1,9 +1,10 @@
 import uuid
 
+from fastapi.testclient import TestClient
+
 from app.config import Settings
 from app.demo import Demo
 from app.main import create_app
-from fastapi.testclient import TestClient
 
 
 def test_remote_browser_requires_local_login_exact_host_origin_and_csrf(tmp_path):
@@ -92,3 +93,39 @@ def test_provisioning_requires_local_admin_and_csrf(tmp_path):
     client.headers["X-CSRF-Token"] = login.json()["csrf"]
     assert client.post("/api/remote/provision", json=body).status_code == 403
     assert not (tmp_path / "remote-identity.json").exists()
+
+
+def test_remote_console_handoff_is_admin_and_csrf_protected(tmp_path):
+    from app.remote_console import RemoteConsole
+
+    origin = f"https://{uuid.uuid4()}.home.smarti.dev"
+    settings = Settings(
+        _env_file=None,
+        mode="demo",
+        data_dir=tmp_path,
+        origin=origin,
+        auto_local_origins=False,
+        bootstrap_secret="bootstrap-test-secret-123456",
+    )
+    local = create_app(settings, Demo())
+    browser = TestClient(local, base_url=origin, headers={"Origin": origin})
+    creds = {"name": "owner", "password": "test-remote-password"}
+    browser.post("/api/bootstrap", json=creds | {"secret": settings.bootstrap_secret})
+    app = create_app(settings, Demo(), remote_surface=True)
+    app.state.console = RemoteConsole(origin, app.state.auth)
+    remote = TestClient(app, base_url=origin, headers={"Origin": origin})
+    endpoint = "/api/manage/console/open"
+    assert remote.post(endpoint, json={}).status_code == 401
+    login = remote.post("/api/login", json=creds)
+    assert remote.post(endpoint, json={}).status_code == 403
+    remote.headers["X-CSRF-Token"] = login.json()["csrf"]
+    response = remote.post(endpoint, json={})
+    assert response.status_code == 200
+    assert response.json()["url"].startswith(origin.replace("https://", "https://ha-") + "/_smarti/launch#")
+    assert remote.post(endpoint, json={"slug": "../evil"}).status_code == 422
+    assert remote.post(endpoint, json={}, headers={"Origin": "https://evil.example"}).status_code == 403
+    page = remote.get("/healthz")
+    assert app.state.console.origin in page.headers["content-security-policy"]
+    with app.state.store.connect() as db:
+        db.execute("UPDATE users SET role='user'")
+    assert remote.post(endpoint, json={}).status_code == 403

@@ -42,9 +42,17 @@ async def serve_home(settings, adapter, certificates, state):
             "remote_identity_file": None,
         }
     )
-    app = create_app(remote, adapter, remote_surface=True)
+    app = create_app(
+        remote, adapter, remote_surface=True, console_settings=settings if settings.ingress else None
+    )
+    served_app = app
+    if settings.ingress and settings.mode == "live":
+        from .remote_console import ConsoleRouter, RemoteConsole
+
+        app.state.console = RemoteConsole(remote.origin, app.state.auth)
+        served_app = ConsoleRouter(app, app.state.console)
     config = uvicorn.Config(
-        app,
+        served_app,
         host="127.0.0.1",
         port=0,
         proxy_headers=False,

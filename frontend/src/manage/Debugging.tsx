@@ -3,8 +3,9 @@ import { Bug, ShieldAlert, ArrowRight, RefreshCw, X } from "lucide-react";
 import { api } from "../api";
 import { SettingsDialog } from "../home/SettingsDialog";
 import "./debugging.css";
+import { openRemoteConsole } from "../remoteConsole";
 
-type Target = { available: boolean; path: string | null };
+type Target = { available: boolean; path: string | null; remote?: boolean };
 const frameName = "smarti-underlying-system";
 function insideDebugging() {
   let current: Window = window;
@@ -34,14 +35,16 @@ export function Debugging({ lang }: { lang: string }) {
     if (stage !== "loading") return;
     let cancelled = false;
     void api<Target>("manage/debugging/target")
-      .then((result) => {
+      .then(async (result) => {
         if (cancelled) return;
         if (!result.available || result.path !== "/config/dashboard") {
           setUnavailable(true);
           setStage("error");
           return;
         }
-        setTarget(result.path);
+        const path = result.remote ? await openRemoteConsole() : result.path;
+        if (cancelled) return;
+        setTarget(path);
         setFrameError(false);
         setStage("open");
       })
@@ -185,7 +188,8 @@ export function Debugging({ lang }: { lang: string }) {
                 <button
                   onClick={() => {
                     setFrameError(false);
-                    setGeneration((g) => g + 1);
+                    if (target?.startsWith("https://")) setStage("loading");
+                    else setGeneration((g) => g + 1);
                   }}
                 >
                   <RefreshCw size={16} />
@@ -219,7 +223,13 @@ export function Debugging({ lang }: { lang: string }) {
                     if (!url || !url.startsWith(window.location.origin + "/"))
                       setFrameError(true);
                   } catch {
-                    setFrameError(true);
+                    // The remote HA origin is deliberately isolated from SMARTi.
+                    if (
+                      !target?.startsWith(
+                        "https://ha-" + window.location.hostname + "/",
+                      )
+                    )
+                      setFrameError(true);
                   }
                 }}
               />

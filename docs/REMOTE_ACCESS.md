@@ -195,3 +195,32 @@ the response. Existing hub identity cannot be replaced through this endpoint.
 The app lifespan owns an idempotent start callback, enabling the remote runtime
 without restarting the primary HA connection. Remote surfaces reject this entire
 route prefix. Supervisor configuration remains available as an installer fallback.
+
+
+### Embedded administration over remote access (1.35.37)
+
+HA app installations additionally serve `ha-<installation-id>.home.smarti.dev`
+through the same opaque TLS tunnel. The certificate contains both home names;
+the cloud challenge handler and SNI relay must be updated before upgrading hubs.
+The existing wildcard DNS and edge route cover both names. No new public port is needed.
+
+A CSRF-protected administrator request creates a single-use 60-second handoff.
+The ticket travels in the iframe fragment, is exchanged on the console origin,
+and is removed from browser history before navigating. The console cookie is
+Secure, HttpOnly and host-only; its one-hour session is bound to the original
+SMARTi session and current admin role. Logout or role changes invalidate access.
+WebSockets also recheck authorization every five seconds.
+
+The console proxies the HA frontend on `http://homeassistant:8123`, including
+HA's own authentication and ingress sessions. It never injects the Supervisor
+token, and strips SMARTi cookies and forwarded identity headers. HA admin
+credentials may be requested once inside the frame. Radio panels use HA's
+`/hassio/ingress/<slug>` view for installed, running ingress-enabled Zigbee2MQTT
+and Z-Wave apps. External standalone radio servers and HA Core installations
+using a custom internal port/TLS endpoint are not covered by this initial route.
+
+Server rollout: cloud and relay routing updated on 2026-10-19 with previous
+images retained as `smartihome:before-console` and `smartihome-relay:before-console`.
+Hub package still requires installation and an end-to-end check against actual
+HA/Ingress. Automated checks cover handoff, HTTP, WebSocket relay, origin checks,
+session revocation, certificate domains, and existing local embedded views.

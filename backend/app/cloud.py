@@ -268,7 +268,7 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     def certificate_challenge(token: str, request: Request):
         # Never trust X-Forwarded-Host: only this exact home's HTTP Host selects a proof.
         host = request.headers.get("host", "").lower().removesuffix(":80")
-        match = re.fullmatch(r"([0-9a-f-]{36})\.home\.smarti\.dev", host)
+        match = re.fullmatch(r"(?:ha-)?([0-9a-f-]{36})\.home\.smarti\.dev", host)
         if not match or len(request.headers.getlist("host")) != 1:
             raise HTTPException(404, "challenge_not_found")
         with db() as c:

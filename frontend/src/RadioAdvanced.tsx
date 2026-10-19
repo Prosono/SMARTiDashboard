@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Maximize2, RefreshCw } from "lucide-react";
 import { api } from "./api";
 import { SettingsDialog } from "./home/SettingsDialog";
 import "./radioAdvanced.css";
+import { remoteHome, openRemoteConsole } from "./remoteConsole";
 
 type Target = {
   slug: string;
@@ -23,23 +24,43 @@ export function RadioAdvanced({
   const [selected, setSelected] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0);
   const no = lang === "nb";
+  const remote = remoteHome();
+  const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
+  const [remoteError, setRemoteError] = useState(false);
   const ingress = window.location.pathname.startsWith("/api/hassio_ingress/");
   const query = useQuery({
     queryKey: ["radio-ui", provider],
     queryFn: () => api<Target[]>(`manage/apps/radio-ui/${provider}`),
-    enabled: open && ingress,
+    enabled: open && (ingress || remote),
     retry: false,
     staleTime: 0,
   });
   const target =
     query.data?.find((t) => t.slug === selected) ??
     (query.data?.length === 1 ? query.data[0] : undefined);
-  const url =
+  const localUrl =
     target?.available &&
     target.url &&
     /^\/api\/hassio_ingress\/[A-Za-z0-9_-]+\/?$/.test(target.url)
       ? target.url
       : null;
+  useEffect(() => {
+    setRemoteUrl(null);
+    setRemoteError(false);
+    if (!open || !remote || !target?.available) return;
+    let cancelled = false;
+    void openRemoteConsole(target.slug)
+      .then((url) => {
+        if (!cancelled) setRemoteUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setRemoteError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, remote, target?.slug, target?.available, generation]);
+  const url = remote ? remoteUrl : localUrl;
   return (
     <>
       <button onClick={() => setOpen(true)}>
@@ -61,7 +82,7 @@ export function RadioAdvanced({
                 ? "Originalgrensesnittet for nettverket ditt. Endringer her gjelder direkte på kontrolleren."
                 : "Your network's original interface. Changes here apply directly to the controller."}
             </p>
-            {!ingress ? (
+            {!ingress && !remote ? (
               <p role="status">
                 {no
                   ? "Denne visningen krever at SMARTi åpnes gjennom hjemmesentralens app-tilgang. Eksterne Docker-grensesnitt uten Ingress er foreløpig ikke støttet."
@@ -106,7 +127,7 @@ export function RadioAdvanced({
                     </select>
                   </label>
                 )}
-                {target && !url && (
+                {target && !target.available && (
                   <p role="status">
                     {no
                       ? "Appen må være startet og ha Ingress-webgrensesnitt aktivert. Dette kan administreres under Apper."
@@ -122,6 +143,17 @@ export function RadioAdvanced({
                   <RefreshCw size={17} />
                   {no ? "Last inn på nytt" : "Reload"}
                 </button>
+                {remote && target?.available && !url && (
+                  <p role={remoteError ? "alert" : "status"}>
+                    {remoteError
+                      ? no
+                        ? "Kunne ikke åpne fjernpanelet. Prøv å laste inn på nytt."
+                        : "Could not open remote panel. Try reloading."
+                      : no
+                        ? "Forbereder sikker forbindelse …"
+                        : "Preparing secure connection …"}
+                  </p>
+                )}
                 {url && (
                   <>
                     <p className="muted">
@@ -131,7 +163,7 @@ export function RadioAdvanced({
                     </p>
                     <iframe
                       key={`${url}:${generation}`}
-                      src={url.endsWith("/") ? url : url + "/"}
+                      src={remote ? url : url.endsWith("/") ? url : url + "/"}
                       title={target?.name ?? "Control panel"}
                       referrerPolicy="same-origin"
                     />

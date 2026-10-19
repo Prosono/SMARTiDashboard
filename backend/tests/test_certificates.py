@@ -37,6 +37,7 @@ def test_challenge_is_bound_to_claimed_enabled_home_and_expires(tmp_path):
     assert c.put(endpoint, headers=headers, json=body).status_code == 200
     public = f"http://{home_id}.home.smarti.dev/.well-known/acme-challenge/{TOKEN}"
     response = c.get(public)
+    assert c.get(public.replace("http://", "http://ha-")).text == PROOF
     assert response.text == PROOF
     assert response.headers["content-type"].startswith("text/plain")
     assert c.get(public.replace(home_id, other["installation_id"])).status_code == 404
@@ -94,5 +95,5 @@ def test_hook_has_fixed_destination_and_rejects_foreign_identifier(tmp_path):
     assert STAGING in staging.command()
     assert production.cert != staging.cert
     assert "s" * 48 not in str(production.command())
-    assert production.command().count("-d") == 1
+    assert production.command().count("-d") == 2
     assert "--keep-until-expiring" in production.command()

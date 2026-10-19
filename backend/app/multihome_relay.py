@@ -115,6 +115,7 @@ class MultiHomeRelay:
 
     def home_for_name(self, name):
         home_id, separator, suffix = name.partition(".")
+        home_id = home_id.removeprefix("ha-")
         if not separator or suffix != self.suffix or str(uuid.UUID(home_id)) != home_id:
             raise ValueError("Unknown home hostname")
         return home_id

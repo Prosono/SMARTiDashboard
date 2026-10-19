@@ -98,7 +98,14 @@ class PairingAnswer(BaseModel):
     pin: str | None = Field(default=None, pattern=r"^\d{5}$", max_length=5)
 
 
-def create_app(settings=None, adapter=None, *, mobile_only=False, remote_surface=False):
+class ConsoleTarget(BaseModel):
+    model_config = {"extra": "forbid"}
+    slug: str | None = Field(default=None, pattern=r"^[a-zA-Z0-9_-]{1,100}$")
+
+
+def create_app(
+    settings=None, adapter=None, *, mobile_only=False, remote_surface=False, console_settings=None
+):
     settings = settings or Settings()
     settings.validate_runtime()
     if remote_surface and (
@@ -215,6 +222,9 @@ def create_app(settings=None, adapter=None, *, mobile_only=False, remote_surface
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; img-src 'self' data: https://www.zigbee2mqtt.io https://brands.home-assistant.io https://tile.openstreetmap.org; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; media-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
         )
+        console = getattr(app.state, "console", None)
+        if console is not None:
+            response.headers["Content-Security-Policy"] += f"; frame-src 'self' {console.origin}"
         return response
 
     def user(request: Request):
@@ -243,7 +253,7 @@ def create_app(settings=None, adapter=None, *, mobile_only=False, remote_surface
     app.include_router(management_router(management, admin))
     app.include_router(system_settings_router(management, admin, settings))
     app.include_router(system_operations_router(management, admin, settings))
-    app.include_router(apps_router(management, admin, settings))
+    app.include_router(apps_router(management, admin, console_settings or settings))
     app.include_router(accounts_router(management, admin, user))
     app.include_router(integration_setup_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
@@ -302,10 +312,40 @@ def create_app(settings=None, adapter=None, *, mobile_only=False, remote_surface
 
     @app.get("/api/manage/debugging/target")
     async def debugging_target(current=Depends(admin)):
-        # Use the browser's existing HA origin through ingress. Never expose a
-        # Supervisor URL or token, and never proxy authenticated HA sessions.
-        available = settings.ingress and settings.mode == "live"
-        return {"available": available, "path": "/config/dashboard" if available else None}
+        # Local ingress keeps the existing HA origin. Remote access uses an
+        # isolated console origin; no Supervisor credentials reach the browser.
+        console = getattr(app.state, "console", None)
+        available = (settings.ingress or console is not None) and settings.mode == "live"
+        return {
+            "available": available,
+            "remote": console is not None,
+            "path": "/config/dashboard" if available else None,
+        }
+
+    @app.post("/api/manage/console/open")
+    async def console_open(body: ConsoleTarget, request: Request, current=Depends(admin)):
+        console = getattr(app.state, "console", None)
+        if console is None:
+            raise HTTPException(503, "console_unavailable")
+        slug = body.slug
+        path = "/config/dashboard"
+        if slug is not None:
+            import re
+
+            from .system_operations import Supervisor
+
+            if not isinstance(slug, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}", slug):
+                raise HTTPException(422, "invalid_app")
+            info = await Supervisor(console_settings).request("GET", f"/addons/{slug}/info")
+            normalized = re.sub(r"[^a-z0-9]", "", slug.lower())
+            if (
+                not any(name in normalized for name in ("zigbee2mqtt", "zwavejs"))
+                or not info.get("ingress")
+                or info.get("state") != "started"
+            ):
+                raise HTTPException(404, "app_not_available")
+            path = "/hassio/ingress/" + slug
+        return {"url": console.launch(request.cookies.get(session_cookie), path)}
 
     @app.get("/api/session")
     async def session(current=Depends(user)):

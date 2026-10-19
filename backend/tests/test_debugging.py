@@ -22,7 +22,7 @@ def test_debug_target_is_admin_only_and_same_origin(tmp_path, mode, ingress):
         available = mode == "live" and ingress
         response = client.get(path)
         assert response.json() == {
-            "available": available, "path": "/config/dashboard" if available else None,
+            "available": available, "remote": False, "path": "/config/dashboard" if available else None,
         }
         assert "never-expose" not in response.text
         assert "internal-supervisor" not in response.text
