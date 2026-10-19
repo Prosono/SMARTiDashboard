@@ -37,7 +37,7 @@ async def serve_home(settings, adapter, certificates, state):
             "auto_local_origins": False,
             "origin": "https://" + certificates.hostname,
             "additional_origins": [],
-            "mobile_enabled": False,
+            "mobile_enabled": True,
             "bootstrap_secret": "",
             "remote_identity_file": None,
         }

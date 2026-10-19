@@ -188,11 +188,12 @@ def create_app(
             # The login screen reads setup status before rendering its form.
             # Only this read is public; provisioning remains local-only.
             setup_status_read = request.method == "GET" and request.url.path == "/api/bootstrap"
-            if not setup_status_read and request.url.path.startswith(
-                ("/api/bootstrap", "/api/remote", "/api/mobile/")
-            ):
+            if not setup_status_read and request.url.path.startswith(("/api/bootstrap", "/api/remote")):
                 return JSONResponse({"detail": "local_access_required"}, status_code=403)
-        if mobile_only:
+        native_request = mobile_only or (
+            remote_surface and settings.mobile_enabled and request.url.path.startswith("/api/mobile/v1/")
+        )
+        if native_request:
             if not settings.mobile_enabled or not request.url.path.startswith("/api/mobile/v1/"):
                 return JSONResponse({"detail": "not_found"}, status_code=404)
             if request.url.scheme != "https" or request.headers.get("origin") is not None:
@@ -209,7 +210,7 @@ def create_app(
             return JSONResponse(
                 {"detail": "ingress_rejected"}, status_code=403, headers={"Cache-Control": "no-store"}
             )
-        if not mobile_only and request.method not in {"GET", "HEAD", "OPTIONS"}:
+        if not native_request and request.method not in {"GET", "HEAD", "OPTIONS"}:
             origin = request.headers.get("origin")
             if len(request.headers.getlist("origin")) != 1 or not origins.accepts(origin):
                 return JSONResponse(
@@ -682,25 +683,28 @@ def create_app(
     if settings.mobile_enabled and not mobile_only:
 
         @app.post("/api/mobile/pairings")
-        async def pairing(current=Depends(admin)):
+        async def pairing(current=Depends(user)):
             auth.throttle("pairing_issue:" + str(current["id"]))
             return mobile.issue_pairing(current["id"]) | {"url": settings.mobile_url}
 
         @app.delete("/api/mobile/pairings")
-        async def cancel_pairing(current=Depends(admin)):
+        async def cancel_pairing(current=Depends(user)):
             mobile.cancel_pairing(current["id"])
             return {"status": "cancelled"}
 
         @app.get("/api/mobile/devices")
-        async def devices(current=Depends(admin)):
+        async def devices(current=Depends(user)):
             return {"installation_id": mobile.installation_id, "devices": mobile.devices(current["id"])}
 
         @app.delete("/api/mobile/devices/{device_id}")
-        async def revoke_device(device_id: str, current=Depends(admin)):
+        async def revoke_device(device_id: str, current=Depends(user)):
             mobile.revoke(current["id"], device_id)
             return {"status": "revoked"}
 
-    if settings.mobile_enabled and mobile_only:
+    if settings.mobile_enabled and (mobile_only or remote_surface):
+        from .mobile_companion import companion_router
+
+        app.include_router(companion_router(management, mobile_user))
 
         @app.post("/api/mobile/v1/pair")
         async def claim(body: MobileClaim, request: Request):

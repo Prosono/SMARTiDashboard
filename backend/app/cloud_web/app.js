@@ -1,11 +1,13 @@
 let csrf = "";
 const $ = id => document.getElementById(id);
-const errors = {401:"Brukernavn eller passord er feil, eller økten er utløpt.",403:"Handlingen ble avvist. Logg inn på nytt.",409:"Kontoen kunne ikke opprettes, eller hjemmet er allerede koblet til.",429:"For mange forsøk. Vent 15 minutter før du prøver igjen.",400:"Koden er ugyldig eller utløpt. Hent en ny kode fra huben.",422:"Kontroller feltene. Passord må ha minst 12 tegn."};
+const errors = {401:"Økten er utløpt. Logg inn på nytt.",403:"Handlingen ble avvist. Logg inn på nytt.",409:"Kontoen kunne ikke opprettes, eller hjemmet er allerede koblet til.",429:"For mange forsøk. Vent 15 minutter før du prøver igjen.",400:"Koden er ugyldig eller utløpt. Hent en ny kode fra huben.",422:"Kontroller feltene. Passord må ha minst 12 tegn."};
 async function api(path, method="GET", body) {
   const r = await fetch("/api/"+path, {method, credentials:"same-origin", signal:AbortSignal.timeout(15000),
     headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},
     ...(body ? {body:JSON.stringify(body)} : {})});
-  if (!r.ok) throw new Error(errors[r.status] || "Kunne ikke fullføre. Prøv igjen.");
+  if (!r.ok) throw new Error(r.status === 401 && path === "login"
+    ? "Feil brukernavn eller passord for SMARTi-kontoen på home.smarti.dev. Bruk kontoen du koblet hjemmet til; hjemmets egen innlogging brukes etter Åpne hjem."
+    : errors[r.status] || "Kunne ikke fullføre. Prøv igjen.");
   return r.json();
 }
 async function run(fn) {

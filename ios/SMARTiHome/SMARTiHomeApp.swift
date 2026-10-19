@@ -1,0 +1,168 @@
+import SwiftUI
+import WebKit
+
+@main struct SMARTiHomeApp: App {
+    @StateObject private var phone = PhoneModel()
+    @StateObject private var home = HomeBrowser()
+    var body: some Scene {
+        WindowGroup {
+            TabView {
+                NavigationStack {
+                    BrowserView(browser: home)
+                        .overlay {
+                            if let message = home.failure {
+                                VStack(spacing: 18) {
+                                    Image(systemName: "exclamationmark.arrow.triangle.2.circlepath").font(.largeTitle)
+                                    Text("Visningen ble avbrutt").font(.title2.bold())
+                                    Text(message).multilineTextAlignment(.center).foregroundStyle(.secondary)
+                                    Button("Prøv igjen") { home.retry() }.buttonStyle(.borderedProminent)
+                                }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .background(.background)
+                            }
+                        }
+                        .navigationTitle("SMARTi").navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button { home.webView.load(URLRequest(url: URL(string: "https://home.smarti.dev/")!)) }
+                                label: { Image(systemName: "house") }.accessibilityLabel("Velg hjem")
+                            }
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button { home.retry() } label: { Image(systemName: "arrow.clockwise") }
+                                    .accessibilityLabel("Last inn på nytt")
+                            }
+                        }
+                }.tabItem { Label("Hjem", systemImage: "house") }
+                NavigationStack {
+                    Form {
+                        Section {
+                            Label("Din iPhone, koblet til hjemmet", systemImage: "iphone.radiowaves.left.and.right")
+                                .font(.headline)
+                            Text(phone.status).foregroundStyle(.secondary)
+                            if !phone.paired {
+                                Button("Koble til denne telefonen") {
+                                    Task {
+                                        phone.busy = true; defer { phone.busy = false }
+                                        do { try await home.pair(); phone.paired = true; try await phone.register() }
+                                        catch { phone.error = error.localizedDescription }
+                                    }
+                                }.disabled(phone.busy)
+                                Text("Åpne hjemmet og logg inn i Hjem-fanen først. Telefonen kobles til denne brukeren.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            } else {
+                                Button("Kontroller registrering") { Task { do { try await phone.register() } catch { phone.error = error.localizedDescription } } }
+                            }
+                        }
+                        Section("Posisjonsdeling") {
+                            Toggle("Del posisjon med hjemmet", isOn: Binding(get: { phone.sharing }, set: { value in Task { await phone.setSharing(value) } }))
+                                .disabled(!phone.paired || phone.busy)
+                            Text("Når du deler posisjon, kan telefonen brukes som sporingsenhet under Hjem og personer. Andre med tilgang til personer kan se posisjonen din. Home Assistant kan lagre posisjonshistorikk.")
+                                .font(.footnote).foregroundStyle(.secondary)
+                            if phone.sharing && phone.permission == .authorizedWhenInUse {
+                                Button("Tillat oppdateringer i bakgrunnen") { phone.enableBackground() }
+                            }
+                            if phone.sharing && (phone.permission == .denied || phone.permission == .restricted) {
+                                Button("Åpne iPhone-innstillinger") { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) }
+                            }
+                            Text("iOS bestemmer når bakgrunnsposisjonen oppdateres. Dette er ikke kontinuerlig sanntidssporing. Når deling stoppes, kan siste kjente posisjon fortsatt finnes i hjemmets historikk.")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
+                        Section("Varsler") {
+                            Label("Klargjøres for pushvarsler", systemImage: "bell.badge")
+                            Text("Pushvarsler aktiveres når Apples signering og SMARTis varslingsserver er satt opp. Ingen varsler leveres av denne utviklingsversjonen ennå.")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
+                        if phone.paired {
+                            Section {
+                                Button("Koble fra telefonen", role: .destructive) { Task { await phone.disconnect() } }.disabled(phone.busy)
+                            }
+                        }
+                    }.navigationTitle("Denne telefonen")
+                }.tabItem { Label("Telefon", systemImage: "iphone") }
+            }.tint(Color(red: 0.87, green: 0.32, blue: 0.03))
+                .alert("SMARTi", isPresented: Binding(get: { phone.error != nil }, set: { if !$0 { phone.error = nil } })) {
+                    Button("OK") { phone.error = nil }
+                } message: { Text(phone.error ?? "") }
+        }
+    }
+}
+
+@MainActor final class HomeBrowser: NSObject, ObservableObject, WKNavigationDelegate {
+    let webView: WKWebView
+    @Published var failure: String?
+    private var lastPage = URL(string: "https://home.smarti.dev/")!
+    private var recovery = WebRecoveryBudget()
+
+    func retry() {
+        failure = nil
+        // Load the last approved main-frame URL with GET. Never replay a form POST.
+        webView.load(URLRequest(url: lastPage))
+    }
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        if let url = webView.url, url.scheme == "https",
+           url.host == "home.smarti.dev" || MobileClient.isHome(url) { lastPage = url }
+    }
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        if recovery.allowAutomaticRecovery(at: ProcessInfo.processInfo.systemUptime) {
+            retry()
+        } else {
+            failure = "Nettvisningen stoppet flere ganger. Du kan prøve igjen. Telefonens tilkobling er beholdt."
+        }
+    }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        navigationFailed(error)
+    }
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        navigationFailed(error)
+    }
+    private func navigationFailed(_ error: Error) {
+        let error = error as NSError
+        guard !(error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled) else { return }
+        failure = "Kunne ikke laste hjemmet. Kontroller internettforbindelsen og prøv igjen."
+    }
+    override init() {
+        let configuration = WKWebViewConfiguration()
+        webView = WKWebView(frame: .zero, configuration: configuration)
+        super.init()
+        webView.navigationDelegate = self
+        webView.allowsBackForwardNavigationGestures = true
+        webView.load(URLRequest(url: URL(string: "https://home.smarti.dev/")!))
+    }
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let url = navigationAction.request.url else { decisionHandler(.cancel); return }
+        // Embedded console frames remain governed by the hub's CSP. Native pairing only
+        // uses the main frame's exact UUID home origin, never a child frame or message handler.
+        if navigationAction.targetFrame?.isMainFrame == false { decisionHandler(.allow); return }
+        if url.scheme == "https", url.host == "home.smarti.dev" || MobileClient.isHome(url) {
+            decisionHandler(.allow)
+        } else {
+            decisionHandler(.cancel)
+            if navigationAction.navigationType == .linkActivated && url.scheme == "https" { UIApplication.shared.open(url) }
+        }
+    }
+    func pair() async throws {
+        guard let url = webView.url, MobileClient.isHome(url),
+              let origin = URL(string: "https://" + (url.host ?? "")) else {
+            throw PhoneError.message("Åpne et hjem og logg inn i Hjem-fanen først.")
+        }
+        let result = try await webView.callAsyncJavaScript("""
+            const session = await fetch('/api/session', {credentials:'same-origin'});
+            if (!session.ok) throw new Error('Logg inn på hjemmet først.');
+            const user = await session.json();
+            const response = await fetch('/api/mobile/pairings', {method:'POST', credentials:'same-origin',
+              headers:{'X-CSRF-Token':user.csrf}});
+            if (!response.ok) throw new Error('Oppdater huben og prøv igjen.');
+            return await response.json();
+            """, arguments: [:], in: nil, contentWorld: .page)
+        guard webView.url?.host == origin.host, let invitation = result as? [String: Any],
+              let installation = invitation["installation_id"] as? String,
+              let code = invitation["code"] as? String else { throw PhoneError.message("Tilkoblingen ble avbrutt. Prøv igjen.") }
+        try await MobileClient.shared.pair(origin: origin, installationID: installation, code: code, name: UIDevice.current.name)
+    }
+}
+
+struct BrowserView: UIViewRepresentable {
+    let browser: HomeBrowser
+    func makeUIView(context: Context) -> WKWebView { browser.webView }
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+}

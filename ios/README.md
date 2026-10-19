@@ -1,0 +1,114 @@
+# SMARTi Home for iPhone
+
+Apple Team ID: `3T2Y4G6HVQ` (verified in Apple Developer on 2026-10-19).
+Proposed separate Bundle ID: `dev.smarti.home`. This is **not yet registered** with Apple.
+`dev.smarti.flex` belongs to the existing SMARTi Flex app and must not be reused.
+
+The iPhone implementation is in progress. No TestFlight build has been uploaded.
+Push requires a separately configured APNs provider and signing capabilities;
+location requires explicit consent and validation on a physical iPhone.
+
+## Implemented development slice
+
+- SwiftUI shell with the existing SMARTi dashboard in WKWebView, account/home selection through `home.smarti.dev`, and a native phone settings tab.
+- Explicit phone pairing from an authenticated home session. Pairing is limited to the exact HTTPS UUID home origin; the app cannot pair from the portal, embedded HA console, or arbitrary websites.
+- Independent per-phone credentials, Keychain storage, serialized refresh, no bearer redirects, and revocation.
+- A restricted HA `mobile_app` registration bridge. HA webhook credentials remain on the hub. The bridge exposes only location updates, not arbitrary HA webhook service commands.
+- Explicit location consent, foreground location and significant-change background updates when Always permission is granted. No continuous background GPS polling.
+- Existing SMARTi person settings can select the resulting HA device tracker. Automatic mapping to the correct HA person is **not yet implemented**; do not assume the Supervisor registration user is the resident.
+
+## Build and verification
+
+```sh
+xcodebuild -project ios/SMARTiHome.xcodeproj -scheme SMARTiHome \
+  -sdk iphonesimulator -configuration Debug -derivedDataPath /tmp/smarti-ios-build \
+  CODE_SIGNING_ALLOWED=NO build
+.venv/bin/python -m pytest backend/tests/test_mobile.py backend/tests/test_mobile_companion.py backend/tests/test_remote_console.py -q
+```
+
+Verified: unsigned simulator build succeeds; 21 backend tests pass. This is compile/automated-test evidence, not a successful physical-phone or live-HA test.
+
+## Remaining before TestFlight
+
+1. Register `dev.smarti.home` as a separate explicit App ID; configure Push Notifications. Do not change SMARTi Flex.
+2. Implement and configure the server APNs provider, protected device-token registration, revocation and HA notification delivery. No push token is requested or uploaded by this development slice.
+3. Complete signing/provisioning and the App Store Connect app record and disclosures. App icon and local privacy manifest are now included.
+4. Verify live registration against the hub's Supervisor/HA permissions. Confirm tracker discovery and resident association, including non-admin users.
+5. Physical-device tests: permissions declined, location paused, phone locked, significant location changes, cold launch, refresh response loss, revoked access, offline recovery and notifications.
+6. Release/package the hub changes together with the native client only after these checks. Nothing in this slice has been deployed or published.
+
+Location history can remain in HA after sharing is disabled. The app explains this before enabling sharing. Coordinates are not persisted in SMARTi's companion metadata; only the last successfully forwarded timestamp is retained. HA's webhook transport can acknowledge unknown webhooks with HTTP 200, so a forwarded timestamp alone must not be presented as proof that HA updated the tracker.
+
+## Simulator WebKit crash investigation — 2026-10-19
+
+The iOS 26.2 run produced WebContent SIGBUS reports in JavaScriptCore's JIT helper thread and in dyld's shared-cache loader. These stacks point to native runtime failures; they do not establish a specific SMARTi JavaScript defect or prove that newer runtimes resolve it.
+
+Added `webViewWebContentProcessDidTerminate` handling with at most two automatic GET reloads in a rolling 60-second window, followed by a visible manual retry state. The last committed approved main-frame URL is retained; cookies and phone credentials are not cleared. Navigation errors also offer retry, while cancelled navigation is ignored.
+
+The simulator build succeeds and the standalone recovery budget test passes:
+
+```sh
+swiftc -module-cache-path /tmp/smarti-swift-cache \
+  ios/SMARTiHome/WebRecoveryBudget.swift ios/Tests/WebRecoveryBudgetTests.swift \
+  -o /tmp/smarti-recovery-tests
+/tmp/smarti-recovery-tests
+```
+
+Updated build installed/launched on the existing iOS 27.1 simulator (`7F9921D9-56DB-432D-B210-64007D176C4F`). Login UI was visibly responsive. Authenticated dashboard reproduction and end-to-end forced WebContent termination recovery remain unverified; no claim of root-cause resolution.
+
+
+## Local TestFlight preparation — 2026-10-19
+
+The user explicitly selected **local preparation only**. Do not register identifiers,
+create certificates/profiles, create an App Store Connect record or upload a build
+until the user authorizes those external steps again.
+
+Version 0.1.0 (1) now includes the SMARTi app icon (1024×1024, opaque), a privacy
+manifest describing linked location/user/device identifiers for app functionality,
+and the system-boot-time reason 35F9.1 for the local crash-recovery timer. There is
+no tracking. The app uses system HTTPS/Keychain rather than custom encryption.
+
+Unsigned Release archive successfully built at `/tmp/SMARTiHome-unsigned.xcarchive`.
+This is not installable on a physical device and is not a TestFlight upload.
+Build command:
+
+```sh
+xcodebuild -project ios/SMARTiHome.xcodeproj -scheme SMARTiHome \
+  -configuration Release -destination 'generic/platform=iOS' \
+  -archivePath /tmp/SMARTiHome-unsigned.xcarchive \
+  -derivedDataPath /tmp/smarti-ios-release CODE_SIGNING_ALLOWED=NO archive
+```
+
+`ExportOptions-TestFlight.plist` is prepared for **local export**, automatic signing
+and internal-only TestFlight distribution when later authorized; destination is
+`export`, not `upload`. Signing and Apple validation remain unverified.
+
+Follow-up reports supplied by the user at 11:49 both identify the old iOS 26.2
+simulator B4739AFF-CAFA-4732-88F2-EC83C6DFC033. The first faults in
+`JSC::CodeOrigin::approximateHash`; the next process launches about 32 ms after
+that failure and faults in `DyldSharedCache::getUUID` about 144 ms later.
+All six WebContent reports found in DiagnosticReports during this follow-up
+belong to that same simulator; none identifies the iOS 27.1 test device. This
+is not proof of stability on iOS 27.1 or physical hardware. The old simulator
+was shut down to avoid continuing to test the wrong runtime; its data was kept.
+
+### Simulator workaround withdrawn
+
+The attempted iOS 26.2-only Lockdown/JIT workaround was removed after the
+11:56 reports demonstrated a crash in `JSRopeString::resolveToBuffer` /
+`stringProtoFuncTrim` on the interpreter path after a click. The replacement
+WebContent.CaptivePortal process then failed in `DyldSharedCache::getUUID`
+after approximately 149 ms. These reports show the workaround was insufficient;
+the short successful startup check was not evidence of a resolved crash.
+
+All web views now retain normal WebKit preferences. Bounded crash recovery is
+retained. Continue comparative testing on iOS 27.1; do not claim the iOS 26.2
+runtime or physical iPhone stability is fixed. No simulator data was erased.
+
+Apple DTS confirms simulator shared-cache mapping/dyld bugs (r. 177003270,
+r. 179143461) and recommends a complete 27-series test environment:
+https://developer.apple.com/forums/thread/837945 . This supports the runtime
+comparison, not a proven cause for the separate JSRopeString crash.
+The normal-WebKit simulator build was installed/launched on iOS 27.1; login
+rendered. Further hub reproduction requires the user to sign in there.
+The unsigned iPhone Release archive was rebuilt after removing the workaround.
