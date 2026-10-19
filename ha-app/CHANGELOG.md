@@ -1,3 +1,8 @@
+## 1.35.34
+
+- Fjerntilgang-dialogen får tydelige knapper, bedre avstand og et eget felt for engangskoden.
+- Engangskoden hentes automatisk etter vellykket klargjøring. Ved feil kan den hentes på nytt uten å legge inn hub-identiteten igjen.
+
 ## 1.35.33
 
 - Klargjør fjerntilgang direkte i SMARTi → Innstillinger → System → Fjerntilgang med Hub-ID og Tilkoblingsnøkkel.

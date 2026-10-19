@@ -1,0 +1,101 @@
+.remote-access-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+  line-height: 1.6;
+}
+.remote-access-dialog p {
+  margin: 0;
+  color: var(--muted);
+}
+.remote-access-dialog .remote-access-status {
+  color: var(--text);
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+.remote-access-dialog form,
+.remote-access-dialog label {
+  display: grid;
+  gap: 10px;
+}
+.remote-access-dialog form {
+  gap: 20px;
+}
+.remote-access-dialog input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.remote-access-dialog button,
+.remote-access-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 11px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.remote-access-dialog button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.remote-access-dialog .remote-access-primary {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.remote-access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.remote-access-dialog .remote-access-disable {
+  align-self: flex-start;
+  margin-top: 12px;
+  background: transparent;
+}
+.remote-access-code {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--soft);
+  font-weight: 600;
+}
+.remote-access-code input {
+  font-family: ui-monospace, monospace;
+  font-size: 1.05rem;
+}
+.remote-access-code small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.remote-access-dialog [role="alert"] {
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--soft);
+}
+@media (max-width: 600px) {
+  .remote-access-actions {
+    flex-direction: column;
+  }
+  .remote-access-dialog .remote-access-disable {
+    align-self: stretch;
+  }
+}

@@ -55,17 +55,35 @@ test("remote linking stays in a dialog and supports cancelling the claim", async
   expect(cancelled).toBe(true);
 });
 
-
-test("manual hub setup verifies credentials inside the dialog", async ({ page }) => {
+test("manual hub setup verifies credentials inside the dialog", async ({
+  page,
+}) => {
   let provisioned = false;
   let attempts = 0;
-  await page.route("**/api/remote", r => r.fulfill({json: {provisioned, linked: false, remote_enabled: true}}));
-  await page.route("**/api/remote/provision", r => {
+  await page.route("**/api/remote/claim-code", (r) =>
+    r.fulfill({
+      json: {
+        code: "automatic-test-code",
+        expires_at: Date.now() / 1000 + 300,
+      },
+    }),
+  );
+  await page.route("**/api/remote", (r) =>
+    r.fulfill({ json: { provisioned, linked: false, remote_enabled: true } }),
+  );
+  await page.route("**/api/remote/provision", (r) => {
     attempts++;
-    expect(r.request().postDataJSON()).toEqual({installation_id: "11111111-1111-4111-8111-111111111111", credential: "test-key-only-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"});
-    if (attempts === 1) return r.fulfill({status:422, json:{detail:"remote_identity_rejected"}});
+    expect(r.request().postDataJSON()).toEqual({
+      installation_id: "11111111-1111-4111-8111-111111111111",
+      credential: "test-key-only-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    });
+    if (attempts === 1)
+      return r.fulfill({
+        status: 422,
+        json: { detail: "remote_identity_rejected" },
+      });
     provisioned = true;
-    return r.fulfill({json:{provisioned:true, restart_required:false}});
+    return r.fulfill({ json: { provisioned: true, restart_required: false } });
   });
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
@@ -89,15 +107,30 @@ test("manual hub setup verifies credentials inside the dialog", async ({ page })
     exact: true,
   });
 
-  await dialog.getByLabel("Hub-ID", {exact:true}).fill("11111111-1111-4111-8111-111111111111");
-  const key = dialog.getByLabel("Tilkoblingsnøkkel", {exact:true});
+  await dialog
+    .getByLabel("Hub-ID", { exact: true })
+    .fill("11111111-1111-4111-8111-111111111111");
+  const key = dialog.getByLabel("Tilkoblingsnøkkel", { exact: true });
   await expect(key).toHaveAttribute("type", "password");
   await key.fill("test-key-only-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-  await dialog.getByRole("button", {name:"Kontroller og lagre", exact:true}).click();
+  await dialog
+    .getByRole("button", { name: "Kontroller og lagre", exact: true })
+    .click();
   await expect(dialog.getByRole("alert")).toContainText("ugyldig");
-  await expect(key).toHaveValue("test-key-only-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-  await dialog.getByRole("button", {name:"Kontroller og lagre", exact:true}).click();
-  await expect(dialog.getByLabel("Tilkoblingsnøkkel", {exact:true})).toHaveCount(0);
-  await expect(dialog.getByRole("button", {name:"Hent engangskode", exact:true})).toBeVisible();
+  await expect(key).toHaveValue(
+    "test-key-only-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  );
+  await dialog
+    .getByRole("button", { name: "Kontroller og lagre", exact: true })
+    .click();
+  await expect(
+    dialog.getByLabel("Tilkoblingsnøkkel", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    dialog.getByRole("button", { name: "Hent engangskode", exact: true }),
+  ).toBeVisible();
+  await expect(dialog.getByLabel("Engangskode")).toHaveValue(
+    "automatic-test-code",
+  );
   await expect(dialog.getByRole("status")).toContainText("Huben er klargjort");
 });
