@@ -1653,3 +1653,13 @@ footer span:last-child {
 .support-home a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 12px 18px; margin: 8px 12px 8px 0; border: 1px solid var(--line); border-radius: 12px; color: var(--text); }
 .support-home a.primary-button { background: var(--accent); color: var(--on-accent, #fff); }
 .support-session-banner { padding: 14px 18px; margin-bottom: 20px; border: 1px solid var(--line); background: var(--soft); color: var(--text); border-radius: 12px; }
+
+.login-new-customer {
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--soft);
+}
+.login-new-customer p { margin: 8px 0 14px; color: var(--muted); font-size: 14px; }
+.login-new-customer a { display: flex; align-items: center; justify-content: space-between; min-height: 44px; color: var(--text); font-weight: 600; }

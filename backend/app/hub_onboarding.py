@@ -196,7 +196,7 @@ class HubOnboarding:
             {
                 "boot_id": self.boot,
                 "fingerprint": self.fingerprint,
-                "version": "1.35.48",
+                "version": "1.35.49",
                 "users": users,
                 "ha_connected": bool(self.ha.connected),
                 "remote_ready": bool(self.remote.get("ready")),

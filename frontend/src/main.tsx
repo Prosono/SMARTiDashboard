@@ -558,6 +558,15 @@ function Login({
               </button>
             </form>
           )}
+          <div className="login-new-customer">
+            <strong>{lang === "nb" ? "Ny kunde eller nytt hjem?" : "New customer or new home?"}</strong>
+            <p>{lang === "nb"
+              ? "Du trenger ingen bruker fra før. Finn huben din og opprett en SMARTi-konto i oppstartsveilederen."
+              : "No account needed yet. Find your hub and create a SMARTi account during setup."}</p>
+            <a href="https://home.smarti.dev/welcome" target="_top">
+              {lang === "nb" ? "Sett opp nytt hjem" : "Set up a new home"} <ArrowUpRight size={18} />
+            </a>
+          </div>
           {setup.data?.mode === "demo" && <p className="note">{t.demoHint}</p>}
         </div>
       </section>

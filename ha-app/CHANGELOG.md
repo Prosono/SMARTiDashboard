@@ -1,3 +1,7 @@
+## 1.35.49
+- New-customer setup is accessible from the home login screen, including when iPhone remembers a previously selected home.
+- Clear new-home entry on the portal login page.
+
 ## 1.35.48
 - Bonjour discovery for factory-prepared hubs on the same LAN as the iPhone.
 - Short-lived discovery proofs, separate activation PIN and owner-checked cloud setup.
