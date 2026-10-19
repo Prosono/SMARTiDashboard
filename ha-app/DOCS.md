@@ -216,3 +216,17 @@ Ugyldig format hindrer fjernoppstart, men lokal SMARTi fortsetter. Serveren
 kontrollerer at ID og nøkkel hører sammen ved tilkobling. Allerede klargjorte
 huber beholder identiteten når begge konfigurasjonsfeltene er tomme. Å tømme
 feltene slår derfor ikke av fjerntilgang; bruk «Slå av fjerntilgang» i SMARTi.
+
+## Klargjøring direkte i SMARTi (fra 1.35.33)
+
+Som administrator åpner du **Innstillinger → System → Fjerntilgang → Administrer
+fjerntilgang**. Fyll inn Hub-ID og Tilkoblingsnøkkel utstedt av SMARTi, og velg
+**Kontroller og lagre**. Nøkkelen kontrolleres mot serveren før den lagres privat.
+Du trenger ikke starte appen på nytt. Hent deretter engangskoden i samme dialog
+og bruk den under «Koble til et hjem» på https://home.smarti.dev.
+
+Oppsettet kan bare gjøres via den lokale SMARTi-inngangen, med administratortilgang.
+Dialogen overskriver ikke en eksisterende identitet og godtar ikke en identitet som
+allerede er koblet til en konto. Home Assistant-konfigurasjonen er fortsatt et
+alternativ for installatører. Verdiene må være utstedt av SMARTi; de kan ikke
+velges selv eller erstattes med bootstrap-nøkkelen.

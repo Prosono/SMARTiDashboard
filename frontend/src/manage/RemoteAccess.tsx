@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Globe, Link, ShieldOff } from "lucide-react";
-import { api } from "../api";
+import { api, ApiError } from "../api";
 import { SettingsDialog } from "../home/SettingsDialog";
 
 type Status = {
@@ -16,6 +16,28 @@ export function RemoteAccess({ lang }: { lang: string }) {
     [claim, setClaim] = useState<Claim | null>(null);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [hubId, setHubId] = useState("");
+  const [connectionKey, setConnectionKey] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [restartRequired, setRestartRequired] = useState(false);
+  async function provision() {
+    setBusy(true); setError("");
+    try {
+      const result = await api<{restart_required: boolean}>("remote/provision", "POST", {
+        installation_id: hubId.trim(), credential: connectionKey.trim(),
+      }, AbortSignal.timeout(15000));
+      setConnectionKey(""); setHubId(""); setSaved(true);
+      setRestartRequired(result.restart_required);
+      await q.refetch();
+    } catch (e) {
+      setError(e instanceof ApiError && e.status === 422
+        ? t("Hub-ID eller tilkoblingsnøkkel er ugyldig. Kontroller begge verdiene.", "The Hub ID or connection key is invalid. Check both values.")
+        : e instanceof ApiError && e.status === 409
+          ? t("Huben er allerede klargjort, eller identiteten er koblet til et annet hjem. Kontroller statusen før du fortsetter.", "The hub is already provisioned, or this identity belongs to a linked home. Check the status before continuing.")
+          : t("Kunne ikke bekrefte eller lagre oppsettet. Kontroller forbindelsen og prøv igjen.", "Could not verify or save setup. Check the connection and try again."));
+      await q.refetch();
+    } finally { setBusy(false); }
+  }
   const [now, setNow] = useState(Date.now());
   const q = useQuery({
     queryKey: ["remote-access"],
@@ -93,16 +115,32 @@ export function RemoteAccess({ lang }: { lang: string }) {
             setOpen(false);
             setClaim(null);
             setError("");
+            setConnectionKey("");
+            setHubId("");
           }}
         >
           <p>{status}</p>
-          {!q.data?.provisioned && (
-            <p>
-              {t(
-                "Åpne SMARTi-appens konfigurasjon i Home Assistant. Fyll inn Hub-ID og Tilkoblingsnøkkel fra SMARTi, lagre og start SMARTi-appen på nytt. Deretter kan du hente en engangskode her.",
-                "Open the SMARTi app configuration in Home Assistant. Enter the Hub ID and Connection key supplied by SMARTi, save and restart the SMARTi app. Then request a one-time code here.",
-              )}
-            </p>
+          {saved && <p role="status">{restartRequired
+            ? t("Oppsettet er lagret. Start SMARTi-appen på nytt før du fortsetter.", "Setup saved. Restart the SMARTi app before continuing.")
+            : t("Huben er klargjort. Hent en engangskode nedenfor for å koble hjemmet til kontoen din.", "Hub setup complete. Request a one-time code below to link your home.")}</p>}
+          {q.data?.provisioned === false && (
+            <form onSubmit={(e) => { e.preventDefault(); void provision(); }}>
+              <h3>{t("Klargjør denne huben", "Set up this hub")}</h3>
+              <p>{t("Fyll inn verdiene du har fått fra SMARTi. Vi kontrollerer dem før oppsettet lagres. Dette er ikke bootstrap-nøkkelen eller Home Assistant-passordet.", "Enter the values supplied by SMARTi. We verify them before saving. This is not the bootstrap secret or your Home Assistant password.")}</p>
+              <label>{t("Hub-ID", "Hub ID")}
+                <input value={hubId} onChange={(e) => setHubId(e.target.value)} required disabled={busy}
+                  autoComplete="off" spellCheck={false} autoCapitalize="none" maxLength={36}
+                  pattern="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}" />
+              </label>
+              <label>{t("Tilkoblingsnøkkel", "Connection key")}
+                <input type="password" value={connectionKey} onChange={(e) => setConnectionKey(e.target.value)}
+                  required disabled={busy} autoComplete="off" spellCheck={false} autoCapitalize="none"
+                  minLength={32} maxLength={256} />
+              </label>
+              <button type="submit" disabled={busy || !hubId.trim() || connectionKey.trim().length < 32}>
+                {busy ? t("Kontrollerer…", "Verifying…") : t("Kontroller og lagre", "Verify and save")}
+              </button>
+            </form>
           )}
           {q.data?.provisioned &&
             !q.data.linked &&

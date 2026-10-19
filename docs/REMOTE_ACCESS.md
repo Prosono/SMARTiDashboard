@@ -184,3 +184,14 @@ an owner-only identity file before enabling the runtime. Invalid input logs only
 a generic message and leaves local access working. Empty options preserve earlier
 installer-provisioned files. These are operator-issued hub credentials, not a
 bootstrap secret. No new browser provisioning endpoint was introduced.
+
+### Local UI provisioning — 1.35.33
+
+`POST /api/remote/provision` accepts a canonical hub UUID and bounded URL-safe
+credential only from a local administrator with valid Origin/CSRF. It verifies the
+pair at the fixed cloud origin, disallows already-claimed identities, and atomically
+creates the private file with no-overwrite semantics. Credentials never appear in
+the response. Existing hub identity cannot be replaced through this endpoint.
+The app lifespan owns an idempotent start callback, enabling the remote runtime
+without restarting the primary HA connection. Remote surfaces reject this entire
+route prefix. Supervisor configuration remains available as an installer fallback.

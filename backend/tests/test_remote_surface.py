@@ -55,3 +55,36 @@ def test_remote_browser_requires_local_login_exact_host_origin_and_csrf(tmp_path
     remote.cookies.set("smarti_session", browser.cookies.get("smarti_session"))
     remote.cookies.set("__Host-smarti_cloud", "not-a-hub-session")
     assert remote.get("/api/session").status_code == 401
+
+
+def test_provisioning_requires_local_admin_and_csrf(tmp_path):
+    settings = Settings(
+        _env_file=None,
+        mode="demo",
+        data_dir=tmp_path,
+        origin="https://local.example",
+        bootstrap_secret="bootstrap-test-secret-123456",
+        auto_local_origins=False,
+    )
+    app = create_app(settings, Demo())
+    client = TestClient(app, base_url=settings.origin, headers={"Origin": settings.origin})
+    body = {"installation_id": str(uuid.uuid4()), "credential": "s" * 64}
+    assert client.post("/api/remote/provision", json=body).status_code == 401
+    credentials = {"name": "owner", "password": "test-remote-password"}
+    client.post("/api/bootstrap", json=credentials | {"secret": settings.bootstrap_secret})
+    login = client.post("/api/login", json=credentials)
+    assert client.post("/api/remote/provision", json=body).status_code == 403
+    client.headers["X-CSRF-Token"] = login.json()["csrf"]
+    invalid = client.post("/api/remote/provision", json=body | {"credential": "secret-invalid!"}, headers={})
+    assert invalid.status_code == 422
+    assert "secret-invalid!" not in invalid.text
+    assert (
+        client.post(
+            "/api/users", json={"name": "resident", "password": "test-resident-password", "role": "user"}
+        ).status_code
+        == 200
+    )
+    login = client.post("/api/login", json={"name": "resident", "password": "test-resident-password"})
+    client.headers["X-CSRF-Token"] = login.json()["csrf"]
+    assert client.post("/api/remote/provision", json=body).status_code == 403
+    assert not (tmp_path / "remote-identity.json").exists()

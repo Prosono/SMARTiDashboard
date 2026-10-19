@@ -79,3 +79,60 @@ def test_cloud_errors_do_not_leak_credentials_or_follow_redirects(tmp_path):
         assert response.status_code == 503
         assert secret not in response.text
     assert len(calls) == 1
+
+
+def test_manual_setup_validates_cloud_saves_once_and_starts_runtime(tmp_path):
+    home = str(uuid.uuid4())
+    key = "test-private-key-" + "x" * 48
+    settings = SimpleNamespace(remote_identity_file=None, data_dir=tmp_path)
+    calls = []
+
+    def request(req):
+        calls.append(req)
+        assert str(req.url) == f"https://home.smarti.dev/api/hubs/{home}/status"
+        assert req.headers["Authorization"] == "Bearer " + key
+        return httpx.Response(200, json={"linked": False, "remote_enabled": True})
+
+    app = FastAPI()
+    started = []
+    app.state.start_remote = lambda: started.append(True)
+    app.include_router(remote_router(settings, lambda: {"role": "admin"}, httpx.MockTransport(request)))
+    with TestClient(app) as client:
+        body = {"installation_id": home, "credential": key}
+        response = client.post("/api/remote/provision", json=body)
+        assert response.json() == {"provisioned": True, "restart_required": False}
+        assert key not in response.text
+        assert settings.remote_identity_file.stat().st_mode & 0o777 == 0o600
+        assert json.loads(settings.remote_identity_file.read_text())["credential"] == key
+        assert started == [True]
+        assert client.post("/api/remote/provision", json=body).status_code == 409
+        assert len(calls) == 1
+        assert key not in client.get("/api/remote").text
+
+
+def test_failed_or_claimed_identity_is_never_saved(tmp_path):
+    settings = SimpleNamespace(remote_identity_file=None, data_dir=tmp_path)
+    for status, data, expected in [
+        (403, {}, 422),
+        (302, {}, 503),
+        (200, {"linked": True, "remote_enabled": True}, 409),
+        (200, {"linked": False}, 503),
+    ]:
+        app = FastAPI()
+        app.include_router(
+            remote_router(
+                settings,
+                lambda: {},
+                httpx.MockTransport(
+                    lambda req: httpx.Response(
+                        status, json=data, headers={"Location": "https://other.example"}
+                    )
+                ),
+            )
+        )
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/remote/provision", json={"installation_id": str(uuid.uuid4()), "credential": "k" * 64}
+            )
+            assert response.status_code == expected
+            assert not (tmp_path / "remote-identity.json").exists()

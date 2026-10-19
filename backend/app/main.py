@@ -119,14 +119,21 @@ def create_app(settings=None, adapter=None, *, mobile_only=False, remote_surface
         task = asyncio.create_task(ha.run())
         discovery = None
         remote_task = None
+
+        def start_remote():
+            nonlocal remote_task
+            if settings.remote_identity_file and not mobile_only and not remote_surface:
+                if remote_task is None or remote_task.done():
+                    from .remote_runtime import run_remote
+
+                    remote_task = asyncio.create_task(run_remote(settings, ha, app.state.remote))
+
+        app.state.start_remote = start_remote
         try:
             if not mobile_only and origins.enabled:
                 await origins.refresh()
                 discovery = asyncio.create_task(origins.run())
-            if settings.remote_identity_file and not mobile_only and not remote_surface:
-                from .remote_runtime import run_remote
-
-                remote_task = asyncio.create_task(run_remote(settings, ha, app.state.remote))
+            start_remote()
             yield
         finally:
             if remote_task:

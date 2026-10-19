@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 
 
-def configure_remote_identity(options, data_dir):
+def configure_remote_identity(options, data_dir, *, exclusive=False):
     path = Path(data_dir) / "remote-identity.json"
     home = options.get("remote_installation_id", "")
     key = options.get("remote_credential", "")
@@ -31,7 +31,10 @@ def configure_remote_identity(options, data_dir):
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, path)
+        if exclusive:
+            os.link(temporary, path)  # Atomic create; never replace another enrollment.
+        else:
+            os.replace(temporary, path)
     finally:
         Path(temporary).unlink(missing_ok=True)
     return path

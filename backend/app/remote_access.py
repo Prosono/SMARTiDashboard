@@ -4,9 +4,18 @@ import json
 import uuid
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
+
+from .remote_options import configure_remote_identity
 
 CLOUD_ORIGIN = "https://home.smarti.dev"
+
+
+class ManualIdentity(BaseModel):
+    model_config = {"extra": "forbid"}
+    installation_id: str = Field(pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+    credential: str = Field(pattern=r"^[A-Za-z0-9_-]{32,256}$", repr=False)
 
 
 def remote_router(settings, admin, transport=None):
@@ -48,6 +57,48 @@ def remote_router(settings, admin, transport=None):
             return result
         except (httpx.HTTPError, ValueError):
             raise HTTPException(503, "remote_cloud_unavailable") from None
+
+    @router.post("/provision")
+    async def provision(body: ManualIdentity, request: Request):
+        if settings.remote_identity_file or (settings.data_dir / "remote-identity.json").exists():
+            raise HTTPException(409, "remote_already_provisioned")
+        try:
+            async with httpx.AsyncClient(
+                timeout=10, trust_env=False, follow_redirects=False, transport=transport
+            ) as client:
+                response = await client.get(
+                    f"{CLOUD_ORIGIN}/api/hubs/{body.installation_id}/status",
+                    headers={"Authorization": "Bearer " + body.credential},
+                )
+            if response.status_code in {401, 403, 404}:
+                raise HTTPException(422, "remote_identity_rejected")
+            response.raise_for_status()
+            result = response.json()
+            if (
+                not isinstance(result, dict)
+                or type(result.get("linked")) is not bool
+                or type(result.get("remote_enabled")) is not bool
+            ):
+                raise ValueError("Invalid status")
+            if result["linked"]:
+                raise HTTPException(409, "remote_already_linked")
+        except (httpx.HTTPError, ValueError):
+            raise HTTPException(503, "remote_cloud_unavailable") from None
+        try:
+            path = configure_remote_identity(
+                {"remote_installation_id": body.installation_id, "remote_credential": body.credential},
+                settings.data_dir,
+                exclusive=True,
+            )
+        except FileExistsError:
+            raise HTTPException(409, "remote_already_provisioned") from None
+        except OSError:
+            raise HTTPException(503, "remote_identity_save_failed") from None
+        settings.remote_identity_file = path
+        start = getattr(request.app.state, "start_remote", None)
+        if start:
+            start()
+        return {"provisioned": True, "restart_required": start is None}
 
     @router.get("")
     async def status():

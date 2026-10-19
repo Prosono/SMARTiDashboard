@@ -1,3 +1,10 @@
+## 1.35.33
+
+- Klargjør fjerntilgang direkte i SMARTi → Innstillinger → System → Fjerntilgang med Hub-ID og Tilkoblingsnøkkel.
+- Oppsettet kontrolleres mot SMARTi-serveren før privat lagring. Fjernaksessdelen starter automatisk uten omstart av appen.
+- Kun lokale administratorer kan klargjøre huben. Eksisterende identiteter og allerede kontokoblede hjem kan ikke overskrives fra dialogen.
+- Konfigurasjonsfeltene i Home Assistant beholdes som et alternativ.
+
 ## 1.35.32
 
 - Hub-ID og Tilkoblingsnøkkel kan nå legges inn i SMARTi-appens konfigurasjon i Home Assistant. Lagre og start SMARTi på nytt for å klargjøre fjerntilgang.
