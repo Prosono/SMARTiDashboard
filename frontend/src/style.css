@@ -1632,3 +1632,16 @@ footer span:last-child {
   background: var(--surface);
   color: var(--text);
 }
+
+.phone-settings-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+/* WKWebView extends behind system chrome; keep controls in the safe area. */
+@media (max-width: 760px) {
+  .topbar {
+    height: calc(64px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    padding-left: max(22px, env(safe-area-inset-left));
+    padding-right: max(22px, env(safe-area-inset-right));
+  }
+  .sidebar nav { scrollbar-width: none; }
+  .sidebar nav::-webkit-scrollbar { display: none; }
+}

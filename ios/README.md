@@ -120,3 +120,35 @@ The unsigned iPhone Release archive was rebuilt after removing the workaround.
 - Signed archive: `/tmp/SMARTiHome-TestFlight.xcarchive`; local IPA: `/tmp/SMARTiHome-TestFlight-export/SMARTiHome.ipa`.
 - Upload uses `ExportOptions-TestFlight.plist` with `destination` changed to `upload` in a temporary copy. The checked-in plist remains local-export-only.
 - This does not establish physical-iPhone stability. Push delivery is not implemented in this build.
+
+## Phone layout update — build 0.1.0 (2)
+
+The native home toolbar and Hjem/Telefon tabs are removed. The WKWebView is sized
+from the available SwiftUI safe-area geometry and explicitly requests mobile
+content. Phone pairing/location settings are presented as a sheet from the hub's
+Innstillinger → Denne iPhonen button (HA app 1.35.42 or later). The native bridge
+only accepts its fixed `open` message from the main frame at the current UUID home
+origin; it neither grants permissions nor pairs automatically.
+
+Release archive and TestFlight upload succeeded. Frontend: 133 tests passed;
+mobile Playwright checks passed for viewport widths 320, 393 and 852, settings
+bridge dispatch and tab-strip centering. App chrome removal was visually checked
+in the simulator; physical-phone layout verification remains pending.
+
+## Edge-to-edge layout and remembered home — build 0.1.0 (3)
+
+The native web view now extends behind the system safe areas; HA 1.35.43 uses
+viewport-fit=cover and themed safe-area padding for the header and bottom menu.
+Notification counts overlay mobile navigation icons instead of taking a flex row.
+
+On a committed UUID home navigation, the app stores only the HTTPS origin in
+UserDefaults. Subsequent launches reopen it with the existing WebKit session;
+expired sessions still require authentication. The portal does not overwrite this
+preference. Settings → Fjernaksess sends the fixed native command `remote` to
+open the portal for choosing or connecting another home. The same main-frame and
+current-home origin checks apply as for phone settings.
+
+Validation: Release archive succeeded, 133 frontend tests passed, mobile
+Playwright tests passed for badge geometry, viewport fit, both bridge commands
+and tab centering. Real-device safe-area appearance requires checking after both
+the native build and hub update are installed.

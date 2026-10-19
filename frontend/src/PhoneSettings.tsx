@@ -1,4 +1,4 @@
-import { Smartphone } from "lucide-react";
+import { Globe, Smartphone } from "lucide-react";
 
 type NativeWindow = Window & {
   webkit?: {
@@ -12,6 +12,7 @@ export function PhoneSettings({ lang }: { lang: string }) {
     ?.smartiPhoneSettings;
   if (!handler) return null;
   return (
+    <div className="phone-settings-actions">
     <button
       className="phone-settings-button"
       onClick={() => handler.postMessage("open")}
@@ -19,5 +20,10 @@ export function PhoneSettings({ lang }: { lang: string }) {
       <Smartphone size={20} aria-hidden="true" />
       {lang === "en" ? "This iPhone" : "Denne iPhonen"}
     </button>
+    <button className="phone-settings-button" onClick={() => handler.postMessage("remote")}>
+      <Globe size={20} aria-hidden="true" />
+      {lang === "en" ? "Remote access" : "Fjernaksess"}
+    </button>
+    </div>
   );
 }

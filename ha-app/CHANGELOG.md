@@ -1,3 +1,8 @@
+## 1.35.43
+- iPhone: notification badges overlay navigation icons without shrinking them.
+- Fill the iPhone safe areas with themed surfaces and keep controls clear of system gestures.
+- Add Fjernaksess in native app settings for choosing or connecting a home (requires iPhone build 3).
+
 ## 1.35.42
 
 - Legger til «Denne iPhonen» i innstillinger når SMARTi åpnes i iPhone-appen, for telefonregistrering og posisjonsdeling uten egen native fanemeny. Krever iPhone-bygg 0.1.0 (2).

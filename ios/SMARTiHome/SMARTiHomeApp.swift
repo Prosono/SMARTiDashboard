@@ -22,6 +22,7 @@ import WebKit
                         }
                     }
             }
+            .ignoresSafeArea(.container)
             .sheet(isPresented: $home.showPhoneSettings) {
                 PhoneSettingsView(phone: phone, home: home)
             }
@@ -88,7 +89,7 @@ struct PhoneSettingsView: View {
                     ToolbarItem(placement: .confirmationAction) { Button("Ferdig") { dismiss() } }
                 }
                 .safeAreaInset(edge: .bottom) {
-                    Button("Velg et annet hjem") { dismiss(); home.openPortal() }
+                    Button("Fjernaksess – velg eller koble til hjem") { dismiss(); home.openPortal() }
                         .padding().frame(maxWidth: .infinity).background(.bar)
                 }
         }
@@ -107,10 +108,14 @@ struct PhoneSettingsView: View {
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.name == "smartiPhoneSettings", message.frameInfo.isMainFrame,
               let url = message.frameInfo.request.url, MobileClient.isHome(url),
-              webView.url?.host == url.host,
-              message.body as? String == "open" else { return }
-        showPhoneSettings = true
+              webView.url?.host == url.host else { return }
+        switch message.body as? String {
+        case "open": showPhoneSettings = true
+        case "remote": openPortal()
+        default: break
+        }
     }
+    private static let savedHomeKey = "smarti.lastSelectedHome"
     private var lastPage = URL(string: "https://home.smarti.dev/")!
     private var recovery = WebRecoveryBudget()
 
@@ -122,6 +127,10 @@ struct PhoneSettingsView: View {
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         if let url = webView.url, url.scheme == "https",
            url.host == "home.smarti.dev" || MobileClient.isHome(url) { lastPage = url }
+        // Persist only the approved origin, never a login code, query or console URL.
+        if let url = webView.url, MobileClient.isHome(url), let host = url.host {
+            UserDefaults.standard.set("https://" + host + "/", forKey: Self.savedHomeKey)
+        }
     }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         if recovery.allowAutomaticRecovery(at: ProcessInfo.processInfo.systemUptime) {
@@ -149,7 +158,12 @@ struct PhoneSettingsView: View {
         configuration.userContentController.add(self, name: "smartiPhoneSettings")
         webView.navigationDelegate = self
         webView.allowsBackForwardNavigationGestures = true
-        webView.load(URLRequest(url: URL(string: "https://home.smarti.dev/")!))
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        if let saved = UserDefaults.standard.string(forKey: Self.savedHomeKey),
+           let url = URL(string: saved), MobileClient.isHome(url), let host = url.host {
+            lastPage = URL(string: "https://" + host + "/")!
+        }
+        retry()
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
