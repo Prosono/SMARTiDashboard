@@ -1,3 +1,7 @@
+## 1.35.42
+
+- Legger til «Denne iPhonen» i innstillinger når SMARTi åpnes i iPhone-appen, for telefonregistrering og posisjonsdeling uten egen native fanemeny. Krever iPhone-bygg 0.1.0 (2).
+
 ## 1.35.41
 
 - Gjeninnfører 3D-energimodellen på iPhone og iPad, inkludert animert strømflyt og interaktive målepunkter.

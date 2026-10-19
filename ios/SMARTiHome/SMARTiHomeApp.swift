@@ -6,34 +6,40 @@ import WebKit
     @StateObject private var home = HomeBrowser()
     var body: some Scene {
         WindowGroup {
-            TabView {
-                NavigationStack {
-                    BrowserView(browser: home)
-                        .overlay {
-                            if let message = home.failure {
-                                VStack(spacing: 18) {
-                                    Image(systemName: "exclamationmark.arrow.triangle.2.circlepath").font(.largeTitle)
-                                    Text("Visningen ble avbrutt").font(.title2.bold())
-                                    Text(message).multilineTextAlignment(.center).foregroundStyle(.secondary)
-                                    Button("Prøv igjen") { home.retry() }.buttonStyle(.borderedProminent)
-                                }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .background(.background)
-                            }
+            GeometryReader { geometry in
+                BrowserView(browser: home)
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .overlay {
+                        if let message = home.failure {
+                            VStack(spacing: 18) {
+                                Image(systemName: "exclamationmark.arrow.triangle.2.circlepath").font(.largeTitle)
+                                Text("Visningen ble avbrutt").font(.title2.bold())
+                                Text(message).multilineTextAlignment(.center).foregroundStyle(.secondary)
+                                Button("Prøv igjen") { home.retry() }.buttonStyle(.borderedProminent)
+                                Button("Velg hjem") { home.openPortal() }
+                            }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(.background)
                         }
-                        .navigationTitle("SMARTi").navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                Button { home.webView.load(URLRequest(url: URL(string: "https://home.smarti.dev/")!)) }
-                                label: { Image(systemName: "house") }.accessibilityLabel("Velg hjem")
-                            }
-                            ToolbarItem(placement: .topBarTrailing) {
-                                Button { home.retry() } label: { Image(systemName: "arrow.clockwise") }
-                                    .accessibilityLabel("Last inn på nytt")
-                            }
-                        }
-                }.tabItem { Label("Hjem", systemImage: "house") }
-                NavigationStack {
-                    Form {
+                    }
+            }
+            .sheet(isPresented: $home.showPhoneSettings) {
+                PhoneSettingsView(phone: phone, home: home)
+            }
+            .tint(Color(red: 0.87, green: 0.32, blue: 0.03))
+            .alert("SMARTi", isPresented: Binding(get: { phone.error != nil }, set: { if !$0 { phone.error = nil } })) {
+                Button("OK") { phone.error = nil }
+            } message: { Text(phone.error ?? "") }
+        }
+    }
+}
+
+struct PhoneSettingsView: View {
+    @ObservedObject var phone: PhoneModel
+    @ObservedObject var home: HomeBrowser
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            Form {
                         Section {
                             Label("Din iPhone, koblet til hjemmet", systemImage: "iphone.radiowaves.left.and.right")
                                 .font(.headline)
@@ -46,7 +52,7 @@ import WebKit
                                         catch { phone.error = error.localizedDescription }
                                     }
                                 }.disabled(phone.busy)
-                                Text("Åpne hjemmet og logg inn i Hjem-fanen først. Telefonen kobles til denne brukeren.")
+                                Text("Åpne hjemmet og logg inn først. Telefonen kobles til denne brukeren.")
                                     .font(.footnote).foregroundStyle(.secondary)
                             } else {
                                 Button("Kontroller registrering") { Task { do { try await phone.register() } catch { phone.error = error.localizedDescription } } }
@@ -77,18 +83,34 @@ import WebKit
                             }
                         }
                     }.navigationTitle("Denne telefonen")
-                }.tabItem { Label("Telefon", systemImage: "iphone") }
-            }.tint(Color(red: 0.87, green: 0.32, blue: 0.03))
-                .alert("SMARTi", isPresented: Binding(get: { phone.error != nil }, set: { if !$0 { phone.error = nil } })) {
-                    Button("OK") { phone.error = nil }
-                } message: { Text(phone.error ?? "") }
+
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button("Ferdig") { dismiss() } }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    Button("Velg et annet hjem") { dismiss(); home.openPortal() }
+                        .padding().frame(maxWidth: .infinity).background(.bar)
+                }
         }
     }
 }
 
-@MainActor final class HomeBrowser: NSObject, ObservableObject, WKNavigationDelegate {
+@MainActor final class HomeBrowser: NSObject, ObservableObject, WKNavigationDelegate, WKScriptMessageHandler {
     let webView: WKWebView
     @Published var failure: String?
+    @Published var showPhoneSettings = false
+
+    func openPortal() {
+        lastPage = URL(string: "https://home.smarti.dev/")!
+        retry()
+    }
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "smartiPhoneSettings", message.frameInfo.isMainFrame,
+              let url = message.frameInfo.request.url, MobileClient.isHome(url),
+              webView.url?.host == url.host,
+              message.body as? String == "open" else { return }
+        showPhoneSettings = true
+    }
     private var lastPage = URL(string: "https://home.smarti.dev/")!
     private var recovery = WebRecoveryBudget()
 
@@ -121,8 +143,10 @@ import WebKit
     }
     override init() {
         let configuration = WKWebViewConfiguration()
+        configuration.defaultWebpagePreferences.preferredContentMode = .mobile
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init()
+        configuration.userContentController.add(self, name: "smartiPhoneSettings")
         webView.navigationDelegate = self
         webView.allowsBackForwardNavigationGestures = true
         webView.load(URLRequest(url: URL(string: "https://home.smarti.dev/")!))
@@ -143,7 +167,7 @@ import WebKit
     func pair() async throws {
         guard let url = webView.url, MobileClient.isHome(url),
               let origin = URL(string: "https://" + (url.host ?? "")) else {
-            throw PhoneError.message("Åpne et hjem og logg inn i Hjem-fanen først.")
+            throw PhoneError.message("Åpne et hjem og logg inn først.")
         }
         let result = try await webView.callAsyncJavaScript("""
             const session = await fetch('/api/session', {credentials:'same-origin'});
@@ -165,4 +189,10 @@ struct BrowserView: UIViewRepresentable {
     let browser: HomeBrowser
     func makeUIView(context: Context) -> WKWebView { browser.webView }
     func updateUIView(_ uiView: WKWebView, context: Context) {}
+    // WKWebView's content size must never become SwiftUI's proposed app width.
+    // The dashboard owns scrolling inside the exact available safe-area bounds.
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: WKWebView, context: Context) -> CGSize? {
+        guard let width = proposal.width, let height = proposal.height else { return nil }
+        return CGSize(width: width, height: height)
+    }
 }

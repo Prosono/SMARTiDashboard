@@ -1,3 +1,4 @@
+import { PhoneSettings } from "./PhoneSettings";
 import { Scenes } from "./home/Scenes";
 import { PagedControls } from "./PagedControls";
 import { DiscoveredDevices, useDiscoveries } from "./manage/DiscoveredDevices";
@@ -1074,6 +1075,7 @@ function Dashboard({
               <span className="eyebrow">SMARTi</span>
               <h1>{t.settings}</h1>
             </div>
+            <PhoneSettings lang={lang} />
             <ExperiencePicker lang={lang} />
             <nav
               className="management-tabs settings-sections"
