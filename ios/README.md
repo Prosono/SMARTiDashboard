@@ -1,10 +1,10 @@
 # SMARTi Home for iPhone
 
 Apple Team ID: `3T2Y4G6HVQ` (verified in Apple Developer on 2026-10-19).
-Proposed separate Bundle ID: `dev.smarti.home`. This is **not yet registered** with Apple.
+Separate Bundle ID: `dev.smarti.home`, registered with Apple on 2026-10-19.
 `dev.smarti.flex` belongs to the existing SMARTi Flex app and must not be reused.
 
-The iPhone implementation is in progress. No TestFlight build has been uploaded.
+The iPhone implementation is in progress. Version 0.1.0 (1) was uploaded to internal TestFlight on 2026-10-19; see distribution status below.
 Push requires a separately configured APNs provider and signing capabilities;
 location requires explicit consent and validation on a physical iPhone.
 
@@ -30,12 +30,12 @@ Verified: unsigned simulator build succeeds; 21 backend tests pass. This is comp
 
 ## Remaining before TestFlight
 
-1. Register `dev.smarti.home` as a separate explicit App ID; configure Push Notifications. Do not change SMARTi Flex.
+1. App ID registration is complete. Push Notifications capability/provider setup remains outstanding. Do not change SMARTi Flex.
 2. Implement and configure the server APNs provider, protected device-token registration, revocation and HA notification delivery. No push token is requested or uploaded by this development slice.
-3. Complete signing/provisioning and the App Store Connect app record and disclosures. App icon and local privacy manifest are now included.
+3. Signing/provisioning and the App Store Connect app record are complete. Complete public-distribution disclosures before any App Store release. App icon and local privacy manifest are included.
 4. Verify live registration against the hub's Supervisor/HA permissions. Confirm tracker discovery and resident association, including non-admin users.
 5. Physical-device tests: permissions declined, location paused, phone locked, significant location changes, cold launch, refresh response loss, revoked access, offline recovery and notifications.
-6. Release/package the hub changes together with the native client only after these checks. Nothing in this slice has been deployed or published.
+6. Complete physical-device validation before production distribution; the current upload is an internal test build.
 
 Location history can remain in HA after sharing is disabled. The app explains this before enabling sharing. Coordinates are not persisted in SMARTi's companion metadata; only the last successfully forwarded timestamp is retained. HA's webhook transport can acknowledge unknown webhooks with HTTP 200, so a forwarded timestamp alone must not be presented as proof that HA updated the tracker.
 
@@ -59,9 +59,7 @@ Updated build installed/launched on the existing iOS 27.1 simulator (`7F9921D9-5
 
 ## Local TestFlight preparation — 2026-10-19
 
-The user explicitly selected **local preparation only**. Do not register identifiers,
-create certificates/profiles, create an App Store Connect record or upload a build
-until the user authorizes those external steps again.
+Initially the user selected **local preparation only**. Later on 2026-10-19 the user explicitly authorized App ID registration, signing/provisioning, app-record creation and internal TestFlight upload, plus Full Access for existing App Store Connect team users.
 
 Version 0.1.0 (1) now includes the SMARTi app icon (1024×1024, opaque), a privacy
 manifest describing linked location/user/device identifiers for app functionality,
@@ -112,3 +110,13 @@ comparison, not a proven cause for the separate JSRopeString crash.
 The normal-WebKit simulator build was installed/launched on iOS 27.1; login
 rendered. Further hub reproduction requires the user to sign in there.
 The unsigned iPhone Release archive was rebuilt after removing the workaround.
+
+## Internal TestFlight distribution — 2026-10-19
+
+- Apple app record: SMARTi Home, ID `6824492352`, Norwegian primary language, SKU `smarti-home-ios`.
+- Version 0.1.0 (1) archive and distribution export succeeded. Xcode confirmed upload succeeded; Apple completed processing and marked the build Ready to Test.
+- App Store Connect: https://appstoreconnect.apple.com/apps/6824492352/testflight
+- Internal group: `SMARTi intern test`, manual build distribution, existing account holder added as tester. Build 0.1.0 (1) is assigned to the group and shows Testing.
+- Signed archive: `/tmp/SMARTiHome-TestFlight.xcarchive`; local IPA: `/tmp/SMARTiHome-TestFlight-export/SMARTiHome.ipa`.
+- Upload uses `ExportOptions-TestFlight.plist` with `destination` changed to `upload` in a temporary copy. The checked-in plist remains local-export-only.
+- This does not establish physical-iPhone stability. Push delivery is not implemented in this build.
