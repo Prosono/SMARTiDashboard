@@ -1,3 +1,6 @@
+## 1.35.44
+- Package consistency for the new separately deployed portal administration. No hub update is required to use home.smarti.dev/admin.
+
 ## 1.35.43
 - iPhone: notification badges overlay navigation icons without shrinking them.
 - Fill the iPhone safe areas with themed surfaces and keep controls clear of system gestures.

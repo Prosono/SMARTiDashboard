@@ -224,3 +224,22 @@ images retained as `smartihome:before-console` and `smartihome-relay:before-cons
 Hub package still requires installation and an end-to-end check against actual
 HA/Ingress. Automated checks cover handoff, HTTP, WebSocket relay, origin checks,
 session revocation, certificate domains, and existing local embedded views.
+
+## Portal administration
+
+`https://home.smarti.dev/admin` uses the existing secure portal session and a
+separate `portal_admins` role table. Registration never grants this role.
+All admin APIs check the role on each request. Writes require the existing
+same-origin and CSRF checks. The dashboard lists account/home counts, current
+relay connectivity, unclaimed hubs, account details and support notes. Reads
+and note creation are recorded in `admin_audit`. Relay failures render unknown
+status, not a fleet-wide outage. No device diagnostics, historical uptime,
+impersonation, password resets or access to customer home controls are provided.
+
+Server operators can create an administrator with a generated password supplied
+on stdin (never as a command argument):
+`docker exec -i smartihome python -m app.cloud_admin_cli --username NAME --create`.
+For an existing account omit `--create`; use `--revoke` to revoke the role and
+its sessions. These commands require server access; no public provisioning API
+is added. Back up the SQLite database before deployment. Notes are internal
+support records: do not put passwords, keys or unnecessary personal data in them.

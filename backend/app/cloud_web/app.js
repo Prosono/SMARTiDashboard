@@ -19,6 +19,7 @@ async function run(fn) {
 }
 async function showHomes() {
   const homes = await api("homes");
+  $("admin-link").hidden=!(await api("session")).portal_admin;
   $("auth").hidden=true; $("account").hidden=false;
   $("homes").replaceChildren();
   if (!homes.length) $("homes").textContent="Du har ikke koblet til et hjem ennå.";

@@ -16,6 +16,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
+from app.cloud_admin import install_admin
 from pwdlib import PasswordHash
 from pydantic import BaseModel, Field
 
@@ -219,7 +220,7 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
 
     @app.get("/api/session")
     def current(s=Depends(session)):
-        return {"csrf": s["csrf"]}
+        return {"csrf": s["csrf"], "portal_admin": is_admin(s["account"])}
 
     @app.post("/api/logout")
     def logout(response: Response, s=Depends(session)):
@@ -372,6 +373,8 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
                     (s["account"],),
                 )
             ]
+
+    is_admin = install_admin(app, db, session, relay_status_url)
 
     static = Path(__file__).with_name("cloud_web")
     app.mount("/assets", StaticFiles(directory=static), name="assets")
