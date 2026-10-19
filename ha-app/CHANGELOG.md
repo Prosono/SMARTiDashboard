@@ -1,3 +1,8 @@
+## 1.35.36
+
+- Kontaktvarselet vises først etter 10 sekunder med sammenhengende brudd, slik at korte gjenoppkoblinger ikke gir blinkende varsler. Varselet fjernes straks forbindelsen er tilbake.
+- Styring følger fortsatt faktisk tilkoblingsstatus uten forsinkelse.
+
 ## 1.35.35
 
 - Retter fjerninnlogging som stoppet med «Kunne ikke hente hjemmet». Innloggingssiden kan nå lese om huben er klargjort via fjernforbindelsen.

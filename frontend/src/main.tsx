@@ -663,6 +663,19 @@ function Dashboard({
     setAdding(false);
     setRoomEditing(false);
   }, [page]);
+  const offline =
+    home.data?.connected === false || !streamConnected || home.isError;
+  const [connectionWarning, setConnectionWarning] = useState(false);
+  useEffect(() => {
+    if (!offline) {
+      setConnectionWarning(false);
+      return;
+    }
+    // Brief reconnects should not flash a page-wide alert. Controls still use
+    // the immediate offline state so stale data cannot enable commands.
+    const timer = window.setTimeout(() => setConnectionWarning(true), 10_000);
+    return () => window.clearTimeout(timer);
+  }, [offline]);
   if (home.isLoading)
     return (
       <div className="loading">
@@ -679,7 +692,6 @@ function Dashboard({
       </div>
     );
   const h = home.data;
-  const offline = !h.connected || !streamConnected || home.isError;
   const regular = h.controls.filter(
     (c) => !c.diagnostic && c.domain !== "automation",
   );
@@ -757,7 +769,7 @@ function Dashboard({
             {t.demoHint}
           </div>
         )}
-        {offline && (
+        {offline && connectionWarning && (
           <div className="notice" role="alert">
             <WifiOff size={20} />
             <span>
