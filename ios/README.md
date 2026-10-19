@@ -152,3 +152,6 @@ Validation: Release archive succeeded, 133 frontend tests passed, mobile
 Playwright tests passed for badge geometry, viewport fit, both bridge commands
 and tab centering. Real-device safe-area appearance requires checking after both
 the native build and hub update are installed.
+
+Build 0.1.0 (3) uploaded successfully and was assigned to SMARTi intern test;
+App Store Connect confirmed Testing. Hub 1.35.43 is pushed to main.
