@@ -1,5 +1,5 @@
 name: SMARTi
-version: "1.35.31"
+version: "1.35.32"
 slug: smarti
 url: https://github.com/Prosono/SMARTiDashboard
 # Build-tested architecture only; hardware/HAOS validation still required.
@@ -27,6 +27,8 @@ options:
   zigbee2mqtt_server: ""
   zigbee2mqtt_auth_token: ""
   bootstrap_secret: ""
+  remote_installation_id: ""
+  remote_credential: ""
 schema:
   origin: url
   additional_origins:
@@ -38,3 +40,5 @@ schema:
   zigbee2mqtt_server: str?
   zigbee2mqtt_auth_token: password?
   bootstrap_secret: password
+  remote_installation_id: str?
+  remote_credential: password?

@@ -1,0 +1,7 @@
+configuration:
+  remote_installation_id:
+    name: Remote access Hub ID
+    description: The unique hub ID issued by SMARTi. Fill in both remote access fields, save and restart the SMARTi app.
+  remote_credential:
+    name: Remote access Connection key
+    description: The private key issued with the hub ID. This is not the bootstrap secret or your Home Assistant password. Disable remote access through Settings → System → Remote access in SMARTi.

@@ -99,8 +99,8 @@ export function RemoteAccess({ lang }: { lang: string }) {
           {!q.data?.provisioned && (
             <p>
               {t(
-                "Denne huben har ikke fått sin egen tilkoblingsidentitet ennå. SMARTi må klargjøre huben før den kan kobles til kontoen din.",
-                "This hub has not received its connection identity yet. SMARTi must provision it before account linking.",
+                "Åpne SMARTi-appens konfigurasjon i Home Assistant. Fyll inn Hub-ID og Tilkoblingsnøkkel fra SMARTi, lagre og start SMARTi-appen på nytt. Deretter kan du hente en engangskode her.",
+                "Open the SMARTi app configuration in Home Assistant. Enter the Hub ID and Connection key supplied by SMARTi, save and restart the SMARTi app. Then request a one-time code here.",
               )}
             </p>
           )}

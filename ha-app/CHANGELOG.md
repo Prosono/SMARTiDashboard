@@ -1,3 +1,9 @@
+## 1.35.32
+
+- Hub-ID og Tilkoblingsnøkkel kan nå legges inn i SMARTi-appens konfigurasjon i Home Assistant. Lagre og start SMARTi på nytt for å klargjøre fjerntilgang.
+- Nøkkelfeltet skjules som et passord. Identiteten lagres atomisk i en privat fil, og ugyldige innstillinger stopper ikke lokal bruk av SMARTi.
+- Fjerntilgang-dialogen forklarer hvor innstillingene finnes. Bootstrap-nøkkelen er fortsatt kun for lokalt førstegangsoppsett.
+
 ## 1.35.31
 
 - Pilot for utgående fjernforbindelse på klargjorte huber, med separat HTTPS-inngang og hjemmets eksisterende innlogging og tilgangsregler.

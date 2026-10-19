@@ -198,3 +198,21 @@ Administratorer kan åpne **Enheter → Zigbee/Z-Wave → Avansert modus**. SMAR
 SMARTi må åpnes gjennom hjemmesentralens Ingress/app-tilgang, og målappen må kjøre og tilby Ingress. Nettleserens eksisterende Ingress-tilgang brukes; ved innloggingsfeil må SMARTi lastes inn på nytt. En Z-Wave-integrasjon alene betyr ikke at et separat Z-Wave-webgrensesnitt finnes. Eksterne Docker-grensesnitt uten Ingress er foreløpig ikke støttet.
 
 Endringer i avansert modus utføres direkte i originalappen. Lukk dialogen for å gå tilbake til SMARTi. Originalappen beholder sitt eget design og språk.
+
+## Manuell klargjøring av fjerntilgang (fra 1.35.32)
+
+Åpne **Innstillinger → Apper → SMARTi → Konfigurasjon** i Home Assistant.
+Fyll inn **Hub-ID for fjerntilgang** (`remote_installation_id`) og
+**Tilkoblingsnøkkel for fjerntilgang** (`remote_credential`) med verdiene utstedt
+av SMARTi. Nøkkelen er forskjellig fra `bootstrap_secret`; ikke bruk HA-passord
+eller Supervisor-token her. Lagre og start **SMARTi-appen** på nytt.
+
+Åpne deretter SMARTi → Innstillinger → System → Fjerntilgang og hent engangskoden.
+Logg inn på https://home.smarti.dev og bruk «Koble til et hjem». Når huben er
+koblet til, velger du «Åpne hjem» og logger inn med din lokale SMARTi-bruker.
+
+Identiteten lagres atomisk i `/data/remote-identity.json` med filmodus 0600.
+Ugyldig format hindrer fjernoppstart, men lokal SMARTi fortsetter. Serveren
+kontrollerer at ID og nøkkel hører sammen ved tilkobling. Allerede klargjorte
+huber beholder identiteten når begge konfigurasjonsfeltene er tomme. Å tømme
+feltene slår derfor ikke av fjerntilgang; bruk «Slå av fjerntilgang» i SMARTi.

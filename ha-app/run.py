@@ -1,7 +1,11 @@
 """Supervisor options are local files; no browser-controlled proxy settings."""
 import json
 import os
+import logging
+
+from app.remote_options import configure_remote_identity
 from pathlib import Path
+options = {}
 options_file = Path('/data/options.json')
 if options_file.exists():
     options = json.loads(options_file.read_text())
@@ -18,9 +22,15 @@ if options_file.exists():
         'SMARTI_ZIGBEE2MQTT_AUTH_TOKEN': options.get('zigbee2mqtt_auth_token', ''),
         'SMARTI_BOOTSTRAP_SECRET': options.get('bootstrap_secret', ''),
     })
-# Installer-owned identity; never accept credentials through browser headers/options.
-remote_identity = Path('/data/remote-identity.json')
-if remote_identity.is_file():
-    os.environ['SMARTI_REMOTE_IDENTITY_FILE'] = str(remote_identity)
+# Supervisor options are entered by the local HA administrator, never browser headers.
+try:
+    remote_identity = configure_remote_identity(options, Path('/data'))
+    if remote_identity:
+        os.environ['SMARTI_REMOTE_IDENTITY_FILE'] = str(remote_identity)
+except (ValueError, OSError):
+    os.environ.pop('SMARTI_REMOTE_IDENTITY_FILE', None)
+    logging.getLogger(__name__).error(
+        'Fjerntilgang kunne ikke klargjøres. Kontroller Hub-ID og Tilkoblingsnøkkel i SMARTi-konfigurasjonen. Lokal tilgang fortsetter.'
+    )
 from app.run import main
 main()

@@ -1,0 +1,7 @@
+configuration:
+  remote_installation_id:
+    name: Hub-ID for fjerntilgang
+    description: Den unike hub-ID-en utstedt av SMARTi. Fyll inn begge fjernaksessfeltene, lagre og start SMARTi-appen på nytt.
+  remote_credential:
+    name: Tilkoblingsnøkkel for fjerntilgang
+    description: Den private nøkkelen utstedt sammen med hub-ID-en. Dette er ikke bootstrap-nøkkelen eller Home Assistant-passordet. For å slå av fjerntilgang, bruk Innstillinger → System → Fjerntilgang i SMARTi.

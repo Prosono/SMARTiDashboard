@@ -174,3 +174,13 @@ hub, verify trusted production TLS and two real households, complete customer
 self-service enrollment/invitations/account recovery/native-app identity storage,
 and monitoring/backups/load testing. The bootstrap secret stays local and must
 not be used as a cloud credential.
+
+### Manual Supervisor configuration — 1.35.32
+
+A local HA administrator can now supply `remote_installation_id` and
+`remote_credential` in the SMARTi app Configuration tab. The latter uses the
+Supervisor password schema. Startup validates both fields and atomically saves
+an owner-only identity file before enabling the runtime. Invalid input logs only
+a generic message and leaves local access working. Empty options preserve earlier
+installer-provisioned files. These are operator-issued hub credentials, not a
+bootstrap secret. No new browser provisioning endpoint was introduced.
