@@ -35,6 +35,7 @@ import {
 } from "./energyFlowModel";
 import { FlowHistory, type FlowHistoryData } from "./FlowHistory";
 import { EnergyWelcome } from "./EnergyWelcome";
+import { prefersLightweightEnergyView } from "./energyCompatibility";
 import "./energyFlow.css";
 const Scene = lazy(() => import("./EnergyScene"));
 class SceneBoundary extends Component<
@@ -65,6 +66,7 @@ export function EnergyFlow({
   offline: boolean;
   lang: string;
 }) {
+  const lightweight = prefersLightweightEnergyView();
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb),
     qc = useQueryClient();
@@ -555,51 +557,74 @@ export function EnergyFlow({
                 ? t("Målinger fra hjemmet", "Readings from home")
                 : t("Venter på målinger", "Waiting for readings")}
           </span>
-          <button aria-pressed={paused} onClick={() => pause(!paused)}>
-            {paused ? <Play size={15} /> : <Pause size={15} />}{" "}
-            {paused ? t("Vis flyt", "Show flow") : t("Pause", "Pause")}
-          </button>
+          {!lightweight && (
+            <button aria-pressed={paused} onClick={() => pause(!paused)}>
+              {paused ? <Play size={15} /> : <Pause size={15} />}{" "}
+              {paused ? t("Vis flyt", "Show flow") : t("Pause", "Pause")}
+            </button>
+          )}
         </div>
-        <SceneBoundary
-          fallback={
-            <p>
-              {t(
-                "3D-modellen kunne ikke lastes. Målingene vises under.",
-                "Could not load 3D model. Readings are shown below.",
-              )}
-            </p>
-          }
-        >
-          <Suspense
+        {lightweight ? (
+          <div
+            className="flow-lightweight"
+            aria-label={t("Energiflyt", "Energy flow")}
+          >
+            <House size={64} strokeWidth={1.2} aria-hidden="true" />
+            <div>
+              <h2>{t("Energien i hjemmet ditt", "Your home's energy")}</h2>
+              <p>
+                {t(
+                  "Se forbruk og strømflyt nedenfor. Velg en måling for historikk og detaljer.",
+                  "See consumption and power flow below. Select a reading for history and details.",
+                )}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <SceneBoundary
             fallback={
-              <div className="flow-loading">
-                {t("Bygger energihuset…", "Building your energy home…")}
-              </div>
+              <p>
+                {t(
+                  "3D-modellen kunne ikke lastes. Målingene vises under.",
+                  "Could not load 3D model. Readings are shown below.",
+                )}
+              </p>
             }
           >
-            <Scene
-              flows={flows}
-              animate={
-                !!config.data?.animation && !paused && !offline && !live.isError
+            <Suspense
+              fallback={
+                <div className="flow-loading">
+                  {t("Bygger energihuset…", "Building your energy home…")}
+                </div>
               }
-              lang={lang}
-              readings={readings}
-              historySeries={history.data?.series}
-              onConfigure={(role) => {
-                if (!config.data?.[role].source) configure(role);
-                else {
-                  select(role);
-                  requestAnimationFrame(() =>
-                    document
-                      .getElementById("flow-history-panel")
-                      ?.scrollIntoView({ block: "center" }),
-                  );
+            >
+              <Scene
+                flows={flows}
+                animate={
+                  !!config.data?.animation &&
+                  !paused &&
+                  !offline &&
+                  !live.isError
                 }
-              }}
-              canConfigure={!!config.data && !busy}
-            />
-          </Suspense>
-        </SceneBoundary>
+                lang={lang}
+                readings={readings}
+                historySeries={history.data?.series}
+                onConfigure={(role) => {
+                  if (!config.data?.[role].source) configure(role);
+                  else {
+                    select(role);
+                    requestAnimationFrame(() =>
+                      document
+                        .getElementById("flow-history-panel")
+                        ?.scrollIntoView({ block: "center" }),
+                    );
+                  }
+                }}
+                canConfigure={!!config.data && !busy}
+              />
+            </Suspense>
+          </SceneBoundary>
+        )}
         <nav
           className="flow-navigation"
           aria-label={t("Energioversikt", "Energy overview")}

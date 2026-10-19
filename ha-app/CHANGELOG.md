@@ -1,3 +1,8 @@
+## 1.35.40
+
+- Energivisningen bruker en lettere oversikt uten 3D/WebGL på iPhone og iPad. Målinger, innstillinger og historikk beholdes.
+- Tiltak mot WebKit-krasj ved åpning av Energi; må fortsatt verifiseres i simulatoren som krasjet.
+
 ## 1.35.39
 
 - Enhetsoversikten viser opptil 48 kontroller per side for å redusere belastningen i store hjem. Søk og filtre søker fortsatt i hele listen.
