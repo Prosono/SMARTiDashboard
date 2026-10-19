@@ -1094,13 +1094,14 @@ function Dashboard({
             <a
               className="primary-button"
               href="https://home.smarti.dev/support"
+              target="_top"
             >
               {lang === "en"
                 ? "Open my support cases"
                 : "Åpne mine supportsaker"}{" "}
               <ArrowUpRight size={18} />
             </a>
-            <a href="https://home.smarti.dev/support/prices">
+            <a href="https://home.smarti.dev/support/prices" target="_top">
               {lang === "en" ? "View prices" : "Se prislisten"}
             </a>
             <p className="muted">

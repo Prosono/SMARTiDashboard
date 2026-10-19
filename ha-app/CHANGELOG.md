@@ -1,3 +1,7 @@
+## 1.35.46
+- Open support and pricing outside the Home Assistant ingress frame so portal security does not block navigation.
+- Keep portal frame protection enabled for login and remote assistance approval.
+
 ## 1.35.45
 - New Support navigation opens cases and pricing in the SMARTi portal.
 - Owner-approved remote support uses one-use links and 30-minute, revocable sessions.
