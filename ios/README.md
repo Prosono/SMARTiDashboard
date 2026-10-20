@@ -229,4 +229,6 @@ customer-account handoff. Legacy QR labels still require their existing PIN.
 Signed archive and TestFlight upload succeeded on 2026-10-20. Archive:
 `/tmp/SMARTiHome-build8.xcarchive`. The seven customer-account backend tests and
 both mobile browser onboarding regressions pass. Physical-device onboarding and
-actual mail delivery remain to be tested. Internal group assignment is pending.
+actual mail delivery remain to be tested. App Store Connect confirmed build 8
+as **Testing** in **SMARTi intern test** on 2026-10-20 (build ID
+`c736a9c1-9d9e-473f-9364-148b8a064928`).
