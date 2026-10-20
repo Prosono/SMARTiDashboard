@@ -350,3 +350,7 @@ Requires HA app 1.35.64 for logout inside the home. Portal changes are deployed.
 Simulator build, signed Release archive, frontend build and isolated portal
 logout-bridge regression passed. Build 13 uploaded successfully to Apple on
 2026-10-20. Physical-device force-close/reopen verification remains necessary.
+
+Build 13 confirmed **Testing** in **SMARTi intern test** on 2026-10-20.
+App Store Connect build ID: `cd8a4503-ee87-4aad-b7ec-133feff8a231`.
+Screenshot: `/tmp/smarti-build13-testflight.png`.
