@@ -5,7 +5,7 @@ async function api(path, method="GET", body) {
   const r = await fetch("/api/"+path, {method, credentials:"same-origin", signal:AbortSignal.timeout(15000),
     headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},
     ...(body ? {body:JSON.stringify(body)} : {})});
-  if (!r.ok) throw Object.assign(new Error(r.status === 401 && path === "login"
+  if(path==="session"&&r.ok)document.documentElement.dataset.portalSession="authenticated";if(r.status===401||(path==="logout"&&r.ok))delete document.documentElement.dataset.portalSession;if (!r.ok) throw Object.assign(new Error(r.status === 401 && path === "login"
     ? "Feil brukernavn eller passord for SMARTi-kontoen på home.smarti.dev. Bruk kontoen du koblet hjemmet til; hjemmets egen innlogging brukes etter Åpne hjem."
     : errors[r.status] || "Kunne ikke fullføre. Prøv igjen."), {status:r.status});
   return r.json();

@@ -6,7 +6,7 @@ function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefine
 function status(h){return el("span",labels[h.status],"status "+h.status);}
 async function api(path,method="GET",body){
  const r=await fetch("/api/"+path,{method,credentials:"same-origin",signal:AbortSignal.timeout(10000),headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},...(body?{body:JSON.stringify(body)}:{})});
- if(r.status===401){$("workspace").hidden=true;$("auth").hidden=false;$("logout").hidden=true;throw Error("Logg inn for å fortsette.");}
+ if(path==="session"&&r.ok)document.documentElement.dataset.portalSession="authenticated";if(r.status===401||(path==="logout"&&r.ok))delete document.documentElement.dataset.portalSession;if(r.status===401){$("workspace").hidden=true;$("auth").hidden=false;$("logout").hidden=true;throw Error("Logg inn for å fortsette.");}
  if(r.status===403)throw Error("Denne kontoen har ikke portaladministratortilgang, eller økten må fornyes.");
  if(!r.ok)throw Error("Handlingen kunne ikke fullføres. Prøv igjen.");
  return r.json();

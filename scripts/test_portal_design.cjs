@@ -14,7 +14,7 @@ const root='backend/app/cloud_web/';
   else if(path==='/api/homes')data=[home,{...home,name:'Hytta ved sjøen',installation_id:'00000000-0000-4000-8000-000000000002',connected:false}];
   else if(path==='/api/admin/overview')data={checked_at:1792480000,relay_available:true,summary:{customers:24,accounts:29,homes:31,online:27,offline:2,unclaimed:2},customers:[{id:'test',username:'kunde@example.no',homes:[{name:home.name,status:'online'}]},{id:'test2',username:'annen@example.no',homes:[{name:'Hytta',status:'offline'}]}],total:2,unclaimed:[]};
   else if(path==='/api/admin/accounts/test')data={username:'kunde@example.no',id:'test',homes:[{name:home.name,status:'online',id:'demo'}],notes:[]};
-  else if(path==='/api/admin/audit')data=[];
+  else if(path==='/api/admin/audit'||path==='/api/admin/hubs')data=[];
   else if(path==='/api/support/pricing')data={hourly:499,simple:299,complex:499,advanced:799,version:1,terms:'Arbeid avtales før oppstart.'};
   else if(path==='/api/customer/profile'){if(route.request().method()==='PUT'){savedProfile=route.request().postDataJSON();profile={...profile,...savedProfile};data={ok:true};}else data={profile,mail_configured:true};}
   else if(path.endsWith('/members'))data=[];
@@ -49,11 +49,16 @@ const root='backend/app/cloud_web/';
  for(const width of [1440,768,390]){
   await page.setViewportSize({width,height:1000});signedIn=false;admin=false;
   await page.goto('https://home.smarti.dev/');await expect(page.locator('#auth')).toBeVisible();
-  await page.getByRole('button',{name:'Lyst',exact:true}).click();
+  if(await page.locator('html').getAttribute('data-portal-theme')!=='light')await page.getByRole('button',{name:'Bytt til lyst tema',exact:true}).click();
   await expect(page.locator('html')).toHaveAttribute('data-portal-theme','light');
+  await expect(page.locator('.masthead nav a:visible')).toHaveCount(1);
+  await expect(page.locator('.masthead nav a:visible')).toHaveText('Om oss');
+  await expect(page.locator('.portal-theme button')).toHaveCount(1);
   await page.screenshot({path:`/tmp/smarti-portal-login-${width}.png`,fullPage:true});
   await page.getByRole('button',{name:'Vis passord',exact:true}).click();await expect(page.locator('[name=password]')).toHaveAttribute('type','text');await page.getByRole('button',{name:'Skjul passord',exact:true}).click();
   await page.locator('[name=username]').fill('resident@example.no');await page.locator('[name=password]').fill('test-password');await page.locator('#login .primary').click();
+  await expect(page.locator('.masthead nav a[href="/account"]')).toBeVisible();
+  await expect(page.locator('.masthead nav .public-about')).toBeHidden();
   await expect(page.locator('.home-card')).toHaveCount(2);await expect(page.locator('#admin-link')).toBeHidden();
   await page.locator('.home-options').first().locator('summary').click();await expect(page.getByRole('button',{name:'Slå av fjerntilgang'}).first()).toBeVisible();
   await page.locator('.home-options').first().locator('summary').click();
@@ -80,7 +85,7 @@ const root='backend/app/cloud_web/';
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);if(overflow)throw Error('Overflow '+path+' '+width);
   }
  }
- signedIn=true;admin=false;await page.setViewportSize({width:1440,height:1050});await page.emulateMedia({colorScheme:'light'});await page.getByRole('button',{name:'Mørkt',exact:true}).click();
+ signedIn=true;admin=false;await page.setViewportSize({width:1440,height:1050});await page.emulateMedia({colorScheme:'light'});await page.getByRole('button',{name:'Bytt til mørkt tema',exact:true}).click();
  for(const [path,name] of [['/','homes'],['/account','account'],['/support','support']]){await page.goto('https://home.smarti.dev'+path);await expect(page.locator(path==='/support'?'#workspace':'#account')).toBeVisible();await expect(page.locator('html')).toHaveAttribute('data-portal-theme','dark');if(await page.locator('body').evaluate(n=>getComputedStyle(n).backgroundColor)!=='rgb(16, 16, 16)')throw Error('Dark background is not neutral black');await page.screenshot({path:`/tmp/smarti-${name}-dark-redesign.png`,fullPage:true});}
  signedIn=true;admin=true;
  await page.goto('https://home.smarti.dev/');await page.waitForURL('https://home.smarti.dev/admin');

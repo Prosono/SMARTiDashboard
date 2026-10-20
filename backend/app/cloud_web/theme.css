@@ -79,3 +79,13 @@ html[data-portal-theme] .home-page .welcome-form input{background:var(--surface)
  html[data-customer-portal] .service-link{padding:18px;margin-top:24px}
  html[data-customer-portal] body:not(:has(.welcome-layout:not([hidden]))) .site-footer{padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));font-size:11px}
 }
+
+/* No customer/staff destinations before a session has been confirmed. */
+html:not([data-portal-session=authenticated]) .masthead nav a:not(.public-about),
+html:not([data-portal-session=authenticated]) .masthead nav:before,
+html:not([data-portal-session=authenticated]) .masthead .sidebar-about,
+html[data-portal-session=authenticated] .masthead nav a.public-about{display:none!important}
+html[data-portal-theme] .masthead .portal-theme{padding:0;border:0;background:transparent}
+html[data-portal-theme] .masthead .portal-theme button{width:44px;min-height:44px;padding:0;gap:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink)}
+html[data-portal-theme] .masthead .portal-theme span{font-size:22px}
+.masthead nav a.public-about:before{display:none}

@@ -26,6 +26,7 @@
       }
     }
   }
+  const publicLink=document.createElement('a');publicLink.href='https://www.smarti.no/';publicLink.textContent='Om oss';publicLink.className='public-about';document.querySelector('.masthead nav')?.append(publicLink);
   for (const link of document.querySelectorAll('.masthead nav a')) {
     if (link.getAttribute('href') === path) link.setAttribute('aria-current', 'page');
   }
@@ -95,13 +96,15 @@ if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)
   let theme='dark';
   try{const saved=localStorage.getItem(themeKey);if(['light','dark'].includes(saved))theme=saved;}catch{}
 
-  const selector=document.createElement('div');selector.className='portal-theme';selector.setAttribute('role','group');selector.setAttribute('aria-label','Fargetema');
-  for(const [value,label,icon] of [['light','Lyst','☀'],['dark','Mørkt','☾']]){
-    const button=document.createElement('button');button.type='button';button.dataset.theme=value;
-    const symbol=document.createElement('span');symbol.setAttribute('aria-hidden','true');symbol.textContent=icon;
-    button.append(symbol,document.createTextNode(label));button.onclick=()=>{theme=value;apply();try{localStorage.setItem(themeKey,theme);}catch{}};selector.append(button);
+  const selector=document.createElement('div');selector.className='portal-theme';
+  const button=document.createElement('button');button.type='button';
+  const symbol=document.createElement('span');symbol.setAttribute('aria-hidden','true');button.append(symbol);selector.append(button);
+  button.onclick=()=>{theme=theme==='dark'?'light':'dark';apply();try{localStorage.setItem(themeKey,theme);}catch{}};
+  function apply(){
+    document.documentElement.dataset.portalTheme=theme;
+    const label=theme==='dark'?'Bytt til lyst tema':'Bytt til mørkt tema';
+    button.setAttribute('aria-label',label);button.title=label;symbol.textContent=theme==='dark'?'☀':'☾';
   }
-  function apply(){document.documentElement.dataset.portalTheme=theme;for(const button of selector.children)button.setAttribute('aria-pressed',String(button.dataset.theme===theme));}
   apply();document.querySelector('.masthead')?.append(selector);
   window.addEventListener('storage',e=>{if(e.key===themeKey&&['light','dark'].includes(e.newValue)){theme=e.newValue;apply();}});
 })();
