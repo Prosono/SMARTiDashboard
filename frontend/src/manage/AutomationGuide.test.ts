@@ -79,3 +79,25 @@ describe("guided automation safety", () => {
     ).toBe(true);
   });
 });
+
+describe("device state triggers", () => {
+  it.each([
+    ["light", "off", "on"],
+    ["lock", "unlocked", "locked"],
+    ["media_player", "paused", "playing"],
+    ["cover", "closed", "open"],
+    ["sensor", "19", "20"],
+    ["person", "not_home", "home"],
+  ])("allows %s transitions in the guide", (domain, from, to) => {
+    const entity_id = `${domain}.trigger`;
+    const source = { entity_id, domain, capabilities: [] };
+    const c = { ...config, triggers: [{ trigger: "state", entity_id, from, to }] };
+    expect(guideValid(c, { ...home, controls: [...home.controls, source] } as Home)).toBe(true);
+    expect(guideValid(c, home)).toBe(false);
+  });
+  it("keeps incomplete and templated transitions out of the guide", () => {
+    for (const values of [{ from: "", to: "on" }, { from: "on", to: "on" }, { from: "off", to: "{{ value }}" }]) {
+      expect(canGuide({ ...config, triggers: [{ trigger: "state", entity_id: "light.one", ...values }] })).toBe(false);
+    }
+  });
+});

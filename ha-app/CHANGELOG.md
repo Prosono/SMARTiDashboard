@@ -1,3 +1,8 @@
+## 1.35.55
+
+- Automasjonsveiviseren lar alle tilgjengelige enheter og sensorer brukes som tilstandsutløser, inkludert lys.
+- Lesbare forslag for fra-/til-tilstander, og mulighet til å angi egne tilstandsverdier.
+
 ## 1.35.54
 
 - Pushvarsler til SMARTi på iPhone via Home Assistant, med samtykke og testvarsel i telefoninnstillingene.

@@ -12,6 +12,27 @@ import {
 import type { Home } from "../types";
 import { words } from "./shared";
 type Config = Record<string, any>;
+export function triggerStates(control?: Home["controls"][number]): string[] {
+  if (!control) return [];
+  const known: Record<string, string[]> = {
+    light: ["off", "on"], switch: ["off", "on"], binary_sensor: ["off", "on"],
+    input_boolean: ["off", "on"], automation: ["off", "on"], fan: ["off", "on"],
+    lock: ["unlocked", "locked"], cover: ["closed", "open", "opening", "closing"],
+    person: ["not_home", "home"], device_tracker: ["not_home", "home"],
+    media_player: ["idle", "playing", "paused", "off", "on"],
+    vacuum: ["docked", "cleaning", "paused", "returning", "idle", "error"],
+    climate: ["off", "heat", "cool", "auto", "heat_cool", "dry", "fan_only"],
+    alarm_control_panel: ["disarmed", "armed_home", "armed_away", "armed_night", "triggered"],
+  };
+  const options = control.attributes?.options;
+  return [...new Set([...(known[control.domain] || []),
+    ...(Array.isArray(options) ? options.filter((v): v is string => typeof v === "string") : []),
+    ...((control.state && !["unknown", "unavailable"].includes(control.state)) ? [control.state] : [])])];
+}
+export function initialTransition(control?: Home["controls"][number]) {
+  const states = triggerStates(control);
+  return { from: states[0] || "", to: states[1] || "" };
+}
 const only = (v: Config, keys: string[]) =>
   !!v &&
   typeof v === "object" &&
@@ -47,8 +68,10 @@ export function canGuide(c: Config): boolean {
         : r.trigger === "state" &&
           only(r, ["trigger", "entity_id", "from", "to"]) &&
           typeof r.entity_id === "string" &&
-          ["on", "off"].includes(r.to) &&
-          r.from === (r.to === "on" ? "off" : "on");
+          typeof r.to === "string" && !!r.to.trim() &&
+          typeof r.from === "string" && !!r.from.trim() &&
+          r.from !== r.to &&
+          ![r.from, r.to].some((v) => /{{|{%/.test(v));
   return (
     !!trigger &&
     only(a, ["action", "target"]) &&
@@ -67,7 +90,7 @@ export function guideValid(c: Config, home: Home): boolean {
       /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(r.at)) &&
     (r.trigger !== "state" ||
       home.controls.some(
-        (x) => x.entity_id === r.entity_id && x.domain === "binary_sensor",
+        (x) => x.entity_id === r.entity_id,
       )) &&
     home.controls.some(
       (x) =>
@@ -108,9 +131,10 @@ export function AutomationGuide({
         (p) => p.actions.includes("turn_on") && p.actions.includes("turn_off"),
       ),
   );
-  const sensors = home.controls.filter((x) => x.domain === "binary_sensor");
-  const stateText = (on: boolean) =>
-    `${t("blir", "becomes")} ${controlState(sensor, on ? "on" : "off", lang).toLocaleLowerCase()}`;
+  const sensors = home.controls;
+  const states = triggerStates(sensor);
+  const stateText = (value: string) =>
+    `${t("blir", "becomes")} ${controlState(sensor, value, lang).toLocaleLowerCase()}`;
   const when =
     r?.trigger === "time"
       ? t("klokken er ", "the time is ") + r.at?.slice(0, 5)
@@ -119,8 +143,8 @@ export function AutomationGuide({
           ? t("solen går ned", "the sun sets")
           : t("solen står opp", "the sun rises")
         : sensor
-          ? `${sensor.name} ${stateText(r.to === "on")}`
-          : t("en sensor endrer seg", "a sensor changes");
+          ? `${sensor.name} ${stateText(r.to)}`
+          : t("en enhet endrer tilstand", "a device changes state");
   const then = target
     ? `${a.action.endsWith("turn_off") ? t("slå av", "turn off") : t("slå på", "turn on")} ${target.name}`
     : t("velg hva som skal skje", "choose what happens");
@@ -147,7 +171,7 @@ export function AutomationGuide({
     r?.trigger === "sun" ||
     (r?.trigger === "time" &&
       /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(r.at)) ||
-    (r?.trigger === "state" && !!sensor);
+    (r?.trigger === "state" && !!sensor && !!r.from?.trim() && !!r.to?.trim() && r.from !== r.to && ![r.from, r.to].some((v) => /{{|{%/.test(v)));
   return (
     <div className="routine-guide">
       <ol className="routine-steps" aria-label={t("Fremdrift", "Progress")}>
@@ -216,8 +240,8 @@ export function AutomationGuide({
                     DoorOpen,
                     t("Når noe skjer hjemme", "When something happens at home"),
                     t(
-                      "En dør åpnes eller en sensor reagerer",
-                      "A door opens or a sensor reacts",
+                      "Et lys slås på, en dør åpnes eller en enhet endrer seg",
+                      "A light turns on, a door opens or a device changes",
                     ),
                   ],
                 ].map(([kind, Icon, label, hint]: any) => (
@@ -283,42 +307,44 @@ export function AutomationGuide({
                   <EntityPicker
                     value={r.entity_id}
                     onChange={(v) =>
-                      patch({ triggers: [{ ...r, entity_id: v }] })
+                      patch({ triggers: [{ trigger: "state", entity_id: v, ...initialTransition(home.controls.find((x) => x.entity_id === v)) }] })
                     }
                     choices={sensors}
                     home={home}
                     lang={lang}
-                    label={t("Velg sensor", "Choose sensor")}
+                    label={t("Velg enhet eller sensor", "Choose device or sensor")}
                   />
                   {!sensors.length && (
                     <p>
                       {t(
-                        "Ingen sensorer er tilgjengelige i oversikten ennå. Velg et tidspunkt, eller bruk flere muligheter nedenfor.",
-                        "No sensors are listed yet. Choose a time or use more options below.",
+                        "Ingen enheter er tilgjengelige i oversikten ennå. Velg et tidspunkt, eller bruk flere muligheter nedenfor.",
+                        "No devices are listed yet. Choose a time or use more options below.",
                       )}
                     </p>
                   )}
                   {sensor && (
-                    <label>
-                      {t("Når den", "When it")}
-                      <select
-                        value={r.to}
-                        onChange={(e) =>
-                          patch({
-                            triggers: [
-                              {
-                                ...r,
-                                to: e.target.value,
-                                from: e.target.value === "on" ? "off" : "on",
-                              },
-                            ],
-                          })
-                        }
-                      >
-                        <option value="on">{stateText(true)}</option>
-                        <option value="off">{stateText(false)}</option>
-                      </select>
-                    </label>
+                    <>
+                      {(["from", "to"] as const).map((field) => (
+                        <label key={field}>
+                          {field === "from" ? t("Fra tilstand", "From state") : t("Til tilstand", "To state")}
+                          {states.length > 1 && states.includes(r[field]) ? (
+                            <select value={r[field]} onChange={(e) => patch({ triggers: [{ ...r, [field]: e.target.value }] })}>
+                              {states.map((value) => <option key={value} value={value}>{controlState(sensor, value, lang)}</option>)}
+                              <option value="">{t("Annen tilstand …", "Other state …")}</option>
+                            </select>
+                          ) : <input
+                            value={r[field] || ""}
+                            list={`routine-trigger-${field}`}
+                            placeholder={field === "from" ? t("F.eks. av", "E.g. off") : t("F.eks. på", "E.g. on")}
+                            onChange={(e) => patch({ triggers: [{ ...r, [field]: e.target.value }] })}
+                          />}
+                          <datalist id={`routine-trigger-${field}`}>
+                            {states.map((value) => <option key={value} value={value}>{controlState(sensor, value, lang)}</option>)}
+                          </datalist>
+                        </label>
+                      ))}
+                      <small>{t("Velg en foreslått tilstand, eller skriv verdien enheten bruker. For temperaturgrenser, lysstyrke og flere vilkår, velg flere muligheter nedenfor.", "Choose a suggested state or enter the value used by the device. For temperature thresholds, brightness and more conditions, use more options below.")}</small>
+                    </>
                   )}
                 </div>
               )}
