@@ -17,7 +17,7 @@ const fs=require('fs');
   if(path.endsWith('/invitations')){invited=true;return route.fulfill({json:{queued:true}});}
   if(path.endsWith('/open')){opened=true;return route.fulfill({json:{url:'https://'+home+'.home.smarti.dev/_account#'+'x'.repeat(48)}});}
   const file=path==='/activate'?'onboarding.html':path.split('/').pop();
-  if(!['onboarding.html','onboarding.js','onboarding.css','profile.js','admin.css'].includes(file))return route.fulfill({status:404,body:''});
+  if(!['onboarding.html','onboarding.js','onboarding.css','profile.js','admin.css','brand.css','brand.js','smarti-logo.png','bai-jamjuree-latin-400-normal.woff2','bai-jamjuree-latin-600-normal.woff2'].includes(file))return route.fulfill({status:404,body:''});
   return route.fulfill({body:fs.readFileSync('backend/app/cloud_web/'+file),contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html'});
  });
  await page.goto('https://home.smarti.dev/activate?device='+device+'#'+home+'.v2.'+'a'.repeat(64));

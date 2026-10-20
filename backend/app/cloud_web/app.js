@@ -21,26 +21,48 @@ async function showHomes() {
   const homes = await api("homes");
   $("admin-link").hidden=!(await api("session")).portal_admin;
   $("auth").hidden=true; $("account").hidden=false;
+  $("home-count").textContent=homes.length+" hjem";
+  // Background polling must not close menus or move keyboard focus every 15 seconds.
+  const signature=JSON.stringify(homes);
+  if ($("homes").dataset.signature===signature) return;
+  $("homes").dataset.signature=signature;
   $("homes").replaceChildren();
-  if (!homes.length) $("homes").textContent="Du har ikke koblet til et hjem ennå.";
+  if (!homes.length) {
+    const empty=document.createElement("div");empty.className="empty-homes";
+    const title=document.createElement("h3");title.textContent="Ditt første hjem starter her.";
+    const text=document.createElement("p");text.textContent="Koble til SMARTi-huben, så finner du hjemmet ditt her neste gang.";
+    const link=document.createElement("a");link.href="/activate";link.className="button primary";link.textContent="Legg til et hjem →";
+    empty.append(title,text,link);$("homes").append(empty);
+  }
   for (const home of homes) {
     const card=document.createElement("article"), title=document.createElement("h2"), detail=document.createElement("p");
-    title.textContent=home.name; detail.textContent=home.remote_enabled ? (home.connected ? "Hjemmet er tilkoblet" : "Venter på tilkobling fra huben") : "Fjerntilgang er slått av";
-    if(home.verification_required)detail.textContent="Bekreft e-postadressen under Min konto for å gjenåpne fjernaksess.";
+    const available=home.connected && home.remote_enabled && !home.verification_required;
+    card.className="home-card "+(available?"is-online":"is-offline");
+    title.textContent=home.name; detail.className="connection-state";
+    detail.textContent=home.remote_enabled ? (home.connected ? "Tilkoblet · klart til å åpnes" : "Venter på tilkobling fra huben") : "Fjerntilgang er slått av";
+    if(home.verification_required)detail.textContent="Bekreft e-postadressen din for å åpne hjemmet.";
     card.append(title,detail);
-    if (home.factory_managed) { const setup=document.createElement("a");setup.href="/activate?home="+encodeURIComponent(home.installation_id);setup.textContent="Oppsett av klargjort hub";card.append(setup); }
-    if (home.connected && home.remote_enabled && /^[0-9a-f-]{36}$/.test(home.installation_id)) {
-      const open=document.createElement("a");
+    if (available && /^[0-9a-f-]{36}$/.test(home.installation_id)) {
+      const open=document.createElement("a");open.className="button primary";
       open.href="https://"+home.installation_id+".home.smarti.dev/";
-      open.textContent="Åpne hjem";card.append(open);
+      open.textContent="Åpne hjem →";card.append(open);
       open.onclick=e=>{e.preventDefault();run(async()=>{try{location.assign((await api("customer/homes/"+home.installation_id+"/open","POST")).url);}catch{location.assign(open.href);}});};
-      const note=document.createElement("p");note.textContent="Kontoen din brukes til å åpne hjemmet når det er satt opp med den nye veilederen.";card.append(note);
+    } else {
+      const help=document.createElement("a");help.className="button";
+      help.href=home.verification_required?"/account":"/support";
+      help.textContent=home.verification_required?"Bekreft e-post →":"Få hjelp med tilkoblingen →";card.append(help);
     }
-    if (home.remote_enabled) {
-      const disable=document.createElement("button");disable.textContent="Slå av fjerntilgang";
-      disable.onclick=()=>{if(window.confirm("Slå av fjerntilgang til dette hjemmet? Lokal tilgang beholdes."))run(async()=>{
-        await api("homes/"+encodeURIComponent(home.installation_id)+"/remote","DELETE");await showHomes();
-      });};card.append(disable);
+    if(home.factory_managed || home.remote_enabled){
+      const options=document.createElement("details");options.className="home-options";
+      const summary=document.createElement("summary");summary.textContent="Innstillinger for hjemmet";options.append(summary);
+      if (home.factory_managed) { const setup=document.createElement("a");setup.href="/activate?home="+encodeURIComponent(home.installation_id);setup.textContent="Åpne oppsett av hub";options.append(setup); }
+      if (home.remote_enabled) {
+        const disable=document.createElement("button");disable.textContent="Slå av fjerntilgang";
+        disable.onclick=()=>{if(window.confirm("Slå av fjerntilgang til dette hjemmet? Lokal tilgang beholdes."))run(async()=>{
+          await api("homes/"+encodeURIComponent(home.installation_id)+"/remote","DELETE");await showHomes();
+        });};options.append(disable);
+      }
+      card.append(options);
     }
     $("homes").append(card);
   }

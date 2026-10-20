@@ -417,3 +417,25 @@ a simulated HA connection. The actual Swift HubDiscovery class discovered an
 unconfigured Python advertiser on macOS over Bonjour. Simulator build and signed
 iPhone archive succeeded. Physical iPhone-to-HAOS discovery remains a pilot check.
 The cloud service was deployed with a database backup and health check.
+
+### Portal design — 2026-10-20
+
+The cloud portal now shares the SMARTi charcoal/orange identity, local Bai Jamjuree
+fonts and original logo through `cloud_web/brand.css` and `brand.js`. Customer homes,
+account/invitations, support/pricing, onboarding and the administrator workspace
+share navigation and responsive controls. Home connection settings and manual
+claim codes are progressively disclosed. Unchanged home polling preserves focus
+and open menus. Verification-blocked homes link to the account page.
+
+Validation: `node scripts/test_portal_design.cjs` covers isolated login, customer
+home actions, administrator details/activity, support creation UI and responsive
+routes at 390/1440 px. `test_customer_onboarding.cjs` covers the full onboarding
+flow. Cloud/admin/support/customer-account/onboarding backend tests: 29 passed.
+No live customer account or support data was changed for testing.
+
+Published cloud image: `smartihome:portal-design-20261020`. Source release:
+`/home/omni/smartihome/releases/portal-design-20261020`. Only static portal assets
+changed; the relay and database schema are unchanged. Previous Compose file:
+`/home/omni/smartihome/compose.before-portal-design-20261020.yaml`.
+Rollback: restore the cloud service image to `smartihome:customer-mail-20261020`
+and run Compose `up -d --no-deps smartihome` with the existing production file.
