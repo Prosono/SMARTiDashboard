@@ -1,3 +1,7 @@
+## 1.35.63
+
+- «Fjernaksess»-snarveien i iPhone-visningen heter nå «Åpne Min side», med kontoikon for kontoen og hjemoversikten.
+
 ## 1.35.62
 
 - Åpne eksisterende, eide hjem direkte fra portalen uten ny innlogging, med kontrollert kobling til en egen lokal kontoprofil.
