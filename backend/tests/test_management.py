@@ -465,7 +465,7 @@ def test_automation_icon_saved_without_changing_config(client):
     assert client.put(path, json={'icon': 'sun'}).status_code == 403
 
 
-def test_notification_recipients_use_registered_ha_services():
+def test_notification_recipients_use_registered_ha_services(tmp_path):
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
     from fastapi import FastAPI
@@ -480,12 +480,21 @@ def test_notification_recipients_use_registered_ha_services():
             "send_message": {},
         }},
     ])
+    from app.storage import Store
+    import time
+    store = Store(tmp_path / "recipients.sqlite")
+    with store.connect() as db:
+        db.execute("INSERT INTO users(id,name,password,role) VALUES(1,'Anna','unused','admin')")
+        for id, revoked in [("phone", 0), ("old", 1)]:
+            db.execute("INSERT INTO mobile_devices(id,user_id,name,created,expires,revoked) VALUES(?,1,'iPhone',?,?,?)", (id, time.time(), time.time()+3600, revoked))
+            store_value = {"push_token": "private", "notify_service": "notify.mobile_app_annas_phone"}
+    store.set("companion:phone", json.dumps(store_value))
+    store.set("companion:old", json.dumps(store_value))
     app = FastAPI()
-    app.include_router(management_router(SimpleNamespace(demo=False, rest=rest), lambda: True))
+    app.include_router(management_router(SimpleNamespace(demo=False, rest=rest, store=store), lambda: True))
     with TestClient(app) as client:
         assert client.get("/api/manage/notification-recipients").json() == [
-            {"action": "notify.mobile_app_annas_phone", "name": "annas phone"},
-            {"action": "notify.mobile_app_new_iphone", "name": "New iPhone"},
+            {"action": "notify.mobile_app_annas_phone", "name": "Anna", "phone": "iPhone"},
         ]
         rest.assert_awaited_once_with("GET", "services")
 

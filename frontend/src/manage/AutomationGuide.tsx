@@ -364,7 +364,7 @@ export function AutomationGuide({
                   ? { action: "notify.mobile_app_", data: { title: "SMARTi", message: "" } }
                   : { action: "light.turn_on", target: { entity_id: "" } }] })}>
                   <option value="power">{t("Styr lys eller stikkontakt", "Control a light or socket")}</option>
-                  <option value="notify">{t("Send varsel til en telefon", "Send a notification to a phone")}</option>
+                  <option value="notify">{t("Send notifikasjon til SMARTi-appen", "Send a notification to the SMARTi app")}</option>
                 </select>
               </label>
               {isNotification ? <>

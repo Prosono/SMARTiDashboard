@@ -40,6 +40,8 @@ async def test_notify_scoped_to_active_device_and_revoked_immediately(push):
     record = push.c.read("phone")
     payload = json.loads(push.c.m.ws.call_args.kwargs["body"])
     assert payload["type"] == "update_registration"
+    assert payload["data"]["device_name"] == "smarti_phone"
+    assert record["notify_service"] == "notify.mobile_app_smarti_phone"
     assert payload["data"]["app_data"]["push_url"].startswith("http://127.0.0.1:8099/")
     assert "a" * 64 not in json.dumps(payload)
     body = HANotification(push_token=record["push_capability"], message="Test")

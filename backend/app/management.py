@@ -294,17 +294,24 @@ def management_router(service, admin):
         if m.demo:
             return []
         services = await m.rest("GET", "services")
+        available = {
+            "notify." + name
+            for domain in services if domain.get("domain") == "notify"
+            for name in domain.get("services", {})
+        }
         recipients = []
-        for domain in services:
-            if domain.get("domain") != "notify":
-                continue
-            for service, info in domain.get("services", {}).items():
-                if service.startswith("mobile_app_"):
-                    recipients.append({
-                        "action": "notify." + service,
-                        "name": info.get("name") or service.removeprefix("mobile_app_").replace("_", " "),
-                    })
-        return sorted(recipients, key=lambda item: item["name"].casefold())
+        with m.store.connect() as db:
+            devices = db.execute(
+                "SELECT d.id,d.name,u.name AS user_name FROM mobile_devices d "
+                "JOIN users u ON u.id=d.user_id WHERE d.revoked=0 AND d.expires>?",
+                (time.time(),),
+            ).fetchall()
+        for device in devices:
+            record = json.loads(m.store.get("companion:" + device["id"], "{}"))
+            action = record.get("notify_service")
+            if record.get("push_token") and action in available:
+                recipients.append({"action": action, "name": device["user_name"], "phone": device["name"]})
+        return sorted(recipients, key=lambda item: (item["name"].casefold(), item["phone"].casefold()))
 
     @router.get("/rooms")
     async def rooms():

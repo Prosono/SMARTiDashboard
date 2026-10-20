@@ -1,3 +1,9 @@
+## 1.35.59
+
+- Send notifikasjon til SMARTi-appen med bruker som mottaker; flere telefoner skilles med telefonnavn.
+- Kun aktive SMARTi-registreringer vises, med egen entydig mottakeridentitet i HA.
+- Aktiver varsler på nytt på telefonen etter oppdatering. Velg mottakeren på nytt i eventuelle eksisterende SMARTi-varslingsautomasjoner.
+
 ## 1.35.58
 
 - Retter registrering av SMARTi-varsler i Home Assistant: alle påkrevde telefonopplysninger sendes ved oppdatering.

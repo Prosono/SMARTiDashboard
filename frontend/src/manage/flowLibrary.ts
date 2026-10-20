@@ -138,8 +138,8 @@ export function flowLibrary(kind: FlowKind, lang: string) {
             ],
             [
               "notify.mobile_app_",
-              t("Send varsel til en telefon", "Send a notification to a phone"),
-              t("Velg telefon og skriv en beskjed.", "Choose a phone and write a message."),
+              t("Send notifikasjon til SMARTi-appen", "Send a notification to the SMARTi app"),
+              t("Velg bruker og skriv en beskjed.", "Choose a phone and write a message."),
             ],
             [
               "light.turn_off",

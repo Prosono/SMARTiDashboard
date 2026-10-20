@@ -59,6 +59,9 @@ class MobilePush:
             metadata = record.get("registration")
             if not metadata:
                 raise HTTPException(409, "mobile_registration_required")
+            # Stable ASCII name avoids collisions with the HA companion app on the same phone.
+            notify_name = "smarti_" + current["device_id"].replace("-", "")
+            metadata = {**metadata, "device_name": notify_name}
             capability = record.get("push_capability") or secrets.token_urlsafe(32)
             # HAOS Core and SMARTi both use host networking; this endpoint is loopback-only.
             response = await self.c.m.ws(
@@ -91,7 +94,8 @@ class MobilePush:
                 or app_data.get("push_url") != "http://127.0.0.1:8099/api/mobile/ha-notify"):
                 raise HTTPException(502, "notification_registration_unconfirmed")
             record.update(
-                push_capability=capability, push_token=body.token, push_environment=body.environment
+                push_capability=capability, push_token=body.token, push_environment=body.environment,
+                notify_service="notify.mobile_app_" + notify_name,
             )
             self.c.save(current["device_id"], record)
         return {"status": "registered"}
