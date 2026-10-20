@@ -62,3 +62,28 @@ for (const input of document.querySelectorAll('input[type=password]')) {
   });
   field.append(toggle);
 }
+
+// Customer workspaces share navigation and follow the device's light/dark preference.
+if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)) {
+  const stylesheet=document.createElement('link');stylesheet.rel='stylesheet';stylesheet.href='/assets/workspace.css';document.head.append(stylesheet);
+  document.body.classList.add('customer-portal');
+  const nav=document.querySelector('.masthead nav');
+  const accountLink=nav.querySelector('a[href="/account"]');
+  if(!accountLink){const link=document.createElement('a');link.href='/account';link.textContent='Min konto';nav.insertBefore(link,nav.querySelector('a[href="/support"]'));}
+  const priceLink=nav.querySelector('a[href="/support/prices"]');if(priceLink)priceLink.remove();
+  const about=document.createElement('a');about.href='https://www.smarti.no/';about.textContent='Om SMARTi ↗';about.className='sidebar-about';document.querySelector('.masthead').append(about);
+  if(location.pathname==='/account'){
+    const fields=document.querySelector('.profile-fields');
+    const photo=fields.querySelector('.photo-picker');fields.prepend(photo);
+    const groups=[['Kontaktinformasjon',['full_name','email','phone']],['Adresse',['address','postal_code','city','country']]];
+    for(const [title,names] of groups){const section=document.createElement('section');section.className='profile-section';const heading=document.createElement('h2');heading.textContent=title;const controls=document.createElement('div');controls.className='profile-controls';for(const name of names)controls.append(fields.querySelector(`[name="${name}"]`).closest('label'));section.append(heading,controls);fields.append(section);}
+    fields.querySelectorAll('.two').forEach(n=>{if(!n.children.length)n.remove()});
+  }
+  if(location.pathname==='/support'){
+    const toolbar=document.querySelector('#workspace>.toolbar');
+    toolbar.append(document.getElementById('filter').closest('label'));
+    const count=document.createElement('span');count.id='case-count';count.className='case-count';toolbar.append(count);
+    const service=document.createElement('a');service.href='/support/prices';service.className='service-link';
+    const title=document.createElement('strong');title.textContent='Tjenester og priser';const text=document.createElement('span');text.textContent='Se hva vi kan hjelpe deg med.';const arrow=document.createElement('span');arrow.textContent='Se priser →';service.append(title,text,arrow);document.querySelector('main').append(service);
+  }
+}

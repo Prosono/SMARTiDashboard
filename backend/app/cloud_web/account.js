@@ -6,7 +6,18 @@ async function api(path,method='GET',body){const r=await fetch('/api/'+path,{met
 async function run(fn){document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn();}catch(e){$('message').textContent=e.message;}finally{document.querySelectorAll('button').forEach(b=>b.disabled=false);}}
 async function show(){csrf=(await api('session')).csrf;const r=await api('customer/profile');$('auth').hidden=true;$('account').hidden=false;$('accept').hidden=!inviteToken;const p=r.profile;$('profile-summary').textContent=p?(p.verified?'E-postadressen er bekreftet.':p.deadline?'Bekreft e-post innen '+new Date(p.deadline*1000).toLocaleDateString('nb-NO')+'.':'E-postbekreftelsen sendes etter oppsettet.'):'Denne eldre kontoen mangler kontaktprofil. Fullfør profilen nedenfor.';
 if(!r.mail_configured)$('message').textContent='E-postutsending er ikke konfigurert ennå. Kontakt SMARTi; meldinger ligger i kø.';
-if(!p){$('auth').hidden=false;$('login').hidden=true;document.querySelector('details').open=true;document.querySelector('summary').textContent='Fullfør kontaktprofilen';$('signup').elements.password.closest('label').hidden=true;$('signup').elements.password.required=false;}
+const editor=$('signup');
+$('account').prepend(editor);editor.classList.add('account-editor');
+editor.elements.password.closest('label').hidden=true;editor.elements.password.required=false;
+editor.querySelector('button[type=submit],button:not([type])').textContent='Lagre profil';
+for(const name of ['full_name','email','phone','address','postal_code','city','country'])editor.elements[name].value=p?.[name]||(name==='country'?'Norge':'');
+window.smartiProfilePhoto=p?.photo||'';$('photo-preview').hidden=!window.smartiProfilePhoto;
+if(window.smartiProfilePhoto)$('photo-preview').src=window.smartiProfilePhoto;
+$('photo-remove').hidden=!window.smartiProfilePhoto;
+editor.querySelectorAll('.verification-row').forEach(n=>{n.replaceWith(...n.childNodes)});
+const verification=document.createElement('div');verification.className='verification-row';
+verification.append($('profile-summary'),$('verify'));editor.insertBefore(verification,editor.lastElementChild);
+
 $('members').replaceChildren();for(const h of await api('homes')){const section=document.createElement('section'),title=document.createElement('h3');title.textContent=h.name;section.append(title);try{const members=await api('customer/homes/'+h.installation_id+'/members');for(const m of members){const row=document.createElement('p'),remove=document.createElement('button');row.textContent=m.username+' ';remove.textContent='Fjern tilgang';remove.onclick=()=>run(async()=>{await api('customer/homes/'+h.installation_id+'/members/'+m.id,'DELETE');await show();});row.append(remove);section.append(row);}const form=document.createElement('form'),input=document.createElement('input'),button=document.createElement('button');input.type='email';input.required=true;input.placeholder='E-post til personen';input.setAttribute('aria-label','Inviter med e-post');button.textContent='Send invitasjon';form.append(input,button);form.onsubmit=e=>{e.preventDefault();run(async()=>{await api('customer/homes/'+h.installation_id+'/invitations','POST',{email:input.value});input.value='';$('message').textContent='Invitasjonen er lagt i utsendingskøen.';});};section.append(form);}catch{}$('members').append(section);}}
 $('login').onsubmit=e=>{e.preventDefault();run(async()=>{csrf=(await api('login','POST',Object.fromEntries(new FormData(e.target)))).csrf;e.target.reset();await show();});};
 $('signup').onsubmit=e=>{e.preventDefault();run(async()=>{const d=Object.fromEntries(new FormData(e.target)),password=d.password;delete d.password;d.photo=window.smartiProfilePhoto||'';if(csrf){await api('customer/profile','PUT',d);}else{await api('register','POST',{username:d.email,password,profile:d});csrf=(await api('login','POST',{username:d.email,password})).csrf;}e.target.reset();await show();});};
