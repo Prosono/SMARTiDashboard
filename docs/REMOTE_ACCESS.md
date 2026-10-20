@@ -448,3 +448,11 @@ Portal browser regression passes at 390/768/1440 px, including signup entry and
 password visibility; the full customer-onboarding regression also passes.
 Rollback image: `smartihome:portal-design-20261020`; saved Compose:
 `/home/omni/smartihome/compose.before-portal-polish-20261020.yaml`.
+
+Photographic sign-in follow-up: `smartihome:portal-welcome-20261020` uses the
+bundled home-living image, full-page dark treatment and orange sign-in action.
+`login.css` scopes page-level styling to the visible authentication state; signed-in
+customer and administrator pages retain their light workspace. Seven-route
+browser regression passes at 390/768/1440 px. Rollback image:
+`smartihome:portal-polish-20261020`; Compose backup:
+`/home/omni/smartihome/compose.before-portal-welcome-20261020.yaml`.

@@ -24,7 +24,7 @@ const root='backend/app/cloud_web/';
   const names={'/':'index.html','/admin':'admin.html','/support':'support.html','/support/prices':'support.html','/admin/support':'support.html','/admin/hubs':'onboarding.html','/account':'account.html','/welcome':'onboarding.html'};
   const file=names[path]||path.replace('/assets/','');
   if(!/^[a-zA-Z0-9_.-]+$/.test(file)||!fs.existsSync(root+file))return route.fulfill({status:404,body:''});
-  const ext=file.split('.').pop();return route.fulfill({body:fs.readFileSync(root+file),contentType:{js:'application/javascript',css:'text/css',html:'text/html',png:'image/png',svg:'image/svg+xml',woff2:'font/woff2'}[ext]});
+  const ext=file.split('.').pop();return route.fulfill({body:fs.readFileSync(root+file),contentType:{js:'application/javascript',css:'text/css',html:'text/html',png:'image/png',webp:'image/webp',svg:'image/svg+xml',woff2:'font/woff2'}[ext]});
  });
  for(const width of [1440,768,390]){
   await page.setViewportSize({width,height:1000});signedIn=false;admin=false;

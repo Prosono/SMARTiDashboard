@@ -1,0 +1,76 @@
+/* The photographic welcome belongs to sign-in only; authenticated workspaces stay light. */
+.home-page:has(#auth:not([hidden])){
+  color-scheme:dark;
+  background:#181b18;
+  color:#f7f6f0;
+  min-height:100svh;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  isolation:isolate;
+}
+.home-page:has(#auth:not([hidden])):before{
+  content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(180deg,rgba(8,12,10,.78),rgba(8,12,10,.32) 45%,rgba(8,12,10,.36)),url('/assets/login-home.webp') center/cover no-repeat;
+}
+.home-page:has(#auth:not([hidden])) .masthead{
+  background:transparent;width:100%;max-width:1440px;margin:0 auto;
+  padding:24px clamp(24px,4vw,64px);min-height:88px;
+}
+.home-page:has(#auth:not([hidden])) .masthead nav a{color:#f5f3ed;border-radius:0}
+.home-page:has(#auth:not([hidden])) .masthead nav a[aria-current=page]{background:transparent}
+.home-page:has(#auth:not([hidden])) main{width:100%;flex:1;padding-top:26px;padding-bottom:64px}
+.home-page .welcome-layout{grid-template-columns:minmax(0,1.35fr) minmax(380px,1fr);gap:clamp(40px,5vw,88px);background:transparent;border:0;border-radius:0;overflow:visible;min-height:0;align-items:start}
+.home-page .welcome-story{background:transparent;padding:36px 0 0 40px;min-width:0}
+.home-page .welcome-story h1{font-size:clamp(46px,5.2vw,76px);line-height:1.06;letter-spacing:-.045em;margin:24px 0;max-width:10ch;color:#fffdf5;text-shadow:0 2px 20px #10140d40}
+.home-page .welcome-story .eyebrow{color:#ff8a20;font-size:14px;letter-spacing:.07em;margin:0}
+.home-page .welcome-story>p:not(.eyebrow){color:#eeeee7;font-size:clamp(18px,1.6vw,23px);line-height:1.6;margin:4px 0;text-shadow:0 1px 8px #1119}
+.home-page .welcome-mark,.home-page .story-foot{display:none}
+.home-page .welcome-form{padding:clamp(28px,3.2vw,48px);background:rgba(20,25,23,.96);border:1px solid #59605a;border-radius:16px;color:#f7f6f0;box-shadow:0 18px 60px #080d0930}
+.home-page .welcome-form .eyebrow{color:#ff8a20;font-size:12px;margin:0 0 16px}
+.home-page .welcome-form h2{color:#f7f6f0;font-size:clamp(27px,2.3vw,34px);line-height:1.2;margin:0 0 16px}
+.home-page .welcome-form>p:not(.eyebrow){color:#c7ccc5;font-size:16px;margin:0 0 28px}
+.home-page .welcome-form label{color:#f0f1ea;font-size:14px;margin-bottom:20px}
+.home-page .welcome-form input{background:#ffffff06;color:#faf9f4;border:1px solid #59605a;min-height:50px;border-radius:8px;font-size:15px}
+.home-page .welcome-form input::placeholder{color:#b7bdb6;opacity:1}
+.home-page .welcome-form input:focus{border-color:#ff8a20}
+.home-page .welcome-form .password-toggle{color:#f0f1ea;background:transparent;border:0;top:6px;right:6px}
+.home-page .welcome-form .password-toggle:hover{background:#ffffff12}
+.home-page .welcome-form .password-toggle[aria-pressed=true]{background:#ffffff16;color:#fffdf5}
+.home-page .welcome-form button.primary{background:#ff7900;border-color:#ff7900;color:#21180f;min-height:52px;font-size:16px;font-weight:600;margin-top:12px}
+.home-page .welcome-form button.primary:hover:not(:disabled){background:#ff942e;border-color:#ff942e}
+.home-page .signup-link{color:#e1e4dc;margin:10px 0 0;font-size:14px}
+.home-page .new-customer{border-color:#485047;margin-top:24px;padding-top:28px;padding-left:62px;position:relative}
+.home-page .new-customer:before{content:"";position:absolute;left:0;top:30px;width:40px;height:40px;background:#ff8a20;mask:url('/assets/icon-home.svg') center/contain no-repeat;-webkit-mask:url('/assets/icon-home.svg') center/contain no-repeat}
+.home-page .new-customer h3{font-size:16px;color:#f5f5ef;margin:0 0 10px}
+.home-page .new-customer p{font-size:14px;color:#c7ccc5;line-height:1.5;margin:0 0 22px}
+.home-page .new-customer a{padding:12px 16px;border:1px solid #c3c9bf;border-radius:8px;min-height:50px;color:#f7f6f0;gap:12px}
+.home-page .new-customer a:hover{background:#ffffff0d;border-color:#f7f6f0}
+.home-page:has(#auth:not([hidden])) .site-footer{width:calc(100% - 128px);max-width:1312px;padding:24px 0;margin:auto;border-color:#92978b;color:#e1e3d9;letter-spacing:0;font-size:13px}
+.home-page:has(#auth:not([hidden])) .site-footer>span{font-size:0}
+.home-page:has(#auth:not([hidden])) .site-footer>span:after{content:"Ditt hjem. Din hverdag. SMARTi.";font-size:13px}
+.home-page:has(#auth:not([hidden])) #message:not(:empty){background:#fff1e3;color:#713710;border-color:#edc9a7}
+@media(max-width:1100px){
+ .home-page:has(#auth:not([hidden])) .masthead{flex-direction:row;align-items:center;gap:12px}
+ .home-page:has(#auth:not([hidden])) .masthead nav{width:auto}
+ .home-page .welcome-layout{grid-template-columns:minmax(0,1fr) minmax(360px,1fr);gap:32px}
+ .home-page .welcome-story{padding:32px 0 0}
+ .home-page .welcome-story h1{font-size:clamp(40px,5.3vw,62px)}
+ .home-page .welcome-form{padding:28px}
+}
+@media(max-width:760px){
+ .home-page:has(#auth:not([hidden])) .masthead{flex-wrap:wrap;padding:20px}
+ .home-page:has(#auth:not([hidden])) .masthead nav{gap:0}
+ .home-page:has(#auth:not([hidden])) main{padding:16px 20px 32px}
+ .home-page .welcome-layout{grid-template-columns:1fr;gap:28px}
+ .home-page .welcome-story{padding:8px 4px 0}
+ .home-page .welcome-story h1{font-size:44px;margin:16px 0;max-width:12ch}
+ .home-page .welcome-story>p:not(.eyebrow){font-size:17px}
+ .home-page .welcome-story .eyebrow{font-size:12px}
+ .home-page .welcome-form{padding:26px 24px}
+ .home-page .new-customer{padding-left:46px}
+ .home-page .new-customer:before{width:30px;height:30px}
+ .home-page .new-customer a{margin-left:-46px;margin-top:18px}
+ .home-page:has(#auth:not([hidden])):before{background:linear-gradient(180deg,#10171085,#101710b8 38%,#101710e8),url('/assets/login-home.webp') 40% top/auto 100svh no-repeat}
+ .home-page:has(#auth:not([hidden])) .site-footer{width:calc(100% - 40px);padding:20px 0 calc(20px + env(safe-area-inset-bottom,0px))}
+}
