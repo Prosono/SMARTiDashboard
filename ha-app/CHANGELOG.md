@@ -1,3 +1,9 @@
+## 1.35.66
+
+- Ny huslogg og historieutforsker med enhetsfilter, tidsrom, interaktive grafer og CSV-eksport fra HAs historikk.
+- Bunnmenyen er flyttet nærmere skjermkanten på iPhone.
+- Tydeligere utlogging i innstillinger.
+
 ## 1.35.65
 
 - Mer kompakt bunnmeny på iPhone og animert bekreftelse ved åpning av hjem.

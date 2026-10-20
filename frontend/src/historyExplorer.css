@@ -1,0 +1,244 @@
+.history-explorer {
+  max-width: 1500px;
+  margin: 0 auto;
+}
+.history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.history-heading h1 {
+  margin: 0 0 8px;
+}
+.history-heading p {
+  margin: 0;
+  color: var(--muted);
+}
+.history-explorer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  white-space: nowrap;
+}
+.history-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 22px;
+  margin-bottom: 24px;
+}
+.history-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.history-period form {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.history-period label,
+.history-sources > label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.history-explorer input,
+.history-explorer select {
+  min-height: 44px;
+  max-width: 100%;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px;
+  font: inherit;
+}
+.history-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.history-layout[data-sources="false"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.history-sources {
+  border-right: 1px solid var(--line);
+  padding-right: 22px;
+  min-width: 0;
+}
+.history-sources h2 {
+  font-size: 18px;
+  margin: 0 0 18px;
+}
+.history-sources > label {
+  margin-bottom: 12px;
+}
+.history-sources .history-search {
+  display: flex;
+  align-items: center;
+}
+.history-search input {
+  min-width: 0;
+  width: 100%;
+}
+.history-selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.history-selection button {
+  font-size: 12px;
+  background: transparent;
+  border: 0;
+}
+.history-choices {
+  max-height: 55vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.history-choices label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+.history-choices input {
+  width: 18px;
+  min-height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+.history-choices span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.history-choices small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.history-results {
+  min-width: 0;
+}
+.history-series {
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+}
+.history-series h2 {
+  font-size: 18px;
+  margin: 0 0 5px;
+}
+.history-series > small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.history-export {
+  display: flex;
+  justify-content: flex-end;
+}
+.history-empty {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--muted);
+}
+.history-empty h2 {
+  font-size: 22px;
+  color: var(--text);
+}
+.house-log {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.house-log li {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+}
+.house-log time,
+.house-log small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.house-log p {
+  margin: 6px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.house-log strong {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .history-layout {
+    grid-template-columns: 1fr;
+  }
+  .history-sources {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .history-choices {
+    max-height: 300px;
+  }
+  .history-heading {
+    align-items: flex-start;
+  }
+  .history-heading h1 {
+    font-size: 28px;
+  }
+  .history-period form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .history-period input {
+    width: 100%;
+    min-width: 0;
+    font-size: 16px;
+  }
+  .history-period label {
+    min-width: 0;
+  }
+  .history-period form button {
+    grid-column: 1/-1;
+  }
+  .house-log li {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .history-empty {
+    padding: 36px 8px;
+  }
+}
+
+.history-sources-done { display: none !important; }
+.history-heading > button { flex-shrink: 0; }
+.history-explorer button:disabled { opacity: .45; cursor: default; }
+@media (max-width: 900px) {
+  .history-sources-done { display: flex !important; width: 100%; margin-top: 14px; }
+}
+@media (max-width: 480px) {
+  .history-period form { grid-template-columns: minmax(0, 1fr); }
+  .history-heading { gap: 8px; }
+}

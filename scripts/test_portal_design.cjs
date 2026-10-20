@@ -99,6 +99,8 @@ const root='backend/app/cloud_web/';
   await expect(page.locator('.masthead nav a[href="/account"]')).toHaveCount(0);
   await expect(page.locator('.masthead>a')).toHaveAttribute('href','/admin');
   await expect(page.locator('.masthead nav a[href="/admin/support/prices"]')).toBeVisible();
+  await expect(page.locator('#logout')).toBeVisible();
+  await page.locator('#logout').click();await page.waitForURL('https://home.smarti.dev/');await expect(page.locator('#auth')).toBeVisible();signedIn=true;
  }
  signedIn=true;admin=false;emptyCases=true;
  for(const width of [320,390,430]){

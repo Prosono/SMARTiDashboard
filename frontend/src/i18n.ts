@@ -1,4 +1,6 @@
 export const nb = {
+  history: "Historikk",
+  logbook: "Huslogg",
   home: "Hjem",
   rooms: "Rom",
   devices: "Enheter",
@@ -136,6 +138,8 @@ export const nb = {
   unsupported: "Denne handlingen støttes ikke.",
 };
 export const en: typeof nb = {
+  history: "History",
+  logbook: "Activity",
   home: "Home",
   rooms: "Rooms",
   devices: "Devices",

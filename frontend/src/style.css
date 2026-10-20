@@ -1151,7 +1151,7 @@ footer span:last-child {
     background: var(--surface);
     color: var(--text);
     border-top: 1px solid var(--line);
-    padding-bottom: max(0px, calc(env(safe-area-inset-bottom) - 10px));
+    padding-bottom: max(4px, calc(env(safe-area-inset-bottom) - 22px));
     box-sizing: content-box;
   }
   [data-theme="dark"] .sidebar {

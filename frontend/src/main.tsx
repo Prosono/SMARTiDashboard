@@ -43,6 +43,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  ScrollText,
   LifeBuoy,
   Layers,
   Clapperboard,
@@ -99,6 +100,7 @@ import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
+import { HistoryExplorer } from "./HistoryExplorer";
 import { ProtocolDevices } from "./ProtocolDevices";
 import { DeviceSetup } from "./DeviceSetup";
 import { readPreference, writePreference } from "./preferences";
@@ -113,6 +115,8 @@ const icons = {
   integrations: Blocks,
   apps: AppWindow,
   updates: DownloadCloud,
+  history: History,
+  logbook: ScrollText,
   support: LifeBuoy,
   more: Settings,
 };
@@ -203,7 +207,8 @@ function App() {
   }
   useEffect(() => {
     setPage((p) =>
-      mode === "simple" && !["home", "support", "more"].includes(p)
+      mode === "simple" &&
+      !["home", "history", "logbook", "support", "more"].includes(p)
         ? "home"
         : p,
     );
@@ -278,9 +283,27 @@ function App() {
     client.clear();
   }
   async function logout() {
-    await api("logout", "POST");
-    (window as Window & { webkit?: { messageHandlers?: { smartiSession?: { postMessage: (message: string) => void } } } })
-      .webkit?.messageHandlers?.smartiSession?.postMessage("logout");
+    try {
+      await api("logout", "POST");
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 401)) {
+        window.alert(
+          lang === "en"
+            ? "Could not sign out. Please try again."
+            : "Kunne ikke logge ut. Prøv igjen.",
+        );
+        return;
+      }
+    }
+    (
+      window as Window & {
+        webkit?: {
+          messageHandlers?: {
+            smartiSession?: { postMessage: (message: string) => void };
+          };
+        };
+      }
+    ).webkit?.messageHandlers?.smartiSession?.postMessage("logout");
     setSession(null);
     updateSession(null);
     client.clear();
@@ -332,7 +355,13 @@ function App() {
                 (p) =>
                   mode === "advanced" ||
                   (mode === "simple"
-                    ? ["home", "support", "more"].includes(p)
+                    ? [
+                        "home",
+                        "history",
+                        "logbook",
+                        "support",
+                        "more",
+                      ].includes(p)
                     : !["integrations", "apps", "updates"].includes(p)),
               )
               .map((p) => {
@@ -464,13 +493,22 @@ function Login({
   }
   return (
     <div className="login">
-      <img className="login-background" src="./home/home-living.webp" alt="" fetchPriority="high" />
+      <img
+        className="login-background"
+        src="./home/home-living.webp"
+        alt=""
+        fetchPriority="high"
+      />
       <section className="login-art">
         <Logo />
         <div>
           <span className="eyebrow">SMART LIVING, SIMPLIFIED.</span>
           <h1>{t.loginTitle}</h1>
-          <p className="login-story-subtitle">{lang === "nb" ? "Hjemmet ditt, samlet på ett sted. Også når du er et annet sted." : "Your home, all in one place. Even when you’re somewhere else."}</p>
+          <p className="login-story-subtitle">
+            {lang === "nb"
+              ? "Hjemmet ditt, samlet på ett sted. Også når du er et annet sted."
+              : "Your home, all in one place. Even when you’re somewhere else."}
+          </p>
         </div>
         <small>SMARTi · {t.live}</small>
       </section>
@@ -488,7 +526,13 @@ function Login({
           <span className="eyebrow">
             {setup.data?.mode === "demo" ? t.demo : "SMARTi"}
           </span>
-          <h2>{first ? t.firstTitle : lang === "nb" ? "Logg inn på SMARTi" : "Sign in to SMARTi"}</h2>
+          <h2>
+            {first
+              ? t.firstTitle
+              : lang === "nb"
+                ? "Logg inn på SMARTi"
+                : "Sign in to SMARTi"}
+          </h2>
           <p>{first ? t.firstHint : t.loginHint}</p>
           {setup.isError ? (
             <p role="alert">{t.loadError}</p>
@@ -529,19 +573,39 @@ function Login({
               <label>
                 {t.password}
                 <div className="login-password-field">
-                <input
-                  name="password"
-                  aria-label={t.password}
-                  type={showPassword ? "text" : "password"}
-                  required
-                  minLength={12}
-                  maxLength={128}
-                  autoComplete={first ? "new-password" : "current-password"}
-                  placeholder={t.passwordHint}
-                />
-                <button type="button" className="login-password-toggle" aria-label={lang === "nb" ? (showPassword ? "Skjul passord" : "Vis passord") : (showPassword ? "Hide password" : "Show password")} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
-                  {lang === "nb" ? (showPassword ? "Skjul" : "Vis") : (showPassword ? "Hide" : "Show")}
-                </button>
+                  <input
+                    name="password"
+                    aria-label={t.password}
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={12}
+                    maxLength={128}
+                    autoComplete={first ? "new-password" : "current-password"}
+                    placeholder={t.passwordHint}
+                  />
+                  <button
+                    type="button"
+                    className="login-password-toggle"
+                    aria-label={
+                      lang === "nb"
+                        ? showPassword
+                          ? "Skjul passord"
+                          : "Vis passord"
+                        : showPassword
+                          ? "Hide password"
+                          : "Show password"
+                    }
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {lang === "nb"
+                      ? showPassword
+                        ? "Skjul"
+                        : "Vis"
+                      : showPassword
+                        ? "Hide"
+                        : "Show"}
+                  </button>
                 </div>
               </label>
               {first && (
@@ -568,13 +632,24 @@ function Login({
             </form>
           )}
           <div className="login-new-customer">
-            <House className="login-new-home-icon" size={36} aria-hidden="true" />
-            <strong>{lang === "nb" ? "Ny kunde eller nytt hjem?" : "New customer or new home?"}</strong>
-            <p>{lang === "nb"
-              ? "Du trenger ingen bruker fra før. Finn huben din og opprett en SMARTi-konto i oppstartsveilederen."
-              : "No account needed yet. Find your hub and create a SMARTi account during setup."}</p>
+            <House
+              className="login-new-home-icon"
+              size={36}
+              aria-hidden="true"
+            />
+            <strong>
+              {lang === "nb"
+                ? "Ny kunde eller nytt hjem?"
+                : "New customer or new home?"}
+            </strong>
+            <p>
+              {lang === "nb"
+                ? "Du trenger ingen bruker fra før. Finn huben din og opprett en SMARTi-konto i oppstartsveilederen."
+                : "No account needed yet. Find your hub and create a SMARTi account during setup."}
+            </p>
             <a href="https://home.smarti.dev/welcome" target="_top">
-              {lang === "nb" ? "Sett opp nytt hjem" : "Set up a new home"} <ArrowUpRight size={18} />
+              {lang === "nb" ? "Sett opp nytt hjem" : "Set up a new home"}{" "}
+              <ArrowUpRight size={18} />
             </a>
           </div>
           {setup.data?.mode === "demo" && <p className="note">{t.demoHint}</p>}
@@ -782,14 +857,23 @@ function Dashboard({
         </div>
         <div className="top-actions">
           <span
-            className={"connection " + (h.mode === "demo" ? "demo" : offline ? "warning" : "")}
+            className={
+              "connection " +
+              (h.mode === "demo" ? "demo" : offline ? "warning" : "")
+            }
             role="status"
             tabIndex={0}
-            title={h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}
-            data-label={h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}
+            title={
+              h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected
+            }
+            data-label={
+              h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected
+            }
           >
             <span aria-hidden="true" />
-            <span className="sr-only">{h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}</span>
+            <span className="sr-only">
+              {h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}
+            </span>
           </span>
         </div>
       </header>
@@ -1107,6 +1191,13 @@ function Dashboard({
               </>
             )}
           </>
+        ) : page === "history" || page === "logbook" ? (
+          <HistoryExplorer
+            key={page}
+            home={h}
+            lang={lang}
+            activity={page === "logbook"}
+          />
         ) : page === "support" ? (
           <section className="support-home">
             <LifeBuoy size={34} aria-hidden="true" />
@@ -1148,6 +1239,10 @@ function Dashboard({
             <div className="page-heading">
               <span className="eyebrow">SMARTi</span>
               <h1>{t.settings}</h1>
+              <button onClick={logout}>
+                <LogOut size={18} />
+                {t.logout}
+              </button>
             </div>
             <PhoneSettings lang={lang} />
             <ExperiencePicker lang={lang} />
@@ -1271,10 +1366,6 @@ function Dashboard({
                       lang={lang}
                     />
                     <UserLanguagePicker lang={lang} />
-                    <button className="text-button" onClick={logout}>
-                      <LogOut size={17} />
-                      {t.logout}
-                    </button>
                   </section>
                 </div>
               </>

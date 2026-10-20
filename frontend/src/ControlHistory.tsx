@@ -4,7 +4,7 @@ import { api } from "./api";
 import { controlState } from "./controlState";
 import type { Control, Home } from "./types";
 type Point = { time: string; value: number | null; state: string };
-type HistoryData = {
+export type HistoryData = {
   points: Point[];
   unit?: string;
   start: string;
@@ -100,7 +100,7 @@ export function ControlHistory({
     </section>
   );
 }
-function HistoryChart({
+export function HistoryChart({
   data,
   control,
   lang,
@@ -114,7 +114,7 @@ function HistoryChart({
   const points = data.points.filter((p) => Number.isFinite(Date.parse(p.time)));
   if (!points.length) return null;
   const numeric =
-    control.domain === "sensor" && points.some((p) => p.value !== null);
+    ["sensor", "number", "input_number", "counter"].includes(control.domain) && points.some((p) => p.value !== null);
   const start = Date.parse(data.start),
     end = Date.parse(data.end);
   const x = (time: string) =>

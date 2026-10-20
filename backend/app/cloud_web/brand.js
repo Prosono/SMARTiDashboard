@@ -116,3 +116,14 @@ if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)
  for(const node of nodes){const parts=node.textContent.split(/([→↗])/);const fragment=document.createDocumentFragment();for(const part of parts){if(part==='→'||part==='↗'){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('class','direction-icon');svg.setAttribute('aria-hidden','true');const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',part==='→'?'M4 12h16m-6-6 6 6-6 6':'M6 18 18 6M6 6h12v12');svg.append(path);fragment.append(svg);}else fragment.append(document.createTextNode(part));}node.replaceWith(fragment);}}
  decorate(document.body);new MutationObserver(records=>{for(const r of records)for(const node of r.addedNodes){if(node.nodeType===1)decorate(node);else if(node.nodeType===3&&/[→↗]/.test(node.textContent))decorate(node.parentNode);}}).observe(document.body,{childList:true,subtree:true});
 })();
+
+// Every administration screen offers the same explicit, server-confirmed logout.
+if(location.pathname==='/admin'||location.pathname.startsWith('/admin/')){
+ const nav=document.querySelector('.masthead nav');const logout=document.getElementById('logout')||document.createElement('button');
+ logout.id='logout';logout.type='button';logout.textContent='Logg ut';logout.hidden=false;nav?.append(logout);
+ logout.onclick=async()=>{logout.disabled=true;try{
+  const session=await fetch('/api/session',{credentials:'same-origin',signal:AbortSignal.timeout(15000)});
+  if(session.status!==401){if(!session.ok)throw Error();const data=await session.json();const result=await fetch('/api/logout',{method:'POST',credentials:'same-origin',headers:{'X-CSRF-Token':data.csrf},signal:AbortSignal.timeout(15000)});if(!result.ok&&result.status!==401)throw Error();}
+  delete document.documentElement.dataset.portalSession;window.webkit?.messageHandlers?.smartiSession?.postMessage('logout');location.replace('/');
+ }catch{const message=document.getElementById('message');if(message){message.textContent='Kunne ikke logge ut. Kontroller forbindelsen og prøv igjen.';message.scrollIntoView({block:'center'});}logout.disabled=false;}};
+}

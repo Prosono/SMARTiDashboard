@@ -25,6 +25,7 @@ from .energy import energy_router
 from .energy_flow import energy_flow_router
 from .groups import groups_router
 from .ha import HAError, HomeAssistant
+from .history import history_router
 from .home_extras import extras_router
 from .home_overview import home_router
 from .integration_setup import integration_setup_router
@@ -310,6 +311,7 @@ def create_app(
     app.include_router(integration_setup_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
     app.include_router(extras_router(store, user, ha, settings))
+    app.include_router(history_router(ha, user, settings))
     app.include_router(calendar_router(store, user, ha, settings))
     app.include_router(vehicle_router(store, user, ha))
     app.include_router(camera_router(ha, user, settings))
