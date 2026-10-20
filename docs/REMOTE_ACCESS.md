@@ -439,3 +439,12 @@ changed; the relay and database schema are unchanged. Previous Compose file:
 `/home/omni/smartihome/compose.before-portal-design-20261020.yaml`.
 Rollback: restore the cloud service image to `smartihome:customer-mail-20261020`
 and run Compose `up -d --no-deps smartihome` with the existing production file.
+
+Portal refinement follow-up: `smartihome:portal-polish-20261020` adds bundled
+outline icons, mobile touch-target refinements, support status styling and helpful
+empty states. Account creation now opens the complete contact-profile form at
+`/account?create=1`. Shared password visibility controls retain form semantics.
+Portal browser regression passes at 390/768/1440 px, including signup entry and
+password visibility; the full customer-onboarding regression also passes.
+Rollback image: `smartihome:portal-design-20261020`; saved Compose:
+`/home/omni/smartihome/compose.before-portal-polish-20261020.yaml`.

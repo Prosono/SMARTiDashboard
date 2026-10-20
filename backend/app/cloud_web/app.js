@@ -72,12 +72,6 @@ async function login() {
   csrf=(await api("login","POST",body)).csrf; await showHomes();
 }
 $("login").onsubmit=e=>{e.preventDefault();run(login);};
-$("register").onclick=()=>run(async()=>{
-  if (!$("login").reportValidity()) return;
-  if ($("login").elements.password.value.length < 12)
-    throw new Error("Nye kontoer må ha et passord med minst 12 tegn.");
-  await api("register","POST",Object.fromEntries(new FormData($("login")))); await login();
-});
 $("claim").onsubmit=e=>{e.preventDefault();run(async()=>{
   await api("homes/claim","POST",Object.fromEntries(new FormData($("claim"))));
   $("claim").reset(); await showHomes();

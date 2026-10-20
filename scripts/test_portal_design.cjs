@@ -24,12 +24,13 @@ const root='backend/app/cloud_web/';
   const names={'/':'index.html','/admin':'admin.html','/support':'support.html','/support/prices':'support.html','/admin/support':'support.html','/admin/hubs':'onboarding.html','/account':'account.html','/welcome':'onboarding.html'};
   const file=names[path]||path.replace('/assets/','');
   if(!/^[a-zA-Z0-9_.-]+$/.test(file)||!fs.existsSync(root+file))return route.fulfill({status:404,body:''});
-  const ext=file.split('.').pop();return route.fulfill({body:fs.readFileSync(root+file),contentType:{js:'application/javascript',css:'text/css',html:'text/html',png:'image/png',woff2:'font/woff2'}[ext]});
+  const ext=file.split('.').pop();return route.fulfill({body:fs.readFileSync(root+file),contentType:{js:'application/javascript',css:'text/css',html:'text/html',png:'image/png',svg:'image/svg+xml',woff2:'font/woff2'}[ext]});
  });
- for(const width of [1440,390]){
+ for(const width of [1440,768,390]){
   await page.setViewportSize({width,height:1000});signedIn=false;admin=false;
   await page.goto('https://home.smarti.dev/');await expect(page.locator('#auth')).toBeVisible();
   await page.screenshot({path:`/tmp/smarti-portal-login-${width}.png`,fullPage:true});
+  await page.getByRole('button',{name:'Vis passord',exact:true}).click();await expect(page.locator('[name=password]')).toHaveAttribute('type','text');await page.getByRole('button',{name:'Skjul passord',exact:true}).click();
   await page.locator('[name=username]').fill('resident@example.no');await page.locator('[name=password]').fill('test-password');await page.locator('#login .primary').click();
   await expect(page.locator('.home-card')).toHaveCount(2);await expect(page.locator('#admin-link')).toBeHidden();
   await page.locator('.home-options').first().locator('summary').click();await expect(page.getByRole('button',{name:'Slå av fjerntilgang'}).first()).toBeVisible();
@@ -48,5 +49,8 @@ const root='backend/app/cloud_web/';
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);if(overflow)throw Error('Overflow '+path+' '+width);
   }
  }
- if(errors.length)throw Error(errors.join('\n'));await browser.close();console.log('PASS: login, home actions, admin detail/log and seven responsive portal routes at 390/1440px');
+ signedIn=false;await page.goto('https://home.smarti.dev/account?create=1');
+ await expect(page.locator('#signup')).toBeVisible();await expect(page.locator('#login')).toBeHidden();
+ await expect(page.locator('#signup [name=email]')).toBeVisible();
+ if(errors.length)throw Error(errors.join('\n'));await browser.close();console.log('PASS: login, home actions, admin detail/log and seven responsive portal routes at 390/768/1440px');
 })().catch(e=>{console.error(e);process.exit(1)});

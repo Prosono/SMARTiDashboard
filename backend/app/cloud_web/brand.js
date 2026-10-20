@@ -40,3 +40,25 @@
     document.body.append(footer);
   }
 })();
+
+// Explicit, accessible password visibility; passwords stay in the existing form.
+for (const input of document.querySelectorAll('input[type=password]')) {
+  const field = document.createElement('div');
+  field.className = 'password-field';
+  input.replaceWith(field);
+  field.append(input);
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'password-toggle';
+  toggle.textContent = 'Vis';
+  toggle.setAttribute('aria-label', 'Vis passord');
+  toggle.setAttribute('aria-pressed', 'false');
+  toggle.addEventListener('click', () => {
+    const reveal = input.type === 'password';
+    input.type = reveal ? 'text' : 'password';
+    toggle.textContent = reveal ? 'Skjul' : 'Vis';
+    toggle.setAttribute('aria-label', reveal ? 'Skjul passord' : 'Vis passord');
+    toggle.setAttribute('aria-pressed', String(reveal));
+  });
+  field.append(toggle);
+}

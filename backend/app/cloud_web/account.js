@@ -1,3 +1,4 @@
+const creatingAccount = new URLSearchParams(location.search).get("create") === "1";
 const $=id=>document.getElementById(id), fragment=new URLSearchParams(location.hash.slice(1));
 const verifyToken=fragment.get('verify'),inviteToken=fragment.get('invite');history.replaceState(null,'','/account');
 let csrf='';
@@ -12,3 +13,5 @@ $('signup').onsubmit=e=>{e.preventDefault();run(async()=>{const d=Object.fromEnt
 $('verify').onclick=()=>run(async()=>{await api('customer/verification','POST');$('message').textContent='Bekreftelsen er lagt i utsendingskøen. Sjekk også søppelpost.';});
 $('accept').onclick=()=>run(async()=>{const r=await api('customer/invitations/accept','POST',{token:inviteToken});$('accept').hidden=true;$('message').textContent='Du har nå tilgang til hjemmet.';$('open').hidden=false;$('open').href='/';$('open').onclick=e=>{e.preventDefault();run(async()=>location.assign((await api('customer/homes/'+r.home+'/open','POST')).url));};});
 (async()=>{if(verifyToken)await run(async()=>{await api('customer/verify','POST',{token:verifyToken});$('message').textContent='E-postadressen er bekreftet. Fjernaksess er tilgjengelig igjen dersom den var satt på pause.';});try{await show();}catch{}})();
+
+if(creatingAccount){document.querySelector('details').open=true;$('login').hidden=true;document.querySelector('#auth > p').textContent='Opprett din SMARTi-konto. E-postadressen blir brukernavnet ditt.';}
