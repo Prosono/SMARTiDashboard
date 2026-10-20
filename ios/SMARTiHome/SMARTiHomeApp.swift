@@ -4,6 +4,7 @@ import VisionKit
 import AVFoundation
 
 @main struct SMARTiHomeApp: App {
+    @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var pushDelegate
     @StateObject private var phone = PhoneModel()
     @StateObject private var home = HomeBrowser()
     var body: some Scene {
@@ -173,8 +174,16 @@ struct PhoneSettingsView: View {
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
                         Section("Varsler") {
-                            Label("Klargjøres for pushvarsler", systemImage: "bell.badge")
-                            Text("Pushvarsler aktiveres når Apples signering og SMARTis varslingsserver er satt opp. Ingen varsler leveres av denne utviklingsversjonen ennå.")
+                            Label(phone.notificationStatus, systemImage: "bell.badge")
+                            if phone.paired {
+                                Button("Aktiver varsler") { Task { await phone.enableNotifications() } }.disabled(phone.busy)
+                                if phone.notificationsReady {
+                                    Button("Send testvarsel") { Task { await phone.testNotification() } }.disabled(phone.busy)
+                                    Button("Slå av varsler", role: .destructive) { Task { await phone.disableNotifications() } }
+                                }
+                            }
+                            Button("Åpne varslingsinnstillinger") { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) }
+                            Text("Når varsler er aktivert, kan du velge denne telefonen som mottaker i Home Assistant-automatiseringer.")
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
                         if phone.paired {

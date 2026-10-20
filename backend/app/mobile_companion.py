@@ -47,7 +47,7 @@ class Companion:
             "registered": bool(record.get("webhook_id")),
             "location_enabled": record.get("location_enabled", False),
             "last_location_at": record.get("last_location_at"),
-            "notifications_ready": False,
+            "notifications_ready": bool(record.get("push_token")),
             "tracker_help": "Velg telefonen under Innstillinger → Hjem og personer → Sporingsenheter.",
         }
 
@@ -122,9 +122,26 @@ class Companion:
             return {"status": "delivered", "timestamp": body.timestamp}
 
 
-def companion_router(management, mobile_user):
+def companion_router(management, mobile_user, identity=None):
     router = APIRouter(prefix="/api/mobile/v1")
     companion = Companion(management)
+    from .mobile_push import MobilePush, PushRegistration
+
+    push = MobilePush(companion, identity)
+
+    @router.put("/notifications")
+    async def notifications(body: PushRegistration, current=Depends(mobile_user)):
+        return await push.enable(current, body)
+
+    @router.delete("/notifications")
+    async def disable_notifications(current=Depends(mobile_user)):
+        return push.disable(current["device_id"])
+
+    @router.post("/notifications/test")
+    async def test_notification(current=Depends(mobile_user)):
+        return await push.deliver(
+            current["device_id"], "SMARTi", "Varsler fungerer! Dette er en test fra hjemmet ditt."
+        )
 
     @router.get("/companion")
     async def status(current=Depends(mobile_user)):

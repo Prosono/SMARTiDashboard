@@ -3,6 +3,8 @@ import CoreLocation
 import UserNotifications
 
 @MainActor final class PhoneModel: NSObject, ObservableObject, @preconcurrency CLLocationManagerDelegate {
+    @Published var notificationsReady = false
+    @Published var notificationStatus = "Varsler er ikke aktivert."
     @Published var paired = false
     @Published var sharing = false
     @Published var busy = false
@@ -10,6 +12,8 @@ import UserNotifications
     @Published var error: String?
     @Published var permission: CLAuthorizationStatus = .notDetermined
     private let location = CLLocationManager()
+    private var pushFailureObserver: NSObjectProtocol?
+    private var wantsNotifications = false
     private var sending = false
     private var lastSent: Date = .distantPast
 
@@ -19,6 +23,14 @@ import UserNotifications
         location.desiredAccuracy = kCLLocationAccuracyHundredMeters
         location.distanceFilter = 100
         permission = location.authorizationStatus
+        pushFailureObserver = NotificationCenter.default.addObserver(forName: Notification.Name("SMARTiPushRegistrationFailed"), object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                self?.notificationStatus = "iPhone kunne ikke registrere varsler hos Apple. Prøv igjen om litt."
+            }
+        }
+        PushAppDelegate.sharedTokenChanged = { [weak self] token in
+            Task { await self?.registerPushToken(token) }
+        }
         Task { await refresh() }
     }
     func refresh() async {
@@ -27,6 +39,17 @@ import UserNotifications
         do {
             let data = try await MobileClient.shared.send("companion", method: "GET")
             let info = try JSONDecoder().decode(CompanionStatus.self, from: data)
+            notificationsReady = info.notifications_ready
+            notificationStatus = info.notifications_ready ? "Varsler er aktivert for dette hjemmet." : "Varsler er ikke aktivert."
+            wantsNotifications = info.notifications_ready
+            if info.notifications_ready {
+                let settings = await UNUserNotificationCenter.current().notificationSettings()
+                if settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional {
+                    UIApplication.shared.registerForRemoteNotifications()
+                } else if settings.authorizationStatus == .denied {
+                    await disableNotifications()
+                }
+            }
             sharing = info.location_enabled
             status = info.registered ? "Telefonen er registrert i hjemmet." : "Telefonen er koblet til. Fullfør registreringen."
             if sharing { startLocation() }
@@ -37,6 +60,51 @@ import UserNotifications
             "model": UIDevice.current.model, "os_version": UIDevice.current.systemVersion,
             "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"])
         await refresh()
+    }
+    func enableNotifications() async {
+        busy = true; defer { busy = false }
+        do {
+            try await register()
+            guard try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) else {
+                notificationStatus = "Tillat varsler i iPhone-innstillingene for å fortsette."
+                return
+            }
+            wantsNotifications = true
+            notificationStatus = "Registrerer varsler …"
+            UIApplication.shared.registerForRemoteNotifications()
+        } catch { self.error = error.localizedDescription }
+    }
+    func registerPushToken(_ token: String) async {
+        guard wantsNotifications, await MobileClient.shared.paired() else { return }
+        #if DEBUG
+        let environment = "development"
+        #else
+        let environment = "production"
+        #endif
+        do {
+            try await MobileClient.shared.send("notifications", method: "PUT", body: ["token": token, "environment": environment])
+            notificationsReady = true
+            notificationStatus = "Varsler er aktivert for dette hjemmet."
+        } catch {
+            notificationsReady = false
+            notificationStatus = "Kunne ikke aktivere varsler. Kontroller at huben er oppdatert, og prøv igjen."
+        }
+    }
+    func disableNotifications() async {
+        do {
+            try await MobileClient.shared.send("notifications", method: "DELETE")
+            wantsNotifications = false
+            notificationsReady = false
+            notificationStatus = "Varsler er slått av for dette hjemmet."
+            UIApplication.shared.unregisterForRemoteNotifications()
+        } catch { self.error = error.localizedDescription }
+    }
+    func testNotification() async {
+        busy = true; defer { busy = false }
+        do {
+            try await MobileClient.shared.send("notifications/test")
+            notificationStatus = "Testvarselet er sendt til Apple. Det skal dukke opp på telefonen."
+        } catch { self.error = error.localizedDescription }
     }
     func setSharing(_ enabled: Bool) async {
         busy = true; defer { busy = false }
@@ -92,7 +160,26 @@ import UserNotifications
     }
     func disconnect() async {
         stopLocation(); busy = true; defer { busy = false }
-        do { try await MobileClient.shared.disconnect(); sharing = false; paired = false; status = "Telefonen er koblet fra." }
+        do { try await MobileClient.shared.disconnect(); wantsNotifications = false; notificationsReady = false; UIApplication.shared.unregisterForRemoteNotifications(); sharing = false; paired = false; status = "Telefonen er koblet fra." }
         catch { self.error = error.localizedDescription }
+    }
+}
+
+
+@MainActor final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    static var sharedTokenChanged: ((String) -> Void)?
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        return true
+    }
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Self.sharedTokenChanged?(deviceToken.map { String(format: "%02x", $0) }.joined())
+    }
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        // Never include token material or system diagnostics in the user-facing message.
+        NotificationCenter.default.post(name: Notification.Name("SMARTiPushRegistrationFailed"), object: nil)
+    }
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound, .list])
     }
 }

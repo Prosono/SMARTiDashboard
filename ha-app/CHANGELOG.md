@@ -1,3 +1,9 @@
+## 1.35.54
+
+- Pushvarsler til SMARTi på iPhone via Home Assistant, med samtykke og testvarsel i telefoninnstillingene.
+- Varsler stoppes når telefonen kobles fra eller tilgangen utløper.
+- Krever iPhone build 10 eller nyere.
+
 ## 1.35.53
 
 - Ny innloggingsside med stuebakgrunn, mørkt panel og oransje hovedknapp, i samme stil som SMARTi-portalen.

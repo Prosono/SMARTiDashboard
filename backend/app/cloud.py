@@ -182,6 +182,10 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
             raise HTTPException(403, "home_authentication_failed")
         return home
 
+    from .cloud_push import install_push
+
+    install_push(app, home_auth, db)
+
     @app.get("/healthz")
     def health():
         return {"status": "ok"}

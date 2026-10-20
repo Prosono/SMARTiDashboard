@@ -245,3 +245,43 @@ argument allows isolated simulator inspection (compile with DEBUG enabled).
 Simulator build and visual inspection on iPhone 17 Pro passed. Signed Release
 archive and upload succeeded on 2026-10-20. App Store Connect confirmed build 9
 as **Testing** in **SMARTi intern test** (ID `beb1889d-4336-4f61-87b1-8c06dd335e34`). Archive: `/tmp/SMARTiHome-build9.xcarchive`.
+
+### Pushvarsler (ny implementasjon, krever Apple-oppsett før publisering)
+
+Telefonen aktiveres under **Innstillinger → Denne iPhonen → Varsler**. Brukeren gir
+varslingssamtykke til iOS, og appen registrerer APNs-tokenet med telefonens egne
+SMARTi-legitimasjoner. «Send testvarsel» bekrefter at Apple aksepterer meldingen;
+levering på den fysiske telefonen må deretter kontrolleres.
+
+Home Assistants `mobile_app`-registrering får en egen, tilfeldig pushkapabilitet.
+På HAOS bruker Core og SMARTi vertsnettverk; HA sender til loopback-port 8099.
+Endepunktet er ikke tilgjengelig fra nettleser, LAN eller fjernaksess. Huben sjekker
+at telefonen og brukeren fortsatt eksisterer, at tilgangen ikke er utløpt eller
+trukket tilbake, og at varsler er på. Først da sendes alerten til skyens APNs-gateway.
+HA-tokenet er ikke APNs-tokenet, og webhooken tillater ikke vilkårlige HA-kommandoer.
+Andre installasjonstopologier enn HAOS med vertsnettverk må verifiseres separat.
+
+Skycontaineren trenger disse miljøvariablene:
+
+- `SMARTI_APNS_KEY_FILE`: sti til privat .p8-fil, montert read-only og lesbar for UID 10001.
+- `SMARTI_APNS_KEY_ID`: Key ID fra Apple Developer.
+- `SMARTI_APNS_TEAM_ID`: `3T2Y4G6HVQ`.
+
+Nøkkelen skal aldri legges i Git, Docker-imaget eller appen. Aktiver Push Notifications
+for `dev.smarti.home` og forny signeringsprofilen. Xcode setter `aps-environment` til
+production under distribusjon. Release/TestFlight bruker produksjons-APNs; Debug bruker
+sandbox. Skyen begrenser varsler til 500 per telefon per hjem per UTC-døgn. Ingen
+meldingstekst eller APNs-token logges. Kun vanlige tekstvarsler med standardlyd støttes
+foreløpig; vedlegg, kritiske varsler og handlingsknapper støttes ikke.
+
+Ved førstegangsaktivering: oppdater HA-appen, aktiver varsler på telefonen, bekreft at
+HA viser `notify.mobile_app_…`, send test både fra SMARTi og HA, og kontroller mottak
+med appen åpen og telefonen låst. Verifiser også at frakobling stopper levering.
+
+Apple-oppsett 2026-10-20: Push Notifications er aktivert for `dev.smarti.home`.
+En egen produksjonsnøkkel med kun dette topicet er montert i skycontaineren;
+SMARTi Home-nøkkelen er ikke delt med Smart Sauna eller SMARTi Flex. Skyrelease
+`smartihome:push-20261020` er publisert og HTTP/2-forbindelse til APNs kontrollert.
+HA-versjon 1.35.54 leverer mobilvarslingsbroen. Build 10 er signert og lastet opp.
+Fysisk mottak krever installasjon av disse versjonene og brukerens varslingssamtykke.
+Debug/simulator trenger en egen sandbox-nøkkel før serverlevering kan testes der.

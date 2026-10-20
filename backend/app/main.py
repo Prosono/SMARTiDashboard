@@ -209,6 +209,15 @@ def create_app(
 
     @app.middleware("http")
     async def boundary(request, call_next):
+        if (
+            settings.ingress
+            and request.url.path == "/api/mobile/ha-notify"
+            and request.method == "POST"
+            and request.client
+            and request.client.host in {"127.0.0.1", "::1"}
+            and not request.headers.get("origin")
+        ):
+            return await call_next(request)
         if remote_surface:
             from urllib.parse import urlsplit
 
@@ -286,6 +295,10 @@ def create_app(
         app.include_router(remote_router(settings, admin))
     management = Management(ha, store, settings)
     app.state.management = management
+    if settings.ingress and settings.remote_identity_file:
+        from .mobile_push import install_local_push
+
+        install_local_push(app, management, settings.remote_identity_file)
     wireless = WirelessSetup(management, settings)
     app.state.wireless = wireless
     app.include_router(wireless.router(admin))
@@ -765,7 +778,9 @@ def create_app(
     if settings.mobile_enabled and (mobile_only or remote_surface):
         from .mobile_companion import companion_router
 
-        app.include_router(companion_router(management, mobile_user))
+        app.include_router(
+            companion_router(management, mobile_user, support_identity or settings.remote_identity_file)
+        )
 
         @app.post("/api/mobile/v1/pair")
         async def claim(body: MobileClaim, request: Request):
