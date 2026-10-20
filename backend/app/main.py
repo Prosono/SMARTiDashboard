@@ -134,11 +134,18 @@ def create_app(
 
     setup = DeviceSetup(ha, settings, store)
     origins = OriginPolicy(settings)
-    reset = FactoryReset(store, HomeResetProvider(ha, setup, settings, store))
+    reset = FactoryReset(store, HomeResetProvider(ha, setup, console_settings or settings, store))
 
     @asynccontextmanager
     async def lifespan(app):
         reset.recover()
+        from .full_reset import FullReset
+
+        reset_coordinator = FullReset(settings, store)
+        interrupted_reset = reset_coordinator.state()
+        if interrupted_reset and interrupted_reset["phase"] in {"preparing", "erasing", "creating_owner"}:
+            interrupted_reset["phase"] = "failed"
+            reset_coordinator.save(interrupted_reset)
         task = asyncio.create_task(ha.run())
         discovery = None
         remote_task = None
@@ -216,6 +223,9 @@ def create_app(
 
     @app.middleware("http")
     async def boundary(request, call_next):
+        reset_state = (console_settings or settings).data_dir / "factory-reset-state.json"
+        if request.method == "POST" and request.url.path == "/api/bootstrap" and reset_state.exists():
+            return JSONResponse({"detail": "owner_onboarding_required"}, status_code=409)
         if (
             request.method not in {"GET", "HEAD", "OPTIONS"}
             and reset.active()

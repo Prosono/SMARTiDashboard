@@ -1,3 +1,11 @@
+## 1.35.69
+
+- Full tilbakestilling på administrerte HA-huber: sletter HA-eier, lokale brukere, innlogginger, historikk og hjemmeoppsett.
+- Beholder installerte apper, hubidentitet og portalens eierkobling. Nytt oppsett startes fra Mine hjem etter sletting.
+- HA holdes stoppet frem til nytt oppsett. Ny HA-eier opprettes før vanlig nettverkstilgang gjenåpnes.
+- Viser gjenstående radioopprydding. Zigbee/Z-Wave-enheter kan kreve fysisk nullstilling, og integrasjoner må kobles til på nytt.
+- Avbrudd og ukjent lagringsformat stopper prosessen for manuell oppfølging.
+
 ## 1.35.68
 
 - Testversjon: delvis tilbakestilling under Innstillinger → System, kun for administrator i avansert modus.

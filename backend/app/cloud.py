@@ -349,6 +349,8 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     def hub_enable(home_id: str, request: Request):
         home_auth(home_id, request)
         with db() as c:
+            if c.execute("SELECT 1 FROM hub_resets WHERE home=? AND phase!='completed'", (home_id,)).fetchone():
+                raise HTTPException(409, 'onboarding_required')
             c.execute("UPDATE homes SET remote_enabled=1 WHERE id=?", (home_id,))
         return {"enabled": True}
 
@@ -430,7 +432,7 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
                     or not remote_allowed(c, s["account"]),
                 }
                 for row in c.execute(
-                    "SELECT id AS installation_id,name,owner,remote_enabled, EXISTS(SELECT 1 FROM factory_hubs f WHERE f.home=homes.id) AS factory_managed FROM homes WHERE owner=? OR id IN (SELECT home FROM home_members WHERE account=?) ORDER BY name",
+                    "SELECT id AS installation_id,name,owner,remote_enabled, EXISTS(SELECT 1 FROM factory_hubs f WHERE f.home=homes.id) AS factory_managed, (SELECT phase FROM hub_resets r WHERE r.home=homes.id AND r.phase!='completed') AS reset_phase FROM homes WHERE owner=? OR id IN (SELECT home FROM home_members WHERE account=?) ORDER BY name",
                     (s["account"], s["account"]),
                 )
             ]

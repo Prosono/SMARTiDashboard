@@ -111,8 +111,10 @@ class FactoryReset:
                 job["step"] = op["kind"]
                 result["status"] = "running"
                 self.save(job)  # A crash here is uncertain, never replayed automatically.
+                if op["kind"] == "full_reset":
+                    op["report"] = [dict(r) for r in job["results"] if r is not result]
                 try:
-                    async with asyncio.timeout(60):
+                    async with asyncio.timeout(300 if op["kind"] == "full_reset" else 60):
                         result["status"], result["reason"] = await self.provider.execute(op)
                 except (HAError, HTTPException, TimeoutError):
                     result.update(status="unconfirmed", reason="operation_unconfirmed")

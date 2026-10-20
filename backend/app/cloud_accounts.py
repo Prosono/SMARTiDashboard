@@ -325,6 +325,8 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
         return {"removed": True}
 
     def permission(c, home, account):
+        if c.execute("SELECT 1 FROM hub_resets WHERE home=? AND phase!='completed'", (home,)).fetchone():
+            raise HTTPException(409, 'onboarding_required')
         h = c.execute("SELECT * FROM homes WHERE id=?", (home,)).fetchone()
         if (
             not h

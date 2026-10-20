@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { api } from "../api";
+import { api, ApiError } from "../api";
 import { SettingsDialog } from "../home/SettingsDialog";
 import "./factoryReset.css";
 
 type Job = {id: string; status: string; step: string; error: string; results: {kind: string; name: string; status: string; reason: string}[]};
-type Readiness = { ready: boolean; blockers: string[]; job?: Job | null };
+type Readiness = { ready: boolean; full?: boolean; blockers: string[]; job?: Job | null };
 export function FactoryReset({ lang }: { lang: string }) {
   const t = (nb: string, en: string) => lang === "en" ? en : nb;
   const [open, setOpen] = useState(false);
@@ -23,7 +23,10 @@ export function FactoryReset({ lang }: { lang: string }) {
   const [error, setError] = useState("");
   const readiness = useQuery({
     queryKey: ["factory-reset-readiness"],
-    queryFn: () => api<Readiness>("manage/settings/factory-reset"),
+    queryFn: async () => {
+      try { return await api<Readiness>("manage/settings/factory-reset"); }
+      catch (e) { if (submitted && e instanceof ApiError && e.status === 401) window.location.assign("https://home.smarti.dev/"); throw e; }
+    },
     enabled: open,
     staleTime: 0,
     refetchInterval: open ? 2000 : false,
@@ -31,13 +34,14 @@ export function FactoryReset({ lang }: { lang: string }) {
   const job = newAttempt ? submitted : (readiness.data?.job || submitted);
   function close() { setOpen(false); setPassword(""); setConfirmation(""); setLoss(false); setPairing(false); setBackup(""); setManual(false); setError(""); }
   return <section className="factory-reset-panel">
-    <div><AlertTriangle size={24} aria-hidden="true" /><h2>{t("Tilbakestilling – testversjon", "Reset – test version")}</h2></div>
-    <p>{t("Delvis opprydding av hjemmets oppsett. Home Assistant og appene beholdes. Full fabrikktilbakestilling er ikke tilgjengelig ennå.", "Partial cleanup of home configuration. Home Assistant and apps are kept. Full factory reset is not available yet.")}</p>
+    <div><AlertTriangle size={24} aria-hidden="true" /><h2>{t("Tilbakestill til fabrikkinnstillinger", "Factory reset")}</h2></div>
+    <p>{t("Slett hjemmets oppsett, historikk og lokale brukere. Installerte apper beholdes. Du setter opp hjemmet på nytt fra Min side.", "Erase home configuration, history and local users. Installed apps are kept. Set up the home again from your account.")}</p>
     <button className="factory-reset-danger" onClick={() => setOpen(true)}><RotateCcw size={18} aria-hidden="true" />{t("Se hva som tilbakestilles", "Review factory reset")}</button>
     {open && <SettingsDialog title={t("Tilbakestill huben?", "Reset this hub?")} lang={lang} busy={busy} onClose={close} compact>
       {job ? <div className="factory-reset-form" aria-live="polite">
         <h3>{job.status === "running" ? t("Tilbakestilling pågår", "Reset in progress") : job.status === "completed" ? t("Tilbakestilling fullført", "Reset complete") : t("Tilbakestillingen er ikke fullført", "Reset is incomplete")}</h3>
-        <p>{job.status === "running" ? t("Ikke koble fra strømmen. Du kan komme tilbake hit for å se fremdriften.", "Keep the hub powered on. You can return here to check progress.") : t("Appene og hubidentiteten er beholdt. Se punktene nedenfor før du starter oppsett på nytt. Brukere og tilganger beholdes når tilbakestillingen er ufullstendig, slik at du kan fullføre oppryddingen.", "Apps and hub identity are kept. Review the items below before setting up again. Accounts and access are kept when reset is incomplete so you can finish recovery.")}</p>
+        <p>{job.status === "running" ? t("Ikke koble fra strømmen. Du kan komme tilbake hit for å se fremdriften.", "Keep the hub powered on. You can return here to check progress.") : t("Se rapporten nedenfor. Hvis tilbakestillingen er avbrutt, ikke forsøk å starte HA manuelt. Gå til Min side for status og nytt oppsett, eller kontakt support.", "Review the report below. If interrupted, do not start HA manually. Open your account for status and setup, or contact support.")}</p>
+        <a href="https://home.smarti.dev/" target="_blank" rel="noreferrer">{t("Åpne Min side og sett opp hjemmet på nytt", "Open your account to set up the home again")}</a>
         <p>{job.results.filter(r => r.status === "done").length} / {job.results.length} {t("trinn bekreftet", "steps confirmed")}</p>
         {job.error && <p role="alert">{t("Prosessen stoppet eller ble avbrutt. Handlinger med ukjent resultat blir ikke gjentatt automatisk.", "The process stopped or was interrupted. Uncertain operations are not automatically repeated.")}</p>}
         <ul className="factory-reset-results">{job.results.map((r,i) => <li key={i}><strong>{r.name}</strong><span>{r.status === "done" ? t("Bekreftet utført", "Confirmed") : r.status === "pending" ? t("Venter", "Waiting") : r.status === "running" ? t("Pågår", "Working") : r.status === "manual" ? t("Må følges opp manuelt", "Manual follow-up required") : t("Ikke bekreftet utført", "Not confirmed")}</span>{r.status === "manual" || r.status === "unconfirmed" ? <small>{r.reason === "zwave_exclusion_required" ? t("Fjern Z-Wave-enheten via ekskludering. Det kan kreve at du trykker på enheten.", "Remove the Z-Wave device through exclusion, which may require physical interaction.") : r.reason === "ha_owner_cleanup_required" ? t("HA tillater ikke sletting av eierkontoen gjennom dette grensesnittet.", "HA does not allow deleting its owner account through this interface.") : r.reason === "history_purge_requested" ? t("Sletting er bestilt hos HA. Fullføring må kontrolleres.", "HA received a purge request. Completion needs verification.") : r.reason === "yaml_cleanup_required" ? t("Oppsett i YAML må fjernes i HA.", "YAML configuration must be removed in HA.") : r.reason === "configuration_review_required" ? t("Kontroller integrasjoner, hjelpere, plassering, YAML-oppsett og gamle tilganger i HA. SMARTi-brukere og fjernaksess er ennå ikke nullstilt.", "Review integrations, helpers, location, YAML and existing access in HA. SMARTi users and remote access have not been reset yet.") : t("Kontroller enheten eller oppsettet i HA før du fortsetter. En fysisk nullstilling kan være nødvendig.", "Check the device or configuration in HA before continuing. A physical reset may be needed.")}</small> : null}</li>)}</ul>
@@ -61,11 +65,11 @@ export function FactoryReset({ lang }: { lang: string }) {
         <p className="muted">{t("Du kan opprette og laste ned en kopi under Innstillinger → Sikkerhetskopiering før du fortsetter.", "Create and download a backup under Settings → Backups before continuing.")}</p>
         <label className="factory-reset-check"><input type="checkbox" required checked={loss} onChange={e => setLoss(e.target.checked)} />{t("Jeg forstår at hjemmets data slettes.", "I understand that home data will be erased.")}</label>
         <label className="factory-reset-check"><input type="checkbox" required checked={pairing} onChange={e => setPairing(e.target.checked)} />{t("Jeg forstår at noen enheter må nullstilles fysisk og pares på nytt.", "I understand some devices require a physical reset and pairing again.")}</label>
-        <aside className="factory-reset-warning"><p>{t("Dette er en delvis, API-basert tilbakestilling. HA-eierkonto, enkelte integrasjoner og oppsett i YAML kan ikke slettes automatisk. SMARTi-brukere og fjernaksess beholdes for manuell oppfølging. Huben går derfor ikke automatisk til førstegangsoppsett ennå.", "This is a partial, API-based reset. The HA owner, some integrations and YAML configuration cannot be erased automatically. SMARTi accounts and remote access are kept for manual follow-up. The hub does not automatically enter first-time setup yet.")}</p></aside>
-        <label className="factory-reset-check"><input type="checkbox" required checked={manual} onChange={e => setManual(e.target.checked)} />{t("Jeg godtar at tilbakestillingen kan bli ufullstendig og kreve manuell opprydding.", "I accept that reset may be incomplete and require manual cleanup.")}</label>
+        <aside className="factory-reset-warning"><p>{t("HA-eier, lokale brukere, innlogginger, integrasjoner og hjemmets oppsett slettes. Du blir logget ut, og HA holdes stoppet til du starter nytt oppsett fra Mine hjem på home.smarti.dev. Kontoen din og eierskapet beholdes. Appene beholdes, men integrasjoner må kobles til på nytt.", "The HA owner, local users, sessions, integrations and home configuration are erased. You are signed out and HA stays stopped until you begin setup again from My homes at home.smarti.dev. Your portal account, ownership and installed apps are kept; integrations must be connected again.")}</p></aside>
+        <label className="factory-reset-check"><input type="checkbox" required checked={manual} onChange={e => setManual(e.target.checked)} />{t("Jeg forstår at jeg må sette opp hjemmet og koble til integrasjoner på nytt, og at noen paringer kan kreve manuell opprydding.", "I accept that reset may be incomplete and require manual cleanup.")}</label>
         <label>{t("Skriv RESET HUB for å bekrefte", "Type RESET HUB to confirm")}<input value={confirmation} onChange={e => setConfirmation(e.target.value)} autoComplete="off" spellCheck={false} required pattern="RESET HUB" /></label>
         <label>{t("Passordet til din administratorkonto", "Your administrator account password")}<input type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required maxLength={128} /></label>
-        {readiness.isPending ? <p role="status">{t("Kontrollerer huben…", "Checking hub…")}</p> : !readiness.data?.ready && <p role="status" className="factory-reset-unavailable">{readiness.isError ? t("Kunne ikke kontrollere huben. Lukk dialogen og prøv igjen.", "Could not check the hub. Close this dialog and retry.") : t("Tilbakestilling krever en tilkoblet, virkelig hub uten aktiv paring. Ingen data er slettet.", "Reset requires a connected live hub with no active pairing. No data has been erased.")}</p>}
+        {readiness.isPending ? <p role="status">{t("Kontrollerer huben…", "Checking hub…")}</p> : !readiness.data?.ready && <p role="status" className="factory-reset-unavailable">{readiness.isError ? t("Kunne ikke kontrollere huben. Lukk dialogen og prøv igjen.", "Could not check the hub. Close this dialog and retry.") : t("Tilbakestilling krever en tilkoblet hub uten aktiv paring, tilgang til HA-konfigurasjonen og oppdatert skytjeneste. Egendefinert historikkdatabase/oppsett kan kreve hjelp fra support. Ingen data er slettet.", "Reset requires a connected live hub with no active pairing. No data has been erased.")}</p>}
         {error && <p role="alert">{error}</p>}
         <div className="factory-reset-actions"><button type="button" disabled={busy} onClick={close}>{t("Avbryt", "Cancel")}</button><button className="factory-reset-danger" disabled={busy || !readiness.data?.ready || !password || confirmation !== "RESET HUB" || !loss || !pairing || !manual || !backup}>{t("Start tilbakestilling", "Start reset")}</button></div>
       </form>}

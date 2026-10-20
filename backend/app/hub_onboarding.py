@@ -9,9 +9,12 @@ import sqlite3
 import uuid
 
 import httpx
+from fastapi import HTTPException
 
 from .certificate_hook import read_identity
+from .full_reset import FullReset
 from .ha import HAError
+from .ha_auth_reset import AuthResetError
 from .remote_access import CLOUD_ORIGIN
 
 log = logging.getLogger(__name__)
@@ -124,6 +127,17 @@ class HubOnboarding:
         if "completed" in done:
             await self.progress(plan, "completed", "completed")
             return
+        full = FullReset(self.settings, self.store)
+        if full.state() and full.state()["phase"] != "completed":
+            try:
+                await self.progress(plan, "working", "checking")
+                await full.bootstrap(plan)
+                async with asyncio.timeout(120):
+                    while not self.ha.connected:
+                        await asyncio.sleep(2)
+            except (AuthResetError, HTTPException, httpx.HTTPError, OSError, ValueError, TimeoutError):
+                await self.progress(plan, "failed", "checking", "setup_failed")
+                return
         if not self.ha.connected:
             await self.progress(plan, "failed", "checking", "ha_unavailable")
             return
@@ -274,6 +288,16 @@ class HubOnboarding:
             await self.progress(plan, "failed", current_step, "setup_failed")
 
     async def tick(self):
+        full = FullReset(self.settings, self.store)
+        reset_state = full.state()
+        if reset_state and reset_state["phase"] == "failed":
+            try:
+                await full.cloud("failed", {"id": reset_state["id"]})
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code != 409:
+                    raise
+        if reset_state and reset_state["phase"] == "awaiting_owner":
+            await full.cloud("ready", {"id": reset_state["id"], "report": reset_state.get("report", [])})
         with self.store.connect() as c:
             users = c.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         result = await self.call(

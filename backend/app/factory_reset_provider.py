@@ -2,19 +2,31 @@
 
 from urllib.parse import quote
 
+import httpx
+from fastapi import HTTPException
+
+from .full_reset import FullReset
 from .ha import HAError
+from .ha_auth_reset import AuthResetError
 
 
 class HomeResetProvider:
     def __init__(self, ha, setup, settings, store):
         self.ha, self.setup, self.settings, self.store = ha, setup, settings, store
+        self.full = FullReset(settings, store) if getattr(settings, "ingress", False) else None
 
     async def preflight(self):
         if self.settings.mode != "live" or not self.ha.connected:
             return {"ready": False, "blockers": ["live_hub_required"]}
         if self.setup.session and self.setup.session.get("radio_open"):
             return {"ready": False, "blockers": ["pairing_active"]}
+        if self.full:
+            try:
+                await self.full.preflight()
+            except (AuthResetError, HTTPException, httpx.HTTPError, OSError, ValueError):
+                return {"ready": False, "blockers": ["full_reset_preflight_failed"], "full": True}
         return {
+            "full": self.full is not None,
             "ready": True,
             "blockers": [],
             "warnings": ["pairings_may_remain", "manual_cleanup_may_be_required"],
@@ -111,10 +123,29 @@ class HomeResetProvider:
             reason="configuration_review_required",
         )
         add("local", "smarti", "SMARTi-visning og varslingshistorikk")
+        if self.full:
+            # Offline deletion replaces HA configuration/history cleanup, while
+            # radio removal still runs through the integration before Core stops.
+            operations = [
+                op
+                for op in operations
+                if op["kind"] in {"pause", "close_zigbee", "zigbee", "device"}
+                or (
+                    op["kind"] == "manual"
+                    and op["reason"] in {"radio_inventory_unavailable", "zwave_exclusion_required"}
+                )
+            ]
+            operations.append(
+                {"kind": "full_reset", "id": "full", "name": "Brukere, tilganger og førstegangsoppsett"}
+            )
         return operations
 
     async def execute(self, op):
         ha, kind, id = self.ha, op["kind"], op["id"]
+        if kind == "full_reset":
+            result = await self.full.execute(op.get("report", []))
+            self.ha.states.clear()
+            return result
         if kind == "manual":
             return "manual", op["reason"]
         if kind == "pause":

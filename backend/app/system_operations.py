@@ -81,15 +81,18 @@ class NetworkRequest(BaseModel):
 
 
 class Supervisor:
-    def __init__(self, settings):
+    def __init__(self, settings, timeout=25):
         self.settings = settings
+        self.timeout = timeout
 
     async def request(self, method, path, data=None):
         token = os.environ.get("SUPERVISOR_TOKEN")
         if self.settings.mode == "demo" or not self.settings.ingress or not token:
             raise HTTPException(503, "supervisor_unavailable")
         try:
-            async with httpx.AsyncClient(timeout=25, trust_env=False, follow_redirects=False) as client:
+            async with httpx.AsyncClient(
+                timeout=self.timeout, trust_env=False, follow_redirects=False
+            ) as client:
                 response = await client.request(
                     method,
                     "http://supervisor" + path,

@@ -104,6 +104,9 @@ def install_onboarding(
           created REAL NOT NULL, updated REAL NOT NULL);
         """)
 
+    from .cloud_factory_reset import install_factory_reset
+
+    install_factory_reset(app, db, home_auth)
     bind_enrollment = install_enrollment(app, db, throttle, secret)
 
     def admin(s=Depends(session)):
@@ -312,6 +315,16 @@ def install_onboarding(
                     "serial": row["serial"],
                 }
 
+            resetting = c.execute(
+                "SELECT phase FROM hub_resets WHERE home=? AND phase!='completed'", (home,)
+            ).fetchone()
+            if resetting and resetting["phase"] == "awaiting_owner" and body.users == 0:
+                result["discovery"] = {
+                    "id": home,
+                    "model": row["model"],
+                    "serial": row["serial"],
+                    "state": "unconfigured",
+                }
             if job:
                 result["plan"] = json.loads(job["payload"]) | {"id": job["id"]}
         return result
@@ -403,6 +416,9 @@ def install_onboarding(
                 "SELECT id,status,step,error,payload FROM onboarding_plans WHERE home=?", (home,)
             ).fetchone()
         result = view(row)
+        with db() as c:
+            reset = c.execute("SELECT phase,report FROM hub_resets WHERE home=?", (home,)).fetchone()
+        result["reset"] = {"phase": reset["phase"], "report": json.loads(reset["report"])} if reset else None
         result["remote_connected"] = False
         if relay_status_url:
             try:
@@ -416,6 +432,7 @@ def install_onboarding(
             draft = json.loads(plan["payload"])
             draft.pop("password_hash", None)
             draft.pop("username", None)
+            draft.pop("ha_credentials", None)
             result["plan"] = {
                 "id": plan["id"],
                 "status": plan["status"],
@@ -436,6 +453,11 @@ def install_onboarding(
             c.execute("BEGIN IMMEDIATE")
             row = owned(c, home, s)
             current = c.execute("SELECT * FROM onboarding_plans WHERE home=?", (home,)).fetchone()
+            reset = c.execute(
+                "SELECT * FROM hub_resets WHERE home=? AND phase!='completed'", (home,)
+            ).fetchone()
+            if reset and (reset["phase"] != "awaiting_owner" or body.mode != "new"):
+                raise HTTPException(409, "reset_not_ready")
             # Identical retry resumes the same operation, never queues a second reset.
             payload = body.model_dump(exclude={"password", "confirmation"})
             if body.mode != "existing":
@@ -449,6 +471,18 @@ def install_onboarding(
                 ).fetchone()
                 if profile:
                     payload["profile"] = dict(profile)
+            if reset:
+                from .reset_credentials import seal
+
+                payload["reset_id"] = reset["id"]
+                # Reuse a sealed envelope for idempotent retries; passwords are verified above.
+                old = json.loads(current["payload"]) if current else {}
+                payload["ha_credentials"] = (
+                    old.get("ha_credentials")
+                    if old.get("reset_id") == reset["id"]
+                    and old.get("password_hash") == payload["password_hash"]
+                    else seal(reset["public_key"], reset["id"], account["username"], body.password)
+                )
             if current and json.loads(current["payload"]) == payload:
                 if current["status"] == "failed":
                     c.execute("UPDATE onboarding_plans SET status='queued',error='' WHERE home=?", (home,))
@@ -468,7 +502,8 @@ def install_onboarding(
                 "INSERT OR REPLACE INTO onboarding_plans VALUES(?,?,?,?,?,?,?,?,?)",
                 (home, job, s["account"], json.dumps(payload), "queued", "checking", "", now, now),
             )
-            c.execute("UPDATE homes SET remote_enabled=1 WHERE id=?", (home,))
+            if not reset:
+                c.execute("UPDATE homes SET remote_enabled=1 WHERE id=?", (home,))
             if body.mode != "existing":
                 c.execute("UPDATE homes SET name=? WHERE id=?", (body.name, home))
             if body.mode == "reset":
@@ -496,6 +531,19 @@ def install_onboarding(
                 if not row or row["status"] != "completed":
                     raise HTTPException(409, "stale_plan")
             if body.status == "completed":
+                c.execute(
+                    "UPDATE hub_resets SET phase='completed',public_key='' WHERE home=? AND phase='awaiting_owner'",
+                    (home,),
+                )
+                c.execute("UPDATE factory_hubs SET phase='activated' WHERE home=?", (home,))
+                c.execute("UPDATE homes SET remote_enabled=1 WHERE id=?", (home,))
+                saved = c.execute("SELECT payload FROM onboarding_plans WHERE home=?", (home,)).fetchone()
+                if saved:
+                    payload = json.loads(saved["payload"])
+                    payload.pop("ha_credentials", None)
+                    c.execute(
+                        "UPDATE onboarding_plans SET payload=? WHERE home=?", (json.dumps(payload), home)
+                    )
                 owner = c.execute("SELECT owner FROM homes WHERE id=?", (home,)).fetchone()[0]
                 app.state.customer_onboarding_completed(c, owner)
                 background.add_task(app.state.deliver_customer_mail)

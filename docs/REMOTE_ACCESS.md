@@ -456,3 +456,12 @@ customer and administrator pages retain their light workspace. Seven-route
 browser regression passes at 390/768/1440 px. Rollback image:
 `smartihome:portal-polish-20261020`; Compose backup:
 `/home/omni/smartihome/compose.before-portal-welcome-20261020.yaml`.
+
+### Full factory reset release — 2026-10-20
+
+Cloud image smartihome:full-reset-20261020 adds owner-preserving reset coordination,
+home-access revocation, encrypted new-owner setup and reset status/report in Mine
+hjem. Published before HA app 1.35.69. Cloud database was backed up before deployment;
+the previous admin-logout-20261020 image and compose backup are retained on server.
+Do not roll back cloud while a hub reset is active: older software cannot coordinate
+its owner setup. No customer hub reset was executed as part of publication.
