@@ -1,3 +1,4 @@
+import { FactoryReset } from "./FactoryReset";
 import { RemoteAccess } from "./RemoteAccess";
 import { RestartCore } from "./RestartCore";
 import { Zones } from "./Zones";
@@ -72,8 +73,10 @@ export function HomeSettings({
   lang,
   home,
   section = "household",
+  advanced = false,
 }: {
   lang: string;
+  advanced?: boolean;
   home: Home;
   section?: "household" | "backups" | "network" | "system";
 }) {
@@ -239,6 +242,7 @@ export function HomeSettings({
         </div>
       )}
       {section === "system" && <RemoteAccess lang={lang} />}
+      {section === "system" && advanced && <FactoryReset lang={lang} />}
       {section !== "household" && system.isError && (
         <p role="alert">
           {t("Kunne ikke hente systemstatus.", "Could not load system status.")}

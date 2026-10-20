@@ -1304,6 +1304,7 @@ function Dashboard({
               settingsSection !== "appearance" &&
               settingsSection !== "debugging" ? (
               <HomeSettings
+                advanced={mode === "advanced"}
                 key={settingsSection}
                 lang={lang}
                 home={h}

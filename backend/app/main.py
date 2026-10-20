@@ -23,6 +23,8 @@ from .config import Settings
 from .demo import Demo
 from .energy import energy_router
 from .energy_flow import energy_flow_router
+from .factory_reset import FactoryReset, factory_reset_router
+from .factory_reset_provider import HomeResetProvider
 from .groups import groups_router
 from .ha import HAError, HomeAssistant
 from .history import history_router
@@ -132,9 +134,11 @@ def create_app(
 
     setup = DeviceSetup(ha, settings, store)
     origins = OriginPolicy(settings)
+    reset = FactoryReset(store, HomeResetProvider(ha, setup, settings, store))
 
     @asynccontextmanager
     async def lifespan(app):
+        reset.recover()
         task = asyncio.create_task(ha.run())
         discovery = None
         remote_task = None
@@ -175,6 +179,7 @@ def create_app(
                 with contextlib.suppress(asyncio.CancelledError):
                     await discovery
             try:
+                await reset.close()
                 await wireless.close()
                 await setup.close()
             finally:
@@ -205,11 +210,18 @@ def create_app(
         install_customer_access(app, customer)
     app.state.customer = customer
     app.state.support = support
+    app.state.factory_reset = reset
     app.state.setup = setup
     app.state.origins = origins
 
     @app.middleware("http")
     async def boundary(request, call_next):
+        if (
+            request.method not in {"GET", "HEAD", "OPTIONS"}
+            and reset.active()
+            and request.url.path not in {"/api/manage/settings/factory-reset", "/api/logout"}
+        ):
+            return JSONResponse({"detail": "reset_in_progress"}, status_code=423)
         if (
             settings.ingress
             and request.url.path == "/api/mobile/ha-notify"
@@ -305,6 +317,7 @@ def create_app(
     app.include_router(wireless.router(admin))
     app.include_router(management_router(management, admin))
     app.include_router(system_settings_router(management, admin, settings))
+    app.include_router(factory_reset_router(store, auth, admin, reset))
     app.include_router(system_operations_router(management, admin, settings))
     app.include_router(apps_router(management, admin, console_settings or settings))
     app.include_router(accounts_router(management, admin, user))

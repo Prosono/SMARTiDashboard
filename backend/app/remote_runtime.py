@@ -124,6 +124,7 @@ async def serve_home(settings, adapter, certificates, state):
             with contextlib.suppress(asyncio.CancelledError):
                 await task
         listener.close()
+        await app.state.factory_reset.close()
         await app.state.wireless.close()
         await app.state.setup.close()
 

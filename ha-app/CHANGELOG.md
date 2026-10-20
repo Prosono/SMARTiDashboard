@@ -1,3 +1,10 @@
+## 1.35.68
+
+- Testversjon: delvis tilbakestilling under Innstillinger → System, kun for administrator i avansert modus.
+- Krever administratorpassord, bekreftelse og valg om sikkerhetskopi. Installerte apper og hubidentitet beholdes.
+- Viser fremdrift og rapport over utførte trinn, ubekreftede handlinger og nødvendig manuell oppfølging.
+- HA-eier, SMARTi-brukere og fjernaksess nullstilles ikke i denne versjonen. Huben går ikke automatisk til førstegangsoppsett. Z-Wave kan kreve fysisk ekskludering.
+
 ## 1.35.67
 
 - Huslogg og historikk skjules i enkel modus. Bytte til enkel modus tar deg tilbake til hjem hvis en av disse sidene er åpen.

@@ -101,6 +101,12 @@ class HubOnboarding:
         await self.call("progress", {"id": plan["id"], "status": status, "step": step, "error": error})
 
     async def apply(self, plan):
+        with self.store.connect() as db:
+            if (
+                db.execute("SELECT 1 FROM sqlite_master WHERE name='factory_resets'").fetchone()
+                and db.execute("SELECT 1 FROM factory_resets WHERE status='running'").fetchone()
+            ):
+                return
         key = "onboarding:" + plan["id"]
         done = set(json.loads(self.store.get(key, "[]")))
         current_step = "checking"
