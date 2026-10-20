@@ -285,3 +285,9 @@ SMARTi Home-nøkkelen er ikke delt med Smart Sauna eller SMARTi Flex. Skyrelease
 HA-versjon 1.35.54 leverer mobilvarslingsbroen. Build 10 er signert og lastet opp.
 Fysisk mottak krever installasjon av disse versjonene og brukerens varslingssamtykke.
 Debug/simulator trenger en egen sandbox-nøkkel før serverlevering kan testes der.
+
+Build 10 er lagt til **SMARTi intern test** i App Store Connect (build-ID
+`8a3a37ca-9e1d-49e1-885f-cc023f471a33`). Distribusjonseksportens
+`aps-environment` er kontrollert til `production`. Backend: 305 tester bestod i
+sandkassen; nettverkstestene ble kjørt på nytt med lokale testporter tillatt og
+alle 25 i de berørte filene bestod. Frontendbygget og HA-pakken er verifisert.
