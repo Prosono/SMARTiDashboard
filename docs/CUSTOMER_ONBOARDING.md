@@ -2,8 +2,9 @@
 
 Requires hub 1.35.51, iPhone 0.1.0 build 8 and the matching cloud + relay images.
 Cloud and relay deployed to home.smarti.dev on 2026-10-20 using the
-`customer-mail-20261020` image tags. Hub 1.35.51 and iPhone build 8 remain
-prepared locally, not published/uploaded as part of this deployment.
+`customer-mail-20261020` image tags. Hub 1.35.51 was pushed to main on
+2026-10-20 (bb48b29). Xcode confirmed successful upload of iPhone 0.1.0 build 8
+on the same date; assignment to the internal TestFlight group is pending.
 
 SendGrid SMTP is configured with `contact@smarti.dev`. TLS and authentication
 were verified from the running portal container; actual delivery and sender

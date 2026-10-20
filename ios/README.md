@@ -218,3 +218,15 @@ capture still needs testing on the user's iPhone.
 
 Build 7 uploaded and confirmed **Testing** in **SMARTi intern test** on 2026-10-19.
 Portal QR/PIN progression is deployed; HA remains at 1.35.50.
+
+## Customer onboarding — build 0.1.0 (8)
+
+Accepts v2 activation QR codes without a separate PIN and adds the camera/photo
+library usage descriptions for profile portraits. The deployed portal provides
+full contact profiles, verification and invitations; HA 1.35.51 provides the
+customer-account handoff. Legacy QR labels still require their existing PIN.
+
+Signed archive and TestFlight upload succeeded on 2026-10-20. Archive:
+`/tmp/SMARTiHome-build8.xcarchive`. The seven customer-account backend tests and
+both mobile browser onboarding regressions pass. Physical-device onboarding and
+actual mail delivery remain to be tested. Internal group assignment is pending.
