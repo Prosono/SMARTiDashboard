@@ -354,3 +354,15 @@ logout-bridge regression passed. Build 13 uploaded successfully to Apple on
 Build 13 confirmed **Testing** in **SMARTi intern test** on 2026-10-20.
 App Store Connect build ID: `cd8a4503-ee87-4aad-b7ec-133feff8a231`.
 Screenshot: `/tmp/smarti-build13-testflight.png`.
+
+### Build 14: portrait-only iPhone layout
+
+The signed app supports portrait orientation only. Build 14 confirmed **Testing**
+in **SMARTi intern test** on 2026-10-20.
+App Store Connect build ID: `cac0b8b9-167f-48f7-b648-d8ba888aa8de`.
+Screenshot: `/tmp/smarti-build14-testflight.png`.
+
+The mobile portal improvements are deployed to home.smarti.dev using
+`smartihome:mobile-polish-20261020`. HA app 1.35.65 contains the lower bottom
+navigation and animated home authentication page. Browser regression checks,
+17 targeted backend tests, frontend build and signed iOS archive passed.
