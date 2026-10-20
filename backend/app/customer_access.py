@@ -61,15 +61,16 @@ class CustomerAccess:
             key = "cloud_account:" + info["account"]
             mapped = c.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
             if not mapped:
-                # Owners must have been bound atomically by onboarding. Never claim a same-named local user.
-                if info["role"] == "admin":
-                    raise HTTPException(409, "owner_binding_missing")
+                # The cloud verifies current ownership/membership on every check.
+                # Legacy owners receive a distinct account, never a same-named local user.
+                if info["role"] not in {"admin", "user"}:
+                    raise HTTPException(403, "customer_role_invalid")
                 from .auth import hasher
 
                 name = "cloud_" + info["account"]
                 row = c.execute(
-                    "INSERT INTO users(name,password,role) VALUES(?,?,'user')",
-                    (name, hasher.hash(secrets.token_urlsafe(48))),
+                    "INSERT INTO users(name,password,role) VALUES(?,?,?)",
+                    (name, hasher.hash(secrets.token_urlsafe(48)), info["role"]),
                 )
                 local_id = row.lastrowid
                 c.execute("INSERT INTO settings VALUES(?,?)", (key, str(local_id)))
@@ -104,7 +105,7 @@ class CustomerAccess:
         return {
             "id": local["id"],
             "name": info["name"],
-            "role": local["role"],
+            "role": local["role"] if info["role"] == "admin" else "user",
             "csrf": info["csrf"],
             "customer": True,
         }

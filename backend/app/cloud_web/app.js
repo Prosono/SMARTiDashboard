@@ -46,7 +46,7 @@ async function showHomes() {
       const open=document.createElement("a");open.className="button primary";
       open.href="https://"+home.installation_id+".home.smarti.dev/";
       open.textContent="Åpne hjem →";card.append(open);
-      open.onclick=e=>{e.preventDefault();run(async()=>{try{location.assign((await api("customer/homes/"+home.installation_id+"/open","POST")).url);}catch{location.assign(open.href);}});};
+      open.onclick=e=>{e.preventDefault();run(async()=>{location.assign((await api("customer/homes/"+home.installation_id+"/open","POST")).url);});};
     } else {
       const help=document.createElement("a");help.className="button";
       help.href=home.verification_required?"/account":"/support";

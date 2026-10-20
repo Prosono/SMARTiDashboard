@@ -1,3 +1,8 @@
+## 1.35.62
+
+- Åpne eksisterende, eide hjem direkte fra portalen uten ny innlogging, med kontrollert kobling til en egen lokal kontoprofil.
+- Medlemstilgang oppgraderes ikke til administrator ved gjenbruk av en tidligere eierkobling.
+
 ## 1.35.61
 
 - Kompakt statuslampe i topplinjen erstatter tilkoblingsteksten på mobil og desktop.

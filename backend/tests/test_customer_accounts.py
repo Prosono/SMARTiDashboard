@@ -150,21 +150,45 @@ async def test_hub_customer_mapping_does_not_claim_local_admin(tmp_path):
 
     customer.cloud = fake
     request = SimpleNamespace(method="GET", cookies={}, headers={})
-    with pytest.raises(HTTPException) as failure:
-        await customer.user(request)
-    assert failure.value.status_code == 409
+    owner = await customer.user(request)
+    assert owner["id"] != 1 and owner["role"] == "admin"
+    assert (await customer.user(request))["id"] == owner["id"]
     info["role"] = "user"
     user = await customer.user(request)
     assert user["id"] != 1 and user["role"] == "user"
     with store.connect() as c:
         assert c.execute("select count(*) from users").fetchone()[0] == 2
     assert (await customer.user(request))["id"] == user["id"]
+
     request.method = "POST"
     with pytest.raises(HTTPException) as failure:
         await customer.user(request)
     assert failure.value.status_code == 403
     request.headers = {"x-csrf-token": "csrf"}
     assert (await customer.user(request))["id"] == user["id"]
+
+
+def test_existing_and_legacy_owner_can_open_but_stranger_cannot(tmp_path):
+    import json
+
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    ready_and_claim(staff, owner, hub, home, activation)
+    finish(owner, hub, home)
+    with sqlite3.connect(path) as c:
+        c.execute("UPDATE onboarding_plans SET payload=?", (json.dumps(PLAN | {"mode": "existing"}),))
+    for legacy in (False, True):
+        if legacy:
+            with sqlite3.connect(path) as c:
+                c.execute("DELETE FROM onboarding_plans")
+                c.execute("DELETE FROM factory_hubs")
+        assert other.post(f"/api/customer/homes/{home}/open").status_code == 404
+        result = owner.post(f"/api/customer/homes/{home}/open")
+        assert result.status_code == 200, result.text
+        token = urlparse(result.json()["url"]).fragment
+        redeemed = hub.post(f"/api/hubs/{home}/customer/redeem", json={"token": token})
+        assert redeemed.status_code == 200
+        info = hub.post(f"/api/hubs/{home}/customer/check", json={"token": redeemed.json()["token"]})
+        assert info.json()["role"] == "admin"
 
 
 def test_remote_session_is_established_without_password_and_logout_clears_it(tmp_path):

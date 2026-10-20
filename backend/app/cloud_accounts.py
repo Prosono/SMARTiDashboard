@@ -332,10 +332,11 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             p = c.execute(
                 "SELECT payload,status FROM onboarding_plans WHERE home=? AND owner=?", (home, account)
             ).fetchone()
-            import json
-
-            if not p or p["status"] != "completed" or json.loads(p["payload"])["mode"] == "existing":
-                raise HTTPException(409, "local_login_required")
+            # Claimed legacy homes have no onboarding plan. Factory homes must
+            # finish setup first, including the non-destructive "existing" mode.
+            factory_home = c.execute("SELECT 1 FROM factory_hubs WHERE home=?", (home,)).fetchone()
+            if (p and p["status"] != "completed") or (factory_home and not p):
+                raise HTTPException(409, "onboarding_required")
             return "admin"
         if c.execute("SELECT 1 FROM home_members WHERE home=? AND account=?", (home, account)).fetchone():
             return "user"
