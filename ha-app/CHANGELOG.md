@@ -1,3 +1,9 @@
+## 1.35.58
+
+- Retter registrering av SMARTi-varsler i Home Assistant: alle påkrevde telefonopplysninger sendes ved oppdatering.
+- Krever bekreftet varslingsoppsett i HA-svaret, slik at et tomt HTTP 200-svar ikke tolkes som suksess.
+- Etter oppdatering: trykk Aktiver varsler på nytt i SMARTi på telefonen og oppdater telefonlisten.
+
 ## 1.35.57
 
 - Retter hvit side når en ny automasjon åpnes uten handlinger.

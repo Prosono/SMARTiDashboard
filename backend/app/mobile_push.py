@@ -56,6 +56,9 @@ class MobilePush:
             record = self.c.read(current["device_id"])
             if not record.get("webhook_id"):
                 raise HTTPException(409, "mobile_registration_required")
+            metadata = record.get("registration")
+            if not metadata:
+                raise HTTPException(409, "mobile_registration_required")
             capability = record.get("push_capability") or secrets.token_urlsafe(32)
             # HAOS Core and SMARTi both use host networking; this endpoint is loopback-only.
             response = await self.c.m.ws(
@@ -66,6 +69,7 @@ class MobilePush:
                     {
                         "type": "update_registration",
                         "data": {
+                            **metadata,
                             "app_data": {
                                 "push_url": "http://127.0.0.1:8099/api/mobile/ha-notify",
                                 "push_token": capability,
@@ -76,6 +80,15 @@ class MobilePush:
                 headers={"Content-Type": "application/json"},
             )
             if not isinstance(response, dict) or response.get("status") != 200:
+                raise HTTPException(502, "notification_registration_unconfirmed")
+            try:
+                confirmed = json.loads(response.get("body", "{}"))
+            except (TypeError, ValueError):
+                confirmed = {}
+            app_data = confirmed.get("app_data", {}) if isinstance(confirmed, dict) else {}
+            if (not isinstance(app_data, dict)
+                or app_data.get("push_token") != capability
+                or app_data.get("push_url") != "http://127.0.0.1:8099/api/mobile/ha-notify"):
                 raise HTTPException(502, "notification_registration_unconfirmed")
             record.update(
                 push_capability=capability, push_token=body.token, push_environment=body.environment

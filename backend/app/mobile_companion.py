@@ -54,7 +54,14 @@ class Companion:
     async def register(self, current, body):
         async with self.lock:
             record = self.read(current["device_id"])
+            metadata = {
+                "device_name": body.name.strip(), "manufacturer": "Apple",
+                "model": body.model, "os_version": body.os_version,
+                "app_version": body.app_version,
+            }
             if record.get("webhook_id"):
+                record["registration"] = metadata
+                self.save(current["device_id"], record)
                 return self.status(current["device_id"])
             if self.m.demo:
                 raise HTTPException(409, "mobile_registration_requires_live_home")
@@ -81,7 +88,7 @@ class Companion:
             if not isinstance(result, dict) or not result.get("webhook_id"):
                 raise HTTPException(502, "mobile_registration_unconfirmed")
             # A capability belonging to this registration only, persisted with 0600 DB permissions.
-            self.save(current["device_id"], {"webhook_id": result["webhook_id"], "location_enabled": False})
+            self.save(current["device_id"], {"webhook_id": result["webhook_id"], "location_enabled": False, "registration": metadata})
             return self.status(current["device_id"])
 
     async def consent(self, current, enabled):

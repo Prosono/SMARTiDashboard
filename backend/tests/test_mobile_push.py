@@ -21,7 +21,15 @@ def push(tmp_path):
             (time.time(), time.time() + 3600),
         )
     companion = Companion(SimpleNamespace(store=store, ws=AsyncMock(return_value={"status": 200})))
-    companion.save("phone", {"webhook_id": "private"})
+    companion.save("phone", {"webhook_id": "private", "registration": {
+        "device_name": "Phone", "manufacturer": "Apple", "model": "iPhone",
+        "app_version": "0.1", "os_version": "18.0",
+    }})
+    async def confirm(*args, **kwargs):
+        data = json.loads(kwargs["body"])["data"]
+        assert all(key in data for key in ("device_name", "manufacturer", "model", "app_version"))
+        return {"status": 200, "body": json.dumps(data)}
+    companion.m.ws.side_effect = confirm
     push = MobilePush(companion, None)
     push.cloud = AsyncMock(return_value={"ready": True, "status": "accepted_by_apple"})
     return push
@@ -91,3 +99,12 @@ def test_local_webhook_does_not_open_ingress_to_lan_or_browser(tmp_path):
     )
     assert local.post("/api/mobile/ha-notify", json={}).status_code == 422
     assert local.post("/api/bootstrap", json={}).status_code == 403
+
+
+async def test_ha_silent_rejection_is_not_success(push):
+    push.c.m.ws.side_effect = None
+    push.c.m.ws.return_value = {"status": 200, "body": "{}"}
+    with pytest.raises(HTTPException) as error:
+        await push.enable({"device_id": "phone"}, PushRegistration(token="a" * 64))
+    assert error.value.detail == "notification_registration_unconfirmed"
+    assert not push.c.status("phone")["notifications_ready"]

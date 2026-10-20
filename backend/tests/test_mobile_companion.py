@@ -130,3 +130,16 @@ def test_remote_native_boundary_and_revocation(tmp_path):
         assert phone.post("/api/mobile/v1/logout").status_code == 200
         assert phone.get("/api/mobile/v1/companion").status_code == 401
         assert web.post("/api/remote/provision", json={}).status_code == 403
+
+
+async def test_existing_registration_gets_metadata_without_duplicate_ha_device(companion):
+    companion.save("phone-one", {"webhook_id": "existing", "location_enabled": True})
+    await register(companion)
+    companion.m.rest.assert_not_awaited()
+    record = companion.read("phone-one")
+    assert record["webhook_id"] == "existing"
+    assert record["location_enabled"] is True
+    assert record["registration"] == {
+        "device_name": "My iPhone", "manufacturer": "Apple", "model": "iPhone",
+        "os_version": "26", "app_version": "0.1",
+    }
