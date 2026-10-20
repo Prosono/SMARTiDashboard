@@ -1,3 +1,7 @@
+## 1.35.67
+
+- Huslogg og historikk skjules i enkel modus. Bytte til enkel modus tar deg tilbake til hjem hvis en av disse sidene er åpen.
+
 ## 1.35.66
 
 - Ny huslogg og historieutforsker med enhetsfilter, tidsrom, interaktive grafer og CSV-eksport fra HAs historikk.

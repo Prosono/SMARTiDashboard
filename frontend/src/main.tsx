@@ -208,7 +208,7 @@ function App() {
   useEffect(() => {
     setPage((p) =>
       mode === "simple" &&
-      !["home", "history", "logbook", "support", "more"].includes(p)
+      !["home", "support", "more"].includes(p)
         ? "home"
         : p,
     );
@@ -357,8 +357,6 @@ function App() {
                   (mode === "simple"
                     ? [
                         "home",
-                        "history",
-                        "logbook",
                         "support",
                         "more",
                       ].includes(p)
