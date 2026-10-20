@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const root='backend/app/cloud_web/';
 (async()=>{
  const browser=await chromium.launch();const page=await browser.newPage();
- let sessionGate=null,sessionFailure=false;let signedIn=false,admin=false,savedProfile=null;let profile={verified:true,full_name:'Test Kunde',email:'test@example.no',phone:'12345678',address:'Testveien 1',postal_code:'1234',city:'Oslo',country:'Norge',photo:''};const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ let brandGate=null,sessionGate=null,sessionFailure=false;let signedIn=false,admin=false,savedProfile=null;let profile={verified:true,full_name:'Test Kunde',email:'test@example.no',phone:'12345678',address:'Testveien 1',postal_code:'1234',city:'Oslo',country:'Norge',photo:''};const errors=[];page.on('pageerror',e=>errors.push(e.message));
  const home={name:'Hjemme i Kristiansand',installation_id:'00000000-0000-4000-8000-000000000001',remote_enabled:true,connected:true,factory_managed:true};
  await page.route('https://home.smarti.dev/**',async route=>{
   const u=new URL(route.request().url()),path=u.pathname;let data;
@@ -24,8 +24,18 @@ const root='backend/app/cloud_web/';
   const names={'/':'index.html','/admin':'admin.html','/support':'support.html','/support/prices':'support.html','/admin/support':'support.html','/admin/hubs':'onboarding.html','/account':'account.html','/welcome':'onboarding.html'};
   const file=names[path]||path.replace('/assets/','');
   if(!/^[a-zA-Z0-9_.-]+$/.test(file)||!fs.existsSync(root+file))return route.fulfill({status:404,body:''});
+  if(file==='brand.js'&&brandGate)await brandGate;
   const ext=file.split('.').pop();return route.fulfill({body:fs.readFileSync(root+file),contentType:{js:'application/javascript',css:'text/css',html:'text/html',png:'image/png',webp:'image/webp',svg:'image/svg+xml',woff2:'font/woff2'}[ext]});
  });
+ // Delay end-of-body decoration: the first rendered shell must already be correct.
+ let releaseBrand;brandGate=new Promise(resolve=>releaseBrand=resolve);signedIn=true;
+ await page.goto('https://home.smarti.dev/',{waitUntil:'commit'});
+ await expect(page.locator('.masthead')).toBeVisible();
+ await expect(page.locator('html')).toHaveAttribute('data-portal-theme','dark');
+ await expect(page.locator('.masthead')).toHaveCSS('position','fixed');
+ await expect(page.locator('body')).toHaveCSS('background-color','rgb(16, 16, 16)');
+ await expect(page.locator('#auth')).toBeHidden();
+ releaseBrand();brandGate=null;await page.waitForLoadState('load');
  // A slow session check must never expose the login artwork for signed-in users.
  signedIn=true;let releaseSession;sessionGate=new Promise(resolve=>releaseSession=resolve);
  await page.goto('https://home.smarti.dev/');

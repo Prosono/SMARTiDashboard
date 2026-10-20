@@ -65,7 +65,7 @@ for (const input of document.querySelectorAll('input[type=password]')) {
 
 // Customer workspaces share navigation and follow the device's light/dark preference.
 if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)) {
-  const stylesheet=document.createElement('link');stylesheet.rel='stylesheet';stylesheet.href='/assets/workspace.css';document.head.append(stylesheet);
+
   document.body.classList.add('customer-portal');
   const nav=document.querySelector('.masthead nav');
   const accountLink=nav.querySelector('a[href="/account"]');
@@ -93,7 +93,7 @@ if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)
   const themeKey='smarti.portal.theme';
   let theme='dark';
   try{const saved=localStorage.getItem(themeKey);if(['light','dark'].includes(saved))theme=saved;}catch{}
-  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/assets/theme.css';document.head.append(sheet);
+
   const selector=document.createElement('div');selector.className='portal-theme';selector.setAttribute('role','group');selector.setAttribute('aria-label','Fargetema');
   for(const [value,label,icon] of [['light','Lyst','☀'],['dark','Mørkt','☾']]){
     const button=document.createElement('button');button.type='button';button.dataset.theme=value;
