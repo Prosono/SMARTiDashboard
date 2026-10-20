@@ -279,6 +279,8 @@ function App() {
   }
   async function logout() {
     await api("logout", "POST");
+    (window as Window & { webkit?: { messageHandlers?: { smartiSession?: { postMessage: (message: string) => void } } } })
+      .webkit?.messageHandlers?.smartiSession?.postMessage("logout");
     setSession(null);
     updateSession(null);
     client.clear();

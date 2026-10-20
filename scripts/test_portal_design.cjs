@@ -115,6 +115,13 @@ const root='backend/app/cloud_web/';
    await page.screenshot({path:`/tmp/smarti-mobile-${path.replaceAll('/','')||'homes'}-${width}.png`,fullPage:true});
   }
  }
+ // Successful portal logout must tell the native shell to forget this session.
+ signedIn=true;admin=false;await page.goto('https://home.smarti.dev/');
+ await expect(page.locator('#account')).toBeVisible();
+ await page.evaluate(()=>{window.nativeMessages=[];window.webkit={messageHandlers:{smartiSession:{postMessage:value=>window.nativeMessages.push(value)}}};});
+ await page.locator('#logout').click();await expect(page.locator('#auth')).toBeVisible();
+ if(JSON.stringify(await page.evaluate(()=>window.nativeMessages))!=='["logout"]')throw Error('Native logout missing');
+ await expect(page.locator('.masthead nav a[href="/account"]')).toBeHidden();
  // Verify header layout with a 59px safe-area input for login and signed-in pages.
  await page.setViewportSize({width:390,height:844});
  for(const loggedIn of [false,true]){

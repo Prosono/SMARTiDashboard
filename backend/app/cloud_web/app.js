@@ -77,7 +77,7 @@ $("claim").onsubmit=e=>{e.preventDefault();run(async()=>{
   await api("homes/claim","POST",Object.fromEntries(new FormData($("claim"))));
   $("claim").reset(); await showHomes();
 });};
-$("logout").onclick=()=>run(async()=>{await api("logout","POST");csrf="";$("account").hidden=true;$("auth").hidden=false;$("login").reset();});
+$("logout").onclick=()=>run(async()=>{await api("logout","POST");window.webkit?.messageHandlers?.smartiSession?.postMessage("logout");csrf="";$("account").hidden=true;$("auth").hidden=false;$("login").reset();});
 async function restoreSession(){
   $("session-loading").hidden=false;$("session-retry").hidden=true;$("message").textContent="";
   try{csrf=(await api("session")).csrf;await showHomes();}

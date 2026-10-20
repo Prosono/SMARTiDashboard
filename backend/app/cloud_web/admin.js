@@ -41,7 +41,7 @@ async function detail(id){const d=await api("admin/accounts/"+encodeURIComponent
 async function audit(){const rows=await api("admin/audit");const names={overview:"Åpnet kundeoversikten",view_customer:"Åpnet kunde",add_note:"La til supportnotat"};$("audit-rows").replaceChildren(...rows.map(r=>{const n=el("div",undefined,"audit-row");n.append(el("span",r.actor+" · "+(names[r.action]||r.action)+(r.target?" · "+r.target:"")),el("small",date(r.created)));return n;}));}
 function tab(v){view=v;$("customers").hidden=v!=="customers";$("audit").hidden=v!=="audit";$("search").hidden=v!=="customers";$("detail").hidden=true;$("customers-tab").setAttribute("aria-pressed",String(v==="customers"));$("audit-tab").setAttribute("aria-pressed",String(v==="audit"));}
 $("login").onsubmit=e=>{e.preventDefault();run(async()=>{csrf=(await api("login","POST",Object.fromEntries(new FormData($("login"))))).csrf;$("login").elements.password.value="";await overview();});};
-$("logout").onclick=()=>run(async()=>{await api("logout","POST");location.href="/admin";});
+$("logout").onclick=()=>run(async()=>{await api("logout","POST");window.webkit?.messageHandlers?.smartiSession?.postMessage("logout");location.href="/admin";});
 $("refresh").onclick=()=>run(async()=>{await overview();if(view==="audit")await audit();else if(selected&&!$("detail").hidden)await detail(selected);});
 $("search").onsubmit=e=>{e.preventDefault();query=$("query").value.trim();offset=0;run(overview);};
 $("previous").onclick=()=>{offset=Math.max(0,offset-50);run(overview);};

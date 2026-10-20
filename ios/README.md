@@ -335,3 +335,18 @@ swiftc -module-cache-path /tmp/smarti-swift-cache \
 
 Testen og signert Release-arkiv bestod. Arkiv: `/tmp/SMARTiHome-build12.xcarchive`.
 Åpning av push på fysisk iPhone må bekreftes etter installasjon.
+
+### Build 13: explicit logout clears remembered web access
+
+Successful logout in the portal or HA app sends `smartiSession: logout` to the
+native shell. Only the current trusted top-level portal/home origin can request
+this. The shell first persists a pending-logout marker and removes the remembered
+home, then deletes SMARTi portal/home cookies from its own WKWebView and opens
+the portal. Interrupted cleanup resumes at next launch. Normal app closure does
+not clear the remembered home or cookies. Phone pairing for push/location is
+separate and remains registered.
+
+Requires HA app 1.35.64 for logout inside the home. Portal changes are deployed.
+Simulator build, signed Release archive, frontend build and isolated portal
+logout-bridge regression passed. Build 13 uploaded successfully to Apple on
+2026-10-20. Physical-device force-close/reopen verification remains necessary.

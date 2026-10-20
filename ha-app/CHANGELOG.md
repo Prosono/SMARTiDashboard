@@ -1,3 +1,7 @@
+## 1.35.64
+
+- Utlogging varsler iPhone-appen, som tømmer nettinnloggingen og glemmer valgt hjem. Krever iPhone build 13. Vanlig lukking beholder innloggingen.
+
 ## 1.35.63
 
 - «Fjernaksess»-snarveien i iPhone-visningen heter nå «Åpne Min side», med kontoikon for kontoen og hjemoversikten.

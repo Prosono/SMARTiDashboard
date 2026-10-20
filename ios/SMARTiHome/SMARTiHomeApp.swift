@@ -206,7 +206,7 @@ struct PhoneSettingsView: View {
                     ToolbarItem(placement: .confirmationAction) { Button("Ferdig") { dismiss() } }
                 }
                 .safeAreaInset(edge: .bottom) {
-                    Button("Fjernaksess – velg eller koble til hjem") { dismiss(); home.openPortal() }
+                    Button("Åpne Min side") { dismiss(); home.openPortal() }
                         .padding().frame(maxWidth: .infinity).background(.bar)
                 }
         }
@@ -284,7 +284,44 @@ struct PhoneSettingsView: View {
         lastPage = URL(string: "https://home.smarti.dev/")!
         retry()
     }
+    private static let logoutPendingKey = "smarti.logoutPending"
+    private var signingOut = false
+
+    // Persist intent before async cookie deletion so force-quitting cannot restore a home.
+    func signOut() {
+        guard !signingOut else { return }
+        signingOut = true
+        UserDefaults.standard.set(true, forKey: Self.logoutPendingKey)
+        UserDefaults.standard.removeObject(forKey: Self.savedHomeKey)
+        pendingSetupDevice = nil
+        lastPage = URL(string: "https://home.smarti.dev/")!
+        webView.stopLoading()
+        showPhoneSettings = false
+        NotificationInbox.shared.presented = false
+        Task { @MainActor in
+            let store = webView.configuration.websiteDataStore.httpCookieStore
+            for cookie in await store.allCookies() {
+                let domain = cookie.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+                if domain == "home.smarti.dev" || domain.hasSuffix(".home.smarti.dev") {
+                    await store.deleteCookie(cookie)
+                }
+            }
+            UserDefaults.standard.removeObject(forKey: Self.logoutPendingKey)
+            signingOut = false
+            retry()
+        }
+    }
+
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "smartiSession", message.frameInfo.isMainFrame,
+           message.body as? String == "logout",
+           let url = message.frameInfo.request.url, url.scheme == "https",
+           url.host == "home.smarti.dev" || MobileClient.isHome(url),
+           webView.url?.host == url.host {
+            signOut()
+            return
+        }
+
         if message.name == "smartiOnboarding", message.frameInfo.isMainFrame,
            message.frameInfo.request.url?.host == "home.smarti.dev", webView.url?.host == "home.smarti.dev",
            ["scan", "discover"].contains(message.body as? String ?? "") {
@@ -307,11 +344,13 @@ struct PhoneSettingsView: View {
     private var recovery = WebRecoveryBudget()
 
     func retry() {
+        guard !signingOut else { return }
         failure = nil
         // Load the last approved main-frame URL with GET. Never replay a form POST.
         webView.load(URLRequest(url: lastPage))
     }
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        guard !signingOut else { return }
         if let url = webView.url, url.scheme == "https",
            url.host == "home.smarti.dev" || MobileClient.isHome(url) { lastPage = url }
         // Persist only the approved origin, never a login code, query or console URL.
@@ -343,10 +382,15 @@ struct PhoneSettingsView: View {
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init()
         configuration.userContentController.add(self, name: "smartiPhoneSettings")
+        configuration.userContentController.add(self, name: "smartiSession")
         configuration.userContentController.add(self, name: "smartiOnboarding")
         webView.navigationDelegate = self
         webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.contentInsetAdjustmentBehavior = .never
+        if UserDefaults.standard.bool(forKey: Self.logoutPendingKey) {
+            signOut()
+            return
+        }
         if let saved = UserDefaults.standard.string(forKey: Self.savedHomeKey),
            let url = URL(string: saved), MobileClient.isHome(url), let host = url.host {
             lastPage = URL(string: "https://" + host + "/")!
