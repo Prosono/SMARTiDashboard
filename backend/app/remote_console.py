@@ -48,6 +48,7 @@ class RemoteConsole:
         self.upstream = upstream.rstrip("/")
         self.transport = transport
         self.tickets, self.sessions = {}, {}
+        self.customer_validator = None
 
     def prune(self):
         for entries in (self.tickets, self.sessions):
@@ -59,8 +60,24 @@ class RemoteConsole:
         if self.auth.session(token)["role"] != "admin":
             raise HTTPException(403, "admin_required")
 
+    async def validate(self, token):
+        if isinstance(token, tuple) and token[0] == "customer":
+            if self.customer_validator is None:
+                raise HTTPException(401, "customer_session_expired")
+            await self.customer_validator(token[1])
+        else:
+            self.admin(token)
+
+    async def launch_customer(self, token, path):
+        principal = ("customer", token)
+        await self.validate(principal)
+        return self.ticket(principal, path)
+
     def launch(self, token, path):
         self.admin(token)
+        return self.ticket(token, path)
+
+    def ticket(self, token, path):
         self.prune()
         if len(self.tickets) >= 128:
             raise HTTPException(429, "too_many_console_requests")
@@ -68,12 +85,12 @@ class RemoteConsole:
         self.tickets[ticket] = (time.time() + 60, token, path)
         return self.origin + "/_smarti/launch#" + ticket
 
-    def authorize(self, cookies):
+    async def authorize(self, cookies):
         self.prune()
         value = self.sessions.get(cookies.get(COOKIE, ""))
         if not value:
             raise HTTPException(401, "console_session_expired")
-        self.admin(value[1])
+        await self.validate(value[1])
         return value[1]
 
     def headers(self, incoming):
@@ -134,7 +151,7 @@ class RemoteConsole:
                     value = None
                 if not value or value[0] < time.time():
                     raise HTTPException(401, "console_ticket_expired")
-                self.admin(value[1])
+                await self.validate(value[1])
                 self.prune()
                 if len(self.sessions) >= 128:
                     raise HTTPException(429, "too_many_console_sessions")
@@ -145,7 +162,7 @@ class RemoteConsole:
                     COOKIE, key, secure=True, httponly=True, samesite="strict", max_age=3600, path="/"
                 )
             else:
-                self.authorize(request.cookies)
+                await self.authorize(request.cookies)
                 response = await self.proxy(request)
         except HTTPException as exc:
             response = JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
@@ -214,7 +231,7 @@ class RemoteConsole:
                 or ws.headers.getlist("origin") != [self.origin]
             ):
                 raise HTTPException(403)
-            self.authorize(ws.cookies)
+            await self.authorize(ws.cookies)
         except HTTPException:
             await ws.close(code=1008)
             return
@@ -241,14 +258,14 @@ class RemoteConsole:
                         event = await ws.receive()
                         if event["type"] == "websocket.disconnect":
                             return
-                        self.authorize(ws.cookies)
+                        await self.authorize(ws.cookies)
                         await upstream.send(
                             event.get("text") if event.get("text") is not None else event["bytes"]
                         )
 
                 async def inward():
                     async for message in upstream:
-                        self.authorize(ws.cookies)
+                        await self.authorize(ws.cookies)
                         if isinstance(message, bytes):
                             await ws.send_bytes(message)
                         else:
@@ -257,7 +274,7 @@ class RemoteConsole:
                 async def validity():
                     while True:
                         await asyncio.sleep(5)
-                        self.authorize(ws.cookies)
+                        await self.authorize(ws.cookies)
 
                 tasks = [asyncio.create_task(fn()) for fn in (outward, inward, validity)]
                 try:

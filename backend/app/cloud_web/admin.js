@@ -33,7 +33,7 @@ async function overview(){
  $("unclaimed-title").textContent=d.summary.unclaimed+" huber uten konto";
  $("unclaimed").replaceChildren(...d.unclaimed.map(home));
 }
-async function detail(id){const d=await api("admin/accounts/"+encodeURIComponent(id));selected=id;$("detail").hidden=false;$("customer-name").textContent=d.username;$("customer-id").textContent=d.id;$("customer-homes").replaceChildren(...d.homes.map(home));if(!d.homes.length)$("customer-homes").textContent="Kontoen har ikke koblet til et hjem ennå.";
+async function detail(id){const d=await api("admin/accounts/"+encodeURIComponent(id));selected=id;$("detail").hidden=false;$("customer-name").textContent=d.username;$("customer-id").textContent=d.profile?[d.profile.full_name,d.profile.email,d.profile.phone,d.profile.address,d.profile.postal_code+" "+d.profile.city,d.profile.country,d.profile.verified?"E-post bekreftet":"E-post ikke bekreftet"].join(" · "):d.id;$("customer-homes").replaceChildren(...d.homes.map(home));if(!d.homes.length)$("customer-homes").textContent="Kontoen har ikke koblet til et hjem ennå.";
  $("notes").replaceChildren(...d.notes.map(n=>{const a=el("article",undefined,"support-note");a.append(el("small",n.author+" · "+date(n.created)),el("p",n.text));return a;}));
  if(!d.notes.length)$("notes").textContent="Ingen supportnotater ennå.";
  $("detail").scrollIntoView({behavior:"auto",block:"start"});

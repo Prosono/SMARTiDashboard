@@ -64,7 +64,7 @@ class HubOnboarding:
                     "device": self.device,
                     "secret": self.enrollment_secret,
                     "fingerprint": self.fingerprint,
-                    "version": "1.35.50",
+                    "version": "1.35.51",
                     "users": 0,
                     "ha_connected": bool(self.ha.connected),
                 },
@@ -165,7 +165,7 @@ class HubOnboarding:
                     ]:
                         c.execute("DELETE FROM " + table)
                     c.execute(
-                        "DELETE FROM settings WHERE key LIKE 'access:%' OR key LIKE 'account_%' OR key LIKE 'experience:%' OR key LIKE 'language:%'"
+                        "DELETE FROM settings WHERE key LIKE 'access:%' OR key LIKE 'account_%' OR key LIKE 'experience:%' OR key LIKE 'language:%' OR key LIKE 'cloud_account:%' OR key LIKE 'customer_profile:%'"
                     )
                     # Commit deletion and reset checkpoint together; never delete the new owner on retry.
                     c.execute(
@@ -224,6 +224,31 @@ class HubOnboarding:
                         "INSERT INTO users(name,password,role) VALUES(?,?,'admin')",
                         (plan["username"], plan["password_hash"]),
                     )
+                    if plan.get("cloud_account"):
+                        c.execute(
+                            "INSERT OR REPLACE INTO settings VALUES(?,?)",
+                            ("cloud_account:" + plan["cloud_account"], str(row.lastrowid)),
+                        )
+                    if plan.get("profile"):
+                        c.execute(
+                            "INSERT OR REPLACE INTO settings VALUES(?,?)",
+                            ("customer_profile:" + str(row.lastrowid), json.dumps(plan["profile"])),
+                        )
+                        c.execute(
+                            "INSERT OR REPLACE INTO settings VALUES(?,?)",
+                            (
+                                "account:" + str(row.lastrowid),
+                                json.dumps({"display_name": plan["profile"]["full_name"]}),
+                            ),
+                        )
+                        if plan["profile"].get("photo"):
+                            c.execute(
+                                "INSERT OR REPLACE INTO settings VALUES(?,?)",
+                                (
+                                    "account_photo:" + str(row.lastrowid),
+                                    plan["profile"]["photo"].split(",", 1)[1],
+                                ),
+                            )
                     c.execute(
                         "INSERT OR REPLACE INTO settings VALUES(?,?)",
                         ("experience:" + str(row.lastrowid), json.dumps({"mode": plan["experience"]})),
@@ -250,7 +275,7 @@ class HubOnboarding:
             {
                 "boot_id": self.boot,
                 "fingerprint": self.fingerprint,
-                "version": "1.35.50",
+                "version": "1.35.51",
                 "users": users,
                 "ha_connected": bool(self.ha.connected),
                 "remote_ready": bool(self.remote.get("ready")),

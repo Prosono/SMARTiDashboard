@@ -26,13 +26,15 @@ async function showHomes() {
   for (const home of homes) {
     const card=document.createElement("article"), title=document.createElement("h2"), detail=document.createElement("p");
     title.textContent=home.name; detail.textContent=home.remote_enabled ? (home.connected ? "Hjemmet er tilkoblet" : "Venter på tilkobling fra huben") : "Fjerntilgang er slått av";
+    if(home.verification_required)detail.textContent="Bekreft e-postadressen under Min konto for å gjenåpne fjernaksess.";
     card.append(title,detail);
     if (home.factory_managed) { const setup=document.createElement("a");setup.href="/activate?home="+encodeURIComponent(home.installation_id);setup.textContent="Oppsett av klargjort hub";card.append(setup); }
     if (home.connected && home.remote_enabled && /^[0-9a-f-]{36}$/.test(home.installation_id)) {
       const open=document.createElement("a");
       open.href="https://"+home.installation_id+".home.smarti.dev/";
       open.textContent="Åpne hjem";card.append(open);
-      const note=document.createElement("p");note.textContent="Logg inn med brukeren din i dette hjemmet.";card.append(note);
+      open.onclick=e=>{e.preventDefault();run(async()=>{try{location.assign((await api("customer/homes/"+home.installation_id+"/open","POST")).url);}catch{location.assign(open.href);}});};
+      const note=document.createElement("p");note.textContent="Kontoen din brukes til å åpne hjemmet når det er satt opp med den nye veilederen.";card.append(note);
     }
     if (home.remote_enabled) {
       const disable=document.createElement("button");disable.textContent="Slå av fjerntilgang";

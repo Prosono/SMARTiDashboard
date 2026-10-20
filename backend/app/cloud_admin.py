@@ -126,8 +126,18 @@ def install_admin(app, db, session, relay_status_url):
                     (account_id,),
                 )
             ]
+            profile = c.execute(
+                "SELECT email,full_name,phone,address,postal_code,city,country,verified,deadline FROM customer_profiles WHERE account=?",
+                (account_id,),
+            ).fetchone()
             audit(c, s, "view_customer", account_id)
-        return {**dict(account), "homes": homes, "notes": notes, "checked_at": time.time()}
+        return {
+            **dict(account),
+            "profile": dict(profile) if profile else None,
+            "homes": homes,
+            "notes": notes,
+            "checked_at": time.time(),
+        }
 
     @app.post("/api/admin/accounts/{account_id}/notes")
     def add_note(account_id: str, body: SupportNote, s=Depends(admin)):

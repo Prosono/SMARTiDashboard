@@ -100,7 +100,8 @@ class HomeRegistry:
     def credential(self, home_id):
         with sqlite3.connect(self.database, uri=True, timeout=1) as db:
             row = db.execute(
-                "SELECT credential FROM homes WHERE id=? AND owner IS NOT NULL AND remote_enabled=1",
+                "SELECT credential FROM homes WHERE id=? AND owner IS NOT NULL AND remote_enabled=1 "
+                "AND NOT EXISTS(SELECT 1 FROM customer_profiles p WHERE p.account=homes.owner AND p.verified IS NULL AND p.deadline IS NOT NULL AND p.deadline<=unixepoch())",
                 (home_id,),
             ).fetchone()
         return row[0] if row else None

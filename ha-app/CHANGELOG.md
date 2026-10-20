@@ -1,3 +1,10 @@
+## 1.35.51
+
+- Ny QR-etikett aktiverer huben uten manuell PIN (eldre etiketter støttes fortsatt).
+- Kontoprofil og kortvarig portalinnlogging til hjemmet etter oppsett.
+- Støtte for inviterte brukere med separate tilganger og profilbilde.
+- Krever tilsvarende portaloppdatering; e-posttjeneste må konfigureres før kundelansering.
+
 ## 1.35.50
 - Ukonfigurerte huber annonserer seg automatisk på lokalnettet ved oppstart, uten forhåndsutfylt tilkoblingsidentitet.
 - iPhone build 6 kan velge huben og knytte den til riktig QR-kode og eier.

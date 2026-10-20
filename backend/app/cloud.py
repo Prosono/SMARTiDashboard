@@ -1,5 +1,7 @@
 """Multi-home account/enrollment control plane; does not proxy home commands."""
 
+import asyncio
+import contextlib
 import hashlib
 import os
 import re
@@ -8,7 +10,7 @@ import sqlite3
 import threading
 import time
 import uuid
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 
 import httpx
@@ -19,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pwdlib import PasswordHash
 from pydantic import BaseModel, Field
 
+from app.cloud_accounts import Profile, install_accounts, remote_allowed
 from app.cloud_admin import install_admin
 from app.cloud_onboarding import install_onboarding
 from app.cloud_support import install_support
@@ -33,11 +36,12 @@ def digest(value):
 
 
 class Credentials(BaseModel):
-    username: str = Field(min_length=3, max_length=80, pattern=r"^[a-zA-Z0-9_.@+-]+$")
+    username: str = Field(min_length=3, max_length=254, pattern=r"^[a-zA-Z0-9_.@+-]+$")
     password: str = Field(min_length=1, max_length=256)
 
 
 class Registration(Credentials):
+    profile: Profile | None = None
     password: str = Field(min_length=12, max_length=256)
 
 
@@ -97,7 +101,23 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
         if "remote_enabled" not in columns:
             c.execute("ALTER TABLE homes ADD COLUMN remote_enabled INTEGER NOT NULL DEFAULT 1")
     os.chmod(database, 0o600)
-    app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+
+    @asynccontextmanager
+    async def lifespan(app):
+        async def mail_loop():
+            while True:
+                await asyncio.to_thread(app.state.deliver_customer_mail)
+                await asyncio.sleep(60)
+
+        task = asyncio.create_task(mail_loop())
+        try:
+            yield
+        finally:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
+    app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_input(request, exc):
@@ -112,7 +132,7 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; script-src 'self'; style-src 'self'; "
-            "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+            "img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         )
         return response
 
@@ -173,14 +193,33 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
             hashed = PASSWORDS.hash(body.password)
         with db() as c:
             try:
+                account_id = uuid.uuid4().hex
+                if body.profile and body.username.lower() != body.profile.email:
+                    raise HTTPException(422, "email_must_match_username")
                 c.execute(
                     "INSERT INTO accounts VALUES(?,?,?)",
                     (
-                        uuid.uuid4().hex,
+                        account_id,
                         body.username.lower(),
                         hashed,
                     ),
                 )
+                if body.profile:
+                    p = body.profile
+                    c.execute(
+                        "INSERT INTO customer_profiles(account,email,full_name,phone,address,postal_code,city,country,photo) VALUES(?,?,?,?,?,?,?,?,?)",
+                        (
+                            account_id,
+                            p.email,
+                            p.full_name,
+                            p.phone,
+                            p.address,
+                            p.postal_code,
+                            p.city,
+                            p.country,
+                            p.photo,
+                        ),
+                    )
             except sqlite3.IntegrityError:
                 raise HTTPException(409, "account_not_created") from None
         return {"created": True}
@@ -246,7 +285,12 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     @app.get("/api/hubs/{home_id}/status")
     def hub_status(home_id: str, request: Request):
         home = home_auth(home_id, request)
-        return {"linked": home["owner"] is not None, "remote_enabled": bool(home["remote_enabled"])}
+        with db() as c:
+            allowed = remote_allowed(c, home["owner"])
+        return {
+            "linked": home["owner"] is not None,
+            "remote_enabled": bool(home["remote_enabled"] and allowed),
+        }
 
     @app.put("/api/hubs/{home_id}/certificate-challenge")
     def publish_challenge(home_id: str, body: CertificateChallenge, request: Request):
@@ -372,14 +416,22 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
             return [
                 {
                     **dict(row),
-                    "connected": bool(row["remote_enabled"] and row["installation_id"] in connected),
+                    "connected": bool(
+                        row["remote_enabled"]
+                        and remote_allowed(c, row["owner"])
+                        and remote_allowed(c, s["account"])
+                        and row["installation_id"] in connected
+                    ),
+                    "verification_required": not remote_allowed(c, row["owner"])
+                    or not remote_allowed(c, s["account"]),
                 }
                 for row in c.execute(
-                    "SELECT id AS installation_id,name,remote_enabled, EXISTS(SELECT 1 FROM factory_hubs f WHERE f.home=homes.id) AS factory_managed FROM homes WHERE owner=? ORDER BY name",
-                    (s["account"],),
+                    "SELECT id AS installation_id,name,owner,remote_enabled, EXISTS(SELECT 1 FROM factory_hubs f WHERE f.home=homes.id) AS factory_managed FROM homes WHERE owner=? OR id IN (SELECT home FROM home_members WHERE account=?) ORDER BY name",
+                    (s["account"], s["account"]),
                 )
             ]
 
+    install_accounts(app, db, session, home_auth, throttle, origin)
     is_admin = install_admin(app, db, session, relay_status_url)
     install_support(app, db, session, is_admin, home_auth, origin)
 

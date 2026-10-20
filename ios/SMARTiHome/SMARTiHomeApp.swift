@@ -159,7 +159,7 @@ struct PhoneSettingsView: View {
         guard let url = URL(string: value), url.scheme == "https", url.host == "home.smarti.dev",
               url.port == nil, url.user == nil, url.password == nil, url.path == "/activate",
               let fragment = url.fragment,
-              fragment.range(of: "^[0-9a-f-]{36}\\.[0-9a-f]{64}$", options: .regularExpression) != nil else { return false }
+              fragment.range(of: "^[0-9a-f-]{36}\\.(?:v2\\.)?[0-9a-f]{64}$", options: .regularExpression) != nil else { return false }
         var destination = URLComponents(url: url, resolvingAgainstBaseURL: false)!
         // Only an explicit in-app scan retains the chosen LAN hub. External links never reuse a stale selection.
         destination.queryItems = forSelectedHub ? selectedSetupDevice.map { [URLQueryItem(name: "device", value: $0)] } : nil

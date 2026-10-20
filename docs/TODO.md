@@ -41,3 +41,7 @@ Grunnstyring og eksisterende romkoblinger er implementert i 1.35.0.
 Kartvisning, opprettelse av romkoblinger i SMARTi, produsentspesifikk mopping,
 tømming og stasjonsvedlikehold gjenstår. Disse må bygge på faktisk tilgjengelige
 HA-entiteter/API-er per integrasjon, ikke antakelser om støvsugermerket.
+
+## Hubaktivering – senere
+
+- [ ] Selvbetjent erstatning/rotasjon av mistet eller kompromittert QR-aktiveringskode, med eierskapskontroll og revisjonslogg. Førstegangsoppsett bruker nå hemmeligheten i QR-etiketten.

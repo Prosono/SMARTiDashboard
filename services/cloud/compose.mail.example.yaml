@@ -1,0 +1,15 @@
+# Optional override. Set these values in the server's protected environment.
+# docker compose -f compose.smartihome.yaml -f compose.mail.yaml up -d smartihome
+services:
+  smartihome:
+    environment:
+      SMARTI_SMTP_HOST: ${SMARTI_SMTP_HOST:?Set mail provider hostname}
+      SMARTI_SMTP_PORT: ${SMARTI_SMTP_PORT:-587}
+      SMARTI_SMTP_USER: ${SMARTI_SMTP_USER:?Set SMTP username}
+      SMARTI_MAIL_FROM: ${SMARTI_MAIL_FROM:?Set verified sender address}
+      SMARTI_SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+    secrets:
+      - smtp_password
+secrets:
+  smtp_password:
+    file: /home/omni/smartihome/secrets/smtp_password

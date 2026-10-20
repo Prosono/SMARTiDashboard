@@ -43,8 +43,8 @@ from .wireless_setup import WirelessSetup
 
 
 class Credentials(BaseModel):
-    name: str = Field(min_length=1, max_length=80, pattern=r"^[\w.@-]+$")
-    password: str = Field(min_length=12, max_length=128)
+    name: str = Field(min_length=1, max_length=254, pattern=r"^[\w.@+\-]+$")
+    password: str = Field(min_length=12, max_length=256)
 
 
 class Setup(Credentials):
@@ -196,6 +196,13 @@ def create_app(
     app.state.ha, app.state.auth, app.state.store = ha, auth, store
     app.state.remote = {"ready": False}
     app.state.mobile = mobile
+    from .customer_access import COOKIE as customer_cookie
+    from .customer_access import CustomerAccess, install_customer_access
+
+    customer = CustomerAccess(support_identity, store) if remote_surface and support_identity else None
+    if customer:
+        install_customer_access(app, customer)
+    app.state.customer = customer
     app.state.support = support
     app.state.setup = setup
     app.state.origins = origins
@@ -254,7 +261,11 @@ def create_app(
     async def user(request: Request):
         if support and request.cookies.get(support_cookie):
             return await support.user(request)
-        result = auth.session(request.cookies.get(session_cookie))
+        result = (
+            await customer.user(request)
+            if customer and request.cookies.get(customer_cookie)
+            else auth.session(request.cookies.get(session_cookie))
+        )
         if request.method not in {"GET", "HEAD"} and not secrets.compare_digest(
             request.headers.get("x-csrf-token", ""), result["csrf"]
         ):
@@ -328,6 +339,8 @@ def create_app(
         token, session = auth.login(body.name, body.password)
         if support:
             response.delete_cookie(support_cookie, path="/", secure=True, httponly=True, samesite="strict")
+        if customer:
+            response.delete_cookie(customer_cookie, path="/", secure=True, httponly=True, samesite="strict")
         auth.finish_successful_attempt(key)
         response.set_cookie(
             session_cookie,
@@ -376,6 +389,9 @@ def create_app(
                 raise HTTPException(404, "app_not_available")
             # HA owns ingress session creation and renewal through its app panel.
             path = "/app/" + slug
+        if current.get("customer"):
+            console.customer_validator = customer.console_admin
+            return {"url": await console.launch_customer(request.cookies.get(customer_cookie), path)}
         return {"url": console.launch(request.cookies.get(session_cookie), path)}
 
     @app.get("/api/session")
@@ -385,6 +401,8 @@ def create_app(
     @app.post("/api/logout")
     async def logout(request: Request, response: Response, current=Depends(user)):
         auth.logout(request.cookies.get(session_cookie))
+        if customer:
+            response.delete_cookie(customer_cookie, path="/", secure=True, httponly=True, samesite="strict")
         if support:
             response.delete_cookie(support_cookie, path="/", secure=True, httponly=True, samesite="strict")
         response.delete_cookie(
@@ -590,6 +608,10 @@ def create_app(
                             raise HTTPException(401, "support_access_expired")
                         if time.monotonic() - support_checked >= 5:
                             await support.user(request)
+                            support_checked = time.monotonic()
+                    elif current.get("customer"):
+                        if time.monotonic() - support_checked >= 5:
+                            await customer.user(request)
                             support_checked = time.monotonic()
                     else:
                         auth.session(request.cookies.get(session_cookie))

@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import httpx
 import qrcode
 import qrcode.image.svg
-from fastapi import Depends, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field, model_validator
 
@@ -51,7 +51,7 @@ class Heartbeat(BaseModel):
 
 class Activation(BaseModel):
     code: str = Field(min_length=32, max_length=128)
-    pin: str = Field(pattern=r"^\d{8}$")
+    pin: str = Field(default="", pattern=r"^(?:\d{8})?$")
     device: uuid.UUID | None = None
 
 
@@ -125,6 +125,22 @@ def install_onboarding(
         return hmac.new(
             secret.encode(), ("hub-label:" + row["home"] + ":" + row["label_nonce"]).encode(), hashlib.sha256
         ).hexdigest()
+
+    def qr_secret(row):
+        return (
+            "v2."
+            + hmac.new(
+                secret.encode(),
+                ("hub-qr-v2:" + row["home"] + ":" + row["label_nonce"]).encode(),
+                hashlib.sha256,
+            ).hexdigest()
+        )
+
+    def valid_activation(row, body):
+        return bool(row) and (
+            secrets.compare_digest(qr_secret(row), body.code)
+            or (activation_proof(row, body.code) and secrets.compare_digest(row["pin"], pin_digest(body.pin)))
+        )
 
     def view(row):
         h = json.loads(row["heartbeat"] or "{}")
@@ -233,7 +249,7 @@ def install_onboarding(
             row = c.execute("SELECT * FROM factory_hubs WHERE home=?", (home,)).fetchone()
             if not row:
                 raise HTTPException(404, "hub_not_found")
-        url = origin + "/activate#" + home + "." + label(row)
+        url = origin + "/activate#" + home + "." + qr_secret(row)
         buf = io.BytesIO()
         qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage).save(buf)
         return Response(buf.getvalue(), media_type="image/svg+xml")
@@ -322,11 +338,7 @@ def install_onboarding(
             row = c.execute(
                 "SELECT f.*,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
             ).fetchone()
-        if (
-            not row
-            or not activation_proof(row, body.code)
-            or not secrets.compare_digest(row["pin"], pin_digest(body.pin))
-        ):
+        if not row or not valid_activation(row, body):
             raise HTTPException(404, "activation_not_found")
         return {
             "model": row["model"],
@@ -344,17 +356,23 @@ def install_onboarding(
             row = c.execute(
                 "SELECT f.*,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
             ).fetchone()
-            if (
-                not row
-                or not activation_proof(row, body.code)
-                or not secrets.compare_digest(row["pin"], pin_digest(body.pin))
-            ):
+            if not row or not valid_activation(row, body):
                 raise HTTPException(404, "activation_not_found")
             if row["owner"] and row["owner"] != s["account"]:
                 raise HTTPException(409, "home_has_an_owner")
+            if (
+                body.code.startswith("v2.")
+                and not c.execute(
+                    "SELECT 1 FROM customer_profiles WHERE account=?", (s["account"],)
+                ).fetchone()
+            ):
+                raise HTTPException(422, "customer_profile_required")
             if body.device:
                 # LAN selection supplies only a device locator; the printed QR and PIN above authorize binding.
-                if not secrets.compare_digest(label(row), body.code):
+                if not (
+                    secrets.compare_digest(label(row), body.code)
+                    or secrets.compare_digest(qr_secret(row), body.code)
+                ):
                     raise HTTPException(404, "activation_not_found")
                 bind_enrollment(c, row, str(body.device))
                 row = c.execute(
@@ -421,7 +439,16 @@ def install_onboarding(
             # Identical retry resumes the same operation, never queues a second reset.
             payload = body.model_dump(exclude={"password", "confirmation"})
             if body.mode != "existing":
-                payload.update(username=account["username"], password_hash=account["password"])
+                payload.update(
+                    username=account["username"],
+                    password_hash=account["password"],
+                    cloud_account=account["id"],
+                )
+                profile = c.execute(
+                    "SELECT * FROM customer_profiles WHERE account=?", (s["account"],)
+                ).fetchone()
+                if profile:
+                    payload["profile"] = dict(profile)
             if current and json.loads(current["payload"]) == payload:
                 if current["status"] == "failed":
                     c.execute("UPDATE onboarding_plans SET status='queued',error='' WHERE home=?", (home,))
@@ -445,6 +472,8 @@ def install_onboarding(
             if body.mode != "existing":
                 c.execute("UPDATE homes SET name=? WHERE id=?", (body.name, home))
             if body.mode == "reset":
+                c.execute("DELETE FROM customer_connections WHERE home=?", (home,))
+                c.execute("DELETE FROM customer_tokens WHERE home=? AND purpose='signin'", (home,))
                 c.execute(
                     "UPDATE support_grants SET decision='revoked',expires=? WHERE home=? AND decision IN ('pending','approved')",
                     (now, home),
@@ -453,7 +482,7 @@ def install_onboarding(
         return {"id": job}
 
     @app.post("/api/hubs/{home}/onboarding/progress")
-    def progress(home: str, body: Progress, request: Request):
+    def progress(home: str, body: Progress, request: Request, background: BackgroundTasks):
         home_auth(home, request)
         with db() as c:
             changed = c.execute(
@@ -466,4 +495,8 @@ def install_onboarding(
                 ).fetchone()
                 if not row or row["status"] != "completed":
                     raise HTTPException(409, "stale_plan")
+            if body.status == "completed":
+                owner = c.execute("SELECT owner FROM homes WHERE id=?", (home,)).fetchone()[0]
+                app.state.customer_onboarding_completed(c, owner)
+                background.add_task(app.state.deliver_customer_mail)
         return {"saved": True}
