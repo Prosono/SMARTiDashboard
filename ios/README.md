@@ -317,3 +317,21 @@ frontendbygg og 40 relevante backendtester bestod. Arkiv:
 Build 11 ble lastet opp og er bekreftet **Testing** i **SMARTi intern test**
 2026-10-20. App Store Connect build-ID: `eb228652-9e39-4792-9014-96819b6a61b0`.
 Verifikasjonsskjermbilde: `/tmp/smarti-build11-testflight.png`.
+
+### Build 12: riktig hjem ved åpning av pushvarsel
+
+APNs sender fjernaksessens hjem-ID, mens mobilparingen har en separat lokal
+installasjons-ID. Varslingssenteret sammenligner nå med UUID-en i den validerte
+hjemmeadressen, slik at riktig hjem ikke avvises. Tilgang til selve historikken
+kontrolleres fortsatt på huben per telefon. Regresjonstesten dekker ulik lokal
+ID, riktig sky-ID, andre hjem, ugyldige adresser og store/små bokstaver:
+
+```sh
+swiftc -module-cache-path /tmp/smarti-swift-cache \
+  ios/SMARTiHome/MobileClient.swift ios/Tests/NotificationHomeTests.swift \
+  -o /tmp/smarti-notification-home-tests
+/tmp/smarti-notification-home-tests
+```
+
+Testen og signert Release-arkiv bestod. Arkiv: `/tmp/SMARTiHome-build12.xcarchive`.
+Åpning av push på fysisk iPhone må bekreftes etter installasjon.

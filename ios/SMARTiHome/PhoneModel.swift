@@ -229,7 +229,7 @@ struct InboxItem: Decodable, Identifiable {
             error = "Koble denne telefonen til hjemmet for å se varsler."
             return
         }
-        if let expectedHome, expectedHome.lowercased() != credentials.installationID.lowercased() {
+        if let expectedHome, !MobileClient.matchesNotificationHome(expectedHome, origin: credentials.origin) {
             items = []; selected = nil
             error = "Dette varselet tilhører et annet hjem. Velg hjemmet og koble telefonen til det for å se historikken."
             return

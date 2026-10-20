@@ -75,6 +75,15 @@ actor MobileClient {
         return UUID(uuidString: String(host.dropLast(".home.smarti.dev".count))) != nil
     }
 
+    static func matchesNotificationHome(_ home: String, origin: URL) -> Bool {
+        // APNs identifies the cloud home, not MobileAuth's separate local installation.
+        guard isHome(origin), let host = origin.host,
+              let expected = UUID(uuidString: home),
+              let connected = UUID(uuidString: String(host.dropLast(".home.smarti.dev".count)))
+        else { return false }
+        return expected == connected
+    }
+
     func paired() -> Bool { credentials != nil }
     func origin() -> URL? { credentials?.origin }
 
