@@ -1,3 +1,8 @@
+## 1.35.61
+
+- Kompakt statuslampe i topplinjen erstatter tilkoblingsteksten på mobil og desktop.
+- Grønn viser tilkobling, gul viser ukjent forbindelse og grå viser demo. Status kan leses med skjermleser, peker eller fokus.
+
 ## 1.35.60
 
 - Varslingssenter for SMARTi på iPhone: meldingshistorikk, lest/ulest og eldre meldinger.

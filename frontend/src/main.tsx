@@ -779,9 +779,15 @@ function Dashboard({
           <span>{t[page]}</span>
         </div>
         <div className="top-actions">
-          <span className={"connection " + (offline ? "warning" : "")}>
-            <span />
-            {h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}
+          <span
+            className={"connection " + (h.mode === "demo" ? "demo" : offline ? "warning" : "")}
+            role="status"
+            tabIndex={0}
+            title={h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}
+            data-label={h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}
+          >
+            <span aria-hidden="true" />
+            <span className="sr-only">{h.mode === "demo" ? t.demo : offline ? t.unknown : t.connected}</span>
           </span>
         </div>
       </header>

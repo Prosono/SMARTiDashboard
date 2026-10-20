@@ -272,20 +272,46 @@ p {
   background: var(--soft);
 }
 .connection {
-  font-size: 11px;
-  color: var(--muted);
-  display: flex;
-  gap: 8px;
+  --connection-color: #5f9479;
+  position: relative;
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  justify-content: center;
   align-items: center;
-}
-.connection > span {
-  width: 6px;
-  height: 6px;
-  background: #5f9479;
   border-radius: 50%;
 }
-.connection.warning > span {
-  background: #bd6729;
+.connection > span[aria-hidden] {
+  width: 8px;
+  height: 8px;
+  background: var(--connection-color);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--connection-color) 16%, transparent);
+  border-radius: 50%;
+}
+.connection.warning {
+  --connection-color: #d49a28;
+}
+.connection.demo {
+  --connection-color: var(--muted);
+}
+.connection:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.connection:focus::after {
+  content: attr(data-label);
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 10;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
 }
 .icon-button {
   width: 40px;
@@ -1205,21 +1231,6 @@ footer span:last-child {
   .top-actions > .icon-button {
     width: 36px;
     height: 36px;
-  }
-  .connection {
-    font-size: 10px;
-  }
-  .connection:not(.warning) > span {
-    display: none;
-  }
-  .connection {
-    max-width: 110px;
-  }
-  .connection.warning {
-    font-size: 0;
-  }
-  .connection.warning > span {
-    display: block;
   }
   main {
     padding: 20px 22px 32px;
