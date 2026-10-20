@@ -232,3 +232,16 @@ both mobile browser onboarding regressions pass. Physical-device onboarding and
 actual mail delivery remain to be tested. App Store Connect confirmed build 8
 as **Testing** in **SMARTi intern test** on 2026-10-20 (build ID
 `c736a9c1-9d9e-473f-9364-148b8a064928`).
+
+## Light offline screen — build 0.1.0 (9)
+
+Replaces the black interrupted-view overlay with a light, branded native screen,
+a bundled SMARTi mark and a resolution-independent house illustration. Retry and
+home selection keep their existing behavior. The error screen uses light system
+chrome, respects safe areas, and scrolls when accessibility text needs more room.
+No network asset is needed to render it. The debug-only `--preview-offline` launch
+argument allows isolated simulator inspection (compile with DEBUG enabled).
+
+Simulator build and visual inspection on iPhone 17 Pro passed. Signed Release
+archive and upload succeeded on 2026-10-20. App Store Connect confirmed build 9
+as **Testing** in **SMARTi intern test** (ID `beb1889d-4336-4f61-87b1-8c06dd335e34`). Archive: `/tmp/SMARTiHome-build9.xcarchive`.
