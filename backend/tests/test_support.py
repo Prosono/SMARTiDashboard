@@ -197,3 +197,28 @@ def test_admin_session_logout_closure_expiry_fail_closed(tmp_path):
     second.patch(f"/api/admin/support/cases/{id}", json={"status": "closed"})
     with sqlite3.connect(db) as c:
         assert c.execute("SELECT decision FROM support_grants").fetchone()[0] == "revoked"
+
+
+def test_round_original_prices_without_rewriting_case_agreements(tmp_path):
+    from app.cloud_support import DEFAULT_PRICING
+
+    db, portal, staff, _, owner, _, _, _, draft = environment(tmp_path)
+    old = DEFAULT_PRICING | {
+        "version": "2026-10-19-1",
+        "hourly": 499,
+        "simple": 299,
+        "complex": 499,
+        "advanced": 799,
+    }
+    with sqlite3.connect(db) as c:
+        c.execute("DELETE FROM support_pricing")
+        c.execute("INSERT INTO support_pricing VALUES(?,?,?)", (old["version"], json.dumps(old), 0))
+    ticket = owner.post("/api/support/cases", json=draft | {"pricing_version": old["version"]}).json()["id"]
+    create_cloud(db, SECRET)
+    prices = owner.get("/api/support/pricing").json()
+    assert [prices[k] for k in ("hourly", "simple", "complex", "advanced")] == [500, 300, 500, 800]
+    assert owner.get(f"/api/support/cases/{ticket}").json()["pricing"] == old
+    custom = {k: prices[k] for k in ("hourly", "simple", "complex", "advanced", "terms")} | {"hourly": 750}
+    assert staff.put("/api/admin/support/pricing", json=custom).status_code == 200
+    create_cloud(db, SECRET)
+    assert owner.get("/api/support/pricing").json()["hourly"] == 750

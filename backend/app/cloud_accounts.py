@@ -60,6 +60,7 @@ class Token(BaseModel):
 
 
 class Invitation(BaseModel):
+    name: str = Field(default="", max_length=120)
     email: str = Field(max_length=254)
     _email = field_validator("email")(Profile.email_valid.__func__)
 
@@ -273,7 +274,8 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
                 c,
                 body.email,
                 "Du er invitert til et SMARTi-hjem",
-                "Opprett din egen konto eller logg inn for å bli med i hjemmet. Invitasjonen gir vanlig brukertilgang, ikke administratorrettigheter.\n"
+                ("Hei " + body.name.strip() + "!\n\n" if body.name.strip() else "")
+                + "Opprett din egen konto eller logg inn for å bli med i hjemmet. Invitasjonen gir vanlig brukertilgang, ikke administratorrettigheter.\n"
                 + origin
                 + "/account#invite="
                 + token
@@ -306,7 +308,10 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             return [
                 dict(r)
                 for r in c.execute(
-                    "SELECT a.id,a.username FROM home_members m JOIN accounts a ON a.id=m.account WHERE m.home=?",
+                    "SELECT a.id,a.username,p.full_name,p.email,CASE WHEN a.id=h.owner THEN 'owner' ELSE 'member' END AS role "
+                    "FROM homes h JOIN accounts a ON a.id=h.owner OR a.id IN "
+                    "(SELECT account FROM home_members WHERE home=h.id) "
+                    "LEFT JOIN customer_profiles p ON p.account=a.id WHERE h.id=?",
                     (home,),
                 )
             ]

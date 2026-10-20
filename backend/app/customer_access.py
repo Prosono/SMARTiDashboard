@@ -3,10 +3,11 @@
 import hashlib
 import secrets
 import time
+from pathlib import Path
 
 import httpx
 from fastapi import HTTPException, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
 from .certificate_hook import read_identity
 from .cloud_accounts import Token
@@ -114,16 +115,27 @@ class CustomerAccess:
 def install_customer_access(app, customer):
     @app.get("/_account", response_class=HTMLResponse)
     def launch():
-        return """<!doctype html><html lang="nb"><meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>Velkommen hjem · SMARTi</title><h1>Åpner hjemmet ditt…</h1><p id="status" role="status">Bekrefter tilgangen din.</p>
-        <script src="/_account/launch.js"></script></html>"""
+        return """<!doctype html><html lang="nb"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+        <title>Velkommen hjem · SMARTi</title><link rel="stylesheet" href="/_account/launch.css"></head><body><main>
+        <img class="logo" src="/_account/logo.png" alt=""><div class="wordmark">SMARTi</div>
+        <h1>Velkommen hjem</h1><p id="status" role="status">Vi bekrefter tilgangen og åpner hjemmet ditt.</p><div class="loader" aria-hidden="true"></div>
+        <a href="https://home.smarti.dev/" id="return" hidden>Tilbake til Mine hjem</a></main>
+        <script src="/_account/launch.js"></script></body></html>"""
+
+    @app.get("/_account/launch.css")
+    def launch_style():
+        return FileResponse(Path(__file__).parent / "cloud_web" / "launch.css", media_type="text/css")
+
+    @app.get("/_account/logo.png")
+    def launch_logo():
+        return FileResponse(Path(__file__).parent / "cloud_web" / "smarti-logo.png", media_type="image/png")
 
     @app.get("/_account/launch.js")
     def script():
         return Response(
             """(async()=>{const token=location.hash.slice(1);history.replaceState(null,'','/_account');
         try{const r=await fetch('/api/customer-access/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
-        if(!r.ok)throw Error();location.replace('/');}catch{document.getElementById('status').textContent='Kunne ikke bekrefte tilgangen. Åpne hjemmet på nytt fra Mine hjem i SMARTi.'}})();""",
+        if(!r.ok)throw Error();location.replace('/');}catch{document.body.classList.add('failed');document.getElementById('return').hidden=false;document.getElementById('status').textContent='Kunne ikke bekrefte tilgangen. Åpne hjemmet på nytt fra Mine hjem i SMARTi.'}})();""",
             media_type="application/javascript",
         )
 

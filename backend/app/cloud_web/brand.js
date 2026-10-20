@@ -82,6 +82,7 @@ if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)
     fields.querySelectorAll('.two').forEach(n=>{if(!n.children.length)n.remove()});
   }
   if(location.pathname==='/support'){
+    document.querySelector('.heading a[href="/support/prices"]')?.remove();
     const toolbar=document.querySelector('#workspace>.toolbar');
     toolbar.append(document.getElementById('filter').closest('label'));
     const count=document.createElement('span');count.id='case-count';count.className='case-count';toolbar.append(count);
@@ -107,4 +108,11 @@ if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)
   }
   apply();document.querySelector('.masthead')?.append(selector);
   window.addEventListener('storage',e=>{if(e.key===themeKey&&['light','dark'].includes(e.newValue)){theme=e.newValue;apply();}});
+})();
+
+// Draw directional icons as vectors so iOS never substitutes an emoji glyph.
+(() => {
+ const decorate=root=>{const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);const nodes=[];while(walker.nextNode())if(/[→↗]/.test(walker.currentNode.textContent)&&!['SCRIPT','STYLE','TEXTAREA'].includes(walker.currentNode.parentElement?.tagName))nodes.push(walker.currentNode);
+ for(const node of nodes){const parts=node.textContent.split(/([→↗])/);const fragment=document.createDocumentFragment();for(const part of parts){if(part==='→'||part==='↗'){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('class','direction-icon');svg.setAttribute('aria-hidden','true');const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',part==='→'?'M4 12h16m-6-6 6 6-6 6':'M6 18 18 6M6 6h12v12');svg.append(path);fragment.append(svg);}else fragment.append(document.createTextNode(part));}node.replaceWith(fragment);}}
+ decorate(document.body);new MutationObserver(records=>{for(const r of records)for(const node of r.addedNodes){if(node.nodeType===1)decorate(node);else if(node.nodeType===3&&/[→↗]/.test(node.textContent))decorate(node.parentNode);}}).observe(document.body,{childList:true,subtree:true});
 })();

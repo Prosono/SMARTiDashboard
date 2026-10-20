@@ -4,10 +4,11 @@ import sqlite3
 import time
 from urllib.parse import urlparse
 
-from app.multihome_relay import HomeRegistry
 from fastapi.testclient import TestClient
 from test_cloud import ORIGIN
 from test_onboarding import PLAN, factory, ready_and_claim
+
+from app.multihome_relay import HomeRegistry
 
 PROFILE = dict(
     email="owner@example.com",
@@ -91,16 +92,23 @@ def test_single_use_home_bound_signin_and_member_revoke(tmp_path):
         == 404
     )
     assert (
-        owner.post(f"/api/customer/homes/{home}/invitations", json={"email": "guest@example.com"}).status_code
+        owner.post(
+            f"/api/customer/homes/{home}/invitations", json={"email": "guest@example.com", "name": "Guest"}
+        ).status_code
         == 200
     )
     with sqlite3.connect(path) as c:
         body = c.execute("select body from mail_outbox where recipient='guest@example.com'").fetchone()[0]
+    assert "Hei Guest!" in body
     invite = body.split("#invite=")[1].split()[0]
     assert owner.post("/api/customer/invitations/accept", json={"token": invite}).status_code == 400
     assert other.post("/api/customer/invitations/accept", json={"token": invite}).status_code == 200
     assert other.post("/api/customer/invitations/accept", json={"token": invite}).status_code == 400
     assert other.get("/api/homes").json()[0]["installation_id"] == home
+    members = owner.get(f"/api/customer/homes/{home}/members").json()
+    assert {m["role"] for m in members} == {"owner", "member"}
+    assert len(members) == 2
+    assert other.get(f"/api/customer/homes/{home}/members").status_code == 404
     link = other.post(f"/api/customer/homes/{home}/open").json()["url"]
     token = hub.post(f"/api/hubs/{home}/customer/redeem", json={"token": urlparse(link).fragment}).json()[
         "token"
@@ -134,10 +142,11 @@ async def test_hub_customer_mapping_does_not_claim_local_admin(tmp_path):
     from types import SimpleNamespace
 
     import pytest
+    from fastapi import HTTPException
+
     from app.config import Settings
     from app.customer_access import CustomerAccess
     from app.storage import Store
-    from fastapi import HTTPException
 
     store = Store(Settings(data_dir=tmp_path).database)
     with store.connect() as c:
@@ -217,6 +226,9 @@ def test_remote_session_is_established_without_password_and_logout_clears_it(tmp
 
     app.state.customer.cloud = fake
     client = TestClient(app, base_url=origin, headers={"Origin": origin})
+    assert client.get("/_account").status_code == 200
+    assert client.get("/_account/launch.css").status_code == 200
+    assert client.get("/_account/logo.png").headers["content-type"] == "image/png"
     result = client.post("/api/customer-access/redeem", json={"token": "x" * 48})
     assert result.status_code == 200
     assert "__Host-smarti_customer=" in result.headers["set-cookie"]

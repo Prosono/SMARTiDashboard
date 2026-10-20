@@ -15,12 +15,12 @@ from pydantic import BaseModel, Field
 STATES = Literal["new", "reviewing", "in_progress", "waiting_customer", "resolved", "closed"]
 CATEGORIES = Literal["connection", "devices", "automation", "billing", "other"]
 DEFAULT_PRICING = {
-    "version": "2026-10-19-1",
+    "version": "2026-10-20-rounded",
     "vat_percent": 25,
-    "hourly": 499,
-    "simple": 299,
-    "complex": 499,
-    "advanced": 799,
+    "hourly": 500,
+    "simple": 300,
+    "complex": 500,
+    "advanced": 800,
     "terms": "Timearbeid faktureres etter medgått tid. Fastpris og omfang avtales i saken før arbeidet starter. Avansert automasjon prises fra oppgitt beløp; endelig pris avtales før oppstart. Innsending alene faktureres ikke.",
 }
 
@@ -100,10 +100,22 @@ def install_support(app, db, session, is_admin, home_auth, origin):
         for column, default in (("staff_unread", 1), ("customer_unread", 0)):
             if column not in columns:
                 c.execute(f"ALTER TABLE support_cases ADD COLUMN {column} INTEGER NOT NULL DEFAULT {default}")
+        latest = c.execute("SELECT data FROM support_pricing ORDER BY created DESC LIMIT 1").fetchone()
         c.execute(
             "INSERT OR IGNORE INTO support_pricing VALUES(?,?,?)",
             (DEFAULT_PRICING["version"], json.dumps(DEFAULT_PRICING), 0),
         )
+
+        # Migrate only the original published rates. Custom prices and case snapshots remain intact.
+        current = json.loads(latest[0]) if latest else DEFAULT_PRICING
+        old_rates = {"hourly": 499, "simple": 299, "complex": 499, "advanced": 799}
+        if current.get("version") == "2026-10-19-1" and all(
+            current.get(k) == v for k, v in old_rates.items()
+        ):
+            c.execute(
+                "UPDATE support_pricing SET created=? WHERE version=?",
+                (time.time(), DEFAULT_PRICING["version"]),
+            )
 
     def audit(c, actor, action, target):
         c.execute(

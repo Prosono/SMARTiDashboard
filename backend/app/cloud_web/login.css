@@ -74,3 +74,6 @@
  .home-page:has(#auth:not([hidden])):before{background:linear-gradient(180deg,#10171085,#101710b8 38%,#101710e8),url('/assets/login-home.webp') 40% top/auto 100svh no-repeat}
  .home-page:has(#auth:not([hidden])) .site-footer{width:calc(100% - 40px);padding:20px 0 calc(20px + env(safe-area-inset-bottom,0px))}
 }
+
+.home-page #login-panel>h2{font-size:28px;margin:12px 0 16px}.home-page #login-panel>p:not(.eyebrow){line-height:1.5;margin:0 0 24px;color:var(--muted)}
+@media(max-width:700px){.home-page .welcome-story{display:none}.home-page .welcome-layout{gap:0}.home-page .welcome-form{padding:22px 20px}.home-page #login-panel>h2{font-size:26px}.home-page #setup-panel{padding-top:12px;margin-top:0}.home-page #setup-panel:before{top:12px}}

@@ -17,7 +17,8 @@ const root='backend/app/cloud_web/';
   else if(path==='/api/admin/audit'||path==='/api/admin/hubs')data=[];
   else if(path==='/api/support/pricing')data={hourly:499,simple:299,complex:499,advanced:799,version:1,terms:'Arbeid avtales før oppstart.'};
   else if(path==='/api/customer/profile'){if(route.request().method()==='PUT'){savedProfile=route.request().postDataJSON();profile={...profile,...savedProfile};data={ok:true};}else data={profile,mail_configured:true};}
-  else if(path.endsWith('/members'))data=[];
+  else if(path.endsWith('/members'))data=[{id:'owner',username:'owner',full_name:'Test Kunde',email:'test@example.no',role:'owner'}];
+  else if(path.endsWith('/invitations'))data={queued:true};
   else if(path.endsWith('/support/cases'))data=emptyCases?[]:[{id:'case1',subject:'Hjelp med en automasjon',category:'automation',status:'in_progress',updated:1792480000,customer:'Kunde',assignee:'SMARTi'}];
   else if(path.startsWith('/api/'))return route.fulfill({status:401,json:{}});
   if(data!==undefined)return route.fulfill({json:data});
@@ -55,6 +56,7 @@ const root='backend/app/cloud_web/';
   await expect(page.locator('.masthead nav a:visible')).toHaveText('Om oss');
   await expect(page.locator('.portal-theme button')).toHaveCount(1);
   await page.screenshot({path:`/tmp/smarti-portal-login-${width}.png`,fullPage:true});
+  await page.getByRole('tab',{name:'Nytt hjem'}).click();await expect(page.locator('#login-panel')).toBeHidden();await expect(page.locator('#setup-panel')).toBeVisible();await page.getByRole('tab',{name:'Logg inn',exact:true}).click();
   await page.getByRole('button',{name:'Vis passord',exact:true}).click();await expect(page.locator('[name=password]')).toHaveAttribute('type','text');await page.getByRole('button',{name:'Skjul passord',exact:true}).click();
   await page.locator('[name=username]').fill('resident@example.no');await page.locator('[name=password]').fill('test-password');await page.locator('#login .primary').click();
   await expect(page.locator('.masthead nav a[href="/account"]')).toBeVisible();
@@ -65,7 +67,7 @@ const root='backend/app/cloud_web/';
   await page.screenshot({path:`/tmp/smarti-portal-homes-${width}.png`,fullPage:true});
   admin=true;await page.goto('https://home.smarti.dev/admin');await expect(page.locator('#rows tr')).toHaveCount(2);
   await page.screenshot({path:`/tmp/smarti-portal-admin-${width}.png`,fullPage:true});
-  await page.getByRole('button',{name:'Se kunde →'}).first().click();await expect(page.locator('#detail')).toBeVisible();
+  await page.getByRole('button',{name:'Se kunde'}).first().click();await expect(page.locator('#detail')).toBeVisible();
   await page.locator('#close-detail').click();await page.locator('#audit-tab').click();await expect(page.locator('#audit')).toBeVisible();
   for(const path of ['/','/admin','/support','/support/prices','/admin/support','/account','/welcome']){
    admin=path.startsWith('/admin');await page.goto('https://home.smarti.dev'+path);
@@ -75,6 +77,8 @@ const root='backend/app/cloud_web/';
    if(path==='/account'){
     await expect(page.locator('#account')).toBeVisible();
     await expect(page.locator('#signup [name=full_name]')).toHaveValue(profile.full_name);
+    await expect(page.locator('#profile-summary')).toHaveClass('is-verified');await expect(page.locator('[name=country]')).toHaveAttribute('list','country-options');
+    await page.getByRole('button',{name:'+ Legg til ny bruker',exact:true}).first().click();await page.locator('dialog [name=name]').fill('Ny Bruker');await page.locator('dialog [name=email]').fill('ny@example.no');await page.getByRole('button',{name:'Send invitasjon',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);await expect(page.locator('#message')).toContainText('Invitasjon sendt!');
     await page.locator('#signup [name=full_name]').fill('Oppdatert Kunde');
     await page.getByRole('button',{name:'Lagre profil',exact:true}).click();
     await expect(page.locator('#signup [name=full_name]')).toHaveValue('Oppdatert Kunde');
@@ -109,9 +113,9 @@ const root='backend/app/cloud_web/';
    if(path==='/account'){
     await page.getByRole('button',{name:'Lagre profil',exact:true}).click();
     await expect(page.getByRole('button',{name:'Lagre profil',exact:true})).toHaveCount(1);
-    await expect(page.locator('#verify')).toHaveText('Send ny bekreftelse på e-post');
+    await expect(page.locator('#verify')).toHaveText('Bytt e-postadresse');
    }
-   if(path==='/support')await expect(page.locator('#cases .empty-state')).toBeVisible();
+   if(path==='/support'){await expect(page.locator('#cases .empty-state')).toBeVisible();await expect(page.locator('#workspace>.toolbar')).toBeHidden();}
    await page.screenshot({path:`/tmp/smarti-mobile-${path.replaceAll('/','')||'homes'}-${width}.png`,fullPage:true});
   }
  }

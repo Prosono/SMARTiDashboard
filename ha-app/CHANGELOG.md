@@ -1,3 +1,8 @@
+## 1.35.65
+
+- Mer kompakt bunnmeny på iPhone og animert bekreftelse ved åpning av hjem.
+- Forbedret mobilportal med innloggingsfaner, profil, medlemsinvitasjoner og support.
+
 ## 1.35.64
 
 - Utlogging varsler iPhone-appen, som tømmer nettinnloggingen og glemmer valgt hjem. Krever iPhone build 13. Vanlig lukking beholder innloggingen.

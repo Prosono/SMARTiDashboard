@@ -58,19 +58,24 @@ async function showHomes() {
       const summary=document.createElement("summary");summary.textContent="Innstillinger for hjemmet";options.append(summary);
       if (home.factory_managed) { const setup=document.createElement("a");setup.href="/activate?home="+encodeURIComponent(home.installation_id);setup.textContent="Åpne oppsett av hub";options.append(setup); }
       if (home.remote_enabled) {
-        const disable=document.createElement("button");disable.textContent="Slå av fjerntilgang";
-        disable.onclick=()=>{if(window.confirm("Slå av fjerntilgang til dette hjemmet? Lokal tilgang beholdes."))run(async()=>{
+        const disable=document.createElement("button");disable.textContent="Slå av fjerntilgang";disable.className="danger";
+        disable.onclick=()=>{if(window.confirm("Vil du slå av fjerntilgang til dette hjemmet? Du og andre brukere vil ikke kunne åpne hjemmet utenfra. Lokal tilgang hjemme beholdes. Fjerntilgang må aktiveres igjen på huben."))run(async()=>{
           await api("homes/"+encodeURIComponent(home.installation_id)+"/remote","DELETE");await showHomes();
         });};options.append(disable);
       }
+      const people=document.createElement("div");people.className="home-members";options.append(people);
+      options.addEventListener("toggle",async()=>{if(!options.open||people.dataset.loaded)return;people.textContent="Henter brukere …";try{const members=await api("customer/homes/"+home.installation_id+"/members");people.replaceChildren();const heading=document.createElement("h3");heading.textContent="Brukere i hjemmet";people.append(heading);for(const member of members){const row=document.createElement("p");row.textContent=(member.full_name||member.username)+(member.role==="owner"?" · Eier":"");people.append(row);}const invite=document.createElement("button");invite.type="button";invite.textContent="+ Legg til ny bruker";invite.onclick=()=>window.inviteHomeMember(home,api,text=>{$("message").textContent=text;$("message").scrollIntoView({block:"center"});});people.append(invite);people.dataset.loaded="true";}catch{people.textContent="Kun eieren kan se og administrere brukere her.";}});
       card.append(options);
     }
+    const add=document.createElement("a");add.href="/activate";add.className="mobile-add-home button";add.textContent="+ Legg til et nytt hjem";card.append(add);
     $("homes").append(card);
   }
 }
 async function login() {
   const body=Object.fromEntries(new FormData($("login")));
+  document.activeElement?.blur();
   csrf=(await api("login","POST",body)).csrf; await showHomes();
+  window.scrollTo({top:0,left:0,behavior:"instant"});
 }
 $("login").onsubmit=e=>{e.preventDefault();run(login);};
 $("claim").onsubmit=e=>{e.preventDefault();run(async()=>{
@@ -92,3 +97,10 @@ restoreSession();
 setInterval(()=>{if(csrf && !document.hidden) showHomes().catch(()=>{});},15000);
 
 $("login").addEventListener("input", () => { $("message").textContent = ""; });
+
+for(const id of ["login-tab","setup-tab"]){
+  const tab=$(id);
+  function select(){for(const name of ["login","setup"]){const active=id===name+"-tab";$(name+"-tab").setAttribute("aria-selected",String(active));$(name+"-tab").tabIndex=active?0:-1;$(name+"-panel").hidden=!active;}}
+  tab.onclick=select;
+  tab.onkeydown=e=>{if(["ArrowLeft","ArrowRight","Home","End"].includes(e.key)){e.preventDefault();const next=$(id==="login-tab"?"setup-tab":"login-tab");next.click();next.focus();}};
+}
