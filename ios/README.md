@@ -313,3 +313,7 @@ Skyrelease `smartihome:inbox-20261020` er publisert (portal HTTP 200); Compose-b
 `compose.before-inbox-20261020.yaml`. Simulatorbygg, signert Release-arkiv,
 frontendbygg og 40 relevante backendtester bestod. Arkiv:
 `/tmp/SMARTiHome-build11.xcarchive`. Fysisk trykk-på-varsel må kontrolleres på iPhone.
+
+Build 11 ble lastet opp og er bekreftet **Testing** i **SMARTi intern test**
+2026-10-20. App Store Connect build-ID: `eb228652-9e39-4792-9014-96819b6a61b0`.
+Verifikasjonsskjermbilde: `/tmp/smarti-build11-testflight.png`.
