@@ -12,19 +12,13 @@ import AVFoundation
                 BrowserView(browser: home)
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .overlay {
-                        if let message = home.failure {
-                            VStack(spacing: 18) {
-                                Image(systemName: "exclamationmark.arrow.triangle.2.circlepath").font(.largeTitle)
-                                Text("Visningen ble avbrutt").font(.title2.bold())
-                                Text(message).multilineTextAlignment(.center).foregroundStyle(.secondary)
-                                Button("Prøv igjen") { home.retry() }.buttonStyle(.borderedProminent)
-                                Button("Velg hjem") { home.openPortal() }
-                            }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .background(.background)
+                        if home.failure != nil {
+                            HomeUnavailableView(retry: { home.retry() }, chooseHome: { home.openPortal() })
+                                .background(Color(red: 0.96, green: 0.98, blue: 0.99).ignoresSafeArea())
                         }
                     }
             }
-            .ignoresSafeArea(.container)
+            .ignoresSafeArea(.container, edges: home.failure == nil ? .all : [])
             .sheet(isPresented: $home.showPhoneSettings) {
                 PhoneSettingsView(phone: phone, home: home)
             }
@@ -34,10 +28,107 @@ import AVFoundation
             .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
                 if let url = activity.webpageURL { _ = home.openActivation(url.absoluteString) }
             }
+            .preferredColorScheme(home.failure == nil ? nil : .light)
             .tint(Color(red: 0.87, green: 0.32, blue: 0.03))
             .alert("SMARTi", isPresented: Binding(get: { phone.error != nil }, set: { if !$0 { phone.error = nil } })) {
                 Button("OK") { phone.error = nil }
             } message: { Text(phone.error ?? "") }
+        }
+    }
+}
+
+
+/// Native and bundled: this screen must remain usable without a network connection.
+struct HomeUnavailableView: View {
+    var retry: () -> Void
+    var chooseHome: () -> Void
+    private let ink = Color(red: 0.04, green: 0.10, blue: 0.23)
+    private let orange = Color(red: 1, green: 0.34, blue: 0)
+
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 0) {
+                    HStack(spacing: 8) {
+                        Image("SMARTiMark").resizable().scaledToFit().frame(width: 46, height: 46)
+                        Text("SMARTi").font(.system(size: 28, weight: .semibold))
+                    }
+                    .accessibilityElement(children: .ignore).accessibilityLabel("SMARTi")
+                    .padding(.top, 24)
+                    Spacer(minLength: 28)
+                    HomeUnavailableIllustration()
+                        .frame(height: min(260, geometry.size.height * 0.32))
+                        .accessibilityHidden(true)
+                    VStack(spacing: 18) {
+                        Text("Kunne ikke laste\nhjemmet")
+                            .font(.system(.largeTitle, design: .default, weight: .bold))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityAddTraits(.isHeader)
+                        Text("Prøv igjen om et øyeblikk,\neller velg et annet hjem.")
+                            .font(.title3).foregroundStyle(Color(red: 0.34, green: 0.39, blue: 0.46))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }.multilineTextAlignment(.center).padding(.top, 24)
+                    VStack(spacing: 12) {
+                        Button(action: retry) {
+                            Label("Prøv igjen", systemImage: "arrow.clockwise")
+                                .frame(maxWidth: .infinity, minHeight: 58)
+                                .foregroundStyle(.white).background(orange, in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        Button(action: chooseHome) {
+                            Label("Velg et annet hjem", systemImage: "house")
+                                .frame(maxWidth: .infinity, minHeight: 58)
+                                .background(.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 18))
+                                .overlay(RoundedRectangle(cornerRadius: 18).stroke(ink.opacity(0.18), lineWidth: 1))
+                        }
+                    }.font(.title3.weight(.semibold)).buttonStyle(.plain).padding(.top, 34)
+                    Spacer(minLength: 36)
+                }
+                .padding(.horizontal, 28)
+                .frame(maxWidth: 460)
+                .frame(minHeight: geometry.size.height)
+                .frame(maxWidth: .infinity)
+            }.foregroundStyle(ink)
+        }
+    }
+}
+
+struct HomeUnavailableIllustration: View {
+    var body: some View {
+        Canvas { context, size in
+            let scale = min(size.width / 320, size.height / 270)
+            context.translateBy(x: (size.width - 320 * scale) / 2, y: (size.height - 270 * scale) / 2)
+            context.scaleBy(x: scale, y: scale)
+            func polygon(_ points: [CGPoint], _ color: Color) {
+                var path = Path(); path.addLines(points); path.closeSubpath()
+                context.fill(path, with: .color(color))
+            }
+            func rect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ color: Color, radius: CGFloat = 0) {
+                context.fill(Path(roundedRect: CGRect(x: x, y: y, width: w, height: h), cornerRadius: radius), with: .color(color))
+            }
+            context.fill(Path(ellipseIn: CGRect(x: 18, y: 0, width: 280, height: 260)), with: .color(Color(red: 0.92, green: 0.96, blue: 0.99)))
+            let cloud = Color(red: 0.88, green: 0.93, blue: 0.97)
+            rect(48, 65, 68, 20, cloud, radius: 10)
+            rect(65, 52, 34, 31, cloud, radius: 16)
+            rect(245, 133, 48, 15, cloud, radius: 8)
+            rect(257, 121, 25, 25, cloud, radius: 12)
+            context.fill(Path(ellipseIn: CGRect(x: 28, y: 150, width: 46, height: 97)), with: .color(Color(red: 0.66, green: 0.77, blue: 0.86)))
+            rect(50, 183, 2, 78, Color(red: 0.45, green: 0.58, blue: 0.69), radius: 1)
+            polygon([CGPoint(x: 85,y: 177),CGPoint(x: 140,y: 120),CGPoint(x: 195,y: 177),CGPoint(x: 195,y: 260),CGPoint(x: 85,y: 260)], Color(red: 0.99,green: 0.995,blue: 1))
+            rect(195, 176, 68, 84, Color(red: 0.83,green: 0.89,blue: 0.93))
+            polygon([CGPoint(x: 140,y: 120),CGPoint(x: 211,y: 120),CGPoint(x: 263,y: 177),CGPoint(x: 195,y: 177)], Color(red: 0.35,green: 0.43,blue: 0.52))
+            var roof = Path(); roof.move(to: CGPoint(x: 84,y: 178)); roof.addLine(to: CGPoint(x: 140,y: 120))
+            context.stroke(roof, with: .color(Color(red: 0.32,green: 0.40,blue: 0.49)), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            rect(198, 119, 10, 27, Color(red: 0.40,green: 0.48,blue: 0.56))
+            rect(105, 207, 29, 53, Color(red: 0.33,green: 0.42,blue: 0.51), radius: 2)
+            rect(110, 231, 2, 8, .orange, radius: 1)
+            rect(153, 207, 23, 29, .white, radius: 2)
+            rect(210, 207, 35, 31, Color(red: 1,green: 0.78,blue: 0.42), radius: 2)
+            rect(226, 207, 2, 31, .white); rect(210, 221, 35, 2, .white)
+            rect(22, 260, 275, 1, cloud)
+            rect(242, 246, 49, 14, Color(red: 0.65,green: 0.77,blue: 0.86), radius: 7)
+            context.fill(Path(ellipseIn: CGRect(x: 256, y: 231, width: 23, height: 27)), with: .color(Color(red: 0.65,green: 0.77,blue: 0.86)))
+            context.fill(Path(ellipseIn: CGRect(x: 206, y: 45, width: 88, height: 88)), with: .color(Color(red: 1,green: 0.94,blue: 0.88)))
+            context.draw(Text(Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")).font(.system(size: 49, weight: .medium)).foregroundColor(Color(red: 1,green: 0.34,blue: 0)), at: CGPoint(x: 250,y: 89))
         }
     }
 }
@@ -241,6 +332,12 @@ struct PhoneSettingsView: View {
            let url = URL(string: saved), MobileClient.isHome(url), let host = url.host {
             lastPage = URL(string: "https://" + host + "/")!
         }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--preview-offline") {
+            failure = "Offline preview"
+            return
+        }
+        #endif
         retry()
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,

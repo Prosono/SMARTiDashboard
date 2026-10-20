@@ -15,23 +15,25 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>8</string>
+	<string>9</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSLocalNetworkUsageDescription</key>
-    <string>Finn din nye SMARTi-hub på samme nettverk, slik at du enkelt kan sette opp hjemmet.</string>
-    <key>NSBonjourServices</key>
-    <array><string>_smarti-setup._tcp</string></array>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Velg et bilde til SMARTi-profilen din.</string>
-    <key>NSCameraUsageDescription</key>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_smarti-setup._tcp</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
 	<string>Skann hubens QR-kode eller ta et profilbilde når du selv velger det.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Finn din nye SMARTi-hub på samme nettverk, slik at du enkelt kan sette opp hjemmet.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Del posisjon også når SMARTi er lukket, slik at hjemmet kan oppdatere tilstedeværelse og kjøre rutinene du har valgt.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>SMARTi bruker posisjonen din når du velger å dele den med hjemmet, slik at telefonen kan vise hvem som er hjemme.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Velg et bilde til SMARTi-profilen din.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
