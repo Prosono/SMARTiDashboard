@@ -87,3 +87,20 @@ if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)
     const title=document.createElement('strong');title.textContent='Tjenester og priser';const text=document.createElement('span');text.textContent='Se hva vi kan hjelpe deg med.';const arrow=document.createElement('span');arrow.textContent='Se priser →';service.append(title,text,arrow);document.querySelector('main').append(service);
   }
 }
+
+// A deliberate portal preference, shared across routes and remembered on this device.
+(() => {
+  const themeKey='smarti.portal.theme';
+  let theme='dark';
+  try{const saved=localStorage.getItem(themeKey);if(['light','dark'].includes(saved))theme=saved;}catch{}
+  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/assets/theme.css';document.head.append(sheet);
+  const selector=document.createElement('div');selector.className='portal-theme';selector.setAttribute('role','group');selector.setAttribute('aria-label','Fargetema');
+  for(const [value,label,icon] of [['light','Lyst','☀'],['dark','Mørkt','☾']]){
+    const button=document.createElement('button');button.type='button';button.dataset.theme=value;
+    const symbol=document.createElement('span');symbol.setAttribute('aria-hidden','true');symbol.textContent=icon;
+    button.append(symbol,document.createTextNode(label));button.onclick=()=>{theme=value;apply();try{localStorage.setItem(themeKey,theme);}catch{}};selector.append(button);
+  }
+  function apply(){document.documentElement.dataset.portalTheme=theme;for(const button of selector.children)button.setAttribute('aria-pressed',String(button.dataset.theme===theme));}
+  apply();document.querySelector('.masthead')?.append(selector);
+  window.addEventListener('storage',e=>{if(e.key===themeKey&&['light','dark'].includes(e.newValue)){theme=e.newValue;apply();}});
+})();

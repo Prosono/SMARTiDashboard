@@ -1,0 +1,27 @@
+/* Neutral black/grey, SMARTi orange. Explicit selection always wins over OS theme. */
+html[data-portal-theme],html[data-portal-theme] body{--ink:#202020;--muted:#686868;--paper:#f6f6f6;--surface:#ffffff;--line:#dedede;--accent:#ff7900;--accent-ink:#a44700;--charcoal:#181818;color:var(--ink);background:var(--paper);color-scheme:light}
+html[data-portal-theme=dark],html[data-portal-theme=dark] body{--ink:#f5f5f5;--muted:#b4b4b4;--paper:#101010;--surface:#1e1e1e;--line:#393939;--accent:#ff7900;--accent-ink:#ff922e;--charcoal:#080808;color-scheme:dark}
+html[data-portal-theme] input,html[data-portal-theme] textarea,html[data-portal-theme] select{background:var(--surface);color:var(--ink);border-color:var(--line)}
+html[data-portal-theme] button:hover:not(:disabled),html[data-portal-theme] .button:hover{background:color-mix(in srgb,var(--ink) 8%,var(--surface));color:var(--ink);border-color:var(--muted)}
+html[data-portal-theme] .primary,html[data-portal-theme] button.primary,html[data-portal-theme] .button.primary{background:var(--accent);border-color:var(--accent);color:#121212}
+html[data-portal-theme] button.primary:hover,html[data-portal-theme] .button.primary:hover{background:#ff922e;border-color:#ff922e;color:#121212}
+html[data-portal-theme] .masthead{background:var(--charcoal);color:#fff}
+html[data-portal-theme] .masthead nav a:hover,html[data-portal-theme] .masthead nav a[aria-current=page]{background:#292929;color:#fff}
+html[data-portal-theme] .toolbar,html[data-portal-theme] th,html[data-portal-theme] .pill{background:color-mix(in srgb,var(--ink) 5%,var(--surface));color:var(--ink)}
+html[data-portal-theme] tbody tr:hover td,html[data-portal-theme] .case-row:nth-child(odd){background:var(--surface)}
+html[data-portal-theme] .customer-portal .home-card:before{background-color:transparent}
+html[data-portal-theme] .customer-portal .photo-picker:has(img[hidden]):before{background-color:#e1e1e1}
+html[data-portal-theme] .customer-portal .home-heading>a.primary{background:transparent;color:var(--ink)}
+html[data-portal-theme] .masthead .portal-theme{display:flex;gap:3px;padding:4px;border:1px solid var(--line);border-radius:9px;align-self:flex-start;flex-shrink:0;background:var(--surface)}
+html[data-portal-theme] .masthead .portal-theme button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 12px;margin:0;border:0;border-radius:6px;font-size:13px;background:transparent;color:var(--muted)}
+html[data-portal-theme] .masthead .portal-theme button[aria-pressed=true]{background:color-mix(in srgb,var(--accent) 15%,var(--surface));color:var(--accent-ink)}
+html[data-portal-theme] .masthead .portal-theme span{margin:0;padding:0;border:0;color:inherit;font-size:17px;line-height:1}
+html[data-portal-theme] .customer-portal:not(:has(.welcome-layout:not([hidden]))) .masthead{gap:28px}
+html[data-portal-theme] .home-page:has(#auth:not([hidden])){background:#101010;color:#fff}
+html[data-portal-theme] .home-page:has(#auth:not([hidden])):before{background:linear-gradient(180deg,#000c,#0006 45%,#0007),url('/assets/login-home.webp') center/cover no-repeat}
+html[data-portal-theme] .home-page .welcome-form{background:var(--surface);color:var(--ink);border-color:var(--line)}
+html[data-portal-theme] .home-page .welcome-form h2,html[data-portal-theme] .home-page .welcome-form label,html[data-portal-theme] .home-page .new-customer h3,html[data-portal-theme] .home-page .new-customer a,html[data-portal-theme] .home-page .signup-link,html[data-portal-theme] .home-page .password-toggle{color:var(--ink)}
+html[data-portal-theme] .home-page .welcome-form>p:not(.eyebrow),html[data-portal-theme] .home-page .new-customer p,html[data-portal-theme] .home-page .welcome-form input::placeholder{color:var(--muted)}
+html[data-portal-theme] .home-page .new-customer,html[data-portal-theme] .home-page .new-customer a{border-color:var(--line)}
+html[data-portal-theme] .home-page .welcome-form input{background:var(--surface);color:var(--ink);border-color:var(--line)}
+@media(max-width:700px){html[data-portal-theme] .masthead .portal-theme{align-self:flex-start}html[data-portal-theme] .customer-portal:not(:has(.welcome-layout:not([hidden]))) .masthead{gap:16px}}

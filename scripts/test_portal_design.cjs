@@ -29,6 +29,8 @@ const root='backend/app/cloud_web/';
  for(const width of [1440,768,390]){
   await page.setViewportSize({width,height:1000});signedIn=false;admin=false;
   await page.goto('https://home.smarti.dev/');await expect(page.locator('#auth')).toBeVisible();
+  await page.getByRole('button',{name:'Lyst',exact:true}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-portal-theme','light');
   await page.screenshot({path:`/tmp/smarti-portal-login-${width}.png`,fullPage:true});
   await page.getByRole('button',{name:'Vis passord',exact:true}).click();await expect(page.locator('[name=password]')).toHaveAttribute('type','text');await page.getByRole('button',{name:'Skjul passord',exact:true}).click();
   await page.locator('[name=username]').fill('resident@example.no');await page.locator('[name=password]').fill('test-password');await page.locator('#login .primary').click();
@@ -57,8 +59,8 @@ const root='backend/app/cloud_web/';
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);if(overflow)throw Error('Overflow '+path+' '+width);
   }
  }
- signedIn=true;admin=false;await page.setViewportSize({width:1440,height:1050});await page.emulateMedia({colorScheme:'dark'});
- for(const [path,name] of [['/','homes'],['/account','account'],['/support','support']]){await page.goto('https://home.smarti.dev'+path);await expect(page.locator(path==='/support'?'#workspace':'#account')).toBeVisible();await page.screenshot({path:`/tmp/smarti-${name}-dark-redesign.png`,fullPage:true});}
+ signedIn=true;admin=false;await page.setViewportSize({width:1440,height:1050});await page.emulateMedia({colorScheme:'light'});await page.getByRole('button',{name:'Mørkt',exact:true}).click();
+ for(const [path,name] of [['/','homes'],['/account','account'],['/support','support']]){await page.goto('https://home.smarti.dev'+path);await expect(page.locator(path==='/support'?'#workspace':'#account')).toBeVisible();await expect(page.locator('html')).toHaveAttribute('data-portal-theme','dark');if(await page.locator('body').evaluate(n=>getComputedStyle(n).backgroundColor)!=='rgb(16, 16, 16)')throw Error('Dark background is not neutral black');await page.screenshot({path:`/tmp/smarti-${name}-dark-redesign.png`,fullPage:true});}
  signedIn=false;await page.goto('https://home.smarti.dev/account?create=1');
  await expect(page.locator('#signup')).toBeVisible();await expect(page.locator('#login')).toBeHidden();
  await expect(page.locator('#signup [name=email]')).toBeVisible();
