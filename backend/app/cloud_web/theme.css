@@ -89,3 +89,13 @@ html[data-portal-theme] .masthead .portal-theme{padding:0;border:0;background:tr
 html[data-portal-theme] .masthead .portal-theme button{width:44px;min-height:44px;padding:0;gap:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink)}
 html[data-portal-theme] .masthead .portal-theme span{font-size:22px}
 .masthead nav a.public-about:before{display:none}
+
+/* The webview extends behind iOS system UI. Keep every portal header below it,
+   including the photographic login whose padding otherwise overrides the inset. */
+@media(max-width:1100px){
+ html[data-portal-theme] body .masthead{
+  padding-top:calc(20px + var(--portal-safe-area-top,env(safe-area-inset-top,0px)))!important;
+  padding-left:max(16px,env(safe-area-inset-left,0px))!important;
+  padding-right:max(16px,env(safe-area-inset-right,0px))!important;
+ }
+}

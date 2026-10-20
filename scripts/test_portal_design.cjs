@@ -115,6 +115,18 @@ const root='backend/app/cloud_web/';
    await page.screenshot({path:`/tmp/smarti-mobile-${path.replaceAll('/','')||'homes'}-${width}.png`,fullPage:true});
   }
  }
+ // Verify header layout with a 59px safe-area input for login and signed-in pages.
+ await page.setViewportSize({width:390,height:844});
+ for(const loggedIn of [false,true]){
+  signedIn=loggedIn;admin=false;
+  await page.goto('https://home.smarti.dev/');
+  await expect(page.locator(loggedIn?'#account':'#auth')).toBeVisible();
+  await page.addStyleTag({content:':root{--portal-safe-area-top:59px}'});
+  await expect(page.locator('.masthead')).toHaveCSS('padding-top','79px');
+  const logo=await page.locator('.masthead>a').first().boundingBox();
+  if(logo.y<79)throw Error('Logo overlaps iPhone status area');
+  await page.screenshot({path:`/tmp/smarti-safe-area-${loggedIn?'home':'login'}.png`,fullPage:true});
+ }
  signedIn=false;await page.goto('https://home.smarti.dev/account?create=1');
  await expect(page.locator('#signup')).toBeVisible();await expect(page.locator('#login')).toBeHidden();
  await expect(page.locator('#signup [name=email]')).toBeVisible();
