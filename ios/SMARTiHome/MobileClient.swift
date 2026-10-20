@@ -80,7 +80,10 @@ actor MobileClient {
 
     private func request(origin: URL, path: String, method: String = "POST", body: Data?, token: String? = nil) async throws -> Data {
         guard Self.isHome(origin) else { throw PhoneError.message("Ugyldig hjemmeadresse.") }
-        var r = URLRequest(url: origin.appendingPathComponent("api/mobile/v1/" + path))
+        let parts = path.split(separator: "?", maxSplits: 1).map(String.init)
+        var endpoint = URLComponents(url: origin.appendingPathComponent("api/mobile/v1/" + parts[0]), resolvingAgainstBaseURL: false)!
+        if parts.count == 2 { endpoint.percentEncodedQuery = parts[1] }
+        var r = URLRequest(url: endpoint.url!)
         r.httpMethod = method; r.httpBody = body
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token { r.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }

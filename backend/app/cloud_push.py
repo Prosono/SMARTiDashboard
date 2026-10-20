@@ -21,6 +21,7 @@ class PushAlert(BaseModel):
     environment: Literal["production", "development"] = "production"
     title: str = Field(default="SMARTi", max_length=200)
     message: str = Field(min_length=1, max_length=1500)
+    notification_id: str | None = Field(default=None, pattern=r"^[a-f0-9-]{36}$")
 
 
 class APNs:
@@ -51,10 +52,14 @@ class APNs:
         self.jwt_time = time.time()
         return self.cached_jwt
 
-    async def send(self, alert):
+    async def send(self, alert, home_id=None):
         if not self.ready():
             raise HTTPException(503, "push_not_configured")
         payload = {"aps": {"alert": {"title": alert.title, "body": alert.message}, "sound": "default"}}
+        if alert.notification_id:
+            payload["smarti_notification_id"] = alert.notification_id
+        if home_id:
+            payload["smarti_home_id"] = home_id
         body = json.dumps(payload, ensure_ascii=False).encode()
         if len(body) > 4096:
             raise HTTPException(413, "notification_too_large")
@@ -120,4 +125,4 @@ def install_push(app, home_auth, db):
                 "UPDATE push_limits SET count=count+1 WHERE home=? AND target=? AND day=?",
                 (home_id, target, day),
             )
-        return await provider.send(body)
+        return await provider.send(body, home_id=home_id)

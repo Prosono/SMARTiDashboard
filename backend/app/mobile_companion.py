@@ -150,6 +150,38 @@ def companion_router(management, mobile_user, identity=None):
             current["device_id"], "SMARTi", "Varsler fungerer! Dette er en test fra hjemmet ditt."
         )
 
+    @router.get("/inbox")
+    async def inbox(before: float | None = None, current=Depends(mobile_user)):
+        with management.store.connect() as db:
+            rows = db.execute(
+                "SELECT id,title,message,created,read_at,delivery FROM notification_inbox "
+                "WHERE device_id=? AND created<? ORDER BY created DESC LIMIT 100",
+                (current["device_id"], before if before is not None else time.time() + 1),
+            ).fetchall()
+            return [dict(row) for row in rows]
+
+    @router.get("/inbox/{notification_id}")
+    async def inbox_item(notification_id: str, current=Depends(mobile_user)):
+        with management.store.connect() as db:
+            row = db.execute(
+                "SELECT id,title,message,created,read_at,delivery FROM notification_inbox WHERE id=? AND device_id=?",
+                (notification_id, current["device_id"]),
+            ).fetchone()
+            if not row:
+                raise HTTPException(404, "notification_not_found")
+            return dict(row)
+
+    @router.put("/inbox/{notification_id}/read")
+    async def read_notification(notification_id: str, current=Depends(mobile_user)):
+        with management.store.connect() as db:
+            row = db.execute("SELECT id FROM notification_inbox WHERE id=? AND device_id=?",
+                             (notification_id, current["device_id"])).fetchone()
+            if not row:
+                raise HTTPException(404, "notification_not_found")
+            db.execute("UPDATE notification_inbox SET read_at=COALESCE(read_at,?) WHERE id=?",
+                       (time.time(), notification_id))
+        return {"status": "read"}
+
     @router.get("/companion")
     async def status(current=Depends(mobile_user)):
         return companion.status(current["device_id"])

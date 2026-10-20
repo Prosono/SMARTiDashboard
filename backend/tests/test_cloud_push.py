@@ -63,6 +63,7 @@ def test_gateway_requires_matching_home_and_enforces_limit(tmp_path, monkeypatch
         db.execute("UPDATE push_limits SET count=500")
     assert c.post(endpoint, json=body, headers=headers).status_code == 429
     assert send.await_count == 1
+    assert send.call_args.kwargs["home_id"] == home["installation_id"]
 
 
 async def test_unconfigured_apns_fails_closed(monkeypatch):

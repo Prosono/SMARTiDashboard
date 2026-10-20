@@ -3,6 +3,7 @@
 import json
 import secrets
 import time
+import uuid
 from typing import Literal
 
 import httpx
@@ -116,8 +117,12 @@ class MobilePush:
         record = self.c.read(device)
         if not active or not record.get("push_token"):
             raise HTTPException(410, "notification_device_inactive")
+        notification_id = str(uuid.uuid4())
+        with self.c.m.store.connect() as db:
+            db.execute("INSERT INTO notification_inbox(id,device_id,title,message,created) VALUES(?,?,?,?,?)",
+                       (notification_id, device, title, message, time.time()))
         try:
-            return await self.cloud(
+            result = await self.cloud(
                 "POST",
                 "push",
                 {
@@ -125,9 +130,15 @@ class MobilePush:
                     "environment": record["push_environment"],
                     "title": title,
                     "message": message,
+                    "notification_id": notification_id,
                 },
             )
+            with self.c.m.store.connect() as db:
+                db.execute("UPDATE notification_inbox SET delivery='accepted' WHERE id=?", (notification_id,))
+            return result
         except HTTPException as error:
+            with self.c.m.store.connect() as db:
+                db.execute("UPDATE notification_inbox SET delivery='failed' WHERE id=?", (notification_id,))
             if error.status_code == 410:
                 self.disable(device)
             raise

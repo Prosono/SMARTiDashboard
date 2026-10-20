@@ -7,6 +7,7 @@ import AVFoundation
     @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var pushDelegate
     @StateObject private var phone = PhoneModel()
     @StateObject private var home = HomeBrowser()
+    @StateObject private var inbox = NotificationInbox.shared
     var body: some Scene {
         WindowGroup {
             GeometryReader { geometry in
@@ -20,8 +21,15 @@ import AVFoundation
                     }
             }
             .ignoresSafeArea(.container, edges: home.failure == nil ? .all : [])
-            .sheet(isPresented: $home.showPhoneSettings) {
-                PhoneSettingsView(phone: phone, home: home)
+            .sheet(isPresented: Binding(
+                get: { home.showPhoneSettings || inbox.presented },
+                set: { if !$0 { home.showPhoneSettings = false; inbox.presented = false } }
+            )) {
+                if inbox.presented { NotificationInboxView(inbox: inbox) }
+                else { PhoneSettingsView(phone: phone, home: home) }
+            }
+            .onChange(of: inbox.presented) { _, shown in
+                if shown { home.showPhoneSettings = false; home.showScanner = false; home.showDiscovery = false }
             }
             .sheet(isPresented: $home.showScanner) { HubScanner(home: home) }
             .sheet(isPresented: $home.showDiscovery, onDismiss: { home.discoveryDismissed() }) { HubDiscoveryView(home: home) }
@@ -174,6 +182,7 @@ struct PhoneSettingsView: View {
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
                         Section("Varsler") {
+                            Button { NotificationInbox.shared.open() } label: { Label("Varslingssenter", systemImage: "bell.badge") }
                             Label(phone.notificationStatus, systemImage: "bell.badge")
                             if phone.paired {
                                 Button("Aktiver varsler") { Task { await phone.enableNotifications() } }.disabled(phone.busy)
@@ -288,6 +297,7 @@ struct PhoneSettingsView: View {
               webView.url?.host == url.host else { return }
         switch message.body as? String {
         case "open": showPhoneSettings = true
+        case "inbox": NotificationInbox.shared.open()
         case "remote": openPortal()
         default: break
         }

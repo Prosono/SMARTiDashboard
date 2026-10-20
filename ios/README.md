@@ -291,3 +291,25 @@ Build 10 er lagt til **SMARTi intern test** i App Store Connect (build-ID
 `aps-environment` er kontrollert til `production`. Backend: 305 tester bestod i
 sandkassen; nettverkstestene ble kjørt på nytt med lokale testporter tillatt og
 alle 25 i de berørte filene bestod. Frontendbygget og HA-pakken er verifisert.
+
+## Varslingssenter — build 11 / HA 1.35.60
+
+Huben lagrer nye SMARTi-varsler før pushforsøket, med egen meldings-ID,
+telefon, tidspunkt, leveringsstatus og lest-status. Historikken og markering som
+lest krever telefonens aktive mobillegitimasjon; en annen telefon kan ikke lese
+eller endre meldingen. Historikken pagineres med 100 meldinger per side.
+APNs får meldings-ID og hjem-ID (satt av den autentiserte skyruten). Trykk på
+varselet åpner det native varslingssenteret, også ved kaldstart. Meldinger for et
+annet hjem åpnes ikke med gjeldende hjems legitimasjon. Eldre pushvarsler uten ID
+åpner listen. Innstillinger har også en egen Varslingssenter-knapp.
+
+Historikk finnes fra denne hubversjonen, ikke bakover i tid. Meldinger slettet
+fra iOS-varslingssenteret finnes fortsatt på huben. Feilet push vises i historikken
+med forklaring; Apple-aksept betyr ikke bekreftet fysisk mottak. Nettforbindelse
+til huben er nødvendig for å hente historikken. APNs-nøkler og tokens inngår ikke
+i historikkresponsene.
+
+Skyrelease `smartihome:inbox-20261020` er publisert (portal HTTP 200); Compose-backup:
+`compose.before-inbox-20261020.yaml`. Simulatorbygg, signert Release-arkiv,
+frontendbygg og 40 relevante backendtester bestod. Arkiv:
+`/tmp/SMARTiHome-build11.xcarchive`. Fysisk trykk-på-varsel må kontrolleres på iPhone.

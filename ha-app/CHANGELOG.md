@@ -1,3 +1,9 @@
+## 1.35.60
+
+- Varslingssenter for SMARTi på iPhone: meldingshistorikk, lest/ulest og eldre meldinger.
+- Trykk på et pushvarsel for å åpne meldingen. Krever iPhone build 11 og oppdatert sky.
+- Historikken er avgrenset til den registrerte telefonen og samles fra denne versjonen.
+
 ## 1.35.59
 
 - Send notifikasjon til SMARTi-appen med bruker som mottaker; flere telefoner skilles med telefonnavn.

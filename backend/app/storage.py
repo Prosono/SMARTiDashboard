@@ -34,6 +34,12 @@ CREATE TABLE dashboards (id TEXT PRIMARY KEY, owner_id INTEGER NOT NULL,
  tiles TEXT NOT NULL, revision INTEGER NOT NULL);
 CREATE INDEX dashboards_owner ON dashboards(owner_id);
 """,
+    """
+CREATE TABLE notification_inbox (id TEXT PRIMARY KEY, device_id TEXT NOT NULL,
+ title TEXT NOT NULL, message TEXT NOT NULL, created REAL NOT NULL,
+ read_at REAL, delivery TEXT NOT NULL DEFAULT 'pending');
+CREATE INDEX notification_inbox_device ON notification_inbox(device_id, created DESC);
+""",
 ]
 
 

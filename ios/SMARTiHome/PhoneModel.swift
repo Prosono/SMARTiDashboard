@@ -179,7 +179,140 @@ import UserNotifications
         // Never include token material or system diagnostics in the user-facing message.
         NotificationCenter.default.post(name: Notification.Name("SMARTiPushRegistrationFailed"), object: nil)
     }
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        let info = response.notification.request.content.userInfo
+        let id = (info["smarti_notification_id"] as? String).flatMap { UUID(uuidString: $0)?.uuidString.lowercased() }
+        let home = info["smarti_home_id"] as? String
+        Task { @MainActor in NotificationInbox.shared.open(id: id, home: home) }
+        completionHandler()
+    }
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        Task { @MainActor in
+            if NotificationInbox.shared.presented { await NotificationInbox.shared.load() }
+        }
         completionHandler([.banner, .sound, .list])
+    }
+}
+
+struct InboxItem: Decodable, Identifiable {
+    let id: String
+    let title: String
+    let message: String
+    let created: Double
+    var read_at: Double?
+    let delivery: String
+}
+
+@MainActor final class NotificationInbox: ObservableObject {
+    static let shared = NotificationInbox()
+    @Published var presented = false
+    @Published var items: [InboxItem] = []
+    @Published var selected: InboxItem?
+    @Published var error: String?
+    @Published var loading = false
+    @Published var hasMore = false
+    private var pendingID: String?
+    private var expectedHome: String?
+    private var scope: String?
+
+    func open(id: String? = nil, home: String? = nil) {
+        pendingID = id; expectedHome = home
+        items = []; selected = nil; error = nil
+        presented = true
+    }
+    func load(more: Bool = false) async {
+        guard !loading else { return }
+        loading = true; defer { loading = false }
+        error = nil
+        guard let credentials = CredentialStore.load() else {
+            items = []; selected = nil
+            error = "Koble denne telefonen til hjemmet for å se varsler."
+            return
+        }
+        if let expectedHome, expectedHome.lowercased() != credentials.installationID.lowercased() {
+            items = []; selected = nil
+            error = "Dette varselet tilhører et annet hjem. Velg hjemmet og koble telefonen til det for å se historikken."
+            return
+        }
+        if scope != credentials.deviceID { items = []; selected = nil; scope = credentials.deviceID }
+        do {
+            let path = more && !items.isEmpty ? "inbox?before=\(items.last!.created)" : "inbox"
+            let data = try await MobileClient.shared.send(path, method: "GET")
+            let rows = try JSONDecoder().decode([InboxItem].self, from: data)
+            guard CredentialStore.load()?.deviceID == credentials.deviceID else { items = []; selected = nil; return }
+            if more { items += rows } else { items = rows }
+            hasMore = rows.count == 100
+            if let id = pendingID {
+                pendingID = nil
+                if let item = items.first(where: { $0.id == id }) { await select(item) }
+                else {
+                    let data = try await MobileClient.shared.send("inbox/" + id, method: "GET")
+                    await select(try JSONDecoder().decode(InboxItem.self, from: data))
+                }
+            }
+        } catch { self.error = "Kunne ikke hente varslene. Kontroller forbindelsen og prøv igjen." }
+    }
+    func select(_ item: InboxItem) async {
+        selected = item
+        guard scope == CredentialStore.load()?.deviceID else { selected = nil; return }
+        do {
+            _ = try await MobileClient.shared.send("inbox/\(item.id)/read", method: "PUT")
+            if let index = items.firstIndex(where: { $0.id == item.id }) { items[index].read_at = Date().timeIntervalSince1970 }
+            selected?.read_at = Date().timeIntervalSince1970
+        } catch { self.error = "Meldingen er åpnet, men kunne ikke markeres som lest. Prøv igjen når forbindelsen er tilbake." }
+    }
+}
+
+struct NotificationInboxView: View {
+    @ObservedObject var inbox: NotificationInbox
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            List {
+                if let error = inbox.error {
+                    Section { Label(error, systemImage: "wifi.exclamationmark").foregroundStyle(.secondary)
+                        Button("Prøv igjen") { Task { await inbox.load() } }
+                    }
+                }
+                if let item = inbox.selected {
+                    Section {
+                        Button { inbox.selected = nil } label: { Label("Alle varsler", systemImage: "chevron.left") }
+                        Text(item.title).font(.title2.bold())
+                        Text(Date(timeIntervalSince1970: item.created), style: .date).foregroundStyle(.secondary)
+                        Text(item.message).font(.body).textSelection(.enabled)
+                        if item.delivery == "failed" { Label("Pushvarselet kunne ikke sendes. Meldingen er lagret her.", systemImage: "exclamationmark.circle").foregroundStyle(.secondary) }
+                    }
+                } else if inbox.items.isEmpty && !inbox.loading && inbox.error == nil {
+                    Section {
+                        Label("Ingen varsler ennå", systemImage: "bell.badge").font(.headline)
+                        Text("Varsler til SMARTi-appen samles her, slik at du kan lese dem igjen senere.").foregroundStyle(.secondary)
+                    }
+                } else {
+                    Section("Varslene dine") {
+                        ForEach(inbox.items) { item in
+                            Button { Task { await inbox.select(item) } } label: {
+                                HStack(alignment: .top, spacing: 14) {
+                                    Image(systemName: item.read_at == nil ? "bell.badge.fill" : "bell")
+                                        .foregroundStyle(item.read_at == nil ? Color.orange : Color.secondary)
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(item.title).font(.headline).foregroundStyle(.primary)
+                                        Text(item.message).lineLimit(2).foregroundStyle(.secondary)
+                                        Text(Date(timeIntervalSince1970: item.created), style: .relative).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer(minLength: 0)
+                                    if item.read_at == nil { Circle().fill(.orange).frame(width: 8, height: 8).accessibilityLabel("Ulest") }
+                                }.padding(.vertical, 6)
+                            }
+                        }
+                        if inbox.hasMore { Button("Vis eldre varsler") { Task { await inbox.load(more: true) } } }
+                    }
+                }
+                if inbox.loading { ProgressView("Henter varsler …") }
+            }
+            .navigationTitle("Varslingssenter")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Lukk") { dismiss() } } }
+            .refreshable { await inbox.load() }
+            .task { await inbox.load() }
+        }
     }
 }
