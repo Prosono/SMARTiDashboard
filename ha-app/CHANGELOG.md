@@ -1,3 +1,8 @@
+## 1.35.52
+
+- Mobil: fjernet den separate raden med hjemmenavn og flyttet «Tilpass Hjem» inn i velkomstbanneret for mer plass til innhold.
+- Desktop beholder eksisterende plassering.
+
 ## 1.35.51
 
 - Ny QR-etikett aktiverer huben uten manuell PIN (eldre etiketter støttes fortsatt).

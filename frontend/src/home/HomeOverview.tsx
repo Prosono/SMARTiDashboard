@@ -324,6 +324,15 @@ export function HomeOverview({
         )}
         {tab === "overview" && (
           <header className="home-welcome">
+            <button
+              className="home-customize home-customize-icon home-customize-mobile"
+              aria-label={t("Tilpass Hjem", "Personalize Home")}
+              title={t("Tilpass Hjem", "Personalize Home")}
+              aria-expanded={configuring}
+              onClick={() => configure(!configuring)}
+            >
+              <Settings size={20} />
+            </button>
             <img
               className="home-hero-photo"
               src={homeAsset("home-living")}
