@@ -9,7 +9,7 @@ if(!r.mail_configured)$('message').textContent='E-postutsending er ikke konfigur
 const editor=$('signup');
 $('account').prepend(editor);editor.classList.add('account-editor');
 editor.elements.password.closest('label').hidden=true;editor.elements.password.required=false;
-editor.querySelector('button[type=submit],button:not([type])').textContent='Lagre profil';
+editor.querySelector('button[type=submit]').textContent='Lagre profil';
 for(const name of ['full_name','email','phone','address','postal_code','city','country'])editor.elements[name].value=p?.[name]||(name==='country'?'Norge':'');
 window.smartiProfilePhoto=p?.photo||'';$('photo-preview').hidden=!window.smartiProfilePhoto;
 if(window.smartiProfilePhoto)$('photo-preview').src=window.smartiProfilePhoto;

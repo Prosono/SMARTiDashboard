@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const root='backend/app/cloud_web/';
 (async()=>{
  const browser=await chromium.launch();const page=await browser.newPage();
- let brandGate=null,sessionGate=null,sessionFailure=false;let signedIn=false,admin=false,savedProfile=null;let profile={verified:true,full_name:'Test Kunde',email:'test@example.no',phone:'12345678',address:'Testveien 1',postal_code:'1234',city:'Oslo',country:'Norge',photo:''};const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ let emptyCases=false;let brandGate=null,sessionGate=null,sessionFailure=false;let signedIn=false,admin=false,savedProfile=null;let profile={verified:true,full_name:'Test Kunde',email:'test@example.no',phone:'12345678',address:'Testveien 1',postal_code:'1234',city:'Oslo',country:'Norge',photo:''};const errors=[];page.on('pageerror',e=>errors.push(e.message));
  const home={name:'Hjemme i Kristiansand',installation_id:'00000000-0000-4000-8000-000000000001',remote_enabled:true,connected:true,factory_managed:true};
  await page.route('https://home.smarti.dev/**',async route=>{
   const u=new URL(route.request().url()),path=u.pathname;let data;
@@ -18,7 +18,7 @@ const root='backend/app/cloud_web/';
   else if(path==='/api/support/pricing')data={hourly:499,simple:299,complex:499,advanced:799,version:1,terms:'Arbeid avtales før oppstart.'};
   else if(path==='/api/customer/profile'){if(route.request().method()==='PUT'){savedProfile=route.request().postDataJSON();profile={...profile,...savedProfile};data={ok:true};}else data={profile,mail_configured:true};}
   else if(path.endsWith('/members'))data=[];
-  else if(path.endsWith('/support/cases'))data=[{id:'case1',subject:'Hjelp med en automasjon',category:'automation',status:'in_progress',updated:1792480000,customer:'Kunde',assignee:'SMARTi'}];
+  else if(path.endsWith('/support/cases'))data=emptyCases?[]:[{id:'case1',subject:'Hjelp med en automasjon',category:'automation',status:'in_progress',updated:1792480000,customer:'Kunde',assignee:'SMARTi'}];
   else if(path.startsWith('/api/'))return route.fulfill({status:401,json:{}});
   if(data!==undefined)return route.fulfill({json:data});
   const names={'/':'index.html','/admin':'admin.html','/support':'support.html','/support/prices':'support.html','/admin/support':'support.html','/admin/hubs':'onboarding.html','/account':'account.html','/welcome':'onboarding.html'};
@@ -81,6 +81,25 @@ const root='backend/app/cloud_web/';
  }
  signedIn=true;admin=false;await page.setViewportSize({width:1440,height:1050});await page.emulateMedia({colorScheme:'light'});await page.getByRole('button',{name:'Mørkt',exact:true}).click();
  for(const [path,name] of [['/','homes'],['/account','account'],['/support','support']]){await page.goto('https://home.smarti.dev'+path);await expect(page.locator(path==='/support'?'#workspace':'#account')).toBeVisible();await expect(page.locator('html')).toHaveAttribute('data-portal-theme','dark');if(await page.locator('body').evaluate(n=>getComputedStyle(n).backgroundColor)!=='rgb(16, 16, 16)')throw Error('Dark background is not neutral black');await page.screenshot({path:`/tmp/smarti-${name}-dark-redesign.png`,fullPage:true});}
+ signedIn=true;admin=false;emptyCases=true;
+ for(const width of [320,390,430]){
+  await page.setViewportSize({width,height:844});
+  for(const path of ['/','/account','/support']){
+   await page.goto('https://home.smarti.dev'+path);await expect(page.locator(path==='/support'?'#workspace':'#account')).toBeVisible();
+   if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Mobile overflow '+path+' '+width);
+   if((await page.locator('.masthead').boundingBox()).height>140)throw Error('Mobile header too tall');
+   if(path==='/'){
+    const button=await page.locator('.home-card>.primary').first().boundingBox();if(button.y+button.height>700)throw Error('Open home pushed below fold');
+   }
+   if(path==='/account'){
+    await page.getByRole('button',{name:'Lagre profil',exact:true}).click();
+    await expect(page.getByRole('button',{name:'Lagre profil',exact:true})).toHaveCount(1);
+    await expect(page.locator('#verify')).toHaveText('Send ny bekreftelse på e-post');
+   }
+   if(path==='/support')await expect(page.locator('#cases .empty-state')).toBeVisible();
+   await page.screenshot({path:`/tmp/smarti-mobile-${path.replaceAll('/','')||'homes'}-${width}.png`,fullPage:true});
+  }
+ }
  signedIn=false;await page.goto('https://home.smarti.dev/account?create=1');
  await expect(page.locator('#signup')).toBeVisible();await expect(page.locator('#login')).toBeHidden();
  await expect(page.locator('#signup [name=email]')).toBeVisible();
