@@ -18,8 +18,9 @@ async function run(fn) {
   finally { document.querySelectorAll("button").forEach(b => b.disabled=false); }
 }
 async function showHomes() {
+  if ((await api("session")).portal_admin) { location.replace("/admin"); return; }
   const homes = await api("homes");
-  $("admin-link").hidden=!(await api("session")).portal_admin;
+  $("admin-link").hidden=true;
   $("auth").hidden=true; $("account").hidden=false;
   $("home-count").textContent=homes.length+" hjem";
   // Background polling must not close menus or move keyboard focus every 15 seconds.

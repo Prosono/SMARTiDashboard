@@ -145,6 +145,7 @@ def install_support(app, db, session, is_admin, home_auth, origin):
             raise HTTPException(403, "support_access_expired")
         return row
 
+    @app.get("/admin/support/prices")
     @app.get("/admin/support")
     @app.get("/support")
     @app.get("/support/prices")

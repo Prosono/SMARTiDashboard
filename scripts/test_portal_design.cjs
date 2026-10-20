@@ -21,7 +21,7 @@ const root='backend/app/cloud_web/';
   else if(path.endsWith('/support/cases'))data=emptyCases?[]:[{id:'case1',subject:'Hjelp med en automasjon',category:'automation',status:'in_progress',updated:1792480000,customer:'Kunde',assignee:'SMARTi'}];
   else if(path.startsWith('/api/'))return route.fulfill({status:401,json:{}});
   if(data!==undefined)return route.fulfill({json:data});
-  const names={'/':'index.html','/admin':'admin.html','/support':'support.html','/support/prices':'support.html','/admin/support':'support.html','/admin/hubs':'onboarding.html','/account':'account.html','/welcome':'onboarding.html'};
+  const names={'/':'index.html','/admin':'admin.html','/support':'support.html','/support/prices':'support.html','/admin/support':'support.html','/admin/support/prices':'support.html','/admin/hubs':'onboarding.html','/account':'account.html','/welcome':'onboarding.html'};
   const file=names[path]||path.replace('/assets/','');
   if(!/^[a-zA-Z0-9_.-]+$/.test(file)||!fs.existsSync(root+file))return route.fulfill({status:404,body:''});
   if(file==='brand.js'&&brandGate)await brandGate;
@@ -63,7 +63,8 @@ const root='backend/app/cloud_web/';
   await page.getByRole('button',{name:'Se kunde →'}).first().click();await expect(page.locator('#detail')).toBeVisible();
   await page.locator('#close-detail').click();await page.locator('#audit-tab').click();await expect(page.locator('#audit')).toBeVisible();
   for(const path of ['/','/admin','/support','/support/prices','/admin/support','/account','/welcome']){
-   await page.goto('https://home.smarti.dev'+path);
+   admin=path.startsWith('/admin');await page.goto('https://home.smarti.dev'+path);
+   if(path==='/')await expect(page.locator('#account')).toBeVisible();
    if(path==='/support'){await expect(page.locator('.case-row')).toHaveCount(1);await page.locator('#new-case').click();await expect(page.locator('#create')).toBeVisible();}
    if(path==='/support/prices')await expect(page.locator('.price-row')).toHaveCount(4);
    if(path==='/account'){
@@ -81,6 +82,15 @@ const root='backend/app/cloud_web/';
  }
  signedIn=true;admin=false;await page.setViewportSize({width:1440,height:1050});await page.emulateMedia({colorScheme:'light'});await page.getByRole('button',{name:'Mørkt',exact:true}).click();
  for(const [path,name] of [['/','homes'],['/account','account'],['/support','support']]){await page.goto('https://home.smarti.dev'+path);await expect(page.locator(path==='/support'?'#workspace':'#account')).toBeVisible();await expect(page.locator('html')).toHaveAttribute('data-portal-theme','dark');if(await page.locator('body').evaluate(n=>getComputedStyle(n).backgroundColor)!=='rgb(16, 16, 16)')throw Error('Dark background is not neutral black');await page.screenshot({path:`/tmp/smarti-${name}-dark-redesign.png`,fullPage:true});}
+ signedIn=true;admin=true;
+ await page.goto('https://home.smarti.dev/');await page.waitForURL('https://home.smarti.dev/admin');
+ for(const path of ['/admin','/admin/hubs','/admin/support','/admin/support/prices']){
+  await page.goto('https://home.smarti.dev'+path);
+  await expect(page.locator('.masthead nav a[href="/"]')).toHaveCount(0);
+  await expect(page.locator('.masthead nav a[href="/account"]')).toHaveCount(0);
+  await expect(page.locator('.masthead>a')).toHaveAttribute('href','/admin');
+  await expect(page.locator('.masthead nav a[href="/admin/support/prices"]')).toBeVisible();
+ }
  signedIn=true;admin=false;emptyCases=true;
  for(const width of [320,390,430]){
   await page.setViewportSize({width,height:844});

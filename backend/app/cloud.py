@@ -16,7 +16,7 @@ from pathlib import Path
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pwdlib import PasswordHash
 from pydantic import BaseModel, Field
@@ -442,6 +442,22 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     install_onboarding(
         app, db, session, is_admin, home_auth, throttle, provision_secret, origin, PASSWORDS, relay_status_url
     )
+
+    @app.middleware("http")
+    async def staff_destination(request: Request, call_next):
+        # Route staff before customer HTML is rendered, including bookmarked pages.
+        destinations = {"/": "/admin", "/account": "/admin",
+                        "/support": "/admin/support", "/support/prices": "/admin/support/prices",
+                        "/welcome": "/admin", "/activate": "/admin/hubs"}
+        target = destinations.get(request.url.path)
+        if target and request.method in {"GET", "HEAD"}:
+            try:
+                user = session(request)
+            except HTTPException:
+                user = None
+            if user and is_admin(user["account"]):
+                return RedirectResponse(target, status_code=303, headers={"Cache-Control": "no-store"})
+        return await call_next(request)
 
     static = Path(__file__).with_name("cloud_web")
     app.mount("/assets", StaticFiles(directory=static), name="assets")

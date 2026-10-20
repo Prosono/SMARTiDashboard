@@ -21,7 +21,7 @@ async function detail(id){const t=await api(prefix+"/cases/"+id);selected=id;$("
  if(!t.grants.length)$("access").textContent="Ingen tilgang er forespurt.";
  $("case").scrollIntoView({block:"start"});
 }
-async function signedIn(){const s=await api("session");csrf=s.csrf;$("admin-nav").hidden=!s.portal_admin;
+async function signedIn(){const s=await api("session");csrf=s.csrf;if(s.portal_admin&&!staff){location.replace(pricePage?"/admin/support/prices":"/admin/support");return;}$("admin-nav").hidden=staff||!s.portal_admin;
  if(staff&&!s.portal_admin)throw Error("Denne kontoen har ikke administratortilgang.");
  if(s.portal_admin&&pricePage){$("price-editor").hidden=false;$("price-inputs").replaceChildren();for(const [key,[label]] of Object.entries(descriptions)){const l=el("label",label),i=el("input");i.name=key;i.type="number";i.min="0";i.max="100000";i.required=true;i.value=prices[key];l.append(i);$("price-inputs").append(l);}$("price-editor").elements.terms.value=prices.terms;}
  if(!staff&&!pricePage){const homes=await api("homes");$("home").replaceChildren(new Option("Generell henvendelse",""),...homes.map(h=>new Option(h.name,h.installation_id)));}

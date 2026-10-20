@@ -75,3 +75,20 @@ def test_status_and_literal_search(tmp_path):
         client.return_value.__enter__.return_value.get.side_effect = ValueError()
         d = staff.get("/api/admin/overview").json()
         assert not d["relay_available"] and d["summary"]["offline"] == 0
+
+
+def test_staff_customer_pages_redirect_before_rendering(tmp_path):
+    app, path, staff, customer = setup(tmp_path)
+    destinations = {'/': '/admin', '/account': '/admin', '/support': '/admin/support',
+                    '/support/prices': '/admin/support/prices', '/welcome': '/admin',
+                    '/activate': '/admin/hubs'}
+    for route, destination in destinations.items():
+        response = staff.get(route, follow_redirects=False)
+        assert response.status_code == 303
+        assert response.headers['location'] == destination
+        assert response.headers['cache-control'] == 'no-store'
+        assert customer.get(route, follow_redirects=False).status_code == 200
+    assert staff.get('/admin/support/prices').status_code == 200
+    with sqlite3.connect(path) as c:
+        c.execute('DELETE FROM portal_admins')
+    assert staff.get('/', follow_redirects=False).status_code == 200

@@ -2,7 +2,7 @@
 (() => {
   const path = location.pathname;
   // Keep the administration destinations in the same order on every staff page.
-  if (path.startsWith('/admin/')) {
+  if (path === '/admin' || path.startsWith('/admin/')) {
     document.body.classList.add('staff-page');
     const brandLabel = document.querySelector('.masthead > a span');
     if (brandLabel) brandLabel.textContent = 'Administrasjon';
@@ -10,8 +10,9 @@
       document.querySelector('#title').textContent = 'Support og oppfølging.';
       document.querySelector('.heading p:not(.eyebrow)').textContent = 'Fordel saker, følg fremdriften og hjelp kunden videre.';
     }
+    document.querySelector('.masthead > a')?.setAttribute('href','/admin');
     const nav = document.querySelector('.masthead nav');
-    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/support','Support'],['/support/prices','Prisliste'],['/','Mine hjem ↗']];
+    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/support','Support'],['/admin/support/prices','Prisliste']];
     if (nav) {
       for (const [href, label] of links) {
         const existing = nav.querySelector(`a[href="${href}"]:not([id])`);
