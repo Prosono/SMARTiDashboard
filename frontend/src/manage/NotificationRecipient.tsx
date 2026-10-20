@@ -15,7 +15,7 @@ export function NotificationRecipient({ value, onChange, lang, report }: {
   useEffect(() => {
     let active = true;
     setStatus("loading");
-    api<Recipient[]>("/api/manage/notification-recipients").then((rows) => {
+    api<Recipient[]>("manage/notification-recipients").then((rows) => {
       if (active) { setItems(rows); setStatus("ready"); }
     }).catch(() => { if (active) setStatus("error"); });
     return () => { active = false; };

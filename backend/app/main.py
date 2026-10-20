@@ -606,10 +606,15 @@ def create_app(
     app.include_router(groups_router(store, ha, user, admin, command))
 
     @app.get("/api/events")
-    async def events(request: Request, current=Depends(user)):
+    async def events(request: Request, poll: bool = False, current=Depends(user)):
         origin = request.headers.get("origin")
         if len(request.headers.getlist("origin")) > 1 or (origin and not origins.accepts(origin)):
             raise HTTPException(403, "origin_rejected")
+
+        # Short responses survive ingress service workers that cannot forward SSE.
+        # The same authentication and origin checks apply to both transports.
+        if poll:
+            return {"revision": ha.revision, "radio_revision": setup.inventory.revision}
 
         async def stream():
             revision = (-1, -1)

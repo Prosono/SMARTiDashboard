@@ -1,3 +1,9 @@
+## 1.35.57
+
+- Retter hvit side når en ny automasjon åpnes uten handlinger.
+- Retter API-adressen for telefonmottakere i automasjoner.
+- Bruker autentisert polling som reserve ved gjentatte feil på sanntidsstrømmen gjennom ingress.
+
 ## 1.35.56
 
 - Velg registrerte telefoner som varselmottakere i automasjonsveiviseren og flow-editoren.

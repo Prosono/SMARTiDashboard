@@ -278,3 +278,14 @@ def test_successful_logins_do_not_exhaust_budget_or_erase_failures(client):
     assert (
         client.post("/api/login", json={"name": "owner", "password": "a wrong password"}).status_code == 429
     )
+
+
+def test_event_poll_requires_auth_and_returns_revisions(client):
+    assert client.get("/api/events?poll=true").status_code == 401
+    login(client)
+    response = client.get("/api/events?poll=true")
+    assert response.status_code == 200
+    assert isinstance(response.json()["revision"], int)
+    assert isinstance(response.json()["radio_revision"], int)
+    assert response.headers["cache-control"] == "no-store"
+    assert client.get("/api/events?poll=true", headers={"origin": "https://evil.example"}).status_code == 403

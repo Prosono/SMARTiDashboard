@@ -151,7 +151,7 @@ export function AutomationGuide({
         : sensor
           ? `${sensor.name} ${stateText(r.to)}`
           : t("en enhet endrer tilstand", "a device changes state");
-  const isNotification = a.action?.startsWith("notify.mobile_app_");
+  const isNotification = a?.action?.startsWith("notify.mobile_app_");
   const then = isNotification ? t("send varsel: ", "send notification: ") + (a.data?.message || t("skriv en beskjed", "write a message")) : target
     ? `${a.action.endsWith("turn_off") ? t("slå av", "turn off") : t("slå på", "turn on")} ${target.name}`
     : t("velg hva som skal skje", "choose what happens");
@@ -210,8 +210,8 @@ export function AutomationGuide({
                   "Choose what starts your routine.",
                 ),
                 t(
-                  "Velg et lys eller en stikkontakt.",
-                  "Choose a light or a socket.",
+                  "Velg en enhet du vil styre, eller send et varsel.",
+                  "Choose a device to control, or send a notification.",
                 ),
                 t(
                   "Se over og gi rutinen et navn du kjenner igjen.",

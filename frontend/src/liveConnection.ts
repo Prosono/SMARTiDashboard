@@ -11,6 +11,43 @@ export function liveConnection(
   let lastFrame = Date.now();
   let delay = 1000;
   let connected = false;
+  let failures = 0;
+  let polling = false;
+  let pending: AbortController | undefined;
+  async function poll() {
+    if (stopped || pending) return;
+    const controller = new AbortController();
+    pending = controller;
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch(new URL("api/events?poll=true", document.baseURI), {
+        credentials: "same-origin", cache: "no-store", signal: controller.signal,
+      });
+      if (stopped) return;
+      if (response.status === 401) {
+        stopped = true;
+        status(false);
+        expired();
+        return;
+      }
+      if (!response.ok) throw new Error("Polling unavailable");
+      const data = await response.json();
+      if (typeof data.revision !== "number" || typeof data.radio_revision !== "number")
+        throw new Error("Invalid revision response");
+      if (stopped) return;
+      if (!connected) refresh();
+      connected = true;
+      lastFrame = Date.now();
+      status(true);
+      message(new MessageEvent("message", { data: JSON.stringify(data) }));
+    } catch {
+      if (!stopped) { connected = false; status(false); }
+    } finally {
+      clearTimeout(timeout);
+      pending = undefined;
+      if (!stopped) retry = setTimeout(() => { retry = undefined; void poll(); }, 5000);
+    }
+  }
   const close = () => {
     source?.close();
     source = undefined;
@@ -20,6 +57,12 @@ export function liveConnection(
     connected = false;
     status(false);
     close();
+    failures += 1;
+    if (failures >= 3) {
+      polling = true;
+      void poll();
+      return;
+    }
     retry = setTimeout(() => {
       retry = undefined;
       connect();
@@ -43,12 +86,14 @@ export function liveConnection(
       if (source !== current) return;
       lastFrame = Date.now();
       delay = 1000;
+      failures = 0;
       message(event);
     };
     current.addEventListener("heartbeat", () => {
       if (source !== current) return;
       lastFrame = Date.now();
       delay = 1000;
+      failures = 0;
     });
     current.onerror = () => {
       if (source === current) reconnect();
@@ -64,6 +109,12 @@ export function liveConnection(
   const resume = () => {
     if (stopped || document.visibilityState === "hidden") return;
     refresh();
+    if (polling) {
+      clearTimeout(retry);
+      retry = undefined;
+      void poll();
+      return;
+    }
     if (!connected || Date.now() - lastFrame > 45000) {
       clearTimeout(retry);
       retry = undefined;
@@ -71,7 +122,7 @@ export function liveConnection(
     }
   };
   const watchdog = setInterval(() => {
-    if (Date.now() - lastFrame > 45000) reconnect();
+    if (!polling && Date.now() - lastFrame > 45000) reconnect();
   }, 5000);
   window.addEventListener("online", resume);
   document.addEventListener("visibilitychange", resume);
@@ -79,6 +130,7 @@ export function liveConnection(
   connect();
   return () => {
     stopped = true;
+    pending?.abort();
     clearInterval(watchdog);
     clearTimeout(retry);
     close();

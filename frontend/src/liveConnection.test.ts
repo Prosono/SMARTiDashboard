@@ -72,3 +72,46 @@ it("handles expired authentication without reconnecting", () => {
   expect(expired).toHaveBeenCalledOnce();
   expect(Stream.instances).toHaveLength(1);
 });
+
+async function failStreams() {
+  Stream.instances[0].onerror?.();
+  await vi.advanceTimersByTimeAsync(1000);
+  Stream.instances[1].onerror?.();
+  await vi.advanceTimersByTimeAsync(2000);
+  Stream.instances[2].onerror?.();
+  await vi.advanceTimersByTimeAsync(0);
+}
+it("falls back to authenticated short polling after repeated stream failures", async () => {
+  const fetcher = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ revision: 5, radio_revision: 2 }) });
+  vi.stubGlobal("fetch", fetcher);
+  const status = vi.fn(), message = vi.fn();
+  stop = liveConnection(status, message, vi.fn(), vi.fn());
+  await failStreams();
+  expect(fetcher.mock.calls[0][0].href).toBe("https://example.test/ingress/api/events?poll=true");
+  expect(fetcher.mock.calls[0][1].credentials).toBe("same-origin");
+  expect(status).toHaveBeenLastCalledWith(true);
+  expect(JSON.parse(message.mock.calls[0][0].data)).toEqual({ revision: 5, radio_revision: 2 });
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  stop();
+  await vi.advanceTimersByTimeAsync(60000);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+it("expires polling authentication and does not retry", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ status: 401 }));
+  const expired = vi.fn();
+  stop = liveConnection(vi.fn(), vi.fn(), vi.fn(), expired);
+  await failStreams();
+  await vi.advanceTimersByTimeAsync(60000);
+  expect(expired).toHaveBeenCalledOnce();
+  expect(fetch).toHaveBeenCalledOnce();
+});
+it("does not mark failed polling as connected and recovers on the next poll", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue({ ok: true, status: 200, json: async () => ({ revision: 1, radio_revision: 1 }) }));
+  const status = vi.fn();
+  stop = liveConnection(status, vi.fn(), vi.fn(), vi.fn());
+  await failStreams();
+  expect(status).toHaveBeenLastCalledWith(false);
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(status).toHaveBeenLastCalledWith(true);
+});
