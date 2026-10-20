@@ -1,3 +1,9 @@
+## 1.35.53
+
+- Ny innloggingsside med stuebakgrunn, mørkt panel og oransje hovedknapp, i samme stil som SMARTi-portalen.
+- Tilpasset mobil og desktop, med mulighet for å vise/skjule passord.
+- Lokal innlogging og førstegangsoppsett beholdes.
+
 ## 1.35.52
 
 - Mobil: fjernet den separate raden med hjemmenavn og flyttet «Tilpass Hjem» inn i velkomstbanneret for mer plass til innhold.

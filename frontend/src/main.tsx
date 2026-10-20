@@ -86,6 +86,7 @@ import "@fontsource/bai-jamjuree/500.css";
 import "@fontsource/bai-jamjuree/600.css";
 import "@fontsource/bai-jamjuree/700.css";
 import "./style.css";
+import "./login.css";
 import "./manage/manage.css";
 import { Automations } from "./manage/Automations";
 import { RoomManager } from "./manage/Rooms";
@@ -418,6 +419,7 @@ function Login({
   });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const first = setup.data && !setup.data.configured;
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -460,14 +462,13 @@ function Login({
   }
   return (
     <div className="login">
+      <img className="login-background" src="./home/home-living.webp" alt="" fetchPriority="high" />
       <section className="login-art">
         <Logo />
         <div>
           <span className="eyebrow">SMART LIVING, SIMPLIFIED.</span>
           <h1>{t.loginTitle}</h1>
-          <div className="login-logo-art">
-            <img src="./brand/smarti-logo.png" alt="SMARTi" />
-          </div>
+          <p className="login-story-subtitle">{lang === "nb" ? "Hjemmet ditt, samlet på ett sted. Også når du er et annet sted." : "Your home, all in one place. Even when you’re somewhere else."}</p>
         </div>
         <small>SMARTi · {t.live}</small>
       </section>
@@ -485,7 +486,7 @@ function Login({
           <span className="eyebrow">
             {setup.data?.mode === "demo" ? t.demo : "SMARTi"}
           </span>
-          <h2>{first ? t.firstTitle : t.welcome}</h2>
+          <h2>{first ? t.firstTitle : lang === "nb" ? "Logg inn på SMARTi" : "Sign in to SMARTi"}</h2>
           <p>{first ? t.firstHint : t.loginHint}</p>
           {setup.isError ? (
             <p role="alert">{t.loadError}</p>
@@ -525,15 +526,21 @@ function Login({
               </label>
               <label>
                 {t.password}
+                <div className="login-password-field">
                 <input
                   name="password"
-                  type="password"
+                  aria-label={t.password}
+                  type={showPassword ? "text" : "password"}
                   required
                   minLength={12}
                   maxLength={128}
                   autoComplete={first ? "new-password" : "current-password"}
                   placeholder={t.passwordHint}
                 />
+                <button type="button" className="login-password-toggle" aria-label={lang === "nb" ? (showPassword ? "Skjul passord" : "Vis passord") : (showPassword ? "Hide password" : "Show password")} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
+                  {lang === "nb" ? (showPassword ? "Skjul" : "Vis") : (showPassword ? "Hide" : "Show")}
+                </button>
+                </div>
               </label>
               {first && (
                 <label>
@@ -559,6 +566,7 @@ function Login({
             </form>
           )}
           <div className="login-new-customer">
+            <House className="login-new-home-icon" size={36} aria-hidden="true" />
             <strong>{lang === "nb" ? "Ny kunde eller nytt hjem?" : "New customer or new home?"}</strong>
             <p>{lang === "nb"
               ? "Du trenger ingen bruker fra før. Finn huben din og opprett en SMARTi-konto i oppstartsveilederen."
