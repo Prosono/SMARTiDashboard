@@ -463,3 +463,32 @@ def test_automation_icon_saved_without_changing_config(client):
     client.post('/api/logout')
     login(client, 'viewer', 'another long password')
     assert client.put(path, json={'icon': 'sun'}).status_code == 403
+
+
+def test_notification_recipients_use_registered_ha_services():
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from fastapi import FastAPI
+    from app.management import management_router
+
+    rest = AsyncMock(return_value=[
+        {"domain": "light", "services": {"turn_on": {}}},
+        {"domain": "notify", "services": {
+            "mobile_app_new_iphone": {"name": "New iPhone"},
+            "mobile_app_annas_phone": {},
+            "persistent_notification": {},
+            "send_message": {},
+        }},
+    ])
+    app = FastAPI()
+    app.include_router(management_router(SimpleNamespace(demo=False, rest=rest), lambda: True))
+    with TestClient(app) as client:
+        assert client.get("/api/manage/notification-recipients").json() == [
+            {"action": "notify.mobile_app_annas_phone", "name": "annas phone"},
+            {"action": "notify.mobile_app_new_iphone", "name": "New iPhone"},
+        ]
+        rest.assert_awaited_once_with("GET", "services")
+
+
+def test_demo_has_no_real_notification_recipients(client):
+    assert client.get("/api/manage/notification-recipients").json() == []

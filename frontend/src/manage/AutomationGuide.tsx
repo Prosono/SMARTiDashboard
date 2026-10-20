@@ -1,6 +1,7 @@
+import { NotificationRecipient } from "./NotificationRecipient";
 import { controlState } from "../controlState";
 import { EntityPicker } from "./EntityPicker";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Clock,
   Sunset,
@@ -74,11 +75,14 @@ export function canGuide(c: Config): boolean {
           ![r.from, r.to].some((v) => /{{|{%/.test(v));
   return (
     !!trigger &&
-    only(a, ["action", "target"]) &&
+    ((only(a, ["action", "data"]) && /^notify\.mobile_app_[a-z0-9_]+$/.test(a.action) &&
+      only(a.data, ["title", "message"]) && typeof a.data.message === "string" && !!a.data.message.trim() &&
+      (a.data.title === undefined || typeof a.data.title === "string")) ||
+    (only(a, ["action", "target"]) &&
     /^(light|switch)\.turn_(on|off)$/.test(a.action) &&
     !!a.target &&
     only(a.target, ["entity_id"]) &&
-    typeof a.target.entity_id === "string"
+    typeof a.target.entity_id === "string"))
   );
 }
 export function guideValid(c: Config, home: Home): boolean {
@@ -92,12 +96,12 @@ export function guideValid(c: Config, home: Home): boolean {
       home.controls.some(
         (x) => x.entity_id === r.entity_id,
       )) &&
-    home.controls.some(
+    (a.action.startsWith("notify.mobile_app_") || home.controls.some(
       (x) =>
         x.entity_id === a.target.entity_id &&
         a.action.startsWith(x.domain + ".") &&
         x.capabilities.some((p) => p.actions.includes(a.action.split(".")[1])),
-    )
+    ))
   );
 }
 export function AutomationGuide({
@@ -117,6 +121,8 @@ export function AutomationGuide({
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const [step, setStep] = useState(0);
+  const [recipientValid, setRecipientValid] = useState(false);
+  const reportRecipient = useCallback((_id: string, value: boolean) => setRecipientValid(value), []);
   const title = useRef<HTMLHeadingElement>(null);
   const r = c.triggers[0],
     a = c.actions[0];
@@ -145,10 +151,11 @@ export function AutomationGuide({
         : sensor
           ? `${sensor.name} ${stateText(r.to)}`
           : t("en enhet endrer tilstand", "a device changes state");
-  const then = target
+  const isNotification = a.action?.startsWith("notify.mobile_app_");
+  const then = isNotification ? t("send varsel: ", "send notification: ") + (a.data?.message || t("skriv en beskjed", "write a message")) : target
     ? `${a.action.endsWith("turn_off") ? t("slå av", "turn off") : t("slå på", "turn on")} ${target.name}`
     : t("velg hva som skal skje", "choose what happens");
-  const valid = guideValid(c, home);
+  const valid = guideValid(c, home) && (!isNotification || recipientValid);
   useEffect(() => {
     onReady(step === 2 && valid);
   }, [step, valid, onReady]);
@@ -352,6 +359,23 @@ export function AutomationGuide({
           )}
           {step === 1 && (
             <>
+              <label className="routine-field">{t("Hva skal skje?", "What should happen?")}
+                <select value={isNotification ? "notify" : "power"} onChange={(e) => patch({ actions: [e.target.value === "notify"
+                  ? { action: "notify.mobile_app_", data: { title: "SMARTi", message: "" } }
+                  : { action: "light.turn_on", target: { entity_id: "" } }] })}>
+                  <option value="power">{t("Styr lys eller stikkontakt", "Control a light or socket")}</option>
+                  <option value="notify">{t("Send varsel til en telefon", "Send a notification to a phone")}</option>
+                </select>
+              </label>
+              {isNotification ? <>
+                <NotificationRecipient value={a.action} lang={lang} report={reportRecipient}
+                  onChange={(value) => patch({ actions: [{ ...a, action: value }] })} />
+                <label className="routine-field">{t("Tittel", "Title")}<input value={a.data?.title || ""} maxLength={200}
+                  onChange={(e) => patch({ actions: [{ ...a, data: { ...a.data, title: e.target.value } }] })} /></label>
+                <label className="routine-field">{t("Beskjed", "Message")}<textarea value={a.data?.message || ""} maxLength={1500}
+                  placeholder={t("For eksempel: Ytterdøren er åpnet", "For example: The front door was opened")}
+                  onChange={(e) => patch({ actions: [{ ...a, data: { ...a.data, message: e.target.value } }] })} /></label>
+              </> : <>
               <EntityPicker
                 value={target?.entity_id || ""}
                 onChange={(v) => {
@@ -403,6 +427,7 @@ export function AutomationGuide({
                   ))}
                 </fieldset>
               )}
+              </>}
             </>
           )}
           {step === 2 && (

@@ -19,6 +19,7 @@ export function newFlowStep(kind: FlowKind, type: string): Record<string, any> {
       ...(type === "state" ? { state: "on" } : { above: 0 }),
     };
   }
+  if (type === "notify.mobile_app_") return { action: type, data: { title: "SMARTi", message: "" } };
   if (type === "delay") return { delay: 60 };
   if (type === "if") return { if: [], then: [], else: [] };
   if (type === "choose")
@@ -134,6 +135,11 @@ export function flowLibrary(kind: FlowKind, lang: string) {
                 "Velg lys og tilpass styrken.",
                 "Choose lights and adjust brightness.",
               ),
+            ],
+            [
+              "notify.mobile_app_",
+              t("Send varsel til en telefon", "Send a notification to a phone"),
+              t("Velg telefon og skriv en beskjed.", "Choose a phone and write a message."),
             ],
             [
               "light.turn_off",

@@ -289,6 +289,23 @@ def management_router(service, admin):
     m = service
     router = APIRouter(prefix="/api/manage", dependencies=[Depends(admin)])
 
+    @router.get("/notification-recipients")
+    async def notification_recipients():
+        if m.demo:
+            return []
+        services = await m.rest("GET", "services")
+        recipients = []
+        for domain in services:
+            if domain.get("domain") != "notify":
+                continue
+            for service, info in domain.get("services", {}).items():
+                if service.startswith("mobile_app_"):
+                    recipients.append({
+                        "action": "notify." + service,
+                        "name": info.get("name") or service.removeprefix("mobile_app_").replace("_", " "),
+                    })
+        return sorted(recipients, key=lambda item: item["name"].casefold())
+
     @router.get("/rooms")
     async def rooms():
         return await m.rooms()

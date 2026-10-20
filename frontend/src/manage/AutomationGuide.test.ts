@@ -101,3 +101,17 @@ describe("device state triggers", () => {
     }
   });
 });
+
+ describe("phone notifications", () => {
+  const notification = { ...config, actions: [{ action: "notify.mobile_app_new_iphone", data: { title: "SMARTi", message: "Døren er åpnet" } }] };
+  it("accepts newly registered phone services without entity targets", () => {
+    expect(guideValid(notification, home)).toBe(true);
+  });
+  it("rejects missing recipient or message", () => {
+    expect(canGuide({ ...notification, actions: [{ action: "notify.mobile_app_", data: { message: "Hei" } }] })).toBe(false);
+    expect(canGuide({ ...notification, actions: [{ action: "notify.mobile_app_phone", data: { message: " " } }] })).toBe(false);
+  });
+  it("keeps advanced notification data in the full editor", () => {
+    expect(canGuide({ ...notification, actions: [{ action: "notify.mobile_app_phone", data: { message: "Hei", data: { sound: "default" } } }] })).toBe(false);
+  });
+});

@@ -1,3 +1,4 @@
+import { NotificationRecipient } from "./NotificationRecipient";
 import {
   useCallback,
   useEffect,
@@ -1099,7 +1100,10 @@ export function FlowInspector({
               </select>
             </label>
           )}
+          {action.startsWith("notify.mobile_app_") && <NotificationRecipient value={action} lang={lang} report={report}
+            onChange={(value) => set([has(row, "action") ? "action" : "service"], value)} />}
           {(() => {
+            if (action.startsWith("notify.mobile_app_")) return null;
             const domain = action.split(".")[0],
               path = targetPath;
             const target = readFlowPath(row, path);
@@ -1316,6 +1320,7 @@ export function FlowInspector({
                 <>
                   {field([dataKey, "message"], t("Beskjed", "Message"), {
                     multiline: true,
+                    required: true,
                   })}
                   {optional(
                     [dataKey, "title"],

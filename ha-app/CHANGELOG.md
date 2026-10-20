@@ -1,3 +1,8 @@
+## 1.35.56
+
+- Velg registrerte telefoner som varselmottakere i automasjonsveiviseren og flow-editoren.
+- Skriv tittel og melding, og oppdater telefonlisten når en ny telefon har aktivert varsler.
+
 ## 1.35.55
 
 - Automasjonsveiviseren lar alle tilgjengelige enheter og sensorer brukes som tilstandsutløser, inkludert lys.
