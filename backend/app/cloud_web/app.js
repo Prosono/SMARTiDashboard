@@ -5,9 +5,9 @@ async function api(path, method="GET", body) {
   const r = await fetch("/api/"+path, {method, credentials:"same-origin", signal:AbortSignal.timeout(15000),
     headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},
     ...(body ? {body:JSON.stringify(body)} : {})});
-  if (!r.ok) throw new Error(r.status === 401 && path === "login"
+  if (!r.ok) throw Object.assign(new Error(r.status === 401 && path === "login"
     ? "Feil brukernavn eller passord for SMARTi-kontoen på home.smarti.dev. Bruk kontoen du koblet hjemmet til; hjemmets egen innlogging brukes etter Åpne hjem."
-    : errors[r.status] || "Kunne ikke fullføre. Prøv igjen.");
+    : errors[r.status] || "Kunne ikke fullføre. Prøv igjen."), {status:r.status});
   return r.json();
 }
 async function run(fn) {
@@ -77,7 +77,16 @@ $("claim").onsubmit=e=>{e.preventDefault();run(async()=>{
   $("claim").reset(); await showHomes();
 });};
 $("logout").onclick=()=>run(async()=>{await api("logout","POST");csrf="";$("account").hidden=true;$("auth").hidden=false;$("login").reset();});
-(async()=>{try{csrf=(await api("session")).csrf;await showHomes();}catch{}})();
+async function restoreSession(){
+  $("session-loading").hidden=false;$("session-retry").hidden=true;$("message").textContent="";
+  try{csrf=(await api("session")).csrf;await showHomes();}
+  catch(e){
+    if(e.status===401){csrf="";$("account").hidden=true;$("auth").hidden=false;}
+    else{$("message").textContent="Kunne ikke hente hjemmene dine. Prøv igjen om et øyeblikk.";$("session-retry").hidden=false;}
+  }finally{$("session-loading").hidden=true;}
+}
+$("session-retry").onclick=restoreSession;
+restoreSession();
 
 setInterval(()=>{if(csrf && !document.hidden) showHomes().catch(()=>{});},15000);
 

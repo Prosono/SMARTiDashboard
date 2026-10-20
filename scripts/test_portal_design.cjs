@@ -4,11 +4,11 @@ const fs=require('node:fs');
 const root='backend/app/cloud_web/';
 (async()=>{
  const browser=await chromium.launch();const page=await browser.newPage();
- let signedIn=false,admin=false,savedProfile=null;let profile={verified:true,full_name:'Test Kunde',email:'test@example.no',phone:'12345678',address:'Testveien 1',postal_code:'1234',city:'Oslo',country:'Norge',photo:''};const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ let sessionGate=null,sessionFailure=false;let signedIn=false,admin=false,savedProfile=null;let profile={verified:true,full_name:'Test Kunde',email:'test@example.no',phone:'12345678',address:'Testveien 1',postal_code:'1234',city:'Oslo',country:'Norge',photo:''};const errors=[];page.on('pageerror',e=>errors.push(e.message));
  const home={name:'Hjemme i Kristiansand',installation_id:'00000000-0000-4000-8000-000000000001',remote_enabled:true,connected:true,factory_managed:true};
  await page.route('https://home.smarti.dev/**',async route=>{
   const u=new URL(route.request().url()),path=u.pathname;let data;
-  if(path==='/api/session'){if(!signedIn)return route.fulfill({status:401,json:{}});data={csrf:'test',portal_admin:admin};}
+  if(path==='/api/session'){if(sessionGate)await sessionGate;if(sessionFailure)return route.fulfill({status:503,json:{}});if(!signedIn)return route.fulfill({status:401,json:{}});data={csrf:'test',portal_admin:admin};}
   else if(path==='/api/login'){signedIn=true;data={csrf:'test'};}
   else if(path==='/api/logout'){signedIn=false;data={};}
   else if(path==='/api/homes')data=[home,{...home,name:'Hytta ved sjøen',installation_id:'00000000-0000-4000-8000-000000000002',connected:false}];
@@ -26,6 +26,16 @@ const root='backend/app/cloud_web/';
   if(!/^[a-zA-Z0-9_.-]+$/.test(file)||!fs.existsSync(root+file))return route.fulfill({status:404,body:''});
   const ext=file.split('.').pop();return route.fulfill({body:fs.readFileSync(root+file),contentType:{js:'application/javascript',css:'text/css',html:'text/html',png:'image/png',webp:'image/webp',svg:'image/svg+xml',woff2:'font/woff2'}[ext]});
  });
+ // A slow session check must never expose the login artwork for signed-in users.
+ signedIn=true;let releaseSession;sessionGate=new Promise(resolve=>releaseSession=resolve);
+ await page.goto('https://home.smarti.dev/');
+ await expect(page.locator('#session-loading')).toBeVisible();
+ await expect(page.locator('#auth')).toBeHidden();
+ await expect(page.locator('#account')).toBeHidden();
+ releaseSession();sessionGate=null;
+ await expect(page.locator('#account')).toBeVisible();await expect(page.locator('#auth')).toBeHidden();
+ sessionFailure=true;await page.reload();await expect(page.locator('#session-retry')).toBeVisible();await expect(page.locator('#auth')).toBeHidden();
+ sessionFailure=false;await page.locator('#session-retry').click();await expect(page.locator('#account')).toBeVisible();
  for(const width of [1440,768,390]){
   await page.setViewportSize({width,height:1000});signedIn=false;admin=false;
   await page.goto('https://home.smarti.dev/');await expect(page.locator('#auth')).toBeVisible();
