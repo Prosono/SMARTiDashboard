@@ -10,7 +10,7 @@ from test_ha_auth_reset import fixture_documents
 from test_onboarding import HEARTBEAT, PLAN, factory, ready_and_claim
 
 from app.config import Settings
-from app.full_reset import ISOLATED_CONFIG, FullReset
+from app.full_reset import ISOLATED_CONFIG, NORMAL_CONFIG, FullReset
 from app.ha_auth_reset import AuthResetError
 from app.reset_credentials import public_key, seal, unseal
 from app.storage import Store
@@ -119,7 +119,46 @@ def setup_reset(tmp_path):
         c.execute("INSERT INTO users VALUES(1,'old','hash','admin')")
         c.execute("INSERT INTO sessions VALUES('oldtoken',1,'csrf',9999999999)")
     supervisor = SupervisorFake()
-    reset = FullReset(settings, store, root, supervisor)
+    owner_requests = []
+
+    def ha(request):
+        onboarding = json.loads((storage / "onboarding").read_text())
+        if request.method == "GET":
+            return httpx.Response(200, json=[{"step": "user", "done": "user" in onboarding["data"]["done"]}])
+        assert request.url.path == "/api/onboarding/users"
+        body = json.loads(request.content)
+        owner_requests.append(body)
+        user_id = uuid4().hex
+        auth = json.loads((storage / "auth").read_text())
+        auth["data"]["users"].append(
+            {
+                "id": user_id,
+                "system_generated": False,
+                "is_owner": True,
+                "local_only": False,
+                "is_active": True,
+                "name": body["name"],
+            }
+        )
+        auth["data"]["credentials"].append(
+            {
+                "id": uuid4().hex,
+                "user_id": user_id,
+                "auth_provider_type": "homeassistant",
+                "data": {"username": body["username"]},
+            }
+        )
+        auth["data"]["refresh_tokens"].append({"user_id": user_id, "token": "onboarding-token"})
+        (storage / "auth").write_text(json.dumps(auth))
+        provider = json.loads((storage / "auth_provider.homeassistant").read_text())
+        provider["data"]["users"].append({"username": body["username"], "password": "test-hash"})
+        (storage / "auth_provider.homeassistant").write_text(json.dumps(provider))
+        onboarding["data"]["done"].append("user")
+        (storage / "onboarding").write_text(json.dumps(onboarding))
+        return httpx.Response(200, json={"auth_code": "not-returned"})
+
+    reset = FullReset(settings, store, root, supervisor, ha_transport=httpx.MockTransport(ha))
+    reset.owner_requests = owner_requests
     reset.host_boot_id = lambda: "boot-one"
     reset.cloud = AsyncMock(return_value={"version": 2, "acknowledged": True})
     return reset, store, supervisor
@@ -141,7 +180,7 @@ async def test_full_reset_erases_users_history_config_keeps_apps_and_requires_ow
     reset.host_boot_id = lambda: "boot-two"
     await reset.resume_reboot()
     assert reset.state()["phase"] == "awaiting_owner"
-    assert (reset.root / "configuration.yaml").read_text() == ISOLATED_CONFIG
+    assert (reset.root / "configuration.yaml").read_text() == NORMAL_CONFIG
     assert not (reset.root / "home-assistant_v2.db").exists()
     assert (reset.root / "zigbee2mqtt" / "database.db").read_text() == "paired devices"
     assert not (reset.root / ".storage" / "core.config_entries").exists()
@@ -149,7 +188,7 @@ async def test_full_reset_erases_users_history_config_keeps_apps_and_requires_ow
     with store.connect() as c:
         assert c.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
         assert c.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 0
-    assert not any(path == "/core/start" for _, path, _ in supervisor.calls)
+    assert sum(path == "/core/start" for _, path, _ in supervisor.calls) == 2
     with pytest.raises(AuthResetError, match="reset_plan_mismatch"):
         await reset.bootstrap({"reset_id": str(uuid4())})
 
@@ -337,3 +376,98 @@ async def test_new_owner_reset_requires_cloud_support_before_erasure(tmp_path, m
     assert reset.state()["ownership"] == "release_owner"
     with store.connect() as c:
         assert c.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
+
+
+@pytest.mark.asyncio
+async def test_recovery_owner_is_local_and_revoked_before_real_owner(tmp_path, monkeypatch):
+    reset, store, supervisor = setup_reset(tmp_path)
+
+    async def refused(*a, **k):
+        raise ConnectionRefusedError()
+
+    monkeypatch.setattr("asyncio.open_connection", refused)
+    await reset.execute()
+    state = reset.state()
+    recovery_id = state["recovery_user"]
+    auth_path = reset.root / ".storage" / "auth"
+    auth = json.loads(auth_path.read_text())
+    recovery = next(u for u in auth["data"]["users"] if u["id"] == recovery_id)
+    assert recovery["local_only"] and recovery["is_owner"]
+    assert not any(t["user_id"] == recovery_id for t in auth["data"]["refresh_tokens"])
+    assert reset.owner_requests[0]["username"] == "admin"
+    assert reset.owner_requests[0]["password"] == "admin123"
+    assert supervisor.info["boot"] is True
+    # Simulate recovery sessions, including tokens that must not survive setup.
+    auth["data"]["refresh_tokens"].append({"user_id": recovery_id, "token": "recovery-session"})
+    auth_path.write_text(json.dumps(auth))
+    reset.host_boot_id = lambda: "boot-two"
+    await reset.resume_reboot()
+    key = x25519.X25519PrivateKey.from_private_bytes(reset.key_path.read_bytes())
+    plan = {
+        "reset_id": state["id"],
+        "username": "newowner",
+        "ha_credentials": seal(public_key(key), state["id"], "newowner", "A new password 123"),
+    }
+    await reset.bootstrap(plan)
+    auth = json.loads(auth_path.read_text())["data"]
+    assert not any(u["id"] == recovery_id for u in auth["users"])
+    assert not any(t["user_id"] == recovery_id for t in auth["refresh_tokens"])
+    assert not any(c["user_id"] == recovery_id for c in auth["credentials"])
+    provider = json.loads((reset.root / ".storage" / "auth_provider.homeassistant").read_text())
+    assert [u["username"] for u in provider["data"]["users"]] == ["newowner"]
+    assert reset.state()["phase"] == "completed"
+    assert "recovery_user" not in reset.state()
+    assert not reset.key_path.exists()
+    await reset.bootstrap(plan)
+    assert len(reset.owner_requests) == 2
+
+
+@pytest.mark.asyncio
+async def test_recovery_creation_failure_never_exposes_ha(tmp_path, monkeypatch):
+    reset, _, supervisor = setup_reset(tmp_path)
+
+    async def refused(*a, **k):
+        raise ConnectionRefusedError()
+
+    monkeypatch.setattr("asyncio.open_connection", refused)
+    reset.ha_transport = httpx.MockTransport(
+        lambda r: (
+            httpx.Response(200, json=[{"step": "user", "done": False}])
+            if r.method == "GET"
+            else httpx.Response(500)
+        )
+    )
+    with pytest.raises(AuthResetError):
+        await reset.execute()
+    assert reset.state()["phase"] == "failed"
+    assert (reset.root / "configuration.yaml").read_text() == ISOLATED_CONFIG
+    assert supervisor.info["boot"] is False
+    assert not any(path == "/host/reboot" for _, path, _ in supervisor.calls)
+
+
+@pytest.mark.asyncio
+async def test_recovery_removal_failure_does_not_create_real_owner(tmp_path, monkeypatch):
+    reset, _, supervisor = setup_reset(tmp_path)
+
+    async def refused(*a, **k):
+        raise ConnectionRefusedError()
+
+    monkeypatch.setattr("asyncio.open_connection", refused)
+    await reset.execute()
+    reset.host_boot_id = lambda: "boot-two"
+    await reset.resume_reboot()
+    state = reset.state()
+    key = x25519.X25519PrivateKey.from_private_bytes(reset.key_path.read_bytes())
+    plan = {
+        "reset_id": state["id"],
+        "username": "newowner",
+        "ha_credentials": seal(public_key(key), state["id"], "newowner", "A new password 123"),
+    }
+    monkeypatch.setattr(
+        "app.full_reset.OfflineAuthReset.execute", AsyncMock(side_effect=AuthResetError("write_failed"))
+    )
+    with pytest.raises(AuthResetError):
+        await reset.bootstrap(plan)
+    assert len(reset.owner_requests) == 1
+    assert supervisor.info["boot"] is False
+    assert (reset.root / "configuration.yaml").read_text() == ISOLATED_CONFIG

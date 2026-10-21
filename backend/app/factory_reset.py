@@ -154,7 +154,8 @@ class FactoryReset:
                     op["ownership"] = job.get("ownership", "keep_owner")
                     op["report"] = [dict(r) for r in job["results"] if r is not result]
                 try:
-                    async with asyncio.timeout(300 if op["kind"] == "full_reset" else 60):
+                    # Full reset now starts and stops HA to provision local recovery access.
+                    async with asyncio.timeout(900 if op["kind"] == "full_reset" else 60):
                         result["status"], result["reason"] = await self.provider.execute(op)
                 except (HAError, HTTPException, TimeoutError):
                     result.update(status="unconfirmed", reason="operation_unconfirmed")

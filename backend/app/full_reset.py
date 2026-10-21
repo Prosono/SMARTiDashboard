@@ -328,10 +328,98 @@ class FullReset:
                 "settings",
             ):
                 db.execute("DELETE FROM " + table)
+        await self.install_recovery_owner(state)
         state["phase"] = "awaiting_reboot"
         self.save(state)
         await self.cloud("ready", {"id": reset_id, "report": state["report"], "phase": "rebooting"})
         return "done", ""
+
+    async def isolated_owner(self, *, name, username, password, before_create=None):
+        """Create an owner while HA is inaccessible from the LAN."""
+        if (self.root / "configuration.yaml").read_text() != ISOLATED_CONFIG:
+            raise AuthResetError("ha_isolation_config_changed")
+        await self.supervisor.request("POST", "/core/start")
+        self.stopped = False
+        async with httpx.AsyncClient(
+            base_url="http://127.0.0.1:8123", timeout=15, trust_env=False, transport=self.ha_transport
+        ) as client:
+            async with asyncio.timeout(120):
+                while True:
+                    try:
+                        response = await client.get("/api/onboarding")
+                        if response.status_code == 200:
+                            break
+                    except httpx.HTTPError:
+                        pass
+                    await asyncio.sleep(2)
+            if before_create:
+                before_create()
+            await create_first_owner(
+                client, name=name, username=username, password=password, client_id="http://localhost:8123/"
+            )
+
+    async def install_recovery_owner(self, state):
+        state["phase"] = "creating_recovery_owner"
+        self.save(state)
+        await self.isolated_owner(name="SMARTi gjenoppretting", username="admin", password="admin123")
+        await self.supervisor.request("POST", "/core/stop")
+        self.stopped = True
+        await self.assert_stopped()
+        # Validate the known schema and the exact account created above before
+        # exposing HA. Never infer an account by display name alone.
+        storage = self.root / ".storage"
+        docs = {
+            name: json.loads((storage / name).read_text())
+            for name in ("auth", "auth_provider.homeassistant", "onboarding")
+        }
+        reset_documents(docs)
+        auth = docs["auth"]["data"]
+        humans = [u for u in auth["users"] if not u["system_generated"]]
+        if len(humans) != 1 or not humans[0]["is_owner"]:
+            raise AuthResetError("ha_recovery_owner_unconfirmed")
+        owner = humans[0]
+        credentials = [c for c in auth["credentials"] if c["user_id"] == owner["id"]]
+        if (
+            len(credentials) != 1
+            or credentials[0].get("auth_provider_type") != "homeassistant"
+            or credentials[0].get("data") != {"username": "admin"}
+        ):
+            raise AuthResetError("ha_recovery_owner_unconfirmed")
+        owner["local_only"] = True
+        # Revoke even the onboarding token before starting recovery access.
+        auth["refresh_tokens"] = [t for t in auth["refresh_tokens"] if t["user_id"] != owner["id"]]
+        self.replace(storage / "auth", json.dumps(docs["auth"]))
+        state["recovery_user"] = owner["id"]
+        self.save(state)
+        self.replace(self.root / "configuration.yaml", NORMAL_CONFIG)
+        await self.supervisor.request("POST", "/core/options", {"boot": True, "watchdog": False})
+        await self.supervisor.request("POST", "/core/start")
+        self.stopped = False
+
+    async def remove_recovery_owner(self, state):
+        # Stop HA and revoke ALL recovery sessions before the real owner is
+        # created. A failed removal must never enable normal onboarding/access.
+        await self.supervisor.request("POST", "/core/options", {"boot": False, "watchdog": False})
+        await self.supervisor.request("POST", "/core/stop")
+        self.stopped = True
+        await self.assert_stopped()
+        self.replace(self.root / "configuration.yaml", ISOLATED_CONFIG)
+        journal = self.settings.data_dir / ("recovery-" + state["id"])
+        if (journal / "accounts-cleared").exists():
+            # A crash after the durable removal but before save is safe to resume
+            # only when no human account/credential has reappeared.
+            storage = self.root / ".storage"
+            docs = {
+                p.name: json.loads(p.read_text())
+                for p in storage.iterdir()
+                if p.name in {"auth", "onboarding"} or p.name.startswith(("auth_provider.", "auth_module."))
+            }
+            if reset_documents(docs) != docs:
+                raise AuthResetError("ha_recovery_removal_unconfirmed")
+        else:
+            await OfflineAuthReset(self.root / ".storage", journal, self.assert_stopped).execute()
+        state.pop("recovery_user", None)
+        self.save(state)
 
     async def bootstrap(self, plan):
         state = self.state()
@@ -346,32 +434,19 @@ class FullReset:
         if credentials["username"] != plan["username"]:
             raise AuthResetError("reset_plan_mismatch")
         if state["phase"] == "awaiting_owner":
-            # Bind only loopback and the private Supervisor bridge, never LAN.
-            # The bridge allows Supervisor health checks during startup.
-            if (self.root / "configuration.yaml").read_text() != ISOLATED_CONFIG:
-                raise AuthResetError("ha_isolation_config_changed")
-            await self.supervisor.request("POST", "/core/start")
-            async with httpx.AsyncClient(
-                base_url="http://127.0.0.1:8123", timeout=15, trust_env=False, transport=self.ha_transport
-            ) as client:
-                async with asyncio.timeout(120):
-                    while True:
-                        try:
-                            response = await client.get("/api/onboarding")
-                            if response.status_code == 200:
-                                break
-                        except httpx.HTTPError:
-                            pass
-                        await asyncio.sleep(2)
+            if state.get("recovery_user"):
+                await self.remove_recovery_owner(state)
+
+            def creating_owner():
                 state["phase"] = "creating_owner"
                 self.save(state)
-                await create_first_owner(
-                    client,
-                    name=plan.get("profile", {}).get("full_name", plan["username"]),
-                    username=credentials["username"],
-                    password=credentials["password"],
-                    client_id="http://localhost:8123/",
-                )
+
+            await self.isolated_owner(
+                name=plan.get("profile", {}).get("full_name", plan["username"]),
+                username=credentials["username"],
+                password=credentials["password"],
+                before_create=creating_owner,
+            )
             state["phase"] = "owner_created"
             self.save(state)
         elif state["phase"] == "creating_owner":

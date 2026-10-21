@@ -1,3 +1,9 @@
+## 1.35.82
+- Full reset oppretter en midlertidig Home Assistant-eier med brukernavn admin og passord admin123. Kontoen tillater kun lokal innlogging og opprettes mens HA er isolert fra lokalnettet.
+- Home Assistant starter igjen før hubens omstart, slik at lokal gjenoppretting er mulig mens huben venter på nytt oppsett.
+- Ny onboarding fjerner reservekontoen og alle tilhørende økter før den ordinære eierkontoen opprettes. SMARTi får ingen reservekonto, og fjernaksess forblir sperret under reset/oppsett.
+- Ved feil før reservekontoen er ferdig opprettet og kontrollert, forblir HA skjermet; lokal innlogging kan da kreve manuell gjenoppretting.
+
 ## 1.35.81
 - QR-skanning fortsetter til oppsettet også når iPhone viser aktiveringssiden fra før. Skanning under pågående sideinnlasting behandles når siden er klar.
 
