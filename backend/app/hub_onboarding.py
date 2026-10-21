@@ -12,6 +12,7 @@ import httpx
 from fastapi import HTTPException
 
 from .certificate_hook import read_identity
+from .factory_reset import archive_previous_reset
 from .full_reset import FullReset
 from .ha import HAError
 from .ha_auth_reset import AuthResetError
@@ -287,6 +288,7 @@ class HubOnboarding:
             await stage("user", user)
             done.add("completed")
             self.store.set(key, json.dumps(sorted(done)))
+            archive_previous_reset(self.store, full.state())
             await self.progress(plan, "completed", "completed")
         except (HAError, HTTPException, TimeoutError, ValueError, KeyError, sqlite3.Error) as e:
             # No raw HA errors or personal setup data in cloud-facing error text.
@@ -302,6 +304,7 @@ class HubOnboarding:
         full = FullReset(self.settings, self.store)
         await full.resume_reboot()
         reset_state = full.state()
+        archive_previous_reset(self.store, reset_state)
         if reset_state and reset_state["phase"] == "failed":
             try:
                 await full.cloud("failed", {"id": reset_state["id"]})

@@ -15,6 +15,33 @@ from .auth import DUMMY, hasher
 from .ha import HAError
 
 
+def archive_previous_reset(store, state):
+    """Hide old journals only after this reset's new owner setup has completed.
+
+    Keep journal rows and idempotency intact. The per-generation marker prevents
+    later reset attempts from being hidden by repeated status/heartbeat calls.
+    """
+    if not state or state.get("phase") != "completed":
+        return
+    marker = "reset_report_archived:" + state["id"]
+    with store.connect() as db:
+        db.execute("BEGIN IMMEDIATE")
+        if db.execute("SELECT 1 FROM settings WHERE key=?", (marker,)).fetchone():
+            return
+        if not db.execute("SELECT 1 FROM users LIMIT 1").fetchone():
+            return
+        checkpoints = db.execute("SELECT value FROM settings WHERE key LIKE 'onboarding:%'").fetchall()
+        if not any("completed" in json.loads(row[0]) for row in checkpoints):
+            return
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='factory_resets'").fetchone():
+            return
+        if db.execute("SELECT 1 FROM factory_resets WHERE status='running'").fetchone():
+            return
+        cutoff = db.execute("SELECT COALESCE(MAX(rowid),0) FROM factory_resets").fetchone()[0]
+        db.execute("INSERT OR REPLACE INTO settings VALUES('factory_reset_report_cutoff',?)", (str(cutoff),))
+        db.execute("INSERT INTO settings VALUES(?, '1')", (marker,))
+
+
 class FactoryResetRequest(BaseModel):
     model_config = {"extra": "forbid"}
     request_id: UUID
@@ -163,10 +190,13 @@ def factory_reset_router(store, auth, admin, engine):
 
     @router.get("")
     async def status(current=Depends(permitted)):
+        full = getattr(engine.provider, "full", None)
+        archive_previous_reset(store, full.state() if full else None)
         result = await engine.provider.preflight()
         with store.connect() as db:
             row = db.execute(
-                "SELECT body FROM factory_resets WHERE owner=? ORDER BY rowid DESC LIMIT 1", (current["id"],)
+                "SELECT body FROM factory_resets WHERE owner=? AND rowid>? ORDER BY rowid DESC LIMIT 1",
+                (current["id"], int(store.get("factory_reset_report_cutoff", "0"))),
             ).fetchone()
         return result | {"job": json.loads(row["body"]) if row else None}
 

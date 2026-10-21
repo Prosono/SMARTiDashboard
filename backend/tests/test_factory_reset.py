@@ -275,3 +275,44 @@ def test_concurrent_requests_and_cancellation_do_not_repeat_operations(client):
     assert result["status"] == "interrupted"
     assert result["results"][0]["status"] == "unconfirmed"
     assert provider.calls == ["1"]
+
+
+def test_completed_onboarding_archives_report_but_preserves_history_and_next_attempt(client):
+    from types import SimpleNamespace
+
+    advanced(client)
+    store = client.app.state.store
+    engine = client.app.state.factory_reset
+    state = {"id": "reset-generation-one", "phase": "completed"}
+    engine.provider.full = SimpleNamespace(state=lambda: state)
+    with store.connect() as db:
+        owner = db.execute("SELECT id FROM users WHERE name='owner'").fetchone()[0]
+        old = {"id": str(uuid4()), "status": "incomplete", "results": [], "step": "finished", "error": ""}
+        db.execute(
+            "INSERT INTO factory_resets VALUES(?,?,?,?)", (old["id"], owner, old["status"], json.dumps(old))
+        )
+    # Recreating the HA owner alone does not prove the entire setup succeeded.
+    assert client.get(PATH).json()["job"]["id"] == old["id"]
+    store.set("onboarding:new-plan", json.dumps(["user", "completed"]))
+    assert client.get(PATH).json()["job"] is None
+    assert engine.read(old["id"], owner) == old
+    new = old | {"id": str(uuid4()), "status": "running"}
+    with store.connect() as db:
+        db.execute(
+            "INSERT INTO factory_resets VALUES(?,?,?,?)", (new["id"], owner, new["status"], json.dumps(new))
+        )
+    assert client.get(PATH).json()["job"]["id"] == new["id"]
+    new["status"] = "interrupted"
+    engine.save(new)
+    assert client.get(PATH).json()["job"]["id"] == new["id"]
+
+
+def test_incomplete_reset_is_not_archived_by_old_onboarding_checkpoint(client):
+    from app.factory_reset import archive_previous_reset
+
+    advanced(client)
+    store = client.app.state.store
+    store.set("onboarding:old-plan", json.dumps(["completed"]))
+    for phase in ["failed", "awaiting_owner", "awaiting_reboot", "creating_owner"]:
+        archive_previous_reset(store, {"id": "incomplete-reset", "phase": phase})
+    assert store.get("factory_reset_report_cutoff") == ""

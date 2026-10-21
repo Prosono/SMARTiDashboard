@@ -1,3 +1,8 @@
+## 1.35.73
+- Etter fullført nytt oppsett åpnes tilbakestilling med et nytt bekreftelsesskjema, ikke rapporten fra forrige installasjon.
+- Gamle rapporter beholdes som historikk. Pågående og avbrutte forsøk vises fortsatt.
+- Retter også huber som allerede er satt opp igjen etter en tidligere tilbakestilling.
+
 ## 1.35.72
 - Gjenoppretter MQTT- og Z-Wave-forbindelser etter fabrikktilbakestilling uten å endre paringer eller radionettverk.
 - Kontrollerer at Zigbee2MQTT og Z-Wave er tilgjengelige før nytt oppsett fullføres.
