@@ -771,7 +771,7 @@ function Dashboard({
     }
     // Brief reconnects should not flash a page-wide alert. Controls still use
     // the immediate offline state so stale data cannot enable commands.
-    const timer = window.setTimeout(() => setConnectionWarning(true), 10_000);
+    const timer = window.setTimeout(() => setConnectionWarning(true), 120_000);
     return () => window.clearTimeout(timer);
   }, [offline]);
   if (home.isLoading)

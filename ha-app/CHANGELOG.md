@@ -1,3 +1,6 @@
+## 1.35.79
+- Frakoblingsvarselet inne i hjemmet vises først etter to minutter sammenhengende kontaktbrudd. Kortvarige brudd gir ikke varsel, og ventetiden nullstilles straks kontakten kommer tilbake.
+
 ## 1.35.78
 - Konto og e-postbekreftelse kreves før en hub kan kobles til. Full kontaktprofil inngår i registreringen.
 - Ny «Glemt passord»-flyt for portalkontoen, med tidsbegrenset engangslenke.

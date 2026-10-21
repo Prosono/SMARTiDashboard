@@ -1,0 +1,25 @@
+import {test,expect} from '../../frontend/node_modules/@playwright/test';
+test('connection warning waits two minutes and clears when contact returns',async({page})=>{
+ let connected=false;
+ await page.route('**/api/home',async route=>{const response=await route.fetch();const data=await response.json();await route.fulfill({json:{...data,connected}});});
+ await page.clock.install();
+ await page.goto('/');
+ await page.getByLabel('Brukernavn',{exact:true}).fill('tester');
+ await page.getByLabel('Passord',{exact:true}).fill('test-password-not-for-live');
+ await page.getByRole('button',{name:'Logg inn',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Innstillinger',exact:true}).first()).toBeVisible();
+ const warning=page.locator('.notice[role="alert"]');
+ await page.clock.fastForward(119000);
+ await expect(warning).toHaveCount(0);
+ await page.clock.fastForward(2000);
+ await expect(warning).toBeVisible();
+ connected=true;
+ await page.clock.fastForward(31000);
+ await expect(warning).toHaveCount(0);
+ connected=false;
+ await page.clock.fastForward(31000);
+ await expect(warning).toHaveCount(0);
+ connected=true;
+ await page.clock.fastForward(31000);
+ await expect(warning).toHaveCount(0);
+});
