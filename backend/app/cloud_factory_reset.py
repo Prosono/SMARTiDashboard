@@ -6,13 +6,14 @@ import time
 from typing import Literal
 from uuid import UUID
 
-from fastapi import HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 
 class ResetBegin(BaseModel):
     id: UUID
     ownership: Literal["keep_owner", "release_owner"] = "keep_owner"
+    production: bool = False
     public_key: str = Field(min_length=44, max_length=44)
 
 
@@ -28,7 +29,7 @@ class ResetReady(BaseModel):
     report: list[ResetResult] = Field(default_factory=list, max_length=2000)
 
 
-def install_factory_reset(app, db, home_auth):
+def install_factory_reset(app, db, home_auth, session, is_admin):
     with db() as c:
         c.execute(
             "CREATE TABLE IF NOT EXISTS hub_resets(home TEXT PRIMARY KEY, id TEXT NOT NULL, public_key TEXT NOT NULL, phase TEXT NOT NULL, created REAL NOT NULL, report TEXT NOT NULL DEFAULT '[]')"
@@ -44,6 +45,35 @@ def install_factory_reset(app, db, home_auth):
         if "released" not in columns:
             c.execute("ALTER TABLE hub_resets ADD COLUMN released INTEGER NOT NULL DEFAULT 0")
 
+    with db() as c:
+        c.execute(
+            "CREATE TABLE IF NOT EXISTS production_grants(home TEXT PRIMARY KEY, expires REAL NOT NULL, reset_id TEXT)"
+        )
+
+    with db() as c:
+        if "completed" not in {r[1] for r in c.execute("PRAGMA table_info(production_grants)")}:
+            c.execute("ALTER TABLE production_grants ADD COLUMN completed INTEGER NOT NULL DEFAULT 0")
+
+    @app.post("/api/admin/hubs/{home}/production-access")
+    def allow_production(home: str, s=Depends(session)):
+        if not is_admin(s["account"]):
+            raise HTTPException(403, "portal_admin_required")
+        with db() as c:
+            if not c.execute("SELECT 1 FROM homes WHERE id=? AND owner IS NOT NULL", (home,)).fetchone():
+                raise HTTPException(409, "managed_owner_required")
+            if c.execute("SELECT 1 FROM hub_resets WHERE home=? AND phase!='completed'", (home,)).fetchone():
+                raise HTTPException(409, "reset_in_progress")
+            expires = time.time() + 1800
+            c.execute(
+                "INSERT OR REPLACE INTO production_grants(home,expires,reset_id) VALUES(?,?,NULL)",
+                (home, expires),
+            )
+            c.execute(
+                "INSERT INTO admin_audit(actor,action,target,created) VALUES(?,?,?,?)",
+                (s["account"], "allow_production_wipe", home, time.time()),
+            )
+        return {"expires": expires}
+
     @app.get("/api/hubs/{home}/factory-reset/capabilities")
     def capabilities(home: str, request: Request):
         home_auth(home, request)
@@ -53,7 +83,13 @@ def install_factory_reset(app, db, home_auth):
             ).fetchone()
             if not row or not row["owner"]:
                 raise HTTPException(409, "managed_owner_required")
-        return {"version": 3}
+            grant = c.execute(
+                "SELECT expires,reset_id FROM production_grants WHERE home=?", (home,)
+            ).fetchone()
+        return {
+            "version": 4,
+            "production_allowed": bool(grant and grant["expires"] > time.time() and not grant["reset_id"]),
+        }
 
     @app.post("/api/hubs/{home}/factory-reset/begin")
     def begin(home: str, body: ResetBegin, request: Request):
@@ -70,6 +106,18 @@ def install_factory_reset(app, db, home_auth):
             ).fetchone()
             if not row:
                 raise HTTPException(409, "managed_owner_required")
+            if body.production:
+                grant = c.execute("SELECT * FROM production_grants WHERE home=?", (home,)).fetchone()
+                if (
+                    body.ownership != "release_owner"
+                    or not grant
+                    or not (
+                        grant["reset_id"] == str(body.id)
+                        or (not grant["reset_id"] and grant["expires"] > time.time())
+                    )
+                ):
+                    raise HTTPException(403, "production_access_required")
+                c.execute("UPDATE production_grants SET reset_id=? WHERE home=?", (str(body.id), home))
             previous = c.execute("SELECT * FROM hub_resets WHERE home=?", (home,)).fetchone()
             if previous and previous["id"] == str(body.id):
                 if previous["public_key"] != body.public_key or previous["ownership"] != body.ownership:
@@ -115,6 +163,11 @@ def install_factory_reset(app, db, home_auth):
         home_auth(home, request)
         with db() as c:
             c.execute("BEGIN IMMEDIATE")
+            grant = c.execute(
+                "SELECT reset_id,completed FROM production_grants WHERE home=?", (home,)
+            ).fetchone()
+            if grant and grant["reset_id"] == str(body.id) and grant["completed"]:
+                return {"acknowledged": True}
             changed = c.execute(
                 "UPDATE hub_resets SET phase=?,report=? WHERE home=? AND id=? AND phase IN ('erasing','rebooting','awaiting_owner')",
                 (body.phase, json.dumps([r.model_dump() for r in body.report]), home, str(body.id)),
@@ -132,6 +185,17 @@ def install_factory_reset(app, db, home_auth):
             ):
                 c.execute("UPDATE homes SET owner=NULL,name='Mitt hjem',remote_enabled=0 WHERE id=?", (home,))
                 c.execute("UPDATE hub_resets SET released=1 WHERE home=?", (home,))
+            if body.phase == "awaiting_owner" and grant and grant["reset_id"] == str(body.id):
+                # Retire the old rendezvous binding, but keep the printed label.
+                # A subsequent QR claim must use a fresh LAN enrollment identity.
+                c.execute("DELETE FROM hub_enrollments WHERE home=?", (home,))
+                c.execute("DELETE FROM hub_resets WHERE home=?", (home,))
+                c.execute(
+                    "UPDATE factory_hubs SET fingerprint=NULL,heartbeat=NULL,seen=NULL,phase='ready' WHERE home=?",
+                    (home,),
+                )
+                c.execute("UPDATE production_grants SET completed=1 WHERE home=?", (home,))
+
         return {"acknowledged": True}
 
     @app.post("/api/hubs/{home}/factory-reset/failed")

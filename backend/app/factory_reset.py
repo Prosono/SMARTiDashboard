@@ -51,13 +51,15 @@ class FactoryResetRequest(BaseModel):
     def release_confirmed(self):
         if self.ownership == "release_owner" and not self.acknowledge_release:
             raise ValueError("ownership_release_confirmation_required")
+        if self.confirmation == "RESTORE WIPE" and self.ownership != "release_owner":
+            raise ValueError("production_requires_release")
         return self
 
     acknowledge_manual_cleanup: Literal[True]
     password: str | None = Field(
         default=None, max_length=128, repr=False
     )  # Accepted from older clients; not required.
-    confirmation: Literal["RESET HUB"]
+    confirmation: Literal["RESET HUB", "RESTORE WIPE"]
     acknowledge_data_loss: Literal[True]
     acknowledge_pairing: Literal[True]
     backup_decision: Literal["saved", "skip"]
@@ -106,14 +108,17 @@ class FactoryReset:
             task.cancel()
         await asyncio.gather(*self.tasks, return_exceptions=True)
 
-    async def start(self, id, owner, ownership="keep_owner"):
+    async def start(self, id, owner, ownership="keep_owner", production=False):
         id = str(id)
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             previous = db.execute("SELECT owner,body FROM factory_resets WHERE id=?", (id,)).fetchone()
             if previous:
                 existing = json.loads(previous["body"])
-                if previous["owner"] != owner or existing.get("ownership", "keep_owner") != ownership:
+                if previous["owner"] != owner or (
+                    existing.get("ownership", "keep_owner") != ownership
+                    or existing.get("production", False) != production
+                ):
                     raise HTTPException(409, "reset_conflict")
                 return existing
             if db.execute("SELECT 1 FROM factory_resets WHERE status='running'").fetchone():
@@ -126,6 +131,7 @@ class FactoryReset:
                 "status": "running",
                 "step": "inventory",
                 "ownership": ownership,
+                "production": production,
                 "created": time.time(),
                 "results": [],
                 "error": "",
@@ -152,6 +158,7 @@ class FactoryReset:
                 self.save(job)  # A crash here is uncertain, never replayed automatically.
                 if op["kind"] == "full_reset":
                     op["ownership"] = job.get("ownership", "keep_owner")
+                    op["production"] = job.get("production", False)
                     op["report"] = [dict(r) for r in job["results"] if r is not result]
                 try:
                     # Full reset now starts and stops HA to provision local recovery access.
@@ -226,15 +233,24 @@ def factory_reset_router(store, auth, admin, engine):
         # A retry of the same request reads its job, including after a disconnect.
         try:
             previous = engine.read(str(body.request_id), current["id"])
-            if previous.get("ownership", "keep_owner") != body.ownership:
+            if previous.get("ownership", "keep_owner") != body.ownership or previous.get(
+                "production", False
+            ) != (body.confirmation == "RESTORE WIPE"):
                 raise HTTPException(409, "reset_conflict")
             return previous
         except HTTPException as e:
             if e.status_code != 404:
                 raise
         ready = await engine.provider.preflight()
+        if body.confirmation == "RESTORE WIPE" and not ready.get("production_allowed"):
+            raise HTTPException(403, "production_access_required")
         if not ready["ready"]:
             raise HTTPException(409, "factory_reset_unavailable")
-        return await engine.start(body.request_id, current["id"], body.ownership)
+        return await engine.start(
+            body.request_id,
+            current["id"],
+            body.ownership,
+            **({"production": True} if body.confirmation == "RESTORE WIPE" else {}),
+        )
 
     return router

@@ -91,6 +91,9 @@ class HubOnboarding:
                 self.settings.data_dir,
                 exclusive=True,
             )
+            from .production_mode import bound
+
+            bound(self.settings.data_dir)
             await self.advertisement.update(None)
             if self.start_remote:
                 self.start_remote()

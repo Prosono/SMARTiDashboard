@@ -53,6 +53,7 @@ class HomeResetProvider:
             except (OSError, ValueError):
                 return {"ready": False, "blockers": ["reset_storage_unreadable"], "full": True}
         return {
+            "production_allowed": bool(self.full and getattr(self.full, "production_allowed", False)),
             "full": self.full is not None,
             "ready": True,
             "blockers": [],
@@ -167,7 +168,9 @@ class HomeResetProvider:
         ha, kind, id = self.ha, op["kind"], op["id"]
         if kind == "full_reset":
             result = await self.full.execute(
-                op.get("report", []), ownership=op.get("ownership", "keep_owner")
+                op.get("report", []),
+                ownership=op.get("ownership", "keep_owner"),
+                **({"production": True} if op.get("production") else {}),
             )
             self.ha.states.clear()
             return result

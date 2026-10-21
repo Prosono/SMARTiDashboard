@@ -25,6 +25,7 @@ class EnrollmentPoll(BaseModel):
     users: int = Field(ge=0)
     ha_connected: bool
     bootstrap: FactoryBootstrap | None = None
+    retire: bool = False
 
 
 def install_enrollment(app, db, throttle, provisioning_secret):
@@ -74,6 +75,11 @@ def install_enrollment(app, db, throttle, provisioning_secret):
                 or row["fingerprint"] != body.fingerprint
             ):
                 raise HTTPException(403, "enrollment_rejected")
+            if body.retire and (not row or not row["home"]):
+                # Atomic with QR binding: a late scan cannot bind an identity
+                # after a reboot has retired it. Bound delivery wins the race.
+                c.execute("DELETE FROM hub_enrollments WHERE device=? AND home IS NULL", (device,))
+                return {"retired": True}
             if not row:
                 if body.users:
                     raise HTTPException(409, "existing_users")
@@ -93,6 +99,8 @@ def install_enrollment(app, db, throttle, provisioning_secret):
                     raw = base64.urlsafe_b64decode(row["delivery"])
                     identity = json.loads(cipher.decrypt(raw[:12], raw[12:], device.encode()))
                     return {"identity": identity}
+            if body.retire:
+                raise HTTPException(409, "enrollment_already_bound")
             return {"waiting": True}
 
     def bind(c, row, device):

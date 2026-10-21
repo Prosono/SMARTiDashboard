@@ -214,3 +214,27 @@ def test_factory_clone_bootstrap_is_scoped_to_qr_claim(tmp_path):
         )
     assert plan["reset_id"] == reset_id
     assert unseal(private, reset_id, plan["ha_credentials"])["password"] == PLAN["password"]
+
+
+def test_rotation_is_atomic_with_qr_claim(tmp_path):
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    client = TestClient(app, base_url=ORIGIN)
+    body = pending()
+    client.post("/api/enrollment/poll", json=body)
+    assert client.post("/api/enrollment/poll", json=body | {"retire": True}).json() == {"retired": True}
+    assert (
+        owner.post(f"/api/activation/{home}/claim", json=activation | {"device": body["device"]}).status_code
+        == 409
+    )
+    # If QR binding wins instead, rotation must recover the delivery.
+    client.post("/api/enrollment/poll", json=body)
+    assert (
+        owner.post(f"/api/activation/{home}/claim", json=activation | {"device": body["device"]}).status_code
+        == 200
+    )
+    assert (
+        client.post("/api/enrollment/poll", json=body | {"retire": True}).json()["identity"][
+            "installation_id"
+        ]
+        == home
+    )

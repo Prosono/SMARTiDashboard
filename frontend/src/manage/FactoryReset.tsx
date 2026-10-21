@@ -6,7 +6,7 @@ import { SettingsDialog } from "../home/SettingsDialog";
 import "./factoryReset.css";
 
 type Job = {id: string; status: string; step: string; error: string; results: {kind: string; name: string; status: string; reason: string}[]};
-type Readiness = { ready: boolean; full?: boolean; blockers: string[]; job?: Job | null };
+type Readiness = { ready: boolean; production_allowed?: boolean; full?: boolean; blockers: string[]; job?: Job | null };
 export function FactoryReset({ lang }: { lang: string }) {
   const t = (nb: string, en: string) => lang === "en" ? en : nb;
   const blockers: Record<string, string> = {
@@ -52,6 +52,8 @@ export function FactoryReset({ lang }: { lang: string }) {
     staleTime: 0,
     refetchInterval: open ? 2000 : false,
   });
+  const productionAllowed = !!readiness.data?.production_allowed && ownership === "release_owner";
+  const validConfirmation = confirmation === "RESET HUB" || (productionAllowed && confirmation === "RESTORE WIPE");
   const latest = readiness.data?.job;
   const job = submitted ? (latest?.id === submitted.id ? latest : submitted) : newAttempt ? null : latest;
   const running = busy || job?.status === "running";
@@ -111,10 +113,11 @@ export function FactoryReset({ lang }: { lang: string }) {
         <label className="factory-reset-check"><input type="checkbox" required checked={pairing} onChange={e => setPairing(e.target.checked)} />{t("Jeg forstår at paringer beholdes og at eventuell fjerning må gjøres manuelt.", "I understand pairings are retained and any removal must be performed manually.")}</label>
         <aside className="factory-reset-warning"><p>{t("HA-eier, lokale brukere, innlogginger, integrasjoner og hjemmets oppsett slettes. Du blir logget ut, og hele huben starter på nytt. SMARTi og HA starter automatisk. HA har midlertidig lokal innlogging med admin / admin123 for gjenoppretting. Denne kontoen og alle øktene dens slettes når du starter nytt oppsett etter QR-skanning. Installerte apper beholdes. Valget ovenfor avgjør om eierskapet beholdes eller fjernes. Integrasjoner må kobles til på nytt.", "The HA owner, local users, sessions, integrations and home configuration are erased. You are signed out and the entire hub reboots. SMARTi and HA start automatically. HA temporarily allows local recovery login with admin / admin123. This account and all its sessions are removed when you begin setup after scanning the QR code. Installed apps are kept. Your selection above determines whether ownership is retained or released; integrations must be connected again.")}</p></aside>
         <label className="factory-reset-check"><input type="checkbox" required checked={manual} onChange={e => setManual(e.target.checked)} />{t("Jeg forstår at jeg må sette opp hjemmet og koble til integrasjoner på nytt, og at noen paringer kan kreve manuell opprydding.", "I accept that reset may be incomplete and require manual cleanup.")}</label>
-        <label>{t("Skriv RESET HUB for å bekrefte", "Type RESET HUB to confirm")}<input value={confirmation} onChange={e => setConfirmation(e.target.value)} autoComplete="off" spellCheck={false} required pattern="RESET HUB" /></label>
+        <label>{t("Skriv RESET HUB for å bekrefte", "Type RESET HUB to confirm")}<input value={confirmation} onChange={e => setConfirmation(e.target.value)} autoComplete="off" spellCheck={false} required pattern={productionAllowed ? "RESET HUB|RESTORE WIPE" : "RESET HUB"} /></label>
+        {productionAllowed && <aside className="factory-reset-warning"><p>{t("Intern produksjonstilgang er aktiv. Skriv RESTORE WIPE for å klargjøre et klonbart master-image. Huben frigjøres fra kontoen og SMARTi-identiteten slettes. Inntil en QR-kode er koblet til, fornyes identiteten ved omstart. Bruk aldri en kundes hub som master. Paringer i radioene slettes ikke.", "Production access is active. Type RESTORE WIPE to prepare a cloneable master image. Ownership and SMARTi identity are removed. Identity renews on restart until QR binding. Never use a customer's hub. Radio pairings are not erased.")}</p></aside>}
         {readiness.isPending ? <p role="status">{t("Kontrollerer huben…", "Checking hub…")}</p> : !readiness.data?.ready && <p role="status" className="factory-reset-unavailable">{readiness.isError ? t("Kunne ikke kontrollere huben. Lukk dialogen og prøv igjen.", "Could not check the hub. Close this dialog and retry.") : (readiness.data?.blockers.map(code => blockers[code] || t("Kontrollen av huben feilet. Kontakt support.", "Hub checks failed. Contact support.")).join(" ") + " " + t("Ingen data er slettet.", "No data has been erased."))}</p>}
         {error && <p role="alert">{error}</p>}
-        <div className="factory-reset-actions"><button type="button" disabled={busy} onClick={close}>{t("Avbryt", "Cancel")}</button><button className="factory-reset-danger" disabled={busy || !readiness.data?.ready || confirmation !== "RESET HUB" || !loss || !pairing || !manual || !backup || (ownership === "release_owner" && !release)}>{t("Start tilbakestilling", "Start reset")}</button></div>
+        <div className="factory-reset-actions"><button type="button" disabled={busy} onClick={close}>{t("Avbryt", "Cancel")}</button><button className="factory-reset-danger" disabled={busy || !readiness.data?.ready || !validConfirmation || !loss || !pairing || !manual || !backup || (ownership === "release_owner" && !release)}>{t("Start tilbakestilling", "Start reset")}</button></div>
       </form>}
     </SettingsDialog>}
   </section>;

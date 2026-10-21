@@ -15,7 +15,11 @@ def physical_addresses(root=Path("/sys/class/net")):
     return {
         p.joinpath("address").read_text().strip().lower()
         for p in root.iterdir()
-        if (p / "device").exists() and (p / "address").is_file()
+        if (p / "device").exists()
+        and (p / "address").is_file()
+        and not (p / "wireless").exists()
+        and (p / "addr_assign_type").is_file()
+        and (p / "addr_assign_type").read_text().strip() == "0"
     }
 
 

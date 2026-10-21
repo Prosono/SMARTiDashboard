@@ -7,6 +7,8 @@ from app.remote_options import configure_remote_identity
 from pathlib import Path
 # This runs before credentials, databases, Bonjour or outbound connections.
 from app.factory_image import initialize
+from app.production_mode import start as start_production
+start_production(Path('/data'))
 initialize(Path('/data'))
 options = {}
 options_file = Path('/data/options.json')

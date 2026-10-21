@@ -121,7 +121,7 @@ def install_onboarding(
 
     from .cloud_factory_reset import install_factory_reset
 
-    install_factory_reset(app, db, home_auth)
+    install_factory_reset(app, db, home_auth, session, is_admin)
     bind_enrollment = install_enrollment(app, db, throttle, secret)
 
     def admin(s=Depends(session)):

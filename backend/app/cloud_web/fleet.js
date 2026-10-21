@@ -1,5 +1,6 @@
 // Fleet presentation: byte totals are supplied by the relay, never synthesized.
 window.fleet = (() => {
+ let apiRequest=null;
  let hubs=[], report=null, filter='all', query='', order='newest';
  let map=null,markers=null,mapItems=[],mapLoading=null,firstMap=true;
  const $=id=>document.getElementById(id);
@@ -56,7 +57,11 @@ window.fleet = (() => {
   for(const [key,value]of fields){dl.append(node('dt',key),node('dd',String(value)));}info.append(dl);
   const traffic=node('section',undefined,'hub-detail-traffic');traffic.append(node('h3','Fjerntrafikk · siste '+$('traffic-period').value+' dager'));
   const r=report?.hubs?.[h.id];if(report?.available){traffic.append(node('strong',bytes(r?total(r):0)),node('p','Til hub: '+bytes(r?.to_hub||0)+' · Fra hub: '+bytes(r?.from_hub||0)));if(r?.daily?.length)traffic.append(chart(r.daily));traffic.append(node('small',(report.stale?'Målingen er forsinket. ':'')+'Gjelder trafikk gjennom SMARTis relé, ikke all trafikk på hjemmenettverket.'));}else traffic.append(node('p','Trafikkmålingen er ikke tilgjengelig ennå.'));
-  info.append(traffic);body.append(qrSection,info);dialog.append(header,body);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();
+  info.append(traffic);
+  const production=node('details',undefined,'hub-production');production.append(node('summary','Internt · produksjonsklargjøring'));
+  production.append(node('p','Åpner RESTORE WIPE på denne huben i 30 minutter. Bruk bare en produksjonsmaster uten kundedata. Selve resetten må fortsatt bekreftes lokalt.'));
+  const allow=node('button','Aktiver produksjonstilgang i 30 minutter'),notice=node('p');notice.setAttribute('role','status');allow.type='button';
+  allow.onclick=async()=>{if(!confirm('Gi denne huben engangstilgang til produksjonsreset i 30 minutter? Dette klargjør for SSD-kloning og fjerner hubidentiteten når resetten utføres.'))return;allow.disabled=true;try{await apiRequest('admin/hubs/'+encodeURIComponent(h.id)+'/production-access','POST');notice.textContent='Tilgang aktivert. Velg «Klargjør for ny eier» i hubens reset-dialog og skriv RESTORE WIPE.';}catch(e){notice.textContent='Tilgang kunne ikke aktiveres. Huben må ha en eier og du må være portaladministrator.';allow.disabled=false;}};production.append(allow,notice);info.append(production);body.append(qrSection,info);dialog.append(header,body);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();
  }
  function updateSummary(){
   const days=Number($('traffic-period').value), list=report?.daily||[], sum=list.reduce((s,r)=>s+total(r),0), measured=report?.available;
@@ -70,7 +75,7 @@ window.fleet = (() => {
  }
  return {bytes,chart,openDetails,
   mapItems(items){mapItems=items;drawMap();},
-  async load(api,items){hubs=items;try{report=await api('admin/traffic?days='+$('traffic-period').value);}catch{report=null;}updateSummary();},
+  async load(api,items){apiRequest=api;hubs=items;try{report=await api('admin/traffic?days='+$('traffic-period').value);}catch{report=null;}updateSummary();},
   select(items){return items.filter(h=>(filter==='all'||category(h)===filter)&&[h.serial,h.model,h.hardware].join(' ').toLocaleLowerCase('nb').includes(query)).sort((a,b)=>order==='serial'?a.serial.localeCompare(b.serial,'nb',{numeric:true}):(order==='oldest'?1:-1)*((a.created||0)-(b.created||0)));},
   metric(h){const n=node('div',undefined,'hub-traffic'),r=report?.hubs?.[h.id];n.append(node('small','Fjerntrafikk · '+$('traffic-period').value+' dager'),node('strong',report?.available?bytes(r?total(r):0):'—'));if(r)n.append(chart(r.daily,true));n.append(node('small',report?.available?'↑ '+bytes(r?.to_hub||0)+' til · ↓ '+bytes(r?.from_hub||0)+' fra':'Venter på måling'));return n;},
   init(render){$('toggle-map').onclick=async()=>{const show=$('fleet-map-panel').hidden;$('fleet-map-panel').hidden=!show;$('toggle-map').setAttribute('aria-expanded',String(show));$('toggle-map').textContent=show?'Skjul kart':'Vis huber på kart';if(show){try{await openMap();}catch(e){$('map-message').textContent=e.message;}}};$('fit-hubs').onclick=fitMap;$('hub-query').oninput=e=>{query=e.target.value.trim().toLocaleLowerCase('nb');render();};$('hub-sort').onchange=e=>{order=e.target.value;render();};document.querySelectorAll('[data-fleet-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.fleetFilter;updateSummary();render();});},

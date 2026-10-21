@@ -1,4 +1,45 @@
-# Internt produksjonsvalg: Klargjør master-image for kloning
+# Produksjonsreset fra appen — RESTORE WIPE
+
+Fra 1.35.85 er anbefalt produksjonsflyt:
+
+1. I **sentral administrasjon → Huber → Se detaljer → Internt · produksjonsklargjøring**,
+   aktiver produksjonstilgang på masterhuben. Tilgangen gjelder én reset i 30 minutter.
+2. I hubens reset-dialog velger du **Klargjør for ny eier**, bekrefter advarslene
+   og skriver **RESTORE WIPE** i stedet for RESET HUB. Produksjonshjelpen vises bare
+   når sentral administrasjon har gitt akkurat denne huben tilgang.
+3. Huben kjører full reset og OS-omstart. Etter omstart bekreftes frigivelse i skyen,
+   Supervisor-options tømmes for fjernidentitet/bootstrap, og SMARTis lokale data,
+   sertifikater, identitet og gamle reset-journaler fjernes. En produksjonsmarkør beholdes.
+4. Når huben igjen er tilgjengelig for lokalt søk, er produksjonsmodus aktiv.
+   Slå av før SSD-kopiering. **Ikke skann QR eller start kundeoppsett på masteren.**
+5. Skriv samme image til nye huber. Hver skal ha egen registrering/QR-etikett.
+   En kopi med annet fysisk nettverkskort får nye tilfeldige SMARTi-nøkler før
+   nettverkstilkoblingen startes. På samme hub fornyes nøklene ved SMARTi-oppstart
+   så lenge den ikke er QR-koblet. Ved rent HA Core-restart uten omstart av SMARTi
+   er det ikke nødvendig å bytte identiteten.
+6. Ved QR-kobling lagres den nye identiteten varig og produksjonsmodus slås av.
+   Om strømmen går mellom QR-claim og mottak av identiteten, hentes eksisterende
+   kobling før nøklene roteres. Ved manglende internett beholdes samme fysiske hubs
+   ventende identitet slik at dette ikke brytes. Kopier på annen maskinvare gjenbruker
+   aldri masterens ventende registrering.
+
+Vanlige lokale administratorer får ikke produksjonstilgang bare ved å kjenne teksten.
+Backend kontrollerer sentral tillatelse før reset og skytjenesten forbruker tillatelsen
+før sletting. Supportøkter er fortsatt blokkert. Ingen generelle produksjonsrettigheter
+ligger i imaget, og originalens trykte QR-etikett kan knyttes på nytt etter wipe.
+
+Dette forutsetter dedikert produksjonsmaster uten kundedata. Radio-paringer og andre
+HA-apper renses ikke av denne funksjonen. Etter oppdateringer kan samme master brukes
+igjen: dersom den er tatt i bruk og QR-koblet, aktiver ny produksjonstilgang og kjør
+RESTORE WIPE på nytt. Ikke klon et image etter kundeoppsett.
+
+Programvaretester dekker tillatelser, isolering av kopier, nøkkelrotasjon, skyfeil og
+avbrutt QR-kobling. Test to faktiske SSD-kopier, hele onboardingløpet og radioene før
+serieproduksjon. Ingen fysisk reset utføres ved installasjon av denne programvaren.
+
+---
+
+# Alternativt offline-verktøy
 
 Dette er **ikke** et ekstra valg under kundens fabrikktilbakestilling. Verktøyet
 `python3 scripts/prepare_factory_image.py` finnes kun i produksjonsrepoet, ikke i

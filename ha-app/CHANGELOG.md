@@ -1,3 +1,9 @@
+## 1.35.85
+
+- RESTORE WIPE i reset-dialogen etter tidsbegrenset engangstillatelse fra sentral administrasjon.
+- Produksjonsmodus fjerner fjernidentiteten etter reset og gir klonede huber egne nøkler. QR-kobling avslutter modusen automatisk.
+- Avbrutt QR-kobling gjenopprettes før nøkkelrotasjon.
+
 ## 1.35.84
 
 - Støtte for internt forseglet produksjonsimage: hver SSD-kopi oppretter egen SMARTi-identitet og kryptert HA-eieroppsett.
