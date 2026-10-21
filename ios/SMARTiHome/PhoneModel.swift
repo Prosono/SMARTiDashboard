@@ -13,6 +13,7 @@ import UserNotifications
     @Published var permission: CLAuthorizationStatus = .notDetermined
     private let location = CLLocationManager()
     private var pushFailureObserver: NSObjectProtocol?
+    private var logoutObserver: NSObjectProtocol?
     private var wantsNotifications = false
     private var sending = false
     private var lastSent: Date = .distantPast
@@ -31,14 +32,23 @@ import UserNotifications
         PushAppDelegate.sharedTokenChanged = { [weak self] token in
             Task { await self?.registerPushToken(token) }
         }
+        logoutObserver = NotificationCenter.default.addObserver(forName: Notification.Name("SMARTiSignedOut"), object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.stopLocation(); self.sharing = false; self.paired = false
+                self.wantsNotifications = false; self.notificationsReady = false
+                self.status = "Logg inn og koble telefonen til kontoen din igjen."
+            }
+        }
         Task { await refresh() }
     }
     func refresh() async {
         paired = await MobileClient.shared.paired()
-        guard paired else { return }
+        guard paired, let scope = CredentialStore.load()?.scope else { return }
         do {
             let data = try await MobileClient.shared.send("companion", method: "GET")
             let info = try JSONDecoder().decode(CompanionStatus.self, from: data)
+            guard CredentialStore.load()?.scope == scope else { return }
             notificationsReady = info.notifications_ready
             notificationStatus = info.notifications_ready ? "Varsler er aktivert for dette hjemmet." : "Varsler er ikke aktivert."
             wantsNotifications = info.notifications_ready
@@ -214,15 +224,29 @@ struct InboxItem: Decodable, Identifiable {
     private var pendingID: String?
     private var expectedHome: String?
     private var scope: String?
+    private var generation = UUID()
+    var authorize: (() async throws -> Void)?
+
+    func clear() {
+        generation = UUID(); presented = false; items = []; selected = nil
+        error = nil; pendingID = nil; expectedHome = nil; scope = nil
+        hasMore = false; loading = false
+    }
+    private func checkAccess() async throws {
+        guard let authorize else { throw PhoneError.message("Åpne hjemmet og logg inn først.") }
+        try await authorize()
+    }
 
     func open(id: String? = nil, home: String? = nil) {
+        clear()
         pendingID = id; expectedHome = home
         items = []; selected = nil; error = nil
         presented = true
     }
     func load(more: Bool = false) async {
         guard !loading else { return }
-        loading = true; defer { loading = false }
+        let epoch = generation
+        loading = true; defer { if generation == epoch { loading = false } }
         error = nil
         guard let credentials = CredentialStore.load() else {
             items = []; selected = nil
@@ -234,12 +258,15 @@ struct InboxItem: Decodable, Identifiable {
             error = "Dette varselet tilhører et annet hjem. Velg hjemmet og koble telefonen til det for å se historikken."
             return
         }
-        if scope != credentials.deviceID { items = []; selected = nil; scope = credentials.deviceID }
+        if scope != credentials.scope { items = []; selected = nil; scope = credentials.scope }
         do {
+            try await checkAccess()
+            guard generation == epoch else { return }
             let path = more && !items.isEmpty ? "inbox?before=\(items.last!.created)" : "inbox"
             let data = try await MobileClient.shared.send(path, method: "GET")
             let rows = try JSONDecoder().decode([InboxItem].self, from: data)
-            guard CredentialStore.load()?.deviceID == credentials.deviceID else { items = []; selected = nil; return }
+            try await checkAccess()
+            guard generation == epoch, CredentialStore.load()?.scope == credentials.scope else { return }
             if more { items += rows } else { items = rows }
             hasMore = rows.count == 100
             if let id = pendingID {
@@ -247,20 +274,27 @@ struct InboxItem: Decodable, Identifiable {
                 if let item = items.first(where: { $0.id == id }) { await select(item) }
                 else {
                     let data = try await MobileClient.shared.send("inbox/" + id, method: "GET")
+                    guard generation == epoch, CredentialStore.load()?.scope == credentials.scope else { return }
                     await select(try JSONDecoder().decode(InboxItem.self, from: data))
                 }
             }
-        } catch { self.error = "Kunne ikke hente varslene. Kontroller forbindelsen og prøv igjen." }
+        } catch { if generation == epoch { items = []; selected = nil; hasMore = false; self.error = error.localizedDescription } }
     }
     func select(_ item: InboxItem) async {
-        selected = item
-        guard scope == CredentialStore.load()?.deviceID else { selected = nil; return }
+        let epoch = generation
+        let currentScope = scope
         do {
+            try await checkAccess()
+            guard generation == epoch, let currentScope, currentScope == CredentialStore.load()?.scope else { return }
             _ = try await MobileClient.shared.send("inbox/\(item.id)/read", method: "PUT")
+            try await checkAccess()
+            guard generation == epoch, currentScope == CredentialStore.load()?.scope else { return }
+            selected = item
             if let index = items.firstIndex(where: { $0.id == item.id }) { items[index].read_at = Date().timeIntervalSince1970 }
             selected?.read_at = Date().timeIntervalSince1970
-        } catch { self.error = "Meldingen er åpnet, men kunne ikke markeres som lest. Prøv igjen når forbindelsen er tilbake." }
+        } catch { if generation == epoch { items = []; selected = nil; self.error = error.localizedDescription } }
     }
+
 }
 
 struct NotificationInboxView: View {

@@ -2,13 +2,14 @@ import concurrent.futures
 import time
 
 import pytest
+from fastapi import HTTPException
+from fastapi.testclient import TestClient
+
 from app.config import Settings
 from app.demo import Demo
 from app.main import create_app
 from app.mobile import MobileAuth
 from app.storage import Store
-from fastapi import HTTPException
-from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -241,3 +242,38 @@ def test_upgrade_from_version_two_preserves_users_and_sessions(tmp_path):
         assert db.execute("SELECT name FROM users").fetchone()[0] == "existing"
         assert db.execute("SELECT token FROM sessions").fetchone()[0] == "existing-token"
     assert MobileAuth(Store(path)).installation_id == identity
+
+
+def test_inbox_never_exposes_another_users_notifications(pilot):
+    web, browser, phone = pilot
+    first, _ = pair(browser, phone)
+    first_session = phone.get("/api/mobile/v1/session").json()
+    assert (
+        browser.post(
+            "/api/users", json={"name": "second", "password": "another test password", "role": "user"}
+        ).status_code
+        == 200
+    )
+    assert browser.post("/api/logout").status_code == 200
+    login = browser.post("/api/login", json={"name": "second", "password": "another test password"})
+    browser.headers["x-csrf-token"] = login.json()["csrf"]
+    second, _ = pair(browser, phone)
+    second_session = phone.get("/api/mobile/v1/session").json()
+    assert first_session["id"] != second_session["id"]
+    assert second_session["id"] == browser.get("/api/session").json()["id"]
+    with web.state.management.store.connect() as db:
+        for id, tokens in [("first-private", first), ("second-private", second)]:
+            db.execute(
+                "INSERT INTO notification_inbox(id,device_id,title,message,created) VALUES(?,?,?,?,?)",
+                (id, tokens["device_id"], id, "private content", time.time()),
+            )
+    assert [n["id"] for n in phone.get("/api/mobile/v1/inbox").json()] == ["second-private"]
+    assert phone.get("/api/mobile/v1/inbox/first-private").status_code == 404
+    assert phone.put("/api/mobile/v1/inbox/first-private/read").status_code == 404
+    assert phone.get("/api/mobile/v1/inbox/second-private").status_code == 200
+    assert phone.put("/api/mobile/v1/inbox/second-private/read").status_code == 200
+    assert phone.post("/api/mobile/v1/logout").status_code == 200
+    assert phone.get("/api/mobile/v1/inbox").status_code == 401
+    phone.headers["authorization"] = "Bearer " + first["access_token"]
+    assert [n["id"] for n in phone.get("/api/mobile/v1/inbox").json()] == ["first-private"]
+    assert phone.get("/api/mobile/v1/inbox/second-private").status_code == 404

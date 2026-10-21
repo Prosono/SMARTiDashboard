@@ -2,6 +2,7 @@ import SwiftUI
 import WebKit
 import VisionKit
 import AVFoundation
+import UserNotifications
 
 @main struct SMARTiHomeApp: App {
     @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var pushDelegate
@@ -297,7 +298,12 @@ struct PhoneSettingsView: View {
         lastPage = URL(string: "https://home.smarti.dev/")!
         webView.stopLoading()
         showPhoneSettings = false
-        NotificationInbox.shared.presented = false
+        NotificationInbox.shared.clear()
+        CredentialStore.clear()
+        NotificationCenter.default.post(name: Notification.Name("SMARTiSignedOut"), object: nil)
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        UIApplication.shared.unregisterForRemoteNotifications()
+        Task { await MobileClient.shared.forget() }
         Task { @MainActor in
             let store = webView.configuration.websiteDataStore.httpCookieStore
             for cookie in await store.allCookies() {
@@ -385,6 +391,10 @@ struct PhoneSettingsView: View {
         configuration.userContentController.add(self, name: "smartiSession")
         configuration.userContentController.add(self, name: "smartiOnboarding")
         webView.navigationDelegate = self
+        NotificationInbox.shared.authorize = { [weak self] in
+            guard let self else { throw CancellationError() }
+            try await self.authorizeInbox()
+        }
         webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         if UserDefaults.standard.bool(forKey: Self.logoutPendingKey) {
@@ -416,6 +426,26 @@ struct PhoneSettingsView: View {
             if navigationAction.navigationType == .linkActivated && url.scheme == "https" { UIApplication.shared.open(url) }
         }
     }
+    func authorizeInbox() async throws {
+        guard !signingOut, let credentials = CredentialStore.load(),
+              let url = webView.url, MobileClient.isHome(url), url.host == credentials.origin.host else {
+            throw PhoneError.message("Åpne riktig hjem og logg inn for å se varslene dine.")
+        }
+        let result = try await webView.callAsyncJavaScript("""
+            const response = await fetch('/api/session', {credentials:'same-origin', cache:'no-store'});
+            if (!response.ok) throw new Error('login_required');
+            return (await response.json()).id;
+            """, arguments: [:], in: nil, contentWorld: .page)
+        let data = try await MobileClient.shared.send("session", method: "GET")
+        let mobile = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard !signingOut, webView.url?.host == url.host,
+              CredentialStore.load()?.scope == credentials.scope,
+              let user = result as? NSNumber, let pairedUser = mobile?["id"] as? NSNumber,
+              user == pairedUser else {
+            throw PhoneError.message("Telefonen er koblet til en annen bruker. Koble denne telefonen til brukeren du er innlogget som for å se dine varsler.")
+        }
+    }
+
     func pair() async throws {
         guard let url = webView.url, MobileClient.isHome(url),
               let origin = URL(string: "https://" + (url.host ?? "")) else {

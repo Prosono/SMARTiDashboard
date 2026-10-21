@@ -19,6 +19,13 @@ import Foundation
         ] {
             precondition(!MobileClient.matchesNotificationHome(cloudHome, origin: URL(string: address)!))
         }
-        print("Notification home routing tests passed")
+        var other = PhoneCredentials(origin: origin, installationID: credentials.installationID,
+            deviceID: UUID().uuidString, accessToken: "", refreshToken: "", expiresAt: 0)
+        precondition(credentials.scope != other.scope)
+        other = PhoneCredentials(origin: URL(string: "https://11111111-1111-4111-8111-111111111111.home.smarti.dev")!,
+            installationID: credentials.installationID, deviceID: credentials.deviceID,
+            accessToken: "", refreshToken: "", expiresAt: 0)
+        precondition(credentials.scope != other.scope)
+        print("Notification home and account-scope tests passed")
     }
 }

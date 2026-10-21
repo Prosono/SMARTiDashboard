@@ -366,3 +366,19 @@ The mobile portal improvements are deployed to home.smarti.dev using
 `smartihome:mobile-polish-20261020`. HA app 1.35.65 contains the lower bottom
 navigation and animated home authentication page. Browser regression checks,
 17 targeted backend tests, frontend build and signed iOS archive passed.
+
+### Build 15: varslingssenter følger innlogget bruker
+
+Varslingssenteret kontrollerer nettvisningens innloggede bruker mot mobilkoblingens
+bruker på samme hjem før historikk hentes eller vises. Konto-/hjembytte og sene
+nettverkssvar kan ikke fylle listen med forrige koblings varsler. Utlogging tømmer
+Keychain-kobling, historikk, visning og leverte iOS-varsler; serverens telefonøkt
+tilbakekalles hvis den er tilgjengelig. Push og posisjonsdeling stoppes lokalt.
+Etter utlogging må telefonen kobles til igjen under den aktuelle brukeren.
+
+Regresjonstest bekrefter isolert lesing, detaljvisning og lesemarkering for to
+brukere, samt avvisning etter tilbakekalling. Swift-tester dekker ulike hjem og
+telefonkoblinger. Simulatorbygg er kontrollert; fysisk kontobytte må testes.
+
+Signert Release-arkiv og opplasting til Apple er fullført. Build 15 er lagt til
+«SMARTi intern test» og bekreftet med status «Testing» 21. oktober 2026.

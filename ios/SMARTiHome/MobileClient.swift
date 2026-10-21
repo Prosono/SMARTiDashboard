@@ -8,6 +8,7 @@ struct PhoneCredentials: Codable {
     var accessToken: String
     var refreshToken: String
     var expiresAt: Double
+    var scope: String { origin.absoluteString + "|" + installationID + "|" + deviceID }
 }
 
 struct TokenResponse: Decodable {
@@ -62,6 +63,7 @@ final class NoRedirects: NSObject, URLSessionTaskDelegate {
 actor MobileClient {
     static let shared = MobileClient()
     private var credentials = CredentialStore.load()
+    private var generation = UUID()
     private var refreshTask: Task<PhoneCredentials, Error>?
     private let session: URLSession = {
         let c = URLSessionConfiguration.ephemeral
@@ -107,40 +109,60 @@ actor MobileClient {
     }
 
     func pair(origin: URL, installationID: String, code: String, name: String) async throws {
+        let epoch = generation
         let body = try JSONSerialization.data(withJSONObject: ["installation_id": installationID, "code": code, "device_name": name])
         let data = try await request(origin: origin, path: "pair", body: body)
         let result = try JSONDecoder().decode(TokenResponse.self, from: data)
         let value = PhoneCredentials(origin: origin, installationID: result.installation_id, deviceID: result.device_id,
             accessToken: result.access_token, refreshToken: result.refresh_token, expiresAt: result.expires_at)
+        guard generation == epoch else { throw CancellationError() }
+        generation = UUID()
         try CredentialStore.save(value); credentials = value
     }
 
     private func authorized() async throws -> PhoneCredentials {
-        guard let current = credentials else { throw PhoneError.message("Koble telefonen til hjemmet først.") }
+        guard let current = credentials, CredentialStore.load()?.scope == current.scope else { throw PhoneError.message("Koble telefonen til hjemmet først.") }
         if current.expiresAt > Date().timeIntervalSince1970 + 60 { return current }
         if let task = refreshTask { return try await task.value }
+        let epoch = generation
         let task = Task<PhoneCredentials, Error> {
             let body = try JSONSerialization.data(withJSONObject: ["installation_id": current.installationID, "refresh_token": current.refreshToken])
             let data = try await self.request(origin: current.origin, path: "refresh", body: body)
             let result = try JSONDecoder().decode(TokenResponse.self, from: data)
             var updated = current
             updated.accessToken = result.access_token; updated.refreshToken = result.refresh_token; updated.expiresAt = result.expires_at
+            guard self.generation == epoch, CredentialStore.load()?.scope == current.scope else { throw CancellationError() }
             try CredentialStore.save(updated)
             return updated
         }
         refreshTask = task
         do {
-            let updated = try await task.value; credentials = updated; refreshTask = nil; return updated
+            let updated = try await task.value
+            guard generation == epoch, CredentialStore.load()?.scope == current.scope else { throw CancellationError() }
+            credentials = updated; refreshTask = nil; return updated
         } catch {
             // A lost refresh response is ambiguous: do not replay a rotated credential.
-            credentials = nil; CredentialStore.clear(); refreshTask = nil; throw error
+            if generation == epoch { credentials = nil; CredentialStore.clear(); refreshTask = nil }
+            throw error
         }
     }
 
     @discardableResult func send(_ path: String, method: String = "POST", body: [String: Any] = [:]) async throws -> Data {
         let current = try await authorized()
-        return try await request(origin: current.origin, path: path, method: method,
+        let epoch = generation
+        let data = try await request(origin: current.origin, path: path, method: method,
             body: method == "GET" ? nil : JSONSerialization.data(withJSONObject: body), token: current.accessToken)
+        guard generation == epoch, CredentialStore.load()?.scope == current.scope else { throw CancellationError() }
+        return data
+    }
+    func forget() async {
+        let old = credentials
+        generation = UUID()
+        credentials = nil; CredentialStore.clear()
+        refreshTask?.cancel(); refreshTask = nil
+        if let old {
+            _ = try? await request(origin: old.origin, path: "logout", body: nil, token: old.accessToken)
+        }
     }
     func disconnect() async throws {
         try await send("logout")
