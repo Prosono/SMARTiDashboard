@@ -18,7 +18,7 @@ class ManualIdentity(BaseModel):
     credential: str = Field(pattern=r"^[A-Za-z0-9_-]{32,256}$", repr=False)
 
 
-def remote_router(settings, admin, transport=None):
+def remote_router(settings, admin, transport=None, *, via_remote=False):
     router = APIRouter(prefix="/api/remote", dependencies=[Depends(admin)])
 
     def identity():
@@ -102,14 +102,29 @@ def remote_router(settings, admin, transport=None):
 
     @router.get("")
     async def status():
+        connection = {"via_remote": via_remote, "management_local_only": via_remote}
         if identity() is None:
-            return {"provisioned": False, "portal": CLOUD_ORIGIN}
-        result = await cloud("status")
+            return {"provisioned": False, "portal": CLOUD_ORIGIN, **connection}
+        try:
+            result = await cloud("status")
+        except HTTPException as exc:
+            if not via_remote or exc.status_code != 503:
+                raise
+            # This authenticated request arrived through the remote listener:
+            # a failed account-status lookup does not mean the tunnel is down.
+            return {
+                "provisioned": True,
+                "portal": CLOUD_ORIGIN,
+                **connection,
+                "account_status_available": False,
+            }
         return {
             "provisioned": True,
             "portal": CLOUD_ORIGIN,
             "linked": result.get("linked") is True,
             "remote_enabled": result.get("remote_enabled") is True,
+            "account_status_available": True,
+            **connection,
         }
 
     @router.post("/claim-code")

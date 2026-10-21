@@ -1,3 +1,8 @@
+## 1.35.83
+- System viser aktiv SMARTi-fjernaksess når statusforespørselen kommer via fjernforbindelsen. Lesing av status er tillatt for innlogget administrator; lokal klargjøring og tilkoblingsnøkler forblir sperret eksternt.
+- Nettverks- og systemmålinger bruker hubens Supervisor-tilgang også ved fjernaksess. Nettverksendringer henvises fortsatt til lokal tilgang.
+- Manglende kontostatus eller nettverksdetaljer vises som manglende måling, ikke som en frakoblet hub.
+
 ## 1.35.82
 - Full reset oppretter en midlertidig Home Assistant-eier med brukernavn admin og passord admin123. Kontoen tillater kun lokal innlogging og opprettes mens HA er isolert fra lokalnettet.
 - Home Assistant starter igjen før hubens omstart, slik at lokal gjenoppretting er mulig mens huben venter på nytt oppsett.

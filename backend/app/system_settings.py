@@ -65,7 +65,7 @@ class ZoneSettings(BaseModel):
         return value.strip()
 
 
-def system_settings_router(m, admin, settings):
+def system_settings_router(m, admin, settings, *, network_read_only=False):
     router = APIRouter(prefix="/api/manage/settings", dependencies=[Depends(admin)])
 
     history_lock = asyncio.Lock()
@@ -120,6 +120,7 @@ def system_settings_router(m, admin, settings):
                 host, ["hostname", "operating_system", "kernel", "disk_total", "disk_used", "disk_free"]
             ),
             "core": pick(core, ["cpu_percent", "memory_usage", "memory_limit", "memory_percent"]),
+            "network_read_only": network_read_only,
             "network": None
             if network is None
             else [

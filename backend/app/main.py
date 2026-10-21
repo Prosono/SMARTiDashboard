@@ -252,7 +252,10 @@ def create_app(
             # The login screen reads setup status before rendering its form.
             # Only this read is public; provisioning remains local-only.
             setup_status_read = request.method == "GET" and request.url.path == "/api/bootstrap"
-            if not setup_status_read and request.url.path.startswith(("/api/bootstrap", "/api/remote")):
+            remote_status_read = request.method == "GET" and request.url.path == "/api/remote"
+            if not (setup_status_read or remote_status_read) and request.url.path.startswith(
+                ("/api/bootstrap", "/api/remote")
+            ):
                 return JSONResponse({"detail": "local_access_required"}, status_code=403)
         native_request = mobile_only or (
             remote_surface and settings.mobile_enabled and request.url.path.startswith("/api/mobile/v1/")
@@ -317,7 +320,7 @@ def create_app(
         install_support_access(app, support)
     app.include_router(access_router(store, admin))
     if not mobile_only:
-        app.include_router(remote_router(settings, admin))
+        app.include_router(remote_router(console_settings or settings, admin, via_remote=remote_surface))
     management = Management(ha, store, settings)
     app.state.management = management
     if settings.ingress and settings.remote_identity_file:
@@ -328,7 +331,11 @@ def create_app(
     app.state.wireless = wireless
     app.include_router(wireless.router(admin))
     app.include_router(management_router(management, admin))
-    app.include_router(system_settings_router(management, admin, settings))
+    app.include_router(
+        system_settings_router(
+            management, admin, console_settings or settings, network_read_only=remote_surface
+        )
+    )
     app.include_router(factory_reset_router(store, auth, admin, reset))
     app.include_router(system_operations_router(management, admin, settings))
     app.include_router(apps_router(management, admin, console_settings or settings))

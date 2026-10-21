@@ -49,6 +49,7 @@ export type System = {
     memory_usage: number | null;
     memory_limit: number | null;
   };
+  network_read_only?: boolean;
   network:
     | {
         interface: string;
@@ -85,7 +86,8 @@ export function HomeSettings({
   const system = useQuery({
     queryKey: ["settings", "system"],
     queryFn: () => api<System>("manage/settings/system"),
-    refetchInterval: section === "system" ? 30000 : false,
+    refetchInterval:
+      section === "system" || section === "network" ? 30000 : false,
     enabled: section !== "household",
   });
   const location = useQuery({
@@ -289,14 +291,16 @@ export function HomeSettings({
                 {s.network === null ? (
                   <p>
                     {t(
-                      "Nettverksstatus utilgjengelig",
-                      "Network status unavailable",
+                      "Kunne ikke hente nettverksdetaljer fra huben. Dette betyr ikke at nettverket er frakoblet.",
+                      "Could not retrieve network details from the hub. This does not mean the network is disconnected.",
                     )}
                   </p>
                 ) : (
                   s.network.map((n) => (
                     <div className="system-list-row" key={n.interface}>
-                      <SystemActions lang={lang} network={n.interface} />
+                      {!s.network_read_only && (
+                        <SystemActions lang={lang} network={n.interface} />
+                      )}
                       <div>
                         <strong>
                           {n.interface}{" "}

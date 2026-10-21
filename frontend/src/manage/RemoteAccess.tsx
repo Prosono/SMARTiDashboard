@@ -7,6 +7,9 @@ import "./remoteAccess.css";
 
 type Status = {
   provisioned: boolean;
+  via_remote?: boolean;
+  management_local_only?: boolean;
+  account_status_available?: boolean;
   linked?: boolean;
   remote_enabled?: boolean;
 };
@@ -85,7 +88,7 @@ export function RemoteAccess({ lang }: { lang: string }) {
     queryKey: ["remote-access"],
     queryFn: () => api<Status>("remote"),
     retry: false,
-    refetchInterval: open ? 5000 : false,
+    refetchInterval: open ? 5000 : 30000,
   });
   useEffect(() => {
     if (!open) return;
@@ -125,14 +128,19 @@ export function RemoteAccess({ lang }: { lang: string }) {
   const status = q.isPending
     ? t("Henter status…", "Loading status…")
     : q.isError
-      ? t("Status er utilgjengelig", "Status unavailable")
-      : !q.data?.provisioned
-        ? t("Huben må klargjøres først", "Hub provisioning required")
-        : q.data.remote_enabled === false
-          ? t("Fjerntilgang er slått av", "Remote access disabled")
-          : q.data.linked
-            ? t("Koblet til SMARTi-konto", "Linked to a SMARTi account")
-            : t("Klar til å koble til konto", "Ready to link an account");
+      ? t("Kunne ikke hente oppdatert status", "Could not refresh status")
+      : q.data?.via_remote
+        ? t(
+            "Tilkoblet via SMARTi-fjernaksess",
+            "Connected through SMARTi remote access",
+          )
+        : !q.data?.provisioned
+          ? t("Huben må klargjøres først", "Hub provisioning required")
+          : q.data.remote_enabled === false
+            ? t("Fjerntilgang er slått av", "Remote access disabled")
+            : q.data.linked
+              ? t("Koblet til SMARTi-konto", "Linked to a SMARTi account")
+              : t("Klar til å koble til konto", "Ready to link an account");
   return (
     <section className="settings-panel">
       <h3>
@@ -145,10 +153,24 @@ export function RemoteAccess({ lang }: { lang: string }) {
           "Manage the link between this home and your account at home.smarti.dev.",
         )}
       </p>
-      <button onClick={() => setOpen(true)}>
-        <Link size={18} />
-        {t("Administrer fjerntilgang", "Manage remote access")}
-      </button>
+      {q.data?.account_status_available === false && (
+        <p className="muted">
+          {t(
+            "Fjernforbindelsen fungerer, men kontostatus kunne ikke oppdateres akkurat nå.",
+            "The remote connection works, but account status could not be refreshed right now.",
+          )}
+        </p>
+      )}
+      {q.data?.management_local_only ? (
+        <a href="https://home.smarti.dev/">
+          {t("Åpne Min side", "Open My account")}
+        </a>
+      ) : (
+        <button onClick={() => setOpen(true)}>
+          <Link size={18} />
+          {t("Administrer fjerntilgang", "Manage remote access")}
+        </button>
+      )}
       {open && (
         <SettingsDialog
           title={t("Fjerntilgang", "Remote access")}
