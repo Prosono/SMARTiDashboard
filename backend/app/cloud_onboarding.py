@@ -85,8 +85,10 @@ class Plan(BaseModel):
 class Progress(BaseModel):
     id: str
     status: Literal["working", "completed", "failed"]
-    step: Literal["checking", "resetting", "location", "rooms", "user", "completed"]
-    error: Literal["", "ha_unavailable", "setup_failed", "existing_users", "reset_not_supported"] = ""
+    step: Literal["checking", "resetting", "location", "rooms", "user", "radios", "completed"]
+    error: Literal[
+        "", "ha_unavailable", "setup_failed", "existing_users", "reset_not_supported", "radios_unavailable"
+    ] = ""
 
 
 def install_onboarding(

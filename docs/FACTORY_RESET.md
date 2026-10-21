@@ -61,3 +61,9 @@ a safe, specific reason to the administrator without exposing file contents.
 For 1.35.71, unit tests also verify exactly one OS reboot request, recovery after
 a changed boot ID, preserved radio data and owner-plus-QR gating. The Docker harness
 simulates the OS boot transition; real HAOS reboot is tested only on the spare hub.
+
+### Radio connections after reset (1.35.72)
+
+Owner setup now verifies retained Zigbee2MQTT and Z-Wave JS UI connections before completion. SMARTi confirms the Supervisor-discovered MQTT integration and creates a manual Z-Wave JS integration pointing to the installed UI app's internal hostname and port 3000. It never installs a second radio app, changes radio options or initiates pairing. Existing integration entries are not replaced. Unknown/multiple app installations, missing MQTT discovery, disabled integrations and unavailable bridges block success and require manual assistance.
+
+The heartbeat also repairs completed resets from earlier versions once, recording success only after both providers are ready. Updating does not initiate another reset. A real hub check is required for MQTT discovery and radio connectivity; unit tests use simulated HA/Supervisor responses.

@@ -169,7 +169,9 @@ def create_app(
                 from .hub_onboarding import HubOnboarding
 
                 onboarding_task = asyncio.create_task(
-                    HubOnboarding(settings, ha, store, app.state.remote, start_remote=start_remote).run()
+                    HubOnboarding(
+                        settings, ha, store, app.state.remote, start_remote=start_remote, setup=setup
+                    ).run()
                 )
             yield
         finally:

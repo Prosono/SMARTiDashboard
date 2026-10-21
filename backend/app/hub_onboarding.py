@@ -21,8 +21,11 @@ log = logging.getLogger(__name__)
 
 
 class HubOnboarding:
-    def __init__(self, settings, ha, store, remote, transport=None, start_remote=None):
+    def __init__(self, settings, ha, store, remote, transport=None, start_remote=None, setup=None):
         self.settings, self.ha, self.store, self.remote = settings, ha, store, remote
+        from .radio_recovery import RadioRecovery
+
+        self.radios = RadioRecovery(settings, ha, store, setup) if setup else None
         self.transport = transport
         self.start_remote = start_remote
         self.boot = uuid.uuid4().hex
@@ -196,6 +199,9 @@ class HubOnboarding:
             if plan["mode"] == "reset":
                 await stage("resetting", reset)
 
+            if full.state() and self.radios:
+                await stage("radios", lambda: self.radios.ensure(full.state()["id"]))
+
             async def location():
                 await self.ha.request(
                     "config/core/update",
@@ -282,10 +288,15 @@ class HubOnboarding:
             done.add("completed")
             self.store.set(key, json.dumps(sorted(done)))
             await self.progress(plan, "completed", "completed")
-        except (HAError, TimeoutError, ValueError, KeyError, sqlite3.Error) as e:
+        except (HAError, HTTPException, TimeoutError, ValueError, KeyError, sqlite3.Error) as e:
             # No raw HA errors or personal setup data in cloud-facing error text.
             log.warning("Hub setup step failed (%s)", type(e).__name__)
-            await self.progress(plan, "failed", current_step, "setup_failed")
+            await self.progress(
+                plan,
+                "failed",
+                current_step,
+                "radios_unavailable" if current_step == "radios" else "setup_failed",
+            )
 
     async def tick(self):
         full = FullReset(self.settings, self.store)
@@ -321,6 +332,19 @@ class HubOnboarding:
                 "serial": self.device[-8:],
             }
         await self.advertisement.update(discovery)
+        # Repair completed resets from older builds, whose setup omitted radio integrations.
+        if (
+            reset_state
+            and reset_state["phase"] == "completed"
+            and users
+            and self.ha.connected
+            and self.radios
+        ):
+            try:
+                await self.radios.ensure(reset_state["id"])
+                self.store.set("radio_recovery_error", "")
+            except (HAError, HTTPException, TimeoutError):
+                self.store.set("radio_recovery_error", "radio_connections_not_ready")
         if result.get("plan"):
             await self.apply(result["plan"])
 

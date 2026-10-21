@@ -1,3 +1,9 @@
+## 1.35.72
+- Gjenoppretter MQTT- og Z-Wave-forbindelser etter fabrikktilbakestilling uten å endre paringer eller radionettverk.
+- Kontrollerer at Zigbee2MQTT og Z-Wave er tilgjengelige før nytt oppsett fullføres.
+- Forsøker også å reparere radioforbindelsene på huber som allerede har fullført tilbakestilling med eldre versjon.
+- Ukjent oppsett, manglende MQTT-oppdagelse eller utilgjengelige radioer krever hjelp fremfor å rapporteres som klart.
+
 ## 1.35.71
 
 - Reset parer ikke bort enheter eller nullstiller radioene. Eventuell fjerning av paringer gjøres manuelt.

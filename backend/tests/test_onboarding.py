@@ -300,3 +300,40 @@ async def test_bonjour_updates_and_stops(monkeypatch):
     assert [c[0] for c in calls] == ["register", "update", "close"]
     assert calls[0][1].properties[b"state"] == b"ready"
     assert advertiser.zeroconf is None
+
+
+@pytest.mark.asyncio
+async def test_reset_onboarding_waits_for_radios_before_user_and_completion(tmp_path, monkeypatch):
+    from app.full_reset import FullReset
+
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    settings = Settings(data_dir=tmp_path, database=tmp_path / "hub.sqlite", mode="demo")
+    identity = tmp_path / "identity.json"
+    identity.write_text(json.dumps({"installation_id": home, "credential": kit["remote_credential"]}))
+    settings.remote_identity_file = identity
+    store = Store(settings.database)
+    worker = HubOnboarding(settings, FakeHA(), store, {}, httpx.ASGITransport(app=app))
+    await worker.tick()
+    assert staff.post(f"/api/admin/hubs/{home}/ready", json=CHECKS).status_code == 200
+    assert owner.post(f"/api/activation/{home}/claim", json=activation).status_code == 200
+    assert owner.post(f"/api/onboarding/{home}", json=PLAN).status_code == 200
+    monkeypatch.setattr(FullReset, "state", lambda self: {"id": "reset-test", "phase": "completed"})
+
+    class Radios:
+        ready = False
+
+        async def ensure(self, reset_id):
+            assert reset_id == "reset-test"
+            if not self.ready:
+                raise HAError("radio_connections_not_ready")
+
+    worker.radios = Radios()
+    await worker.tick()
+    plan = owner.get(f"/api/onboarding/{home}").json()["plan"]
+    assert (plan["status"], plan["step"], plan["error"]) == ("failed", "radios", "radios_unavailable")
+    with store.connect() as c:
+        assert c.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
+    worker.radios.ready = True
+    owner.post(f"/api/onboarding/{home}", json=PLAN)
+    await worker.tick()
+    assert owner.get(f"/api/onboarding/{home}").json()["plan"]["status"] == "completed"
