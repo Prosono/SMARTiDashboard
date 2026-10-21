@@ -1,3 +1,7 @@
+## 1.35.88
+
+- Legger til SMARTi-ikonet i Home Assistants appbutikk og liste over installerte apper.
+
 ## 1.35.87
 
 - RESTORE WIPE bytter Z-Wave-nøkler ved neste oppsett også med gjenværende paringer.
