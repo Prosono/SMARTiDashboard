@@ -1,3 +1,7 @@
+## 1.35.74
+- Setter valgt land i Home Assistant under førstegangsoppsett og nytt oppsett etter tilbakestilling. Norge er forhåndsvalgt, og land kan endres i veilederen.
+- Adminens QR-oversikt viser status for tilbakestilling, omstart, ny QR-skanning og nytt oppsett.
+
 ## 1.35.73
 - Etter fullført nytt oppsett åpnes tilbakestilling med et nytt bekreftelsesskjema, ikke rapporten fra forrige installasjon.
 - Gamle rapporter beholdes som historikk. Pågående og avbrutte forsøk vises fortsatt.

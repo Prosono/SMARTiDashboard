@@ -210,6 +210,7 @@ class HubOnboarding:
                     latitude=plan["latitude"],
                     longitude=plan["longitude"],
                     time_zone=plan["timezone"],
+                    country=plan.get("country", "NO"),
                 )
                 self.store.set("home_name", plan["name"])
                 self.store.set("timezone", plan["timezone"])

@@ -60,12 +60,18 @@ class Room(BaseModel):
     floor: str = Field(min_length=1, max_length=80)
 
 
+COUNTRY_CODES = frozenset(
+    "AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW".split()
+)
+
+
 class Plan(BaseModel):
     mode: Literal["new", "reset", "existing"]
     name: str = Field(min_length=1, max_length=80)
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
     timezone: str = "Europe/Oslo"
+    country: str = Field(default="NO", pattern=r"^[A-Z]{2}$")
     rooms: list[Room] = Field(default_factory=list, max_length=80)
     experience: Literal["simple", "normal", "advanced"] = "normal"
     password: str = Field(min_length=1, max_length=256, repr=False)
@@ -73,6 +79,8 @@ class Plan(BaseModel):
 
     @model_validator(mode="after")
     def valid(self):
+        if self.country not in COUNTRY_CODES:
+            raise ValueError("invalid country")
         try:
             ZoneInfo(self.timezone)
         except (ZoneInfoNotFoundError, ValueError):
@@ -186,7 +194,19 @@ def install_onboarding(
     @app.get("/api/admin/hubs")
     def inventory(s=Depends(admin)):
         with db() as c:
-            return [view(r) for r in c.execute("SELECT * FROM factory_hubs ORDER BY created DESC")]
+            result = []
+            for row in c.execute("SELECT * FROM factory_hubs ORDER BY created DESC"):
+                item = view(row)
+                reset = c.execute(
+                    "SELECT phase,qr_required,qr_verified FROM hub_resets WHERE home=?", (row["home"],)
+                ).fetchone()
+                item["reset"] = dict(reset) if reset else None
+                plan = c.execute(
+                    "SELECT status FROM onboarding_plans WHERE home=?", (row["home"],)
+                ).fetchone()
+                item["setup_status"] = plan["status"] if plan else None
+                result.append(item)
+            return result
 
     @app.post("/api/admin/hubs")
     def create(body: FactoryHub, s=Depends(admin)):

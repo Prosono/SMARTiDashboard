@@ -30,6 +30,7 @@ PLAN = {
     "latitude": 59.9,
     "longitude": 10.7,
     "timezone": "Europe/Oslo",
+    "country": "SE",
     "rooms": [{"name": "Stue", "floor": "Første etasje"}, {"name": "Soverom", "floor": "Andre etasje"}],
     "experience": "simple",
     "password": PASSWORD,
@@ -204,6 +205,7 @@ async def test_worker_resumes_without_duplicate_rooms_and_reset_replay(tmp_path)
     await worker.tick()
     await worker.tick()
     assert len(ha.floors) == 2 and len(ha.areas) == 2
+    assert next(data for kind, data in ha.calls if kind == "config/core/update")["country"] == "SE"
     with store.connect() as c:
         assert c.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 1
     assert json.loads(store.get("experience:1")) == {"mode": "simple"}
@@ -337,3 +339,15 @@ async def test_reset_onboarding_waits_for_radios_before_user_and_completion(tmp_
     owner.post(f"/api/onboarding/{home}", json=PLAN)
     await worker.tick()
     assert owner.get(f"/api/onboarding/{home}").json()["plan"]["status"] == "completed"
+
+
+def test_country_validation_and_legacy_default():
+    from pydantic import ValidationError
+
+    from app.cloud_onboarding import Plan
+
+    assert Plan(**PLAN).country == "SE"
+    assert Plan(**{k: v for k, v in PLAN.items() if k != "country"}).country == "NO"
+    for invalid in ["Norge", "ZZ", "no", ""]:
+        with pytest.raises(ValidationError):
+            Plan(**(PLAN | {"country": invalid}))

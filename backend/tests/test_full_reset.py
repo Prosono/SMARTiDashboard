@@ -5,14 +5,15 @@ from uuid import uuid4
 
 import httpx
 import pytest
+from cryptography.hazmat.primitives.asymmetric import x25519
+from test_ha_auth_reset import fixture_documents
+from test_onboarding import HEARTBEAT, PLAN, factory, ready_and_claim
+
 from app.config import Settings
 from app.full_reset import ISOLATED_CONFIG, FullReset
 from app.ha_auth_reset import AuthResetError
 from app.reset_credentials import public_key, seal, unseal
 from app.storage import Store
-from cryptography.hazmat.primitives.asymmetric import x25519
-from test_ha_auth_reset import fixture_documents
-from test_onboarding import HEARTBEAT, PLAN, factory, ready_and_claim
 
 
 def test_reset_credentials_bound_to_hub_and_generation():
@@ -42,6 +43,9 @@ def test_cloud_reset_owner_bound_revocation_and_sealed_setup(tmp_path):
     assert hub.post(url + "/ready", json={"id": str(uuid4())}).status_code == 409
     assert hub.post(url + "/ready", json={"id": reset_id}).status_code == 200
     assert owner.get("/api/homes").json()[0]["reset_phase"] == "awaiting_owner"
+    inventory = staff.get("/api/admin/hubs").json()[0]
+    assert inventory["reset"] == {"phase": "awaiting_owner", "qr_required": 1, "qr_verified": 0}
+    assert "public_key" not in inventory["reset"]
     assert other.post("/api/onboarding/" + home, json=PLAN).status_code == 404
     assert owner.post("/api/onboarding/" + home, json=PLAN).json()["detail"] == "reset_qr_required"
     assert other.post(f"/api/activation/{home}/claim", json=activation).status_code == 409
@@ -70,6 +74,7 @@ def test_cloud_reset_owner_bound_revocation_and_sealed_setup(tmp_path):
         == 200
     )
     assert owner.get("/api/homes").json()[0]["reset_phase"] is None
+    assert staff.get("/api/admin/hubs").json()[0]["reset"]["phase"] == "completed"
 
 
 class SupervisorFake:
