@@ -26,3 +26,17 @@ fresh and nonzero after deployment. No iOS or HA app update is required.
 Validation: relay/TLS integration tests, traffic persistence and user isolation,
 admin authorization, onboarding regression tests, and responsive light/dark browser
 checks (`scripts/test_fleet.cjs`, `scripts/test_portal_design.cjs`).
+
+## Hub map (2026-10-21)
+
+The administrator inventory exposes only name and validated coordinates from a
+completed onboarding plan. It never serializes the plan's passwords/hashes or
+HA credentials. Active resets hide the old location. This is the configured home
+location, not live tracking; hubs without it remain visible in the inventory.
+
+The map loads bundled Leaflet on demand and fetches only visible OpenStreetMap
+tiles, with attribution, browser caching and origin-only referrer. No account
+names, serial numbers or marker data are sent to the tile provider. Tile requests
+necessarily identify the viewed map area. Do not use this integration for offline
+prefetching or bulk tile downloads. See https://operations.osmfoundation.org/policies/tiles/.
+Map backgrounds can fail without blocking the inventory. Automated tests stub tiles.

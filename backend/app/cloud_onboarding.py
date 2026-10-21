@@ -209,9 +209,19 @@ def install_onboarding(
                 ).fetchone()
                 item["reset"] = dict(reset) if reset else None
                 plan = c.execute(
-                    "SELECT status FROM onboarding_plans WHERE home=?", (row["home"],)
+                    "SELECT status,payload FROM onboarding_plans WHERE home=?", (row["home"],)
                 ).fetchone()
                 item["setup_status"] = plan["status"] if plan else None
+                # Never expose the full plan: it also contains credential material.
+                item["location"] = None
+                if plan and plan["status"] == "completed" and not (reset and reset["phase"] != "completed"):
+                    payload = json.loads(plan["payload"])
+                    lat, lon = payload.get("latitude"), payload.get("longitude")
+                    if (type(lat) in (int, float) and type(lon) in (int, float)
+                            and -90 <= lat <= 90 and -180 <= lon <= 180):
+                        item["location"] = {"latitude": lat, "longitude": lon,
+                                            "name": payload.get("name", ""), "source": "onboarding"}
+
                 result.append(item)
             return result
 
