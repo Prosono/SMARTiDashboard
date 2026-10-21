@@ -9,6 +9,21 @@ from .full_reset import FullReset
 from .ha import HAError
 from .ha_auth_reset import AuthResetError
 
+RESET_BLOCKERS = {
+    "full_reset_requires_managed_hub",
+    "reset_recovery_required",
+    "ha_config_mount_required",
+    "invalid_ha_yaml",
+    "custom_yaml_requires_review",
+    "custom_recorder_or_packages_requires_review",
+    "ha_storage_symlink",
+    "ha_auth_storage_missing",
+    "ha_auth_schema_unsupported",
+    "ha_system_password_account_unsupported",
+    "standard_ha_http_required",
+    "cloud_reset_update_required",
+}
+
 
 class HomeResetProvider:
     def __init__(self, ha, setup, settings, store):
@@ -23,8 +38,19 @@ class HomeResetProvider:
         if self.full:
             try:
                 await self.full.preflight()
-            except (AuthResetError, HTTPException, httpx.HTTPError, OSError, ValueError):
-                return {"ready": False, "blockers": ["full_reset_preflight_failed"], "full": True}
+            except AuthResetError as exc:
+                code = str(exc)
+                return {
+                    "ready": False,
+                    "blockers": [code if code in RESET_BLOCKERS else "full_reset_preflight_failed"],
+                    "full": True,
+                }
+            except HTTPException:
+                return {"ready": False, "blockers": ["reset_supervisor_unavailable"], "full": True}
+            except httpx.HTTPError:
+                return {"ready": False, "blockers": ["reset_cloud_unavailable"], "full": True}
+            except (OSError, ValueError):
+                return {"ready": False, "blockers": ["reset_storage_unreadable"], "full": True}
         return {
             "full": self.full is not None,
             "ready": True,

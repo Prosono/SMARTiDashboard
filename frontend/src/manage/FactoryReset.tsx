@@ -9,6 +9,25 @@ type Job = {id: string; status: string; step: string; error: string; results: {k
 type Readiness = { ready: boolean; full?: boolean; blockers: string[]; job?: Job | null };
 export function FactoryReset({ lang }: { lang: string }) {
   const t = (nb: string, en: string) => lang === "en" ? en : nb;
+  const blockers: Record<string, string> = {
+    live_hub_required: t("SMARTi må ha kontakt med Home Assistant. Vent til tilkoblingen er tilbake.", "SMARTi must be connected to Home Assistant."),
+    pairing_active: t("En paring pågår. Avslutt paringen før tilbakestilling.", "Stop active pairing before reset."),
+    full_reset_requires_managed_hub: t("Huben mangler tilkoblingsidentitet eller tilgang til HA-konfigurasjonen. Kontroller at SMARTi er oppdatert og koblet til Min side.", "The hub needs its connection identity and HA configuration mount."),
+    ha_config_mount_required: t("SMARTi mangler skrivetilgang til HA-konfigurasjonen. Oppdater og start SMARTi-appen på nytt i HA.", "Update and restart SMARTi to enable its HA configuration mount."),
+    reset_storage_unreadable: t("SMARTi kunne ikke lese HA-oppsettet. Kontroller konfigurasjonstilgangen etter oppdateringen.", "SMARTi could not read HA configuration storage."),
+    ha_auth_storage_missing: t("HAs brukerfiler er ikke tilgjengelige. Førstegangsoppsett i HA må være fullført.", "HA authentication files are missing. Complete HA onboarding first."),
+    ha_auth_schema_unsupported: t("Denne versjonen av HAs brukerfiler er ikke støttet av tilbakestillingen ennå. Kontakt support.", "This HA authentication storage format needs support review."),
+    ha_system_password_account_unsupported: t("En systemkonto har et uventet passordoppsett. Kontakt support før tilbakestilling.", "A system account has an unsupported password configuration."),
+    invalid_ha_yaml: t("HA-konfigurasjonen kunne ikke leses som gyldig YAML. Kontakt support.", "HA configuration could not be parsed."),
+    custom_yaml_requires_review: t("HA bruker ekstra konfigurasjonsfiler som må gjennomgås før sletting. Kontakt support.", "Custom HA configuration includes need review."),
+    custom_recorder_or_packages_requires_review: t("HA har et eget historikk- eller pakkeoppsett som må gjennomgås før sletting. Kontakt support.", "Custom recorder or packages configuration needs review."),
+    ha_storage_symlink: t("HA-oppsettet har filkoblinger som krever manuell gjennomgang. Kontakt support.", "HA storage links need manual review."),
+    standard_ha_http_required: t("HAs nettverksoppsett avviker fra det tilbakestillingen støtter. Kontakt support.", "HA networking differs from the supported reset configuration."),
+    reset_recovery_required: t("En tidligere tilbakestilling må fullføres eller kontrolleres av support før en ny kan startes.", "A previous reset needs recovery before another can start."),
+    reset_supervisor_unavailable: t("SMARTi fikk ikke tilgang til HA Supervisor. Kontroller at appen er startet i HA.", "SMARTi could not access HA Supervisor."),
+    reset_cloud_unavailable: t("SMARTi kunne ikke bekrefte resetstøtte hos skytjenesten. Kontroller internett og at huben er koblet til kontoen din.", "Cloud reset support could not be confirmed. Check connectivity and account linking."),
+    cloud_reset_update_required: t("Skytjenesten må oppdateres før denne huben kan tilbakestilles.", "The cloud service needs an update."),
+  };
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -69,7 +88,7 @@ export function FactoryReset({ lang }: { lang: string }) {
         <label className="factory-reset-check"><input type="checkbox" required checked={manual} onChange={e => setManual(e.target.checked)} />{t("Jeg forstår at jeg må sette opp hjemmet og koble til integrasjoner på nytt, og at noen paringer kan kreve manuell opprydding.", "I accept that reset may be incomplete and require manual cleanup.")}</label>
         <label>{t("Skriv RESET HUB for å bekrefte", "Type RESET HUB to confirm")}<input value={confirmation} onChange={e => setConfirmation(e.target.value)} autoComplete="off" spellCheck={false} required pattern="RESET HUB" /></label>
         <label>{t("Passordet til din administratorkonto", "Your administrator account password")}<input type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required maxLength={128} /></label>
-        {readiness.isPending ? <p role="status">{t("Kontrollerer huben…", "Checking hub…")}</p> : !readiness.data?.ready && <p role="status" className="factory-reset-unavailable">{readiness.isError ? t("Kunne ikke kontrollere huben. Lukk dialogen og prøv igjen.", "Could not check the hub. Close this dialog and retry.") : t("Tilbakestilling krever en tilkoblet hub uten aktiv paring, tilgang til HA-konfigurasjonen og oppdatert skytjeneste. Egendefinert historikkdatabase/oppsett kan kreve hjelp fra support. Ingen data er slettet.", "Reset requires a connected live hub with no active pairing. No data has been erased.")}</p>}
+        {readiness.isPending ? <p role="status">{t("Kontrollerer huben…", "Checking hub…")}</p> : !readiness.data?.ready && <p role="status" className="factory-reset-unavailable">{readiness.isError ? t("Kunne ikke kontrollere huben. Lukk dialogen og prøv igjen.", "Could not check the hub. Close this dialog and retry.") : (readiness.data?.blockers.map(code => blockers[code] || t("Kontrollen av huben feilet. Kontakt support.", "Hub checks failed. Contact support.")).join(" ") + " " + t("Ingen data er slettet.", "No data has been erased."))}</p>}
         {error && <p role="alert">{error}</p>}
         <div className="factory-reset-actions"><button type="button" disabled={busy} onClick={close}>{t("Avbryt", "Cancel")}</button><button className="factory-reset-danger" disabled={busy || !readiness.data?.ready || !password || confirmation !== "RESET HUB" || !loss || !pairing || !manual || !backup}>{t("Start tilbakestilling", "Start reset")}</button></div>
       </form>}

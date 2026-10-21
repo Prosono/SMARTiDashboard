@@ -154,3 +154,53 @@ async def test_external_database_is_blocked_before_mutation(tmp_path):
     with pytest.raises(AuthResetError, match="custom_recorder"):
         await reset.execute()
     assert not supervisor.calls
+
+
+@pytest.mark.asyncio
+async def test_local_packages_are_checked_and_allowed(tmp_path):
+    reset, store, supervisor = setup_reset(tmp_path)
+    (reset.root / "packages").mkdir()
+    (reset.root / "packages" / "lights.yaml").write_text("input_boolean:\n  test_light:\n")
+    (reset.root / "configuration.yaml").write_text(
+        "homeassistant:\n  packages: !include_dir_named packages\n"
+    )
+    await reset.preflight()
+    (reset.root / "packages" / "history.yaml").write_text("recorder:\n  db_url: !secret database\n")
+    with pytest.raises(AuthResetError, match="custom_recorder"):
+        await reset.preflight()
+    assert not supervisor.calls or all(path == "/core/info" for _, path, _ in supervisor.calls)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "content",
+    [
+        "homeassistant:\n  packages: !include ../outside.yaml\n",
+        "homeassistant:\n  packages: !include configuration.yaml\n",
+        "homeassistant: &loop\n  packages: *loop\n",
+    ],
+)
+async def test_unsafe_or_recursive_package_includes_remain_blocked(tmp_path, content):
+    reset, store, supervisor = setup_reset(tmp_path)
+    (reset.root / "configuration.yaml").write_text(content)
+    with pytest.raises(AuthResetError, match="custom_yaml"):
+        await reset.preflight()
+    assert not supervisor.calls
+
+
+@pytest.mark.asyncio
+async def test_preflight_reports_safe_reason_without_exception_details(tmp_path):
+    from types import SimpleNamespace
+
+    from app.factory_reset_provider import HomeResetProvider
+
+    reset, store, _ = setup_reset(tmp_path)
+    provider = HomeResetProvider(
+        SimpleNamespace(connected=True), SimpleNamespace(session=None), reset.settings, store
+    )
+    provider.full.preflight = AsyncMock(side_effect=AuthResetError("ha_auth_schema_unsupported"))
+    assert (await provider.preflight())["blockers"] == ["ha_auth_schema_unsupported"]
+    provider.full.preflight = AsyncMock(side_effect=AuthResetError("secret raw data"))
+    assert (await provider.preflight())["blockers"] == ["full_reset_preflight_failed"]
+    provider.full.preflight = AsyncMock(side_effect=PermissionError("secret path"))
+    assert (await provider.preflight())["blockers"] == ["reset_storage_unreadable"]

@@ -70,28 +70,7 @@ class FullReset:
             raise AuthResetError("reset_recovery_required")
         if self.root.is_symlink() or not os.access(self.root, os.W_OK):
             raise AuthResetError("ha_config_mount_required")
-        # Reject external recorder and arbitrary YAML layouts rather than pretending
-        # a local file deletion erases an external database. Full reset replaces YAML.
-        try:
-            config = yaml.compose((self.root / "configuration.yaml").read_text())
-        except yaml.YAMLError as exc:
-            raise AuthResetError("invalid_ha_yaml") from exc
-
-        def inspect(node, key=""):
-            if node is None:
-                return
-            if node.tag.startswith("!include") and key not in {"automation", "script", "scene", "themes"}:
-                raise AuthResetError("custom_yaml_requires_review")
-            if isinstance(node, yaml.MappingNode):
-                for k, v in node.value:
-                    if not isinstance(k, yaml.ScalarNode) or k.value in {"recorder", "packages"}:
-                        raise AuthResetError("custom_recorder_or_packages_requires_review")
-                    inspect(v, k.value)
-            elif isinstance(node, yaml.SequenceNode):
-                for v in node.value:
-                    inspect(v, key)
-
-        inspect(config)
+        self.inspect_configuration()
         storage = self.root / ".storage"
         if storage.is_symlink():
             raise AuthResetError("ha_storage_symlink")
@@ -109,6 +88,79 @@ class FullReset:
         if capability.get("version") != 1:
             raise AuthResetError("cloud_reset_update_required")
         return info
+
+    def inspect_configuration(self):
+        """Inspect local YAML includes before permitting a destructive reset."""
+        root = self.root.resolve()
+        seen_files = set()
+        active_nodes = set()
+
+        def checked_path(base, value):
+            path = base / value
+            if path.is_absolute() and not path.is_relative_to(root):
+                raise AuthResetError("custom_yaml_requires_review")
+            if ".." in path.parts or any(
+                p.is_symlink() for p in [path, *path.parents] if p.is_relative_to(root)
+            ):
+                raise AuthResetError("custom_yaml_requires_review")
+            if not path.resolve().is_relative_to(root):
+                raise AuthResetError("custom_yaml_requires_review")
+            return path
+
+        def read(path, depth):
+            if depth > 32 or path in seen_files or len(seen_files) >= 128:
+                raise AuthResetError("custom_yaml_requires_review")
+            seen_files.add(path)
+            if path.stat().st_size > 2_000_000:
+                raise AuthResetError("custom_yaml_requires_review")
+            try:
+                node = yaml.compose(path.read_text())
+            except yaml.YAMLError as exc:
+                raise AuthResetError("invalid_ha_yaml") from exc
+            inspect(node, path.parent, depth)
+
+        def inspect(node, base, depth):
+            if node is None:
+                return
+            if depth > 64 or id(node) in active_nodes:
+                raise AuthResetError("custom_yaml_requires_review")
+            active_nodes.add(id(node))
+            try:
+                if node.tag.startswith("!include"):
+                    if not isinstance(node, yaml.ScalarNode):
+                        raise AuthResetError("custom_yaml_requires_review")
+                    target = checked_path(base, node.value)
+                    if node.tag == "!include":
+                        read(target, depth + 1)
+                    elif node.tag in {
+                        "!include_dir_named",
+                        "!include_dir_merge_named",
+                        "!include_dir_list",
+                        "!include_dir_merge_list",
+                    }:
+                        if not target.is_dir():
+                            raise AuthResetError("custom_yaml_requires_review")
+                        for item in sorted(target.rglob("*")):
+                            if item.is_symlink():
+                                raise AuthResetError("custom_yaml_requires_review")
+                            if item.is_file() and item.suffix in {".yaml", ".yml"}:
+                                read(item, depth + 1)
+                    else:
+                        raise AuthResetError("custom_yaml_requires_review")
+                elif isinstance(node, yaml.MappingNode):
+                    for key, value in node.value:
+                        if not isinstance(key, yaml.ScalarNode):
+                            raise AuthResetError("custom_yaml_requires_review")
+                        if key.value == "recorder":
+                            raise AuthResetError("custom_recorder_or_packages_requires_review")
+                        inspect(value, base, depth + 1)
+                elif isinstance(node, yaml.SequenceNode):
+                    for value in node.value:
+                        inspect(value, base, depth + 1)
+            finally:
+                active_nodes.remove(id(node))
+
+        read(checked_path(root, "configuration.yaml"), 0)
 
     async def assert_stopped(self):
         if not self.stopped:

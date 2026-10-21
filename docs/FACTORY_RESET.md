@@ -1,4 +1,4 @@
-# Factory reset — 1.35.69
+# Factory reset — 1.35.70
 
 Managed HA hubs now support coordinated full reset. Advanced-mode administrators
 must confirm data loss, pairing limitations, backup choice, RESET HUB and their
@@ -8,7 +8,7 @@ was reset during development.
 ## Sequence
 
 1. Validate HA storage schemas, standard HA HTTP/bridge configuration, writable
-   configuration mount and cloud coordination. Custom recorder/packages layouts
+   configuration mount and cloud coordination. Custom recorder layouts
    are blocked before mutation rather than claiming an external database is erased.
 2. Pause automations and attempt supported radio removals. Unconfirmed or physical
    exclusions remain in the report.
@@ -49,3 +49,7 @@ old HA and SMARTi users were removed, created exactly one new owner and restored
 normal startup. The Supervisor adapter was simulated with Docker start/stop.
 Real HAOS service reconnection and physical radio behavior still require the
 new spare hub test. Do not describe the Docker test as a hardware test.
+
+Local YAML packages/includes are inspected recursively before reset. External paths,
+symlinks, cycles and recorder configuration remain blocked. Failed preflight returns
+a safe, specific reason to the administrator without exposing file contents.

@@ -1,3 +1,9 @@
+## 1.35.70
+
+- Tilbakestilling støtter nå lokale HA-pakker og kontrollerer inkluderte YAML-filer før sletting.
+- Eksterne historikkoppsett, filkoblinger utenfor konfigurasjonen og rekursive inkluderinger forblir blokkert.
+- Resetdialogen viser den konkrete årsaken når kontrollen av huben stopper prosessen.
+
 ## 1.35.69
 
 - Full tilbakestilling på administrerte HA-huber: sletter HA-eier, lokale brukere, innlogginger, historikk og hjemmeoppsett.
