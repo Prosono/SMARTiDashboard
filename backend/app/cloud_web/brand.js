@@ -4,6 +4,7 @@
   // Keep the administration destinations in the same order on every staff page.
   if (path === '/admin' || path.startsWith('/admin/')) {
     document.body.classList.add('staff-page');
+    const fleetStyle=document.createElement('link');fleetStyle.rel='stylesheet';fleetStyle.href='/assets/fleet.css';document.head.append(fleetStyle);
     const brandLabel = document.querySelector('.masthead > a span');
     if (brandLabel) brandLabel.textContent = 'Administrasjon';
     if (path === '/admin/support') {
@@ -12,7 +13,7 @@
     }
     document.querySelector('.masthead > a')?.setAttribute('href','/admin');
     const nav = document.querySelector('.masthead nav');
-    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/support','Support'],['/admin/support/prices','Prisliste']];
+    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/users','Brukere'],['/admin/support','Support'],['/admin/support/prices','Prisliste']];
     if (nav) {
       for (const [href, label] of links) {
         const existing = nav.querySelector(`a[href="${href}"]:not([id])`);

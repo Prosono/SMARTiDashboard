@@ -14,6 +14,7 @@ const root='backend/app/cloud_web/';
   else if(path==='/api/homes')data=[home,{...home,name:'Hytta ved sjøen',installation_id:'00000000-0000-4000-8000-000000000002',connected:false}];
   else if(path==='/api/admin/overview')data={checked_at:1792480000,relay_available:true,summary:{customers:24,accounts:29,homes:31,online:27,offline:2,unclaimed:2},customers:[{id:'test',username:'kunde@example.no',homes:[{name:home.name,status:'online'}]},{id:'test2',username:'annen@example.no',homes:[{name:'Hytta',status:'offline'}]}],total:2,unclaimed:[]};
   else if(path==='/api/admin/accounts/test')data={username:'kunde@example.no',id:'test',homes:[{name:home.name,status:'online',id:'demo'}],notes:[]};
+  else if(path==='/api/admin/traffic')data={available:false,daily:[],hubs:{}};
   else if(path==='/api/admin/audit'||path==='/api/admin/hubs')data=[];
   else if(path==='/api/support/pricing')data={hourly:499,simple:299,complex:499,advanced:799,version:1,terms:'Arbeid avtales før oppstart.'};
   else if(path==='/api/customer/profile'){if(route.request().method()==='PUT'){savedProfile=route.request().postDataJSON();profile={...profile,...savedProfile};data={ok:true};}else data={profile,mail_configured:true};}

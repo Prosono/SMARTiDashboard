@@ -1,5 +1,6 @@
 """Operator support surface. Home ownership and hub permissions are never bypassed."""
 
+import os
 import time
 from pathlib import Path
 
@@ -7,6 +8,8 @@ import httpx
 from fastapi import Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+
+from .relay_traffic import traffic_report
 
 
 class SupportNote(BaseModel):
@@ -67,9 +70,14 @@ def install_admin(app, db, session, relay_status_url):
         )
         return home
 
+    @app.get("/admin/users")
     @app.get("/admin")
     def admin_page():
         return FileResponse(Path(__file__).with_name("cloud_web") / "admin.html")
+
+    @app.get("/api/admin/traffic")
+    def traffic(days: int = Query(30, ge=1, le=90), s=Depends(admin)):
+        return traffic_report(os.environ.get("RELAY_TRAFFIC_DATABASE"), days)
 
     @app.get("/api/admin/overview")
     def overview(q: str = Query("", max_length=80), offset: int = Query(0, ge=0), s=Depends(admin)):

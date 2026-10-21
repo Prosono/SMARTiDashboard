@@ -10,12 +10,14 @@ services:
     environment:
       FORWARDED_ALLOW_IPS: "172.18.0.3"
       CLOUD_ORIGIN: https://home.smarti.dev
+      RELAY_TRAFFIC_DATABASE: /metrics/traffic.sqlite
       CLOUD_RELAY_STATUS_URL: http://smartihome-relay:9443/status
       CLOUD_PROVISION_SECRET_FILE: /run/secrets/provision
     secrets:
       - provision
     volumes:
       - accounts:/data
+      - traffic:/metrics:ro
     read_only: true
     tmpfs:
       - /tmp
@@ -34,8 +36,10 @@ services:
     environment:
       CLOUD_DATABASE: /data/cloud.sqlite
       RELAY_BEHIND_TLS_PROXY: "true"
+      RELAY_TRAFFIC_DATABASE: /metrics/traffic.sqlite
     volumes:
       - accounts:/data:ro
+      - traffic:/metrics
     read_only: true
     tmpfs:
       - /tmp
@@ -70,6 +74,7 @@ secrets:
     file: /home/omni/smartihome/secrets/provision
 volumes:
   accounts:
+  traffic:
 
 networks:
   edge:

@@ -62,3 +62,5 @@ $("note-form").onsubmit=e=>{e.preventDefault();if(selected)run(async()=>{await a
 
 async function supportCount(){try{const cases=await api("admin/support/cases");const count=cases.filter(c=>c.unread||c.status==="new").length;$("support-count").textContent=count?"("+count+")":"";}catch{}}
 supportCount();setInterval(()=>{if(!document.hidden&&csrf)supportCount();},60000);
+
+if(location.pathname==='/admin/users'){document.title='SMARTi · Brukere';document.querySelector('#workspace h1').textContent='Brukere og hjem.';document.querySelector('#workspace .eyebrow').textContent='KONTOER OG KUNDEOPPFØLGING';}

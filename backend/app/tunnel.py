@@ -15,14 +15,17 @@ CHUNK = 32768
 
 
 class Tunnel:
-    def __init__(self, websocket, target=None):
+    def __init__(self, websocket, target=None, meter=None):
         self.websocket = websocket
         self.target = target
+        self.meter = meter
         self.streams = {}
         self.tasks = set()
 
     async def send(self, frame):
         await asyncio.wait_for(self.websocket.send(frame), 10)
+        if self.meter and frame[:1] == b"D":
+            self.meter("to_hub", len(frame) - 17)
 
     async def add(self, reader, writer, stream_id=None, initial_data=b""):
         if len(self.streams) >= MAX_STREAMS:
@@ -79,6 +82,8 @@ class Tunnel:
                         try:
                             writer.write(frame[17:])
                             await asyncio.wait_for(writer.drain(), 10)
+                            if self.meter:
+                                self.meter("from_hub", len(frame) - 17)
                         except (OSError, TimeoutError):
                             writer.close()
                 elif kind == b"C" and len(frame) == 17:

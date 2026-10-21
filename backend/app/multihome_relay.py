@@ -8,6 +8,7 @@ import asyncio
 import contextlib
 import hashlib
 import json
+import logging
 import os
 import secrets
 import sqlite3
@@ -17,6 +18,7 @@ from pathlib import Path
 
 from websockets.asyncio.server import serve
 
+from .relay_traffic import TrafficMeter
 from .tunnel import CHUNK, Tunnel
 
 MAX_HELLO = 65536
@@ -108,11 +110,12 @@ class HomeRegistry:
 
 
 class MultiHomeRelay:
-    def __init__(self, registry, suffix="home.smarti.dev"):
+    def __init__(self, registry, suffix="home.smarti.dev", meter=None):
         self.registry, self.suffix = registry, suffix
         self.connections = {}
         self.credentials = {}
         self.pending = 0
+        self.meter = meter
 
     def home_for_name(self, name):
         home_id, separator, suffix = name.partition(".")
@@ -158,7 +161,7 @@ class MultiHomeRelay:
             await websocket.close(1008, "Connector rejected")
             return
         home_id, credential = identity
-        tunnel = Tunnel(websocket)
+        tunnel = Tunnel(websocket, meter=(lambda direction, size: self.meter.record(home_id, direction, size)) if self.meter else None)
         self.connections[home_id] = tunnel
         self.credentials[home_id] = credential
 
@@ -195,6 +198,8 @@ class MultiHomeRelay:
             tunnel = self.connections.get(home_id)
             if tunnel is None or self.registry.credential(home_id) != self.credentials.get(home_id):
                 raise ValueError("Home unavailable")
+            if self.meter:
+                self.meter.record(home_id, "connections", 1)
             await tunnel.add(reader, writer, initial_data=initial)
         except (ValueError, UnicodeError, OSError, TimeoutError, asyncio.IncompleteReadError, sqlite3.Error):
             writer.close()
@@ -203,7 +208,19 @@ class MultiHomeRelay:
 
 
 async def main():
-    relay = MultiHomeRelay(HomeRegistry(os.environ["CLOUD_DATABASE"]))
+    meter = TrafficMeter(os.environ["RELAY_TRAFFIC_DATABASE"]) if os.environ.get("RELAY_TRAFFIC_DATABASE") else None
+    relay = MultiHomeRelay(HomeRegistry(os.environ["CLOUD_DATABASE"]), meter=meter)
+
+    async def flush():
+        while True:
+            await asyncio.sleep(10)
+            if meter:
+                try:
+                    meter.flush()
+                except sqlite3.Error:
+                    logging.exception("Traffic counters could not be persisted")
+
+    flush_task = asyncio.create_task(flush())
     tls = None
     if os.environ.get("RELAY_BEHIND_TLS_PROXY") != "true":
         tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -229,7 +246,12 @@ async def main():
             limit=MAX_HELLO,
         )
         async with server:
-            await server.serve_forever()
+            try:
+                await server.serve_forever()
+            finally:
+                flush_task.cancel()
+                if meter:
+                    meter.flush()
 
 
 if __name__ == "__main__":

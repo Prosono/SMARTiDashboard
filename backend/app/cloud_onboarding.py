@@ -170,6 +170,7 @@ def install_onboarding(
             "phase": row["phase"],
             "online": bool(row["seen"] and row["seen"] > time.time() - 100),
             "seen": row["seen"],
+            "created": row["created"],
             "checks": json.loads(row["inspection"] or "{}"),
             "health": h,
         }
