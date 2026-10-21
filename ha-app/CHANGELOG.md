@@ -1,3 +1,6 @@
+## 1.35.76
+- Skytjenesten bruker aktiv hubstatus ved ny QR-skanning av allerede registrerte huber, i stedet for en utløpt førstegangsregistrering. Serverrettelsen krever ikke en ny tilbakestilling eller appoppdatering.
+
 ## 1.35.75
 - Rolig lasteanimasjon og én oppdatert statustekst mens tilbakestilling pågår.
 - Detaljrapporten ligger under «Se detaljer» etter avslutning.

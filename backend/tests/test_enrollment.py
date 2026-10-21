@@ -7,12 +7,13 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
-from app.config import Settings
-from app.hub_onboarding import HubOnboarding
-from app.storage import Store
 from fastapi.testclient import TestClient
 from test_cloud import ORIGIN
 from test_onboarding import HEARTBEAT, PLAN, FakeHA, factory
+
+from app.config import Settings
+from app.hub_onboarding import HubOnboarding
+from app.storage import Store
 
 
 def pending(secret="x" * 48):
@@ -142,3 +143,44 @@ async def test_local_advertisement_starts_before_cloud_and_survives_offline(tmp_
     assert [x[0] for x in events] == ["advertise", "cloud", "close"]
     assert events[0][1]["state"] == "unconfigured"
     assert HubOnboarding(settings, FakeHA(), worker.store, {}).device == worker.device
+
+
+def test_reset_qr_uses_bound_hub_heartbeat_not_expired_enrollment(tmp_path):
+    from cryptography.hazmat.primitives.asymmetric import x25519
+
+    from app.reset_credentials import public_key
+
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    anonymous = TestClient(app, base_url=ORIGIN)
+    body = pending()
+    anonymous.post("/api/enrollment/poll", json=body)
+    claim = activation | {"device": body["device"]}
+    url = f"/api/activation/{home}/claim"
+    assert owner.post(url, json=claim).status_code == 200
+    identity = anonymous.post("/api/enrollment/poll", json=body).json()["identity"]
+    hub.headers["Authorization"] = "Bearer " + identity["credential"]
+    reset_id = str(uuid.uuid4())
+    reset_url = f"/api/hubs/{home}/factory-reset"
+    assert (
+        hub.post(
+            reset_url + "/begin",
+            json={"id": reset_id, "public_key": public_key(x25519.X25519PrivateKey.generate())},
+        ).status_code
+        == 200
+    )
+    assert hub.post(reset_url + "/ready", json={"id": reset_id}).status_code == 200
+    assert (
+        hub.post(
+            f"/api/hubs/{home}/onboarding/heartbeat", json=HEARTBEAT | {"ha_connected": False}
+        ).status_code
+        == 200
+    )
+    with sqlite3.connect(path) as c:
+        c.execute("UPDATE hub_enrollments SET seen=0")
+    assert other.post(url, json=claim).status_code == 409
+    assert owner.post(url, json=claim | {"device": str(uuid.uuid4())}).status_code == 409
+    assert owner.post(url, json=claim).status_code == 200
+    assert owner.get(f"/api/onboarding/{home}").json()["reset"]["scan_required"] is False
+    with sqlite3.connect(path) as c:
+        c.execute("UPDATE factory_hubs SET seen=0 WHERE home=?", (home,))
+    assert owner.post(url, json=claim).json()["detail"] == "enrollment_offline"

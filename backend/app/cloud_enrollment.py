@@ -85,12 +85,21 @@ def install_enrollment(app, db, throttle, provisioning_secret):
     def bind(c, row, device):
         """Called only after account, CSRF, printed QR and PIN validation, in the claim transaction."""
         pending = c.execute("SELECT * FROM hub_enrollments WHERE device=?", (device,)).fetchone()
-        if not pending or pending["seen"] < time.time() - 100:
+        if not pending:
             raise HTTPException(409, "enrollment_offline")
         if pending["home"]:
             if pending["home"] != row["home"]:
                 raise HTTPException(409, "device_already_linked")
+            # Bound hubs stop enrollment polling once they receive their identity.
+            # Their authenticated factory heartbeat is the current liveness proof,
+            # including while Core deliberately remains stopped after a reset.
+            if pending["fingerprint"] != row["fingerprint"]:
+                raise HTTPException(409, "hub_already_personalized")
+            if not row["seen"] or row["seen"] < time.time() - 100:
+                raise HTTPException(409, "enrollment_offline")
             return
+        if pending["seen"] < time.time() - 100:
+            raise HTTPException(409, "enrollment_offline")
         if row["owner"] or row["fingerprint"]:
             # Never overwrite an already personalized/owned installation with a different physical hub.
             raise HTTPException(409, "hub_already_personalized")
