@@ -1,3 +1,8 @@
+## 1.35.87
+
+- RESTORE WIPE bytter Z-Wave-nøkler ved neste oppsett også med gjenværende paringer.
+- Produksjonsdialogen forklarer at gamle enheter kan måtte nullstilles manuelt og pares på nytt.
+
 ## 1.35.86
 
 - Egne S0-/S2-nøkler for Z-Wave og Long Range ved første oppsett etter RESTORE WIPE.

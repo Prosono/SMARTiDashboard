@@ -112,12 +112,18 @@ async def test_uncertain_save_reuses_keys(rig):
 
 
 @pytest.mark.asyncio
-async def test_paired_controller_blocks_without_changes(rig):
+async def test_paired_controller_rotates_and_completes_without_removing_nodes(rig):
     rig.ha.paired = True
-    with pytest.raises(HAError, match="zwave_keys_existing_devices"):
-        await rig.worker.ensure(rig.state)
-    assert rig.posts == 0
+    await rig.worker.ensure(rig.state)
+    assert rig.posts == 1
+    assert rig.supervisor.restarts == 1
+    assert rig.store["production_zwave_keys:clone-1"] == "ready"
+    assert rig.ha.paired is True
+    assert "networkKey" not in rig.config["zwave"]
+    assert len(rig.config["zwave"]["securityKeys"]) == 4
     assert not rig.worker.journal.exists()
+    await rig.worker.ensure(rig.state)
+    assert rig.posts == 1
 
 
 @pytest.mark.asyncio

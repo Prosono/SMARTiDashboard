@@ -50,8 +50,8 @@ class ZWaveKeys:
         nodes = controller.get("nodes")
         if not isinstance(nodes, list) or not nodes or not controller.get("home_id"):
             raise HAError("zwave_keys_unavailable")
-        if len(nodes) != 1 or nodes[0].get("is_controller_node") is not True:
-            raise HAError("zwave_keys_existing_devices")
+        # RESTORE WIPE explicitly authorizes replacing keys even when old nodes remain.
+        # Keep the controller/network intact; old secure nodes may need manual re-pairing.
         return controller["home_id"]
 
     async def ensure(self, state):

@@ -26,8 +26,9 @@ Fra 1.35.85 er anbefalt produksjonsflyt:
 Fra 1.35.86 oppretter kundeoppsettet seks tilfeldige Z-Wave-sikkerhetsnøkler
 (S0, tre S2-klasser og to Long Range-klasser) etter QR-kobling og radiotilkobling.
 Z-Wave JS UI startes på nytt og lagringen kontrolleres før oppsettet fullføres.
-Kontrolleren må være tom for parede enheter; ellers stoppes dette steget.
-Fjern gamle paringer manuelt før produksjonsklargjøring. Home ID endres ikke.
+Fra 1.35.87 gjennomføres nøkkelbyttet også når gamle enheter fortsatt er paret.
+Disse paringene fjernes ikke automatisk, og gamle sikrede enheter kan måtte
+nullstilles manuelt og pares på nytt. Home ID endres ikke.
 Nøklene beholdes ved retry/omstart og vanlig reset. En lokal journal med modus 0600
 sikrer at et avbrutt forsøk gjenbruker samme nøkler; den fjernes etter kontroll.
 API-autentisering eller eksternt administrerte nøkler overstyres ikke: oppsettet

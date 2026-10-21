@@ -313,11 +313,7 @@ class HubOnboarding:
                 plan,
                 "failed",
                 current_step,
-                (
-                    "zwave_keys_existing_devices"
-                    if str(e) == "zwave_keys_existing_devices"
-                    else "zwave_keys_unavailable"
-                )
+                "zwave_keys_unavailable"
                 if current_step == "zwave_keys"
                 else "radios_unavailable"
                 if current_step == "radios"
