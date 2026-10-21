@@ -26,8 +26,10 @@ class HubOnboarding:
     def __init__(self, settings, ha, store, remote, transport=None, start_remote=None, setup=None):
         self.settings, self.ha, self.store, self.remote = settings, ha, store, remote
         from .radio_recovery import RadioRecovery
+        from .zwave_keys import ZWaveKeys
 
         self.radios = RadioRecovery(settings, ha, store, setup) if setup else None
+        self.zwave_keys = ZWaveKeys(settings, ha, store, setup) if setup else None
         self.transport = transport
         self.start_remote = start_remote
         self.boot = uuid.uuid4().hex
@@ -207,6 +209,14 @@ class HubOnboarding:
 
             if full.state() and self.radios:
                 await stage("radios", lambda: self.radios.ensure(full.state()["id"]))
+            if full.state() and full.state().get("factory_image"):
+
+                async def rotate_keys():
+                    if not self.zwave_keys:
+                        raise HAError("zwave_keys_unavailable")
+                    await self.zwave_keys.ensure(full.state())
+
+                await stage("zwave_keys", rotate_keys)
 
             async def location():
                 await self.ha.request(
@@ -303,7 +313,15 @@ class HubOnboarding:
                 plan,
                 "failed",
                 current_step,
-                "radios_unavailable" if current_step == "radios" else "setup_failed",
+                (
+                    "zwave_keys_existing_devices"
+                    if str(e) == "zwave_keys_existing_devices"
+                    else "zwave_keys_unavailable"
+                )
+                if current_step == "zwave_keys"
+                else "radios_unavailable"
+                if current_step == "radios"
+                else "setup_failed",
             )
 
     async def update_credentials(self):

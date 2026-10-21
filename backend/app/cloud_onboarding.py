@@ -98,9 +98,16 @@ class Plan(BaseModel):
 class Progress(BaseModel):
     id: str
     status: Literal["working", "completed", "failed"]
-    step: Literal["checking", "resetting", "location", "rooms", "user", "radios", "completed"]
+    step: Literal["checking", "resetting", "location", "rooms", "user", "radios", "zwave_keys", "completed"]
     error: Literal[
-        "", "ha_unavailable", "setup_failed", "existing_users", "reset_not_supported", "radios_unavailable"
+        "",
+        "ha_unavailable",
+        "setup_failed",
+        "existing_users",
+        "reset_not_supported",
+        "radios_unavailable",
+        "zwave_keys_existing_devices",
+        "zwave_keys_unavailable",
     ] = ""
 
 
@@ -217,10 +224,18 @@ def install_onboarding(
                 if plan and plan["status"] == "completed" and not (reset and reset["phase"] != "completed"):
                     payload = json.loads(plan["payload"])
                     lat, lon = payload.get("latitude"), payload.get("longitude")
-                    if (type(lat) in (int, float) and type(lon) in (int, float)
-                            and -90 <= lat <= 90 and -180 <= lon <= 180):
-                        item["location"] = {"latitude": lat, "longitude": lon,
-                                            "name": payload.get("name", ""), "source": "onboarding"}
+                    if (
+                        type(lat) in (int, float)
+                        and type(lon) in (int, float)
+                        and -90 <= lat <= 90
+                        and -180 <= lon <= 180
+                    ):
+                        item["location"] = {
+                            "latitude": lat,
+                            "longitude": lon,
+                            "name": payload.get("name", ""),
+                            "source": "onboarding",
+                        }
 
                 result.append(item)
             return result

@@ -23,6 +23,17 @@ Fra 1.35.85 er anbefalt produksjonsflyt:
    ventende identitet slik at dette ikke brytes. Kopier på annen maskinvare gjenbruker
    aldri masterens ventende registrering.
 
+Fra 1.35.86 oppretter kundeoppsettet seks tilfeldige Z-Wave-sikkerhetsnøkler
+(S0, tre S2-klasser og to Long Range-klasser) etter QR-kobling og radiotilkobling.
+Z-Wave JS UI startes på nytt og lagringen kontrolleres før oppsettet fullføres.
+Kontrolleren må være tom for parede enheter; ellers stoppes dette steget.
+Fjern gamle paringer manuelt før produksjonsklargjøring. Home ID endres ikke.
+Nøklene beholdes ved retry/omstart og vanlig reset. En lokal journal med modus 0600
+sikrer at et avbrutt forsøk gjenbruker samme nøkler; den fjernes etter kontroll.
+API-autentisering eller eksternt administrerte nøkler overstyres ikke: oppsettet
+stoppes med en feilmelding dersom SMARTi ikke får lagret og kontrollert nøklene.
+Test også Z-Wave-paring på begge faktiske kloner før serieproduksjon.
+
 Vanlige lokale administratorer får ikke produksjonstilgang bare ved å kjenne teksten.
 Backend kontrollerer sentral tillatelse før reset og skytjenesten forbruker tillatelsen
 før sletting. Supportøkter er fortsatt blokkert. Ingen generelle produksjonsrettigheter

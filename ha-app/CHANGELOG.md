@@ -1,3 +1,8 @@
+## 1.35.86
+
+- Egne S0-/S2-nøkler for Z-Wave og Long Range ved første oppsett etter RESTORE WIPE.
+- Krever tom Z-Wave-kontroller; avbrutte forsøk gjenbruker nøklene, og vanlige omstarter endrer dem ikke.
+
 ## 1.35.85
 
 - RESTORE WIPE i reset-dialogen etter tidsbegrenset engangstillatelse fra sentral administrasjon.
