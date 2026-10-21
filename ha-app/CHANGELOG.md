@@ -1,3 +1,6 @@
+## 1.35.81
+- QR-skanning fortsetter til oppsettet også når iPhone viser aktiveringssiden fra før. Skanning under pågående sideinnlasting behandles når siden er klar.
+
 ## 1.35.80
 - To resetvalg: behold eierkontoen, eller klargjør huben for ny eier med egen bekreftelse.
 - Eierskifte sletter lokale brukere, land og husoppsett og frigjør huben fra eierkontoen etter sletting og omstart. Tidligere medlems-, support- og innloggingstilganger tilbakekalles.
