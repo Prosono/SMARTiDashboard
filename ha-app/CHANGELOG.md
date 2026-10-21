@@ -1,3 +1,6 @@
+## 1.35.77
+- «Åpne hjemmet» vises rett under ferdigmeldingen i oppstartsveilederen, før invitasjoner. Fullførte fremdriftstrinn skjules.
+
 ## 1.35.76
 - Skytjenesten bruker aktiv hubstatus ved ny QR-skanning av allerede registrerte huber, i stedet for en utløpt førstegangsregistrering. Serverrettelsen krever ikke en ny tilbakestilling eller appoppdatering.
 
