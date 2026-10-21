@@ -6,3 +6,16 @@
 @media(max-width:600px){.factory-reset-panel{padding:18px}.factory-reset-actions{flex-direction:column}.factory-reset-actions button{width:100%}}
 
 .factory-reset-results{list-style:none;padding:0;display:grid;gap:12px}.factory-reset-results li{display:grid;gap:6px;border-bottom:1px solid var(--line);padding-bottom:12px;overflow-wrap:anywhere}.factory-reset-results small{color:var(--muted)}
+
+.factory-reset-progress{display:flex;flex-direction:column;align-items:center;text-align:center;padding:clamp(24px,6vw,48px) 8px;gap:18px;color:var(--text)}
+.factory-reset-orbit{position:relative;display:grid;place-items:center;width:116px;height:116px;color:#f87912;margin-bottom:10px;flex-shrink:0}
+.factory-reset-orbit span{position:absolute;inset:0;border:3px solid color-mix(in srgb,#f87912 16%,transparent);border-top-color:#f87912;border-right-color:#f87912;border-radius:50%;animation:factory-reset-turn 1.8s linear infinite}
+.factory-reset-progress .factory-reset-eyebrow{font-size:12px;font-weight:600;letter-spacing:.15em;color:var(--muted);margin:0}
+.factory-reset-progress h3{font-size:clamp(24px,5vw,30px);line-height:1.2;margin:0;max-width:100%;overflow-wrap:anywhere}
+.factory-reset-progress>p:not(.factory-reset-eyebrow){max-width:38ch;margin:0;line-height:1.6}
+.factory-reset-progress small{color:var(--muted);max-width:38ch;line-height:1.5}
+.factory-reset-orbit.is-waiting span{animation:none;border-style:dashed}
+.factory-reset-outcome{color:var(--text);padding-top:12px}
+.factory-reset-report summary{cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline;text-underline-offset:4px}
+@keyframes factory-reset-turn{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.factory-reset-orbit span{animation:none}}

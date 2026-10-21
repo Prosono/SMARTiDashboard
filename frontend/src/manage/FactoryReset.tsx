@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { AlertTriangle, RotateCcw, House, Check } from "lucide-react";
 import { api, ApiError } from "../api";
 import { SettingsDialog } from "../home/SettingsDialog";
 import "./factoryReset.css";
@@ -51,20 +51,37 @@ export function FactoryReset({ lang }: { lang: string }) {
     staleTime: 0,
     refetchInterval: open ? 2000 : false,
   });
-  const job = newAttempt ? submitted : (readiness.data?.job || submitted);
+  const latest = readiness.data?.job;
+  const job = submitted ? (latest?.id === submitted.id ? latest : submitted) : newAttempt ? null : latest;
+  const running = busy || job?.status === "running";
+  const stages: Record<string, string> = {
+    inventory: t("Gjør huben klar", "Preparing your hub"),
+    pause: t("Gjør huben klar", "Preparing your hub"),
+    full_reset: t("Tilbakestiller hjemmet", "Resetting your home"),
+    history: t("Rydder hjemmets historikk", "Clearing home history"),
+    manual: t("Beholder enhetsparingene", "Keeping device pairings"),
+  };
+  const progressText = busy ? t("Starter tilbakestilling", "Starting reset") : readiness.isError ? t("Venter på kontakt med huben", "Waiting for the hub") : stages[job?.step || ""] || t("Tilbakestiller hjemmet", "Resetting your home");
   function close() { setOpen(false); setPassword(""); setConfirmation(""); setLoss(false); setPairing(false); setBackup(""); setManual(false); setError(""); }
   return <section className="factory-reset-panel">
     <div><AlertTriangle size={24} aria-hidden="true" /><h2>{t("Tilbakestill til fabrikkinnstillinger", "Factory reset")}</h2></div>
     <p>{t("Slett hjemmets oppsett, historikk og lokale brukere. Installerte apper beholdes. Du setter opp hjemmet på nytt fra Min side.", "Erase home configuration, history and local users. Installed apps are kept. Set up the home again from your account.")}</p>
     <button className="factory-reset-danger" onClick={() => setOpen(true)}><RotateCcw size={18} aria-hidden="true" />{t("Se hva som tilbakestilles", "Review factory reset")}</button>
     {open && <SettingsDialog title={t("Tilbakestill huben?", "Reset this hub?")} lang={lang} busy={busy} onClose={close} compact>
-      {job ? <div className="factory-reset-form" aria-live="polite">
+      {running ? <div className="factory-reset-progress">
+        <div className={`factory-reset-orbit${readiness.isError && !busy ? " is-waiting" : ""}`} aria-hidden="true"><span /><House size={36} strokeWidth={1.5} /></div>
+        <p className="factory-reset-eyebrow">{t("TILBAKESTILLING", "FACTORY RESET")}</p>
+        <h3 role="status" aria-live="polite" aria-atomic="true">{progressText}</h3>
+        <p>{readiness.isError && !busy ? t("Forbindelsen kan forsvinne når huben starter på nytt. Vi kan ikke bekrefte fremdriften akkurat nå. Se status på Min side.", "The connection may drop while the hub restarts. Progress cannot be confirmed right now. Check your account for status.") : t("Dette kan ta noen minutter. La huben være koblet til strøm og nettverk mens vi gjør den klar for nytt oppsett.", "This may take a few minutes. Keep the hub connected to power and the network while we prepare it for setup.")}</p>
+        <small>{t("Kontoen din, QR-koden og enhetsparingene beholdes.", "Your account, QR code and device pairings are kept.")}</small>
+        {readiness.isError && <a href="https://home.smarti.dev/">{t("Åpne Min side", "Open your account")}</a>}
+      </div> : job ? <div className="factory-reset-form" aria-live="polite">
+        <div className="factory-reset-outcome" aria-hidden="true">{job.status === "completed" ? <Check size={32} /> : <AlertTriangle size={32} />}</div>
         <h3>{job.status === "running" ? t("Tilbakestilling pågår", "Reset in progress") : job.status === "completed" ? t("Tilbakestilling fullført", "Reset complete") : t("Tilbakestillingen er ikke fullført", "Reset is incomplete")}</h3>
         <p>{job.status === "running" ? t("Ikke koble fra strømmen. Du kan komme tilbake hit for å se fremdriften.", "Keep the hub powered on. You can return here to check progress.") : t("Se rapporten nedenfor. Hvis tilbakestillingen er avbrutt, ikke forsøk å starte HA manuelt. Gå til Min side for status og nytt oppsett, eller kontakt support.", "Review the report below. If interrupted, do not start HA manually. Open your account for status and setup, or contact support.")}</p>
         <a href="https://home.smarti.dev/" target="_blank" rel="noreferrer">{t("Åpne Min side og skann hubens QR-kode", "Open your account and scan the hub QR code")}</a>
-        <p>{job.results.filter(r => r.status === "done").length} / {job.results.length} {t("trinn bekreftet", "steps confirmed")}</p>
         {job.error && <p role="alert">{t("Prosessen stoppet eller ble avbrutt. Handlinger med ukjent resultat blir ikke gjentatt automatisk.", "The process stopped or was interrupted. Uncertain operations are not automatically repeated.")}</p>}
-        <ul className="factory-reset-results">{job.results.map((r,i) => <li key={i}><strong>{r.name}</strong><span>{r.status === "done" ? t("Bekreftet utført", "Confirmed") : r.status === "pending" ? t("Venter", "Waiting") : r.status === "running" ? t("Pågår", "Working") : r.status === "manual" ? t("Må følges opp manuelt", "Manual follow-up required") : t("Ikke bekreftet utført", "Not confirmed")}</span>{r.status === "manual" || r.status === "unconfirmed" ? <small>{r.reason === "pairings_not_removed" ? t("Ingen enheter er paret bort. Du kan beholde paringene eller fjerne dem manuelt.", "No devices were unpaired. Keep pairings or remove them manually.") : r.reason === "zwave_exclusion_required" ? t("Fjern Z-Wave-enheten via ekskludering. Det kan kreve at du trykker på enheten.", "Remove the Z-Wave device through exclusion, which may require physical interaction.") : r.reason === "ha_owner_cleanup_required" ? t("HA tillater ikke sletting av eierkontoen gjennom dette grensesnittet.", "HA does not allow deleting its owner account through this interface.") : r.reason === "history_purge_requested" ? t("Sletting er bestilt hos HA. Fullføring må kontrolleres.", "HA received a purge request. Completion needs verification.") : r.reason === "yaml_cleanup_required" ? t("Oppsett i YAML må fjernes i HA.", "YAML configuration must be removed in HA.") : r.reason === "configuration_review_required" ? t("Kontroller integrasjoner, hjelpere, plassering, YAML-oppsett og gamle tilganger i HA. SMARTi-brukere og fjernaksess er ennå ikke nullstilt.", "Review integrations, helpers, location, YAML and existing access in HA. SMARTi users and remote access have not been reset yet.") : t("Kontroller enheten eller oppsettet i HA før du fortsetter. En fysisk nullstilling kan være nødvendig.", "Check the device or configuration in HA before continuing. A physical reset may be needed.")}</small> : null}</li>)}</ul>
+        <details className="factory-reset-report"><summary>{t("Se detaljer", "View details")}</summary><ul className="factory-reset-results">{job.results.map((r,i) => <li key={i}><strong>{r.name}</strong><span>{r.status === "done" ? t("Bekreftet utført", "Confirmed") : r.status === "pending" ? t("Venter", "Waiting") : r.status === "running" ? t("Pågår", "Working") : r.status === "manual" ? t("Må følges opp manuelt", "Manual follow-up required") : t("Ikke bekreftet utført", "Not confirmed")}</span>{r.status === "manual" || r.status === "unconfirmed" ? <small>{r.reason === "pairings_not_removed" ? t("Ingen enheter er paret bort. Du kan beholde paringene eller fjerne dem manuelt.", "No devices were unpaired. Keep pairings or remove them manually.") : r.reason === "zwave_exclusion_required" ? t("Fjern Z-Wave-enheten via ekskludering. Det kan kreve at du trykker på enheten.", "Remove the Z-Wave device through exclusion, which may require physical interaction.") : r.reason === "ha_owner_cleanup_required" ? t("HA tillater ikke sletting av eierkontoen gjennom dette grensesnittet.", "HA does not allow deleting its owner account through this interface.") : r.reason === "history_purge_requested" ? t("Sletting er bestilt hos HA. Fullføring må kontrolleres.", "HA received a purge request. Completion needs verification.") : r.reason === "yaml_cleanup_required" ? t("Oppsett i YAML må fjernes i HA.", "YAML configuration must be removed in HA.") : r.reason === "configuration_review_required" ? t("Kontroller integrasjoner, hjelpere, plassering, YAML-oppsett og gamle tilganger i HA. SMARTi-brukere og fjernaksess er ennå ikke nullstilt.", "Review integrations, helpers, location, YAML and existing access in HA. SMARTi users and remote access have not been reset yet.") : t("Kontroller enheten eller oppsettet i HA før du fortsetter. En fysisk nullstilling kan være nødvendig.", "Check the device or configuration in HA before continuing. A physical reset may be needed.")}</small> : null}</li>)}</ul></details>
         <button type="button" onClick={close}>{t("Lukk", "Close")}</button>
         {job.status !== "running" && <button type="button" onClick={() => {setNewAttempt(true);setSubmitted(null);setRequestId(crypto.randomUUID());}}>{t("Gå gjennom en ny tilbakestilling", "Review another reset")}</button>}
       </div> : <form className="factory-reset-form" onSubmit={async e => {

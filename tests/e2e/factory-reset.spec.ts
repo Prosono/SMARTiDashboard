@@ -62,3 +62,27 @@ test("reset request shows durable incomplete report instead of success", async (
   await expect(page.getByRole('dialog')).toContainText('Tilbakestillingen er ikke fullført');
   expect(writes).toBe(1);
 });
+
+test("reset shows one live stage without the operation list and respects reduced motion", async ({page}) => {
+  await page.goto('/');
+  await page.getByLabel('Brukernavn',{exact:true}).fill('tester');
+  await page.getByLabel('Passord',{exact:true}).fill('test-password-not-for-live');
+  await page.getByRole('button',{name:'Logg inn',exact:true}).click();
+  await page.getByRole('button',{name:'Innstillinger',exact:true}).first().click();
+  await page.getByRole('button',{name:/^Avansert/}).click();
+  let step='inventory'; let offline=false;
+  await page.route('**/api/manage/settings/factory-reset', route => offline ? route.abort() : route.fulfill({json:{ready:false,blockers:[],job:{id:'running-reset',status:'running',step,error:'',results:[{kind:'full_reset',name:'Intern detalj',status:'running',reason:''}]}}}));
+  await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
+  await page.getByRole('button',{name:'Se hva som tilbakestilles'}).click();
+  const dialog=page.getByRole('dialog',{name:'Tilbakestill huben?'});
+  await expect(dialog.getByRole('status')).toHaveText('Gjør huben klar');
+  await expect(dialog.locator('.factory-reset-results')).toHaveCount(0);
+  step='full_reset';
+  await expect(dialog.getByRole('status')).toHaveText('Tilbakestiller hjemmet',{timeout:10000});
+  await dialog.screenshot({path:`/tmp/smarti-reset-loading-${test.info().project.name}.png`});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(dialog.locator('.factory-reset-orbit span')).toHaveCSS('animation-name','none');
+  offline=true;
+  await expect(dialog.getByRole('status')).toHaveText('Venter på kontakt med huben',{timeout:20000});
+  await expect(dialog).toContainText('Vi kan ikke bekrefte fremdriften akkurat nå');
+});

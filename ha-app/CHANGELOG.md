@@ -1,3 +1,8 @@
+## 1.35.75
+- Rolig lasteanimasjon og én oppdatert statustekst mens tilbakestilling pågår.
+- Detaljrapporten ligger under «Se detaljer» etter avslutning.
+- Tydelig beskjed når kontakt med huben mangler, og støtte for redusert bevegelse.
+
 ## 1.35.74
 - Setter valgt land i Home Assistant under førstegangsoppsett og nytt oppsett etter tilbakestilling. Norge er forhåndsvalgt, og land kan endres i veilederen.
 - Adminens QR-oversikt viser status for tilbakestilling, omstart, ny QR-skanning og nytt oppsett.
