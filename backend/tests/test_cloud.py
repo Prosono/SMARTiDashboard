@@ -1,9 +1,12 @@
+import inspect
+import re
 import sqlite3
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from app.cloud import create_cloud
 from fastapi.testclient import TestClient
+
+from app.cloud import create_cloud
 
 ORIGIN = "https://home.smarti.dev"
 SECRET = "test-provision-" + "x" * 40
@@ -13,7 +16,26 @@ def account(app, name):
     c = TestClient(app, base_url=ORIGIN)
     c.headers["Origin"] = ORIGIN
     body = {"username": name, "password": "test-cloud-password-only"}
-    assert c.post("/api/register", json=body).status_code == 200
+    profile = dict(
+        email=name + "@example.test",
+        full_name=name + " Customer",
+        phone="12345678",
+        address="Test street 1",
+        postal_code="1234",
+        city="Oslo",
+        country="Norge",
+    )
+    response = c.post("/api/register", json=body | {"profile": profile})
+    assert response.status_code == 200, response.text
+    # Exercise the real email verification URL from the test outbox.
+    route = next(r for r in app.routes if getattr(r, "path", None) == "/api/customer/verify")
+    db = inspect.getclosurevars(route.endpoint).nonlocals["db"]
+    with db() as connection:
+        mail = connection.execute(
+            "SELECT body FROM mail_outbox WHERE recipient=? ORDER BY id DESC", (profile["email"],)
+        ).fetchone()[0]
+    token = re.search(r"verify=([^\s]+)", mail).group(1)
+    assert c.post("/api/customer/verify", json={"token": token}).status_code == 200
     login = c.post("/api/login", json=body)
     assert login.status_code == 200
     c.headers["X-CSRF-Token"] = login.json()["csrf"]
@@ -195,7 +217,10 @@ def test_login_checks_existing_password_without_registration_length_rule(tmp_pat
     body = {"username": "existing", "password": "short-test"}
     assert c.post("/api/register", json=body).status_code == 422
     with sqlite3.connect(path) as db:
-        db.execute("INSERT INTO accounts VALUES(?,?,?)", ("existing-id", "existing", PASSWORDS.hash(body["password"])))
+        db.execute(
+            "INSERT INTO accounts VALUES(?,?,?)",
+            ("existing-id", "existing", PASSWORDS.hash(body["password"])),
+        )
     assert c.post("/api/login", json={**body, "password": "wrong"}).status_code == 401
     assert c.post("/api/login", json=body).status_code == 200
     assert c.get("/api/session").status_code == 200

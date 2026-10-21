@@ -11,7 +11,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from .auth import DUMMY, hasher
 from .ha import HAError
 
 
@@ -46,7 +45,9 @@ class FactoryResetRequest(BaseModel):
     model_config = {"extra": "forbid"}
     request_id: UUID
     acknowledge_manual_cleanup: Literal[True]
-    password: str = Field(min_length=1, max_length=128, repr=False)
+    password: str | None = Field(
+        default=None, max_length=128, repr=False
+    )  # Accepted from older clients; not required.
     confirmation: Literal["RESET HUB"]
     acknowledge_data_loss: Literal[True]
     acknowledge_pairing: Literal[True]
@@ -208,11 +209,6 @@ def factory_reset_router(store, auth, admin, engine):
     async def start(body: FactoryResetRequest, current=Depends(permitted)):
         key = f"factory-reset:{current['id']}"
         auth.throttle(key)
-        with store.connect() as db:
-            row = db.execute("SELECT password,role FROM users WHERE id=?", (current["id"],)).fetchone()
-        valid = hasher.verify(body.password, row["password"] if row else DUMMY)
-        if not valid or not row or row["role"] != "admin":
-            raise HTTPException(403, "factory_reset_password_invalid")
         auth.finish_successful_attempt(key)
         # A retry of the same request reads its job, including after a disconnect.
         try:

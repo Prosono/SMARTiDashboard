@@ -50,8 +50,8 @@ def test_confirmation_is_validated_and_password_never_echoed(client):
         assert response.status_code == 422
         assert BODY["password"] not in response.text
     response = client.post(PATH, json=BODY | {"password": "incorrect"})
-    assert response.status_code == 403
-    assert response.json()["detail"] == "factory_reset_password_invalid"
+    assert response.status_code == 409
+    assert response.json()["detail"] == "factory_reset_unavailable"
     assert client.get("/api/session").status_code == 200
 
 
@@ -66,13 +66,6 @@ def test_no_provider_never_deletes_data_or_sessions(client):
     assert client.get("/api/session").status_code == 200
     with store.connect() as db:
         assert db.execute("SELECT count(*) FROM users").fetchone()[0] == 1
-
-
-def test_reauthentication_is_rate_limited(client):
-    advanced(client)
-    for _ in range(8):
-        assert client.post(PATH, json=BODY | {"password": "incorrect"}).status_code == 403
-    assert client.post(PATH, json=BODY).status_code == 429
 
 
 class Provider:
@@ -98,7 +91,7 @@ def test_real_job_records_partial_result_and_duplicate_never_replays(client):
     engine = client.app.state.factory_reset
     provider = Provider()
     engine.provider = provider
-    body = BODY | {"request_id": str(uuid4())}
+    body = {k: v for k, v in BODY.items() if k != "password"} | {"request_id": str(uuid4())}
     r = client.post(PATH, json=body)
     assert r.status_code == 202
     import time

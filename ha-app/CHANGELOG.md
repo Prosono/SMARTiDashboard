@@ -1,3 +1,11 @@
+## 1.35.78
+- Konto og e-postbekreftelse kreves før en hub kan kobles til. Full kontaktprofil inngår i registreringen.
+- Ny «Glemt passord»-flyt for portalkontoen, med tidsbegrenset engangslenke.
+- Nye huber får fornavnet som lokalt administratornavn og et eget passord med dobbel inntasting. Innloggingene holdes adskilt per hub.
+- Sentral administrasjon kan endre SMARTi-administratorinnloggingen på én hub, med kvittering fra huben og revisjonslogg.
+- Enklere mobiloppsett: én søkeknapp og illustrasjon av telefon, ruter og hub.
+- Fabrikktilbakestilling krever fortsatt administrator, avansert modus og eksplisitte bekreftelser, men ikke passordinntasting.
+
 ## 1.35.77
 - «Åpne hjemmet» vises rett under ferdigmeldingen i oppstartsveilederen, før invitasjoner. Fullførte fremdriftstrinn skjules.
 

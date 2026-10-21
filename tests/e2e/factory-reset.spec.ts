@@ -16,12 +16,11 @@ test("factory reset is advanced-only, explains pairing limits and stays blocked 
   await dialog.getByRole('checkbox').nth(0).check();
   await dialog.getByRole('checkbox').nth(1).check();
   await dialog.getByLabel('Skriv RESET HUB for å bekrefte').fill('RESET HUB');
-  await dialog.getByLabel('Passordet til din administratorkonto').fill('test-password-not-for-live');
   await expect(dialog.getByRole('button',{name:'Start tilbakestilling'})).toBeDisabled();
   await dialog.screenshot({path:`/tmp/smarti-factory-reset-${test.info().project.name}.png`});
   await dialog.getByRole('button',{name:'Avbryt',exact:true}).click();
   await page.getByRole('button',{name:'Se hva som tilbakestilles'}).click();
-  await expect(page.getByLabel('Passordet til din administratorkonto')).toHaveValue('');
+  await expect(page.getByLabel('Passordet til din administratorkonto')).toHaveCount(0);
   await page.getByRole('button',{name:'Avbryt',exact:true}).click();
   await page.getByRole('button',{name:/^Normal/}).click();
   await expect(page.locator('.factory-reset-panel')).toHaveCount(0);
@@ -39,7 +38,7 @@ test("reset request shows durable incomplete report instead of success", async (
     if(route.request().method()==='POST'){
       writes++;const body=route.request().postDataJSON();
       expect(body.acknowledge_manual_cleanup).toBe(true);
-      expect(body.password).toBe('test-password-not-for-live');
+      expect(body.password).toBeUndefined();
       job={id:body.request_id,status:'incomplete',step:'finished',error:'',results:[{kind:'zigbee',name:'Testlampe',status:'done',reason:''},{kind:'manual',name:'Z-Wave',status:'manual',reason:'zwave_exclusion_required'}]};
       return route.fulfill({status:202,json:job});
     }
@@ -51,7 +50,6 @@ test("reset request shows durable incomplete report instead of success", async (
   await dialog.getByLabel('Sikkerhetskopi',{exact:true}).selectOption('saved');
   for(const checkbox of await dialog.getByRole('checkbox').all()) await checkbox.check();
   await dialog.getByLabel('Skriv RESET HUB for å bekrefte').fill('RESET HUB');
-  await dialog.getByLabel('Passordet til din administratorkonto').fill('test-password-not-for-live');
   await dialog.getByRole('button',{name:'Start tilbakestilling',exact:true}).click();
   await expect(dialog).toContainText('Tilbakestillingen er ikke fullført');
   await expect(dialog).toContainText('Må følges opp manuelt');

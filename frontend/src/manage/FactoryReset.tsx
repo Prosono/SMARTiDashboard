@@ -30,7 +30,6 @@ export function FactoryReset({ lang }: { lang: string }) {
     cloud_reset_update_required: t("Skytjenesten må oppdateres før denne huben kan tilbakestilles.", "The cloud service needs an update."),
   };
   const [open, setOpen] = useState(false);
-  const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [loss, setLoss] = useState(false);
   const [pairing, setPairing] = useState(false);
@@ -62,7 +61,7 @@ export function FactoryReset({ lang }: { lang: string }) {
     manual: t("Beholder enhetsparingene", "Keeping device pairings"),
   };
   const progressText = busy ? t("Starter tilbakestilling", "Starting reset") : readiness.isError ? t("Venter på kontakt med huben", "Waiting for the hub") : stages[job?.step || ""] || t("Tilbakestiller hjemmet", "Resetting your home");
-  function close() { setOpen(false); setPassword(""); setConfirmation(""); setLoss(false); setPairing(false); setBackup(""); setManual(false); setError(""); }
+  function close() { setOpen(false); setConfirmation(""); setLoss(false); setPairing(false); setBackup(""); setManual(false); setError(""); }
   return <section className="factory-reset-panel">
     <div><AlertTriangle size={24} aria-hidden="true" /><h2>{t("Tilbakestill til fabrikkinnstillinger", "Factory reset")}</h2></div>
     <p>{t("Slett hjemmets oppsett, historikk og lokale brukere. Installerte apper beholdes. Du setter opp hjemmet på nytt fra Min side.", "Erase home configuration, history and local users. Installed apps are kept. Set up the home again from your account.")}</p>
@@ -89,11 +88,11 @@ export function FactoryReset({ lang }: { lang: string }) {
         if (!readiness.data?.ready || busy) return;
         setBusy(true); setError("");
         try {
-          const result = await api<Job>("manage/settings/factory-reset", "POST", {request_id: requestId, password, confirmation, acknowledge_data_loss: loss, acknowledge_pairing: pairing, acknowledge_manual_cleanup: manual, backup_decision: backup});
+          const result = await api<Job>("manage/settings/factory-reset", "POST", {request_id: requestId, confirmation, acknowledge_data_loss: loss, acknowledge_pairing: pairing, acknowledge_manual_cleanup: manual, backup_decision: backup});
           setSubmitted(result); setNewAttempt(false); void readiness.refetch();
         } catch {
-          setError(t("Tilbakestillingen kunne ikke startes. Kontroller passordet og hubens status før du prøver igjen.", "The reset could not start. Check your password and hub status before retrying."));
-        } finally { setPassword(""); setBusy(false); }
+          setError(t("Tilbakestillingen kunne ikke startes. Kontroller hubens status før du prøver igjen.", "The reset could not start. Check hub status before retrying."));
+        } finally { setBusy(false); }
       }}>
         <p><strong>{t("Dette kan ikke angres.", "This cannot be undone.")}</strong> {t("Vi sletter hjemmets oppsett, rom, soner, automasjoner, scener og historikk. Det som slettes, kan ikke gjenopprettes uten sikkerhetskopi.", "We erase home configuration, rooms, zones, automations, scenes and history. Removed data requires a backup to restore.")}</p>
         <p>{t("Programvaren, hubens identitet og eierskapet på Min side beholdes. Dette overfører ikke huben til en ny eier.", "Software, hub identity and portal ownership are kept. This does not transfer the hub to another owner.")}</p>
@@ -105,10 +104,9 @@ export function FactoryReset({ lang }: { lang: string }) {
         <aside className="factory-reset-warning"><p>{t("HA-eier, lokale brukere, innlogginger, integrasjoner og hjemmets oppsett slettes. Du blir logget ut, og hele huben starter på nytt. SMARTi starter automatisk, mens HA venter til du har skannet QR-koden under huben og startet nytt oppsett. Kontoen din og eierskapet beholdes. Appene beholdes, men integrasjoner må kobles til på nytt.", "The HA owner, local users, sessions, integrations and home configuration are erased. You are signed out and the entire hub reboots. SMARTi starts automatically while HA waits for you to scan the hub QR code and begin setup. Your portal account, ownership and installed apps are kept; integrations must be connected again.")}</p></aside>
         <label className="factory-reset-check"><input type="checkbox" required checked={manual} onChange={e => setManual(e.target.checked)} />{t("Jeg forstår at jeg må sette opp hjemmet og koble til integrasjoner på nytt, og at noen paringer kan kreve manuell opprydding.", "I accept that reset may be incomplete and require manual cleanup.")}</label>
         <label>{t("Skriv RESET HUB for å bekrefte", "Type RESET HUB to confirm")}<input value={confirmation} onChange={e => setConfirmation(e.target.value)} autoComplete="off" spellCheck={false} required pattern="RESET HUB" /></label>
-        <label>{t("Passordet til din administratorkonto", "Your administrator account password")}<input type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required maxLength={128} /></label>
         {readiness.isPending ? <p role="status">{t("Kontrollerer huben…", "Checking hub…")}</p> : !readiness.data?.ready && <p role="status" className="factory-reset-unavailable">{readiness.isError ? t("Kunne ikke kontrollere huben. Lukk dialogen og prøv igjen.", "Could not check the hub. Close this dialog and retry.") : (readiness.data?.blockers.map(code => blockers[code] || t("Kontrollen av huben feilet. Kontakt support.", "Hub checks failed. Contact support.")).join(" ") + " " + t("Ingen data er slettet.", "No data has been erased."))}</p>}
         {error && <p role="alert">{error}</p>}
-        <div className="factory-reset-actions"><button type="button" disabled={busy} onClick={close}>{t("Avbryt", "Cancel")}</button><button className="factory-reset-danger" disabled={busy || !readiness.data?.ready || !password || confirmation !== "RESET HUB" || !loss || !pairing || !manual || !backup}>{t("Start tilbakestilling", "Start reset")}</button></div>
+        <div className="factory-reset-actions"><button type="button" disabled={busy} onClick={close}>{t("Avbryt", "Cancel")}</button><button className="factory-reset-danger" disabled={busy || !readiness.data?.ready || confirmation !== "RESET HUB" || !loss || !pairing || !manual || !backup}>{t("Start tilbakestilling", "Start reset")}</button></div>
       </form>}
     </SettingsDialog>}
   </section>;

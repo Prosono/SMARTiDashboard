@@ -14,12 +14,12 @@ from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pwdlib import PasswordHash
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.cloud_accounts import Profile, install_accounts, remote_allowed
 from app.cloud_admin import install_admin
@@ -41,8 +41,14 @@ class Credentials(BaseModel):
 
 
 class Registration(Credentials):
-    profile: Profile | None = None
+    profile: Profile
     password: str = Field(min_length=12, max_length=256)
+
+    @model_validator(mode="after")
+    def email_identifier(self):
+        if "@" in self.username and self.username.lower() != self.profile.email:
+            raise ValueError("email_username_mismatch")
+        return self
 
 
 class HomeName(BaseModel):
@@ -191,15 +197,13 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
         return {"status": "ok"}
 
     @app.post("/api/register", dependencies=[Depends(browser)])
-    def register(body: Registration, request: Request):
+    def register(body: Registration, request: Request, background: BackgroundTasks):
         throttle("register:" + request.client.host)
         with PASSWORD_WORKERS:
             hashed = PASSWORDS.hash(body.password)
         with db() as c:
             try:
                 account_id = uuid.uuid4().hex
-                if body.profile and body.username.lower() != body.profile.email:
-                    raise HTTPException(422, "email_must_match_username")
                 c.execute(
                     "INSERT INTO accounts VALUES(?,?,?)",
                     (
@@ -224,8 +228,10 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
                             p.photo,
                         ),
                     )
+                app.state.queue_verification(c, account_id)
             except sqlite3.IntegrityError:
                 raise HTTPException(409, "account_not_created") from None
+        background.add_task(app.state.deliver_customer_mail)
         return {"created": True}
 
     @app.post("/api/login", dependencies=[Depends(browser)])
@@ -349,8 +355,10 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     def hub_enable(home_id: str, request: Request):
         home_auth(home_id, request)
         with db() as c:
-            if c.execute("SELECT 1 FROM hub_resets WHERE home=? AND phase!='completed'", (home_id,)).fetchone():
-                raise HTTPException(409, 'onboarding_required')
+            if c.execute(
+                "SELECT 1 FROM hub_resets WHERE home=? AND phase!='completed'", (home_id,)
+            ).fetchone():
+                raise HTTPException(409, "onboarding_required")
             c.execute("UPDATE homes SET remote_enabled=1 WHERE id=?", (home_id,))
         return {"enabled": True}
 
@@ -381,6 +389,8 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     @app.post("/api/homes/claim")
     def claim(body: Claim, s=Depends(session)):
         throttle("claim:" + s["account"])
+        with db() as c:
+            app.state.require_verified_profile(c, s["account"])
         with db() as c:
             c.execute("BEGIN IMMEDIATE")
             row = c.execute(
@@ -445,12 +455,21 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
         app, db, session, is_admin, home_auth, throttle, provision_secret, origin, PASSWORDS, relay_status_url
     )
 
+    from .cloud_hub_credentials import install_hub_credentials
+
+    install_hub_credentials(app, db, session, is_admin, home_auth)
+
     @app.middleware("http")
     async def staff_destination(request: Request, call_next):
         # Route staff before customer HTML is rendered, including bookmarked pages.
-        destinations = {"/": "/admin", "/account": "/admin",
-                        "/support": "/admin/support", "/support/prices": "/admin/support/prices",
-                        "/welcome": "/admin", "/activate": "/admin/hubs"}
+        destinations = {
+            "/": "/admin",
+            "/account": "/admin",
+            "/support": "/admin/support",
+            "/support/prices": "/admin/support/prices",
+            "/welcome": "/admin",
+            "/activate": "/admin/hubs",
+        }
         target = destinations.get(request.url.path)
         if target and request.method in {"GET", "HEAD"}:
             try:

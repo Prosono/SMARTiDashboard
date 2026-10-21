@@ -158,7 +158,7 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             + origin
             + "/account#verify="
             + token
-            + "\nEtter ti dager kreves bekreftet e-post for fjernaksess. Lokal tilgang påvirkes ikke.",
+            + "\nBekreft e-posten før du legger til en hub. Har du ikke opprettet kontoen, kan du se bort fra denne meldingen.",
         )
 
     def completed(c, account):
@@ -169,6 +169,17 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
         if changed:
             verification(c, account)
 
+    app.state.queue_verification = verification
+
+    def require_verified_profile(c, account):
+        p = c.execute("SELECT * FROM customer_profiles WHERE account=?", (account,)).fetchone()
+        if not p:
+            raise HTTPException(403, "customer_profile_required")
+        if not p["verified"]:
+            raise HTTPException(403, "email_verification_required")
+        return p
+
+    app.state.require_verified_profile = require_verified_profile
     app.state.customer_onboarding_completed = completed
 
     @app.get("/account")
@@ -186,7 +197,7 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             }
 
     @app.put("/api/customer/profile")
-    def save(body: Profile, s=Depends(session)):
+    def save(body: Profile, background: BackgroundTasks, s=Depends(session)):
         with db() as c:
             existing = c.execute(
                 "SELECT email FROM customer_profiles WHERE account=?", (s["account"],)
@@ -221,6 +232,9 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
                 )
             except sqlite3.IntegrityError:
                 raise HTTPException(409, "email_unavailable") from None
+            if not existing:
+                verification(c, s["account"])
+                background.add_task(deliver)
         return {"saved": True}
 
     @app.post("/api/customer/verification")
@@ -250,6 +264,76 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             )
             c.execute("DELETE FROM customer_tokens WHERE hash=?", (digest(body.token),))
         return {"verified": True}
+
+    class RecoveryEmail(BaseModel):
+        email: str = Field(max_length=254)
+        _email = field_validator("email")(Profile.email_valid.__func__)
+
+    class RecoveryPassword(Token):
+        password: str = Field(min_length=12, max_length=128, repr=False)
+        password_repeat: str = Field(min_length=12, max_length=128, repr=False)
+
+    @app.get("/forgot-password")
+    def recovery_page():
+        return FileResponse(Path(__file__).with_name("cloud_web") / "recovery.html")
+
+    @app.post("/api/customer/password/forgot")
+    def forgot(body: RecoveryEmail, request: Request, background: BackgroundTasks):
+        if request.headers.get("origin") != origin:
+            raise HTTPException(403, "origin_rejected")
+        throttle("password-email-ip:" + request.client.host)
+        throttle("password-email:" + digest(body.email))
+        with db() as c:
+            p = c.execute("SELECT account FROM customer_profiles WHERE email=?", (body.email,)).fetchone()
+            if p:
+                token = secrets.token_urlsafe(32)
+                c.execute(
+                    "DELETE FROM customer_tokens WHERE account=? AND purpose='password_reset'",
+                    (p["account"],),
+                )
+                c.execute(
+                    "INSERT INTO customer_tokens VALUES(?,?,?,?,?,?)",
+                    (digest(token), p["account"], "password_reset", None, body.email, time.time() + 1800),
+                )
+                queue(
+                    c,
+                    body.email,
+                    "Velg nytt SMARTi-passord",
+                    "Velg nytt passord innen 30 minutter: "
+                    + origin
+                    + "/forgot-password#token="
+                    + token
+                    + "\nHvis du ikke ba om dette, kan du ignorere meldingen. Passordet til hubene dine endres ikke.",
+                )
+        background.add_task(deliver)
+        return {"queued": True}
+
+    @app.post("/api/customer/password/reset")
+    def recover(body: RecoveryPassword, request: Request):
+        if request.headers.get("origin") != origin:
+            raise HTTPException(403, "origin_rejected")
+        throttle("password-reset:" + request.client.host)
+        if body.password != body.password_repeat:
+            raise HTTPException(422, "passwords_do_not_match")
+        from pwdlib import PasswordHash
+
+        hashed = PasswordHash.recommended().hash(body.password)
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            row = c.execute(
+                "SELECT t.* FROM customer_tokens t JOIN customer_profiles p ON p.account=t.account AND p.email=t.email WHERE t.hash=? AND t.purpose='password_reset' AND t.expires>?",
+                (digest(body.token), time.time()),
+            ).fetchone()
+            if not row:
+                raise HTTPException(400, "link_expired")
+            c.execute("UPDATE accounts SET password=? WHERE id=?", (hashed, row["account"]))
+            c.execute("DELETE FROM sessions WHERE account=?", (row["account"],))
+            c.execute("DELETE FROM customer_connections WHERE account=?", (row["account"],))
+            c.execute(
+                "DELETE FROM customer_tokens WHERE account=? AND purpose IN ('password_reset','signin')",
+                (row["account"],),
+            )
+        return {"changed": True}
 
     def owner(c, home, account):
         row = c.execute("SELECT owner FROM homes WHERE id=?", (home,)).fetchone()
@@ -326,7 +410,7 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
 
     def permission(c, home, account):
         if c.execute("SELECT 1 FROM hub_resets WHERE home=? AND phase!='completed'", (home,)).fetchone():
-            raise HTTPException(409, 'onboarding_required')
+            raise HTTPException(409, "onboarding_required")
         h = c.execute("SELECT * FROM homes WHERE id=?", (home,)).fetchone()
         if (
             not h

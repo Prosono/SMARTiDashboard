@@ -74,11 +74,16 @@ class Plan(BaseModel):
     country: str = Field(default="NO", pattern=r"^[A-Z]{2}$")
     rooms: list[Room] = Field(default_factory=list, max_length=80)
     experience: Literal["simple", "normal", "advanced"] = "normal"
-    password: str = Field(min_length=1, max_length=256, repr=False)
+    password: str = Field(default="", max_length=128, repr=False)
+    password_repeat: str = Field(default="", max_length=128, repr=False)
     confirmation: str = ""
 
     @model_validator(mode="after")
     def valid(self):
+        if self.mode != "existing":
+            from .hub_credentials import HubCredentials
+
+            HubCredentials(username="admin", password=self.password, password_repeat=self.password_repeat)
         if self.country not in COUNTRY_CODES:
             raise ValueError("invalid country")
         try:
@@ -384,6 +389,8 @@ def install_onboarding(
 
     @app.post("/api/activation/{home}/claim")
     def activate(home: str, body: Activation, s=Depends(session)):
+        with db() as c:
+            app.state.require_verified_profile(c, s["account"])
         throttle("activate-account:" + s["account"])
         throttle("activation-hub:" + home)
         with db() as c:
@@ -492,10 +499,9 @@ def install_onboarding(
         throttle("setup:" + s["account"])
         with db() as c:
             account = c.execute("SELECT * FROM accounts WHERE id=?", (s["account"],)).fetchone()
-        if not passwords.verify(body.password, account["password"]):
-            raise HTTPException(403, "password_confirmation_failed")
         with db() as c:
             c.execute("BEGIN IMMEDIATE")
+            profile = app.state.require_verified_profile(c, s["account"])
             row = owned(c, home, s)
             current = c.execute("SELECT * FROM onboarding_plans WHERE home=?", (home,)).fetchone()
             reset = c.execute(
@@ -506,11 +512,20 @@ def install_onboarding(
             if reset and reset["qr_required"] and not reset["qr_verified"]:
                 raise HTTPException(409, "reset_qr_required")
             # Identical retry resumes the same operation, never queues a second reset.
-            payload = body.model_dump(exclude={"password", "confirmation"})
+            payload = body.model_dump(exclude={"password", "password_repeat", "confirmation"})
             if body.mode != "existing":
+                from .hub_credentials import first_name
+
+                username = first_name(profile["full_name"])
+                old = json.loads(current["payload"]) if current else {}
+                previous_hash = old.get("password_hash", "")
+                try:
+                    same_password = bool(previous_hash) and passwords.verify(body.password, previous_hash)
+                except Exception:
+                    same_password = False
                 payload.update(
-                    username=account["username"],
-                    password_hash=account["password"],
+                    username=username,
+                    password_hash=previous_hash if same_password else passwords.hash(body.password),
                     cloud_account=account["id"],
                 )
                 profile = c.execute(
@@ -528,7 +543,7 @@ def install_onboarding(
                     old.get("ha_credentials")
                     if old.get("reset_id") == reset["id"]
                     and old.get("password_hash") == payload["password_hash"]
-                    else seal(reset["public_key"], reset["id"], account["username"], body.password)
+                    else seal(reset["public_key"], reset["id"], payload["username"], body.password)
                 )
             if current and json.loads(current["payload"]) == payload:
                 if current["status"] == "failed":

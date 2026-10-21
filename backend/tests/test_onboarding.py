@@ -14,7 +14,7 @@ from app.ha import HAError
 from app.hub_onboarding import HubOnboarding
 from app.storage import Store
 
-PASSWORD = "test-cloud-password-only"
+PASSWORD = "hub-password-only-2026"
 CHECKS = dict.fromkeys(["ha", "zigbee", "zwave", "network", "clean"], True)
 HEARTBEAT = {
     "boot_id": "boot",
@@ -34,6 +34,7 @@ PLAN = {
     "rooms": [{"name": "Stue", "floor": "Første etasje"}, {"name": "Soverom", "floor": "Andre etasje"}],
     "experience": "simple",
     "password": PASSWORD,
+    "password_repeat": PASSWORD,
 }
 
 
@@ -105,7 +106,7 @@ def test_plans_reset_reauth_and_retry(tmp_path):
     path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
     ready_and_claim(staff, owner, hub, home, activation)
     endpoint = f"/api/onboarding/{home}"
-    assert owner.post(endpoint, json=PLAN | {"password": "wrong"}).status_code == 403
+    assert owner.post(endpoint, json=PLAN | {"password": "wrong"}).status_code == 422
     assert owner.post(endpoint, json=PLAN | {"mode": "reset"}).status_code == 422
     assert owner.post(endpoint, json=PLAN | {"mode": "existing"}).status_code == 409
     assert owner.post(endpoint, json=PLAN | {"timezone": "fake/time"}).status_code == 422

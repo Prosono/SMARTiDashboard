@@ -301,6 +301,48 @@ class HubOnboarding:
                 "radios_unavailable" if current_step == "radios" else "setup_failed",
             )
 
+    async def update_credentials(self):
+        try:
+            result = await self.call("credentials", {})
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return  # Older cloud release.
+            raise
+        change = result.get("change")
+        if not change:
+            return
+        success = False
+        with self.store.connect() as c:
+            c.execute("BEGIN IMMEDIATE")
+            marker = "hub_credentials:" + change["id"]
+            if c.execute("SELECT 1 FROM settings WHERE key=?", (marker,)).fetchone():
+                success = True
+            else:
+                plan = c.execute(
+                    "SELECT value FROM settings WHERE key=?", ("onboarding:" + change["plan"],)
+                ).fetchone()
+                user = c.execute(
+                    "SELECT u.id FROM users u JOIN settings s ON s.value=CAST(u.id AS TEXT) WHERE s.key=? AND u.role='admin'",
+                    ("cloud_account:" + change["account"],),
+                ).fetchone()
+                conflict = c.execute("SELECT id FROM users WHERE name=?", (change["username"],)).fetchone()
+                if (
+                    plan
+                    and "completed" in json.loads(plan[0])
+                    and user
+                    and (not conflict or conflict[0] == user[0])
+                ):
+                    c.execute(
+                        "UPDATE users SET name=?,password=? WHERE id=?",
+                        (change["username"], change["password_hash"], user[0]),
+                    )
+                    c.execute("DELETE FROM sessions WHERE user_id=?", (user[0],))
+                    c.execute("DELETE FROM mobile_pairings WHERE user_id=?", (user[0],))
+                    c.execute("UPDATE mobile_devices SET revoked=1 WHERE user_id=?", (user[0],))
+                    c.execute("INSERT INTO settings VALUES(?,?)", (marker, "applied"))
+                    success = True
+        await self.call("credentials-result", {"id": change["id"], "success": success})
+
     async def tick(self):
         full = FullReset(self.settings, self.store)
         await full.resume_reboot()
@@ -327,6 +369,8 @@ class HubOnboarding:
                 "remote_ready": bool(self.remote.get("ready")),
             },
         )
+        if not reset_state or reset_state["phase"] == "completed":
+            await self.update_credentials()
         discovery = result.get("discovery")
         if reset_state and reset_state["phase"] == "awaiting_owner":
             discovery = {

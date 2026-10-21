@@ -6,7 +6,8 @@ from urllib.parse import urlparse
 
 from fastapi.testclient import TestClient
 from test_cloud import ORIGIN
-from test_onboarding import PLAN, factory, ready_and_claim
+from test_onboarding import PLAN, ready_and_claim
+from test_onboarding import factory as base_factory
 
 from app.multihome_relay import HomeRegistry
 
@@ -20,6 +21,19 @@ PROFILE = dict(
     country="Norge",
     photo="",
 )
+
+
+def factory(tmp_path):
+    result = base_factory(tmp_path)
+    with sqlite3.connect(result[0]) as c:
+        c.execute(
+            "UPDATE customer_profiles SET email='owner@example.com' WHERE account=(SELECT id FROM accounts WHERE username='customer')"
+        )
+        c.execute(
+            "UPDATE customer_profiles SET email='guest@example.com' WHERE account=(SELECT id FROM accounts WHERE username='stranger')"
+        )
+        c.execute("DELETE FROM mail_outbox")
+    return result
 
 
 def finish(owner, hub, home):
@@ -55,10 +69,16 @@ def test_verification_grace_relay_pause_and_recovery(tmp_path):
     assert owner.put("/api/customer/profile", json=PROFILE).status_code == 200
     ready_and_claim(staff, owner, hub, home, activation)
     finish(owner, hub, home)
+    # Legacy accounts can still have an unfinished verification grace period.
+    with sqlite3.connect(path) as c:
+        c.execute("UPDATE customer_profiles SET verified=NULL WHERE email=?", (PROFILE["email"],))
+    assert owner.post("/api/customer/verification").status_code == 200
     registry = HomeRegistry(path)
     assert registry.credential(home)
     with sqlite3.connect(path) as c:
-        deadline = c.execute("select deadline from customer_profiles").fetchone()[0]
+        deadline = c.execute(
+            "select deadline from customer_profiles where email='owner@example.com'"
+        ).fetchone()[0]
         assert 86400 * 10 - 10 < deadline - time.time() <= 86400 * 10
         body = c.execute("select body from mail_outbox").fetchone()[0]
         token = body.split("#verify=")[1].split()[0]
@@ -120,7 +140,7 @@ def test_single_use_home_bound_signin_and_member_revoke(tmp_path):
 
 
 def test_complete_registration_atomic_and_profile_private(tmp_path):
-    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    path, app, staff, owner, other, hub, home, activation, kit = base_factory(tmp_path)
     client = TestClient(app, base_url=ORIGIN, headers={"Origin": ORIGIN})
     body = {"username": PROFILE["email"], "password": "long-test-password", "profile": PROFILE}
     assert client.post("/api/register", json=body).status_code == 200
@@ -247,6 +267,9 @@ def test_mail_queue_retries_and_erases_delivered_links(tmp_path, monkeypatch):
     owner.put("/api/customer/profile", json=PROFILE)
     ready_and_claim(staff, owner, hub, home, activation)
     finish(owner, hub, home)
+    with sqlite3.connect(path) as c:
+        c.execute("UPDATE customer_profiles SET verified=NULL WHERE email=?", (PROFILE["email"],))
+    owner.post("/api/customer/verification")
     monkeypatch.setenv("SMARTI_SMTP_HOST", "smtp.test.invalid")
     monkeypatch.setenv("SMARTI_MAIL_FROM", "SMARTi <sender@example.com>")
     monkeypatch.delenv("SMARTI_SMTP_USER", raising=False)
