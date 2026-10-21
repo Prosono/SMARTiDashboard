@@ -405,6 +405,19 @@ def install_onboarding(
                 )
                 c.execute("UPDATE factory_hubs SET phase='activated' WHERE home=?", (home,))
                 audit(c, s["account"], "hub_activated", home)
+            reset = c.execute(
+                "SELECT * FROM hub_resets WHERE home=? AND phase!='completed'", (home,)
+            ).fetchone()
+            if reset:
+                if reset["phase"] != "awaiting_owner":
+                    raise HTTPException(409, "reset_not_ready")
+                if not (
+                    secrets.compare_digest(label(row), body.code)
+                    or secrets.compare_digest(qr_secret(row), body.code)
+                ):
+                    raise HTTPException(409, "reset_qr_required")
+                # Owner authorization and QR/PIN proof above are both required.
+                c.execute("UPDATE hub_resets SET qr_verified=1 WHERE home=? AND id=?", (home, reset["id"]))
             c.execute("DELETE FROM claims WHERE home=?", (home,))
         return {"id": home, "linked": True}
 
@@ -417,8 +430,18 @@ def install_onboarding(
             ).fetchone()
         result = view(row)
         with db() as c:
-            reset = c.execute("SELECT phase,report FROM hub_resets WHERE home=?", (home,)).fetchone()
-        result["reset"] = {"phase": reset["phase"], "report": json.loads(reset["report"])} if reset else None
+            reset = c.execute(
+                "SELECT phase,report,qr_required,qr_verified FROM hub_resets WHERE home=?", (home,)
+            ).fetchone()
+        result["reset"] = (
+            {
+                "phase": reset["phase"],
+                "report": json.loads(reset["report"]),
+                "scan_required": bool(reset["qr_required"] and not reset["qr_verified"]),
+            }
+            if reset
+            else None
+        )
         result["remote_connected"] = False
         if relay_status_url:
             try:
@@ -458,6 +481,8 @@ def install_onboarding(
             ).fetchone()
             if reset and (reset["phase"] != "awaiting_owner" or body.mode != "new"):
                 raise HTTPException(409, "reset_not_ready")
+            if reset and reset["qr_required"] and not reset["qr_verified"]:
+                raise HTTPException(409, "reset_qr_required")
             # Identical retry resumes the same operation, never queues a second reset.
             payload = body.model_dump(exclude={"password", "confirmation"})
             if body.mode != "existing":

@@ -43,9 +43,9 @@ async function showHomes() {
     detail.textContent=home.remote_enabled ? (home.connected ? "Tilkoblet · klart til å åpnes" : "Venter på tilkobling fra huben") : "Fjerntilgang er slått av";
     if(home.verification_required)detail.textContent="Bekreft e-postadressen din for å åpne hjemmet.";
     card.append(title,detail);
-    if(home.reset_phase) detail.textContent=home.reset_phase==='awaiting_owner'?'Huben er tilbakestilt · klar for nytt oppsett':home.reset_phase==='failed'?'Tilbakestillingen ble avbrutt · kontakt support før du starter HA':'Tilbakestilling pågår · ikke koble fra strømmen';
+    if(home.reset_phase) detail.textContent=home.reset_phase==='awaiting_owner'?'Huben er tilbakestilt · klar for nytt oppsett':home.reset_phase==='rebooting'?'Huben starter på nytt · vent til den er tilbake på nett':home.reset_phase==='failed'?'Tilbakestillingen ble avbrutt · kontakt support før du starter HA':'Tilbakestilling pågår · ikke koble fra strømmen';
     if(home.reset_phase==='awaiting_owner') {
-      const setup=document.createElement('a');setup.className='button primary';setup.href='/activate?home='+encodeURIComponent(home.installation_id);setup.textContent='Sett opp hjemmet på nytt →';card.append(setup);
+      const setup=document.createElement('a');setup.className='button primary';setup.href='/activate';setup.textContent='Skann QR-koden og sett opp på nytt →';card.append(setup);
     } else if (available && /^[0-9a-f-]{36}$/.test(home.installation_id)) {
       const open=document.createElement("a");open.className="button primary";
       open.href="https://"+home.installation_id+".home.smarti.dev/";

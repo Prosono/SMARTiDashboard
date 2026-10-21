@@ -231,13 +231,14 @@ allerede er koblet til en konto. Home Assistant-konfigurasjonen er fortsatt et
 alternativ for installatører. Verdiene må være utstedt av SMARTi; de kan ikke
 velges selv eller erstattes med bootstrap-nøkkelen.
 
-### Test full factory reset (1.35.69)
+### Test full factory reset (1.35.71)
 
 Use a disposable hub. In advanced mode open Settings → System → Factory reset.
 Download any backup outside the hub and read the irreversible deletion and radio
 warnings. Confirm with the local administrator password and RESET HUB.
 After local logout, open home.smarti.dev using the existing portal owner account,
-then Mine hjem → Sett opp hjemmet på nytt. Finish user/location/room setup.
+then scan the physical QR label again. The hub reboots after erasure. Finish
+user/location/room setup after SMARTi is back online.
 HA owner and local SMARTi users are recreated; installed apps and portal ownership
 remain. Reconnect integrations and follow any physical radio cleanup instructions.
 If reset fails, contact support rather than manually starting HA.

@@ -22,6 +22,7 @@ RESET_BLOCKERS = {
     "ha_system_password_account_unsupported",
     "standard_ha_http_required",
     "cloud_reset_update_required",
+    "reset_app_boot_unavailable",
 }
 
 
@@ -61,6 +62,17 @@ class HomeResetProvider:
     async def plan(self):
         """Finish read-only inventory before the first destructive operation."""
         ha = self.ha
+        if self.full:
+            # Reset never invokes radio exclusion or removes paired devices.
+            return [
+                {
+                    "kind": "manual",
+                    "id": "pairings",
+                    "name": "Enhetsparinger beholdes",
+                    "reason": "pairings_not_removed",
+                },
+                {"kind": "full_reset", "id": "full", "name": "Brukere, oppsett og omstart av huben"},
+            ]
         states = list(self.ha.states.items())
         entries = await ha.request("config_entries/get")
         devices = await ha.request("config/device_registry/list")
@@ -149,22 +161,7 @@ class HomeResetProvider:
             reason="configuration_review_required",
         )
         add("local", "smarti", "SMARTi-visning og varslingshistorikk")
-        if self.full:
-            # Offline deletion replaces HA configuration/history cleanup, while
-            # radio removal still runs through the integration before Core stops.
-            operations = [
-                op
-                for op in operations
-                if op["kind"] in {"pause", "close_zigbee", "zigbee", "device"}
-                or (
-                    op["kind"] == "manual"
-                    and op["reason"] in {"radio_inventory_unavailable", "zwave_exclusion_required"}
-                )
-            ]
-            operations.append(
-                {"kind": "full_reset", "id": "full", "name": "Brukere, tilganger og førstegangsoppsett"}
-            )
-        return operations
+        return [op for op in operations if op["kind"] not in {"zigbee", "device", "close_zigbee"}]
 
     async def execute(self, op):
         ha, kind, id = self.ha, op["kind"], op["id"]

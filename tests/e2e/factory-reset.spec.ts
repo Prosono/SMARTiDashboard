@@ -10,7 +10,7 @@ test("factory reset is advanced-only, explains pairing limits and stays blocked 
   await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
   await page.getByRole('button',{name:'Se hva som tilbakestilles'}).click();
   const dialog=page.getByRole('dialog',{name:'Tilbakestill huben?'});
-  await expect(dialog).toContainText('Noen paringer kan bli igjen');
+  await expect(dialog).toContainText('Paringer fjernes ikke');
   await expect(dialog).toContainText('Ingen data er slettet');
   await dialog.getByLabel('Sikkerhetskopi',{exact:true}).selectOption('skip');
   await dialog.getByRole('checkbox').nth(0).check();

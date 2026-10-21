@@ -289,6 +289,7 @@ class HubOnboarding:
 
     async def tick(self):
         full = FullReset(self.settings, self.store)
+        await full.resume_reboot()
         reset_state = full.state()
         if reset_state and reset_state["phase"] == "failed":
             try:
@@ -311,7 +312,15 @@ class HubOnboarding:
                 "remote_ready": bool(self.remote.get("ready")),
             },
         )
-        await self.advertisement.update(result.get("discovery"))
+        discovery = result.get("discovery")
+        if reset_state and reset_state["phase"] == "awaiting_owner":
+            discovery = {
+                "id": self.device,
+                "state": "unconfigured",
+                "model": "SMARTi Hub",
+                "serial": self.device[-8:],
+            }
+        await self.advertisement.update(discovery)
         if result.get("plan"):
             await self.apply(result["plan"])
 

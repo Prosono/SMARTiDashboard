@@ -43,6 +43,9 @@ def test_cloud_reset_owner_bound_revocation_and_sealed_setup(tmp_path):
     assert hub.post(url + "/ready", json={"id": reset_id}).status_code == 200
     assert owner.get("/api/homes").json()[0]["reset_phase"] == "awaiting_owner"
     assert other.post("/api/onboarding/" + home, json=PLAN).status_code == 404
+    assert owner.post("/api/onboarding/" + home, json=PLAN).json()["detail"] == "reset_qr_required"
+    assert other.post(f"/api/activation/{home}/claim", json=activation).status_code == 409
+    assert owner.post(f"/api/activation/{home}/claim", json=activation).status_code == 200
     response = owner.post("/api/onboarding/" + home, json=PLAN)
     assert response.status_code == 200, response.text
     plan = hub.post(f"/api/hubs/{home}/onboarding/heartbeat", json=HEARTBEAT).json()["plan"]
@@ -76,6 +79,8 @@ class SupervisorFake:
 
     async def request(self, method, path, data=None):
         self.calls.append((method, path, data))
+        if path == "/addons/self/info":
+            return {"boot": "auto"}
         if path == "/core/options":
             self.info.update(data)
         return dict(self.info)
@@ -92,6 +97,8 @@ def setup_reset(tmp_path):
     (root / "configuration.yaml").write_text("default_config:\n")
     (root / "home-assistant_v2.db").write_text("old history")
     (root / "secrets.yaml").write_text("old password")
+    (root / "zigbee2mqtt").mkdir()
+    (root / "zigbee2mqtt" / "database.db").write_text("paired devices")
     (root / "custom_components").mkdir()
     (root / "custom_components" / "keep.py").write_text("software")
     settings = Settings(
@@ -103,7 +110,8 @@ def setup_reset(tmp_path):
         c.execute("INSERT INTO sessions VALUES('oldtoken',1,'csrf',9999999999)")
     supervisor = SupervisorFake()
     reset = FullReset(settings, store, root, supervisor)
-    reset.cloud = AsyncMock(return_value={"version": 1, "acknowledged": True})
+    reset.host_boot_id = lambda: "boot-one"
+    reset.cloud = AsyncMock(return_value={"version": 2, "acknowledged": True})
     return reset, store, supervisor
 
 
@@ -116,9 +124,16 @@ async def test_full_reset_erases_users_history_config_keeps_apps_and_requires_ow
 
     monkeypatch.setattr("asyncio.open_connection", refused)
     assert await reset.execute() == ("done", "")
+    assert reset.state()["phase"] == "awaiting_reboot"
+    await reset.resume_reboot()
+    await reset.resume_reboot()
+    assert sum(path == "/host/reboot" for _, path, _ in supervisor.calls) == 1
+    reset.host_boot_id = lambda: "boot-two"
+    await reset.resume_reboot()
     assert reset.state()["phase"] == "awaiting_owner"
     assert (reset.root / "configuration.yaml").read_text() == ISOLATED_CONFIG
     assert not (reset.root / "home-assistant_v2.db").exists()
+    assert (reset.root / "zigbee2mqtt" / "database.db").read_text() == "paired devices"
     assert not (reset.root / ".storage" / "core.config_entries").exists()
     assert (reset.root / "custom_components" / "keep.py").read_text() == "software"
     with store.connect() as c:
@@ -135,7 +150,7 @@ async def test_cloud_failure_changes_no_customer_files(tmp_path):
 
     async def cloud(action, body=None):
         if action == "capabilities":
-            return {"version": 1}
+            return {"version": 2}
         raise httpx.ConnectError("offline")
 
     reset.cloud = cloud
@@ -168,7 +183,7 @@ async def test_local_packages_are_checked_and_allowed(tmp_path):
     (reset.root / "packages" / "history.yaml").write_text("recorder:\n  db_url: !secret database\n")
     with pytest.raises(AuthResetError, match="custom_recorder"):
         await reset.preflight()
-    assert not supervisor.calls or all(path == "/core/info" for _, path, _ in supervisor.calls)
+    assert all(method == "GET" for method, _, _ in supervisor.calls)
 
 
 @pytest.mark.asyncio
@@ -204,3 +219,41 @@ async def test_preflight_reports_safe_reason_without_exception_details(tmp_path)
     assert (await provider.preflight())["blockers"] == ["full_reset_preflight_failed"]
     provider.full.preflight = AsyncMock(side_effect=PermissionError("secret path"))
     assert (await provider.preflight())["blockers"] == ["reset_storage_unreadable"]
+
+
+@pytest.mark.asyncio
+async def test_full_plan_never_calls_pairing_apis(tmp_path):
+    from types import SimpleNamespace
+
+    from app.factory_reset_provider import HomeResetProvider
+
+    reset, store, _ = setup_reset(tmp_path)
+    ha = SimpleNamespace(request=AsyncMock(side_effect=AssertionError("No device inventory needed")))
+    provider = HomeResetProvider(ha, SimpleNamespace(), reset.settings, store)
+    plan = await provider.plan()
+    assert [op["kind"] for op in plan] == ["manual", "full_reset"]
+    assert plan[0]["reason"] == "pairings_not_removed"
+    ha.request.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_uncertain_reboot_is_not_replayed(tmp_path):
+    from fastapi import HTTPException
+
+    reset, _, supervisor = setup_reset(tmp_path)
+    reset.save({"id": "reset", "phase": "awaiting_reboot", "host_boot_id": "boot-one", "report": []})
+    original = supervisor.request
+
+    async def request(method, path, data=None):
+        await original(method, path, data)
+        if path == "/host/reboot":
+            raise HTTPException(502, "unknown result")
+
+    supervisor.request = request
+    await reset.resume_reboot()
+    await reset.resume_reboot()
+    assert reset.state()["reboot_unconfirmed"]
+    assert sum(path == "/host/reboot" for _, path, _ in supervisor.calls) == 1
+    reset.host_boot_id = lambda: "boot-two"
+    await reset.resume_reboot()
+    assert reset.state()["phase"] == "awaiting_owner"

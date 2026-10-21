@@ -126,7 +126,12 @@ class FactoryReset:
             # The provider explicitly reports all manual follow-up. Do not erase
             # administrator access needed to recover an incomplete installation.
             job.update(
-                status="incomplete" if any(r["status"] != "done" for r in job["results"]) else "completed",
+                status="incomplete"
+                if any(
+                    r["status"] != "done" and r.get("reason") != "pairings_not_removed"
+                    for r in job["results"]
+                )
+                else "completed",
                 step="finished",
             )
         except asyncio.CancelledError:

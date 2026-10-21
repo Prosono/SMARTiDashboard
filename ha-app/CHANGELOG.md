@@ -1,3 +1,10 @@
+## 1.35.71
+
+- Reset parer ikke bort enheter eller nullstiller radioene. Eventuell fjerning av paringer gjøres manuelt.
+- Etter sletting startes hele HAOS-huben på nytt. SMARTi settes til automatisk oppstart; HA forblir stoppet frem til nytt oppsett.
+- Samme eier må skanne hubens QR-kode på nytt før oppstartsveilederen kan brukes. Eierskapet beholdes.
+- Omstart sendes kun én gang og bekreftes med ny OS-oppstart, slik at avbrudd ikke gir omstartsløkker.
+
 ## 1.35.70
 
 - Tilbakestilling støtter nå lokale HA-pakker og kontrollerer inkluderte YAML-filer før sletting.

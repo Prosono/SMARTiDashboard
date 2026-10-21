@@ -22,6 +22,7 @@ class ResetResult(BaseModel):
 
 
 class ResetReady(BaseModel):
+    phase: Literal["rebooting", "awaiting_owner"] = "awaiting_owner"
     id: UUID
     report: list[ResetResult] = Field(default_factory=list, max_length=2000)
 
@@ -32,6 +33,11 @@ def install_factory_reset(app, db, home_auth):
             "CREATE TABLE IF NOT EXISTS hub_resets(home TEXT PRIMARY KEY, id TEXT NOT NULL, public_key TEXT NOT NULL, phase TEXT NOT NULL, created REAL NOT NULL, report TEXT NOT NULL DEFAULT '[]')"
         )
 
+        columns = {r[1] for r in c.execute("PRAGMA table_info(hub_resets)")}
+        for name in ("qr_required", "qr_verified"):
+            if name not in columns:
+                c.execute(f"ALTER TABLE hub_resets ADD COLUMN {name} INTEGER NOT NULL DEFAULT 0")
+
     @app.get("/api/hubs/{home}/factory-reset/capabilities")
     def capabilities(home: str, request: Request):
         home_auth(home, request)
@@ -41,7 +47,7 @@ def install_factory_reset(app, db, home_auth):
             ).fetchone()
             if not row or not row["owner"]:
                 raise HTTPException(409, "managed_owner_required")
-        return {"version": 1}
+        return {"version": 2}
 
     @app.post("/api/hubs/{home}/factory-reset/begin")
     def begin(home: str, body: ResetBegin, request: Request):
@@ -66,7 +72,7 @@ def install_factory_reset(app, db, home_auth):
             if previous and previous["phase"] != "completed":
                 raise HTTPException(409, "reset_in_progress")
             c.execute(
-                "INSERT OR REPLACE INTO hub_resets(home,id,public_key,phase,created) VALUES(?,?,?,?,?)",
+                "INSERT OR REPLACE INTO hub_resets(home,id,public_key,phase,created,qr_required,qr_verified) VALUES(?,?,?,?,?,1,0)",
                 (home, str(body.id), body.public_key, "erasing", time.time()),
             )
             c.execute("UPDATE homes SET remote_enabled=0 WHERE id=?", (home,))
@@ -100,12 +106,12 @@ def install_factory_reset(app, db, home_auth):
         home_auth(home, request)
         with db() as c:
             changed = c.execute(
-                "UPDATE hub_resets SET phase='awaiting_owner',report=? WHERE home=? AND id=? AND phase IN ('erasing','awaiting_owner')",
-                (json.dumps([r.model_dump() for r in body.report]), home, str(body.id)),
+                "UPDATE hub_resets SET phase=?,report=? WHERE home=? AND id=? AND phase IN ('erasing','rebooting','awaiting_owner')",
+                (body.phase, json.dumps([r.model_dump() for r in body.report]), home, str(body.id)),
             ).rowcount
             if not changed:
                 raise HTTPException(409, "reset_conflict")
-            c.execute("UPDATE factory_hubs SET phase='awaiting_owner' WHERE home=?", (home,))
+            c.execute("UPDATE factory_hubs SET phase=? WHERE home=?", (body.phase, home))
         return {"acknowledged": True}
 
     @app.post("/api/hubs/{home}/factory-reset/failed")

@@ -161,6 +161,8 @@ async def main():
                         }
 
                     async def request(self, method, path, data=None):
+                        if path == "/addons/self/info":
+                            return {"boot": "auto"}
                         if path == "/core/options":
                             self.info.update(data)
                         if path == "/core/start":
@@ -195,10 +197,14 @@ async def main():
 
                 async def cloud(action, body=None):
                     messages[action] = body
-                    return {"version": 1, "acknowledged": True}
+                    return {"version": 2, "acknowledged": True}
 
                 coordinator.cloud = cloud
+                coordinator.host_boot_id = lambda: "boot-one"
                 assert await coordinator.execute() == ("done", "")
+                assert coordinator.state()["phase"] == "awaiting_reboot"
+                coordinator.host_boot_id = lambda: "boot-two"
+                await coordinator.resume_reboot()
                 assert coordinator.state()["phase"] == "awaiting_owner"
                 assert not json.loads(docker("inspect", name).stdout)[0]["State"][
                     "Running"

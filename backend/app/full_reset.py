@@ -10,6 +10,7 @@ from pathlib import Path
 import httpx
 import yaml
 from cryptography.hazmat.primitives.asymmetric import x25519
+from fastapi import HTTPException
 
 from .certificate_hook import read_identity
 from .ha_auth_reset import (
@@ -85,8 +86,13 @@ class FullReset:
         if info.get("port") != 8123 or info.get("ssl") or info.get("ip_address") != "172.30.32.1":
             raise AuthResetError("standard_ha_http_required")
         capability = await self.cloud("capabilities")
-        if capability.get("version") != 1:
+        if capability.get("version", 0) < 2:
             raise AuthResetError("cloud_reset_update_required")
+        # Ensure SMARTi can resume without Core after an OS reboot.
+        own = await self.supervisor.request("GET", "/addons/self/info")
+        if own.get("boot") not in {"auto", "manual"}:
+            raise AuthResetError("reset_app_boot_unavailable")
+        self.host_boot_id()
         return info
 
     def inspect_configuration(self):
@@ -162,6 +168,35 @@ class FullReset:
 
         read(checked_path(root, "configuration.yaml"), 0)
 
+    def host_boot_id(self):
+        return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+
+    async def resume_reboot(self):
+        state = self.state()
+        if not state or state["phase"] != "awaiting_reboot":
+            return
+        if self.host_boot_id() != state["host_boot_id"]:
+            state["phase"] = "awaiting_owner"
+            self.save(state)
+            await self.cloud("ready", {"id": state["id"], "report": state["report"]})
+            return
+        with self.store.connect() as db:
+            if (
+                db.execute("SELECT 1 FROM sqlite_master WHERE name='factory_resets'").fetchone()
+                and db.execute("SELECT 1 FROM factory_resets WHERE status='running'").fetchone()
+            ):
+                return
+        if state.get("reboot_requested"):
+            return  # An uncertain reboot request must never create a reboot loop.
+        await self.cloud("ready", {"id": state["id"], "report": state["report"], "phase": "rebooting"})
+        state["reboot_requested"] = True
+        self.save(state)
+        try:
+            await self.supervisor.request("POST", "/host/reboot")
+        except (HTTPException, httpx.HTTPError, TimeoutError):
+            state["reboot_unconfirmed"] = True
+            self.save(state)
+
     async def assert_stopped(self):
         if not self.stopped:
             raise AuthResetError("ha_stop_unconfirmed")
@@ -193,7 +228,7 @@ class FullReset:
             return await self._execute(report)
         except BaseException:
             state = self.state()
-            if state and state["phase"] not in {"completed", "awaiting_owner"}:
+            if state and state["phase"] not in {"completed", "awaiting_owner", "awaiting_reboot"}:
                 state["phase"] = "failed"
                 self.save(state)
             raise
@@ -211,11 +246,16 @@ class FullReset:
             "boot": info["boot"],
             "watchdog": info["watchdog"],
             "report": report or [],
+            "host_boot_id": self.host_boot_id(),
         }
         self.save(state)
         # Cloud acknowledgement precedes every destructive write. Owner is kept;
         # old plans, member access and support/portal sessions for this home expire.
         await self.cloud("begin", {"id": reset_id, "public_key": public_key(private)})
+        await self.supervisor.request("POST", "/addons/self/options", {"boot": "auto"})
+        own = await self.supervisor.request("GET", "/addons/self/info")
+        if own.get("boot") != "auto":
+            raise AuthResetError("reset_app_boot_unavailable")
         await self.supervisor.request("POST", "/core/options", {"boot": False, "watchdog": False})
         await self.supervisor.request("POST", "/core/stop")
         self.stopped = True
@@ -241,7 +281,14 @@ class FullReset:
         # Remove customer files as well as the recorder database; retain only
         # installed integration/blueprint software and the reset auth metadata.
         for p in self.root.iterdir():
-            if p.name in {".storage", "custom_components", "blueprints"}:
+            if p.name in {
+                ".storage",
+                "custom_components",
+                "blueprints",
+                "zigbee2mqtt",
+                "zwave_js",
+                "zwavejs2mqtt",
+            }:
                 continue
             if p.is_symlink() or p.is_file():
                 p.unlink()
@@ -276,9 +323,9 @@ class FullReset:
                 "settings",
             ):
                 db.execute("DELETE FROM " + table)
-        state["phase"] = "awaiting_owner"
+        state["phase"] = "awaiting_reboot"
         self.save(state)
-        await self.cloud("ready", {"id": reset_id, "report": state["report"]})
+        await self.cloud("ready", {"id": reset_id, "report": state["report"], "phase": "rebooting"})
         return "done", ""
 
     async def bootstrap(self, plan):

@@ -1,4 +1,4 @@
-# Factory reset — 1.35.70
+# Factory reset — 1.35.71
 
 Managed HA hubs now support coordinated full reset. Advanced-mode administrators
 must confirm data loss, pairing limitations, backup choice, RESET HUB and their
@@ -10,8 +10,8 @@ was reset during development.
 1. Validate HA storage schemas, standard HA HTTP/bridge configuration, writable
    configuration mount and cloud coordination. Custom recorder layouts
    are blocked before mutation rather than claiming an external database is erased.
-2. Pause automations and attempt supported radio removals. Unconfirmed or physical
-   exclusions remain in the report.
+2. Do not unpair devices, start exclusion or reset radio controllers. Retain local
+   Zigbee2MQTT/Z-Wave app directories; explain that any pairing removal is manual.
 3. Cloud revokes home-scoped member, support and portal access and old setup plans.
    Portal account, immutable hub identity and ownership stay intact.
 4. Disable automatic Core restart and stop Core. Replace its configuration with
@@ -21,13 +21,17 @@ was reset during development.
    registries, SQLite history, logs and customer files. Installed custom integration
    and blueprint software stays. Installed Supervisor apps are not uninstalled.
 6. Clear SMARTi users, sessions, phone registrations and customer settings. Keep
-   the reset journal and hub identity. Core remains stopped awaiting its owner.
-7. The existing portal owner opens Mine hjem → Sett opp hjemmet på nytt. The
+   the reset journal and hub identity. Enable SMARTi automatic boot, persist the OS
+   boot ID and request one host reboot. Never replay an uncertain reboot request.
+   A changed OS boot ID confirms reboot; Core remains stopped awaiting its owner.
+7. The existing portal owner scans the physical QR label again. The server requires
+   owner authorization and label proof for this reset generation before accepting
+   a setup plan; a direct URL or LAN discovery proof cannot bypass this. The
    confirmed password is encrypted to an ephemeral hub key; the cloud stores only
    ciphertext. The hub creates a new HA owner through onboarding while isolated,
    then restores normal Core startup and applies SMARTi user/location/room setup.
 8. Successful setup restores remote access. Integration connections must be
-   configured again; radio devices may require physical reset/exclusion.
+   configured again; radio pairings are retained unless the user removes them manually.
 
 ## Failure and recovery
 
@@ -53,3 +57,7 @@ new spare hub test. Do not describe the Docker test as a hardware test.
 Local YAML packages/includes are inspected recursively before reset. External paths,
 symlinks, cycles and recorder configuration remain blocked. Failed preflight returns
 a safe, specific reason to the administrator without exposing file contents.
+
+For 1.35.71, unit tests also verify exactly one OS reboot request, recovery after
+a changed boot ID, preserved radio data and owner-plus-QR gating. The Docker harness
+simulates the OS boot transition; real HAOS reboot is tested only on the spare hub.
