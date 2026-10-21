@@ -1,3 +1,9 @@
+## 1.35.80
+- To resetvalg: behold eierkontoen, eller klargjør huben for ny eier med egen bekreftelse.
+- Eierskifte sletter lokale brukere, land og husoppsett og frigjør huben fra eierkontoen etter sletting og omstart. Tidligere medlems-, support- og innloggingstilganger tilbakekalles.
+- Samme trykte QR-kode brukes av neste eier. Full onboarding og egen administratorinnlogging kreves på nytt.
+- Sentral administrasjon viser om huben venter på eksisterende eller ny eier. En gjentatt statusmelding kan ikke fjerne den nye eieren.
+
 ## 1.35.79
 - Frakoblingsvarselet inne i hjemmet vises først etter to minutter sammenhengende kontaktbrudd. Kortvarige brudd gir ikke varsel, og ventetiden nullstilles straks kontakten kommer tilbake.
 

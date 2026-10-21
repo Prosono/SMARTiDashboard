@@ -166,7 +166,9 @@ class HomeResetProvider:
     async def execute(self, op):
         ha, kind, id = self.ha, op["kind"], op["id"]
         if kind == "full_reset":
-            result = await self.full.execute(op.get("report", []))
+            result = await self.full.execute(
+                op.get("report", []), ownership=op.get("ownership", "keep_owner")
+            )
             self.ha.states.clear()
             return result
         if kind == "manual":

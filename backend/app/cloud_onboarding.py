@@ -203,7 +203,8 @@ def install_onboarding(
             for row in c.execute("SELECT * FROM factory_hubs ORDER BY created DESC"):
                 item = view(row)
                 reset = c.execute(
-                    "SELECT phase,qr_required,qr_verified FROM hub_resets WHERE home=?", (row["home"],)
+                    "SELECT phase,qr_required,qr_verified,ownership FROM hub_resets WHERE home=?",
+                    (row["home"],),
                 ).fetchone()
                 item["reset"] = dict(reset) if reset else None
                 plan = c.execute(
@@ -420,9 +421,13 @@ def install_onboarding(
                 row = c.execute(
                     "SELECT f.*,h.owner FROM factory_hubs f JOIN homes h ON h.id=f.home WHERE home=?", (home,)
                 ).fetchone()
+            transfer = c.execute(
+                "SELECT * FROM hub_resets WHERE home=? AND ownership='release_owner' AND released=1 AND phase='awaiting_owner'",
+                (home,),
+            ).fetchone()
             if not row["owner"]:
                 if (
-                    row["phase"] != "ready"
+                    (row["phase"] != "ready" and not transfer)
                     or json.loads(row["heartbeat"] or "{}").get("users") != 0
                     or not row["seen"]
                     or row["seen"] < time.time() - 100
@@ -432,7 +437,10 @@ def install_onboarding(
                     "UPDATE homes SET owner=?,remote_enabled=1 WHERE id=? AND owner IS NULL",
                     (s["account"], home),
                 )
-                c.execute("UPDATE factory_hubs SET phase='activated' WHERE home=?", (home,))
+                if transfer:
+                    c.execute("UPDATE homes SET remote_enabled=0 WHERE id=?", (home,))
+                else:
+                    c.execute("UPDATE factory_hubs SET phase='activated' WHERE home=?", (home,))
                 audit(c, s["account"], "hub_activated", home)
             reset = c.execute(
                 "SELECT * FROM hub_resets WHERE home=? AND phase!='completed'", (home,)

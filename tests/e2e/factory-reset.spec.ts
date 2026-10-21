@@ -39,6 +39,8 @@ test("reset request shows durable incomplete report instead of success", async (
       writes++;const body=route.request().postDataJSON();
       expect(body.acknowledge_manual_cleanup).toBe(true);
       expect(body.password).toBeUndefined();
+      expect(body.ownership).toBe("release_owner");
+      expect(body.acknowledge_release).toBe(true);
       job={id:body.request_id,status:'incomplete',step:'finished',error:'',results:[{kind:'zigbee',name:'Testlampe',status:'done',reason:''},{kind:'manual',name:'Z-Wave',status:'manual',reason:'zwave_exclusion_required'}]};
       return route.fulfill({status:202,json:job});
     }
@@ -47,6 +49,8 @@ test("reset request shows durable incomplete report instead of success", async (
   await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
   await page.getByRole('button',{name:'Se hva som tilbakestilles'}).click();
   const dialog=page.getByRole('dialog',{name:'Tilbakestill huben?'});
+  await dialog.getByRole('radio',{name:'Klargjør for ny eier – fjern fra kontoen'}).check();
+  await expect(dialog).toContainText('Den trykte QR-koden beholdes');
   await dialog.getByLabel('Sikkerhetskopi',{exact:true}).selectOption('saved');
   for(const checkbox of await dialog.getByRole('checkbox').all()) await checkbox.check();
   await dialog.getByLabel('Skriv RESET HUB for å bekrefte').fill('RESET HUB');

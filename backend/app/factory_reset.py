@@ -9,7 +9,7 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .ha import HAError
 
@@ -44,6 +44,15 @@ def archive_previous_reset(store, state):
 class FactoryResetRequest(BaseModel):
     model_config = {"extra": "forbid"}
     request_id: UUID
+    ownership: Literal["keep_owner", "release_owner"] = "keep_owner"
+    acknowledge_release: bool = False
+
+    @model_validator(mode="after")
+    def release_confirmed(self):
+        if self.ownership == "release_owner" and not self.acknowledge_release:
+            raise ValueError("ownership_release_confirmation_required")
+        return self
+
     acknowledge_manual_cleanup: Literal[True]
     password: str | None = Field(
         default=None, max_length=128, repr=False
@@ -97,15 +106,16 @@ class FactoryReset:
             task.cancel()
         await asyncio.gather(*self.tasks, return_exceptions=True)
 
-    async def start(self, id, owner):
+    async def start(self, id, owner, ownership="keep_owner"):
         id = str(id)
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             previous = db.execute("SELECT owner,body FROM factory_resets WHERE id=?", (id,)).fetchone()
             if previous:
-                if previous["owner"] != owner:
+                existing = json.loads(previous["body"])
+                if previous["owner"] != owner or existing.get("ownership", "keep_owner") != ownership:
                     raise HTTPException(409, "reset_conflict")
-                return json.loads(previous["body"])
+                return existing
             if db.execute("SELECT 1 FROM factory_resets WHERE status='running'").fetchone():
                 raise HTTPException(409, "reset_in_progress")
             account = db.execute("SELECT role FROM users WHERE id=?", (owner,)).fetchone()
@@ -115,6 +125,7 @@ class FactoryReset:
                 "id": id,
                 "status": "running",
                 "step": "inventory",
+                "ownership": ownership,
                 "created": time.time(),
                 "results": [],
                 "error": "",
@@ -140,6 +151,7 @@ class FactoryReset:
                 result["status"] = "running"
                 self.save(job)  # A crash here is uncertain, never replayed automatically.
                 if op["kind"] == "full_reset":
+                    op["ownership"] = job.get("ownership", "keep_owner")
                     op["report"] = [dict(r) for r in job["results"] if r is not result]
                 try:
                     async with asyncio.timeout(300 if op["kind"] == "full_reset" else 60):
@@ -212,13 +224,16 @@ def factory_reset_router(store, auth, admin, engine):
         auth.finish_successful_attempt(key)
         # A retry of the same request reads its job, including after a disconnect.
         try:
-            return engine.read(str(body.request_id), current["id"])
+            previous = engine.read(str(body.request_id), current["id"])
+            if previous.get("ownership", "keep_owner") != body.ownership:
+                raise HTTPException(409, "reset_conflict")
+            return previous
         except HTTPException as e:
             if e.status_code != 404:
                 raise
         ready = await engine.provider.preflight()
         if not ready["ready"]:
             raise HTTPException(409, "factory_reset_unavailable")
-        return await engine.start(body.request_id, current["id"])
+        return await engine.start(body.request_id, current["id"], body.ownership)
 
     return router

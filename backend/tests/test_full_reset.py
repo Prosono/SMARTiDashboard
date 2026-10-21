@@ -44,7 +44,12 @@ def test_cloud_reset_owner_bound_revocation_and_sealed_setup(tmp_path):
     assert hub.post(url + "/ready", json={"id": reset_id}).status_code == 200
     assert owner.get("/api/homes").json()[0]["reset_phase"] == "awaiting_owner"
     inventory = staff.get("/api/admin/hubs").json()[0]
-    assert inventory["reset"] == {"phase": "awaiting_owner", "qr_required": 1, "qr_verified": 0}
+    assert inventory["reset"] == {
+        "phase": "awaiting_owner",
+        "qr_required": 1,
+        "qr_verified": 0,
+        "ownership": "keep_owner",
+    }
     assert "public_key" not in inventory["reset"]
     assert other.post("/api/onboarding/" + home, json=PLAN).status_code == 404
     assert owner.post("/api/onboarding/" + home, json=PLAN).json()["detail"] == "reset_qr_required"
@@ -262,3 +267,73 @@ async def test_uncertain_reboot_is_not_replayed(tmp_path):
     reset.host_boot_id = lambda: "boot-two"
     await reset.resume_reboot()
     assert reset.state()["phase"] == "awaiting_owner"
+
+
+def test_release_owner_requires_finished_reset_and_same_qr_can_onboard_new_owner(tmp_path):
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    ready_and_claim(staff, owner, hub, home, activation)
+    key = x25519.X25519PrivateKey.generate()
+    reset_id = str(uuid4())
+    url = f"/api/hubs/{home}/factory-reset"
+    body = {"id": reset_id, "public_key": public_key(key), "ownership": "release_owner"}
+    with sqlite3.connect(path) as c:
+        original_label = c.execute("SELECT label_nonce FROM factory_hubs WHERE home=?", (home,)).fetchone()[0]
+        original_owner = c.execute("SELECT owner FROM homes WHERE id=?", (home,)).fetchone()[0]
+    import hashlib
+    import hmac
+
+    from test_cloud import SECRET
+
+    activation = {
+        "code": "v2."
+        + hmac.new(
+            SECRET.encode(), ("hub-qr-v2:" + home + ":" + original_label).encode(), hashlib.sha256
+        ).hexdigest()
+    }
+    assert hub.post(url + "/begin", json=body).status_code == 200
+    assert hub.post(url + "/begin", json=body | {"ownership": "keep_owner"}).status_code == 409
+    assert other.post(f"/api/activation/{home}/claim", json=activation).status_code == 409
+    assert hub.post(url + "/ready", json={"id": reset_id, "phase": "rebooting"}).status_code == 200
+    with sqlite3.connect(path) as c:
+        assert c.execute("SELECT owner FROM homes WHERE id=?", (home,)).fetchone()[0] == original_owner
+    assert hub.post(url + "/ready", json={"id": reset_id}).status_code == 200
+    assert owner.get("/api/homes").json() == []
+    assert owner.get("/api/onboarding/" + home).status_code == 404
+    assert owner.post("/api/customer/homes/" + home + "/open").status_code == 409
+    assert hub.post(url + "/begin", json=body).status_code == 200
+    # Reusing the unchanged printed label establishes a new owner, not a reused plan.
+    assert other.post(f"/api/activation/{home}/claim", json=activation).status_code == 200
+    assert hub.post(url + "/ready", json={"id": reset_id}).status_code == 200
+    assert len(other.get("/api/homes").json()) == 1
+    assert owner.get("/api/homes").json() == []
+    assert other.post("/api/onboarding/" + home, json=PLAN).status_code == 200
+    plan = hub.post(f"/api/hubs/{home}/onboarding/heartbeat", json=HEARTBEAT).json()["plan"]
+    assert plan["username"] == "stranger"
+    assert unseal(key, reset_id, plan["ha_credentials"])["password"] == PLAN["password"]
+    with sqlite3.connect(path) as c:
+        assert (
+            c.execute("SELECT label_nonce FROM factory_hubs WHERE home=?", (home,)).fetchone()[0]
+            == original_label
+        )
+        assert c.execute("SELECT owner FROM homes WHERE id=?", (home,)).fetchone()[0] != original_owner
+        assert c.execute("SELECT COUNT(*) FROM accounts").fetchone()[0] == 3
+
+
+@pytest.mark.asyncio
+async def test_new_owner_reset_requires_cloud_support_before_erasure(tmp_path, monkeypatch):
+    async def refused(*args, **kwargs):
+        raise ConnectionRefusedError()
+
+    monkeypatch.setattr("asyncio.open_connection", refused)
+    reset, store, supervisor = setup_reset(tmp_path)
+    with pytest.raises(AuthResetError, match="cloud_reset_update_required"):
+        await reset.execute(ownership="release_owner")
+    with store.connect() as c:
+        assert c.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 1
+    reset.cloud = AsyncMock(return_value={"version": 3, "acknowledged": True})
+    assert await reset.execute(ownership="release_owner") == ("done", "")
+    begin = next(call for call in reset.cloud.call_args_list if call.args[0] == "begin")
+    assert begin.args[1]["ownership"] == "release_owner"
+    assert reset.state()["ownership"] == "release_owner"
+    with store.connect() as c:
+        assert c.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0

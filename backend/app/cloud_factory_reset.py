@@ -1,4 +1,4 @@
-"""Owner-preserving reset coordination and home-scoped access revocation."""
+"""Owner-retaining or owner-releasing reset coordination and home-scoped access revocation."""
 
 import base64
 import json
@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 class ResetBegin(BaseModel):
     id: UUID
+    ownership: Literal["keep_owner", "release_owner"] = "keep_owner"
     public_key: str = Field(min_length=44, max_length=44)
 
 
@@ -38,6 +39,11 @@ def install_factory_reset(app, db, home_auth):
             if name not in columns:
                 c.execute(f"ALTER TABLE hub_resets ADD COLUMN {name} INTEGER NOT NULL DEFAULT 0")
 
+        if "ownership" not in columns:
+            c.execute("ALTER TABLE hub_resets ADD COLUMN ownership TEXT NOT NULL DEFAULT 'keep_owner'")
+        if "released" not in columns:
+            c.execute("ALTER TABLE hub_resets ADD COLUMN released INTEGER NOT NULL DEFAULT 0")
+
     @app.get("/api/hubs/{home}/factory-reset/capabilities")
     def capabilities(home: str, request: Request):
         home_auth(home, request)
@@ -47,7 +53,7 @@ def install_factory_reset(app, db, home_auth):
             ).fetchone()
             if not row or not row["owner"]:
                 raise HTTPException(409, "managed_owner_required")
-        return {"version": 2}
+        return {"version": 3}
 
     @app.post("/api/hubs/{home}/factory-reset/begin")
     def begin(home: str, body: ResetBegin, request: Request):
@@ -62,18 +68,20 @@ def install_factory_reset(app, db, home_auth):
             row = c.execute(
                 "SELECT h.owner FROM homes h JOIN factory_hubs f ON f.home=h.id WHERE h.id=?", (home,)
             ).fetchone()
-            if not row or not row["owner"]:
+            if not row:
                 raise HTTPException(409, "managed_owner_required")
             previous = c.execute("SELECT * FROM hub_resets WHERE home=?", (home,)).fetchone()
             if previous and previous["id"] == str(body.id):
-                if previous["public_key"] != body.public_key:
+                if previous["public_key"] != body.public_key or previous["ownership"] != body.ownership:
                     raise HTTPException(409, "reset_conflict")
                 return {"acknowledged": True}
+            if not row["owner"]:
+                raise HTTPException(409, "managed_owner_required")
             if previous and previous["phase"] != "completed":
                 raise HTTPException(409, "reset_in_progress")
             c.execute(
-                "INSERT OR REPLACE INTO hub_resets(home,id,public_key,phase,created,qr_required,qr_verified) VALUES(?,?,?,?,?,1,0)",
-                (home, str(body.id), body.public_key, "erasing", time.time()),
+                "INSERT OR REPLACE INTO hub_resets(home,id,public_key,phase,created,qr_required,qr_verified,ownership) VALUES(?,?,?,?,?,1,0,?)",
+                (home, str(body.id), body.public_key, "erasing", time.time(), body.ownership),
             )
             c.execute("UPDATE homes SET remote_enabled=0 WHERE id=?", (home,))
             for table in (
@@ -82,6 +90,7 @@ def install_factory_reset(app, db, home_auth):
                 "customer_tokens",
                 "home_members",
                 "onboarding_plans",
+                "hub_credential_changes",
             ):
                 c.execute("DELETE FROM " + table + " WHERE home=?", (home,))
             for table in ("support_codes", "support_connections"):
@@ -97,7 +106,7 @@ def install_factory_reset(app, db, home_auth):
             c.execute("UPDATE factory_hubs SET phase='resetting' WHERE home=?", (home,))
             c.execute(
                 "INSERT INTO admin_audit(actor,action,target,created) VALUES(?,?,?,?)",
-                (row["owner"], "hub_factory_reset", home, time.time()),
+                (row["owner"], "hub_factory_reset_" + body.ownership, home, time.time()),
             )
         return {"acknowledged": True}
 
@@ -105,6 +114,7 @@ def install_factory_reset(app, db, home_auth):
     def ready(home: str, body: ResetReady, request: Request):
         home_auth(home, request)
         with db() as c:
+            c.execute("BEGIN IMMEDIATE")
             changed = c.execute(
                 "UPDATE hub_resets SET phase=?,report=? WHERE home=? AND id=? AND phase IN ('erasing','rebooting','awaiting_owner')",
                 (body.phase, json.dumps([r.model_dump() for r in body.report]), home, str(body.id)),
@@ -112,6 +122,16 @@ def install_factory_reset(app, db, home_auth):
             if not changed:
                 raise HTTPException(409, "reset_conflict")
             c.execute("UPDATE factory_hubs SET phase=? WHERE home=?", (body.phase, home))
+            # Release only after local erasure and reboot. Retried ready callbacks must
+            # never detach a new owner who has subsequently claimed the same QR label.
+            reset = c.execute("SELECT ownership,released FROM hub_resets WHERE home=?", (home,)).fetchone()
+            if (
+                body.phase == "awaiting_owner"
+                and reset["ownership"] == "release_owner"
+                and not reset["released"]
+            ):
+                c.execute("UPDATE homes SET owner=NULL,name='Mitt hjem',remote_enabled=0 WHERE id=?", (home,))
+                c.execute("UPDATE hub_resets SET released=1 WHERE home=?", (home,))
         return {"acknowledged": True}
 
     @app.post("/api/hubs/{home}/factory-reset/failed")

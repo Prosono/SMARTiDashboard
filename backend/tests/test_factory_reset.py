@@ -309,3 +309,10 @@ def test_incomplete_reset_is_not_archived_by_old_onboarding_checkpoint(client):
     for phase in ["failed", "awaiting_owner", "awaiting_reboot", "creating_owner"]:
         archive_previous_reset(store, {"id": "incomplete-reset", "phase": phase})
     assert store.get("factory_reset_report_cutoff") == ""
+
+
+def test_releasing_ownership_requires_separate_acknowledgement(client):
+    advanced(client)
+    response = client.post(PATH, json=BODY | {"ownership": "release_owner"})
+    assert response.status_code == 422
+    assert client.get("/api/session").status_code == 200

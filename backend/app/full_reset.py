@@ -223,9 +223,9 @@ class FullReset:
         os.replace(pending, path)
         _sync_directory(path.parent)
 
-    async def execute(self, report=None):
+    async def execute(self, report=None, ownership="keep_owner"):
         try:
-            return await self._execute(report)
+            return await self._execute(report, ownership)
         except BaseException:
             state = self.state()
             if state and state["phase"] not in {"completed", "awaiting_owner", "awaiting_reboot"}:
@@ -233,8 +233,12 @@ class FullReset:
                 self.save(state)
             raise
 
-    async def _execute(self, report=None):
+    async def _execute(self, report=None, ownership="keep_owner"):
+        if ownership not in {"keep_owner", "release_owner"}:
+            raise AuthResetError("reset_ownership_invalid")
         info = await self.preflight()
+        if ownership == "release_owner" and (await self.cloud("capabilities")).get("version", 0) < 3:
+            raise AuthResetError("cloud_reset_update_required")
         reset_id = str(uuid.uuid4())
         private = x25519.X25519PrivateKey.generate()
         if self.key_path.exists():
@@ -243,15 +247,16 @@ class FullReset:
         state = {
             "id": reset_id,
             "phase": "preparing",
+            "ownership": ownership,
             "boot": info["boot"],
             "watchdog": info["watchdog"],
             "report": report or [],
             "host_boot_id": self.host_boot_id(),
         }
         self.save(state)
-        # Cloud acknowledgement precedes every destructive write. Owner is kept;
+        # Cloud acknowledgement precedes every destructive write;
         # old plans, member access and support/portal sessions for this home expire.
-        await self.cloud("begin", {"id": reset_id, "public_key": public_key(private)})
+        await self.cloud("begin", {"id": reset_id, "public_key": public_key(private), "ownership": ownership})
         await self.supervisor.request("POST", "/addons/self/options", {"boot": "auto"})
         own = await self.supervisor.request("GET", "/addons/self/info")
         if own.get("boot") != "auto":
