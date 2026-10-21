@@ -1,3 +1,8 @@
+## 1.35.84
+
+- Støtte for internt forseglet produksjonsimage: hver SSD-kopi oppretter egen SMARTi-identitet og kryptert HA-eieroppsett.
+- Produksjonsverktøyet er separat og finnes ikke i kundeappen eller avansert modus.
+
 ## 1.35.83
 - System viser aktiv SMARTi-fjernaksess når statusforespørselen kommer via fjernforbindelsen. Lesing av status er tillatt for innlogget administrator; lokal klargjøring og tilkoblingsnøkler forblir sperret eksternt.
 - Nettverks- og systemmålinger bruker hubens Supervisor-tilgang også ved fjernaksess. Nettverksendringer henvises fortsatt til lokal tilgang.

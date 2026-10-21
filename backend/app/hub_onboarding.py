@@ -12,6 +12,7 @@ import httpx
 from fastapi import HTTPException
 
 from .certificate_hook import read_identity
+from .factory_image import enrollment_bootstrap
 from .factory_reset import archive_previous_reset
 from .full_reset import FullReset
 from .ha import HAError
@@ -74,6 +75,7 @@ class HubOnboarding:
                     "version": "1.35.51",
                     "users": 0,
                     "ha_connected": bool(self.ha.connected),
+                    "bootstrap": enrollment_bootstrap(self.settings.data_dir),
                 },
             )
             response.raise_for_status()

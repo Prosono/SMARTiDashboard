@@ -12,6 +12,11 @@ from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 
 
+class FactoryBootstrap(BaseModel):
+    id: UUID
+    public_key: str = Field(pattern=r"^[A-Za-z0-9+/]{43}=$")
+
+
 class EnrollmentPoll(BaseModel):
     device: UUID
     secret: str = Field(pattern=r"^[A-Za-z0-9_-]{43,128}$", repr=False)
@@ -19,6 +24,7 @@ class EnrollmentPoll(BaseModel):
     version: str = Field(max_length=40)
     users: int = Field(ge=0)
     ha_connected: bool
+    bootstrap: FactoryBootstrap | None = None
 
 
 def install_enrollment(app, db, throttle, provisioning_secret):
@@ -44,7 +50,14 @@ def install_enrollment(app, db, throttle, provisioning_secret):
         if device != str(UUID(bytes=bytes.fromhex(hashed)[:16], version=4)):
             # A LAN observer cannot pre-register someone else's broadcast ID with a different secret.
             raise HTTPException(403, "enrollment_rejected")
-        health = json.dumps({"version": body.version, "users": body.users, "ha_connected": body.ha_connected})
+        health = json.dumps(
+            {
+                "version": body.version,
+                "users": body.users,
+                "ha_connected": body.ha_connected,
+                "factory_bootstrap": body.bootstrap.model_dump(mode="json") if body.bootstrap else None,
+            }
+        )
         # Registration is throttled separately: valid polling must survive normal setup delays.
         with db() as c:
             known = c.execute("SELECT secret_hash FROM hub_enrollments WHERE device=?", (device,)).fetchone()
@@ -106,6 +119,17 @@ def install_enrollment(app, db, throttle, provisioning_secret):
         health = json.loads(pending["health"])
         if health["users"] or not health["ha_connected"]:
             raise HTTPException(409, "enrollment_not_ready")
+        bootstrap = health.pop("factory_bootstrap", None)
+        if bootstrap:
+            # Only a fresh QR-authorized binding can install a factory bootstrap.
+            # Never replace an existing home/reset or let enrollment erase a hub.
+            if c.execute("SELECT 1 FROM hub_resets WHERE home=?", (row["home"],)).fetchone():
+                raise HTTPException(409, "hub_already_personalized")
+            c.execute(
+                "INSERT INTO hub_resets(home,id,public_key,phase,created,qr_required,qr_verified,ownership) "
+                "VALUES(?,?,?,'awaiting_owner',?,1,0,'keep_owner')",
+                (row["home"], bootstrap["id"], bootstrap["public_key"], time.time()),
+            )
         credential = secrets.token_urlsafe(48)
         c.execute(
             "UPDATE homes SET credential=? WHERE id=?",

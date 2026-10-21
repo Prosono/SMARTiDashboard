@@ -184,3 +184,33 @@ def test_reset_qr_uses_bound_hub_heartbeat_not_expired_enrollment(tmp_path):
     with sqlite3.connect(path) as c:
         c.execute("UPDATE factory_hubs SET seen=0 WHERE home=?", (home,))
     assert owner.post(url, json=claim).json()["detail"] == "enrollment_offline"
+
+
+def test_factory_clone_bootstrap_is_scoped_to_qr_claim(tmp_path):
+    from cryptography.hazmat.primitives.asymmetric import x25519
+
+    from app.reset_credentials import public_key, unseal
+
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    client = TestClient(app, base_url=ORIGIN)
+    private = x25519.X25519PrivateKey.generate()
+    reset_id = str(uuid.uuid4())
+    body = pending() | {"bootstrap": {"id": reset_id, "public_key": public_key(private)}}
+    assert client.post("/api/enrollment/poll", json=body).status_code == 200
+    with sqlite3.connect(path) as c:
+        assert c.execute("SELECT COUNT(*) FROM hub_resets").fetchone()[0] == 0
+    claim = activation | {"device": body["device"]}
+    assert owner.post(f"/api/activation/{home}/claim", json=claim | {"code": "0" * 64}).status_code == 404
+    assert owner.post(f"/api/activation/{home}/claim", json=claim).status_code == 200
+    with sqlite3.connect(path) as c:
+        assert c.execute(
+            "SELECT id,qr_verified,ownership FROM hub_resets WHERE home=?", (home,)
+        ).fetchone() == (reset_id, 1, "keep_owner")
+    assert owner.post(f"/api/activation/{home}/claim", json=claim).status_code == 200
+    assert owner.post(f"/api/onboarding/{home}", json=PLAN).status_code == 200
+    with sqlite3.connect(path) as c:
+        plan = json.loads(
+            c.execute("SELECT payload FROM onboarding_plans WHERE home=?", (home,)).fetchone()[0]
+        )
+    assert plan["reset_id"] == reset_id
+    assert unseal(private, reset_id, plan["ha_credentials"])["password"] == PLAN["password"]
