@@ -1,6 +1,7 @@
 """Multi-home account/enrollment control plane; does not proxy home commands."""
 
 import asyncio
+import base64
 import contextlib
 import hashlib
 import os
@@ -19,7 +20,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pwdlib import PasswordHash
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.cloud_accounts import Profile, install_accounts, remote_allowed
 from app.cloud_admin import install_admin
@@ -38,6 +39,15 @@ def digest(value):
 class Credentials(BaseModel):
     username: str = Field(min_length=3, max_length=254, pattern=r"^[a-zA-Z0-9_.@+-]+$")
     password: str = Field(min_length=1, max_length=256)
+
+
+class HomePhoto(BaseModel):
+    photo: str = Field(max_length=700000)
+
+    @field_validator("photo")
+    @classmethod
+    def valid_photo(cls, value):
+        return Profile.photo_valid(value)
 
 
 TERMS_VERSION = "2026-10-22"
@@ -105,6 +115,9 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
         CREATE TABLE IF NOT EXISTS homes(
             id TEXT PRIMARY KEY, name TEXT NOT NULL, credential TEXT NOT NULL,
             owner TEXT REFERENCES accounts(id));
+        CREATE TABLE IF NOT EXISTS home_photos(
+            home TEXT PRIMARY KEY REFERENCES homes(id) ON DELETE CASCADE,
+            body BLOB NOT NULL, revision TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS claims(
             token TEXT PRIMARY KEY, home TEXT UNIQUE NOT NULL REFERENCES homes(id),
             expires REAL NOT NULL);
@@ -446,7 +459,13 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
         with db() as c:
             return [
                 {
-                    **dict(row),
+                    **{key: row[key] for key in row.keys() if key != "photo_revision"},
+                    "can_manage": row["owner"] == s["account"],
+                    "photo_url": (
+                        "/api/customer/homes/" + row["installation_id"] + "/photo?v=" + row["photo_revision"]
+                    )
+                    if row["photo_revision"]
+                    else None,
                     "connected": bool(
                         row["remote_enabled"]
                         and remote_allowed(c, row["owner"])
@@ -457,10 +476,35 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
                     or not remote_allowed(c, s["account"]),
                 }
                 for row in c.execute(
-                    "SELECT id AS installation_id,name,owner,remote_enabled, EXISTS(SELECT 1 FROM factory_hubs f WHERE f.home=homes.id) AS factory_managed, (SELECT phase FROM hub_resets r WHERE r.home=homes.id AND r.phase!='completed') AS reset_phase FROM homes WHERE owner=? OR id IN (SELECT home FROM home_members WHERE account=?) ORDER BY name",
+                    "SELECT id AS installation_id,name,owner,remote_enabled, (SELECT revision FROM home_photos WHERE home=homes.id) AS photo_revision, EXISTS(SELECT 1 FROM factory_hubs f WHERE f.home=homes.id) AS factory_managed, (SELECT phase FROM hub_resets r WHERE r.home=homes.id AND r.phase!='completed') AS reset_phase FROM homes WHERE owner=? OR id IN (SELECT home FROM home_members WHERE account=?) ORDER BY name",
                     (s["account"], s["account"]),
                 )
             ]
+
+    @app.put("/api/customer/homes/{home}/photo")
+    def save_home_photo(home: str, body: HomePhoto, s=Depends(session)):
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            if not c.execute("SELECT 1 FROM homes WHERE id=? AND owner=?", (home, s["account"])).fetchone():
+                raise HTTPException(404, "home_not_found")
+            if body.photo:
+                raw = base64.b64decode(body.photo.split(",", 1)[1], validate=True)
+                c.execute("INSERT OR REPLACE INTO home_photos VALUES(?,?,?)", (home, raw, digest(body.photo)))
+            else:
+                c.execute("DELETE FROM home_photos WHERE home=?", (home,))
+        return {"saved": True}
+
+    @app.get("/api/customer/homes/{home}/photo")
+    def home_photo(home: str, s=Depends(session)):
+        with db() as c:
+            row = c.execute(
+                "SELECT p.body FROM home_photos p JOIN homes h ON h.id=p.home WHERE h.id=? "
+                "AND (h.owner=? OR EXISTS(SELECT 1 FROM home_members m WHERE m.home=h.id AND m.account=?))",
+                (home, s["account"], s["account"]),
+            ).fetchone()
+            if not row:
+                raise HTTPException(404, "home_not_found")
+        return Response(row["body"], media_type="image/jpeg", headers={"Cache-Control": "private, no-store"})
 
     install_accounts(app, db, session, home_auth, throttle, origin)
     from .cloud_energy import install_energy

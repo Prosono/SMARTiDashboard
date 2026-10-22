@@ -4,14 +4,14 @@ const fs=require('node:fs');
 const root='backend/app/cloud_web/';
 (async()=>{
  const browser=await chromium.launch();const page=await browser.newPage();
- let emptyCases=false;let brandGate=null,sessionGate=null,sessionFailure=false;let signedIn=false,admin=false,savedProfile=null;let profile={verified:true,full_name:'Test Kunde',email:'test@example.no',phone:'12345678',address:'Testveien 1',postal_code:'1234',city:'Oslo',country:'Norge',photo:''};const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ let emptyCases=false,noHomes=false,homePhotoData=null;let brandGate=null,sessionGate=null,sessionFailure=false;let signedIn=false,admin=false,savedProfile=null;let profile={verified:true,full_name:'Test Kunde',email:'test@example.no',phone:'12345678',address:'Testveien 1',postal_code:'1234',city:'Oslo',country:'Norge',photo:''};const errors=[];page.on('pageerror',e=>errors.push(e.message));
  const home={name:'Hjemme i Kristiansand',installation_id:'00000000-0000-4000-8000-000000000001',remote_enabled:true,connected:true,factory_managed:true};
  await page.route('https://home.smarti.dev/**',async route=>{
   const u=new URL(route.request().url()),path=u.pathname;let data;
   if(path==='/api/session'){if(sessionGate)await sessionGate;if(sessionFailure)return route.fulfill({status:503,json:{}});if(!signedIn)return route.fulfill({status:401,json:{}});data={csrf:'test',portal_admin:admin};}
   else if(path==='/api/login'){signedIn=true;data={csrf:'test'};}
   else if(path==='/api/logout'){signedIn=false;data={};}
-  else if(path==='/api/homes')data=[home,{...home,name:'Hytta ved sjøen',installation_id:'00000000-0000-4000-8000-000000000002',connected:false}];
+  else if(path.endsWith('/photo')&&route.request().method()==='PUT'){const photo=route.request().postDataJSON().photo;homePhotoData=photo;home.photo_url=photo?'/api/customer/homes/'+home.installation_id+'/photo?v=test':null;data={saved:true};}else if(path.endsWith('/photo'))return route.fulfill({contentType:'image/jpeg',body:Buffer.from(homePhotoData.split(',')[1],'base64')});else if(path==='/api/homes')data=noHomes?[]:[home,{...home,name:'Hytta ved sjøen',installation_id:'00000000-0000-4000-8000-000000000002',connected:false}];
   else if(path==='/api/admin/overview')data={checked_at:1792480000,relay_available:true,summary:{customers:24,accounts:29,homes:31,online:27,offline:2,unclaimed:2},customers:[{id:'test',username:'kunde@example.no',homes:[{name:home.name,status:'online'}]},{id:'test2',username:'annen@example.no',homes:[{name:'Hytta',status:'offline'}]}],total:2,unclaimed:[]};
   else if(path==='/api/admin/accounts/test')data={username:'kunde@example.no',id:'test',homes:[{name:home.name,status:'online',id:'demo'}],notes:[]};
   else if(path==='/api/admin/traffic')data={available:false,daily:[],hubs:{}};
@@ -70,10 +70,16 @@ const root='backend/app/cloud_web/';
   await expect(page.locator('.home-visual img')).toHaveCount(2);
   await expect(page.locator('.home-badge').first()).toHaveText('Tilkoblet');
   await expect(page.locator('.home-badge').last()).toHaveText('Venter på tilkobling');
-  await expect(page.locator('.home-heading>a')).toBeVisible();
+  await expect(page.locator('.home-heading>a')).toHaveCount(0);await expect(page.locator('.home-add-card')).toBeVisible();await expect(page.locator('.home-quick-actions').first()).toBeVisible();
   await page.locator('.home-more').first().click();
   await expect(page.locator('.home-more').first()).toHaveAttribute('aria-expanded','true');
   await expect(page.locator('.home-members').first()).toContainText('Test Kunde');
+  const jpeg=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=400;c.height=250;const x=c.getContext('2d');x.fillStyle='#ff7900';x.fillRect(0,0,400,250);return c.toDataURL('image/jpeg').split(',')[1];});
+  await page.locator('.home-options input[type=file]').first().setInputFiles({name:'house.jpg',mimeType:'image/jpeg',buffer:Buffer.from(jpeg,'base64')});
+  await expect(page.locator('.home-visual img').first()).toHaveAttribute('src',/photo\?v=test/);
+  await page.locator('.home-more').first().click();await page.getByRole('button',{name:'Bruk standardbilde',exact:true}).first().click();
+  await expect(page.locator('.home-visual img').first()).toHaveAttribute('src','/assets/portal-home.webp');await page.locator('.home-more').first().click();
+
   await page.locator('.home-more').first().click();
   await expect(page.locator('.home-more').first()).toHaveAttribute('aria-expanded','false');
   await page.screenshot({path:`/tmp/smarti-portal-homes-${width}.png`,fullPage:true});
@@ -180,5 +186,5 @@ const root='backend/app/cloud_web/';
      await page.screenshot({path:`/tmp/smarti-registration-${width}-${theme}.png`,fullPage:true});
    }
  }
- if(errors.length)throw Error(errors.join('\n'));await browser.close();console.log('PASS: login, home actions, admin detail/log and seven responsive portal routes at 390/768/1440px');
+ signedIn=true;admin=false;noHomes=true;await page.goto('https://home.smarti.dev/');await expect(page.locator('.home-card')).toHaveCount(0);await expect(page.locator('.home-add-card')).toHaveCount(1);await expect(page.locator('.home-add-card')).toContainText('Legg til ditt første hjem');if(errors.length)throw Error(errors.join('\n'));await browser.close();console.log('PASS: login, home actions, admin detail/log and seven responsive portal routes at 390/768/1440px');
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -426,3 +426,37 @@ def test_deletion_rechecks_link_and_blocks_reset_in_progress(tmp_path):
         account_id = c.execute("SELECT id FROM accounts WHERE username='customer'").fetchone()[0]
         c.execute("INSERT INTO home_members(home,account) VALUES(?,?)", (home, account_id))
     assert staff.delete("/api/admin/hubs/" + home).json()["detail"] == "hub_still_linked"
+
+
+def test_home_photo_is_private_owner_managed_and_removed_with_hub(tmp_path):
+    import base64
+
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    ready_and_claim(staff, owner, hub, home, activation)
+    url = f"/api/customer/homes/{home}/photo"
+    raw = b"\xff\xd8\xff\xe0test-photo\xff\xd9"
+    photo = "data:image/jpeg;base64," + base64.b64encode(raw).decode()
+    assert other.put(url, json={"photo": photo}).status_code == 404
+    assert owner.put(url, json={"photo": "data:image/svg+xml;base64,PHN2Zz4="}).status_code == 422
+    assert owner.put(url, json={"photo": photo}).status_code == 200
+    assert owner.get("/api/homes").json()[0]["photo_url"].startswith(url + "?v=")
+    assert owner.get("/api/homes").json()[0]["can_manage"] is True
+    assert owner.get(url).content == raw
+    assert "no-store" in owner.get(url).headers["cache-control"]
+    assert other.get(url).status_code == 404
+    assert TestClient(app, base_url=ORIGIN).get(url).status_code == 401
+    with sqlite3.connect(path) as c:
+        account_id = c.execute("SELECT id FROM accounts WHERE username='stranger'").fetchone()[0]
+        c.execute("INSERT INTO home_members VALUES(?,?)", (home, account_id))
+    assert other.get(url).content == raw
+    assert other.get("/api/homes").json()[0]["can_manage"] is False
+    assert other.put(url, json={"photo": ""}).status_code == 404
+    assert owner.put(url, json={"photo": ""}).status_code == 200
+    assert owner.get(url).status_code == 404
+    assert owner.put(url, json={"photo": photo}).status_code == 200
+    with sqlite3.connect(path) as c:
+        c.execute("DELETE FROM home_members WHERE home=?", (home,))
+        c.execute("UPDATE homes SET owner=NULL WHERE id=?", (home,))
+    assert staff.delete("/api/admin/hubs/" + home).status_code == 200
+    with sqlite3.connect(path) as c:
+        assert not c.execute("SELECT 1 FROM home_photos WHERE home=?", (home,)).fetchone()

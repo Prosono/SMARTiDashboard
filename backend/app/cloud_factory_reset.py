@@ -187,6 +187,7 @@ def install_factory_reset(app, db, home_auth, session, is_admin):
                 and reset["ownership"] == "release_owner"
                 and not reset["released"]
             ):
+                c.execute("DELETE FROM home_photos WHERE home=?", (home,))
                 c.execute("UPDATE homes SET owner=NULL,name='Mitt hjem',remote_enabled=0 WHERE id=?", (home,))
                 c.execute("UPDATE hub_resets SET released=1 WHERE home=?", (home,))
             if body.phase == "awaiting_owner" and grant and grant["reset_id"] == str(body.id):

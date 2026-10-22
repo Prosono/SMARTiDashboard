@@ -28,13 +28,6 @@ async function showHomes() {
   if ($("homes").dataset.signature===signature) return;
   $("homes").dataset.signature=signature;
   $("homes").replaceChildren();
-  if (!homes.length) {
-    const empty=document.createElement("div");empty.className="empty-homes";
-    const title=document.createElement("h3");title.textContent="Ditt første hjem starter her.";
-    const text=document.createElement("p");text.textContent="Koble til SMARTi-huben, så finner du hjemmet ditt her neste gang.";
-    const link=document.createElement("a");link.href="/activate";link.className="button primary";link.textContent="Legg til et hjem →";
-    empty.append(title,text,link);$("homes").append(empty);
-  }
   for (const home of homes) {
     const card=document.createElement("article"), title=document.createElement("h2"), detail=document.createElement("p");
     const available=!home.reset_phase && home.connected && home.remote_enabled && !home.verification_required;
@@ -43,13 +36,13 @@ async function showHomes() {
     detail.textContent=home.remote_enabled ? (home.connected ? "Tilkoblet · klart til å åpnes" : "Venter på tilkobling fra huben") : "Fjerntilgang er slått av";
     if(home.verification_required)detail.textContent="Bekreft e-postadressen din for å åpne hjemmet.";
     const visual=document.createElement("div");visual.className="home-visual";
-    const photo=document.createElement("img");photo.src="/assets/portal-home.webp";photo.alt="";photo.loading="lazy";photo.width=1200;photo.height=800;
+    const photo=document.createElement("img");photo.src=home.photo_url||"/assets/portal-home.webp";photo.alt="";photo.loading="lazy";photo.width=1200;photo.height=800;
     const badge=document.createElement("span");badge.className="home-badge";badge.textContent=available?"Tilkoblet":"Venter på tilkobling";
     if(!home.remote_enabled)badge.textContent="Fjerntilgang av";
     if(home.verification_required)badge.textContent="Bekreft e-post";
     if(home.reset_phase)badge.textContent="Nytt oppsett";
     const caption=document.createElement("div");caption.className="home-caption";caption.append(title,detail);
-    const artwork=document.createElement("span");artwork.className="home-artwork-label";artwork.textContent="Stemningsbilde";
+    const artwork=document.createElement("span");artwork.className="home-artwork-label";artwork.textContent=home.photo_url?"":"Stemningsbilde";
     visual.append(photo,badge,caption,artwork);card.append(visual);
     if(home.reset_phase) detail.textContent=home.reset_phase==='awaiting_owner'?'Huben er tilbakestilt · klar for nytt oppsett':home.reset_phase==='rebooting'?'Huben starter på nytt · vent til den er tilbake på nett':home.reset_phase==='failed'?'Tilbakestillingen ble avbrutt · kontakt support før du starter HA':'Tilbakestilling pågår · ikke koble fra strømmen';
     if(home.reset_phase==='awaiting_owner') {
@@ -64,18 +57,29 @@ async function showHomes() {
       help.href=home.verification_required?"/account":"/support";
       help.textContent=home.verification_required?"Bekreft e-post →":"Få hjelp med tilkoblingen →";card.append(help);
     }
-    if(home.factory_managed || home.remote_enabled){
+    if(home.can_manage!==false || home.factory_managed || home.remote_enabled){
       const options=document.createElement("details");options.className="home-options";
       const summary=document.createElement("summary");summary.textContent="Innstillinger for hjemmet";options.append(summary);
       if (home.factory_managed) { const setup=document.createElement("a");setup.href="/activate?home="+encodeURIComponent(home.installation_id);setup.textContent="Åpne oppsett av hub";options.append(setup); }
-      if (home.remote_enabled) {
+      const actions=document.createElement("div");actions.className="home-quick-actions";
+      if (home.remote_enabled && home.can_manage!==false) {
         const disable=document.createElement("button");disable.textContent="Slå av fjerntilgang";disable.className="danger";
         disable.onclick=()=>{if(window.confirm("Vil du slå av fjerntilgang til dette hjemmet? Du og andre brukere vil ikke kunne åpne hjemmet utenfra. Lokal tilgang hjemme beholdes. Fjerntilgang må aktiveres igjen på huben."))run(async()=>{
           await api("homes/"+encodeURIComponent(home.installation_id)+"/remote","DELETE");await showHomes();
-        });};options.append(disable);
+        });};actions.append(disable);
       }
+      if(home.can_manage!==false){
+        if(!home.remote_enabled){const off=document.createElement('span');off.className='remote-off';off.textContent='Fjerntilgang er av';actions.append(off);}
+        const invite=document.createElement('button');invite.type='button';invite.textContent='+ Legg til bruker';invite.onclick=()=>window.inviteHomeMember(home,api,text=>{$('message').textContent=text;});actions.append(invite);
+        const upload=document.createElement('input');upload.type='file';upload.accept='image/jpeg,image/png,image/webp,image/heic,image/heif';upload.hidden=true;
+        const choose=document.createElement('button');choose.type='button';choose.textContent=home.photo_url?'Bytt husbilde':'Last opp husbilde';choose.onclick=()=>upload.click();
+        upload.onchange=()=>{const file=upload.files[0];if(file)run(async()=>{const photo=await prepareHomePhoto(file);await api('customer/homes/'+home.installation_id+'/photo','PUT',{photo});await showHomes();});upload.value='';};
+        options.append(choose,upload);
+        if(home.photo_url){const remove=document.createElement('button');remove.type='button';remove.textContent='Bruk standardbilde';remove.onclick=()=>run(async()=>{await api('customer/homes/'+home.installation_id+'/photo','PUT',{photo:''});await showHomes();});options.append(remove);}
+      }
+      card.append(actions);
       const people=document.createElement("div");people.className="home-members";options.append(people);
-      options.addEventListener("toggle",async()=>{if(!options.open||people.dataset.loaded)return;people.textContent="Henter brukere …";try{const members=await api("customer/homes/"+home.installation_id+"/members");people.replaceChildren();const heading=document.createElement("h3");heading.textContent="Brukere i hjemmet";people.append(heading);for(const member of members){const row=document.createElement("p");row.textContent=(member.full_name||member.username)+(member.role==="owner"?" · Eier":"");people.append(row);}const invite=document.createElement("button");invite.type="button";invite.textContent="+ Legg til ny bruker";invite.onclick=()=>window.inviteHomeMember(home,api,text=>{$("message").textContent=text;$("message").scrollIntoView({block:"center"});});people.append(invite);people.dataset.loaded="true";}catch{people.textContent="Kun eieren kan se og administrere brukere her.";}});
+      options.addEventListener("toggle",async()=>{if(!options.open||people.dataset.loaded)return;people.textContent="Henter brukere …";try{const members=await api("customer/homes/"+home.installation_id+"/members");people.replaceChildren();const heading=document.createElement("h3");heading.textContent="Brukere i hjemmet";people.append(heading);for(const member of members){const row=document.createElement("p");row.textContent=(member.full_name||member.username)+(member.role==="owner"?" · Eier":"");people.append(row);}people.dataset.loaded="true";}catch{people.textContent="Kun eieren kan se og administrere brukere her.";}});
       card.append(options);
       const more=document.createElement("button");more.type="button";more.className="home-more";more.textContent="•••";more.setAttribute("aria-label","Innstillinger for "+home.name);more.setAttribute("aria-expanded","false");
       more.onclick=()=>{options.open=!options.open;if(options.open)summary.focus();};
@@ -85,6 +89,25 @@ async function showHomes() {
 
     $("homes").append(card);
   }
+  const add=document.createElement('a');add.href='/activate';add.className='home-add-card';
+  const outline=document.createElement('img');outline.src='/assets/home-illustration.svg';outline.alt='';outline.width=400;outline.height=220;
+  const heading=document.createElement('h2');heading.textContent=homes.length?'Legg til et nytt hjem':'Legg til ditt første hjem';
+  const note=document.createElement('p');note.textContent='Koble til huben og skann QR-koden for å komme i gang.';
+  const plus=document.createElement('span');plus.className='home-add-plus';plus.textContent='+';plus.setAttribute('aria-hidden','true');
+  add.append(outline,plus,heading,note);$('homes').append(add);
+}
+async function prepareHomePhoto(file){
+ if(file.size>20000000)throw Error('Velg et bilde under 20 MB.');
+ const url=URL.createObjectURL(file);
+ try{
+  const img=new Image();img.src=url;await img.decode();
+  const scale=Math.min(1,1200/Math.max(img.naturalWidth,img.naturalHeight));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  for(const quality of [.85,.7,.55,.4]){const data=canvas.toDataURL('image/jpeg',quality);if(data.length<660000)return data;}
+  throw Error('Bildet er for stort. Velg et enklere eller mindre bilde.');
+ }catch(e){throw Error(e.message.startsWith('Bildet er for stort')?e.message:'Bildet kunne ikke leses. Prøv et JPEG-, PNG- eller WebP-bilde.');}
+ finally{URL.revokeObjectURL(url);}
 }
 async function login() {
   const body=Object.fromEntries(new FormData($("login")));
