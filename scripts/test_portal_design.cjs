@@ -174,6 +174,7 @@ const root='backend/app/cloud_web/';
  for(const width of [390,1440]){await page.setViewportSize({width,height:900});
    for(const theme of ['light','dark']){await page.evaluate(t=>document.documentElement.dataset.portalTheme=t,theme);
      const first=await page.locator('#signup [name=password]').boundingBox(),second=await page.locator('[name=password_confirmation]').boundingBox();
+     if(width===1440){const main=await page.locator('main').boundingBox();if(Math.abs(main.x+main.width/2-width/2)>2)throw Error('Account content not centered');await expect(page.locator('.masthead')).toHaveCSS('position','relative');}
      if(Math.abs(first.width-second.width)>2)throw Error('Password widths differ');
      if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Registration overflow');
      await page.screenshot({path:`/tmp/smarti-registration-${width}-${theme}.png`,fullPage:true});
