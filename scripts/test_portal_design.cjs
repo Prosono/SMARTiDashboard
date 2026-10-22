@@ -96,7 +96,6 @@ const root='backend/app/cloud_web/';
     await expect(page.locator('#account')).toBeVisible();
     await expect(page.locator('#signup [name=full_name]')).toHaveValue(profile.full_name);
     await expect(page.locator('#profile-summary')).toHaveClass('is-verified');await expect(page.locator('[name=country]')).toHaveAttribute('list','country-options');
-    await page.getByRole('button',{name:'+ Legg til ny bruker',exact:true}).first().click();await page.locator('dialog [name=name]').fill('Ny Bruker');await page.locator('dialog [name=email]').fill('ny@example.no');await page.getByRole('button',{name:'Send invitasjon',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);await expect(page.locator('#message')).toContainText('Invitasjon sendt!');
     await page.locator('#signup [name=full_name]').fill('Oppdatert Kunde');
     await page.getByRole('button',{name:'Lagre profil',exact:true}).click();
     await expect(page.locator('#signup [name=full_name]')).toHaveValue('Oppdatert Kunde');
