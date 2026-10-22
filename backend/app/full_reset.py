@@ -25,8 +25,9 @@ from .remote_access import CLOUD_ORIGIN
 from .reset_credentials import public_key, unseal
 from .system_operations import Supervisor
 
-NORMAL_CONFIG = "default_config:\nautomation: !include automations.yaml\nscript: !include scripts.yaml\nscene: !include scenes.yaml\n"
-ISOLATED_CONFIG = NORMAL_CONFIG + "http:\n  server_host: [127.0.0.1, 172.30.32.1]\n  server_port: 8123\n"
+BASE_CONFIG = "default_config:\nautomation: !include automations.yaml\nscript: !include scripts.yaml\nscene: !include scenes.yaml\n"
+NORMAL_CONFIG = BASE_CONFIG + "http:\n  server_port: 8123\n"
+ISOLATED_CONFIG = BASE_CONFIG + "http:\n  server_host: [127.0.0.1, 172.30.32.1]\n  server_port: 8123\n"
 
 
 class FullReset:
@@ -224,6 +225,22 @@ class FullReset:
         os.replace(pending, path)
         _sync_directory(path.parent)
 
+    async def configure_reset_http(self, content):
+        """Reimport managed HTTP settings on the next boot, with Core stopped.
+
+        HA 2026.10 migrates YAML only once into .storage/http. Keeping that
+        store would ignore later bind/port changes (or replay a pending trial).
+        Only the reset flow owns this configuration; normal operation does not.
+        """
+        await self.assert_stopped()
+        storage = self.root / ".storage"
+        http_store = storage / "http"
+        if storage.is_symlink() or http_store.is_symlink():
+            raise AuthResetError("ha_storage_symlink")
+        self.replace(self.root / "configuration.yaml", content)
+        http_store.unlink(missing_ok=True)
+        _sync_directory(storage)
+
     async def execute(self, report=None, ownership="keep_owner", production=False):
         try:
             return await self._execute(report, ownership, production)
@@ -277,7 +294,7 @@ class FullReset:
         await self.supervisor.request("POST", "/core/stop")
         self.stopped = True
         await self.assert_stopped()
-        self.replace(self.root / "configuration.yaml", ISOLATED_CONFIG)
+        await self.configure_reset_http(ISOLATED_CONFIG)
         state["phase"] = "erasing"
         self.save(state)
         await OfflineAuthReset(
@@ -360,6 +377,10 @@ class FullReset:
         """Create an owner while HA is inaccessible from the LAN."""
         if (self.root / "configuration.yaml").read_text() != ISOLATED_CONFIG:
             raise AuthResetError("ha_isolation_config_changed")
+        await self.supervisor.request("POST", "/core/options", {"boot": False, "watchdog": False})
+        await self.supervisor.request("POST", "/core/stop")
+        self.stopped = True
+        await self.configure_reset_http(ISOLATED_CONFIG)
         await self.supervisor.request("POST", "/core/start")
         self.stopped = False
         async with httpx.AsyncClient(
@@ -413,7 +434,7 @@ class FullReset:
         self.replace(storage / "auth", json.dumps(docs["auth"]))
         state["recovery_user"] = owner["id"]
         self.save(state)
-        self.replace(self.root / "configuration.yaml", NORMAL_CONFIG)
+        await self.configure_reset_http(NORMAL_CONFIG)
         await self.supervisor.request("POST", "/core/options", {"boot": True, "watchdog": False})
         await self.supervisor.request("POST", "/core/start")
         self.stopped = False
@@ -425,7 +446,7 @@ class FullReset:
         await self.supervisor.request("POST", "/core/stop")
         self.stopped = True
         await self.assert_stopped()
-        self.replace(self.root / "configuration.yaml", ISOLATED_CONFIG)
+        await self.configure_reset_http(ISOLATED_CONFIG)
         journal = self.settings.data_dir / ("recovery-" + state["id"])
         if (journal / "accounts-cleared").exists():
             # A crash after the durable removal but before save is safe to resume
@@ -509,7 +530,7 @@ class FullReset:
         await self.supervisor.request("POST", "/core/stop")
         self.stopped = True
         await self.assert_stopped()
-        self.replace(self.root / "configuration.yaml", NORMAL_CONFIG)
+        await self.configure_reset_http(NORMAL_CONFIG)
         await self.supervisor.request("POST", "/core/start")
         await self.supervisor.request(
             "POST", "/core/options", {"boot": state["boot"], "watchdog": state["watchdog"]}

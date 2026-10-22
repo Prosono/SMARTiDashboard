@@ -1,3 +1,8 @@
+## 1.36.1
+
+- Behold Home Assistant-port 8123 gjennom fabrikktilbakestilling og nytt oppsett.
+- Nullstill lagrede HTTP-innstillinger under tilbakestilling mens Home Assistant er stoppet, slik at port og skjermet tilgang brukes riktig ved neste oppstart.
+
 ## 1.36.0
 
 - Ny energiveileder med nettselskap, prisområde, strømavtale, støtteordning og målere per hjem.

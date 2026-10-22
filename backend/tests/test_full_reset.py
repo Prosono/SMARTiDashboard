@@ -476,7 +476,9 @@ async def test_recovery_removal_failure_does_not_create_real_owner(tmp_path, mon
 @pytest.mark.asyncio
 @pytest.mark.parametrize("phase", ["creating_owner", "failed"])
 @pytest.mark.parametrize("existing", ["empty", "owner", "orphan", "schema"])
-async def test_interrupted_owner_creation_resumes_only_proven_empty_storage(tmp_path, monkeypatch, existing, phase):
+async def test_interrupted_owner_creation_resumes_only_proven_empty_storage(
+    tmp_path, monkeypatch, existing, phase
+):
     reset, _, supervisor = setup_reset(tmp_path)
 
     async def refused(*a, **k):
@@ -525,3 +527,66 @@ async def test_interrupted_owner_creation_resumes_only_proven_empty_storage(tmp_
         assert reset.state()["phase"] == phase
         assert {p.name: p.read_bytes() for p in storage.iterdir() if p.is_file()} == original
         assert supervisor.info["boot"] is False
+
+
+@pytest.mark.asyncio
+async def test_reset_keeps_8123_and_reimports_http_at_every_access_transition(tmp_path, monkeypatch):
+    """Model HA's one-time YAML import: an existing store overrides new YAML."""
+    import yaml
+
+    reset, _, supervisor = setup_reset(tmp_path)
+    storage = reset.root / ".storage" / "http"
+    storage.write_text(json.dumps({"server_port": 80, "server_host": ["0.0.0.0"]}))
+    starts = []
+    request = supervisor.request
+
+    async def ha_request(method, path, data=None):
+        if path == "/core/start":
+            if storage.exists():
+                config = json.loads(storage.read_text())
+            else:
+                config = yaml.load(
+                    (reset.root / "configuration.yaml").read_text(), Loader=yaml.BaseLoader
+                ).get("http", {"server_port": 80})
+                storage.write_text(json.dumps(config))
+            starts.append(config)
+        return await request(method, path, data)
+
+    async def refused(*args, **kwargs):
+        raise ConnectionRefusedError()
+
+    supervisor.request = ha_request
+    monkeypatch.setattr("asyncio.open_connection", refused)
+    await reset.execute()
+    reset.host_boot_id = lambda: "boot-two"
+    await reset.resume_reboot()
+    state = reset.state()
+    key = x25519.X25519PrivateKey.from_private_bytes(reset.key_path.read_bytes())
+    await reset.bootstrap(
+        {
+            "reset_id": state["id"],
+            "username": "newowner",
+            "ha_credentials": seal(public_key(key), state["id"], "newowner", "A new password 123"),
+        }
+    )
+    assert len(starts) == 4
+    assert all(int(config["server_port"]) == 8123 for config in starts)
+    assert [config.get("server_host") for config in starts] == [
+        ["127.0.0.1", "172.30.32.1"],
+        None,
+        ["127.0.0.1", "172.30.32.1"],
+        None,
+    ]
+    assert reset.state()["phase"] == "completed"
+
+
+@pytest.mark.asyncio
+async def test_reset_http_does_not_modify_storage_without_confirmed_stop(tmp_path):
+    reset, _, _ = setup_reset(tmp_path)
+    storage = reset.root / ".storage" / "http"
+    storage.write_text("keep")
+    original = (reset.root / "configuration.yaml").read_text()
+    with pytest.raises(AuthResetError, match="ha_stop_unconfirmed"):
+        await reset.configure_reset_http(NORMAL_CONFIG)
+    assert storage.read_text() == "keep"
+    assert (reset.root / "configuration.yaml").read_text() == original
