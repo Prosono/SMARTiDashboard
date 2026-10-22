@@ -152,7 +152,15 @@ const root='backend/app/cloud_web/';
   if(logo.y<79)throw Error('Logo overlaps iPhone status area');
   await page.screenshot({path:`/tmp/smarti-safe-area-${loggedIn?'home':'login'}.png`,fullPage:true});
  }
- signedIn=false;await page.goto('https://home.smarti.dev/account?create=1');
+ signedIn=false;
+ for(const width of [390,1440]){await page.setViewportSize({width,height:900});await page.goto('https://home.smarti.dev/account');
+   await expect(page.locator('#login')).toBeVisible();
+   await expect(page.locator('#login button[type=submit]')).toHaveCSS('background-color','rgb(255, 121, 0)');
+   const button=await page.locator('#login button[type=submit]').boundingBox(),forgot=await page.locator('#login a[href="/forgot-password"]').boundingBox();
+   if(forgot.y<button.y+button.height)throw Error('Recovery link overlaps login button');
+   await page.screenshot({path:`/tmp/smarti-account-login-${width}.png`,fullPage:true});
+ }
+ await page.goto('https://home.smarti.dev/account?create=1');
  await expect(page.locator('#signup')).toBeVisible();await expect(page.locator('#login')).toBeHidden();
  await expect(page.locator('#signup [name=email]')).toBeVisible();
  await expect(page.locator('[name=terms_accepted]')).not.toBeChecked();
