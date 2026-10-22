@@ -50,6 +50,7 @@ def rig(tmp_path):
     )
 
     def handler(request):
+        assert request.headers["accept"] == "application/json"
         # The UI redirects requests without the canonical trailing slash.
         # Never follow arbitrary redirects while sending security keys.
         if request.url.path == "/api/settings":

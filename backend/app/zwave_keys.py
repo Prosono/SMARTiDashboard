@@ -107,6 +107,7 @@ class ZWaveKeys:
         self.diagnostic_stage = "settings_read"
         async with httpx.AsyncClient(
             base_url=f"http://{host}:44920",
+            headers={"Accept": "application/json"},
             timeout=30,
             trust_env=False,
             follow_redirects=False,

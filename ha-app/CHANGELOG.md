@@ -1,3 +1,7 @@
+## 1.35.96
+
+- Explicitly request JSON from Z-Wave JS UI so its web-page fallback cannot intercept setup requests.
+
 ## 1.35.95
 
 - Use the canonical Z-Wave JS UI settings endpoint so production key rotation is not blocked by its trailing-slash redirect.
