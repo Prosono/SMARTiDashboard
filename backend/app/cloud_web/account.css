@@ -80,3 +80,12 @@ body.account-page:not(.registration-page) #auth>details[open]>summary:after{cont
  html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page #auth>p,html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page #login{margin-left:auto;margin-right:auto}
  html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page #auth>details>summary{margin-left:auto;margin-right:auto}
 }
+
+@media(min-width:701px){
+ html[data-customer-portal][data-portal-session="authenticated"] body.account-page main.intro{
+  width:calc(100% - var(--workspace-sidebar));
+  max-width:1050px;
+  margin-left:calc(var(--workspace-sidebar) + max(0px, (100% - var(--workspace-sidebar) - 1050px) / 2));
+  margin-right:auto;
+ }
+}
