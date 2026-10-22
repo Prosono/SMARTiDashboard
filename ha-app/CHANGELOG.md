@@ -1,3 +1,7 @@
+## 1.35.91
+
+- Ryddigere innstillingsmeny på mobil med to faste kolonner, store trykkflater og tydelig valgt kategori.
+
 ## 1.35.90
 
 - Ny innstillingsside med bildeheader, visuelle visningsnivåer, ikonfaner og tydeligere systemkort.

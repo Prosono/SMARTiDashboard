@@ -50,3 +50,13 @@
 .settings-overview .hub-readings .section-heading{gap:10px;flex-wrap:wrap}
 @media(max-width:600px){.settings-overview .hub-product{display:grid}.settings-overview .hub-readings .system-metrics{grid-template-columns:1fr}.settings-overview .hub-readings .system-metrics article{min-height:170px}.settings-overview .hub-readings .system-metrics h3{font-size:15px}}
 @media(min-width:901px){.settings-overview .settings-category-system>.hub-overview{grid-column:2;grid-row:2/span 2}.settings-overview .settings-category-system>.settings-panel:not(.settings-remote){grid-column:1;grid-row:3}}
+/* Stable mobile category grid: selection must never change an item's width. */
+@media(max-width:600px){
+ .settings-overview .settings-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:8px;overflow:visible}
+ .settings-overview .settings-sections button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;width:100%;min-width:0;min-height:78px;margin:0;padding:10px 6px;white-space:normal;overflow-wrap:anywhere;line-height:1.35;font-size:13px;text-align:center;background:var(--soft);border:1px solid transparent;grid-column:auto}
+ .settings-overview .settings-sections button svg{flex-shrink:0;width:21px;height:21px}
+ .settings-overview .settings-sections button.selected{background:color-mix(in srgb,var(--orange) 12%,var(--surface));color:var(--text);border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange)}
+ .settings-overview .settings-sections button.selected svg{color:var(--accent)}
+ .settings-overview .settings-sections button:only-child{grid-column:1/-1}
+ .settings-overview .settings-sections button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+}
