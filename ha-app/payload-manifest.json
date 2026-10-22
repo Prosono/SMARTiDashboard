@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "6a282207932105725b19e1be49ce6091f4344149ad5079427c226de535b5da1e",
+  "bundle_sha256": "df6b6e88107f7919da029dc316d04d317ce737f05e978d625848ab4f4a6223dd",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/access.py": "c1fb8be81ea171fb93038d76e752cdbdd0782ad94f509841c8521a527ebd6be2",
@@ -23,8 +23,8 @@
     "backend/app/cloud_support.py": "10a9f3f8f5841779d8a366f2c95ce91c6f60f4b060ec3fea9b84217caefa5978",
     "backend/app/cloud_web/Bai-Jamjuree-OFL.txt": "74b7deafa632a5ed301dc322fcc2867ac200402e06b6d0b0b01faf09b8514e3e",
     "backend/app/cloud_web/account.css": "9cb6e227c36f216985ca8ec992406e2b899ec466b55d6cc8f864c1302aa2c877",
-    "backend/app/cloud_web/account.html": "f6ccca1b25f0ca1dfb53ae33df5e8856504446caea50cc15551274ef4e8b2e17",
-    "backend/app/cloud_web/account.js": "9ca9e3941403ea9583e20e53d75fcecc236c9ea60c9bd251e2fb1df0445f107d",
+    "backend/app/cloud_web/account.html": "5354c0de08ccd73415d8e9acabf28269d1392fc0ac52bd9d31549d61a26955f2",
+    "backend/app/cloud_web/account.js": "6113927871943368e915f6de819c08095b4d02a589738f3fa3c402b389c05d06",
     "backend/app/cloud_web/admin.css": "703e279c87f03073af034b8c168a31eec35eab5adb64ef679c337fcab352c141",
     "backend/app/cloud_web/admin.html": "aae7bcaeb6b6268a272926f828edcb717f92182a942fe332a468ba4609256b27",
     "backend/app/cloud_web/admin.js": "a3098af9d6696c4419c043f659d5b961e419bc7e38c938af4f128fa7383118c7",
@@ -237,8 +237,8 @@
     "backend/app/cloud_support.py": "10a9f3f8f5841779d8a366f2c95ce91c6f60f4b060ec3fea9b84217caefa5978",
     "backend/app/cloud_web/Bai-Jamjuree-OFL.txt": "74b7deafa632a5ed301dc322fcc2867ac200402e06b6d0b0b01faf09b8514e3e",
     "backend/app/cloud_web/account.css": "9cb6e227c36f216985ca8ec992406e2b899ec466b55d6cc8f864c1302aa2c877",
-    "backend/app/cloud_web/account.html": "f6ccca1b25f0ca1dfb53ae33df5e8856504446caea50cc15551274ef4e8b2e17",
-    "backend/app/cloud_web/account.js": "9ca9e3941403ea9583e20e53d75fcecc236c9ea60c9bd251e2fb1df0445f107d",
+    "backend/app/cloud_web/account.html": "5354c0de08ccd73415d8e9acabf28269d1392fc0ac52bd9d31549d61a26955f2",
+    "backend/app/cloud_web/account.js": "6113927871943368e915f6de819c08095b4d02a589738f3fa3c402b389c05d06",
     "backend/app/cloud_web/admin.css": "703e279c87f03073af034b8c168a31eec35eab5adb64ef679c337fcab352c141",
     "backend/app/cloud_web/admin.html": "aae7bcaeb6b6268a272926f828edcb717f92182a942fe332a468ba4609256b27",
     "backend/app/cloud_web/admin.js": "a3098af9d6696c4419c043f659d5b961e419bc7e38c938af4f128fa7383118c7",
