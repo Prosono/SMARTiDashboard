@@ -163,5 +163,13 @@ const root='backend/app/cloud_web/';
  await page.locator('[name=password_confirmation]').fill('a long test password');
  await expect(page.locator('[data-match]')).toHaveText('✓ Passordene er like');
  await page.screenshot({path:'/tmp/smarti-registration.png',fullPage:true});
+ for(const width of [390,1440]){await page.setViewportSize({width,height:900});
+   for(const theme of ['light','dark']){await page.evaluate(t=>document.documentElement.dataset.portalTheme=t,theme);
+     const first=await page.locator('#signup [name=password]').boundingBox(),second=await page.locator('[name=password_confirmation]').boundingBox();
+     if(Math.abs(first.width-second.width)>2)throw Error('Password widths differ');
+     if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Registration overflow');
+     await page.screenshot({path:`/tmp/smarti-registration-${width}-${theme}.png`,fullPage:true});
+   }
+ }
  if(errors.length)throw Error(errors.join('\n'));await browser.close();console.log('PASS: login, home actions, admin detail/log and seven responsive portal routes at 390/768/1440px');
 })().catch(e=>{console.error(e);process.exit(1)});

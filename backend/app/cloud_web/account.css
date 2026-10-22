@@ -1,0 +1,50 @@
+/* Account forms share a bounded reading width, independent of screen size. */
+body.account-page main.intro{max-width:1050px;box-sizing:border-box;margin-right:auto;padding-top:48px;padding-bottom:48px}
+body.account-page main>h1{font-size:clamp(28px,3vw,40px);line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
+body.account-page .account-intro{max-width:620px;font-size:16px;line-height:1.6;margin-bottom:28px}
+body.registration-page #auth>p,body.registration-page #auth>details>summary{display:none}
+body.account-page #signup{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;margin:0;max-width:none}
+body.account-page #signup .profile-fields{border:0;padding:0;margin:0}
+body.account-page #signup .profile-section{grid-template-columns:1fr;gap:18px;padding:24px 0}
+body.account-page #signup .profile-section h2{font-size:18px;letter-spacing:-.015em}
+body.account-page #signup .profile-controls{grid-template-columns:1fr 1fr;gap:18px}
+body.account-page #signup label{font-size:14px;font-weight:500}
+body.account-page #signup input:not([type=checkbox]):not([type=file]){min-height:48px;font-size:16px;border-radius:8px;width:100%;box-sizing:border-box}
+body.account-page #signup .photo-picker{padding-bottom:24px;gap:12px}
+body.account-page #signup .photo-picker:before,body.account-page #signup .photo-picker img{width:56px;height:56px}
+body.account-page #signup .photo-button{font-size:13px;padding:10px 14px}
+#signup .registration-options{border:0;border-top:1px solid var(--line);padding:24px 0 0;margin:0;min-width:0}
+#signup .registration-options legend{font-size:18px;font-weight:600;padding:0 0 16px;float:left;width:100%}
+#signup .registration-passwords{clear:both;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+#signup .registration-passwords>label{display:block!important;margin:0!important;min-width:0}
+#signup .registration-passwords .password-field{display:block;width:100%;margin-top:8px}
+#signup .registration-passwords input{width:100%;min-height:48px;font-size:16px;box-sizing:border-box}
+#signup .password-checks{display:flex;flex-wrap:wrap;gap:8px 20px;padding:14px 0;margin:0;font-size:13px}
+#signup .password-checks .met{color:light-dark(#23734b,#79dca5)}
+#signup .consent-choice,#signup .marketing-choice{padding:14px 0;margin:0!important;font-size:14px;font-weight:400;line-height:1.6;min-height:44px;cursor:pointer}
+#signup .marketing-choice{border-bottom:1px solid var(--line);margin-bottom:22px!important}
+#signup input[type=checkbox]{accent-color:#ff7900}
+body.account-page #signup>button[type=submit]{min-height:48px;padding:12px 28px;margin-top:0;display:block;margin-left:auto;font-size:16px}
+.registration-login{display:block;text-align:center;padding:22px;font-size:14px;color:var(--muted)}
+body.account-page .registration-options[hidden]{display:none}
+@media(max-width:700px){
+ body.account-page main.intro{padding:24px 16px 32px!important}
+ body.account-page #signup{padding:20px 16px;border-radius:14px}
+ body.account-page #signup .profile-section{padding:22px 0;gap:16px}
+ body.account-page #signup .profile-controls{gap:16px;grid-template-columns:1fr 1fr}
+ body.account-page #signup .profile-controls>label{grid-column:1/-1}
+ body.account-page #signup .profile-controls>label:has([name=postal_code]),body.account-page #signup .profile-controls>label:has([name=city]){grid-column:auto}
+ #signup .registration-passwords{grid-template-columns:1fr;gap:18px}
+ #signup .password-checks{display:grid;gap:6px}
+ body.account-page #signup>button[type=submit]{width:100%}
+ body.account-page #signup .photo-picker{display:grid;grid-template-columns:56px 1fr 1fr}
+ body.account-page #signup .photo-picker>span{grid-column:2/-1;grid-row:1;margin:0;order:0}
+ body.account-page #signup .photo-picker .photo-button{grid-row:2;text-align:center;padding:10px 8px}
+ body.account-page #signup .photo-picker .photo-button:first-of-type{grid-column:1/3}
+ body.account-page #signup .photo-picker .photo-button:nth-of-type(2){grid-column:3}
+}
+#signup .consent-choice>span,#signup .marketing-choice>span{font-weight:400}
+@media(max-width:700px){
+ body.account-page #signup .photo-picker:before,body.account-page #signup .photo-picker img{grid-column:1;grid-row:1}
+ body.account-page #signup .photo-picker #photo-status,body.account-page #signup .photo-picker #photo-remove{grid-column:1/-1}
+}
