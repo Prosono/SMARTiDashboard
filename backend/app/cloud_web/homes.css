@@ -52,3 +52,5 @@ html[data-customer-portal] .home-page .home-add-card{min-height:380px;align-self
 .home-add-card h2{font-size:23px;margin:4px 0 10px}.home-add-card p{max-width:30ch;font-size:14px;color:var(--muted);margin:0;line-height:1.5}
 .home-add-card:hover{border-color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 7%,var(--surface))!important}
 @media(max-width:700px){.home-quick-actions{margin:8px}.home-quick-actions button{font-size:12px}html[data-customer-portal] .home-page .home-add-card{min-height:280px;padding:24px}.home-add-card>img{height:110px}}
+
+.home-photo-dialog{width:min(520px,calc(100vw - 32px))}.home-photo-preview{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:12px}.home-photo-hint{font-size:14px;line-height:1.5;color:var(--muted)}.home-photo-actions{display:flex;flex-wrap:wrap;gap:10px}.home-photo-actions button{min-height:46px;flex:1 1 130px;padding:12px;font-size:14px}.home-photo-actions button[hidden]{display:none}
