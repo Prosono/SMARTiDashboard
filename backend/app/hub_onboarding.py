@@ -146,7 +146,10 @@ class HubOnboarding:
                 async with asyncio.timeout(120):
                     while not self.ha.connected:
                         await asyncio.sleep(2)
-            except (AuthResetError, HTTPException, httpx.HTTPError, OSError, ValueError, TimeoutError):
+            except (AuthResetError, HTTPException, httpx.HTTPError, OSError, ValueError, TimeoutError) as exc:
+                # AuthResetError contains only our credential-free diagnostic code.
+                detail = str(exc) if isinstance(exc, AuthResetError) else type(exc).__name__
+                log.warning("HA owner setup failed (%s)", detail)
                 await self.progress(plan, "failed", "checking", "setup_failed")
                 return
         if not self.ha.connected:

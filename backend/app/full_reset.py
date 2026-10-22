@@ -437,7 +437,18 @@ class FullReset:
         state = self.state()
         if not state or state["phase"] == "completed":
             return
-        if state["phase"] not in {"awaiting_owner", "creating_owner", "owner_created"}:
+        # Older startup code marked an interrupted owner POST as failed. The
+        # durable recovery-removal marker proves this had reached onboarding,
+        # rather than failing partway through erasing the home.
+        interrupted_owner = (
+            state["phase"] == "failed"
+            and not state.get("recovery_user")
+            and (self.settings.data_dir / ("recovery-" + state["id"]) / "accounts-cleared").is_file()
+        )
+        if (
+            state["phase"] not in {"awaiting_owner", "creating_owner", "owner_created"}
+            and not interrupted_owner
+        ):
             raise AuthResetError("reset_requires_recovery")
         if plan.get("reset_id") != state["id"] or not plan.get("ha_credentials"):
             raise AuthResetError("reset_plan_mismatch")
@@ -445,7 +456,7 @@ class FullReset:
         credentials = unseal(private, state["id"], plan["ha_credentials"])
         if credentials["username"] != plan["username"]:
             raise AuthResetError("reset_plan_mismatch")
-        if state["phase"] == "creating_owner":
+        if state["phase"] == "creating_owner" or interrupted_owner:
             # A failed response is ambiguous. Resume only after stopping Core and
             # proving that no human account, password or completed user step exists.
             if (self.root / "configuration.yaml").read_text() != ISOLATED_CONFIG:

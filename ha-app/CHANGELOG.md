@@ -1,3 +1,8 @@
+# 1.35.93
+
+- Preserve interrupted owner setup across app restarts and recover legacy interrupted states only with verified empty HA accounts and a completed recovery-removal journal.
+- Log credential-free owner setup error codes.
+
 # 1.35.92
 
 - Normalize Home Assistant owner usernames during setup.

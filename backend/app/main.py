@@ -143,7 +143,7 @@ def create_app(
 
         reset_coordinator = FullReset(settings, store)
         interrupted_reset = reset_coordinator.state()
-        if interrupted_reset and interrupted_reset["phase"] in {"preparing", "erasing", "creating_owner"}:
+        if interrupted_reset and interrupted_reset["phase"] in {"preparing", "erasing"}:
             interrupted_reset["phase"] = "failed"
             reset_coordinator.save(interrupted_reset)
         task = asyncio.create_task(ha.run())

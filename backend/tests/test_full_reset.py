@@ -474,8 +474,9 @@ async def test_recovery_removal_failure_does_not_create_real_owner(tmp_path, mon
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("phase", ["creating_owner", "failed"])
 @pytest.mark.parametrize("existing", ["empty", "owner", "orphan", "schema"])
-async def test_interrupted_owner_creation_resumes_only_proven_empty_storage(tmp_path, monkeypatch, existing):
+async def test_interrupted_owner_creation_resumes_only_proven_empty_storage(tmp_path, monkeypatch, existing, phase):
     reset, _, supervisor = setup_reset(tmp_path)
 
     async def refused(*a, **k):
@@ -487,7 +488,7 @@ async def test_interrupted_owner_creation_resumes_only_proven_empty_storage(tmp_
     await reset.resume_reboot()
     state = reset.state()
     await reset.remove_recovery_owner(state)
-    state["phase"] = "creating_owner"
+    state["phase"] = phase
     reset.save(state)
     storage = reset.root / ".storage"
     if existing == "owner":
@@ -521,6 +522,6 @@ async def test_interrupted_owner_creation_resumes_only_proven_empty_storage(tmp_
         with pytest.raises(AuthResetError):
             await reset.bootstrap(plan)
         assert len(reset.owner_requests) == posts
-        assert reset.state()["phase"] == "creating_owner"
+        assert reset.state()["phase"] == phase
         assert {p.name: p.read_bytes() for p in storage.iterdir() if p.is_file()} == original
         assert supervisor.info["boot"] is False
