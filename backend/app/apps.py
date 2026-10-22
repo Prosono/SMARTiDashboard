@@ -1,4 +1,4 @@
-"""Administrator app management. Fixed Supervisor routes; never manage ourselves."""
+"""Administrator app management. Fixed Supervisor routes; self-management is update-only."""
 
 import asyncio
 import hashlib
@@ -128,6 +128,20 @@ def apps_router(m, admin, settings):
             merged[slug] = {**merged.get(slug, {}), **item}
         return [view(a, slug in installed) for slug, a in merged.items() if not protected(a, own)]
 
+    @router.get("/self-update")
+    async def self_update_info():
+        info = await supervisor.request("GET", "/addons/self/info")
+        if not info.get("slug"):
+            raise HTTPException(503, "app_identity_unavailable")
+        return view(info, True)
+
+    @router.post("/self-update")
+    async def self_update(body: AppAction, current=Depends(admin)):
+        slug = await own_slug()
+        if body.action != "update":
+            raise HTTPException(422, "self_update_only")
+        return await execute(slug, body, current, self_update=True)
+
     @router.get("/radio-ui/{provider}")
     async def radio_ui(provider: Literal["zigbee2mqtt", "zwave_js"]):
         own = await own_slug()
@@ -228,7 +242,11 @@ def apps_router(m, admin, settings):
 
     @router.post("/{slug}/actions")
     async def action(slug: str, body: AppAction, current=Depends(admin)):
-        valid_slug(slug)
+        return await execute(slug, body, current)
+
+    async def execute(slug, body, current, self_update=False):
+        if not self_update:
+            valid_slug(slug)
         if body.confirm_slug != slug:
             raise HTTPException(422, "confirmation_required")
         key = "app_operation:" + str(body.request_id)
@@ -238,7 +256,13 @@ def apps_router(m, admin, settings):
                 if old["owner"] != current["id"] or old["slug"] != slug or old["action"] != body.action:
                     raise HTTPException(409, "operation_conflict")
                 return old
-            info = await target(slug, body.action == "install")
+            info = (
+                (await supervisor.request("GET", "/addons/self/info"))
+                if self_update
+                else await target(slug, body.action == "install")
+            )
+            if self_update and info.get("slug") != slug:
+                raise HTTPException(409, "app_identity_changed")
             if body.action == "install" and info.get("installed"):
                 raise HTTPException(409, "already_installed")
             if body.action == "uninstall" and info.get("system_managed"):

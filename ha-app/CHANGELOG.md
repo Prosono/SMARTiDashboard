@@ -1,3 +1,8 @@
+## 1.35.89
+
+- Oppdater SMARTi direkte under Oppdateringer: versjonskontroll, oppfrisking av appkilder og bekreftet installasjon med valgfri sikkerhetskopi.
+- Egen oppdatering er kun tilgjengelig for administrator. Stopp og avinstallering av SMARTi er fortsatt sperret.
+
 ## 1.35.88
 
 - Legger til SMARTi-ikonet i Home Assistants appbutikk og liste over installerte apper.

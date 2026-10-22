@@ -1,3 +1,4 @@
+import { SelfUpdate } from "./SelfUpdate";
 import { DiscoveredDevices } from "./DiscoveredDevices";
 import { IntegrationLogo } from "./IntegrationLogo";
 import { IntegrationSetup } from "./IntegrationSetup";
@@ -417,6 +418,7 @@ export function Updates({ lang }: { lang: string }) {
           )}
         </p>
       </div>
+      <SelfUpdate lang={lang} />
       <Feedback message={w.message} />
       {q.isError && <LoadError lang={lang} retry={() => void q.refetch()} />}
       {q.isPending && <p>{t("Henter oppdateringer …", "Loading updates …")}</p>}
@@ -542,8 +544,8 @@ export function Updates({ lang }: { lang: string }) {
       {available?.length === 0 && (
         <p className="empty">
           {t(
-            "Alt er oppdatert. Ingen tilgjengelige oppdateringer.",
-            "Everything is up to date. No updates available.",
+            "Ingen andre tilgjengelige oppdateringer.",
+            "No other updates available.",
           )}
         </p>
       )}

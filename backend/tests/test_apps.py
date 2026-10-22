@@ -27,7 +27,7 @@ def supervisor(monkeypatch):
     async def request(self, method, path, data=None):
         calls.append((method, path, data))
         if path == "/addons/self/info":
-            return {"slug": state["own"]}
+            return {**info, "slug": state["own"]}
         if path == "/addons":
             return {
                 "addons": [
@@ -156,6 +156,8 @@ def test_options_validation_uninstall_and_access(client, supervisor):  # noqa: F
     client.post("/api/logout")
     login(client, "resident", "another long password")
     assert client.get("/api/manage/apps").status_code == 403
+    assert client.get("/api/manage/apps/self-update").status_code == 403
+    assert client.post("/api/manage/apps/self-update", json=body("renamed_instance", "update")).status_code == 403
     assert client.post("/api/manage/apps/core_test/actions", json=body()).status_code == 403
 
 
@@ -172,9 +174,10 @@ def test_app_images_fixed_routes_bounded_raster_and_self_protection(client, supe
     from types import SimpleNamespace
 
     import httpx
-    from app.apps import apps_router
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+
+    from app.apps import apps_router
 
     _, info, _ = supervisor
     info.update(icon=True, logo=True)
@@ -263,3 +266,27 @@ def test_radio_ui_only_returns_running_ingress_targets(client, monkeypatch):  # 
     client.post("/api/logout")
     login(client, "viewer", "another long password")
     assert client.get(base + "zigbee2mqtt").status_code == 403
+
+
+def test_self_update_only_and_idempotence(client, supervisor):  # noqa: F811
+    calls, info, state = supervisor
+    result = client.get("/api/manage/apps/self-update")
+    assert result.status_code == 200
+    assert result.json()["update_available"] is True
+    assert "do-not-log" not in result.text
+    for action in ["stop", "restart", "uninstall", "install", "start"]:
+        assert client.post("/api/manage/apps/self-update", json=body(state["own"], action)).status_code == 422
+    assert not any(method == "POST" for method, _, _ in calls)
+    assert client.post("/api/manage/apps/self-update", json=body("other", "update")).status_code == 422
+    request = body(state["own"], "update")
+    assert client.post("/api/manage/apps/self-update", json=request).json()["status"] == "accepted"
+    assert client.post("/api/manage/apps/self-update", json=request).json()["status"] == "accepted"
+    writes = [(path, data) for method, path, data in calls if method == "POST"]
+    assert writes == [("/store/addons/renamed_instance/update", {"background": True, "backup": True})]
+
+
+def test_self_update_no_update(client, supervisor):  # noqa: F811
+    calls, info, state = supervisor
+    info["update_available"] = False
+    assert client.post("/api/manage/apps/self-update", json=body(state["own"], "update")).status_code == 409
+    assert not any(method == "POST" for method, _, _ in calls)
