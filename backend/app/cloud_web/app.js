@@ -42,7 +42,15 @@ async function showHomes() {
     title.textContent=home.name; detail.className="connection-state";
     detail.textContent=home.remote_enabled ? (home.connected ? "Tilkoblet · klart til å åpnes" : "Venter på tilkobling fra huben") : "Fjerntilgang er slått av";
     if(home.verification_required)detail.textContent="Bekreft e-postadressen din for å åpne hjemmet.";
-    card.append(title,detail);
+    const visual=document.createElement("div");visual.className="home-visual";
+    const photo=document.createElement("img");photo.src="/assets/portal-home.webp";photo.alt="";photo.loading="lazy";photo.width=1200;photo.height=800;
+    const badge=document.createElement("span");badge.className="home-badge";badge.textContent=available?"Tilkoblet":"Venter på tilkobling";
+    if(!home.remote_enabled)badge.textContent="Fjerntilgang av";
+    if(home.verification_required)badge.textContent="Bekreft e-post";
+    if(home.reset_phase)badge.textContent="Nytt oppsett";
+    const caption=document.createElement("div");caption.className="home-caption";caption.append(title,detail);
+    const artwork=document.createElement("span");artwork.className="home-artwork-label";artwork.textContent="Stemningsbilde";
+    visual.append(photo,badge,caption,artwork);card.append(visual);
     if(home.reset_phase) detail.textContent=home.reset_phase==='awaiting_owner'?'Huben er tilbakestilt · klar for nytt oppsett':home.reset_phase==='rebooting'?'Huben starter på nytt · vent til den er tilbake på nett':home.reset_phase==='failed'?'Tilbakestillingen ble avbrutt · kontakt support før du starter HA':'Tilbakestilling pågår · ikke koble fra strømmen';
     if(home.reset_phase==='awaiting_owner') {
       const setup=document.createElement('a');setup.className='button primary';setup.href='/activate';setup.textContent='Skann QR-koden og sett opp på nytt →';card.append(setup);
@@ -69,8 +77,12 @@ async function showHomes() {
       const people=document.createElement("div");people.className="home-members";options.append(people);
       options.addEventListener("toggle",async()=>{if(!options.open||people.dataset.loaded)return;people.textContent="Henter brukere …";try{const members=await api("customer/homes/"+home.installation_id+"/members");people.replaceChildren();const heading=document.createElement("h3");heading.textContent="Brukere i hjemmet";people.append(heading);for(const member of members){const row=document.createElement("p");row.textContent=(member.full_name||member.username)+(member.role==="owner"?" · Eier":"");people.append(row);}const invite=document.createElement("button");invite.type="button";invite.textContent="+ Legg til ny bruker";invite.onclick=()=>window.inviteHomeMember(home,api,text=>{$("message").textContent=text;$("message").scrollIntoView({block:"center"});});people.append(invite);people.dataset.loaded="true";}catch{people.textContent="Kun eieren kan se og administrere brukere her.";}});
       card.append(options);
+      const more=document.createElement("button");more.type="button";more.className="home-more";more.textContent="•••";more.setAttribute("aria-label","Innstillinger for "+home.name);more.setAttribute("aria-expanded","false");
+      more.onclick=()=>{options.open=!options.open;if(options.open)summary.focus();};
+      options.addEventListener("toggle",()=>more.setAttribute("aria-expanded",String(options.open)));
+      visual.append(more);
     }
-    const add=document.createElement("a");add.href="/activate";add.className="mobile-add-home button";add.textContent="+ Legg til et nytt hjem";card.append(add);
+
     $("homes").append(card);
   }
 }
@@ -81,10 +93,6 @@ async function login() {
   window.scrollTo({top:0,left:0,behavior:"instant"});
 }
 $("login").onsubmit=e=>{e.preventDefault();run(login);};
-$("claim").onsubmit=e=>{e.preventDefault();run(async()=>{
-  await api("homes/claim","POST",Object.fromEntries(new FormData($("claim"))));
-  $("claim").reset(); await showHomes();
-});};
 $("logout").onclick=()=>run(async()=>{await api("logout","POST");window.webkit?.messageHandlers?.smartiSession?.postMessage("logout");csrf="";$("account").hidden=true;$("auth").hidden=false;$("login").reset();});
 async function restoreSession(){
   $("session-loading").hidden=false;$("session-retry").hidden=true;$("message").textContent="";

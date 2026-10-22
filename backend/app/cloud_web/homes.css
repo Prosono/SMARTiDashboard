@@ -1,0 +1,43 @@
+/* Photo-led customer home overview; scoped away from sign-in and staff pages. */
+html[data-customer-portal] .home-page #account{max-width:1280px;margin-inline:auto}
+html[data-customer-portal] .home-page .home-heading{position:relative;isolation:isolate;min-height:240px;padding:42px 32px!important;margin:0 0 28px!important;border:0;border-radius:20px;overflow:hidden;align-items:center;gap:28px;background:var(--surface)}
+.home-page .home-heading:before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,var(--surface) 4%,color-mix(in srgb,var(--surface) 92%,transparent) 28%,transparent 90%),url('/assets/portal-home.webp') center 47%/cover}
+html[data-customer-portal] .home-page .home-heading h1{font-size:clamp(32px,3.5vw,52px);line-height:1.08;letter-spacing:-.04em;margin:10px 0 14px}
+.home-page .home-heading p:not(.eyebrow){max-width:38ch;line-height:1.5}
+html[data-customer-portal] .home-page .home-heading>a.primary{background:#ff7900;color:#151515;border:0;box-shadow:0 4px 18px #0002;min-height:48px;align-self:center}
+html[data-customer-portal] .home-page .home-workspace{display:block}
+html[data-customer-portal] .home-page #homes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start}
+html[data-customer-portal] .home-page .home-card{display:flex;flex-direction:column;padding:8px;border:1px solid var(--line);border-radius:22px;background:var(--surface);box-shadow:0 10px 30px #00000008;overflow:hidden;min-width:0}
+html[data-customer-portal] .home-page .home-card:before,html[data-customer-portal] .home-page .home-card h2:before{display:none}
+.home-visual{position:relative;isolation:isolate;min-height:260px;display:flex;align-items:flex-end;border-radius:16px 16px 8px 8px;overflow:hidden;color:#fff;background:#262626}
+.home-visual>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.home-visual:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#00000015 20%,#000b 100%);z-index:-1}
+.home-card:nth-child(even) .home-visual>img{object-position:75% center}
+.home-caption{padding:82px 22px 30px;width:100%}
+html[data-customer-portal] .home-page .home-card h2{color:#fff;font-size:clamp(23px,2.4vw,30px);line-height:1.15;margin:0 0 10px;padding:0;letter-spacing:-.02em}
+html[data-customer-portal] .home-page .home-card .connection-state{color:#f5f5f5;font-size:13px;line-height:1.5;margin:0;display:block;max-width:40ch}
+.home-page .home-card .connection-state:before{display:none}
+.home-badge{position:absolute;top:16px;left:16px;background:#fff4df;color:#843a00;padding:8px 12px;border-radius:24px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px;max-width:calc(100% - 80px)}
+.home-badge:before{content:'';width:9px;height:9px;border-radius:50%;background:#ed7900;flex-shrink:0}
+.is-online .home-badge{background:#e5f7e9;color:#006c40}.is-online .home-badge:before{background:#008652}
+.home-artwork-label{position:absolute;right:12px;bottom:8px;font-size:9px;color:#ffffffb0}
+.home-page button.home-more{position:absolute;right:14px;top:14px;border-radius:50%;width:40px;height:40px;min-height:40px;padding:0;background:#fff;color:#171717;border:0;letter-spacing:1px}
+html[data-customer-portal] .home-page .home-card>.button{display:flex;min-height:50px;margin:16px 12px 8px;width:auto;font-size:15px;border-radius:13px;gap:12px}
+html[data-customer-portal] .home-page .home-options{margin:4px 12px 8px;padding:4px 0 0;border-top:1px solid var(--line)}
+.home-page .home-options summary{font-size:13px;cursor:pointer}
+.home-page .home-options[open]{padding-bottom:12px}
+.home-page .home-members{padding-top:8px}.home-page .home-members h3{font-size:16px}
+.home-page .account-footer{margin-top:32px}
+.home-page .section-heading h2{font-size:23px}.home-page .section-heading{margin-bottom:16px}
+@media(max-width:700px){
+ html[data-customer-portal] .home-page .home-heading{min-height:0;background:none;padding:4px 0 0!important;display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:26px!important;border-radius:0}
+ .home-page .home-heading:before{display:none}
+ html[data-customer-portal] .home-page .home-heading>a.primary{display:flex!important;width:100%;box-shadow:none;align-self:stretch;min-height:46px}
+ html[data-customer-portal] .home-page #homes{grid-template-columns:1fr;gap:20px}
+ html[data-customer-portal] .home-page .home-card{padding:6px;border-radius:18px}
+ .home-visual{min-height:210px;border-radius:13px 13px 6px 6px}.home-caption{padding:72px 16px 26px}
+ html[data-customer-portal] .home-page .home-card h2{font-size:24px}
+ html[data-customer-portal] .home-page .home-card>.button{margin:12px 8px 6px;min-height:46px}
+ html[data-customer-portal] .home-page .home-options{margin:4px 8px 6px}
+ .home-badge{left:12px;top:12px}
+}
