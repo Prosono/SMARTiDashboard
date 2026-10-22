@@ -1,5 +1,5 @@
 {
-  "bundle_sha256": "b1d562ff520f0b7e7af3ccf857cfc163d5993f62499d71de287c9527bf251cf3",
+  "bundle_sha256": "38672857ad30a16b826c0acec589d39bb2835e4c2947f2d9e07aa37be16236d7",
   "payload": {
     "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/app/access.py": "c1fb8be81ea171fb93038d76e752cdbdd0782ad94f509841c8521a527ebd6be2",
@@ -92,7 +92,7 @@
     "backend/app/factory_image.py": "2ed380e458bce94f03b362922e91c36a78dcbe76848b9cbf8b5dddb811f21a9f",
     "backend/app/factory_reset.py": "c6f747fa8066da8c7bc63f0a4fc0569fce804c5e65dae16feec6e3cc01e179be",
     "backend/app/factory_reset_provider.py": "b1417f2daa70fcd4d16f4c79ce1f36aff950c7f78996c1362396820be3647fdd",
-    "backend/app/full_reset.py": "e6710ac90ce11bb4961a4d77d81b26962452fb7e341835e3eff3739c246f169e",
+    "backend/app/full_reset.py": "2adbfbbe32eb3886374c389a5e626d27cc201cdaa4771c60002a0d0a0c5e0dc1",
     "backend/app/groups.py": "a83280ba14511cabad78a16e21b3a7bda52e62ed2173ac9008420bb5efa85358",
     "backend/app/ha.py": "8faa9b6bc0157adc0d4e57713a8c45e53afe29b0bc51534866af950d63443422",
     "backend/app/ha_auth_reset.py": "4c932f44210e9f72562ea453df5b3e3608fc4b140dfc5d27a232e21f3e0dc786",
@@ -306,7 +306,7 @@
     "backend/app/factory_image.py": "2ed380e458bce94f03b362922e91c36a78dcbe76848b9cbf8b5dddb811f21a9f",
     "backend/app/factory_reset.py": "c6f747fa8066da8c7bc63f0a4fc0569fce804c5e65dae16feec6e3cc01e179be",
     "backend/app/factory_reset_provider.py": "b1417f2daa70fcd4d16f4c79ce1f36aff950c7f78996c1362396820be3647fdd",
-    "backend/app/full_reset.py": "e6710ac90ce11bb4961a4d77d81b26962452fb7e341835e3eff3739c246f169e",
+    "backend/app/full_reset.py": "2adbfbbe32eb3886374c389a5e626d27cc201cdaa4771c60002a0d0a0c5e0dc1",
     "backend/app/groups.py": "a83280ba14511cabad78a16e21b3a7bda52e62ed2173ac9008420bb5efa85358",
     "backend/app/ha.py": "8faa9b6bc0157adc0d4e57713a8c45e53afe29b0bc51534866af950d63443422",
     "backend/app/ha_auth_reset.py": "4c932f44210e9f72562ea453df5b3e3608fc4b140dfc5d27a232e21f3e0dc786",

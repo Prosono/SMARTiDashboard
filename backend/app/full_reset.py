@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -226,19 +227,54 @@ class FullReset:
         _sync_directory(path.parent)
 
     async def configure_reset_http(self, content):
-        """Reimport managed HTTP settings on the next boot, with Core stopped.
+        """Install reset-owned HTTP settings offline, without a timed trial.
 
-        HA 2026.10 migrates YAML only once into .storage/http. Keeping that
-        store would ignore later bind/port changes (or replay a pending trial).
-        Only the reset flow owns this configuration; normal operation does not.
+        HA 2026.10 imports YAML as pending, falling back to port 80 after five
+        minutes. Seed its stable store while Core is stopped instead. Older
+        versions continue to read the explicit YAML configuration.
         """
         await self.assert_stopped()
         storage = self.root / ".storage"
         http_store = storage / "http"
         if storage.is_symlink() or http_store.is_symlink():
             raise AuthResetError("ha_storage_symlink")
+        info = await self.supervisor.request("GET", "/core/info")
+        try:
+            version = tuple(int(part) for part in info["version"].split(".")[:2])
+        except (KeyError, ValueError, AttributeError):
+            raise AuthResetError("ha_http_version_unknown") from None
+        if http_store.exists():
+            existing = json.loads(http_store.read_text())
+            if version >= (2026, 10) and (existing.get("version") != 2 or existing.get("minor_version") != 2):
+                raise AuthResetError("ha_http_storage_unsupported")
         self.replace(self.root / "configuration.yaml", content)
-        http_store.unlink(missing_ok=True)
+        if version >= (2026, 10):
+            stable = {
+                "server_port": 8123,
+                "cors_allowed_origins": ["https://cast.home-assistant.io"],
+                "ip_ban_enabled": True,
+                "login_attempts_threshold": -1,
+                "ssl_profile": "modern",
+                "use_x_frame_options": True,
+                "created_at": datetime.now(UTC).isoformat(),
+                "error": None,
+                "error_message": None,
+            }
+            if content == ISOLATED_CONFIG:
+                stable["server_host"] = ["127.0.0.1", "172.30.32.1"]
+            self.replace(
+                http_store,
+                json.dumps(
+                    {
+                        "version": 2,
+                        "minor_version": 2,
+                        "key": "http",
+                        "data": {"stable": stable, "pending": None, "yaml_migration_done": True},
+                    }
+                ),
+            )
+        else:
+            http_store.unlink(missing_ok=True)
         _sync_directory(storage)
 
     async def execute(self, report=None, ownership="keep_owner", production=False):

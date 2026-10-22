@@ -1,3 +1,8 @@
+## 1.36.2
+
+- Lagre HTTP-port 8123 som stabil konfigurasjon under restore, slik at HA ikke ruller tilbake til port 80 etter fem minutter.
+- Gjelder både skjermet opprettelse av eier og vanlig tilgang etter oppsett. Ukjent HTTP-lagringsformat stoppes før endringer.
+
 ## 1.36.1
 
 - Behold Home Assistant-port 8123 gjennom fabrikktilbakestilling og nytt oppsett.

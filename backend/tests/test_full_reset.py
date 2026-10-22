@@ -84,7 +84,14 @@ def test_cloud_reset_owner_bound_revocation_and_sealed_setup(tmp_path):
 
 class SupervisorFake:
     def __init__(self):
-        self.info = {"boot": True, "watchdog": True, "port": 8123, "ssl": False, "ip_address": "172.30.32.1"}
+        self.info = {
+            "version": "2026.10.2",
+            "boot": True,
+            "watchdog": True,
+            "port": 8123,
+            "ssl": False,
+            "ip_address": "172.30.32.1",
+        }
         self.calls = []
 
     async def request(self, method, path, data=None):
@@ -536,14 +543,26 @@ async def test_reset_keeps_8123_and_reimports_http_at_every_access_transition(tm
 
     reset, _, supervisor = setup_reset(tmp_path)
     storage = reset.root / ".storage" / "http"
-    storage.write_text(json.dumps({"server_port": 80, "server_host": ["0.0.0.0"]}))
+    storage.write_text(
+        json.dumps(
+            {
+                "version": 2,
+                "minor_version": 2,
+                "key": "http",
+                "data": {"stable": {"server_port": 80}, "pending": None, "yaml_migration_done": True},
+            }
+        )
+    )
     starts = []
     request = supervisor.request
 
     async def ha_request(method, path, data=None):
         if path == "/core/start":
             if storage.exists():
-                config = json.loads(storage.read_text())
+                document = json.loads(storage.read_text())
+                assert document["data"]["pending"] is None
+                assert document["data"]["yaml_migration_done"] is True
+                config = document["data"]["stable"]
             else:
                 config = yaml.load(
                     (reset.root / "configuration.yaml").read_text(), Loader=yaml.BaseLoader
@@ -590,3 +609,22 @@ async def test_reset_http_does_not_modify_storage_without_confirmed_stop(tmp_pat
         await reset.configure_reset_http(NORMAL_CONFIG)
     assert storage.read_text() == "keep"
     assert (reset.root / "configuration.yaml").read_text() == original
+
+
+@pytest.mark.asyncio
+async def test_reset_http_rejects_unknown_storage_schema_before_writing(tmp_path, monkeypatch):
+    reset, _, supervisor = setup_reset(tmp_path)
+    reset.stopped = True
+    supervisor.info.update(boot=False, watchdog=False)
+
+    async def refused(*args, **kwargs):
+        raise ConnectionRefusedError()
+
+    monkeypatch.setattr("asyncio.open_connection", refused)
+    storage = reset.root / ".storage" / "http"
+    storage.write_text('{"version": 3, "minor_version": 0}')
+    original = (reset.root / "configuration.yaml").read_text()
+    with pytest.raises(AuthResetError, match="ha_http_storage_unsupported"):
+        await reset.configure_reset_http(NORMAL_CONFIG)
+    assert (reset.root / "configuration.yaml").read_text() == original
+    assert json.loads(storage.read_text())["version"] == 3
