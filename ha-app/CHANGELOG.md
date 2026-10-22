@@ -1,3 +1,7 @@
+## 1.35.94
+
+- Add credential-free diagnostics for production Z-Wave key initialization.
+
 # 1.35.93
 
 - Preserve interrupted owner setup across app restarts and recover legacy interrupted states only with verified empty HA accounts and a completed recovery-removal journal.

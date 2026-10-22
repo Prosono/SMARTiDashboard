@@ -4,6 +4,7 @@ import asyncio
 import copy
 import hashlib
 import json
+import logging
 import re
 import secrets
 
@@ -14,6 +15,8 @@ from .ha import HAError
 from .production_mode import save
 from .radio_status import controller_status
 from .system_operations import Supervisor
+
+log = logging.getLogger(__name__)
 
 CLASSIC = ("S0_Legacy", "S2_Unauthenticated", "S2_Authenticated", "S2_AccessControl")
 LONG_RANGE = ("S2_Authenticated", "S2_AccessControl")
@@ -61,11 +64,17 @@ class ZWaveKeys:
         if self.store.get(checkpoint) == "ready":
             self.journal.unlink(missing_ok=True)
             return
+        self.diagnostic_stage = "controller_status"
         try:
             async with self.setup.lock:
                 if self.setup.session and self.setup.session.get("radio_open"):
                     raise HAError("zwave_keys_unavailable")
                 await self.rotate(state["id"], checkpoint)
+        except HAError:
+            log.warning(
+                "Z-Wave key setup failed at %s (controller or settings validation)", self.diagnostic_stage
+            )
+            raise
         except (
             httpx.HTTPError,
             HTTPException,
@@ -75,12 +84,14 @@ class ZWaveKeys:
             TypeError,
             AttributeError,
             TimeoutError,
-        ):
+        ) as exc:
+            log.warning("Z-Wave key setup failed at %s (%s)", self.diagnostic_stage, type(exc).__name__)
             # Do not expose responses/settings/security keys to logs or the cloud.
             raise HAError("zwave_keys_unavailable") from None
 
     async def rotate(self, reset_id, checkpoint):
         home_id = await self.network()
+        self.diagnostic_stage = "app_discovery"
         apps = (await self.supervisor.request("GET", "/addons")).get("addons", [])
         candidates = [a for a in apps if a.get("slug", "").endswith("_zwavejs2mqtt")]
         if len(candidates) != 1:
@@ -93,6 +104,7 @@ class ZWaveKeys:
         host = info.get("hostname", "")
         if host != slug.replace("_", "-") or info.get("state") != "started":
             raise HAError("zwave_keys_unavailable")
+        self.diagnostic_stage = "settings_read"
         async with httpx.AsyncClient(
             base_url=f"http://{host}:44920",
             timeout=30,
@@ -120,6 +132,7 @@ class ZWaveKeys:
                 return data["settings"]
 
             config = await read()
+            self.diagnostic_stage = "journal_validation"
             if self.journal.exists():
                 journal = json.loads(self.journal.read_text())
                 if (
@@ -151,15 +164,19 @@ class ZWaveKeys:
                 # Check again immediately before saving; never remove/exclude nodes.
                 if await self.network() != home_id:
                     raise HAError("zwave_keys_unavailable")
+                self.diagnostic_stage = "settings_write"
                 response = await client.post("/api/settings", json=changed)
                 response.raise_for_status()
                 if response.json().get("success") is not True:
                     raise HAError("zwave_keys_unavailable")
+            self.diagnostic_stage = "settings_verify"
             if digest((await read())["zwave"]) != digest(expected):
                 raise HAError("zwave_keys_unavailable")
             # Required for both older auto-restarting and newer save-only UI versions.
             # Retrying an uncertain restart is safe; the same keys are reused.
+            self.diagnostic_stage = "app_restart"
             await self.supervisor.request("POST", f"/addons/{slug}/restart")
+            self.diagnostic_stage = "controller_reconnect"
             for attempt in range(30):
                 try:
                     if (
