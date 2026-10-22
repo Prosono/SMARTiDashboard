@@ -41,3 +41,10 @@ html[data-portal-theme] .staff-page .masthead nav a[aria-current=page]{backgroun
 @media print{.hub-detail{position:absolute;inset:0;border:0;box-shadow:none;max-height:none;overflow:visible}.hub-detail::backdrop{background:none}.hub-detail .hub-label.printing{width:70mm}}
 .hub-detail .hub-detail-label img{width:100%;height:auto;max-width:220px}
 .hub-production{margin-top:24px;border-top:1px solid var(--line);padding-top:18px}.hub-production summary{cursor:pointer;color:var(--muted)}.hub-production p{font-size:14px;line-height:1.5}
+
+.hub-info [data-hub-status].hub-onboarded{color:#137a45;display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-weight:600}
+html[data-portal-theme="dark"] .hub-info [data-hub-status].hub-onboarded{color:#65d69a}
+.hub-complete-check{display:inline-grid;place-items:center;width:18px;height:18px;flex:none;border-radius:50%;background:currentColor;position:relative}
+.hub-complete-check::after{content:"";width:7px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:translateY(-1px) rotate(-45deg)}
+html[data-portal-theme="dark"] .hub-complete-check::after{border-color:#10261b}
+.hub-connection-status{color:var(--muted);font-weight:400}

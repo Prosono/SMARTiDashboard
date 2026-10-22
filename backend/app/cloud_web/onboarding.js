@@ -96,9 +96,16 @@ function hubPhase(h){
 
 const homeCountries='AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' '),homeCountryNames=new Intl.DisplayNames(['nb'],{type:'region'}),homeCountrySelect=$('configure').elements.country;homeCountrySelect.replaceChildren(...homeCountries.map(code=>({code,name:homeCountryNames.of(code)})).sort((a,b)=>a.name.localeCompare(b.name,'nb')).map(c=>new Option(c.name,c.code)));homeCountrySelect.value='NO';
 
-function hubStatusNode(h){const node=el('p',hubPhase(h)+' · '+(h.online?'På nett':'Frakoblet'));node.dataset.hubStatus=h.id;node.setAttribute('role','status');return node;}
+function updateHubStatus(node,h){
+ const complete=(!h.reset||h.reset.phase==='completed')&&(h.setup_status==='completed'||(!h.setup_status&&h.phase==='activated'));
+ node.classList.toggle('hub-onboarded',complete);node.replaceChildren();
+ if(complete){const check=el('span');check.className='hub-complete-check';check.setAttribute('aria-hidden','true');node.append(check);}
+ node.append(document.createTextNode(complete?'Oppsett fullført':hubPhase(h)));
+ const connection=el('span',' · '+(h.online?'På nett':'Frakoblet'));connection.className='hub-connection-status';node.append(connection);
+}
+function hubStatusNode(h){const node=el('p');node.dataset.hubStatus=h.id;node.setAttribute('role','status');updateHubStatus(node,h);return node;}
 let inventoryPolling=false;
-setInterval(async()=>{if(!staff||!csrf||busy||inventoryPolling||document.hidden||$('factory').hidden)return;inventoryPolling=true;try{const hubs=await api('admin/hubs');for(const node of document.querySelectorAll('[data-hub-status]')){const h=hubs.find(h=>h.id===node.dataset.hubStatus);if(h)node.textContent=hubPhase(h)+' · '+(h.online?'På nett':'Frakoblet');}}catch(e){$('message').textContent=e.message;}finally{inventoryPolling=false;}},10000);
+setInterval(async()=>{if(!staff||!csrf||busy||inventoryPolling||document.hidden||$('factory').hidden)return;inventoryPolling=true;try{const hubs=await api('admin/hubs');for(const node of document.querySelectorAll('[data-hub-status]')){const h=hubs.find(h=>h.id===node.dataset.hubStatus);if(h)updateHubStatus(node,h);}}catch(e){$('message').textContent=e.message;}finally{inventoryPolling=false;}},10000);
 
 if(staff){
  document.title='SMARTi · Hubadministrasjon';
