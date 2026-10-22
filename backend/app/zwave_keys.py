@@ -114,7 +114,7 @@ class ZWaveKeys:
         ) as client:
 
             async def read():
-                response = await client.get("/api/settings")
+                response = await client.get("/api/settings/")
                 response.raise_for_status()
                 data = response.json()
                 if (
@@ -165,7 +165,7 @@ class ZWaveKeys:
                 if await self.network() != home_id:
                     raise HAError("zwave_keys_unavailable")
                 self.diagnostic_stage = "settings_write"
-                response = await client.post("/api/settings", json=changed)
+                response = await client.post("/api/settings/", json=changed)
                 response.raise_for_status()
                 if response.json().get("success") is not True:
                     raise HAError("zwave_keys_unavailable")

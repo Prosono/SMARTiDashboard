@@ -1,3 +1,7 @@
+## 1.35.95
+
+- Use the canonical Z-Wave JS UI settings endpoint so production key rotation is not blocked by its trailing-slash redirect.
+
 ## 1.35.94
 
 - Add credential-free diagnostics for production Z-Wave key initialization.

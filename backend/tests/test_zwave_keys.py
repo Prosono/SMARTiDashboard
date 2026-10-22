@@ -50,6 +50,11 @@ def rig(tmp_path):
     )
 
     def handler(request):
+        # The UI redirects requests without the canonical trailing slash.
+        # Never follow arbitrary redirects while sending security keys.
+        if request.url.path == "/api/settings":
+            return httpx.Response(301, headers={"Location": "/api/settings/"})
+        assert request.url.path == "/api/settings/"
         if r.denied:
             return httpx.Response(401)
         if request.method == "POST":
