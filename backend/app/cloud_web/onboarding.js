@@ -14,7 +14,7 @@ $('identify').onsubmit=e=>{e.preventDefault();run(async()=>{const data=new FormD
 async function verified(){
  if(!await current()){show('auth');return false;}
  const r=await api('customer/profile');
- if(!r.profile){profileOnly=true;show('auth');$('signup').hidden=false;$('login').hidden=true;$('signup').elements.password.required=false;$('signup').elements.password.closest('label').hidden=true;return false;}
+ if(!r.profile){profileOnly=true;window.smartiRegistration?.editProfile(false);show('auth');$('signup').hidden=false;$('login').hidden=true;$('signup').elements.password.required=false;$('signup').elements.password.closest('label').hidden=true;return false;}
  if(!r.profile.verified){show('verification');return false;}
  $('hub-username').value=(r.profile.full_name.trim().split(/\s+/)[0]||'admin').normalize('NFKC').replace(/[^\p{L}\p{N}_-]/gu,'').slice(0,64)||'admin';
  return true;
@@ -27,7 +27,7 @@ async function login(register=false){const data=Object.fromEntries(new FormData(
 $('login').onsubmit=e=>{e.preventDefault();run(()=>login());};
 $('show-register').onclick=()=>{$('signup').hidden=false;$('login').hidden=true;};
 $('show-login').onclick=()=>{$('signup').hidden=true;$('login').hidden=false;};
-$('signup').onsubmit=e=>{e.preventDefault();run(async()=>{const d=Object.fromEntries(new FormData(e.target));const password=d.password;delete d.password;d.photo=window.smartiProfilePhoto||'';if(profileOnly){await api('customer/profile','PUT',d);}else{await api('register','POST',{username:d.email,password,profile:d});csrf=(await api('login','POST',{username:d.email,password})).csrf;}e.target.reset();await continueSetup();});};
+$('signup').onsubmit=e=>{e.preventDefault();run(async()=>{const d=Object.fromEntries(new FormData(e.target));const password=d.password;delete d.password;const registration=window.smartiRegistration.payload();delete d.password_confirmation;delete d.terms_accepted;delete d.marketing_opt_in;d.photo=window.smartiProfilePhoto||'';if(profileOnly){await api('customer/profile','PUT',d);}else{await api('register','POST',{username:d.email,password,profile:d,...registration});csrf=(await api('login','POST',{username:d.email,password})).csrf;}e.target.reset();await continueSetup();});};
 $('invite-form').onsubmit=e=>{e.preventDefault();run(async()=>{await api('customer/homes/'+active+'/invitations','POST',Object.fromEntries(new FormData(e.target)));$('invite-status').textContent='Invitasjonen er lagt i utsendingskøen. Du kan invitere flere eller åpne hjemmet.';e.target.reset();});};
 $('open-home').onclick=e=>{if($('open-home').dataset.existing==='true')return;e.preventDefault();run(async()=>{const r=await api('customer/homes/'+active+'/open','POST');location.assign(r.url);});};
 function room(name='',floor='Første etasje'){const row=el('div');row.className='room-row';for(const [title,value,key]of[['Rom',name,'room'],['Etasje',floor,'floor']]){const l=el('label',title),input=el('input');input.value=value;input.required=true;input.maxLength=80;input.dataset.field=key;l.append(input);row.append(l);}const remove=el('button','×');remove.type='button';remove.setAttribute('aria-label','Fjern rom');remove.onclick=()=>row.remove();row.append(remove);$('rooms').append(row);}

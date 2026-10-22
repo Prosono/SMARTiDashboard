@@ -25,7 +25,16 @@ def account(app, name):
         city="Oslo",
         country="Norge",
     )
-    response = c.post("/api/register", json=body | {"profile": profile})
+    response = c.post(
+        "/api/register",
+        json=body
+        | {
+            "profile": profile,
+            "password_confirmation": body["password"],
+            "terms_accepted": True,
+            "terms_version": "2026-10-22",
+        },
+    )
     assert response.status_code == 200, response.text
     # Exercise the real email verification URL from the test outbox.
     route = next(r for r in app.routes if getattr(r, "path", None) == "/api/customer/verify")
@@ -224,3 +233,44 @@ def test_login_checks_existing_password_without_registration_length_rule(tmp_pat
     assert c.post("/api/login", json={**body, "password": "wrong"}).status_code == 401
     assert c.post("/api/login", json=body).status_code == 200
     assert c.get("/api/session").status_code == 200
+
+
+def test_registration_requires_matching_password_and_terms(tmp_path):
+    app = create_cloud(tmp_path / "consents.sqlite", SECRET)
+    c = TestClient(app, base_url=ORIGIN, headers={"Origin": ORIGIN})
+    body = dict(
+        username="new@example.test",
+        password="a sufficiently long password",
+        password_confirmation="a sufficiently long password",
+        terms_accepted=True,
+        terms_version="2026-10-22",
+        profile=dict(
+            email="new@example.test",
+            full_name="New Customer",
+            phone="12345678",
+            address="Street 1",
+            postal_code="1234",
+            city="Oslo",
+            country="Norge",
+        ),
+    )
+    for invalid in [
+        {"password_confirmation": "different"},
+        {"terms_accepted": False},
+        {"terms_version": "old"},
+        {"terms_accepted": "true"},
+    ]:
+        assert c.post("/api/register", json=body | invalid).status_code == 422
+    assert c.post("/api/register", json=body).status_code == 200
+    login = c.post("/api/login", json={"username": body["username"], "password": body["password"]})
+    c.headers["X-CSRF-Token"] = login.json()["csrf"]
+    consent = c.get("/api/customer/profile").json()["consents"]
+    assert consent["terms_version"] == "2026-10-22"
+    assert consent["accepted_at"] > 0
+    assert consent["marketing_opt_in"] == 0
+    for choice in [True, False]:
+        assert c.put("/api/customer/marketing", json={"marketing_opt_in": choice}).status_code == 200
+        current = c.get("/api/customer/profile").json()["consents"]
+        assert bool(current["marketing_opt_in"]) is choice
+        assert current["accepted_at"] == consent["accepted_at"]
+    assert c.get("/terms").status_code == 200

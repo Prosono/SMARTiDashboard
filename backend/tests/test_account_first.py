@@ -30,7 +30,19 @@ def test_registration_verification_and_recovery(tmp_path):
     c = TestClient(app, base_url=ORIGIN, headers={"Origin": ORIGIN})
     body = {"username": PROFILE["email"], "password": "portal-password-2026"}
     assert c.post("/api/register", json=body).status_code == 422
-    assert c.post("/api/register", json=body | {"profile": PROFILE}).status_code == 200
+    assert (
+        c.post(
+            "/api/register",
+            json=body
+            | {
+                "profile": PROFILE,
+                "password_confirmation": body["password"],
+                "terms_accepted": True,
+                "terms_version": "2026-10-22",
+            },
+        ).status_code
+        == 200
+    )
     login = c.post("/api/login", json=body)
     c.headers["X-CSRF-Token"] = login.json()["csrf"]
     assert c.post("/api/homes/claim", json={"code": "x" * 32}).status_code == 403

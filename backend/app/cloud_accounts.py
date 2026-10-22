@@ -55,6 +55,10 @@ class Profile(BaseModel):
         return value
 
 
+class MarketingPreference(BaseModel):
+    marketing_opt_in: bool = Field(strict=True)
+
+
 class Token(BaseModel):
     token: str = Field(min_length=32, max_length=128)
 
@@ -73,6 +77,9 @@ def remote_allowed(c, account):
 def install_accounts(app, db, session, home_auth, throttle, origin):
     with db() as c:
         c.executescript("""
+        CREATE TABLE IF NOT EXISTS customer_consents(
+          account TEXT PRIMARY KEY REFERENCES accounts(id), terms_version TEXT, accepted_at REAL,
+          marketing_opt_in INTEGER NOT NULL DEFAULT 0, marketing_updated_at REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS customer_profiles(
           account TEXT PRIMARY KEY REFERENCES accounts(id), email TEXT UNIQUE NOT NULL,
           full_name TEXT NOT NULL, phone TEXT NOT NULL, address TEXT NOT NULL,
@@ -182,6 +189,21 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
     app.state.require_verified_profile = require_verified_profile
     app.state.customer_onboarding_completed = completed
 
+    @app.get("/terms")
+    def terms_page():
+        return FileResponse(Path(__file__).with_name("cloud_web") / "terms.html")
+
+    @app.put("/api/customer/marketing")
+    def marketing(body: MarketingPreference, s=Depends(session)):
+        with db() as c:
+            c.execute(
+                """INSERT INTO customer_consents(account,marketing_opt_in,marketing_updated_at)
+                VALUES(?,?,?) ON CONFLICT(account) DO UPDATE SET
+                marketing_opt_in=excluded.marketing_opt_in, marketing_updated_at=excluded.marketing_updated_at""",
+                (s["account"], int(body.marketing_opt_in), time.time()),
+            )
+        return {"saved": True}
+
     @app.get("/account")
     def page():
         return FileResponse(Path(__file__).with_name("cloud_web") / "account.html")
@@ -192,6 +214,10 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             p = c.execute("SELECT * FROM customer_profiles WHERE account=?", (s["account"],)).fetchone()
             return {
                 "profile": dict(p) if p else None,
+                "consents": dict(
+                    c.execute("SELECT * FROM customer_consents WHERE account=?", (s["account"],)).fetchone()
+                    or {}
+                ),
                 "remote_allowed": remote_allowed(c, s["account"]),
                 "mail_configured": bool(os.getenv("SMARTI_SMTP_HOST") and os.getenv("SMARTI_MAIL_FROM")),
             }

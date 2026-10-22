@@ -40,12 +40,23 @@ class Credentials(BaseModel):
     password: str = Field(min_length=1, max_length=256)
 
 
+TERMS_VERSION = "2026-10-22"
+
+
 class Registration(Credentials):
     profile: Profile
+    password_confirmation: str = Field(max_length=256)
+    terms_version: str
+    terms_accepted: bool = Field(strict=True)
+    marketing_opt_in: bool = Field(default=False, strict=True)
     password: str = Field(min_length=12, max_length=256)
 
     @model_validator(mode="after")
     def email_identifier(self):
+        if self.password != self.password_confirmation:
+            raise ValueError("password_confirmation_mismatch")
+        if not self.terms_accepted or self.terms_version != TERMS_VERSION:
+            raise ValueError("terms_acceptance_required")
         if "@" in self.username and self.username.lower() != self.profile.email:
             raise ValueError("email_username_mismatch")
         return self
@@ -228,6 +239,10 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
                             p.photo,
                         ),
                     )
+                c.execute(
+                    "INSERT INTO customer_consents VALUES(?,?,?,?,?)",
+                    (account_id, TERMS_VERSION, time.time(), int(body.marketing_opt_in), time.time()),
+                )
                 app.state.queue_verification(c, account_id)
             except sqlite3.IntegrityError:
                 raise HTTPException(409, "account_not_created") from None

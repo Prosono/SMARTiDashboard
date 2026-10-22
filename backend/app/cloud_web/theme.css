@@ -133,3 +133,7 @@ html[data-portal-theme=dark] .portal-dialog{background:#202020;color:#f5f5f5}
 .price-icon-hourly{mask-image:url('/assets/icon-clock.svg')}
 html:not([data-portal-session=authenticated]) .staff-page #logout{display:none!important}
 .staff-page .masthead nav{flex-wrap:wrap}.staff-page #logout{flex-shrink:0;white-space:nowrap}
+
+html[data-portal-theme] .home-page .new-customer a{background:#ff7900;color:#171717;border-color:#ff7900;font-weight:600}
+html[data-portal-theme] .home-page .new-customer a:hover{background:#ff8c24}
+.registration-options{border:0;padding:0;margin:20px 0}.registration-options label,.marketing-choice{display:flex!important;align-items:flex-start;gap:12px;line-height:1.5;margin:16px 0!important}.registration-options input[type=checkbox],.marketing-choice input{width:20px!important;height:20px!important;flex:0 0 20px;margin-top:2px}.password-checks{font-size:14px;color:var(--muted);margin:10px 0 20px}.password-checks .met{color:#238054}.registration-options a{text-decoration:underline}.terms-document{max-width:800px;margin:40px auto;padding:24px;line-height:1.7}

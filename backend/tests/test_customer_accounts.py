@@ -142,7 +142,14 @@ def test_single_use_home_bound_signin_and_member_revoke(tmp_path):
 def test_complete_registration_atomic_and_profile_private(tmp_path):
     path, app, staff, owner, other, hub, home, activation, kit = base_factory(tmp_path)
     client = TestClient(app, base_url=ORIGIN, headers={"Origin": ORIGIN})
-    body = {"username": PROFILE["email"], "password": "long-test-password", "profile": PROFILE}
+    body = {
+        "username": PROFILE["email"],
+        "password": "long-test-password",
+        "profile": PROFILE,
+        "password_confirmation": "long-test-password",
+        "terms_accepted": True,
+        "terms_version": "2026-10-22",
+    }
     assert client.post("/api/register", json=body).status_code == 200
     assert client.get("/api/customer/profile").status_code == 401
     csrf = client.post("/api/login", json=body).json()["csrf"]
