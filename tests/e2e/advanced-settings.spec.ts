@@ -11,6 +11,10 @@ test.beforeEach(async({page})=>{
 test('system category contains charts without household or automation panels',async({page})=>{
  await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
  await expect(page.locator('.system-graph')).toHaveCount(3);
+ await expect(page.locator('.settings-hero')).toBeVisible();
+ await expect(page.locator('.experience-picker button')).toHaveCount(3);
+ if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Settings overflow');
+ await page.screenshot({path:`test-results/settings-redesign-${test.info().project.name}.png`,fullPage:true});
  await page.locator('.system-graph').first().focus();await page.keyboard.press('ArrowLeft');await expect(page.locator('.system-graph output').first()).toContainText('%');
  await expect(page.locator('.settings-personal-grid')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Automasjoner',exact:true})).toHaveCount(0);
@@ -81,7 +85,9 @@ test('personal panels show photos and system category shows usage levels',async(
 });
 test('hub product image stays uncropped in dark palette',async({page})=>{
  await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
- await page.getByRole('button',{name:'Mørkt',exact:true}).click();
+ await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'Tema og utseende'}).click();
+ await page.getByRole('combobox',{name:'Utseende',exact:true}).selectOption('dark');
+ await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
  const image=page.locator('.hub-product > img');await expect(image).toBeVisible();
  await expect.poll(()=>image.evaluate((el:HTMLImageElement)=>el.naturalWidth)).toBe(1774);
  await expect(image).toHaveCSS('object-fit','contain');
@@ -122,7 +128,7 @@ test('main destinations and five settings categories are separate',async({page})
  }
  await main.getByRole('button',{name:'Innstillinger',exact:true}).click();
  const categories=page.getByRole('navigation',{name:'Innstillingskategorier'});
- await expect(categories.getByRole('button')).toHaveText(['Hjem og personer','Sikkerhetskopiering','Nettverk','System','Tema og utseende']);
+ await expect(categories.getByRole('button')).toHaveText(['Hjem og personer','Sikkerhetskopiering','Nettverk','System','Debugging','Tema og utseende']);
  await categories.getByRole('button',{name:'Tema og utseende'}).click();
  await expect(page.locator('.home-settings')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Tema og utseende'})).toBeVisible();

@@ -1,0 +1,52 @@
+/* Settings composition stays within the current home and its permission model. */
+.settings-overview{max-width:1480px;margin-inline:auto;--settings-line:color-mix(in srgb,var(--text) 12%,transparent)}
+.settings-overview .settings-hero{position:relative;isolation:isolate;overflow:hidden;display:block;min-height:230px;padding:40px 32px;margin-bottom:20px;border-radius:20px;background:var(--surface)}
+.settings-hero:before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,var(--surface) 8%,color-mix(in srgb,var(--surface) 94%,transparent) 35%,transparent 90%),url('/home/home-living.webp') center 48%/cover no-repeat}
+.settings-overview .settings-hero h1{font-size:clamp(32px,4vw,52px);letter-spacing:-.04em;margin:10px 0 12px;line-height:1.1}
+.settings-overview .settings-hero p{max-width:42ch;color:var(--muted);font-size:16px;line-height:1.6;margin:0}
+.settings-overview .experience-picker{padding:22px;background:var(--surface);border:1px solid var(--settings-line);border-radius:18px;margin:0 0 18px}
+.settings-overview .experience-picker h2{font-size:20px;margin:0 0 6px}
+.settings-overview .experience-picker>p{font-size:13px;margin:0 0 18px;line-height:1.6}
+.settings-overview .experience-picker>div{gap:14px}
+.settings-overview .experience-picker button{position:relative;overflow:hidden;isolation:isolate;min-height:156px;border:1px solid var(--settings-line);border-radius:14px;padding:20px 18px 18px 34%;background:var(--surface);text-align:left}
+.settings-overview .experience-picker button:before{content:'';position:absolute;inset:0 69% 0 0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surface) 30%,transparent)),url('/home/home-living.webp') center/cover;z-index:-1}
+.settings-overview .experience-picker button[data-mode=normal]:before{background-image:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surface) 30%,transparent)),url('/home/home-kitchen.webp')}
+.settings-overview .experience-picker button[data-mode=advanced]:before{background-image:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surface) 30%,transparent)),url('/home/home-outdoor.webp')}
+.settings-overview .experience-picker button[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface));box-shadow:inset 0 0 0 1px var(--accent)}
+.settings-overview .experience-option-top{margin-bottom:10px}
+.settings-overview .experience-symbol{color:var(--accent)}
+.settings-overview .experience-picker button strong{font-size:17px;margin-bottom:6px}
+.settings-overview .experience-picker button>span{font-size:12px;line-height:1.55}
+.settings-overview .settings-sections{display:flex;gap:6px;padding:8px;background:var(--surface);border:1px solid var(--settings-line);border-radius:14px;overflow-x:auto;margin:20px 0 28px;scrollbar-width:thin}
+.settings-overview .settings-sections button{display:flex;align-items:center;justify-content:center;gap:9px;flex:1 0 auto;white-space:nowrap;padding:12px 14px;border:0;border-radius:10px;min-height:44px;font-size:13px}
+.settings-overview .settings-sections button.selected{background:var(--text);color:var(--surface);box-shadow:none}
+.settings-overview .home-settings{margin:0;gap:18px}
+.settings-overview .settings-category-system{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);align-items:start}
+.settings-category-system>.section-heading,.settings-category-system>.note,.settings-category-system>.muted,.settings-category-system>[role]{grid-column:1/-1}
+.settings-overview .settings-panel,.settings-overview .hub-overview,.settings-overview .settings-advanced{border:1px solid var(--settings-line);border-radius:16px;background:var(--surface);padding:22px;margin:0;min-width:0}
+.settings-overview .settings-remote h3{display:flex;align-items:center;gap:12px;font-size:19px;margin:0 0 12px}
+.settings-overview .settings-remote p{font-size:14px;line-height:1.7}
+.settings-overview .remote-state{display:flex;align-items:center;gap:8px}
+.settings-overview .remote-state:before{content:'';width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.settings-overview .remote-state[data-active=true]:before{background:#14a267}
+.settings-overview .settings-remote>button,.settings-overview .settings-remote>a{display:flex;align-items:center;gap:10px;border:0;border-top:1px solid var(--settings-line);border-radius:0;padding:16px 0;margin-top:18px;width:100%;background:transparent;text-align:left;min-height:48px}
+.settings-overview .hub-overview{display:block}
+.settings-overview .hub-product{padding:0 0 18px;border:0;border-bottom:1px solid var(--settings-line);margin-bottom:18px}
+.settings-overview .hub-product img{max-width:110px;max-height:90px;object-fit:contain}
+.settings-overview .hub-readings{padding:0;min-width:0}
+.settings-overview .settings-advanced{grid-column:1/-1}
+.settings-advanced>summary{font-size:16px;font-weight:600;cursor:pointer;min-height:44px;align-content:center}
+.settings-signout{border-top:1px solid var(--settings-line);margin-top:28px;padding-top:20px}
+.settings-signout button{display:flex;gap:10px;align-items:center;border:0;background:transparent;padding:8px 0}
+@media(max-width:900px){.settings-overview .settings-category-system{grid-template-columns:1fr}.settings-overview .experience-picker button{padding-left:20px;min-height:170px}.settings-overview .experience-picker button:before{display:none}}
+@media(max-width:600px){.settings-overview .settings-hero{min-height:170px;padding:26px 20px;border-radius:14px}.settings-overview .settings-hero p{font-size:14px;max-width:28ch}.settings-overview .experience-picker{padding:16px}.settings-overview .experience-picker>div{grid-template-columns:1fr;gap:10px}.settings-overview .experience-picker button{min-height:120px;padding:14px 16px 14px 32%}.settings-overview .experience-picker button:before{display:block;right:72%}.settings-overview .experience-option-top{margin-bottom:5px}.settings-overview .experience-picker button>span{font-size:13px}.settings-overview .settings-sections{margin:16px 0 22px}.settings-overview .settings-panel,.settings-overview .hub-overview{padding:18px}}
+.settings-overview .hub-product{min-height:145px;grid-template-columns:minmax(0,1fr) 100px;gap:14px;background:transparent}
+.settings-overview .hub-product h2{font-size:23px;line-height:1.2;margin:8px 0 12px;max-width:none;text-wrap:initial}
+.settings-overview .hub-product>img{justify-self:end;transform:none;filter:none}
+.settings-overview .hub-readings .system-metrics article{padding:14px 10px;min-height:190px;gap:8px 4px}
+.settings-overview .hub-readings .system-metrics strong{font-size:27px;white-space:nowrap;letter-spacing:-.04em}
+.settings-overview .hub-readings .system-metrics h3{font-size:12px}
+.settings-overview .hub-readings .system-metrics .metric-icon{width:24px;height:24px}
+.settings-overview .hub-readings .section-heading{gap:10px;flex-wrap:wrap}
+@media(max-width:600px){.settings-overview .hub-product{display:grid}.settings-overview .hub-readings .system-metrics{grid-template-columns:1fr}.settings-overview .hub-readings .system-metrics article{min-height:170px}.settings-overview .hub-readings .system-metrics h3{font-size:15px}}
+@media(min-width:901px){.settings-overview .settings-category-system>.hub-overview{grid-column:2;grid-row:2/span 2}.settings-overview .settings-category-system>.settings-panel:not(.settings-remote){grid-column:1;grid-row:3}}

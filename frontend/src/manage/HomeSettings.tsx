@@ -142,7 +142,7 @@ export function HomeSettings({
   }
   const s = system.data;
   return (
-    <section className="home-settings">
+    <section className={`home-settings settings-category-${section}`}>
       <div className="section-heading">
         <h2>
           {section === "household"
@@ -244,7 +244,7 @@ export function HomeSettings({
         </div>
       )}
       {section === "system" && <RemoteAccess lang={lang} />}
-      {section === "system" && advanced && <FactoryReset lang={lang} />}
+
       {section !== "household" && system.isError && (
         <p role="alert">
           {t("Kunne ikke hente systemstatus.", "Could not load system status.")}
@@ -326,6 +326,7 @@ export function HomeSettings({
           {section === "backups" && <Backups items={s.backups} lang={lang} />}
         </>
       )}
+      {section === "system" && advanced && <details className="settings-advanced"><summary>{t("Avanserte innstillinger", "Advanced settings")}</summary><p>{t("Tilbakestilling og administrasjon av huben.", "Hub reset and administration.")}</p><FactoryReset lang={lang} /></details>}
       {(place || person || remove) && (
         <SettingsDialog
           lang={lang}

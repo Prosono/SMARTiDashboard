@@ -1,3 +1,5 @@
+import "./manage/settingsOverview.css";
+import { Database, Network, Server, Code, Palette } from "lucide-react";
 import { PhoneSettings } from "./PhoneSettings";
 import { Scenes } from "./home/Scenes";
 import { PagedControls } from "./PagedControls";
@@ -1233,14 +1235,11 @@ function Dashboard({
         ) : page === "updates" && session.role === "admin" ? (
           <Updates lang={lang} />
         ) : (
-          <>
-            <div className="page-heading">
+          <section className="settings-overview">
+            <div className="page-heading settings-hero">
               <span className="eyebrow">SMARTi</span>
               <h1>{t.settings}</h1>
-              <button onClick={logout}>
-                <LogOut size={18} />
-                {t.logout}
-              </button>
+              <p>{lang === "en" ? "Make your home yours, and choose how SMARTi works for you." : "Tilpass hjemmet ditt, og hvordan SMARTi fungerer."}</p>
             </div>
             <PhoneSettings lang={lang} />
             <ExperiencePicker lang={lang} />
@@ -1291,6 +1290,7 @@ function Dashboard({
                   }
                   onClick={() => guard(() => setSettingsSection(key))}
                 >
+                  {key === "household" ? <House size={19} /> : key === "backups" ? <Database size={19} /> : key === "network" ? <Network size={19} /> : key === "system" ? <Server size={19} /> : key === "debugging" ? <Code size={19} /> : <Palette size={19} />}
                   {label}
                 </button>
               ))}
@@ -1369,7 +1369,8 @@ function Dashboard({
                 </div>
               </>
             )}
-          </>
+            <div className="settings-signout"><button onClick={logout}><LogOut size={18} />{t.logout}</button></div>
+          </section>
         )}
       </main>
       <footer>

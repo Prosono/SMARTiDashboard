@@ -75,7 +75,7 @@ export function HubStatus({
         <img src="brand/smarti-hub.png" alt="SMARTi Hub" />
         <div>
           <span className="eyebrow">SMARTi HUB</span>
-          <h2>{t("Hjertet i hjemmet ditt", "The heart of your home")}</h2>
+          <h2>{t("Systeminformasjon", "System information")}</h2>
           <span className={`hub-connection metric-${status}`}>
             <Activity size={17} />
             {stale

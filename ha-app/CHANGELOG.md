@@ -1,3 +1,8 @@
+## 1.35.90
+
+- Ny innstillingsside med bildeheader, visuelle visningsnivåer, ikonfaner og tydeligere systemkort.
+- Avansert tilbakestilling er samlet i en utvidbar seksjon. Tilpasset mobil og lyst/mørkt tema.
+
 ## 1.35.89
 
 - Oppdater SMARTi direkte under Oppdateringer: versjonskontroll, oppfrisking av appkilder og bekreftet installasjon med valgfri sikkerhetskopi.

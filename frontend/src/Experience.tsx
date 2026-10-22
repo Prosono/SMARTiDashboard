@@ -77,6 +77,7 @@ export function ExperiencePicker({ lang }: { lang: string }) {
         {options.map((o) => (
           <button
             key={o.id}
+            data-mode={o.id}
             disabled={busy}
             aria-pressed={mode === o.id}
             onClick={() => void choose(o.id)}

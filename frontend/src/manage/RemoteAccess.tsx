@@ -142,11 +142,11 @@ export function RemoteAccess({ lang }: { lang: string }) {
               ? t("Koblet til SMARTi-konto", "Linked to a SMARTi account")
               : t("Klar til å koble til konto", "Ready to link an account");
   return (
-    <section className="settings-panel">
+    <section className="settings-panel settings-remote">
       <h3>
         <Globe /> {t("Fjerntilgang", "Remote access")}
       </h3>
-      <p>{status}</p>
+      <p className="remote-state" data-active={!!(q.data?.via_remote || (q.data?.linked && q.data?.remote_enabled))}>{status}</p>
       <p>
         {t(
           "Administrer koblingen mellom dette hjemmet og kontoen din på home.smarti.dev.",
