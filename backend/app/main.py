@@ -132,6 +132,9 @@ def create_app(
     mobile = MobileAuth(store)
     ha = adapter or (Demo() if settings.mode == "demo" else HomeAssistant(settings.ha_url, settings.ha_token))
 
+    from .energy_platform import EnergyPlatform, platform_router
+
+    energy_platform = EnergyPlatform(ha, store, settings)
     setup = DeviceSetup(ha, settings, store)
     origins = OriginPolicy(settings)
     reset = FactoryReset(store, HomeResetProvider(ha, setup, console_settings or settings, store))
@@ -150,6 +153,7 @@ def create_app(
         discovery = None
         remote_task = None
         onboarding_task = None
+        energy_task = None
 
         def start_remote():
             nonlocal remote_task
@@ -173,8 +177,14 @@ def create_app(
                         settings, ha, store, app.state.remote, start_remote=start_remote, setup=setup
                     ).run()
                 )
+            if not mobile_only and not remote_surface:
+                energy_task = asyncio.create_task(energy_platform.run())
             yield
         finally:
+            if energy_task:
+                energy_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await energy_task
             if onboarding_task:
                 onboarding_task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
@@ -349,6 +359,7 @@ def create_app(
     app.include_router(camera_router(ha, user, settings))
     app.include_router(scenes_router(ha, store, user, settings))
     app.include_router(energy_router(ha, store, user, settings))
+    app.include_router(platform_router(energy_platform, user, admin))
     app.include_router(energy_flow_router(store, user, ha, settings))
 
     @app.get("/healthz")

@@ -326,6 +326,16 @@ class FullReset:
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             for table in (
+                "energy_tariffs",
+                "energy_intervals",
+                "energy_configs",
+                "energy_prices",
+            ):
+                if db.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+                ).fetchone():
+                    db.execute("DELETE FROM " + table)
+            for table in (
                 "sessions",
                 "favorites",
                 "dashboards",

@@ -45,6 +45,7 @@ import type { Home, Control } from "../types";
 import { entityState } from "../manage/entityWords";
 import { overview, reading, temperature, usable } from "./homeModel";
 import { Energy } from "./EnergyOverview";
+import { EnergyPlatform } from "./EnergyPlatform";
 import { EnergyFlow } from "./EnergyFlow";
 import { Scenes } from "./Scenes";
 import { HomeTabs, type HomeTab } from "./HomeTabs";
@@ -1054,25 +1055,15 @@ export function HomeOverview({
           />
         )}
         {tab === "energy" && (
-          <EnergyFlow home={h} offline={offline} lang={lang} />
-        )}
-        {tab === "energy" && !model.meters.length && (
-          <section className="home-empty-view">
-            <Zap size={32} />
-            <h1>
-              {t("Her kommer energien din", "Your energy overview starts here")}
-            </h1>
-            <p>
-              {t(
-                "Koble en strøm- eller energimåler til SMARTi. Deretter kan du velge målere og grafer her.",
-                "Connect a power or energy meter to SMARTi. Then choose your meters and charts here.",
-              )}
-            </p>
-          </section>
+          <>
+            <EnergyPlatform admin={admin} lang={lang} />
+            <EnergyFlow home={h} offline={offline} lang={lang} />
+          </>
         )}
         <div className="home-insights">
           {tab === "energy" && model.meters.length > 0 && (
-            <div id="home-energy">
+            <details id="home-energy">
+              <summary>Detaljert målerhistorikk</summary>
               <Energy
                 controls={h.controls}
                 meters={model.meters}
@@ -1081,7 +1072,7 @@ export function HomeOverview({
                 offline={offline}
                 lang={lang}
               />
-            </div>
+            </details>
           )}
           {tab === "energy" && (
             <Vehicle home={h} offline={offline} lang={lang} />

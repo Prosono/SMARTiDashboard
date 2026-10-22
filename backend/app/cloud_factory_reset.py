@@ -175,6 +175,10 @@ def install_factory_reset(app, db, home_auth, session, is_admin):
             if not changed:
                 raise HTTPException(409, "reset_conflict")
             c.execute("UPDATE factory_hubs SET phase=? WHERE home=?", (body.phase, home))
+            # The confirmed local erasure also removes the cloud energy archive.
+            if c.execute("SELECT 1 FROM sqlite_master WHERE name='energy_history'").fetchone():
+                c.execute("DELETE FROM energy_history WHERE home=?", (home,))
+                c.execute("DELETE FROM energy_agreements WHERE home=?", (home,))
             # Release only after local erasure and reboot. Retried ready callbacks must
             # never detach a new owner who has subsequently claimed the same QR label.
             reset = c.execute("SELECT ownership,released FROM hub_resets WHERE home=?", (home,)).fetchone()

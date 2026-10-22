@@ -1,0 +1,549 @@
+.ep {
+  margin: 1.5rem 0 2rem;
+  color: var(--text);
+}
+.ep-heading,
+.ep-history header,
+.ep-toolbar,
+.ep-consumer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.ep-heading {
+  margin-bottom: 1.6rem;
+  align-items: flex-end;
+}
+.ep-eyebrow {
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+.ep h2 {
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  letter-spacing: -0.04em;
+  margin: 0.4rem 0;
+}
+.ep p,
+.ep small,
+.ep-wizard p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+.ep h3 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+}
+.ep button,
+.ep-wizard button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.ep button:focus-visible,
+.ep-wizard button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.ep .ep-primary,
+.ep-wizard .ep-primary {
+  background: #ff7900;
+  color: #171717;
+  border-color: #ff7900;
+  font-weight: 600;
+}
+.ep button:disabled,
+.ep-wizard button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ep-start {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  padding: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.ep-start > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.ep-start p {
+  margin: 0;
+}
+.ep-start > button {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.ep-toolbar {
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+.ep-toolbar > div {
+  display: flex;
+  gap: 0.25rem;
+}
+.ep-toolbar button[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--surface);
+}
+.ep-toolbar label {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+.ep input,
+.ep-wizard input:not([type="checkbox"]),
+.ep-wizard select {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.7rem 0.8rem;
+  min-height: 46px;
+  font: inherit;
+  min-width: 0;
+}
+.ep-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 1.5rem 0 2rem;
+}
+.ep-metrics article {
+  padding: 1rem 1.5rem;
+  border-left: 1px solid var(--border);
+}
+.ep-metrics article:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.ep-metrics strong {
+  display: block;
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  font-weight: 500;
+  margin: 0.5rem 0;
+  white-space: nowrap;
+}
+.ep-metrics strong span {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.ep-metrics p {
+  font-size: 0.75rem;
+  margin: 0;
+}
+.ep-history {
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.ep-history header span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.ep-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 200px;
+  margin-top: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+.ep-bars button {
+  flex: 1;
+  min-width: 0;
+  min-height: 3px;
+  padding: 0;
+  background: var(--accent);
+  border: 0;
+  border-radius: 4px 4px 0 0;
+}
+.ep-bars button[aria-pressed="true"] {
+  background: var(--text);
+}
+.ep-chart-detail {
+  font-size: 0.8rem;
+  min-height: 1.5em;
+  margin: 1rem 0 0;
+}
+.ep-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+}
+.ep-empty svg {
+  color: var(--accent);
+}
+.ep-empty p {
+  max-width: 45ch;
+  margin: auto;
+}
+.ep-details {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2rem;
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.ep-details article > svg {
+  float: right;
+  color: var(--muted);
+}
+.ep-details small {
+  font-size: 0.75rem;
+}
+.ep-consumer {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.ep-consumer small {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.ep-source {
+  font-size: 0.7rem;
+  margin: 1.5rem 0;
+}
+.ep-source a {
+  color: inherit;
+  text-decoration: underline;
+}
+.ep-wizard {
+  padding: clamp(1rem, 3vw, 2rem);
+  max-width: 780px;
+  margin: auto;
+}
+.ep-wizard h3 {
+  font-size: 1.7rem;
+  letter-spacing: -0.03em;
+  margin: 2rem 0 0.5rem;
+}
+.ep-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ep-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.ep-steps li span {
+  width: 27px;
+  height: 27px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.ep-steps li[aria-current] {
+  color: var(--text);
+  font-weight: 600;
+}
+.ep-steps li[aria-current] span {
+  background: #ff7900;
+  color: #171717;
+  border-color: #ff7900;
+}
+.ep-wizard label:not(.ep-check) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.ep-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+.ep-company-list {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.ep-company-list button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 0;
+}
+.ep-company-list button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.ep-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  font-size: 0.85rem;
+}
+.ep-help svg {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+.ep-help p {
+  margin: 0;
+}
+.ep-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin: 1.3rem 0;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+.ep-check input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  accent-color: #ff7900;
+}
+.ep-review {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.ep-review dt {
+  color: var(--muted);
+}
+.ep-review dd {
+  margin: 0;
+  text-align: right;
+}
+.ep-wizard footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.ep-wizard details {
+  margin-top: 1.5rem;
+}
+.ep-spin {
+  animation: ep-spin 1s linear infinite;
+}
+@keyframes ep-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 700px) {
+  .ep-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .ep-heading button {
+    font-size: 0.8rem;
+  }
+  .ep-start {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 1.2rem;
+  }
+  .ep-start > button {
+    margin: 0;
+    width: 100%;
+  }
+  .ep-metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .ep-metrics article {
+    border: 0;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .ep-metrics strong {
+    font-size: 1.8rem;
+  }
+  .ep-details {
+    grid-template-columns: 1fr;
+    gap: 1.3rem;
+  }
+  .ep-history {
+    padding: 1rem;
+  }
+  .ep-history header {
+    display: block;
+  }
+  .ep-toolbar > div {
+    width: 100%;
+  }
+  .ep-toolbar > div button {
+    flex: 1;
+    padding: 0.5rem;
+  }
+  .ep-toolbar input {
+    max-width: 170px;
+  }
+  .ep-steps li {
+    flex-direction: column;
+    font-size: 0.7rem;
+  }
+  .ep-wizard input,
+  .ep-wizard select {
+    font-size: 16px !important;
+  }
+  .ep-fields {
+    grid-template-columns: 1fr;
+  }
+  .ep-wizard h3 {
+    font-size: 1.4rem;
+  }
+  .ep-wizard footer button {
+    flex: 1;
+  }
+  .ep-bars {
+    gap: 2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ep-spin {
+    animation: none;
+  }
+}
+.ep-cost-breakdown {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.ep-cost-breakdown dl {
+  max-width: 600px;
+  margin: 1rem 0;
+}
+.ep-cost-breakdown dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+}
+.ep-cost-breakdown dd {
+  margin: 0;
+  white-space: nowrap;
+}
+.ep-period-summary {
+  display: flex;
+  gap: 2rem;
+  padding: 0 0 1.5rem;
+  flex-wrap: wrap;
+}
+.ep-period-summary > div {
+  display: grid;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 120px;
+}
+.ep-period-summary span,
+.ep-period-summary small {
+  font-size: 0.75rem;
+}
+.ep-forecast {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.ep-forecast > strong {
+  display: block;
+  font-size: 2rem;
+  margin: 0.5rem 0;
+}
+.ep-forecast p {
+  max-width: 65ch;
+  font-size: 0.85rem;
+}
+.ep-alternatives {
+  padding: 1.5rem 0;
+}
+.ep-alternatives > div {
+  display: flex;
+  justify-content: space-between;
+  max-width: 600px;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.ep-alternatives > small {
+  display: block;
+  margin-top: 0.8rem;
+}
+.home-overview .ep-heading h2 {
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  font-weight: 500;
+}
+.home-overview .ep-empty > svg {
+  display: inline-block;
+}
+.dashboard-settings-dialog .ep-wizard label:not(.ep-check) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+.dashboard-settings-dialog .ep-wizard select,
+.dashboard-settings-dialog .ep-wizard input:not([type="checkbox"]) {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  min-height: 46px;
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+}
+.dashboard-settings-dialog .ep-wizard summary {
+  min-height: 44px;
+  padding: 0.7rem 0;
+  cursor: pointer;
+}
+.dashboard-settings-dialog .ep-wizard h3 {
+  font-size: clamp(1.4rem, 3vw, 1.7rem);
+}
+.ep-bars button[data-missing] {
+  background: transparent;
+  border-bottom: 2px dotted var(--muted);
+  border-radius: 0;
+}
+.ep-current-rate {
+  font-size: 0.85rem;
+  max-width: 75ch;
+}
+.ep-current-rate strong {
+  color: var(--text);
+}
+.ep-solar {
+  border-block: 1px solid var(--border);
+  padding: 1.5rem 0;
+  margin-bottom: 1.5rem;
+}
+.ep-solar h3 {
+  margin-bottom: 1.5rem;
+}

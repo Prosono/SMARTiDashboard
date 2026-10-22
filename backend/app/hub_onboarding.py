@@ -231,6 +231,7 @@ class HubOnboarding:
                     country=plan.get("country", "NO"),
                 )
                 self.store.set("home_name", plan["name"])
+                self.store.set("country", plan.get("country", "NO"))
                 self.store.set("timezone", plan["timezone"])
 
             await stage("location", location)

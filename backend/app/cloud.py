@@ -463,6 +463,13 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
             ]
 
     install_accounts(app, db, session, home_auth, throttle, origin)
+    from .cloud_energy import install_energy
+
+    install_energy(app, db, session, home_auth)
+    from .energy_sources import install_prices, install_sources
+
+    install_sources(app, db)
+    install_prices(app, db)
     is_admin = install_admin(app, db, session, relay_status_url)
     install_support(app, db, session, is_admin, home_auth, origin)
 

@@ -1,3 +1,12 @@
+## 1.36.0
+
+- Ny energiveileder med nettselskap, prisområde, strømavtale, støtteordning og målere per hjem.
+- Energioversikt med historikk, kostnadsfordeling, månedlig prognose, støttealternativer og datadekning.
+- Åpne priskilder og nettleiesatser med manuell korrigering. Manglende målinger vises ikke som null.
+- Lokal historikk og valgfri synkronisering av målinger og avtaler til SMARTi-skyen. Krever oppdatert skytjeneste.
+- Solproduksjon, eksport, elbillading og større forbrukere kan knyttes til målere. Eksisterende 3D-energiflyt beholdes.
+- Elhub krever virksomhetsavtale og Maskinporten-tilgang og er ikke aktivert i denne versjonen. Kostnadsreglene dekker 2026; beregninger er estimater.
+
 ## 1.35.96
 
 - Explicitly request JSON from Z-Wave JS UI so its web-page fallback cannot intercept setup requests.

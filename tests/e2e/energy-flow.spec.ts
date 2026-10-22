@@ -5,6 +5,31 @@ import {
   type Locator,
 } from "../../frontend/node_modules/@playwright/test";
 
+// This suite exercises the existing 3D view after the separate setup wizard.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/home/energy/platform/setup", (route) =>
+    route.fulfill({
+      json: {
+        config: {
+          country: "NO",
+          area: "NO1",
+          company: "elvia",
+          meters: [],
+          cloud_history: false,
+        },
+        can_edit: true,
+        country: "NO",
+        companies: [],
+        sensors: [],
+        tariff_source: {
+          url: "https://github.com/kraftsystemet/fri-nettleie",
+          updated: "2026-10-22",
+        },
+      },
+    }),
+  );
+});
+
 // Let React, ResizeObserver and WebGL finish pending frames before checking motion.
 const settleRendering = (page: Page) =>
   page.evaluate(
@@ -471,6 +496,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     animations: "disabled",
     path: `../artifacts/${test.info().project.name}-energy-flow.png`,
   });
+  await page.getByText("Detaljert målerhistorikk", {exact:true}).click();
   await expect(
     page.locator(".energy-workspace .energy-large-chart"),
   ).toBeVisible();
@@ -526,7 +552,11 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     await page.setViewportSize(originalViewport);
     await settleRendering(page);
   }
-  await page.getByRole("button", { name: "Mørkt", exact: true }).click();
+  await page.getByRole("button", { name: "Innstillinger", exact: true }).click();
+  await page.getByRole("button", { name: "Tema og utseende", exact: true }).click();
+  await page.getByRole("combobox", { name: "Utseende", exact: true }).selectOption("dark");
+  await page.getByRole("button", { name: "Hjem", exact: true }).click();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
   await flow.locator(".energy-scene-stage").screenshot({
     animations: "disabled",
     style: ".sidebar { visibility: hidden !important; }",

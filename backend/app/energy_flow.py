@@ -1,5 +1,6 @@
 """Explicit power bindings and freshness-aware directional energy flows."""
 
+import json
 import math
 from datetime import UTC, datetime, timedelta
 from typing import Literal
@@ -62,7 +63,14 @@ def energy_flow_router(store, user, ha, settings):
     router = APIRouter(prefix="/api/home/energy-flow", dependencies=[Depends(user)])
 
     def prefs(current):
-        return FlowPreferences.model_validate_json(store.get(f"energy_flow:{current['id']}", "{}"))
+        pref = FlowPreferences.model_validate_json(store.get(f"energy_flow:{current['id']}", "{}"))
+        shared = json.loads(store.get("energy_platform_config", "{}"))
+        for role, entity in dict(shared.get("power", {}), grid=shared.get("power_entity")).items():
+            if role in ROLES and entity and not getattr(pref, role).source:
+                getattr(pref, role).source = entity
+        if not pref.battery_level:
+            pref.battery_level = shared.get("battery_level")
+        return pref
 
     @router.get("/preferences")
     async def get(current=Depends(user)):

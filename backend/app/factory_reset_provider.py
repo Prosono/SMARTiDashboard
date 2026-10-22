@@ -220,6 +220,10 @@ class HomeResetProvider:
             return "unconfirmed", "history_purge_requested"
         elif kind == "local":
             with self.store.connect() as db:
+                for table in ["energy_intervals", "energy_configs", "energy_prices", "energy_tariffs"]:
+                    if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone():
+                        db.execute("DELETE FROM " + table)
+                db.execute("DELETE FROM settings WHERE key LIKE 'energy_%'")
                 for table in ["favorites", "dashboards", "notification_inbox"]:
                     db.execute("DELETE FROM " + table)
                 db.execute("DELETE FROM settings WHERE key LIKE 'dashboard:%' OR key LIKE 'device_image:%'")
