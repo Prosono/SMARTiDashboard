@@ -66,17 +66,17 @@ body.account-page:not(.registration-page) #auth>details>summary::-webkit-details
 body.account-page:not(.registration-page) #auth>details>summary:after{content:'+';font-size:24px;color:var(--accent-ink)}
 body.account-page:not(.registration-page) #auth>details[open]>summary:after{content:'−'}
 @media(max-width:700px){body.account-page #login{padding:22px 16px;border-radius:14px}}
-/* Account pages use the same top navigation on wide screens as on phones. */
+/* Public account/registration pages use a top bar; signed-in pages share the workspace sidebar. */
 @media(min-width:701px){
- html[data-customer-portal] body.account-page .masthead{position:relative;inset:auto;width:100%;box-sizing:border-box;display:flex;flex-direction:row;align-items:center;gap:28px;padding:20px 40px;border-right:0;border-bottom:1px solid var(--line)}
- html[data-customer-portal] body.account-page .masthead>a{flex-shrink:0;font-size:24px}
- html[data-customer-portal] body.account-page .masthead nav{display:flex;flex-direction:row;justify-content:flex-end;align-items:center;gap:8px;width:auto;margin-left:auto}
- html[data-customer-portal] body.account-page .masthead nav:before{display:none}
- html[data-customer-portal] body.account-page .masthead nav a{width:auto;padding:10px 16px;min-height:44px;white-space:nowrap}
- html[data-customer-portal] body.account-page .masthead .sidebar-about{display:none!important}
- html[data-customer-portal] body.account-page .masthead .portal-theme{margin:0;align-self:center;flex-shrink:0}
- html[data-customer-portal] body.account-page main.intro{width:100%;max-width:980px;margin:0 auto;padding:48px 32px}
- html[data-customer-portal] body.account-page .site-footer{max-width:980px;margin:0 auto;padding:24px 32px;box-sizing:border-box}
- html[data-customer-portal] body.account-page #auth>p,html[data-customer-portal] body.account-page #login{margin-left:auto;margin-right:auto}
- html[data-customer-portal] body.account-page #auth>details>summary{margin-left:auto;margin-right:auto}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page .masthead{position:relative;inset:auto;width:100%;box-sizing:border-box;display:flex;flex-direction:row;align-items:center;gap:28px;padding:20px 40px;border-right:0;border-bottom:1px solid var(--line)}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page .masthead>a{flex-shrink:0;font-size:24px}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page .masthead nav{display:flex;flex-direction:row;justify-content:flex-end;align-items:center;gap:8px;width:auto;margin-left:auto}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page .masthead nav:before{display:none}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page .masthead nav a{width:auto;padding:10px 16px;min-height:44px;white-space:nowrap}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page .masthead .sidebar-about{display:none!important}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page .masthead .portal-theme{margin:0;align-self:center;flex-shrink:0}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page main.intro{width:100%;max-width:980px;margin:0 auto;padding:48px 32px}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page .site-footer{max-width:980px;margin:0 auto;padding:24px 32px;box-sizing:border-box}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page #auth>p,html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page #login{margin-left:auto;margin-right:auto}
+ html[data-customer-portal]:not([data-portal-session="authenticated"]) body.account-page #auth>details>summary{margin-left:auto;margin-right:auto}
 }
