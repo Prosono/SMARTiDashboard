@@ -173,7 +173,7 @@ async def create_first_owner(client: httpx.AsyncClient, *, name, username, passw
             "/api/onboarding/users",
             json={
                 "name": name,
-                "username": username,
+                "username": username.strip().casefold(),
                 "password": password,
                 "client_id": client_id,
                 "language": "nb",

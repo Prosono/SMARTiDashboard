@@ -445,6 +445,30 @@ class FullReset:
         credentials = unseal(private, state["id"], plan["ha_credentials"])
         if credentials["username"] != plan["username"]:
             raise AuthResetError("reset_plan_mismatch")
+        if state["phase"] == "creating_owner":
+            # A failed response is ambiguous. Resume only after stopping Core and
+            # proving that no human account, password or completed user step exists.
+            if (self.root / "configuration.yaml").read_text() != ISOLATED_CONFIG:
+                raise AuthResetError("ha_owner_creation_requires_recovery")
+            await self.supervisor.request("POST", "/core/options", {"boot": False, "watchdog": False})
+            await self.supervisor.request("POST", "/core/stop")
+            self.stopped = True
+            await self.assert_stopped()
+            storage = self.root / ".storage"
+            if storage.is_symlink():
+                raise AuthResetError("ha_storage_symlink")
+            docs = {}
+            for path in storage.iterdir():
+                if path.name in {"auth", "onboarding"} or path.name.startswith(
+                    ("auth_provider.", "auth_module.")
+                ):
+                    if path.is_symlink() or not path.is_file():
+                        raise AuthResetError("ha_auth_storage_invalid")
+                    docs[path.name] = json.loads(path.read_text())
+            if reset_documents(docs) != docs:
+                raise AuthResetError("ha_owner_creation_requires_recovery")
+            state["phase"] = "awaiting_owner"
+            self.save(state)
         if state["phase"] == "awaiting_owner":
             if state.get("recovery_user"):
                 await self.remove_recovery_owner(state)
@@ -461,9 +485,6 @@ class FullReset:
             )
             state["phase"] = "owner_created"
             self.save(state)
-        elif state["phase"] == "creating_owner":
-            # Never replay an uncertain user-creation POST.
-            raise AuthResetError("ha_owner_creation_requires_recovery")
         await self.supervisor.request("POST", "/core/stop")
         self.stopped = True
         await self.assert_stopped()

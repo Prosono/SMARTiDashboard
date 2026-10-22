@@ -471,3 +471,56 @@ async def test_recovery_removal_failure_does_not_create_real_owner(tmp_path, mon
     assert len(reset.owner_requests) == 1
     assert supervisor.info["boot"] is False
     assert (reset.root / "configuration.yaml").read_text() == ISOLATED_CONFIG
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("existing", ["empty", "owner", "orphan", "schema"])
+async def test_interrupted_owner_creation_resumes_only_proven_empty_storage(tmp_path, monkeypatch, existing):
+    reset, _, supervisor = setup_reset(tmp_path)
+
+    async def refused(*a, **k):
+        raise ConnectionRefusedError()
+
+    monkeypatch.setattr("asyncio.open_connection", refused)
+    await reset.execute()
+    reset.host_boot_id = lambda: "boot-two"
+    await reset.resume_reboot()
+    state = reset.state()
+    await reset.remove_recovery_owner(state)
+    state["phase"] = "creating_owner"
+    reset.save(state)
+    storage = reset.root / ".storage"
+    if existing == "owner":
+        await reset.isolated_owner(
+            name="Existing", username="existing", password="secret", before_create=lambda: None
+        )
+    elif existing == "orphan":
+        path = storage / "auth_provider.homeassistant"
+        doc = json.loads(path.read_text())
+        doc["data"]["users"].append({"username": "orphan", "password": "hash"})
+        path.write_text(json.dumps(doc))
+    elif existing == "schema":
+        path = storage / "auth"
+        doc = json.loads(path.read_text())
+        doc["version"] = 99
+        path.write_text(json.dumps(doc))
+    original = {p.name: p.read_bytes() for p in storage.iterdir() if p.is_file()}
+    posts = len(reset.owner_requests)
+    key = x25519.X25519PrivateKey.from_private_bytes(reset.key_path.read_bytes())
+    plan = {
+        "reset_id": state["id"],
+        "username": "NewOwner",
+        "ha_credentials": seal(public_key(key), state["id"], "NewOwner", "A new password 123"),
+    }
+    if existing == "empty":
+        await reset.bootstrap(plan)
+        assert reset.state()["phase"] == "completed"
+        assert len(reset.owner_requests) == posts + 1
+        assert reset.owner_requests[-1]["username"] == "newowner"
+    else:
+        with pytest.raises(AuthResetError):
+            await reset.bootstrap(plan)
+        assert len(reset.owner_requests) == posts
+        assert reset.state()["phase"] == "creating_owner"
+        assert {p.name: p.read_bytes() for p in storage.iterdir() if p.is_file()} == original
+        assert supervisor.info["boot"] is False

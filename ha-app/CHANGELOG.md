@@ -1,3 +1,8 @@
+# 1.35.92
+
+- Normalize Home Assistant owner usernames during setup.
+- Safely resume interrupted owner creation only after offline verification that no personal account or credential exists.
+
 ## 1.35.91
 
 - Ryddigere innstillingsmeny på mobil med to faste kolonner, store trykkflater og tydelig valgt kategori.
