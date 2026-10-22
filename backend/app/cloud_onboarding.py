@@ -204,12 +204,71 @@ def install_onboarding(
             }
         }
 
+    def deletion_block(c, home, owner):
+        if owner is not None or c.execute("SELECT 1 FROM home_members WHERE home=?", (home,)).fetchone():
+            return "hub_still_linked"
+        if (
+            c.execute(
+                "SELECT 1 FROM onboarding_plans WHERE home=? AND status IN ('queued','working')", (home,)
+            ).fetchone()
+            or c.execute(
+                "SELECT 1 FROM hub_resets WHERE home=? AND phase NOT IN ('completed','awaiting_owner')",
+                (home,),
+            ).fetchone()
+        ):
+            return "hub_operation_in_progress"
+        return None
+
+    @app.delete("/api/admin/hubs/{home}")
+    def delete_hub(home: str, s=Depends(admin)):
+        with db() as c:
+            # Serialize against QR claims: eligibility must still hold at deletion.
+            c.execute("BEGIN IMMEDIATE")
+            row = c.execute(
+                "SELECT h.owner FROM homes h JOIN factory_hubs f ON f.home=h.id WHERE h.id=?", (home,)
+            ).fetchone()
+            if not row:
+                raise HTTPException(404, "hub_not_found")
+            if reason := deletion_block(c, home, row["owner"]):
+                raise HTTPException(409, reason)
+            for table in ("support_codes", "support_connections"):
+                c.execute(
+                    f"DELETE FROM {table} WHERE grant_id IN (SELECT id FROM support_grants WHERE home=?)",
+                    (home,),
+                )
+            c.execute("DELETE FROM support_grants WHERE home=?", (home,))
+            # Keep support correspondence and the administrator audit trail.
+            c.execute("UPDATE support_cases SET home=NULL WHERE home=?", (home,))
+            for table in (
+                "claims",
+                "certificate_challenges",
+                "customer_tokens",
+                "customer_connections",
+                "home_members",
+                "hub_enrollments",
+                "hub_credential_changes",
+                "onboarding_plans",
+                "hub_resets",
+                "production_grants",
+                "push_limits",
+                "energy_history",
+                "energy_agreements",
+                "factory_hubs",
+            ):
+                c.execute(f"DELETE FROM {table} WHERE home=?", (home,))
+            c.execute("DELETE FROM homes WHERE id=?", (home,))
+            audit(c, s["account"], "hub_deleted", home)
+        return {"deleted": True}
+
     @app.get("/api/admin/hubs")
     def inventory(s=Depends(admin)):
         with db() as c:
             result = []
             for row in c.execute("SELECT * FROM factory_hubs ORDER BY created DESC"):
                 item = view(row)
+                owner = c.execute("SELECT owner FROM homes WHERE id=?", (row["home"],)).fetchone()[0]
+                item["linked"] = owner is not None
+                item["can_delete"] = deletion_block(c, row["home"], owner) is None
                 reset = c.execute(
                     "SELECT phase,qr_required,qr_verified,ownership FROM hub_resets WHERE home=?",
                     (row["home"],),

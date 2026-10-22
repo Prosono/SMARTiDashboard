@@ -356,21 +356,73 @@ def test_country_validation_and_legacy_default():
 
 def test_admin_map_only_exposes_completed_location_and_no_credentials(tmp_path):
     path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
-    assert staff.get('/api/admin/hubs').json()[0]['location'] is None
-    assert owner.get('/api/admin/hubs').status_code == 403
-    assert TestClient(app, base_url=ORIGIN).get('/api/admin/hubs').status_code == 401
-    payload = {**PLAN, 'password_hash': 'private-hash', 'ha_credentials': 'private-credentials'}
+    assert staff.get("/api/admin/hubs").json()[0]["location"] is None
+    assert owner.get("/api/admin/hubs").status_code == 403
+    assert TestClient(app, base_url=ORIGIN).get("/api/admin/hubs").status_code == 401
+    payload = {**PLAN, "password_hash": "private-hash", "ha_credentials": "private-credentials"}
     with sqlite3.connect(path) as db:
-        owner_id = db.execute('SELECT id FROM accounts WHERE username=?', ('customer',)).fetchone()[0]
-        db.execute('INSERT INTO onboarding_plans VALUES(?,?,?,?,?,?,?,?,?)',
-                   (home, 'map-test', owner_id, json.dumps(payload), 'working', 'location', '', 1, 1))
-    assert staff.get('/api/admin/hubs').json()[0]['location'] is None
+        owner_id = db.execute("SELECT id FROM accounts WHERE username=?", ("customer",)).fetchone()[0]
+        db.execute(
+            "INSERT INTO onboarding_plans VALUES(?,?,?,?,?,?,?,?,?)",
+            (home, "map-test", owner_id, json.dumps(payload), "working", "location", "", 1, 1),
+        )
+    assert staff.get("/api/admin/hubs").json()[0]["location"] is None
     with sqlite3.connect(path) as db:
         db.execute("UPDATE onboarding_plans SET status='completed'")
-    result = staff.get('/api/admin/hubs').json()[0]
-    assert result['location'] == {'latitude': 59.9, 'longitude': 10.7, 'name': 'Hytta', 'source': 'onboarding'}
-    assert 'private-' not in str(result) and PASSWORD not in str(result)
+    result = staff.get("/api/admin/hubs").json()[0]
+    assert result["location"] == {
+        "latitude": 59.9,
+        "longitude": 10.7,
+        "name": "Hytta",
+        "source": "onboarding",
+    }
+    assert "private-" not in str(result) and PASSWORD not in str(result)
     with sqlite3.connect(path) as db:
-        db.execute('INSERT INTO hub_resets(home,id,public_key,phase,created) VALUES(?,?,?,?,?)',
-                   (home, 'reset', '', 'awaiting_owner', 1))
-    assert staff.get('/api/admin/hubs').json()[0]['location'] is None
+        db.execute(
+            "INSERT INTO hub_resets(home,id,public_key,phase,created) VALUES(?,?,?,?,?)",
+            (home, "reset", "", "awaiting_owner", 1),
+        )
+    assert staff.get("/api/admin/hubs").json()[0]["location"] is None
+
+
+def test_admin_can_delete_only_unlinked_hub(tmp_path):
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    url = "/api/admin/hubs/" + home
+    assert staff.get("/api/admin/hubs").json()[0]["can_delete"] is True
+    assert owner.delete(url).status_code == 403
+    anonymous = TestClient(app, base_url=ORIGIN)
+    assert anonymous.delete(url).status_code == 401
+    ready_and_claim(staff, owner, hub, home, activation)
+    assert staff.get("/api/admin/hubs").json()[0]["can_delete"] is False
+    assert staff.delete(url).json()["detail"] == "hub_still_linked"
+    with sqlite3.connect(path) as c:
+        c.execute("UPDATE homes SET owner=NULL WHERE id=?", (home,))
+        c.execute("DELETE FROM home_members WHERE home=?", (home,))
+    assert staff.delete(url).status_code == 200
+    assert staff.get("/api/admin/hubs").json() == []
+    assert staff.get(url + "/label").status_code == 404
+    assert hub.post(f"/api/hubs/{home}/onboarding/heartbeat", json=HEARTBEAT).status_code in (401, 403, 404)
+    assert owner.post(f"/api/activation/{home}/claim", json=activation).status_code == 404
+    with sqlite3.connect(path) as c:
+        assert not c.execute("SELECT 1 FROM homes WHERE id=?", (home,)).fetchone()
+        assert (
+            c.execute("SELECT action FROM admin_audit WHERE target=? ORDER BY id DESC", (home,)).fetchone()[0]
+            == "hub_deleted"
+        )
+    assert staff.delete(url).status_code == 404
+
+
+def test_deletion_rechecks_link_and_blocks_reset_in_progress(tmp_path):
+    path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
+    assert staff.get("/api/admin/hubs").json()[0]["can_delete"] is True
+    with sqlite3.connect(path) as c:
+        c.execute(
+            "INSERT INTO hub_resets(home,id,public_key,phase,created) VALUES(?, 'reset','key','erasing',0)",
+            (home,),
+        )
+    assert staff.delete("/api/admin/hubs/" + home).json()["detail"] == "hub_operation_in_progress"
+    with sqlite3.connect(path) as c:
+        c.execute("DELETE FROM hub_resets WHERE home=?", (home,))
+        account_id = c.execute("SELECT id FROM accounts WHERE username='customer'").fetchone()[0]
+        c.execute("INSERT INTO home_members(home,account) VALUES(?,?)", (home, account_id))
+    assert staff.delete("/api/admin/hubs/" + home).json()["detail"] == "hub_still_linked"

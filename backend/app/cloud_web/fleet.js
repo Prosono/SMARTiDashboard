@@ -58,6 +58,15 @@ window.fleet = (() => {
   const traffic=node('section',undefined,'hub-detail-traffic');traffic.append(node('h3','Fjerntrafikk · siste '+$('traffic-period').value+' dager'));
   const r=report?.hubs?.[h.id];if(report?.available){traffic.append(node('strong',bytes(r?total(r):0)),node('p','Til hub: '+bytes(r?.to_hub||0)+' · Fra hub: '+bytes(r?.from_hub||0)));if(r?.daily?.length)traffic.append(chart(r.daily));traffic.append(node('small',(report.stale?'Målingen er forsinket. ':'')+'Gjelder trafikk gjennom SMARTis relé, ikke all trafikk på hjemmenettverket.'));}else traffic.append(node('p','Trafikkmålingen er ikke tilgjengelig ennå.'));
   info.append(traffic);
+  const deletion=node('section',undefined,'hub-deletion');
+  deletion.append(node('h3','Slett hub'),node('p',h.can_delete?'Fjern huben fra SMARTis register. QR-etiketten og tilkoblingsnøkkelen slutter å virke. Huben må registreres på nytt før den kan brukes igjen.':'Huben kan bare slettes når den er frikoblet fra alle kontoer og ikke har et oppsett eller en tilbakestilling som pågår. Å være frakoblet nettet er ikke tilstrekkelig.'));
+  if(h.can_delete){
+   const remove=node('button','Slett hub');remove.type='button';remove.className='danger';
+   const result=node('p');result.setAttribute('role','status');
+   remove.onclick=async()=>{if(!confirm('Slett huben «'+h.serial+'» permanent fra SMARTis register? QR-etiketten slutter å virke. Dette kan ikke angres.'))return;remove.disabled=true;try{await apiRequest('admin/hubs/'+encodeURIComponent(h.id),'DELETE');dialog.close();await inventory();}catch(e){result.textContent=e.message;remove.disabled=false;}};
+   deletion.append(remove,result);
+  }
+  info.append(deletion);
   const production=node('details',undefined,'hub-production');production.append(node('summary','Internt · produksjonsklargjøring'));
   production.append(node('p','Åpner RESTORE WIPE på denne huben i 30 minutter. Bruk bare en produksjonsmaster uten kundedata. Selve resetten må fortsatt bekreftes lokalt.'));
   const allow=node('button','Aktiver produksjonstilgang i 30 minutter'),notice=node('p');notice.setAttribute('role','status');allow.type='button';
