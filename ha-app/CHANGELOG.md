@@ -1,3 +1,8 @@
+## 1.36.18
+
+- Felles høyde på toppbildene for lys, klima, sikkerhet, multimedia og diverse på mobil og desktop. Innholdet kan fortsatt vokse ved større tekststørrelse.
+- Flytter Stemningsmodus til overskriften over rommenes belysning, slik at sceneknappen ikke øker høyden på toppbildet.
+
 ## 1.36.17
 
 - Felles toppdesign for lys, klima, multimedia, diverse og sikkerhet, basert på sikkerhetssidens ikon, tittel, undertittel og bildefelt.

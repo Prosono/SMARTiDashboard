@@ -9,10 +9,15 @@ test("search toolbars start collapsed while image banners stay visible", async (
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
+  let bannerHeight: number | undefined;
   for (const name of ["Lys", "Klima", "Sikkerhet", "Multimedia", "Diverse"]) {
     await page.getByRole("tab", { name, exact: true }).click();
     const imageBanner = page.locator(".category-summary");
     await expect(imageBanner).toBeVisible();
+    const height = (await imageBanner.boundingBox())!.height;
+    if (bannerHeight !== undefined)
+      expect(Math.abs(height - bannerHeight)).toBeLessThanOrEqual(1);
+    bannerHeight = height;
     await expect(page.locator(".category-heading h1")).toHaveText(name);
     await expect
       .poll(() =>

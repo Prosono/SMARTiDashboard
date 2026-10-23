@@ -236,15 +236,6 @@ export function LightOverview({
                 "Everyday comfort. A smarter home.",
               )
         }
-        action={
-          scenes && (
-            <button onClick={scenes}>
-              <Sparkles size={18} />
-              {t("Stemningsmodus", "Scenes")}
-              <ChevronRight size={18} />
-            </button>
-          )
-        }
       >
         {[
           {
@@ -274,6 +265,16 @@ export function LightOverview({
           </div>
         ))}
       </CategorySummary>
+      <div className="lighting-section-heading">
+        <h2>{t("Belysning i rommene", "Lighting by room")}</h2>
+        {scenes && (
+          <button onClick={scenes}>
+            <Sparkles size={18} />
+            {t("Stemningsmodus", "Scenes")}
+            <ChevronRight size={18} />
+          </button>
+        )}
+      </div>
       {message && <p role="status">{message}</p>}
       <div className="lighting-grid">
         {visible.map((a) => {

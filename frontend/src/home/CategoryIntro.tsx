@@ -32,7 +32,6 @@ export function CategorySummary({
   description,
   alert = false,
   children,
-  action,
 }: {
   image: string;
   eyebrow: string;
@@ -40,7 +39,6 @@ export function CategorySummary({
   description: ReactNode;
   alert?: boolean;
   children: ReactNode;
-  action?: ReactNode;
 }) {
   return (
     <section className="category-summary" data-alert={alert}>
@@ -49,7 +47,6 @@ export function CategorySummary({
         <small>{eyebrow}</small>
         <h2>{title}</h2>
         <p>{description}</p>
-        {action && <div className="category-summary-action">{action}</div>}
       </div>
       <div className="category-metrics">{children}</div>
     </section>
