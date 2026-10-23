@@ -30,7 +30,15 @@ def test_energy_archive_isolated_idempotent_and_owner_scoped(tmp_path):
             headers=headers,
             json={
                 "readings": [row],
-                "agreements": [{"start": start.isoformat(), "config": {"company": "elvia"}}],
+                "agreements": [
+                    {
+                        "start": start.isoformat(),
+                        "config": {
+                            "company": "elvia",
+                            "equipment": {"solar": True, "ev": False, "battery": False},
+                        },
+                    }
+                ],
             },
         ).json() == {"accepted": 1}
     assert client.post(endpoint, json={"readings": [row]}).status_code == 403
@@ -42,13 +50,26 @@ def test_energy_archive_isolated_idempotent_and_owner_scoped(tmp_path):
             headers=headers,
             json={
                 "readings": [],
-                "agreements": [{"start": start.isoformat(), "config": {"company": "elvia"}}],
+                "agreements": [
+                    {
+                        "start": start.isoformat(),
+                        "config": {
+                            "company": "elvia",
+                            "equipment": {"solar": True, "ev": False, "battery": False},
+                        },
+                    }
+                ],
             },
         ).status_code
         == 200
     )
     assert len(alice.get(read, params=query).json()["readings"]) == 1
     assert alice.get(read, params=query).json()["agreements"][0]["config"]["company"] == "elvia"
+    assert alice.get(read, params=query).json()["agreements"][0]["config"]["equipment"] == {
+        "solar": True,
+        "ev": False,
+        "battery": False,
+    }
     assert bob.get(read, params=query).status_code == 404
     # Simulate reassignment: the new owner must not inherit private readings.
     with sqlite3.connect(path) as db:

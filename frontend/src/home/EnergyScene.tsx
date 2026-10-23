@@ -533,8 +533,8 @@ export default function EnergyScene({
           role="img"
           aria-label={
             en
-              ? "Interactive 3D energy home with solar roof, EV charger, battery and utility pole. Measurements available beside each component and below."
-              : "Interaktivt 3D-energihus med soltak, elbillader, batteri og strømmast. Målinger ved hver del og under modellen."
+              ? "Interactive 3D energy home with your configured equipment. Measurements available beside each component and below."
+              : "Interaktivt 3D-energihus med utstyret du har valgt. Målinger ved hver del og under modellen."
           }
         />
         {!failed && (

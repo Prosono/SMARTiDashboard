@@ -69,11 +69,37 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   await dialog.getByLabel("Støtteordning").selectOption("norgespris");
   await dialog.getByRole("button", { name: "Fortsett" }).click();
   await dialog
+    .locator(".ep-sensor-picker")
+    .filter({ has: page.getByText("Kjøpt strøm fra nettet", { exact: true }) })
+    .locator("summary")
+    .click();
+  await dialog
     .getByRole("combobox", { name: "Kjøpt strøm fra nettet", exact: true })
     .selectOption("sensor.grid");
   await dialog
+    .locator(".ep-sensor-picker")
+    .filter({ has: page.getByText("Effekt fra strømnettet", { exact: true }) })
+    .locator("summary")
+    .click();
+  await dialog
     .getByRole("combobox", { name: "Effekt fra strømnettet", exact: true })
     .selectOption("sensor.power");
+  const battery = dialog.getByRole("group", { name: "Har du hjemmebatteri?" });
+  await expect(
+    dialog.getByText("Strøm inn på batteriet", { exact: true }),
+  ).toHaveCount(0);
+  await battery.getByRole("button", { name: "Ja", exact: true }).click();
+  await expect(
+    dialog.getByText("Strøm inn på batteriet", { exact: true }),
+  ).toBeVisible();
+  await battery.getByRole("button", { name: "Nei", exact: true }).click();
+  await expect(
+    dialog.getByText("Strøm inn på batteriet", { exact: true }),
+  ).toHaveCount(0);
+  await dialog
+    .getByRole("group", { name: "Har du solceller?" })
+    .getByRole("button", { name: "Ja", exact: true })
+    .click();
   await expect(dialog.getByText("Elhub kommer senere")).toBeVisible();
   await page.screenshot({
     path: `/tmp/smarti-energy-wizard-${info.project.name}.png`,
@@ -84,6 +110,19 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   expect(config.cloud_history).toBe(true);
   expect(config.scheme).toBe("norgespris");
   expect(config.meters[0].entity).toBe("sensor.grid");
+  expect(config.equipment).toEqual({ solar: true, ev: false, battery: false });
+  await expect(
+    page.getByRole("tab", { name: "3D-oversikt", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(
+    page.getByRole("tabpanel", {
+      name: "Historikk og strømpriser",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("tab", { name: "Historikk og strømpriser", exact: true })
+    .click();
   await expect(page.getByText("Ingen fersk effektmåling")).toBeVisible();
   expect(errors).toEqual([]);
   dashboardReady = true;
@@ -162,6 +201,9 @@ test("energy chart distinguishes zero from missing readings and supports keyboar
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  await page
+    .getByRole("tab", { name: "Historikk og strømpriser", exact: true })
+    .click();
   const chart = page.getByRole("group", { name: "Forbruksgraf" });
   await expect(chart.getByRole("button")).toHaveCount(3);
   await chart.getByRole("button").nth(1).focus();

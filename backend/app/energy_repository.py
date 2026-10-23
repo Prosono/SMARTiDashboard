@@ -36,6 +36,7 @@ class EnergyConfig(BaseModel):
     power_entity: str | None = Field(default=None, max_length=200)
     power: dict[Literal["solar", "battery", "ev", "home"], str] = Field(default_factory=dict, max_length=4)
     battery_level: str | None = Field(default=None, max_length=200)
+    equipment: dict[Literal["solar", "ev", "battery"], bool] | None = None
     cloud_history: bool = True
 
     @model_validator(mode="after")

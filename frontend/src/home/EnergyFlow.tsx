@@ -60,10 +60,12 @@ export function EnergyFlow({
   home,
   offline,
   lang,
+  managedEquipment = false,
 }: {
   home: Home;
   offline: boolean;
   lang: string;
+  managedEquipment?: boolean;
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb),
@@ -121,7 +123,8 @@ export function EnergyFlow({
   for (const role of flowRoles) {
     const reading = live.data?.flows[role];
     if (reading) flows[role] = { ...reading };
-    flows[role].visible = config.data?.[role].visible ?? true;
+    flows[role].visible =
+      config.data?.[role].visible ?? (role === "home" || role === "grid");
     if (offline || live.isError || !live.data?.connected) {
       flows[role].watts = null;
       flows[role].status = config.data?.[role].source
@@ -268,22 +271,24 @@ export function EnergyFlow({
       <header className="flow-heading">
         <EnergyWelcome home={home} offline={offline} lang={lang} />
         <div className="flow-heading-actions">
-          <button
-            className="flow-configure"
-            aria-label={t("Rediger 3D-modell", "Edit 3D model")}
-            title={t("Rediger 3D-modell", "Edit 3D model")}
-            disabled={!config.data || busy}
-            onClick={() => {
-              edit(structuredClone(config.data!));
-              setEditingRole(null);
-              setError("");
-              requestAnimationFrame(() =>
-                document.getElementById("flow-model-options")?.focus(),
-              );
-            }}
-          >
-            <House size={20} aria-hidden="true" />
-          </button>
+          {!managedEquipment && (
+            <button
+              className="flow-configure"
+              aria-label={t("Rediger 3D-modell", "Edit 3D model")}
+              title={t("Rediger 3D-modell", "Edit 3D model")}
+              disabled={!config.data || busy}
+              onClick={() => {
+                edit(structuredClone(config.data!));
+                setEditingRole(null);
+                setError("");
+                requestAnimationFrame(() =>
+                  document.getElementById("flow-model-options")?.focus(),
+                );
+              }}
+            >
+              <House size={20} aria-hidden="true" />
+            </button>
+          )}
           <button
             className="flow-configure"
             aria-label={t("Konfigurer energiflyt", "Configure energy flow")}
@@ -341,7 +346,7 @@ export function EnergyFlow({
                 "Choose power sensors in W or kW. kWh measures energy over time and belongs in the history below. Configuration controls no devices.",
               )}
             </p>
-            {!editingRole && (
+            {!editingRole && !managedEquipment && (
               <div
                 id="flow-model-options"
                 className="flow-model-options"
@@ -381,6 +386,14 @@ export function EnergyFlow({
                   })}
                 </div>
               </div>
+            )}
+            {managedEquipment && (
+              <p>
+                {t(
+                  "Endre hvilket utstyr du har under Energiinnstillinger.",
+                  "Change your equipment in Energy settings.",
+                )}
+              </p>
             )}
             <div className="flow-binding-grid">
               {flowRoles

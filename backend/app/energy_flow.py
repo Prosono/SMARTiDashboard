@@ -70,6 +70,31 @@ def energy_flow_router(store, user, ha, settings):
                 getattr(pref, role).source = entity
         if not pref.battery_level:
             pref.battery_level = shared.get("battery_level")
+        # Explicit setup choices define equipment, even without a live sensor.
+        # Old configurations retain their previous per-user preferences.
+        equipment = shared.get("equipment")
+        if equipment is None and shared and not store.get(f"energy_flow:{current['id']}"):
+            roles = {m["role"] for m in shared.get("meters", [])}
+            power = shared.get("power", {})
+            equipment = {
+                "solar": bool(power.get("solar") or roles & {"solar", "export"}),
+                "ev": bool(power.get("ev") or "ev" in roles),
+                "battery": bool(
+                    power.get("battery")
+                    or shared.get("battery_level")
+                    or roles & {"battery_charge", "battery_discharge"}
+                ),
+            }
+        if equipment is not None:
+            for role in ("solar", "ev", "battery"):
+                binding = getattr(pref, role)
+                binding.visible = bool(equipment.get(role, False))
+                if not binding.visible:
+                    binding.source = None
+                    binding.return_source = None
+            if not pref.battery.visible:
+                pref.battery_level = None
+
         return pref
 
     @router.get("/preferences")

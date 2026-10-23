@@ -44,7 +44,7 @@
   gap: 0.6rem;
   min-height: 44px;
   padding: 0.65rem 1rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
   color: inherit;
@@ -73,7 +73,7 @@
   align-items: center;
   gap: 1.4rem;
   padding: 2rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--surface);
 }
@@ -90,7 +90,7 @@
 }
 .ep-toolbar {
   flex-wrap: wrap;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
   padding-bottom: 1rem;
 }
 .ep-toolbar > div {
@@ -110,7 +110,7 @@
 .ep input,
 .ep-wizard input:not([type="checkbox"]),
 .ep-wizard select {
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface);
   color: var(--text);
@@ -126,7 +126,7 @@
 }
 .ep-metrics article {
   padding: 1rem 1.5rem;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--line);
 }
 .ep-metrics article:first-child {
   border-left: 0;
@@ -149,7 +149,7 @@
 }
 .ep-history {
   padding: 1.5rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--surface);
 }
@@ -163,7 +163,7 @@
   gap: 3px;
   height: 200px;
   margin-top: 2rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
 }
 .ep-bars button {
   flex: 1;
@@ -198,7 +198,7 @@
   grid-template-columns: 1.2fr 1fr;
   gap: 2rem;
   padding: 2rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
 }
 .ep-details article > svg {
   float: right;
@@ -209,7 +209,7 @@
 }
 .ep-consumer {
   padding: 1rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
 }
 .ep-consumer small {
   display: block;
@@ -252,7 +252,7 @@
 .ep-steps li span {
   width: 27px;
   height: 27px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -282,7 +282,7 @@
 .ep-company-list {
   max-height: 220px;
   overflow: auto;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 12px;
 }
 .ep-company-list button {
@@ -342,7 +342,7 @@
   gap: 1rem;
   padding-top: 1.5rem;
   margin-top: 1.5rem;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
 }
 .ep-wizard details {
   margin-top: 1.5rem;
@@ -379,7 +379,7 @@
   .ep-metrics article {
     border: 0;
     padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--line);
   }
   .ep-metrics strong {
     font-size: 1.8rem;
@@ -432,7 +432,7 @@
 }
 .ep-cost-breakdown {
   padding: 1.5rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
 }
 .ep-cost-breakdown dl {
   max-width: 600px;
@@ -467,7 +467,7 @@
 }
 .ep-forecast {
   padding: 1.5rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
 }
 .ep-forecast > strong {
   display: block;
@@ -486,7 +486,7 @@
   justify-content: space-between;
   max-width: 600px;
   padding: 0.65rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
 }
 .ep-alternatives > small {
   display: block;
@@ -510,7 +510,7 @@
 }
 .dashboard-settings-dialog .ep-wizard select,
 .dashboard-settings-dialog .ep-wizard input:not([type="checkbox"]) {
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   background: var(--surface);
   border-radius: 10px;
   padding: 0.7rem 0.8rem;
@@ -540,10 +540,102 @@
   color: var(--text);
 }
 .ep-solar {
-  border-block: 1px solid var(--border);
+  border-block: 1px solid var(--line);
   padding: 1.5rem 0;
   margin-bottom: 1.5rem;
 }
 .ep-solar h3 {
   margin-bottom: 1.5rem;
+}
+
+.ep-view-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+.ep-view-tabs button {
+  flex: 1;
+  max-width: 280px;
+  min-height: 48px;
+}
+.ep-view-tabs button[aria-selected="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  font-weight: 600;
+}
+.ep-wizard .ep-equipment-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  margin: 20px 0;
+  background: var(--surface);
+}
+.ep-equipment-card h4 {
+  font-size: 1.1rem;
+  margin: 0 0 8px;
+}
+.ep-equipment-card p {
+  font-size: 0.9rem;
+  margin: 8px 0 16px;
+}
+.ep-choice {
+  display: flex;
+  gap: 12px;
+}
+.ep-wizard .ep-choice button {
+  flex: 1;
+  justify-content: space-between;
+  border: 1px solid var(--muted);
+  min-height: 52px;
+  padding: 12px 16px;
+}
+.ep-wizard .ep-choice button[aria-pressed="true"] {
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  padding: 11px 15px;
+  font-weight: 600;
+}
+.ep-equipment-readings {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ep-sensor-picker {
+  margin-top: 18px;
+}
+.ep-sensor-picker small {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.ep-wizard .ep-sensor-picker details {
+  margin-top: 4px;
+}
+.dashboard-settings-dialog .ep-wizard .ep-sensor-picker summary {
+  padding: 12px;
+  border: 1px solid var(--muted);
+  border-radius: 10px;
+  min-height: 48px;
+  overflow-wrap: anywhere;
+}
+.ep-sensor-picker select {
+  width: 100%;
+  max-width: 100%;
+}
+.ep-wizard .ep-sensor-picker label {
+  margin: 8px 0;
+}
+@media (max-width: 700px) {
+  .ep-wizard .ep-equipment-card {
+    padding: 16px;
+  }
+  .ep-view-tabs button {
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+  .ep-view-tabs {
+    gap: 6px;
+  }
 }

@@ -49,3 +49,38 @@ def test_dashboard_keeps_missing_readings_missing(client):  # noqa: F811
     assert data["meters"][0]["cost_total"] is None
     assert data["forecast"] is None
     assert all(p["kwh"] is None for p in data["meters"][0]["points"])
+
+
+def test_equipment_controls_scene_without_requiring_sensors(client):  # noqa: F811
+    install(client.app.state.ha, "sensor.battery", 500, "W")
+    # Old personal bindings must not resurrect equipment removed by the household.
+    assert (
+        client.put(
+            "/api/home/energy-flow/preferences", json={"battery": {"source": "sensor.battery"}}
+        ).status_code
+        == 200
+    )
+    body = {"company": "elvia", "equipment": {"solar": True, "ev": False, "battery": False}}
+    assert client.put("/api/home/energy/platform/setup", json=body).status_code == 200
+    assert client.get("/api/home/energy/platform/setup").json()["config"]["equipment"] == body["equipment"]
+    pref = client.get("/api/home/energy-flow/preferences").json()
+    assert pref["solar"]["visible"] and pref["solar"]["source"] is None
+    assert not pref["ev"]["visible"]
+    assert not pref["battery"]["visible"] and pref["battery"]["source"] is None
+    live = client.get("/api/home/energy-flow/live").json()
+    assert live["flows"]["solar"]["status"] == "unconfigured"
+    assert live["flows"]["solar"]["watts"] is None
+    assert not live["flows"]["battery"]["visible"]
+    body["equipment"]["ev"] = True
+    assert client.put("/api/home/energy/platform/setup", json=body).status_code == 200
+    assert client.get("/api/home/energy-flow/preferences").json()["ev"]["visible"]
+
+
+def test_legacy_setup_infers_equipment(client):  # noqa: F811
+    install(client.app.state.ha, "sensor.solar", 15, "kWh")
+    body = {"company": "elvia", "meters": [{"role": "solar", "entity": "sensor.solar", "name": "Solar"}]}
+    assert client.put("/api/home/energy/platform/setup", json=body).status_code == 200
+    pref = client.get("/api/home/energy-flow/preferences").json()
+    assert pref["solar"]["visible"]
+    assert not pref["ev"]["visible"]
+    assert not pref["battery"]["visible"]

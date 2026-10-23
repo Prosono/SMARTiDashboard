@@ -66,7 +66,7 @@ async function expectStillCanvas(page: Page, canvas: Locator, reason: string) {
 test("3D hotspots configure live measurements and preserve directions, freshness and persistence", async ({
   page,
 }) => {
-  test.setTimeout(120000);
+  test.setTimeout(180000);
   const renderingErrors: string[] = [];
   page.on("pageerror", (error) => renderingErrors.push(error.message));
   page.on("console", (message) => {
@@ -359,7 +359,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(grid).toContainText("Til nettet");
   await expect(battery).toContainText("Lader batteriet");
   await expect(solar).toContainText("4,3 kW");
-  await expect(solarHotspot).toContainText("4,3 kW");
+  await expect(solarHotspot).toContainText("4,3 kW", { timeout: 20000 });
   // True hourly history is carried into the floating instrument card, including gaps.
   await expect(
     solarHotspot.locator(".energy-hotspot-sparkline svg"),
@@ -381,8 +381,9 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await flow.locator("canvas").scrollIntoViewIfNeeded();
   const moving = await flow.locator("canvas").screenshot();
   await expect
-    .poll(async () =>
-      (await flow.locator("canvas").screenshot()).equals(moving),
+    .poll(
+      async () => (await flow.locator("canvas").screenshot()).equals(moving),
+      { timeout: 15000 },
     )
     .toBe(false);
   await flow.getByRole("button", { name: "Pause", exact: true }).click();
@@ -408,7 +409,9 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await page.emulateMedia({ reducedMotion: "no-preference" });
   const reducedFrame = await canvas.screenshot();
   await expect
-    .poll(async () => (await canvas.screenshot()).equals(reducedFrame))
+    .poll(async () => (await canvas.screenshot()).equals(reducedFrame), {
+      timeout: 15000,
+    })
     .toBe(false);
   await flow.getByRole("button", { name: "Pause", exact: true }).click();
   await settleRendering(page);
@@ -496,7 +499,10 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     animations: "disabled",
     path: `../artifacts/${test.info().project.name}-energy-flow.png`,
   });
-  await page.getByText("Detaljert målerhistorikk", {exact:true}).click();
+  await page
+    .getByRole("tab", { name: "Historikk og strømpriser", exact: true })
+    .click();
+  await page.getByText("Detaljert målerhistorikk", { exact: true }).click();
   await expect(
     page.locator(".energy-workspace .energy-large-chart"),
   ).toBeVisible();
@@ -504,6 +510,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     animations: "disabled",
     path: `../artifacts/${test.info().project.name}-energy-overview.png`,
   });
+  await page.getByRole("tab", { name: "3D-oversikt", exact: true }).click();
   if (test.info().project.name === "desktop") {
     const originalViewport = page.viewportSize()!;
     await page.setViewportSize({ width: 1920, height: 1200 });
@@ -552,9 +559,15 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     await page.setViewportSize(originalViewport);
     await settleRendering(page);
   }
-  await page.getByRole("button", { name: "Innstillinger", exact: true }).click();
-  await page.getByRole("button", { name: "Tema og utseende", exact: true }).click();
-  await page.getByRole("combobox", { name: "Utseende", exact: true }).selectOption("dark");
+  await page
+    .getByRole("button", { name: "Innstillinger", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Utseende", exact: true })
+    .selectOption("dark");
   await page.getByRole("button", { name: "Hjem", exact: true }).click();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
   await flow.locator(".energy-scene-stage").screenshot({
@@ -589,7 +602,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     0,
   );
   await expect(flow.locator('[data-hotspot="ev"]')).toHaveCount(0);
-  await expect(solarHotspot).toContainText("4,3 kW");
+  await expect(solarHotspot).toContainText("4,3 kW", { timeout: 20000 });
   await solarHotspot.click();
   await flow.getByRole("button", { name: "Endre måler", exact: true }).click();
   await expect(

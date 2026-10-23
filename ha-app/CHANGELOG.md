@@ -1,3 +1,10 @@
+## 1.36.3
+
+- Enklere energioppsett med tydelige rammer, ja/nei-valg for solceller, elbil og hjemmebatteri, og søk etter kompatible målere.
+- Målerfeltene vises bare for utstyret som er valgt. Utstyr kan legges til uten måler; manglende målinger vises tydelig.
+- Energivisningen deles i «3D-oversikt» og «Historikk og strømpriser». 3D-huset følger hjemmets utstyrsvalg, også fra tidligere energioppsett.
+- Veiviseren starter øverst ved hvert steg. Utstyrsvalgene lagres på huben og følger avtalesynkroniseringen til SMARTi-skyen.
+
 ## 1.36.2
 
 - Lagre HTTP-port 8123 som stabil konfigurasjon under restore, slik at HA ikke ruller tilbake til port 80 etter fem minutter.

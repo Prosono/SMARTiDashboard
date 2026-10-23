@@ -1055,28 +1055,38 @@ export function HomeOverview({
           />
         )}
         {tab === "energy" && (
-          <>
-            <EnergyPlatform admin={admin} lang={lang} />
-            <EnergyFlow home={h} offline={offline} lang={lang} />
-          </>
-        )}
-        <div className="home-insights">
-          {tab === "energy" && model.meters.length > 0 && (
-            <details id="home-energy">
-              <summary>Detaljert målerhistorikk</summary>
-              <Energy
-                controls={h.controls}
-                meters={model.meters}
-                selected={pref?.energy || null}
-                onSelect={(id) => savePreference({ energy: id })}
+          <EnergyPlatform
+            admin={admin}
+            lang={lang}
+            overview={(managedEquipment) => (
+              <EnergyFlow
+                home={h}
                 offline={offline}
                 lang={lang}
+                managedEquipment={managedEquipment}
               />
-            </details>
-          )}
-          {tab === "energy" && (
-            <Vehicle home={h} offline={offline} lang={lang} />
-          )}
+            )}
+            historyExtras={
+              <>
+                {model.meters.length > 0 && (
+                  <details id="home-energy">
+                    <summary>Detaljert målerhistorikk</summary>
+                    <Energy
+                      controls={h.controls}
+                      meters={model.meters}
+                      selected={pref?.energy || null}
+                      onSelect={(id) => savePreference({ energy: id })}
+                      offline={offline}
+                      lang={lang}
+                    />
+                  </details>
+                )}
+                <Vehicle home={h} offline={offline} lang={lang} />
+              </>
+            }
+          />
+        )}
+        <div className="home-insights">
           {tab === "overview" && !!activity.data?.length && (
             <section className="home-panel">
               <h2>{t("Siste aktivitet", "Recent activity")}</h2>
