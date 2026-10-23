@@ -9,13 +9,17 @@ type Version = {
   version: string;
   version_latest: string;
   update_available: boolean;
+  checked_at?: number | null;
+  check_error?: boolean;
 };
 export function SelfUpdate({ lang }: { lang: string }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const q = useQuery({
     queryKey: ["manage", "self-update"],
-    queryFn: () => api<Version>("manage/apps/self-update"),
-    refetchInterval: 15000,
+    queryFn: () => api<Version>("manage/apps/self-update/check", "POST", {}),
+    refetchInterval: 60000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
   });
   const [confirm, setConfirm] = useState(false),
     [busy, setBusy] = useState(false),
@@ -74,7 +78,7 @@ export function SelfUpdate({ lang }: { lang: string }) {
   }
   return (
     <article className="panel">
-      <h2>SMARTi</h2>
+      <h2>{t("SMARTi-appen", "SMARTi app")}</h2>
       {q.data ? (
         <p>
           {t("Installert", "Installed")}: {q.data.version} ·{" "}
@@ -90,8 +94,31 @@ export function SelfUpdate({ lang }: { lang: string }) {
             : t("Henter versjon …", "Loading version …")}
         </p>
       )}
+      <p role="status">
+        {q.isFetching
+          ? t("Ser etter ny versjon …", "Checking for a new version …")
+          : q.isError || q.data?.check_error
+            ? t(
+                "Sjekken kunne ikke fullføres. Versjonsinformasjonen kan være utdatert.",
+                "The check could not complete. Version information may be outdated.",
+              )
+            : q.data?.checked_at
+              ? t("Sist sjekket", "Last checked") +
+                " " +
+                new Date(q.data.checked_at * 1000).toLocaleTimeString(
+                  lang === "en" ? "en-GB" : "nb-NO",
+                  { hour: "2-digit", minute: "2-digit" },
+                )
+              : ""}
+      </p>
+      <small>
+        {t(
+          "Sjekker automatisk hvert minutt mens denne siden er åpen. Oppdateringer installeres først når du bekrefter.",
+          "Checks every minute while this page is open. Updates install only after confirmation.",
+        )}
+      </small>
       <div className="app-actions">
-        <button disabled={busy} onClick={() => void refresh()}>
+        <button disabled={busy || q.isFetching} onClick={() => void refresh()}>
           {t("Se etter oppdateringer", "Check for updates")}
         </button>
         {q.data?.update_available && (

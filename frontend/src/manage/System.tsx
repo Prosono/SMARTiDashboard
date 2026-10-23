@@ -393,7 +393,13 @@ export function Integrations({ lang }: { lang: string }) {
     </section>
   );
 }
-export function Updates({ lang }: { lang: string }) {
+export function Updates({
+  lang,
+  embedded = false,
+}: {
+  lang: string;
+  embedded?: boolean;
+}) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const q = useQuery({
     queryKey: ["manage", "updates"],
@@ -410,7 +416,11 @@ export function Updates({ lang }: { lang: string }) {
     <section>
       <div className="page-heading">
         <span className="eyebrow">SMARTi</span>
-        <h1>{t("Hold hjemmet oppdatert.", "Keep your home up to date.")}</h1>
+        {embedded ? (
+          <h2>{t("SMARTi-oppdateringer", "SMARTi updates")}</h2>
+        ) : (
+          <h1>{t("Hold hjemmet oppdatert.", "Keep your home up to date.")}</h1>
+        )}
         <p>
           {t(
             "System, apper og enheter samlet på ett sted.",

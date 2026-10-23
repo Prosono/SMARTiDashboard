@@ -1262,6 +1262,7 @@ function Dashboard({
                       ],
                       ["network", lang === "en" ? "Network" : "Nettverk"],
                       ["system", "System"],
+                      ["updates", lang === "en" ? "SMARTi updates" : "SMARTi-oppdateringer"],
                       ...(mode === "advanced"
                         ? [["debugging", "Debugging"]]
                         : []),
@@ -1290,12 +1291,12 @@ function Dashboard({
                   }
                   onClick={() => guard(() => setSettingsSection(key))}
                 >
-                  {key === "household" ? <House size={19} /> : key === "backups" ? <Database size={19} /> : key === "network" ? <Network size={19} /> : key === "system" ? <Server size={19} /> : key === "debugging" ? <Code size={19} /> : <Palette size={19} />}
+                  {key === "household" ? <House size={19} /> : key === "backups" ? <Database size={19} /> : key === "network" ? <Network size={19} /> : key === "system" ? <Server size={19} /> : key === "debugging" ? <Code size={19} /> : key === "updates" ? <DownloadCloud size={19} /> : <Palette size={19} />}
                   {label}
                 </button>
               ))}
             </nav>
-            {mode === "advanced" &&
+            {mode !== "simple" && session.role === "admin" && settingsSection === "updates" ? <Updates lang={lang} embedded /> : mode === "advanced" &&
             session.role === "admin" &&
             settingsSection === "debugging" ? (
               <Debugging lang={lang} />

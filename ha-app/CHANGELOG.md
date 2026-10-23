@@ -1,3 +1,9 @@
+## 1.36.6
+
+- Ny kategori «SMARTi-oppdateringer» under Innstillinger for administratorer i normal og avansert modus, med både SMARTi-appen og system-/enhetsoppdateringer.
+- Appkatalogen sjekkes automatisk ved åpning og hvert minutt mens oppdateringssiden er aktiv. Flere klienter deler en begrenset katalogkontroll, og manuell sjekk er fortsatt tilgjengelig.
+- Viser siste vellykkede sjekk og tydelig feilstatus hvis nyeste versjon ikke kan bekreftes. Ingen oppdateringer installeres uten bekreftelse.
+
 ## 1.36.5
 
 - Rediger eksisterende energioppsett direkte fra Energiinnstillinger: hjem og nettleie, strømavtale, utstyr og målere, eller historikk og lagring.

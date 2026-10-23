@@ -58,6 +58,28 @@ def apps_router(m, admin, settings):
     router = APIRouter(prefix="/api/manage/apps", dependencies=[Depends(admin)])
     supervisor = Supervisor(settings)
     lock = asyncio.Lock()
+    catalog_lock = asyncio.Lock()
+    last_catalog_attempt = None
+    catalog_checked_at = None
+    catalog_check_error = False
+
+    async def refresh_catalog(force=False):
+        nonlocal last_catalog_attempt, catalog_checked_at, catalog_check_error
+        async with catalog_lock:
+            if (
+                not force
+                and last_catalog_attempt is not None
+                and time.monotonic() - last_catalog_attempt < 60
+            ):
+                return
+            last_catalog_attempt = time.monotonic()
+            try:
+                await supervisor.request("POST", "/store/reload")
+            except HTTPException:
+                catalog_check_error = True
+                return
+            catalog_checked_at = time.time()
+            catalog_check_error = False
 
     def valid_slug(slug):
         if (
@@ -135,6 +157,13 @@ def apps_router(m, admin, settings):
             raise HTTPException(503, "app_identity_unavailable")
         return view(info, True)
 
+    @router.post("/self-update/check")
+    async def self_update_check():
+        await own_slug()
+        await refresh_catalog()
+        info = await self_update_info()
+        return {**info, "checked_at": catalog_checked_at, "check_error": catalog_check_error}
+
     @router.post("/self-update")
     async def self_update(body: AppAction, current=Depends(admin)):
         slug = await own_slug()
@@ -194,7 +223,9 @@ def apps_router(m, admin, settings):
     @router.post("/reload")
     async def reload_store():
         await own_slug()
-        await supervisor.request("POST", "/store/reload")
+        await refresh_catalog(force=True)
+        if catalog_check_error:
+            raise HTTPException(502, "app_catalog_check_failed")
         return {"saved": True}
 
     def rows(current=None):

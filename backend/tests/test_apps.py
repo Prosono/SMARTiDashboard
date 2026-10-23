@@ -157,7 +157,10 @@ def test_options_validation_uninstall_and_access(client, supervisor):  # noqa: F
     login(client, "resident", "another long password")
     assert client.get("/api/manage/apps").status_code == 403
     assert client.get("/api/manage/apps/self-update").status_code == 403
-    assert client.post("/api/manage/apps/self-update", json=body("renamed_instance", "update")).status_code == 403
+    assert (
+        client.post("/api/manage/apps/self-update", json=body("renamed_instance", "update")).status_code
+        == 403
+    )
     assert client.post("/api/manage/apps/core_test/actions", json=body()).status_code == 403
 
 
@@ -290,3 +293,41 @@ def test_self_update_no_update(client, supervisor):  # noqa: F811
     info["update_available"] = False
     assert client.post("/api/manage/apps/self-update", json=body(state["own"], "update")).status_code == 409
     assert not any(method == "POST" for method, _, _ in calls)
+
+
+def test_self_update_check_refreshes_catalog_and_throttles(client, supervisor):  # noqa: F811
+    calls, info, state = supervisor
+    info["version_latest"] = "2"
+    first = client.post("/api/manage/apps/self-update/check")
+    assert first.status_code == 200
+    assert first.json()["checked_at"] is not None
+    assert first.json()["check_error"] is False
+    assert first.json()["version_latest"] == "2"
+    assert (
+        client.post("/api/manage/apps/self-update/check").json()["checked_at"] == first.json()["checked_at"]
+    )
+    assert sum(path == "/store/reload" for _, path, _ in calls) == 1
+    assert not any(path.endswith("/update") for _, path, _ in calls)
+    assert client.post("/api/manage/apps/reload").status_code == 200
+    assert sum(path == "/store/reload" for _, path, _ in calls) == 2
+
+
+def test_self_update_check_reports_catalog_failure_and_recovers(client, supervisor):  # noqa: F811
+    calls, _, state = supervisor
+    state["fail"] = True
+    result = client.post("/api/manage/apps/self-update/check").json()
+    assert result["check_error"] is True
+    assert result["checked_at"] is None
+    assert result["version"] == "1"
+    client.post("/api/manage/apps/self-update/check")
+    assert sum(path == "/store/reload" for _, path, _ in calls) == 1
+    state["fail"] = False
+    assert client.post("/api/manage/apps/reload").status_code == 200
+    assert client.post("/api/manage/apps/self-update/check").json()["check_error"] is False
+
+
+def test_self_update_check_requires_admin(client, supervisor):  # noqa: F811
+    client.post("/api/users", json={"name": "resident", "password": "another long password", "role": "user"})
+    client.post("/api/logout")
+    login(client, "resident", "another long password")
+    assert client.post("/api/manage/apps/self-update/check").status_code == 403
