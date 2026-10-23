@@ -743,7 +743,7 @@ export function EnergyPlatform({
             onClose={() => setEditing(false)}
             onSaved={() => {
               setEditing(false);
-              setView("overview");
+              if (!setup.data?.config) setView("overview");
               void cache.invalidateQueries({
                 queryKey: ["energy-platform-setup"],
               });
@@ -780,6 +780,13 @@ function EnergyWizard({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const editingExisting = !!setup.config;
+  const editSections = [
+    "Hjem og nettleie",
+    "Strømavtale",
+    "Utstyr og målere",
+    "Historikk og lagring",
+  ];
   const [draft, setDraft] = useState<Config>({
       ...(setup.config || defaults),
       equipment: Object.fromEntries(
@@ -882,8 +889,13 @@ function EnergyWizard({
         : {}),
     });
   }
-  const valid =
-    step === 0
+  const valid = editingExisting
+    ? !!draft.company &&
+      !!draft.effective_from &&
+      [draft.fixed_price, draft.markup, draft.monthly_fee].every(
+        (v) => String(v).trim() !== "" && Number.isFinite(Number(v)),
+      )
+    : step === 0
       ? !!draft.company
       : step === 1
         ? [draft.fixed_price, draft.markup, draft.monthly_fee].every(
@@ -906,7 +918,9 @@ function EnergyWizard({
   }
   return (
     <SettingsDialog
-      title="Energien i hjemmet ditt"
+      title={
+        editingExisting ? "Energiinnstillinger" : "Energien i hjemmet ditt"
+      }
       lang={lang}
       busy={busy}
       onClose={onClose}
@@ -917,19 +931,44 @@ function EnergyWizard({
         onSubmit={(e) => {
           e.preventDefault();
           if (valid) {
-            if (step < 3) setStep(step + 1);
+            if (!editingExisting && step < 3) setStep(step + 1);
             else void save();
           }
         }}
       >
-        <ol className="ep-steps">
-          {labels.map((label, i) => (
-            <li key={label} aria-current={i === step ? "step" : undefined}>
-              <span>{i < step ? <Check size={14} /> : i + 1}</span>
-              {label}
-            </li>
-          ))}
-        </ol>
+        {editingExisting ? (
+          <>
+            <p>
+              Velg det du vil endre, og trykk «Lagre endringer». Resten av
+              oppsettet beholdes.
+            </p>
+            <nav className="ep-edit-sections" aria-label="Energiinnstillinger">
+              {editSections.map((label, index) => (
+                <button
+                  type="button"
+                  key={label}
+                  aria-pressed={step === index}
+                  disabled={busy}
+                  onClick={() => {
+                    setStep(index);
+                    setError("");
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+          </>
+        ) : (
+          <ol className="ep-steps">
+            {labels.map((label, i) => (
+              <li key={label} aria-current={i === step ? "step" : undefined}>
+                <span>{i < step ? <Check size={14} /> : i + 1}</span>
+                {label}
+              </li>
+            ))}
+          </ol>
+        )}
         {step === 0 && (
           <>
             <h3>Hvilket nettselskap har du?</h3>
@@ -1291,18 +1330,12 @@ function EnergyWizard({
         )}
         {step === 3 && (
           <>
-            <h3>Dette blir din energioversikt.</h3>
-            <label>
-              Avtalen gjelder fra
-              <input
-                type="date"
-                required
-                min="2021-12-01"
-                max={dayString(new Date())}
-                value={draft.effective_from}
-                onChange={(e) => change({ effective_from: e.target.value })}
-              />
-            </label>
+            <h3>
+              {editingExisting
+                ? "Historikk og lagring"
+                : "Dette blir din energioversikt."}
+            </h3>
+
             <dl className="ep-review">
               <dt>Nettselskap</dt>
               <dd>
@@ -1358,9 +1391,36 @@ function EnergyWizard({
             )}
           </>
         )}
+        {(editingExisting || step === 3) && (
+          <div className="ep-edit-date">
+            {" "}
+            <label>
+              Endringene gjelder fra
+              <input
+                type="date"
+                required
+                min="2021-12-01"
+                max={dayString(new Date())}
+                value={draft.effective_from}
+                onChange={(e) => change({ effective_from: e.target.value })}
+              />
+            </label>
+            {editingExisting && (
+              <small>
+                Endringene gjelder fra denne datoen. Tidligere målinger
+                beholdes.
+              </small>
+            )}
+          </div>
+        )}
         {error && <p role="alert">{error}</p>}
         <footer>
-          {step > 0 && (
+          {editingExisting && (
+            <button type="button" disabled={busy} onClick={onClose}>
+              Avbryt
+            </button>
+          )}
+          {!editingExisting && step > 0 && (
             <button
               type="button"
               disabled={busy}
@@ -1376,9 +1436,11 @@ function EnergyWizard({
           >
             {busy
               ? "Lagrer…"
-              : step === 3
-                ? "Åpne energioversikten"
-                : "Fortsett"}
+              : editingExisting
+                ? "Lagre endringer"
+                : step === 3
+                  ? "Åpne energioversikten"
+                  : "Fortsett"}
             <ArrowRight size={18} />
           </button>
         </footer>

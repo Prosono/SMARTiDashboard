@@ -141,6 +141,27 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
     path: `/tmp/smarti-energy-dashboard-${info.project.name}.png`,
     fullPage: true,
   });
+  // Existing homes edit one section directly, preserving the other settings.
+  const saved = structuredClone(config);
+  await page.getByRole("button", {name: "Energiinnstillinger", exact: true}).click();
+  const editor = page.getByRole("dialog", {name: "Energiinnstillinger", exact: true});
+  await editor.getByRole("button", {name: "Utstyr og målere", exact: true}).click();
+  await editor.getByRole("group", {name: "Har du hjemmebatteri?"}).getByRole("button", {name: "Ja", exact: true}).click();
+  await expect(editor.getByRole("button", {name: "Fortsett", exact: true})).toHaveCount(0);
+  await editor.screenshot({path: `/tmp/smarti-energy-edit-${info.project.name}.png`});
+  await editor.getByRole("button", {name: "Lagre endringer", exact: true}).click();
+  await expect(editor).not.toBeVisible();
+  expect(config.equipment.battery).toBe(true);
+  expect(config.company).toBe(saved.company);
+  expect(config.scheme).toBe(saved.scheme);
+  expect(config.meters).toEqual(saved.meters);
+  expect(config.cloud_history).toBe(saved.cloud_history);
+  await expect(page.getByRole("tab", {name: "Historikk og strømpriser", exact: true})).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("button", {name: "Energiinnstillinger", exact: true}).click();
+  await editor.getByRole("button", {name: "Utstyr og målere", exact: true}).click();
+  await editor.getByRole("group", {name: "Har du hjemmebatteri?"}).getByRole("button", {name: "Nei", exact: true}).click();
+  await editor.getByRole("button", {name: "Avbryt", exact: true}).click();
+  expect(config.equipment.battery).toBe(true);
   expect(errors).toEqual([]);
 });
 

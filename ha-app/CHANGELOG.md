@@ -1,3 +1,9 @@
+## 1.36.5
+
+- Rediger eksisterende energioppsett direkte fra Energiinnstillinger: hjem og nettleie, strømavtale, utstyr og målere, eller historikk og lagring.
+- Lagre endringer fra hver del uten å gå gjennom førstegangsveiviseren. Øvrige valg beholdes, og Avbryt forkaster ulagrede endringer.
+- Beholder valgt energifane etter lagring. Datoen endringene gjelder fra vises ved redigering.
+
 ## 1.36.4
 
 - Valgfritt «Slett alle sikkerhetskopier» under tilbakestilling, også RESTORE WIPE. Sletter HA-sikkerhetskopier på selve huben; eksterne kopier beholdes.
