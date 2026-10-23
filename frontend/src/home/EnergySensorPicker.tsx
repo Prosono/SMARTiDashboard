@@ -161,6 +161,16 @@ export function EnergySensorPicker(props: Props) {
                     <>
                       <span className="energy-picker-name">
                         <strong>{sensor.name}</strong>
+                        <small>
+                          {["W", "kW"].includes(sensor.unit)
+                            ? t("Effekt · akkurat nå", "Power · right now")
+                            : ["Wh", "kWh"].includes(sensor.unit)
+                              ? t(
+                                  "Energi · forbruk over tid",
+                                  "Energy · consumption over time",
+                                )
+                              : sensor.unit}
+                        </small>
                         <small>{sensor.entity}</small>
                       </span>
                       <span className="energy-picker-reading">

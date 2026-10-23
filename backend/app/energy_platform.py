@@ -79,7 +79,13 @@ class EnergyPlatform:
             end = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
             # Refresh recent readings for recorder corrections, plus one older day per cycle.
             start = end - timedelta(days=2)
-            entities = [m.entity for m in config.meters]
+            controls = {c.entity_id: c for c in self.ha.controls()}
+            entities = [
+                m.entity
+                for m in config.meters
+                if m.entity in controls
+                and controls[m.entity].attributes.get("unit_of_measurement") in {"Wh", "kWh"}
+            ]
             if entities and self.ha.connected:
                 cursor = self.store.get("energy_backfill")
                 older = datetime.fromisoformat(cursor) if cursor else start
@@ -257,7 +263,8 @@ def platform_router(service, user, admin):
         available = {c.entity_id: c for c in ha.controls() if visible(current, c)}
         for meter in body.meters:
             c = available.get(meter.entity)
-            if not c or c.attributes.get("unit_of_measurement") not in {"Wh", "kWh"}:
+            allowed = {"Wh", "kWh", "W", "kW"} if meter.role == "consumer" else {"Wh", "kWh"}
+            if not c or c.attributes.get("unit_of_measurement") not in allowed:
                 raise HTTPException(422, "invalid_energy_meter")
         if body.power_entity:
             c = available.get(body.power_entity)
@@ -308,8 +315,20 @@ def platform_router(service, user, admin):
         b = min(b, datetime.now(UTC).replace(minute=0, second=0, microsecond=0))
         controls = {c.entity_id: c for c in ha.controls() if visible(current, c)}
         meters = []
+        power_consumers = []
         for meter in config.meters:
             if meter.entity not in controls:
+                continue
+            if meter.role == "consumer" and controls[meter.entity].attributes.get("unit_of_measurement") in {
+                "W",
+                "kW",
+            }:
+                watts, status, _ = power_reading(
+                    controls[meter.entity], getattr(ha, "states", {}), ha.connected, datetime.now(UTC), 300
+                )
+                power_consumers.append(
+                    {"entity": meter.entity, "name": meter.name, "watts": watts, "status": status}
+                )
                 continue
             result = analyze(repo, config, meter, a, b)
             result["points"] = chart_points(result["points"], a, b)
@@ -447,6 +466,7 @@ def platform_router(service, user, admin):
             "comparisons": comparisons,
             "previous": previous,
             "meters": meters,
+            "power_consumers": power_consumers,
             "power_kw": power / 1000 if power is not None else None,
             "power_status": state,
             "cloud": store.get("energy_cloud_state", "pending"),

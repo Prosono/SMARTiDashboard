@@ -133,7 +133,13 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   await consumers
     .getByRole("checkbox", { name: "Varmepumpe", exact: true })
     .check();
-  await expect(consumers.getByRole("status")).toHaveText("2 valgt");
+  await consumers
+    .getByRole("checkbox", { name: "Strømmåler · effekt", exact: true })
+    .check();
+  await expect(
+    consumers.getByText("Effekt · akkurat nå", { exact: true }),
+  ).toBeVisible();
+  await expect(consumers.getByRole("status")).toHaveText("3 valgt");
   await expect(consumers.locator(".energy-picker-option").first()).toHaveCSS(
     "flex-direction",
     "row",
@@ -149,7 +155,7 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
     .click();
   await expect(
     dialog.getByRole("button", { name: consumerLabel, exact: true }),
-  ).toContainText("2 målinger valgt");
+  ).toContainText("3 målinger valgt");
   await dialog
     .getByRole("button", { name: consumerLabel, exact: true })
     .click();
@@ -159,7 +165,7 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   await consumers.getByRole("button", { name: "Avbryt", exact: true }).click();
   await expect(
     dialog.getByRole("button", { name: consumerLabel, exact: true }),
-  ).toContainText("2 målinger valgt");
+  ).toContainText("3 målinger valgt");
   const battery = dialog.getByRole("group", { name: "Har du hjemmebatteri?" });
   await expect(
     dialog.getByText("Strøm inn på batteriet", { exact: true }),
@@ -187,7 +193,7 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
     config.meters
       .filter((m: any) => m.role === "consumer")
       .map((m: any) => m.entity),
-  ).toEqual(["sensor.heater", "sensor.heatpump"]);
+  ).toEqual(["sensor.heater", "sensor.heatpump", "sensor.power"]);
   expect(config.cloud_history).toBe(true);
   expect(config.scheme).toBe("norgespris");
   expect(config.meters[0].entity).toBe("sensor.grid");

@@ -87,6 +87,12 @@ type Dashboard = {
   } | null;
   configured: boolean;
   power_kw: number | null;
+  power_consumers?: {
+    entity: string;
+    name: string;
+    watts: number | null;
+    status: string;
+  }[];
   cloud: string;
   cloud_at: string;
   collected_at: string;
@@ -688,6 +694,18 @@ export function EnergyPlatform({
                 )}
               </article>
             </div>
+            {data?.power_consumers?.map((m) => (
+              <div className="ep-consumer" key={m.entity}>
+                <span>
+                  {m.name}
+                  <small>Effekt akkurat nå</small>
+                </span>
+                <strong>
+                  {m.watts == null ? "Utilgjengelig" : `${fmt(m.watts, 0)} W`}
+                  <small>Ingen kWh-historikk fra denne måleren</small>
+                </strong>
+              </div>
+            ))}
             {data?.meters
               ?.filter((m) => m.role !== "grid")
               .map((m) => (
@@ -1297,10 +1315,10 @@ function EnergyWizard({
             <EnergySensorPicker
               multiple
               label="Varmepumpe, varmtvann og andre forbrukere"
-              hint="Velg energimålingene (kWh) for enhetene du vil følge hver for seg."
+              hint="Velg effekt (W/kW) for forbruk akkurat nå eller energi (Wh/kWh) for historikk. Du trenger ikke begge."
               sensors={setup.sensors.filter(
                 (s) =>
-                  ["kWh", "Wh"].includes(s.unit) &&
+                  ["kWh", "Wh", "kW", "W"].includes(s.unit) &&
                   !draft.meters.some(
                     (m) => m.entity === s.entity && m.role !== "consumer",
                   ),

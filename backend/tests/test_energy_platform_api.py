@@ -98,3 +98,32 @@ def test_setup_exposes_latest_readings_and_disconnect(client):  # noqa: F811
     ha.connected = False
     sensors = client.get("/api/home/energy/platform/setup").json()["sensors"]
     assert next(s for s in sensors if s["entity"] == "sensor.reading")["state"] == "unavailable"
+
+
+def test_consumer_power_and_energy_are_kept_separate(client):  # noqa: F811
+    ha = client.app.state.ha
+    install(ha, "sensor.heat_energy", 123, "kWh")
+    install(ha, "sensor.water_power", 1.5, "kW")
+    body = {
+        "meters": [
+            {"role": "consumer", "entity": "sensor.heat_energy", "name": "Varmepumpe"},
+            {"role": "consumer", "entity": "sensor.water_power", "name": "Varmtvann"},
+        ]
+    }
+    assert client.put("/api/home/energy/platform/setup", json=body).status_code == 200
+    assert len(client.get("/api/home/energy/platform/setup").json()["config"]["meters"]) == 2
+    today = datetime.now(UTC).date()
+    data = client.get(
+        "/api/home/energy/platform/dashboard",
+        params={"start": str(today - timedelta(days=1)), "end": str(today)},
+    ).json()
+    assert [m["name"] for m in data["meters"]] == ["Varmepumpe"]
+    assert data["power_consumers"][0]["watts"] == 1500
+    ha.connected = False
+    data = client.get(
+        "/api/home/energy/platform/dashboard",
+        params={"start": str(today - timedelta(days=1)), "end": str(today)},
+    ).json()
+    assert data["power_consumers"][0]["watts"] is None
+    body["meters"][1]["role"] = "grid"
+    assert client.put("/api/home/energy/platform/setup", json=body).status_code == 422

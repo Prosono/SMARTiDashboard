@@ -1,3 +1,9 @@
+## 1.36.10
+
+- «Andre forbrukere» inkluderer nå både W/kW-effektmålere og Wh/kWh-energimålere. Du trenger ikke begge måletypene for å legge til en enhet.
+- Sensorvelgeren skiller tydelig mellom effekt akkurat nå og energiforbruk over tid.
+- Effektmålere vises separat med aktuell effekt i energioversikten. De brukes ikke som kWh-historikk eller i energikostnadsberegninger.
+
 ## 1.36.9
 
 - Ny søkbar popup for valg av energimålere, med tydelig navn, siste måleverdi og enhet på egne plasser. Brukes også for målere i 3D-innstillingene.
