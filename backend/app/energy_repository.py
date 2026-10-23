@@ -50,6 +50,20 @@ class EnergyConfig(BaseModel):
         return self
 
 
+def history_config(config):
+    """Use estimated grid history only when there is no explicit energy meter."""
+    if config and config.power_entity and not any(m.role == "grid" for m in config.meters):
+        return config.model_copy(
+            update={
+                "meters": [
+                    Meter(role="grid", entity=config.power_entity, name="Husets forbruk (estimert)"),
+                    *[m for m in config.meters if m.entity != config.power_entity],
+                ]
+            }
+        )
+    return config
+
+
 class EnergyRepository:
     def __init__(self, store):
         self.store = store

@@ -182,7 +182,7 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
     .getByRole("group", { name: "Har du solceller?" })
     .getByRole("button", { name: "Ja", exact: true })
     .click();
-  await expect(dialog.getByText("Elhub kommer senere")).toBeVisible();
+  await expect(dialog.getByText("Elhub kommer senere")).toHaveCount(0);
   await page.screenshot({
     path: `/tmp/smarti-energy-wizard-${info.project.name}.png`,
   });

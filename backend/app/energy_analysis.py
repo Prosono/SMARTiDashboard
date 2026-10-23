@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 from .energy_costs import cost
 from .energy_intervals import local_day, summarize_energy
-from .energy_repository import EnergyConfig
+from .energy_repository import EnergyConfig, history_config
 from .energy_tariffs import capacity_rate
 
 ZONE = ZoneInfo("Europe/Oslo")
@@ -28,7 +28,7 @@ def analyze(repo, config, meter, start, end, scenario=None):
         }
     with repo.store.connect() as db:
         versions = [
-            (datetime.fromisoformat(r["start"]), EnergyConfig.model_validate_json(r["body"]))
+            (datetime.fromisoformat(r["start"]), history_config(EnergyConfig.model_validate_json(r["body"])))
             for r in db.execute("SELECT * FROM energy_configs ORDER BY start")
         ]
     prices, months, tariffs, capacities = {}, {}, {}, {}

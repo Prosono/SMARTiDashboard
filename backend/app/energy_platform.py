@@ -17,7 +17,7 @@ from .energy_analysis import analyze, chart_points
 from .energy_costs import cost, spot_rate
 from .energy_flow import power_reading
 from .energy_intervals import Interval, local_day
-from .energy_repository import EnergyConfig, EnergyRepository
+from .energy_repository import EnergyConfig, EnergyRepository, history_config
 from .energy_tariffs import catalogue
 from .ha import HAError
 
@@ -86,6 +86,13 @@ class EnergyPlatform:
                 if m.entity in controls
                 and controls[m.entity].attributes.get("unit_of_measurement") in {"Wh", "kWh"}
             ]
+            power_history = config.power_entity if not any(m.role == "grid" for m in config.meters) else None
+            if power_history not in controls or controls[power_history].attributes.get(
+                "unit_of_measurement"
+            ) not in {"W", "kW"}:
+                power_history = None
+            if power_history:
+                entities.append(power_history)
             if entities and self.ha.connected:
                 cursor = self.store.get("energy_backfill")
                 older = datetime.fromisoformat(cursor) if cursor else start
@@ -99,15 +106,16 @@ class EnergyPlatform:
                         end_time=b.isoformat(),
                         statistic_ids=entities,
                         period="hour",
-                        units={"energy": "kWh"},
-                        types=["change"],
+                        units={"energy": "kWh", "power": "W"},
+                        types=["change", "mean"],
                     )
                     if self.store.get("energy_generation") != generation or self.repo.config() is None:
                         return
                     for entity in entities:
                         readings = []
                         for row in (data or {}).get(entity, [])[:72]:
-                            stamp, value = row.get("start"), row.get("change")
+                            estimated = entity == power_history
+                            stamp, value = row.get("start"), row.get("mean" if estimated else "change")
                             if not isinstance(stamp, (int, float)) or not isinstance(value, (int, float)):
                                 continue
                             if not math.isfinite(stamp) or not math.isfinite(value) or value < 0:
@@ -119,9 +127,9 @@ class EnergyPlatform:
                                 Interval(
                                     point,
                                     point + timedelta(hours=1),
-                                    Decimal(str(value)),
-                                    "ha:recorder",
-                                    "measured",
+                                    Decimal(str(value)) / (1000 if estimated else 1),
+                                    "ha:recorder:power" if estimated else "ha:recorder",
+                                    "estimated" if estimated else "measured",
                                 )
                             )
                         self.repo.put(entity, readings)
@@ -310,6 +318,8 @@ def platform_router(service, user, admin):
         config = repo.config()
         if not config:
             return {"configured": False}
+        estimated_history = bool(config.power_entity and not any(m.role == "grid" for m in config.meters))
+        config = history_config(config)
         a, _ = local_day(start)
         b, _ = local_day(end)
         b = min(b, datetime.now(UTC).replace(minute=0, second=0, microsecond=0))
@@ -459,6 +469,7 @@ def platform_router(service, user, admin):
         )
         return {
             "configured": True,
+            "history_estimated": estimated_history,
             "outlook": outlook,
             "solar": solar,
             "totals": totals,

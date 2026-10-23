@@ -1,3 +1,10 @@
+## 1.36.12
+
+- Fjerner Elhub-delen fra energioppsettet.
+- Flytter energiens faner og innstillingsknapp inn i widgeten og fjerner den store overskriften over en ferdig konfigurert energioversikt.
+- Lagrer estimert kWh-historikk fra husets effektmålers ferdige timer med HA-statistikk når ingen egen energimåler er valgt. Historikken merkes som estimert og følger eksisterende skysynkronisering.
+- En egen energimåler prioriteres foran estimatet, og manglende målinger behandles ikke som nullforbruk.
+
 ## 1.36.11
 
 - Retter oppdatering fra SMARTi: Home Assistants egen update.install-funksjon utfører nå installasjonen. Supervisor tillater ikke at en app oppdaterer seg selv direkte.

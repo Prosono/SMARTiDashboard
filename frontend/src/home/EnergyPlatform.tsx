@@ -85,6 +85,7 @@ type Dashboard = {
     kwh: number | string | null;
     cost: number | string | null;
   } | null;
+  history_estimated?: boolean;
   configured: boolean;
   power_kw: number | null;
   power_consumers?: {
@@ -275,19 +276,24 @@ export function EnergyPlatform({
     );
   return (
     <>
-      <section className="ep" aria-label="Energi og kostnader">
-        <header className="ep-heading">
-          <div>
-            <small className="ep-eyebrow">DIN ENERGI</small>
-            <h2>Mer innsikt. Bedre valg.</h2>
-            <p>Forbruk, strømavtale og nettleie, samlet for hjemmet ditt.</p>
-          </div>
-          {admin && setup.data?.config && (
-            <button onClick={() => setEditing(true)}>
-              <Settings2 size={18} /> Energiinnstillinger
-            </button>
-          )}
-        </header>
+      <section
+        className={`ep ${setup.data?.config ? "ep-widget" : ""}`}
+        aria-label="Energi og kostnader"
+      >
+        {!setup.data?.config && (
+          <header className="ep-heading">
+            <div>
+              <small className="ep-eyebrow">DIN ENERGI</small>
+              <h2>Mer innsikt. Bedre valg.</h2>
+              <p>Forbruk, strømavtale og nettleie, samlet for hjemmet ditt.</p>
+            </div>
+            {admin && setup.data?.config && (
+              <button onClick={() => setEditing(true)}>
+                <Settings2 size={18} /> Energiinnstillinger
+              </button>
+            )}
+          </header>
+        )}
         {setup.data?.config && (
           <div
             className="ep-view-tabs"
@@ -328,6 +334,16 @@ export function EnergyPlatform({
                 {label}
               </button>
             ))}
+            {admin && (
+              <button
+                className="ep-settings-button"
+                aria-label="Energiinnstillinger"
+                title="Energiinnstillinger"
+                onClick={() => setEditing(true)}
+              >
+                <Settings2 size={20} />
+              </button>
+            )}
           </div>
         )}
         {!setup.data?.config ? (
@@ -353,6 +369,13 @@ export function EnergyPlatform({
             id="energy-panel-history"
             aria-labelledby="energy-view-history"
           >
+            {data?.history_estimated && (
+              <p role="status">
+                Forbruk beregnes fra effektmålerens timegjennomsnitt og lagres
+                som estimert kWh. Velg en egen energimåler for målt forbruk.
+                Historikk vises etter første ferdige time med statistikk i HA.
+              </p>
+            )}
             <div className="ep-toolbar">
               <div role="group" aria-label="Periode">
                 {[
@@ -785,17 +808,17 @@ export function EnergyPlatform({
             }}
           />
         )}
+        {setup.data?.config && (
+          <div
+            role="tabpanel"
+            hidden={view !== "overview"}
+            id="energy-panel-overview"
+            aria-labelledby="energy-view-overview"
+          >
+            {overview?.(setup.data?.config?.equipment != null)}
+          </div>
+        )}
       </section>
-      {setup.data?.config && (
-        <div
-          role="tabpanel"
-          hidden={view !== "overview"}
-          id="energy-panel-overview"
-          aria-labelledby="energy-view-overview"
-        >
-          {overview?.(setup.data?.config?.equipment != null)}
-        </div>
-      )}
     </>
   );
 }
@@ -1342,15 +1365,6 @@ function EnergyWizard({
                 })
               }
             />
-            <div className="ep-help">
-              <Info size={20} />
-              <p>
-                <strong>Elhub kommer senere</strong>
-                <br />
-                SMARTi må først etablere virksomhetstilgang. Du kan bruke
-                målerne i hjemmet nå og koble til Elhub når tjenesten er klar.
-              </p>
-            </div>
           </>
         )}
         {step === 3 && (

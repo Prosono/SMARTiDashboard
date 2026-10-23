@@ -127,3 +127,73 @@ def test_consumer_power_and_energy_are_kept_separate(client):  # noqa: F811
     assert data["power_consumers"][0]["watts"] is None
     body["meters"][1]["role"] = "grid"
     assert client.put("/api/home/energy/platform/setup", json=body).status_code == 422
+
+
+def test_power_history_is_persisted_estimated_and_not_double_counted(client, monkeypatch):  # noqa: F811
+    import asyncio
+    from decimal import Decimal
+    from types import SimpleNamespace
+
+    from app.energy_platform import EnergyPlatform
+    from app.energy_repository import EnergyRepository
+
+    ha, store = client.app.state.ha, client.app.state.store
+    install(ha, "sensor.house_power", 1.2, "kW")
+    assert (
+        client.put(
+            "/api/home/energy/platform/setup",
+            json={"power_entity": "sensor.house_power", "cloud_history": False},
+        ).status_code
+        == 200
+    )
+    service = EnergyPlatform(ha, store, SimpleNamespace(mode="live", remote_identity_file=None))
+    end = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
+    start = end - timedelta(hours=1)
+
+    async def request(kind, **args):
+        assert kind == "recorder/statistics_during_period"
+        assert args["units"]["power"] == "W"
+        return {
+            "sensor.house_power": [
+                {"start": start.timestamp() * 1000, "mean": 1200},
+                {"start": (start - timedelta(hours=1)).timestamp() * 1000, "mean": None},
+            ]
+        }
+
+    async def prices(*args):
+        return None
+
+    monkeypatch.setattr(ha, "request", request)
+    monkeypatch.setattr(service, "prices", prices)
+    asyncio.run(service.collect())
+    asyncio.run(service.collect())
+    repo = EnergyRepository(store)
+    readings = repo.rows("sensor.house_power", start - timedelta(hours=1), end)
+    assert len(readings) == 1
+    assert readings[0].value == Decimal("1.2")
+    assert readings[0].quality == "estimated"
+    today = datetime.now(UTC).date()
+    response = client.get(
+        "/api/home/energy/platform/dashboard",
+        params={"start": str(today - timedelta(days=1)), "end": str(today + timedelta(days=1))},
+    ).json()
+    assert response["history_estimated"] is True
+    assert response["meters"][0]["summary"]["available_kwh"] == 1.2
+    install(ha, "sensor.house_energy", 100, "kWh")
+    assert (
+        client.put(
+            "/api/home/energy/platform/setup",
+            json={
+                "power_entity": "sensor.house_power",
+                "meters": [{"entity": "sensor.house_energy", "name": "Import", "role": "grid"}],
+            },
+        ).status_code
+        == 200
+    )
+    response = client.get(
+        "/api/home/energy/platform/dashboard",
+        params={"start": str(today - timedelta(days=1)), "end": str(today + timedelta(days=1))},
+    ).json()
+    assert response["history_estimated"] is False
+    assert len(response["meters"]) == 1
+    assert response["meters"][0]["name"] == "Import"
