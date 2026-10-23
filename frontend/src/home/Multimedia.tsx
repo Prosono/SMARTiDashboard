@@ -1,3 +1,4 @@
+import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { allViews } from "../access";
@@ -343,19 +344,16 @@ export function Multimedia({
   );
   return (
     <section className="multimedia-view">
-      <header className="multimedia-heading toolbar-heading">
-        <AudioLines size={36} />
-        <div>
-          <h1>{t("Multimedia", "Multimedia")}</h1>
-          <p>
-            {t(
-              "Musikk, film og lyd i hele hjemmet.",
-              "Music, movies and sound throughout your home.",
-            )}
-          </p>
-        </div>
+      <CategoryHeading
+        Icon={AudioLines}
+        title={t("Multimedia", "Multimedia")}
+        subtitle={t(
+          "Musikk, film og lyd i hele hjemmet.",
+          "Music, movies and sound throughout your home.",
+        )}
+      >
         <ToolbarToggle {...toolbar} lang={lang} />
-      </header>
+      </CategoryHeading>
       <div
         className="lighting-toolbar climate-toolbar media-toolbar"
         id={toolbar.id}
@@ -458,70 +456,62 @@ export function Multimedia({
           </button>
         </div>
       </div>
-      <div className="media-overview-banner">
-        <img src={homeAsset("home-multimedia")} alt="" />
-        <div className="media-banner-copy">
-          <span className="eyebrow">{t("LYD OG BILDE", "SOUND & VISION")}</span>
-          <h2>
-            {t(
-              "Nyt underholdning i hele hjemmet",
-              "Enjoy entertainment throughout your home",
-            )}
-          </h2>
-          <p>
-            {t(
-              "Dine rom. Din musikk. Alt innen rekkevidde.",
-              "Your rooms. Your music. Everything within reach.",
-            )}
-          </p>
-        </div>
-        <div className="media-metrics">
-          {[
-            {
-              Icon: Music2,
-              value: offline ? "—" : playing.length,
-              label: t("Spiller nå", "Playing now"),
-            },
-            {
-              Icon: Speaker,
-              value: players.length,
-              label: t("Spillere", "Players"),
-            },
-            {
-              Icon: Tv,
-              value: offline
-                ? "—"
-                : players.filter(
-                    (c) =>
-                      available(c) &&
-                      ["tv", "projector"].includes(
-                        String(c.attributes.device_class),
-                      ) &&
-                      !["off", "standby"].includes(c.state),
-                  ).length,
-              label: t("TV på", "TVs on"),
-            },
-            {
-              Icon: Volume2,
-              value: offline
-                ? "—"
-                : players.filter(
-                    (c) =>
-                      available(c) && c.attributes.is_volume_muted === true,
-                  ).length,
-              label: t("Dempet", "Muted"),
-            },
-          ].map(({ Icon, value, label }) => (
-            <div key={label}>
-              <Icon size={24} />
-              <span>
-                <strong>{value}</strong>
-                <small>{label}</small>
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <CategorySummary
+        image={homeAsset("home-multimedia")}
+        eyebrow={t("LYD OG BILDE", "SOUND & VISION")}
+        title={t(
+          "Nyt underholdning i hele hjemmet",
+          "Enjoy entertainment throughout your home",
+        )}
+        description={t(
+          "Dine rom. Din musikk. Alt innen rekkevidde.",
+          "Your rooms. Your music. Everything within reach.",
+        )}
+      >
+        {[
+          {
+            Icon: Music2,
+            value: offline ? "—" : playing.length,
+            label: t("Spiller nå", "Playing now"),
+          },
+          {
+            Icon: Speaker,
+            value: players.length,
+            label: t("Spillere", "Players"),
+          },
+          {
+            Icon: Tv,
+            value: offline
+              ? "—"
+              : players.filter(
+                  (c) =>
+                    available(c) &&
+                    ["tv", "projector"].includes(
+                      String(c.attributes.device_class),
+                    ) &&
+                    !["off", "standby"].includes(c.state),
+                ).length,
+            label: t("TV på", "TVs on"),
+          },
+          {
+            Icon: Volume2,
+            value: offline
+              ? "—"
+              : players.filter(
+                  (c) => available(c) && c.attributes.is_volume_muted === true,
+                ).length,
+            label: t("Dempet", "Muted"),
+          },
+        ].map(({ Icon, value, label }) => (
+          <div key={label}>
+            <Icon size={24} />
+            <span>
+              <strong>{value}</strong>
+              <small>{label}</small>
+            </span>
+          </div>
+        ))}
+      </CategorySummary>
       <div
         className={`media-player-grid ${layout === "list" ? "is-list" : ""}`}
       >

@@ -2,19 +2,28 @@ import { test, expect } from "../../frontend/node_modules/@playwright/test";
 
 test("search toolbars start collapsed while image banners stay visible", async ({
   page,
-}) => {
+}, info) => {
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
   await page
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  for (const name of ["Lys", "Klima", "Sikkerhet", "Multimedia"]) {
+  for (const name of ["Lys", "Klima", "Sikkerhet", "Multimedia", "Diverse"]) {
     await page.getByRole("tab", { name, exact: true }).click();
-    const imageBanner = page.locator(
-      ".lighting-banner, .climate-summary, .security-summary, .media-overview-banner",
-    );
+    const imageBanner = page.locator(".category-summary");
     await expect(imageBanner).toBeVisible();
+    await expect(page.locator(".category-heading h1")).toHaveText(name);
+    await expect
+      .poll(() =>
+        imageBanner
+          .locator("img")
+          .evaluate((img: HTMLImageElement) => img.naturalWidth),
+      )
+      .toBeGreaterThan(0);
+    await imageBanner.screenshot({
+      path: `/tmp/smarti-category-${name}-${info.project.name}.png`,
+    });
     const toggle = page.getByRole("button", {
       name: "Vis søk og filtre",
       exact: true,

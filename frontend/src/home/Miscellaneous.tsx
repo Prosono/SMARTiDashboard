@@ -1,3 +1,4 @@
+import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RobotVacuumIcon } from "./RobotVacuumIcon";
 import { MiscDeviceCard } from "./MiscDeviceCard";
 import { homeAsset } from "./HomeOverview";
@@ -93,18 +94,17 @@ export function Miscellaneous({
     .filter((g) => g.controls.length);
   return (
     <section className="miscellaneous-view">
-      <header className="cleaning-heading toolbar-heading">
-        <LayoutGrid size={34} />
-        <div>
-          <h1>{en ? "More" : "Diverse"}</h1>
-          <p>
-            {en
-              ? "Everyday helpers, together in one place."
-              : "Hverdagens hjelpere, samlet på ett sted."}
-          </p>
-        </div>
+      <CategoryHeading
+        Icon={LayoutGrid}
+        title={en ? "More" : "Diverse"}
+        subtitle={
+          en
+            ? "Everyday helpers, together in one place."
+            : "Hverdagens hjelpere, samlet på ett sted."
+        }
+      >
         <ToolbarToggle {...toolbar} lang={lang} />
-      </header>
+      </CategoryHeading>
       <div
         className="miscellaneous-toolbar"
         id={toolbar.id}
@@ -136,50 +136,49 @@ export function Miscellaneous({
           <option value="none">{en ? "No room" : "Uten rom"}</option>
         </select>
       </div>
-      <div className="lighting-banner miscellaneous-banner">
-        <img src={homeAsset("home-office")} alt="" />
-        <div>
-          <h2>
-            {en ? "Small helpers." : "Små hjelpere."}
-            <br />
-            {en ? "A simpler everyday life." : "En enklere hverdag."}
-          </h2>
-          <p>
-            {en
-              ? "Cleaning, shade and power — at your fingertips."
-              : "Rengjøring, solskjerming og strøm – rett ved hånden."}
-          </p>
-        </div>
-        <div className="misc-banner-summary">
-          {[
-            {
-              Icon: RobotVacuumIcon,
-              kind: "cleaning",
-              label: en ? "Robots" : "Roboter",
-            },
-            {
-              Icon: Blinds,
-              kind: "covers",
-              label: en ? "Shades" : "Solskjerming",
-            },
-            {
-              Icon: Plug,
-              kind: "switches",
-              label: en ? "Switches" : "Brytere",
-            },
-          ].map(({ Icon, kind, label }) => {
-            const count =
-              groups.find((g) => g.id === kind)?.controls.length || 0;
-            return count > 0 ? (
-              <div key={kind}>
-                <Icon size={23} />
+      <CategorySummary
+        image={homeAsset("home-office")}
+        eyebrow={en ? "EVERYDAY HELPERS" : "HJELPERE I HJEMMET"}
+        title={
+          en
+            ? "Small helpers. A simpler everyday life."
+            : "Små hjelpere. En enklere hverdag."
+        }
+        description={
+          en
+            ? "Cleaning, shade and power — at your fingertips."
+            : "Rengjøring, solskjerming og strøm – rett ved hånden."
+        }
+      >
+        {[
+          {
+            Icon: RobotVacuumIcon,
+            kind: "cleaning",
+            label: en ? "Robots" : "Roboter",
+          },
+          {
+            Icon: Blinds,
+            kind: "covers",
+            label: en ? "Shades" : "Solskjerming",
+          },
+          {
+            Icon: Plug,
+            kind: "switches",
+            label: en ? "Switches" : "Brytere",
+          },
+        ].map(({ Icon, kind, label }) => {
+          const count = groups.find((g) => g.id === kind)?.controls.length || 0;
+          return (
+            <div key={kind}>
+              <Icon size={23} />
+              <span>
                 <strong>{count}</strong>
                 <small>{label}</small>
-              </div>
-            ) : null;
-          })}
-        </div>
-      </div>
+              </span>
+            </div>
+          );
+        })}
+      </CategorySummary>
       {groups.map(({ id, Icon, name, controls }) => (
         <section className="miscellaneous-section" key={id} aria-label={name}>
           <header>

@@ -1,3 +1,4 @@
+import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -232,19 +233,16 @@ export function SecurityOverview({
   }
   return (
     <section className="security-overview">
-      <header className="security-heading toolbar-heading">
-        <Shield size={36} />
-        <div>
-          <h1>{t("Sikkerhet", "Security")}</h1>
-          <p>
-            {t(
-              "Et tryggere hjem. Full kontroll, uansett hvor du er.",
-              "A safer home. Stay in control, wherever you are.",
-            )}
-          </p>
-        </div>
+      <CategoryHeading
+        Icon={Shield}
+        title={t("Sikkerhet", "Security")}
+        subtitle={t(
+          "Et tryggere hjem. Full kontroll, uansett hvor du er.",
+          "A safer home. Stay in control, wherever you are.",
+        )}
+      >
         <ToolbarToggle {...toolbar} lang={lang} />
-      </header>
+      </CategoryHeading>
       <div
         className="lighting-toolbar security-toolbar"
         id={toolbar.id}
@@ -296,73 +294,68 @@ export function SecurityOverview({
           ))}
         </nav>
       </div>
-      <section className="security-summary" data-alert={alerts.length > 0}>
-        <img src={homeAsset("home-security")} alt="" />
-        <div>
-          <small>{t("SIKKERHET I HJEMMET", "HOME SECURITY")}</small>
-          <h2>
-            {offline
-              ? t("Tilkoblingen er brutt", "Connection lost")
-              : alerts.length
-                ? t("Se aktive varsler", "Check active alerts")
-                : unknown
-                  ? t(
-                      "Noen enheter svarer ikke",
-                      "Some devices are unavailable",
-                    )
-                  : openings.length
-                    ? t("Noe står åpent", "An opening needs attention")
-                    : devices.length
-                      ? t("Ingen aktive varsler", "No active alerts")
-                      : t("Din sikkerhetsoversikt", "Your security overview")}
-          </h2>
-          <p>
-            {offline
-              ? t(
-                  "Status kan være utdatert. Styring er utilgjengelig.",
-                  "Status may be stale. Controls are unavailable.",
-                )
-              : t(
-                  "Oversikten viser det enhetene rapporterer akkurat nå.",
-                  "This overview shows what your devices report right now.",
-                )}
-          </p>
-        </div>
-        <div className="security-metrics">
-          {[
-            {
-              Icon: Camera,
-              value: offline
-                ? "—"
-                : `${model.cameras.filter(usable).length} / ${model.cameras.length}`,
-              label: t("Kameraer tilgjengelige", "Cameras available"),
-            },
-            {
-              Icon: LockKeyhole,
-              value: offline ? "—" : `${locked} / ${totalLocks.length}`,
-              label: t("Dører låst", "Doors locked"),
-            },
-            {
-              Icon: Shield,
-              value: offline ? "—" : String(alerts.length),
-              label: t("Aktive varsler", "Active alerts"),
-            },
-            {
-              Icon: Radio,
-              value: offline ? "—" : String(unknown),
-              label: t("Utilgjengelige", "Unavailable"),
-            },
-          ].map(({ Icon, value, label }) => (
-            <div key={label}>
-              <Icon size={24} />
-              <span>
-                <strong>{value}</strong>
-                <small>{label}</small>
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
+      <CategorySummary
+        image={homeAsset("home-security")}
+        eyebrow={t("SIKKERHET I HJEMMET", "HOME SECURITY")}
+        title={
+          offline
+            ? t("Tilkoblingen er brutt", "Connection lost")
+            : alerts.length
+              ? t("Se aktive varsler", "Check active alerts")
+              : unknown
+                ? t("Noen enheter svarer ikke", "Some devices are unavailable")
+                : openings.length
+                  ? t("Noe står åpent", "An opening needs attention")
+                  : devices.length
+                    ? t("Ingen aktive varsler", "No active alerts")
+                    : t("Din sikkerhetsoversikt", "Your security overview")
+        }
+        description={
+          offline
+            ? t(
+                "Status kan være utdatert. Styring er utilgjengelig.",
+                "Status may be stale. Controls are unavailable.",
+              )
+            : t(
+                "Oversikten viser det enhetene rapporterer akkurat nå.",
+                "This overview shows what your devices report right now.",
+              )
+        }
+        alert={alerts.length > 0}
+      >
+        {[
+          {
+            Icon: Camera,
+            value: offline
+              ? "—"
+              : `${model.cameras.filter(usable).length} / ${model.cameras.length}`,
+            label: t("Kameraer tilgjengelige", "Cameras available"),
+          },
+          {
+            Icon: LockKeyhole,
+            value: offline ? "—" : `${locked} / ${totalLocks.length}`,
+            label: t("Dører låst", "Doors locked"),
+          },
+          {
+            Icon: Shield,
+            value: offline ? "—" : String(alerts.length),
+            label: t("Aktive varsler", "Active alerts"),
+          },
+          {
+            Icon: Radio,
+            value: offline ? "—" : String(unknown),
+            label: t("Utilgjengelige", "Unavailable"),
+          },
+        ].map(({ Icon, value, label }) => (
+          <div key={label}>
+            <Icon size={24} />
+            <span>
+              <strong>{value}</strong>
+              <small>{label}</small>
+            </span>
+          </div>
+        ))}
+      </CategorySummary>
       <div className="security-layout" data-tab={tab}>
         <div className="security-main">
           {(tab === "all" || tab === "cameras") && (

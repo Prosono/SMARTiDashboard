@@ -1,3 +1,4 @@
+import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { useState, type ReactNode } from "react";
@@ -136,16 +137,16 @@ export function ClimateOverview({
   ];
   return (
     <section className="climate-overview">
-      <header className="climate-heading toolbar-heading">
-        <Thermometer size={34} />
-        <div>
-          <h1>{t("Klima", "Climate")}</h1>
-          <p>
-            {t("Et behagelig hjem. Alltid.", "A comfortable home. Always.")}
-          </p>
-        </div>
+      <CategoryHeading
+        Icon={Thermometer}
+        title={t("Klima", "Climate")}
+        subtitle={t(
+          "Et behagelig hjem. Alltid.",
+          "A comfortable home. Always.",
+        )}
+      >
         <ToolbarToggle {...toolbar} lang={lang} />
-      </header>
+      </CategoryHeading>
       <div
         className="lighting-toolbar climate-toolbar"
         id={toolbar.id}
@@ -211,44 +212,44 @@ export function ClimateOverview({
           ))}
         </div>
       </div>
-      <div className="climate-summary">
-        <img src={homeAsset("home-climate")} alt="" />
-        <div className="climate-summary-intro">
-          <h2>{t("Inneklimaet akkurat nå", "Your indoor climate now")}</h2>
-          <p>
-            {offline
-              ? t(
-                  "Venter på ferske målinger fra hjemmet.",
-                  "Waiting for fresh readings from your home.",
-                )
-              : t(
-                  `Målinger fra ${rooms.length} rom, samlet på ett sted.`,
-                  `Readings from ${rooms.length} rooms, together in one place.`,
-                )}
-          </p>
-        </div>
-        <div className="climate-metric">
+      <CategorySummary
+        image={homeAsset("home-climate")}
+        eyebrow={t("KLIMA I HJEMMET", "HOME CLIMATE")}
+        title={t("Inneklimaet akkurat nå", "Your indoor climate now")}
+        description={
+          offline
+            ? t(
+                "Venter på ferske målinger fra hjemmet.",
+                "Waiting for fresh readings from your home.",
+              )
+            : t(
+                `Målinger fra ${rooms.length} rom, samlet på ett sted.`,
+                `Readings from ${rooms.length} rooms, together in one place.`,
+              )
+        }
+      >
+        <div>
           <Thermometer />
-          <div>
+          <span>
             <strong>{fmt(mean(rooms.map((a) => a.temp)), " °C")}</strong>
             <small>{t("Snittemperatur", "Average temperature")}</small>
-          </div>
+          </span>
         </div>
-        <div className="climate-metric">
+        <div>
           <Droplets />
-          <div>
+          <span>
             <strong>{fmt(mean(rooms.map((a) => a.humidity)), " %")}</strong>
             <small>{t("Snittfuktighet", "Average humidity")}</small>
-          </div>
+          </span>
         </div>
-        <div className="climate-metric">
+        <div>
           <Leaf />
-          <div>
+          <span>
             <strong>{fmt(mean(co2.map(numeric)), " ppm")}</strong>
             <small>{t("CO₂ · gjennomsnitt", "CO₂ · average")}</small>
-          </div>
+          </span>
         </div>
-      </div>
+      </CategorySummary>
       <div className="climate-room-heading">
         <h2>
           {room === "all"

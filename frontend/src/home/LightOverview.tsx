@@ -1,3 +1,4 @@
+import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { SettingsDialog } from "./SettingsDialog";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
@@ -132,21 +133,16 @@ export function LightOverview({
     .filter((a) => a.items.length);
   return (
     <section className="light-overview">
-      <header className="lighting-heading toolbar-heading">
-        <div>
-          <h1>
-            <Lightbulb />
-            {t("Lys", "Lights")}
-          </h1>
-          <p>
-            {t(
-              "Styr belysningen i hele hjemmet.",
-              "Lighting for your whole home.",
-            )}
-          </p>
-        </div>
+      <CategoryHeading
+        Icon={Lightbulb}
+        title={t("Lys", "Lights")}
+        subtitle={t(
+          "Styr belysningen i hele hjemmet.",
+          "Lighting for your whole home.",
+        )}
+      >
         <ToolbarToggle {...toolbar} lang={lang} />
-      </header>
+      </CategoryHeading>
       <div
         className="lighting-toolbar"
         id={toolbar.id}
@@ -222,38 +218,62 @@ export function LightOverview({
           </span>
         </button>
       </div>
-      <div className="lighting-banner">
-        <img src={homeAsset("home-lighting")} alt="" />
-        <div>
-          <h2>
-            {t("God stemning", "A good atmosphere")}
-            <br />
-            {t("starter med riktig lys.", "starts with the right light.")}
-          </h2>
-          <p>
-            {t(
-              "Enklere hverdag. Et smartere hjem.",
-              "Everyday comfort. A smarter home.",
-            )}
-          </p>
-        </div>
-        <div className="lighting-summary">
-          <span>
-            <Sun size={26} />
-            {offline
-              ? t("Venter på ferske data", "Waiting for fresh data")
-              : `${on} ${t("av", "of")} ${lights.length} ${t("lys er på", "lights are on")}`}
-          </span>
-          <progress max={lights.length || 1} value={offline ? 0 : on} />
-        </div>
-        {scenes && (
-          <button onClick={scenes}>
-            <Sparkles size={18} />
-            {t("Stemningsmodus", "Scenes")}
-            <ChevronRight size={18} />
-          </button>
+      <CategorySummary
+        image={homeAsset("home-lighting")}
+        eyebrow={t("LYS I HJEMMET", "HOME LIGHTING")}
+        title={t(
+          "God stemning starter med riktig lys.",
+          "A good atmosphere starts with the right light.",
         )}
-      </div>
+        description={
+          offline
+            ? t(
+                "Venter på ferske data fra hjemmet.",
+                "Waiting for fresh data from your home.",
+              )
+            : t(
+                "Enklere hverdag. Et smartere hjem.",
+                "Everyday comfort. A smarter home.",
+              )
+        }
+        action={
+          scenes && (
+            <button onClick={scenes}>
+              <Sparkles size={18} />
+              {t("Stemningsmodus", "Scenes")}
+              <ChevronRight size={18} />
+            </button>
+          )
+        }
+      >
+        {[
+          {
+            Icon: Sun,
+            value: offline ? "—" : `${on} / ${lights.length}`,
+            label: t("Lys på", "Lights on"),
+          },
+          {
+            Icon: House,
+            value: home.areas.filter((a) =>
+              lights.some((c) => c.area_id === a.area_id),
+            ).length,
+            label: t("Rom med lys", "Rooms with lights"),
+          },
+          {
+            Icon: Power,
+            value: offline ? "—" : lights.filter((c) => !usable(c)).length,
+            label: t("Utilgjengelige", "Unavailable"),
+          },
+        ].map(({ Icon, value, label }) => (
+          <div key={label}>
+            <Icon size={24} />
+            <span>
+              <strong>{value}</strong>
+              <small>{label}</small>
+            </span>
+          </div>
+        ))}
+      </CategorySummary>
       {message && <p role="status">{message}</p>}
       <div className="lighting-grid">
         {visible.map((a) => {

@@ -1,3 +1,9 @@
+## 1.36.17
+
+- Felles toppdesign for lys, klima, multimedia, diverse og sikkerhet, basert på sikkerhetssidens ikon, tittel, undertittel og bildefelt.
+- Samme utforming av nøkkeltall, bildeovergang og mobiloppsett på tvers av kategoriene. Lys viser antall lys på, rom med lys og utilgjengelige lys.
+- Eksisterende filtre og styringsknapper beholdes. Tallene bruker enhetenes faktiske data.
+
 ## 1.36.16
 
 - Nøkkeltall under 3D-modellen viser spotpris nå, dagens forbruk og estimert kostnad for ferdige timer.
