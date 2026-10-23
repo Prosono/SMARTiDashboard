@@ -1,3 +1,4 @@
+import { UpdateProgress } from "./UpdateProgress";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
@@ -26,6 +27,11 @@ export function SelfUpdate({ lang }: { lang: string }) {
     [backup, setBackup] = useState(true),
     [message, setMessage] = useState("");
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{
+    slug: string;
+    target: string;
+    started: number;
+  } | null>(null);
   async function refresh() {
     setBusy(true);
     try {
@@ -47,6 +53,12 @@ export function SelfUpdate({ lang }: { lang: string }) {
     setBusy(true);
     const id = requestId || crypto.randomUUID();
     setRequestId(id);
+    setConfirm(false);
+    setProgress({
+      slug: q.data.slug,
+      target: q.data.version_latest,
+      started: Date.now(),
+    });
     try {
       const result = await api<{ status: string }>(
         "manage/apps/self-update",
@@ -132,6 +144,14 @@ export function SelfUpdate({ lang }: { lang: string }) {
         )}
       </div>
       {message && <p role="status">{message}</p>}
+      {progress && (
+        <UpdateProgress
+          lang={lang}
+          {...progress}
+          sending={busy}
+          onClose={() => setProgress(null)}
+        />
+      )}
       {confirm && (
         <SettingsDialog
           lang={lang}

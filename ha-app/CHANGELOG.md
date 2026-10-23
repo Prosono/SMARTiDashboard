@@ -1,3 +1,9 @@
+## 1.36.8
+
+- Oppdatering av SMARTi viser nå en animert SMARTi-logo med status under installasjon og omstart på mobil og desktop.
+- Kontrollerer automatisk installert versjon og at appen kjører før oppdateringen bekreftes. Tilbyr deretter å laste inn den nye appen.
+- Viser tydelig beskjed dersom resultatet ikke kan bekreftes innen ti minutter. Å lukke visningen avbryter ikke installasjonen. Respekterer redusert bevegelse.
+
 ## 1.36.7
 
 - Sensorvalg i energioppsettet og 3D-innstillingene viser siste måleverdi og enhet sammen med navnet, slik at riktig måler er enklere å finne.

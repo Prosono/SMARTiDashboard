@@ -1,0 +1,60 @@
+.smarti-update-progress {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1rem 0 1.5rem;
+  text-align: center;
+}
+.smarti-update-emblem {
+  width: 144px;
+  height: 144px;
+  margin: 0 auto 1.75rem;
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: #ff7900;
+}
+.smarti-update-emblem img {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+}
+.smarti-update-orbit {
+  position: absolute;
+  inset: 0;
+  border: 2px solid color-mix(in srgb, #ff7900 18%, transparent);
+  border-top-color: #ff7900;
+  border-radius: 50%;
+}
+.smarti-update-progress[data-active="true"] .smarti-update-orbit {
+  animation: smarti-update-turn 2.5s linear infinite;
+}
+.smarti-update-progress[data-active="false"] .smarti-update-orbit {
+  border-color: currentColor;
+  opacity: 0.25;
+}
+.smarti-update-progress h3 {
+  font-size: clamp(1.25rem, 4vw, 1.7rem);
+  line-height: 1.25;
+  margin: 0 0 0.75rem;
+}
+.smarti-update-progress p {
+  line-height: 1.6;
+}
+.smarti-update-progress small {
+  display: block;
+  margin-top: 1rem;
+}
+.smarti-update-progress button {
+  min-height: 48px;
+  margin-top: 0.75rem;
+}
+@keyframes smarti-update-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .smarti-update-progress[data-active="true"] .smarti-update-orbit {
+    animation: none;
+  }
+}
