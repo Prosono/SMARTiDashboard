@@ -11,8 +11,20 @@ window.fleet = (() => {
  function chart(rows,compact=false){
   const wrap=node('div',undefined,compact?'traffic-bars mini':'traffic-bars');
   const max=Math.max(1,...rows.map(total));
-  for(const r of rows){const bar=node('div',undefined,'traffic-day');bar.style.setProperty('--bar',Math.max(0,total(r)/max*100)+'%');const label=r.day+': '+bytes(total(r))+' · til hub '+bytes(r.to_hub)+' · fra hub '+bytes(r.from_hub);bar.title=label;bar.setAttribute('aria-label',label);const fill=node('span');bar.append(fill);wrap.append(bar);}
+  for(const r of rows){const bar=node('div',undefined,'traffic-day');bar.style.setProperty('--bar',Math.max(0,total(r)/max*100)+'%');const label=r.day+': '+bytes(total(r))+' · til hub '+bytes(r.to_hub)+' · fra hub '+bytes(r.from_hub);bar.title=label;bar.setAttribute('aria-label',label);const fill=node('span');if(total(r)>0)fill.classList.add('has-traffic');bar.append(fill);wrap.append(bar);}
   wrap.setAttribute('role','img');wrap.setAttribute('aria-label','Daglig fjerntrafikk. '+rows.map(r=>r.day+': '+bytes(total(r))).join(', '));return wrap;
+ }
+
+ function dailyHistory(rows){
+  const details=node('details',undefined,'traffic-history');details.append(node('summary','Vis daglige målinger'));
+  const first=new Date(report.started*1000).toISOString().slice(0,10);
+  const table=node('table'),head=node('thead'),heading=node('tr'),body=node('tbody');
+  for(const title of ['Dato (UTC)','Til hub','Fra hub','Totalt']){const th=node('th',title);th.scope='col';heading.append(th);}head.append(heading);
+  for(const r of rows.filter(r=>r.day>=first).slice().reverse()){
+   const tr=node('tr'),day=node('th',r.day);day.scope='row';tr.append(day,node('td',bytes(r.to_hub)),node('td',bytes(r.from_hub)),node('td',bytes(total(r))));body.append(tr);
+  }
+  table.append(head,body);details.append(table,node('p','Dagssummer lagres i skyen i 90 dager og beholdes ved omstart og oppdateringer. Små trafikkmengder vises med en minimumshøyde i grafen. Tallene i listen er de målte verdiene.'));
+  return details;
  }
 
  function validLocation(h){return h.location&&Number.isFinite(h.location.latitude)&&Number.isFinite(h.location.longitude);}
@@ -56,7 +68,7 @@ window.fleet = (() => {
   if(h.reset&&h.reset.phase!=='completed')fields.push(['Tilbakestilling',h.reset.qr_required?(h.reset.qr_verified?'QR-koden er bekreftet':'Venter på ny QR-skanning'):'Tilbakestilling pågår']);
   for(const [key,value]of fields){dl.append(node('dt',key),node('dd',String(value)));}info.append(dl);
   const traffic=node('section',undefined,'hub-detail-traffic');traffic.append(node('h3','Fjerntrafikk · siste '+$('traffic-period').value+' dager'));
-  const r=report?.hubs?.[h.id];if(report?.available){traffic.append(node('strong',bytes(r?total(r):0)),node('p','Til hub: '+bytes(r?.to_hub||0)+' · Fra hub: '+bytes(r?.from_hub||0)));if(r?.daily?.length)traffic.append(chart(r.daily));traffic.append(node('small',(report.stale?'Målingen er forsinket. ':'')+'Gjelder trafikk gjennom SMARTis relé, ikke all trafikk på hjemmenettverket.'));}else traffic.append(node('p','Trafikkmålingen er ikke tilgjengelig ennå.'));
+  const r=report?.hubs?.[h.id];if(report?.available){traffic.append(node('strong',bytes(r?total(r):0)),node('p','Til hub: '+bytes(r?.to_hub||0)+' · Fra hub: '+bytes(r?.from_hub||0)));if(r?.daily?.length)traffic.append(chart(r.daily),dailyHistory(r.daily));traffic.append(node('small',(report.stale?'Målingen er forsinket. ':'')+'Gjelder trafikk gjennom SMARTis relé, ikke all trafikk på hjemmenettverket.'));}else traffic.append(node('p','Trafikkmålingen er ikke tilgjengelig ennå.'));
   info.append(traffic);
   const deletion=node('section',undefined,'hub-deletion');
   deletion.append(node('h3','Slett hub'),node('p',h.can_delete?'Fjern huben fra SMARTis register. QR-etiketten og tilkoblingsnøkkelen slutter å virke. Huben må registreres på nytt før den kan brukes igjen.':'Huben kan bare slettes når den er frikoblet fra alle kontoer og ikke har et oppsett eller en tilbakestilling som pågår. Å være frakoblet nettet er ikke tilstrekkelig.'));
@@ -77,7 +89,7 @@ window.fleet = (() => {
   const metrics=[['Totalt antall huber',hubs.length,'Registrert i SMARTi','hub'],['Aktive huber',hubs.filter(h=>h.online).length,'Livstegn siste 100 sekunder','online'],['Gjennomsnittlig datatrafikk',measured?bytes(hubs.length?hubs.reduce((s,h)=>s+total(report.hubs?.[h.id]||{}),0)/hubs.length:0):'—','Per registrert hub · valgt periode','traffic'],['Total fjerntrafikk',measured?bytes(sum):'—','Til og fra alle huber · valgt periode','traffic']];
   $('fleet-summary').replaceChildren(...metrics.map(([label,value,note,icon])=>{const n=node('article',undefined,'fleet-metric');n.append(node('span',undefined,'fleet-icon '+icon),node('span',label),node('strong',value),node('small',note));return n;}));
   $('traffic-chart').replaceChildren();
-  if(measured){$('traffic-chart').append(chart(list));const range=node('div',undefined,'chart-range');range.append(node('span',list[0]?.day),node('span',list.at(-1)?.day));$('traffic-chart').append(range);}
+  if(measured){$('traffic-chart').append(chart(list));const range=node('div',undefined,'chart-range');range.append(node('span',list[0]?.day),node('span',list.at(-1)?.day));$('traffic-chart').append(range,dailyHistory(list));}
   else $('traffic-chart').append(node('p','Trafikkmålingen er ikke tilgjengelig ennå. Historikk vises når reléet rapporterer data.','traffic-empty'));
   $('traffic-note').textContent=measured?`${report.stale?'Målingen er forsinket. ':''}Målt fra ${new Date(report.started*1000).toLocaleDateString('nb-NO')}. Oppdatert ${new Date(report.updated*1000).toLocaleTimeString('nb-NO')}. Dager følger UTC.`:'Ingen estimerte tall vises.';
   for(const b of document.querySelectorAll('[data-fleet-filter]')){const key=b.dataset.fleetFilter;b.setAttribute('aria-pressed',String(key===filter));b.querySelector('span').textContent=key==='all'?hubs.length:hubs.filter(h=>category(h)===key).length;}

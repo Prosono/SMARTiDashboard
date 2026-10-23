@@ -48,3 +48,12 @@ html[data-portal-theme="dark"] .hub-info [data-hub-status].hub-onboarded{color:#
 .hub-complete-check::after{content:"";width:7px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:translateY(-1px) rotate(-45deg)}
 html[data-portal-theme="dark"] .hub-complete-check::after{border-color:#10261b}
 .hub-connection-status{color:var(--muted);font-weight:400}
+
+.traffic-day .has-traffic{min-height:3px}
+.traffic-history{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+.traffic-history summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:13px;font-weight:600}
+.traffic-history summary::before{content:'+';margin-right:8px}.traffic-history[open] summary::before{content:'−'}
+.staff-page .traffic-history table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px}
+.staff-page .traffic-history th,.staff-page .traffic-history td{padding:9px 4px;text-align:right;overflow-wrap:anywhere;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.staff-page .traffic-history th:first-child{width:30%;text-align:left;font-weight:500}
+.traffic-history p{font-size:11px;color:var(--muted);line-height:1.5}

@@ -70,3 +70,28 @@ async def test_tunnel_counts_payload_only_in_both_directions():
     await tunnel.send(b"D" + b"a" * 16 + b"123")
     await tunnel.receive()
     assert counts == [("to_hub", 3), ("from_hub", 5)]
+
+
+def test_previous_days_remain_after_new_day_flush(tmp_path):
+    import sqlite3
+    from datetime import UTC, datetime, timedelta
+
+    path = tmp_path / "traffic.sqlite"
+    TrafficMeter(path)
+    previous = (datetime.now(UTC).date() - timedelta(days=2)).isoformat()
+    yesterday = (datetime.now(UTC).date() - timedelta(days=1)).isoformat()
+    with sqlite3.connect(path) as db:
+        db.executemany(
+            "INSERT INTO daily VALUES(?,?,?,?,?)",
+            [
+                ("hub", previous, 100, 44000000, 2),
+                ("hub", yesterday, 200, 10800000000, 4),
+            ],
+        )
+    resumed = TrafficMeter(path)
+    resumed.record("hub", "from_hub", 7000000)
+    resumed.flush()
+    rows = {row["day"]: row for row in traffic_report(path, 7)["hubs"]["hub"]["daily"]}
+    assert rows[previous]["from_hub"] == 44000000
+    assert rows[yesterday]["from_hub"] == 10800000000
+    assert rows[datetime.now(UTC).date().isoformat()]["from_hub"] == 7000000
