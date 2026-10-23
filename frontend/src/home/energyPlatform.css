@@ -1048,3 +1048,81 @@
     grid-column: 1;
   }
 }
+.ep-spot-chart {
+  padding: clamp(14px, 2vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.ep-spot-chart header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.ep-spot-chart header p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+.ep-price-days {
+  display: flex;
+  gap: 6px;
+}
+.ep-price-days button[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--surface);
+  border-color: var(--text);
+}
+.ep-spot-stats {
+  display: flex;
+  gap: clamp(16px, 4vw, 48px);
+  margin-top: 20px;
+  align-items: end;
+}
+.ep-spot-stats > div {
+  display: grid;
+  gap: 4px;
+}
+.ep-spot-stats strong {
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-variant-numeric: tabular-nums;
+}
+.ep-spot-stats small,
+.ep-spot-stats > span,
+.ep-price-source {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.ep-price-source {
+  display: block;
+  margin-top: 12px;
+  line-height: 1.6;
+}
+.ep-price-source a {
+  color: inherit;
+  text-decoration: underline;
+}
+.ep-now-marker {
+  pointer-events: none;
+}
+.ep-dashboard > .ep-summary-panel {
+  grid-column: 1 / -1;
+}
+@media (max-width: 700px) {
+  .ep-price-days {
+    width: 100%;
+  }
+  .ep-price-days button {
+    padding: 8px;
+    flex: 1;
+  }
+  .ep-price-days button:first-child,
+  .ep-price-days button:last-child {
+    flex: 0 0 44px;
+  }
+  .ep-spot-stats {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+}

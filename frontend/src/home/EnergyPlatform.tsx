@@ -17,6 +17,7 @@ import {
 import { api } from "../api";
 import { SettingsDialog } from "./SettingsDialog";
 import "./energyPlatform.css";
+import { EnergyPriceChart } from "./EnergyPriceChart";
 import { EnergySensorPicker } from "./EnergySensorPicker";
 
 import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
@@ -598,6 +599,11 @@ export function EnergyPlatform({
                 </div>
               )}
             </div>
+            <EnergyPriceChart
+              today={data?.spot || null}
+              tomorrow={data?.tomorrow || null}
+              area={setup.data.config.area}
+            />
             <section className="ep-summary-panel">
               <h3>
                 <BarChart3 size={18} /> Forbruk over tid
@@ -627,51 +633,6 @@ export function EnergyPlatform({
                 ))}
               </div>
             </section>
-            {data?.spot && data.spot.length > 0 && (
-              <section className="ep-price-summary">
-                <h3>
-                  <Tag size={18} /> Spotpris i dag
-                </h3>
-                <div>
-                  {[
-                    [
-                      "Laveste",
-                      Math.min(...data.spot.map((p) => p.NOK_per_kWh)),
-                    ],
-                    [
-                      "Gjennomsnitt",
-                      data.spot.reduce(
-                        (sum, p) =>
-                          sum +
-                          p.NOK_per_kWh *
-                            (Date.parse(p.time_end) - Date.parse(p.time_start)),
-                        0,
-                      ) /
-                        data.spot.reduce(
-                          (sum, p) =>
-                            sum +
-                            Date.parse(p.time_end) -
-                            Date.parse(p.time_start),
-                          0,
-                        ),
-                    ],
-                    [
-                      "Høyeste",
-                      Math.max(...data.spot.map((p) => p.NOK_per_kWh)),
-                    ],
-                  ].map(([label, value]) => (
-                    <article key={label}>
-                      <small>{label}</small>
-                      <strong>{fmt(Number(value) * 100)}</strong>
-                      <small>øre/kWh</small>
-                    </article>
-                  ))}
-                </div>
-                <small>
-                  Tilgjengelige priser i dag · uten mva., påslag og nettleie.
-                </small>
-              </section>
-            )}
             {grid?.cost_total != null && (
               <div className="ep-cost-breakdown">
                 <h3>Slik fordeler kostnaden seg</h3>

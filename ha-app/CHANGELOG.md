@@ -1,3 +1,10 @@
+## 1.36.15
+
+- Egen strømprisgraf med valg for i dag og i morgen, prisområde og automatisk oppdatert nå-markør.
+- Trykk eller bruk tastaturet for å se prisen for et tidsrom. Grafen kan sveipes på mobil og håndterer negative priser og ulike intervallengder.
+- Tydelig ventemelding når morgendagens priser ikke er tilgjengelige. Laveste, høyeste og tidsvektet gjennomsnitt følger valgt dag.
+- Kilden er tydelig merket Hva koster strømmen / ENTSO-E, ikke direkte Nord Pool. Prisene vises uten mva., påslag, nettleie og støtte.
+
 ## 1.36.14
 
 - SMARTi samler nå husets effektmåling hvert minutt og beregner egen kWh-historikk når ingen separat energimåler er valgt. Innsamlingen krever ikke HA-statistikk.
