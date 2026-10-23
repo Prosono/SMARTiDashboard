@@ -228,6 +228,67 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
     path: `/tmp/smarti-energy-dashboard-${info.project.name}.png`,
     fullPage: true,
   });
+  // Exercise the chart with missing data and negative prices.
+  const points = Array.from({ length: 24 }, (_, hour) => ({
+    start: new Date(Date.UTC(2026, 9, 23, hour)).toISOString(),
+    end: new Date(Date.UTC(2026, 9, 23, hour + 1)).toISOString(),
+    kwh: hour === 5 ? null : 1 + (hour % 6) * 0.6,
+    cost: { total: hour === 5 ? null : 2.4 },
+  }));
+  await page.route("**/api/home/energy/platform/dashboard?*", (r) =>
+    r.fulfill({
+      json: {
+        configured: true,
+        power_kw: 4.2,
+        history_estimated: true,
+        cloud: "synced",
+        meters: [
+          {
+            role: "grid",
+            name: "Huset",
+            points,
+            summary: { available_kwh: 52, complete: false, coverage: 0.96 },
+            cost_total: null,
+          },
+        ],
+        spot: points.map((p, i) => ({
+          time_start: p.start,
+          time_end: p.end,
+          NOK_per_kWh: i < 4 ? -0.12 : 0.4 + i / 20,
+        })),
+        totals: {
+          today: { available_kwh: 52, complete: false },
+          month: { available_kwh: 612, complete: false },
+          year: { available_kwh: 7240, complete: false },
+        },
+      },
+    }),
+  );
+  await page.getByRole("button", { name: "Døgn", exact: true }).click();
+  const chart = page.getByRole("group", { name: "Forbruksgraf" });
+  await expect(chart.getByRole("button")).toHaveCount(24);
+  await chart.getByRole("button").nth(5).focus();
+  await expect(chart.getByRole("button").nth(5)).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(chart.getByRole("button").nth(5)).toHaveAccessibleName(
+    /Måling mangler/,
+  );
+  await chart.getByRole("button").first().focus();
+  await expect(chart.getByRole("button").first()).toHaveAccessibleName(
+    /spotpris [−-]12/,
+  );
+  await expect(page.locator(".ep-chart-detail")).toContainText("1 kWh");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page
+    .locator(".ep-dashboard")
+    .screenshot({ path: `/tmp/smarti-energy-chart-${info.project.name}.png` });
+
   // Existing homes edit one section directly, preserving the other settings.
   const saved = structuredClone(config);
   await page

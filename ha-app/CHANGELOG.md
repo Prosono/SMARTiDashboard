@@ -1,3 +1,10 @@
+## 1.36.13
+
+- Ny utforming av energihistorikken med tydelige nøkkeltall, kompakte kontroller og egne oppsummeringer for forbruk og dagens strømpriser.
+- Ny interaktiv forbruksgraf med akser, tidsmerking, søyler og strømprislinje når prisene dekker samme tidsrom. Manglende målinger vises som hull og negative priser støttes.
+- Grafen kan sveipes på mobil og betjenes med tastatur. Valgt tidsrom viser forbruk, tilgjengelig kostnad og spotpris.
+- Informasjon om estimert forbruk kan utvides ved behov. Farger følger valgt SMARTi-tema.
+
 ## 1.36.12
 
 - Fjerner Elhub-delen fra energioppsettet.

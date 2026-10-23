@@ -4,6 +4,10 @@ import {
   ArrowRight,
   Check,
   ChevronLeft,
+  BarChart3,
+  Coins,
+  Tag,
+  Box,
   Cloud,
   Settings2,
   Zap,
@@ -14,6 +18,8 @@ import { api } from "../api";
 import { SettingsDialog } from "./SettingsDialog";
 import "./energyPlatform.css";
 import { EnergySensorPicker } from "./EnergySensorPicker";
+
+import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
 
 type Meter = { role: string; entity: string; name: string };
 type Config = {
@@ -193,10 +199,7 @@ export function EnergyPlatform({
   });
   const data = dashboard.data,
     grid = data?.meters?.find((m) => m.role === "grid");
-  const grouped = new Map<
-    string,
-    { label: string; kwh: number | null; cost: number; priced: boolean }
-  >();
+  const grouped = new Map<string, HistoryBucket>();
   for (const p of grid?.points || []) {
     const d = new Date(p.start),
       key =
@@ -215,10 +218,13 @@ export function EnergyPlatform({
               timeZoneName: "shortOffset",
             })
           : key,
+      start: p.start,
+      end: p.end,
       kwh: 0,
       cost: 0,
       priced: true,
     };
+    item.end = p.end;
     item.kwh =
       p.kwh == null || item.kwh == null ? null : item.kwh + Number(p.kwh);
     item.cost += Number(p.cost.total || 0);
@@ -226,7 +232,6 @@ export function EnergyPlatform({
     grouped.set(key, item);
   }
   const points = [...grouped.values()],
-    max = Math.max(1, ...points.map((p) => p.kwh ?? 0)),
     active = selected == null ? null : points[selected];
   const totalCost = grid?.cost_total;
   const currentPrice = data?.spot?.find(
@@ -331,6 +336,11 @@ export function EnergyPlatform({
                   }
                 }}
               >
+                {id === "overview" ? (
+                  <Box size={18} />
+                ) : (
+                  <BarChart3 size={18} />
+                )}
                 {label}
               </button>
             ))}
@@ -366,15 +376,21 @@ export function EnergyPlatform({
         ) : view === "history" ? (
           <div
             role="tabpanel"
+            className="ep-dashboard"
             id="energy-panel-history"
             aria-labelledby="energy-view-history"
           >
             {data?.history_estimated && (
-              <p role="status">
-                Forbruk beregnes fra effektmålerens timegjennomsnitt og lagres
-                som estimert kWh. Velg en egen energimåler for målt forbruk.
-                Historikk vises etter første ferdige time med statistikk i HA.
-              </p>
+              <details className="ep-estimate-note">
+                <summary>
+                  <Info size={16} /> Forbruket er beregnet fra effektmåleren
+                </summary>
+                <p>
+                  Vi lagrer timegjennomsnitt som estimert kWh. Velg en egen
+                  energimåler for målt forbruk. Historikk vises etter første
+                  ferdige time med statistikk i HA.
+                </p>
+              </details>
             )}
             <div className="ep-toolbar">
               <div role="group" aria-label="Periode">
@@ -423,7 +439,9 @@ export function EnergyPlatform({
             )}
             <div className="ep-metrics">
               <article>
-                <small>Akkurat nå</small>
+                <small>
+                  <Zap size={18} /> Strømforbruk nå
+                </small>
                 <strong>
                   {fmt(data?.power_kw)} <span>kW</span>
                 </strong>
@@ -434,7 +452,9 @@ export function EnergyPlatform({
                 </p>
               </article>
               <article>
-                <small>Forbruk i perioden</small>
+                <small>
+                  <BarChart3 size={18} /> Forbruk i perioden
+                </small>
                 <strong>
                   {fmt(grid?.summary.available_kwh)} <span>kWh</span>
                 </strong>
@@ -445,7 +465,9 @@ export function EnergyPlatform({
                 </p>
               </article>
               <article>
-                <small>Beregnet energikostnad</small>
+                <small>
+                  <Coins size={18} /> Beregnet energikostnad
+                </small>
                 <strong>
                   {fmt(totalCost)} <span>kr</span>
                 </strong>
@@ -456,7 +478,9 @@ export function EnergyPlatform({
                 </p>
               </article>
               <article>
-                <small>Spotpris akkurat nå</small>
+                <small>
+                  <Tag size={18} /> Spotpris akkurat nå
+                </small>
                 <strong>
                   {fmt(
                     currentPrice?.NOK_per_kWh == null
@@ -525,26 +549,6 @@ export function EnergyPlatform({
                 <small>{data.solar.note}</small>
               </div>
             )}
-            <div className="ep-period-summary" aria-label="Forbruksoversikt">
-              {[
-                ["today", "I dag"],
-                ["month", "Denne måneden"],
-                ["year", "Hittil i år"],
-              ].map(([key, label]) => (
-                <div key={key}>
-                  <span>{label}</span>
-                  <strong>{fmt(data?.totals?.[key]?.available_kwh)} kWh</strong>
-                  <small>
-                    Estimert kostnad: {fmt(data?.totals?.[key]?.cost, 2)} kr
-                  </small>
-                  <small>
-                    {data?.totals?.[key]?.complete
-                      ? "Målt forbruk"
-                      : "Ufullstendig målegrunnlag"}
-                  </small>
-                </div>
-              ))}
-            </div>
             {grid?.capacity?.next_threshold_kw != null &&
               Number(grid.capacity.peak_kw) >=
                 Number(grid.capacity.next_threshold_kw) * 0.9 && (
@@ -564,26 +568,12 @@ export function EnergyPlatform({
               </header>
               {points.some((p) => p.kwh != null) ? (
                 <>
-                  <div
-                    className="ep-bars"
-                    role="group"
-                    aria-label="Forbruksgraf"
-                  >
-                    {points.map((p, i) => (
-                      <button
-                        key={i}
-                        style={{
-                          height: `${Math.max(3, ((p.kwh ?? 0) / max) * 100)}%`,
-                        }}
-                        data-missing={p.kwh == null || undefined}
-                        aria-label={`${p.label}: ${p.kwh == null ? "Måling mangler" : fmt(p.kwh) + " kWh"}`}
-                        aria-pressed={selected === i}
-                        onClick={() => setSelected(i)}
-                        onFocus={() => setSelected(i)}
-                        title={`${p.label}: ${fmt(p.kwh)} kWh`}
-                      />
-                    ))}
-                  </div>
+                  <EnergyHistoryChart
+                    points={points}
+                    prices={data?.spot || []}
+                    selected={selected}
+                    onSelect={setSelected}
+                  />
                   <p className="ep-chart-detail" aria-live="polite">
                     {active
                       ? `${active.label} · ${fmt(active.kwh)} kWh · ${active.priced ? fmt(active.cost) + " kr uten faste beløp" : "kostnad ikke tilgjengelig"}`
@@ -605,6 +595,78 @@ export function EnergyPlatform({
                 </div>
               )}
             </div>
+            <section className="ep-summary-panel">
+              <h3>
+                <BarChart3 size={18} /> Forbruk over tid
+              </h3>
+              <div className="ep-period-summary" aria-label="Forbruksoversikt">
+                {[
+                  ["today", "I dag"],
+                  ["month", "Denne måneden"],
+                  ["year", "Hittil i år"],
+                ].map(([key, label]) => (
+                  <div key={key}>
+                    <span>{label}</span>
+                    <strong>
+                      {fmt(data?.totals?.[key]?.available_kwh)} kWh
+                    </strong>
+                    <small>
+                      Estimert kostnad: {fmt(data?.totals?.[key]?.cost, 2)} kr
+                    </small>
+                    <small>
+                      {data?.totals?.[key]?.complete
+                        ? "Målt forbruk"
+                        : "Ufullstendig målegrunnlag"}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            </section>
+            {data?.spot && data.spot.length > 0 && (
+              <section className="ep-price-summary">
+                <h3>
+                  <Tag size={18} /> Spotpris i dag
+                </h3>
+                <div>
+                  {[
+                    [
+                      "Laveste",
+                      Math.min(...data.spot.map((p) => p.NOK_per_kWh)),
+                    ],
+                    [
+                      "Gjennomsnitt",
+                      data.spot.reduce(
+                        (sum, p) =>
+                          sum +
+                          p.NOK_per_kWh *
+                            (Date.parse(p.time_end) - Date.parse(p.time_start)),
+                        0,
+                      ) /
+                        data.spot.reduce(
+                          (sum, p) =>
+                            sum +
+                            Date.parse(p.time_end) -
+                            Date.parse(p.time_start),
+                          0,
+                        ),
+                    ],
+                    [
+                      "Høyeste",
+                      Math.max(...data.spot.map((p) => p.NOK_per_kWh)),
+                    ],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <small>{label}</small>
+                      <strong>{fmt(Number(value) * 100)}</strong>
+                      <small>øre/kWh</small>
+                    </article>
+                  ))}
+                </div>
+                <small>
+                  Tilgjengelige priser i dag · uten mva., påslag og nettleie.
+                </small>
+              </section>
+            )}
             {grid?.cost_total != null && (
               <div className="ep-cost-breakdown">
                 <h3>Slik fordeler kostnaden seg</h3>
