@@ -1,3 +1,4 @@
+import { energySensorReading } from "./energySensorReading";
 import { SettingsDialog } from "./SettingsDialog";
 import {
   Component,
@@ -256,8 +257,13 @@ export function EnergyFlow({
         )}
         {options.map((c) => (
           <option key={c.id} value={c.entity_id}>
-            {c.name} · {String(c.attributes.unit_of_measurement)} ·{" "}
-            {c.entity_id}
+            {c.name} ·{" "}
+            {energySensorReading(
+              offline || !home.connected ? "unavailable" : c.state,
+              String(c.attributes.unit_of_measurement),
+              lang,
+            )}{" "}
+            · {c.entity_id}
           </option>
         ))}
       </select>

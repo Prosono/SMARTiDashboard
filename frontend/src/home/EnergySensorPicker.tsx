@@ -1,6 +1,8 @@
 import { useId, useState } from "react";
 
-type Sensor = { entity: string; name: string; unit: string };
+import { energySensorReading } from "./energySensorReading";
+
+type Sensor = { entity: string; name: string; unit: string; state?: string };
 /** Search stays local and only offers compatible measurements supplied by the hub. */
 export function EnergySensorPicker({
   label,
@@ -32,7 +34,7 @@ export function EnergySensorPicker({
       <details>
         <summary>
           {selected
-            ? `${selected.name} · ${selected.unit}`
+            ? `${selected.name} · ${energySensorReading(selected.state, selected.unit)}`
             : value
               ? "Valgt måler er ikke tilgjengelig"
               : "Velg måling (valgfritt)"}
@@ -55,12 +57,14 @@ export function EnergySensorPicker({
           <option value="">Velg senere / ingen måling</option>
           {value && !matches.some((s) => s.entity === value) && (
             <option value={value}>
-              {selected?.name || "Tidligere valgt måler"}
+              {selected
+                ? `${selected.name} · ${energySensorReading(selected.state, selected.unit)}`
+                : "Tidligere valgt måler"}
             </option>
           )}
           {matches.map((s) => (
             <option key={s.entity} value={s.entity}>
-              {s.name} · {s.unit} · {s.entity}
+              {s.name} · {energySensorReading(s.state, s.unit)} · {s.entity}
             </option>
           ))}
         </select>

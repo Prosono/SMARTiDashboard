@@ -239,7 +239,12 @@ def platform_router(service, user, admin):
             },
             "elhub": "requires_business_access",
             "sensors": [
-                {"entity": c.entity_id, "name": c.name, "unit": c.attributes["unit_of_measurement"]}
+                {
+                    "entity": c.entity_id,
+                    "name": c.name,
+                    "unit": c.attributes["unit_of_measurement"],
+                    "state": c.state if ha.connected else "unavailable",
+                }
                 for c in ha.controls()
                 if c.domain == "sensor"
                 and visible(current, c)

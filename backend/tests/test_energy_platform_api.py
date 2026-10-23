@@ -84,3 +84,17 @@ def test_legacy_setup_infers_equipment(client):  # noqa: F811
     assert pref["solar"]["visible"]
     assert not pref["ev"]["visible"]
     assert not pref["battery"]["visible"]
+
+
+def test_setup_exposes_latest_readings_and_disconnect(client):  # noqa: F811
+    ha = client.app.state.ha
+    for value in (0, -123.45, "unknown", "unavailable"):
+        install(ha, "sensor.reading", value, "W")
+        sensors = client.get("/api/home/energy/platform/setup").json()["sensors"]
+        reading = next(s for s in sensors if s["entity"] == "sensor.reading")
+        assert reading["state"] == str(value)
+        assert reading["unit"] == "W"
+    install(ha, "sensor.reading", 1500, "W")
+    ha.connected = False
+    sensors = client.get("/api/home/energy/platform/setup").json()["sensors"]
+    assert next(s for s in sensors if s["entity"] == "sensor.reading")["state"] == "unavailable"

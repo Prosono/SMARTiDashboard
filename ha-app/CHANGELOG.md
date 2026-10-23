@@ -1,3 +1,9 @@
+## 1.36.7
+
+- Sensorvalg i energioppsettet og 3D-innstillingene viser siste måleverdi og enhet sammen med navnet, slik at riktig måler er enklere å finne.
+- Måleverdier oppdateres hvert femte sekund mens energioppsettet er åpent, uten å nullstille ulagrede valg.
+- Ukjente og utilgjengelige målinger vises tydelig, også når hubtilkoblingen brytes. Nullforbruk vises som en faktisk nullverdi.
+
 ## 1.36.6
 
 - Ny kategori «SMARTi-oppdateringer» under Innstillinger for administratorer i normal og avansert modus, med både SMARTi-appen og system-/enhetsoppdateringer.

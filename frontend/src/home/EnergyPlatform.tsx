@@ -43,7 +43,7 @@ type Setup = {
   can_edit: boolean;
   country: string;
   companies: { id: string; name: string }[];
-  sensors: { entity: string; name: string; unit: string }[];
+  sensors: { entity: string; name: string; unit: string; state?: string }[];
   tariff_source: { url: string; updated: string };
 };
 type Point = {
@@ -162,12 +162,14 @@ export function EnergyPlatform({
 }) {
   const cache = useQueryClient();
   const [view, setView] = useState("overview");
+  const [editing, setEditing] = useState<boolean | null>(null);
   const setup = useQuery({
     queryKey: ["energy-platform-setup"],
     queryFn: () => api<Setup>("home/energy/platform/setup"),
+    refetchInterval: (query) =>
+      (editing ?? (admin && !query.state.data?.config)) ? 5000 : false,
   });
-  const [editing, setEditing] = useState<boolean | null>(null),
-    [period, setPeriod] = useState("day"),
+  const [period, setPeriod] = useState("day"),
     [day, setDay] = useState(dayString(new Date()));
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -258,7 +260,7 @@ export function EnergyPlatform({
         <p>Henter energioppsettet…</p>
       </section>
     );
-  if (setup.isError)
+  if (setup.isError && !setup.data)
     return (
       <section className="ep">
         <p role="alert">Kunne ikke hente energioppsettet.</p>
@@ -738,7 +740,17 @@ export function EnergyPlatform({
         ) : null}
         {(editing ?? (admin && !setup.data?.config)) && setup.data && (
           <EnergyWizard
-            setup={setup.data}
+            setup={
+              setup.isError
+                ? {
+                    ...setup.data,
+                    sensors: setup.data.sensors.map((sensor) => ({
+                      ...sensor,
+                      state: "unavailable",
+                    })),
+                  }
+                : setup.data
+            }
             lang={lang}
             onClose={() => setEditing(false)}
             onSaved={() => {
