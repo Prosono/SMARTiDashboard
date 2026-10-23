@@ -271,7 +271,7 @@ def test_radio_ui_only_returns_running_ingress_targets(client, monkeypatch):  # 
     assert client.get(base + "zigbee2mqtt").status_code == 403
 
 
-def test_self_update_only_and_idempotence(client, supervisor):  # noqa: F811
+def test_self_update_only_and_idempotence(client, supervisor, monkeypatch):  # noqa: F811
     calls, info, state = supervisor
     result = client.get("/api/manage/apps/self-update")
     assert result.status_code == 200
@@ -281,11 +281,34 @@ def test_self_update_only_and_idempotence(client, supervisor):  # noqa: F811
         assert client.post("/api/manage/apps/self-update", json=body(state["own"], action)).status_code == 422
     assert not any(method == "POST" for method, _, _ in calls)
     assert client.post("/api/manage/apps/self-update", json=body("other", "update")).status_code == 422
+    ha_calls = []
+
+    async def ha_request(kind, **data):
+        ha_calls.append((kind, data))
+        if kind == "config/entity_registry/list":
+            return [
+                {
+                    "entity_id": "update.renamed_by_owner",
+                    "platform": "hassio",
+                    "unique_id": "renamed_instance_version_latest",
+                }
+            ]
+        return {}
+
+    monkeypatch.setattr(client.app.state.ha, "request", ha_request)
     request = body(state["own"], "update")
     assert client.post("/api/manage/apps/self-update", json=request).json()["status"] == "accepted"
     assert client.post("/api/manage/apps/self-update", json=request).json()["status"] == "accepted"
     writes = [(path, data) for method, path, data in calls if method == "POST"]
-    assert writes == [("/store/addons/renamed_instance/update", {"background": True, "backup": True})]
+    assert writes == []
+    assert [data for kind, data in ha_calls if kind == "call_service"] == [
+        {
+            "domain": "update",
+            "service": "install",
+            "target": {"entity_id": "update.renamed_by_owner"},
+            "service_data": {"backup": True},
+        }
+    ]
 
 
 def test_self_update_no_update(client, supervisor):  # noqa: F811
@@ -331,3 +354,51 @@ def test_self_update_check_requires_admin(client, supervisor):  # noqa: F811
     client.post("/api/logout")
     login(client, "resident", "another long password")
     assert client.post("/api/manage/apps/self-update/check").status_code == 403
+
+
+@pytest.mark.parametrize(
+    "failure, expected",
+    [("ha_request_rejected", "failed"), ("disconnected", "unconfirmed"), ("timeout", "unconfirmed")],
+)
+def test_self_update_failure_is_not_success(client, supervisor, monkeypatch, failure, expected):  # noqa: F811
+    from app.ha import HAError
+
+    calls = []
+
+    async def request(kind, **data):
+        if kind == "config/entity_registry/list":
+            return [
+                {
+                    "entity_id": "update.actual",
+                    "platform": "hassio",
+                    "unique_id": "renamed_instance_version_latest",
+                }
+            ]
+        calls.append(data)
+        if failure == "timeout":
+            raise TimeoutError()
+        raise HAError(failure)
+
+    monkeypatch.setattr(client.app.state.ha, "request", request)
+    payload = body("renamed_instance", "update")
+    for _ in range(2):
+        assert client.post("/api/manage/apps/self-update", json=payload).json()["status"] == expected
+    assert len(calls) == 1
+
+
+def test_self_update_refuses_unrelated_entity(client, supervisor, monkeypatch):  # noqa: F811
+    async def request(kind, **data):
+        assert kind == "config/entity_registry/list"
+        return [
+            {
+                "entity_id": "update.smarti",
+                "platform": "other",
+                "unique_id": "renamed_instance_version_latest",
+            }
+        ]
+
+    monkeypatch.setattr(client.app.state.ha, "request", request)
+    assert (
+        client.post("/api/manage/apps/self-update", json=body("renamed_instance", "update")).status_code
+        == 409
+    )

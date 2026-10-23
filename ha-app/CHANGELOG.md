@@ -1,3 +1,9 @@
+## 1.36.11
+
+- Retter oppdatering fra SMARTi: Home Assistants egen update.install-funksjon utfører nå installasjonen. Supervisor tillater ikke at en app oppdaterer seg selv direkte.
+- Identifiserer kun denne installasjonens oppdateringsenhet via HA-registeret og beholder sikkerhetskopivalget og beskyttelsen mot doble forespørsler.
+- Avviste oppdateringer stopper animasjonen og viser en feilmelding. Brutt forbindelse under installasjon behandles fortsatt som ubekreftet resultat.
+
 ## 1.36.10
 
 - «Andre forbrukere» inkluderer nå både W/kW-effektmålere og Wh/kWh-energimålere. Du trenger ikke begge måletypene for å legge til en enhet.

@@ -14,6 +14,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, field_validator
 
+from .ha import HAError
 from .system_operations import Supervisor
 
 
@@ -155,6 +156,15 @@ def apps_router(m, admin, settings):
         info = await supervisor.request("GET", "/addons/self/info")
         if not info.get("slug"):
             raise HTTPException(503, "app_identity_unavailable")
+        for operation in rows():
+            if (
+                operation.get("via_ha")
+                and operation["slug"] == info["slug"]
+                and operation.get("target_version") == info.get("version")
+                and info.get("state") == "started"
+            ):
+                operation["status"] = "completed"
+                m.store.set("app_operation:" + operation["request_id"], json.dumps(operation))
         return view(info, True)
 
     @router.post("/self-update/check")
@@ -304,6 +314,21 @@ def apps_router(m, admin, settings):
                 await supervisor.request("GET", f"/store/addons/{slug}/availability")
             if any(i["slug"] == slug and i["status"] == "accepted" for i in rows()):
                 raise HTTPException(409, "app_operation_active")
+            update_entity = None
+            if self_update:
+                m.connected()
+                registry = await m.ws("config/entity_registry/list")
+                candidates = [
+                    r["entity_id"]
+                    for r in registry
+                    if r.get("platform") == "hassio"
+                    and r.get("unique_id") == f"{slug}_version_latest"
+                    and r.get("entity_id", "").startswith("update.")
+                    and not r.get("disabled_by")
+                ]
+                if len(candidates) != 1:
+                    raise HTTPException(409, "self_update_entity_unavailable")
+                update_entity = candidates[0]
             state = {
                 "owner": current["id"],
                 "slug": slug,
@@ -312,7 +337,29 @@ def apps_router(m, admin, settings):
                 "created": time.time(),
                 "status": "unconfirmed",
             }
+            if self_update:
+                state.update(via_ha=True, target_version=info.get("version_latest"))
             m.store.set(key, json.dumps(state))
+            if self_update:
+                # Supervisor rejects a direct self-update. HA owns the update entity
+                # and runs the installation independently of this app's lifetime.
+                try:
+                    await m.ha.request(
+                        "call_service",
+                        domain="update",
+                        service="install",
+                        target={"entity_id": update_entity},
+                        service_data={"backup": body.backup},
+                    )
+                    state["status"] = "accepted"
+                except HAError as error:
+                    if str(error) == "ha_request_rejected":
+                        state["status"] = "failed"
+                except (TimeoutError, OSError):
+                    # A disconnect during installation is not proof of failure.
+                    pass
+                m.store.set(key, json.dumps(state))
+                return state
             path = (
                 f"/store/addons/{slug}/{body.action}"
                 if body.action in {"install", "update"}

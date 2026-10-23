@@ -1,7 +1,7 @@
 import { UpdateProgress } from "./UpdateProgress";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../api";
+import { api, ApiError } from "../api";
 import { words } from "./shared";
 import { SettingsDialog } from "../home/SettingsDialog";
 
@@ -65,6 +65,16 @@ export function SelfUpdate({ lang }: { lang: string }) {
         "POST",
         { request_id: id, action: "update", confirm_slug: q.data.slug, backup },
       );
+      if (result.status === "failed") {
+        setProgress(null);
+        setMessage(
+          t(
+            "Home Assistant avviste oppdateringen. Kontroller oppdateringsstatus og loggen i HA.",
+            "Home Assistant rejected the update. Check update status and logs in HA.",
+          ),
+        );
+        return;
+      }
       setMessage(
         result.status === "unconfirmed"
           ? t(
@@ -77,7 +87,22 @@ export function SelfUpdate({ lang }: { lang: string }) {
             ),
       );
       setConfirm(false);
-    } catch {
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        error.status >= 400 &&
+        error.status < 500
+      ) {
+        setProgress(null);
+        setRequestId(null);
+        setMessage(
+          t(
+            "Oppdateringen kunne ikke startes. Kontroller at SMARTis oppdateringsenhet er aktiv i HA, og se etter oppdateringer igjen.",
+            "The update could not start. Check that SMARTi's update entity is enabled in HA, then check for updates again.",
+          ),
+        );
+        return;
+      }
       setMessage(
         t(
           "Forbindelsen ble brutt eller oppdateringen kunne ikke bekreftes. Den kan fortsatt pågå. Kontroller i Home Assistant før du forsøker igjen.",
