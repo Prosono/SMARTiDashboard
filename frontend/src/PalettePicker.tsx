@@ -8,6 +8,40 @@ export const palettes = [
     note: ["Varm og original", "Warm and original"],
   },
   {
+    id: "smarti-black",
+    nb: "SMARTi Sort",
+    en: "SMARTi Black",
+    colors: ["#000000", "#ff7900", "#202020"],
+    note: [
+      "Rent svart og oransje i mørk visning",
+      "Pure black and orange in dark mode",
+    ],
+  },
+  {
+    id: "midnight",
+    nb: "Midnatt",
+    en: "Midnight",
+    colors: ["#101629", "#9bb8f3", "#edf1fa"],
+    note: ["Dyp marineblå", "Deep navy blue"],
+  },
+  {
+    id: "copper",
+    nb: "Kobber",
+    en: "Copper",
+    colors: ["#291b18", "#e4a38c", "#faf1ed"],
+    note: ["Varm terrakotta og kobber", "Warm terracotta and copper"],
+  },
+  {
+    id: "graphite",
+    nb: "Grafitt",
+    en: "Graphite",
+    colors: ["#18181b", "#bcbcc6", "#f1f1f3"],
+    note: [
+      "Nøytral grå, uten fargestikk",
+      "Neutral grey, without a color cast",
+    ],
+  },
+  {
     id: "fjord",
     nb: "Fjord",
     en: "Fjord",

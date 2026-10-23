@@ -1,3 +1,9 @@
+## 1.36.19
+
+- Fire nye fargepaletter: SMARTi Sort, Midnatt, Kobber og Grafitt. Alle kan kombineres med lyst og mørkt modus.
+- SMARTi Sort bruker helt svart bakgrunn, nøytrale mørkegrå flater og oransje detaljer i mørkt modus.
+- Kontrollerte tekstkontraster og tydelig tastaturfokus i temavelgeren. Valgt tema lagres som før.
+
 ## 1.36.18
 
 - Felles høyde på toppbildene for lys, klima, sikkerhet, multimedia og diverse på mobil og desktop. Innholdet kan fortsatt vokse ved større tekststørrelse.

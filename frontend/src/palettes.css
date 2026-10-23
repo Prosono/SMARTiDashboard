@@ -284,3 +284,127 @@ html[data-palette]:not([data-palette="smarti"]) .nav-item.active svg {
     max-height: calc(100dvh - 100px);
   }
 }
+
+html[data-palette="smarti-black"] {
+  --bg: #f7f7f7;
+  --surface: #ffffff;
+  --text: #171717;
+  --muted: #646464;
+  --line: #dddddd;
+  --soft: #ededed;
+  --tint: #fff0e4;
+  --accent: #a34600;
+  --orange: #ff7900;
+  --sidebar: #000000;
+}
+
+html[data-theme="dark"][data-palette="smarti-black"] {
+  --bg: #000000;
+  --surface: #141414;
+  --text: #f5f5f5;
+  --muted: #b5b5b5;
+  --line: #363636;
+  --soft: #222222;
+  --tint: #332013;
+  --accent: #ff9a3d;
+  --orange: #ff7900;
+  --sidebar: #000000;
+}
+
+html[data-palette="midnight"] {
+  --bg: #edf1fa;
+  --surface: #fbfcff;
+  --text: #202b47;
+  --muted: #5b6783;
+  --line: #d3dcee;
+  --soft: #e1e7f4;
+  --tint: #e0e8fa;
+  --accent: #365e9e;
+  --orange: #436bb0;
+  --sidebar: #101629;
+}
+
+html[data-theme="dark"][data-palette="midnight"] {
+  --bg: #0c1020;
+  --surface: #171e33;
+  --text: #edf1ff;
+  --muted: #aebbd6;
+  --line: #323f5c;
+  --soft: #242e48;
+  --tint: #293758;
+  --accent: #a7c3ff;
+  --orange: #9bb8f3;
+  --sidebar: #090e1b;
+}
+
+html[data-palette="copper"] {
+  --bg: #faf1ed;
+  --surface: #fffaf7;
+  --text: #442c26;
+  --muted: #7a6259;
+  --line: #e6d5cd;
+  --soft: #f0e1d9;
+  --tint: #f5dfd2;
+  --accent: #934d35;
+  --orange: #a6553c;
+  --sidebar: #291b18;
+}
+
+html[data-theme="dark"][data-palette="copper"] {
+  --bg: #201512;
+  --surface: #30211d;
+  --text: #fff0e8;
+  --muted: #ceb2a5;
+  --line: #503a31;
+  --soft: #402e27;
+  --tint: #4b3024;
+  --accent: #f0b69c;
+  --orange: #e4a38c;
+  --sidebar: #180f0d;
+}
+
+html[data-palette="graphite"] {
+  --bg: #f1f1f3;
+  --surface: #fdfdfd;
+  --text: #27272c;
+  --muted: #65656f;
+  --line: #d9d9df;
+  --soft: #e7e7eb;
+  --tint: #e1e1e7;
+  --accent: #52525e;
+  --orange: #60606d;
+  --sidebar: #202024;
+}
+
+html[data-theme="dark"][data-palette="graphite"] {
+  --bg: #101012;
+  --surface: #1c1c20;
+  --text: #f0f0f4;
+  --muted: #b4b4be;
+  --line: #3a3a43;
+  --soft: #2b2b32;
+  --tint: #32323c;
+  --accent: #d0d0dc;
+  --orange: #bcbcc6;
+  --sidebar: #131316;
+}
+
+/* SMARTi orange needs dark button text; keep black surfaces neutral. */
+html[data-palette="smarti-black"] {
+  --on-primary: #171717;
+}
+html[data-palette="smarti-black"] .sidebar {
+  background: var(--sidebar);
+}
+@media (max-width: 760px) {
+  html[data-palette="smarti-black"] .sidebar {
+    background: var(--surface);
+  }
+}
+.palette-options button {
+  color: var(--text);
+}
+.palette-options button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

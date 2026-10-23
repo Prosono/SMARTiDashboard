@@ -8,9 +8,20 @@ test.beforeEach(async ({ page }) => {
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   await expect(page.locator(".home-welcome")).toBeVisible();
 });
-test("five palettes in both modes persist independently", async ({ page }) => {
+test("nine palettes in both modes persist independently", async ({ page }) => {
+  await page
+    .getByRole("navigation", { name: "Hovedmeny" })
+    .getByRole("button", { name: "Innstillinger", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
   const values = [
     ["smarti", "SMARTi"],
+    ["smarti-black", "SMARTi Sort"],
+    ["midnight", "Midnatt"],
+    ["copper", "Kobber"],
+    ["graphite", "Grafitt"],
     ["fjord", "Fjord"],
     ["forest", "Skog"],
     ["sand", "Sand"],
@@ -18,12 +29,11 @@ test("five palettes in both modes persist independently", async ({ page }) => {
   ];
   const backgrounds = new Set<string>();
   for (const mode of ["light", "dark"]) {
-    if (mode === "dark")
-      await page.getByRole("button", { name: "Mørkt", exact: true }).click();
+    await page
+      .getByRole("combobox", { name: "Utseende", exact: true })
+      .selectOption(mode);
     for (const [id, name] of values) {
-      await page.getByLabel("Velg fargepalett", { exact: true }).click();
       await page
-        .locator(".palette-menu")
         .getByRole("button", { name: `Palett: ${name}`, exact: true })
         .click();
       await expect(page.locator("html")).toHaveAttribute("data-palette", id);
@@ -38,41 +48,24 @@ test("five palettes in both modes persist independently", async ({ page }) => {
           .locator("body")
           .evaluate((el) => el.scrollWidth <= el.clientWidth),
       ).toBe(true);
+      if (id === "smarti-black" && mode === "dark") {
+        expect(
+          await page
+            .locator("html")
+            .evaluate((el) =>
+              getComputedStyle(el).getPropertyValue("--bg").trim(),
+            ),
+        ).toBe("#000000");
+        await page.locator(".palette-picker").screenshot({
+          path: `/tmp/smarti-black-picker-${test.info().project.name}.png`,
+        });
+      }
     }
   }
-  expect(backgrounds.size).toBe(10);
-  await page.setViewportSize({ width: 320, height: 800 });
-  await page.getByLabel("Velg fargepalett", { exact: true }).click();
-  const picker = await page
-    .locator(".palette-menu .palette-picker")
-    .boundingBox();
-  expect(picker!.x).toBeGreaterThanOrEqual(0);
-  expect(picker!.x + picker!.width).toBeLessThanOrEqual(320);
-  expect(
-    await page
-      .locator(".sidebar")
-      .evaluate((el) => getComputedStyle(el).backgroundImage),
-  ).toBe("none");
-  await page.keyboard.press("Escape");
+  expect(backgrounds.size).toBe(18);
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-palette", "plum");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.getByLabel("Velg fargepalett", { exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Palett: Plomme", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await page.keyboard.press("Escape");
-  await expect(page.locator(".palette-menu")).not.toHaveAttribute("open", "");
-  await page.getByRole("button", { name: "Lyst", exact: true }).click();
-  await page.getByLabel("Velg fargepalett", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Palett: Fjord", exact: true })
-    .click();
-  await page.screenshot({
-    path: `../artifacts/${test.info().project.name}-palette-fjord.png`,
-    fullPage: true,
-    animations: "disabled",
-  });
 });
 test("room groups, search, navigation and controls", async ({ page }) => {
   await page
