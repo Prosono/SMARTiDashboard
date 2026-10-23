@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   BarChart3,
   Coins,
+  Leaf,
   Tag,
   Box,
   Cloud,
@@ -189,7 +190,10 @@ export function EnergyPlatform({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [selected, setSelected] = useState<number | null>(null);
-  const [start, end] = range(day, period);
+  const [start, end] = range(
+    view === "overview" ? dayString(new Date()) : day,
+    view === "overview" ? "day" : period,
+  );
   const dashboard = useQuery({
     queryKey: ["energy-platform", start, end],
     queryFn: () =>
@@ -255,6 +259,28 @@ export function EnergyPlatform({
       (p) => p.variable_rate != null && new Date(p.end).getTime() > Date.now(),
     )
     .sort((a, b) => Number(a.variable_rate) - Number(b.variable_rate))[0];
+  const todayCost = data?.totals?.today?.cost;
+  const selfUse = data?.solar?.self_consumption;
+  const importedToday = data?.totals?.today?.total_kwh;
+  const selfSupply =
+    selfUse != null &&
+    importedToday != null &&
+    Number(selfUse) + Number(importedToday) > 0
+      ? (Number(selfUse) / (Number(selfUse) + Number(importedToday))) * 100
+      : null;
+  function openSummary(target: string) {
+    setDay(dayString(new Date()));
+    setPeriod("day");
+    setSelected(null);
+    setView("history");
+    requestAnimationFrame(() => {
+      const element =
+        document.getElementById(target) ||
+        document.getElementById("energy-view-history");
+      element?.focus({ preventScroll: true });
+      element?.scrollIntoView({ block: "nearest" });
+    });
+  }
   async function refresh() {
     setBusy(true);
     setError("");
@@ -529,7 +555,7 @@ export function EnergyPlatform({
                 </p>
               )}
             {data?.solar && (
-              <div className="ep-solar">
+              <div className="ep-solar" id="ep-solar-summary" tabIndex={-1}>
                 <h3>Solenergien din</h3>
                 <div className="ep-period-summary">
                   <div>
@@ -562,7 +588,7 @@ export function EnergyPlatform({
                   Dette er et foreløpig grunnlag for måneden.
                 </p>
               )}
-            <div className="ep-history">
+            <div className="ep-history" id="ep-consumption-chart" tabIndex={-1}>
               <header>
                 <h3>Forbruket ditt</h3>
                 <span>
@@ -634,7 +660,11 @@ export function EnergyPlatform({
               </div>
             </section>
             {grid?.cost_total != null && (
-              <div className="ep-cost-breakdown">
+              <div
+                className="ep-cost-breakdown"
+                id="ep-cost-breakdown"
+                tabIndex={-1}
+              >
                 <h3>Slik fordeler kostnaden seg</h3>
                 <dl>
                   {Object.entries(grid.breakdown).map(([key, value]) => (
@@ -844,6 +874,74 @@ export function EnergyPlatform({
             aria-labelledby="energy-view-overview"
           >
             {overview?.(setup.data?.config?.equipment != null)}
+            <div className="ep-scene-summary" aria-label="Energitall for i dag">
+              <button onClick={() => openSummary("ep-price-chart")}>
+                <span className="ep-scene-label">
+                  <Tag size={20} /> Spotpris nå <ArrowRight size={16} />
+                </span>
+                <strong>
+                  {fmt(currentPrice ? currentPrice.NOK_per_kWh * 100 : null)}{" "}
+                  <span>øre/kWh</span>
+                </strong>
+                <small>
+                  {currentPrice
+                    ? "Uten mva., påslag og nettleie"
+                    : "Venter på dagens priser"}
+                </small>
+              </button>
+              <button onClick={() => openSummary("ep-consumption-chart")}>
+                <span className="ep-scene-label">
+                  <BarChart3 size={20} /> Forbruk i dag <ArrowRight size={16} />
+                </span>
+                <strong>
+                  {fmt(grid?.summary.available_kwh)} <span>kWh</span>
+                </strong>
+                <small>
+                  {grid?.summary.available_kwh == null
+                    ? "Venter på målinger"
+                    : `${data?.history_estimated ? "Estimert" : "Målt"} · ${grid?.summary.complete ? "komplett grunnlag" : "ufullstendig grunnlag"}`}
+                </small>
+              </button>
+              <button
+                onClick={() =>
+                  openSummary(
+                    totalCost != null
+                      ? "ep-cost-breakdown"
+                      : "ep-consumption-chart",
+                  )
+                }
+              >
+                <span className="ep-scene-label">
+                  <Coins size={20} /> Estimert kostnad i dag{" "}
+                  <ArrowRight size={16} />
+                </span>
+                <strong>
+                  {fmt(todayCost, 2)} <span>kr</span>
+                </strong>
+                <small>
+                  {todayCost != null
+                    ? "Ferdige timer · inkl. nettleie og faste beløp"
+                    : "Mangler komplett beregningsgrunnlag"}
+                </small>
+              </button>
+              {(setup.data.config.equipment?.solar ||
+                setup.data.config.meters.some((m) => m.role === "solar")) && (
+                <button onClick={() => openSummary("ep-solar-summary")}>
+                  <span className="ep-scene-label">
+                    <Leaf size={20} /> Selvforsyning i dag{" "}
+                    <ArrowRight size={16} />
+                  </span>
+                  <strong>
+                    {fmt(selfSupply, 0)} <span>%</span>
+                  </strong>
+                  <small>
+                    {selfSupply != null
+                      ? "Egen solenergi · ferdige timer"
+                      : "Krever komplette målinger, uten batteri"}
+                  </small>
+                </button>
+              )}
+            </div>
           </div>
         )}
       </section>

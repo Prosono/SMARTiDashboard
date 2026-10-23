@@ -495,12 +495,13 @@ def platform_router(service, user, admin):
         solar = None
         production = next((m for m in config.meters if m.role == "solar" and m.entity in controls), None)
         export = next((m for m in config.meters if m.role == "export" and m.entity in controls), None)
-        if production and export and a < b:
-            produced = repo.rows(production.entity, a, b)
-            exported = repo.rows(export.entity, a, b)
+        solar_end = b.replace(minute=0, second=0, microsecond=0)
+        if production and export and a < solar_end:
+            produced = repo.rows(production.entity, a, solar_end)
+            exported = repo.rows(export.entity, a, solar_end)
             from .energy_intervals import summarize_energy
 
-            ps, es = summarize_energy(produced, a, b), summarize_energy(exported, a, b)
+            ps, es = summarize_energy(produced, a, solar_end), summarize_energy(exported, a, solar_end)
             value, complete_value = Decimal(0), bool(exported)
             for row in exported:
                 historical = repo.config(row.start)

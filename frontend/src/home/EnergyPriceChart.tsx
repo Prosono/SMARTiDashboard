@@ -79,6 +79,8 @@ export function EnergyPriceChart({
     : 0;
   return (
     <section
+      id="ep-price-chart"
+      tabIndex={-1}
       className="ep-spot-chart"
       aria-label="Strømpriser i dag og i morgen"
     >

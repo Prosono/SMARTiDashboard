@@ -1,3 +1,9 @@
+## 1.36.16
+
+- Nøkkeltall under 3D-modellen viser spotpris nå, dagens forbruk og estimert kostnad for ferdige timer.
+- Hjem med solceller får også selvforsyning når komplette målinger uten batteri gjør beregningen mulig. Manglende tall vises som strek.
+- Kortene åpner relevant historikk og tilpasser seg mobil og desktop. Oversikten viser alltid dagens tall.
+
 ## 1.36.15
 
 - Egen strømprisgraf med valg for i dag og i morgen, prisområde og automatisk oppdatert nå-markør.

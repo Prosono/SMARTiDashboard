@@ -273,7 +273,7 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
           NOK_per_kWh: 0.2 + i / 20,
         })),
         totals: {
-          today: { available_kwh: 52, complete: false },
+          today: { available_kwh: 52, cost: 42.6, complete: false },
           month: { available_kwh: 612, complete: false },
           year: { available_kwh: 7240, complete: false },
         },
@@ -296,7 +296,9 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   await expect(chart.getByRole("button").first()).toHaveAccessibleName(
     /spotpris [−-]12/,
   );
-  await expect(page.locator(".ep-history .ep-chart-detail")).toContainText("1 kWh");
+  await expect(page.locator(".ep-history .ep-chart-detail")).toContainText(
+    "1 kWh",
+  );
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth + 1,
@@ -330,6 +332,26 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
     path: `/tmp/smarti-price-chart-${info.project.name}.png`,
   });
 
+  await page.getByRole("tab", { name: "3D-oversikt", exact: true }).click();
+  const summary = page.getByLabel("Energitall for i dag", { exact: true });
+  await expect(summary.getByRole("button")).toHaveCount(4);
+  await expect(
+    summary.getByRole("button", { name: /Forbruk i dag/ }),
+  ).toContainText("52");
+  await expect(
+    summary.getByRole("button", { name: /Selvforsyning i dag/ }),
+  ).toContainText("—");
+  await expect(
+    summary.getByRole("button", { name: /Estimert kostnad i dag/ }),
+  ).toContainText("42,6");
+  await summary.screenshot({
+    path: `/tmp/smarti-scene-summary-${info.project.name}.png`,
+  });
+  await summary.getByRole("button", { name: /Spotpris nå/ }).click();
+  await expect(
+    page.getByRole("tab", { name: "Historikk og strømpriser", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(pricePanel).toBeFocused();
   // Existing homes edit one section directly, preserving the other settings.
   const saved = structuredClone(config);
   await page
@@ -446,7 +468,9 @@ test("energy chart distinguishes zero from missing readings and supports keyboar
     "aria-pressed",
     "true",
   );
-  await expect(page.locator(".ep-history .ep-chart-detail")).toContainText("0 kWh");
+  await expect(page.locator(".ep-history .ep-chart-detail")).toContainText(
+    "0 kWh",
+  );
   await page.keyboard.press("Tab");
   await expect(chart.getByRole("button").nth(2)).toHaveAttribute(
     "data-missing",
