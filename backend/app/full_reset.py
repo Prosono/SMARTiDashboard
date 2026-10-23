@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import re
 import shutil
 import uuid
 from datetime import UTC, datetime
@@ -277,9 +278,42 @@ class FullReset:
             http_store.unlink(missing_ok=True)
         _sync_directory(storage)
 
-    async def execute(self, report=None, ownership="keep_owner", production=False):
+    async def delete_local_backups(self):
+        """Delete only Supervisor's local copies; never network/cloud copies.
+
+        HA is stopped before this operation. Verify inventory again before erasure
+        continues, and fail closed on malformed inventory or unconfirmed deletion.
+        """
+
+        async def local_slugs():
+            inventory = await self.supervisor.request("GET", "/backups/info")
+            if not isinstance(inventory, dict) or not isinstance(inventory.get("backups"), list):
+                raise AuthResetError("reset_backup_inventory_invalid")
+            slugs = []
+            for backup in inventory["backups"]:
+                if not isinstance(backup, dict):
+                    raise AuthResetError("reset_backup_inventory_invalid")
+                locations = backup.get("locations", [backup.get("location")])
+                if not isinstance(locations, list):
+                    raise AuthResetError("reset_backup_inventory_invalid")
+                if None not in locations and ".local" not in locations:
+                    continue
+                slug = backup.get("slug")
+                if not isinstance(slug, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,80}", slug):
+                    raise AuthResetError("reset_backup_inventory_invalid")
+                slugs.append(slug)
+            return slugs
+
+        slugs = await local_slugs()
+        for slug in slugs:
+            await self.supervisor.request("DELETE", f"/backups/{slug}", {"location": ".local"})
+        if await local_slugs():
+            raise AuthResetError("reset_backup_deletion_unconfirmed")
+        return len(slugs)
+
+    async def execute(self, report=None, ownership="keep_owner", production=False, delete_backups=False):
         try:
-            return await self._execute(report, ownership, production)
+            return await self._execute(report, ownership, production, delete_backups)
         except BaseException:
             state = self.state()
             if state and state["phase"] not in {"completed", "awaiting_owner", "awaiting_reboot"}:
@@ -287,7 +321,7 @@ class FullReset:
                 self.save(state)
             raise
 
-    async def _execute(self, report=None, ownership="keep_owner", production=False):
+    async def _execute(self, report=None, ownership="keep_owner", production=False, delete_backups=False):
         if ownership not in {"keep_owner", "release_owner"}:
             raise AuthResetError("reset_ownership_invalid")
         info = await self.preflight()
@@ -305,6 +339,7 @@ class FullReset:
             "phase": "preparing",
             "ownership": ownership,
             "production": production,
+            "delete_backups": delete_backups,
             "boot": info["boot"],
             "watchdog": info["watchdog"],
             "report": report or [],
@@ -331,6 +366,19 @@ class FullReset:
         self.stopped = True
         await self.assert_stopped()
         await self.configure_reset_http(ISOLATED_CONFIG)
+        if delete_backups:
+            state["phase"] = "deleting_backups"
+            self.save(state)
+            count = await self.delete_local_backups()
+            state["report"].append(
+                {
+                    "kind": "backups",
+                    "name": "Lokale sikkerhetskopier",
+                    "status": "done",
+                    "reason": "",
+                    "count": count,
+                }
+            )
         state["phase"] = "erasing"
         self.save(state)
         await OfflineAuthReset(

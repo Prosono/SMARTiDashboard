@@ -104,6 +104,7 @@ def test_real_job_records_partial_result_and_duplicate_never_replays(client):
     assert result["status"] == "incomplete"
     assert [r["status"] for r in result["results"]] == ["done", "manual"]
     assert client.post(PATH, json=body).json()["id"] == body["request_id"]
+    assert client.post(PATH, json=body | {"delete_backups": True}).status_code == 409
     assert provider.calls == ["1", "2"]
     with engine.store.connect() as db:
         persisted = db.execute("SELECT body FROM factory_resets").fetchone()[0]

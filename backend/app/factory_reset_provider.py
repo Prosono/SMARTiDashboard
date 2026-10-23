@@ -170,6 +170,7 @@ class HomeResetProvider:
             result = await self.full.execute(
                 op.get("report", []),
                 ownership=op.get("ownership", "keep_owner"),
+                **({"delete_backups": True} if op.get("delete_backups") else {}),
                 **({"production": True} if op.get("production") else {}),
             )
             self.ha.states.clear()

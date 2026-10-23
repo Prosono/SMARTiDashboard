@@ -628,3 +628,51 @@ async def test_reset_http_rejects_unknown_storage_schema_before_writing(tmp_path
         await reset.configure_reset_http(NORMAL_CONFIG)
     assert (reset.root / "configuration.yaml").read_text() == original
     assert json.loads(storage.read_text())["version"] == 3
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("enabled", [False, True])
+async def test_reset_backup_deletion_is_opt_in_and_local_only(tmp_path, monkeypatch, enabled):
+    reset, store, supervisor = setup_reset(tmp_path)
+    monkeypatch.setattr("asyncio.open_connection", AsyncMock(side_effect=ConnectionRefusedError))
+    original = supervisor.request
+    backups = [
+        {"slug": "abc123", "locations": [".local", "nas"]},
+        {"slug": "def456", "location": None},
+        {"slug": "remote", "locations": ["nas"]},
+    ]
+
+    async def request(method, path, data=None):
+        if path == "/backups/info":
+            supervisor.calls.append((method, path, data))
+            return {"backups": backups}
+        if method == "DELETE":
+            assert data == {"location": ".local"}
+            assert reset.stopped
+            supervisor.calls.append((method, path, data))
+            backup = next(b for b in backups if path.endswith("/" + b["slug"]))
+            if backup["slug"] == "abc123":
+                backup["locations"] = ["nas"]
+            else:
+                backups.remove(backup)
+            return {}
+        return await original(method, path, data)
+
+    supervisor.request = request
+    await reset.execute(delete_backups=enabled)
+    deletes = [p for m, p, _ in supervisor.calls if m == "DELETE"]
+    assert deletes == (["/backups/abc123", "/backups/def456"] if enabled else [])
+    assert any(b["slug"] == "remote" for b in backups)
+    assert reset.state()["delete_backups"] is enabled
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "inventory",
+    [{}, {"backups": [{"slug": "../../bad"}]}, {"backups": [{"slug": "remaining", "location": None}]}],
+)
+async def test_backup_deletion_requires_verified_empty_inventory(tmp_path, inventory):
+    reset, _, supervisor = setup_reset(tmp_path)
+    supervisor.request = AsyncMock(return_value=inventory)
+    with pytest.raises(AuthResetError):
+        await reset.delete_local_backups()

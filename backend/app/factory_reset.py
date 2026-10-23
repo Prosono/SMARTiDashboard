@@ -63,6 +63,7 @@ class FactoryResetRequest(BaseModel):
     acknowledge_data_loss: Literal[True]
     acknowledge_pairing: Literal[True]
     backup_decision: Literal["saved", "skip"]
+    delete_backups: bool = False
 
 
 class FactoryReset:
@@ -108,7 +109,7 @@ class FactoryReset:
             task.cancel()
         await asyncio.gather(*self.tasks, return_exceptions=True)
 
-    async def start(self, id, owner, ownership="keep_owner", production=False):
+    async def start(self, id, owner, ownership="keep_owner", production=False, delete_backups=False):
         id = str(id)
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -118,6 +119,7 @@ class FactoryReset:
                 if previous["owner"] != owner or (
                     existing.get("ownership", "keep_owner") != ownership
                     or existing.get("production", False) != production
+                    or existing.get("delete_backups", False) != delete_backups
                 ):
                     raise HTTPException(409, "reset_conflict")
                 return existing
@@ -132,6 +134,7 @@ class FactoryReset:
                 "step": "inventory",
                 "ownership": ownership,
                 "production": production,
+                "delete_backups": delete_backups,
                 "created": time.time(),
                 "results": [],
                 "error": "",
@@ -159,6 +162,7 @@ class FactoryReset:
                 if op["kind"] == "full_reset":
                     op["ownership"] = job.get("ownership", "keep_owner")
                     op["production"] = job.get("production", False)
+                    op["delete_backups"] = job.get("delete_backups", False)
                     op["report"] = [dict(r) for r in job["results"] if r is not result]
                 try:
                     # Full reset now starts and stops HA to provision local recovery access.
@@ -233,9 +237,11 @@ def factory_reset_router(store, auth, admin, engine):
         # A retry of the same request reads its job, including after a disconnect.
         try:
             previous = engine.read(str(body.request_id), current["id"])
-            if previous.get("ownership", "keep_owner") != body.ownership or previous.get(
-                "production", False
-            ) != (body.confirmation == "RESTORE WIPE"):
+            if (
+                previous.get("ownership", "keep_owner") != body.ownership
+                or previous.get("production", False) != (body.confirmation == "RESTORE WIPE")
+                or previous.get("delete_backups", False) != body.delete_backups
+            ):
                 raise HTTPException(409, "reset_conflict")
             return previous
         except HTTPException as e:
@@ -244,12 +250,15 @@ def factory_reset_router(store, auth, admin, engine):
         ready = await engine.provider.preflight()
         if body.confirmation == "RESTORE WIPE" and not ready.get("production_allowed"):
             raise HTTPException(403, "production_access_required")
+        if body.delete_backups and not ready.get("full"):
+            raise HTTPException(409, "backup_deletion_requires_managed_hub")
         if not ready["ready"]:
             raise HTTPException(409, "factory_reset_unavailable")
         return await engine.start(
             body.request_id,
             current["id"],
             body.ownership,
+            delete_backups=body.delete_backups,
             **({"production": True} if body.confirmation == "RESTORE WIPE" else {}),
         )
 

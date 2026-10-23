@@ -1,3 +1,9 @@
+## 1.36.4
+
+- Valgfritt «Slett alle sikkerhetskopier» under tilbakestilling, også RESTORE WIPE. Sletter HA-sikkerhetskopier på selve huben; eksterne kopier beholdes.
+- Valget er av som standard. Sletting bekreftes mot Supervisor før resten av tilbakestillingen fortsetter; feil rapporteres som ufullført prosess.
+- Ryddigere resetdialog på mobil og desktop, med korrekt størrelse på avhukinger/radioknapper, lesbare advarsler og tydelige seksjoner.
+
 ## 1.36.3
 
 - Enklere energioppsett med tydelige rammer, ja/nei-valg for solceller, elbil og hjemmebatteri, og søk etter kompatible målere.
