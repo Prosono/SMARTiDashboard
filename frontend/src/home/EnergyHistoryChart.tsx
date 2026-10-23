@@ -1,6 +1,7 @@
 import { useId } from "react";
 
 export type HistoryBucket = {
+  partial?: boolean;
   label: string;
   start: string;
   end: string;
@@ -159,7 +160,7 @@ export function EnergyHistoryChart({
             fill="transparent"
             tabIndex={0}
             role="button"
-            aria-label={`${p.label}: ${p.kwh == null ? "Måling mangler" : number(p.kwh) + " kWh"}${values[i] == null ? "" : `, spotpris ${number(values[i]!)} øre/kWh`}`}
+            aria-label={`${p.label}${p.partial ? " (ufullstendig / pågående)" : ""}: ${p.kwh == null ? "Måling mangler" : number(p.kwh) + " kWh"}${values[i] == null ? "" : `, spotpris ${number(values[i]!)} øre/kWh`}`}
             aria-pressed={selected === i}
             onClick={() => onSelect(i)}
             onFocus={() => onSelect(i)}

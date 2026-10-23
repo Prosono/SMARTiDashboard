@@ -99,6 +99,15 @@ CREATE TABLE IF NOT EXISTS energy_prices(area TEXT NOT NULL, day TEXT NOT NULL, 
             for row in rows:
                 if row.value is None:
                     continue
+                # Recorder is a historical fallback; never overwrite our direct collection.
+                if (
+                    row.source == "ha:recorder:power"
+                    and db.execute(
+                        "SELECT 1 FROM energy_intervals WHERE entity=? AND source='smarti:power' AND start<? AND end>?",
+                        (entity, row.end.isoformat(), row.start.isoformat()),
+                    ).fetchone()
+                ):
+                    continue
                 values = (
                     entity,
                     row.start.isoformat(),
@@ -113,6 +122,31 @@ CREATE TABLE IF NOT EXISTS energy_prices(area TEXT NOT NULL, day TEXT NOT NULL, 
  quality=excluded.quality,synced=0 WHERE value!=excluded.value OR end!=excluded.end
  OR source!=excluded.source OR quality!=excluded.quality""",
                     values,
+                )
+
+    def append_power(self, entity, start, end, value):
+        """Merge adjacent minute estimates within an hour, preserving every gap."""
+        with self.store.connect() as db:
+            if db.execute(
+                "SELECT 1 FROM energy_intervals WHERE entity=? AND start<? AND end>?",
+                (entity, end.isoformat(), start.isoformat()),
+            ).fetchone():
+                return
+            previous = db.execute(
+                "SELECT * FROM energy_intervals WHERE entity=? AND end=? AND source='smarti:power'",
+                (entity, start.isoformat()),
+            ).fetchone()
+            if previous and datetime.fromisoformat(previous["start"]).replace(
+                minute=0, second=0, microsecond=0
+            ) == start.replace(minute=0, second=0, microsecond=0):
+                db.execute(
+                    "UPDATE energy_intervals SET end=?,value=?,synced=0 WHERE entity=? AND start=?",
+                    (end.isoformat(), str(Decimal(previous["value"]) + value), entity, previous["start"]),
+                )
+            else:
+                db.execute(
+                    "INSERT INTO energy_intervals VALUES(?,?,?,?,?,'estimated',0)",
+                    (entity, start.isoformat(), end.isoformat(), str(value), "smarti:power"),
                 )
 
     def rows(self, entity, start, end):

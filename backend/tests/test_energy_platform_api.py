@@ -197,3 +197,36 @@ def test_power_history_is_persisted_estimated_and_not_double_counted(client, mon
     assert response["history_estimated"] is False
     assert len(response["meters"]) == 1
     assert response["meters"][0]["name"] == "Import"
+
+
+def test_direct_minutes_are_visible_before_hour_finishes(client):  # noqa: F811
+    from types import SimpleNamespace
+
+    from app.energy_platform import EnergyPlatform
+    from app.energy_repository import EnergyConfig
+
+    ha, store = client.app.state.ha, client.app.state.store
+    install(ha, "sensor.power", 1200, "W")
+    service = EnergyPlatform(ha, store, SimpleNamespace(mode="live", remote_identity_file=None))
+    end = datetime.now(UTC).replace(second=0, microsecond=0)
+    start = end - timedelta(minutes=2)
+    service.repo.save(EnergyConfig(power_entity="sensor.power", scheme="none"), start)
+    for minute in range(3):
+        stamp = start + timedelta(minutes=minute)
+        ha.states["sensor.power"]["last_updated"] = stamp.isoformat()
+        service.sample_power(stamp)
+    data = client.get(
+        "/api/home/energy/platform/dashboard",
+        params={
+            "start": str((start - timedelta(days=1)).date()),
+            "end": str((end + timedelta(days=1)).date()),
+        },
+    ).json()
+    meter = data["meters"][0]
+    assert meter["summary"]["available_kwh"] == 0.04
+    assert meter["summary"]["complete"] is False
+    points = [p for p in meter["points"] if p["kwh"] is not None]
+    assert points
+    assert sum(p["kwh"] for p in points) == 0.04
+    assert all(p["partial"] for p in points)
+    assert meter["capacity"] is None

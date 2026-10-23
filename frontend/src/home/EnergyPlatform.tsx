@@ -53,6 +53,7 @@ type Setup = {
   tariff_source: { url: string; updated: string };
 };
 type Point = {
+  partial?: boolean;
   start: string;
   end: string;
   kwh: number | string | null;
@@ -218,15 +219,16 @@ export function EnergyPlatform({
               timeZoneName: "shortOffset",
             })
           : key,
+      partial: false,
       start: p.start,
       end: p.end,
-      kwh: 0,
+      kwh: null,
       cost: 0,
       priced: true,
     };
     item.end = p.end;
-    item.kwh =
-      p.kwh == null || item.kwh == null ? null : item.kwh + Number(p.kwh);
+    item.partial ||= !!p.partial || p.kwh == null;
+    if (p.kwh != null) item.kwh = (item.kwh ?? 0) + Number(p.kwh);
     item.cost += Number(p.cost.total || 0);
     item.priced &&= p.cost.total != null;
     grouped.set(key, item);
@@ -386,9 +388,9 @@ export function EnergyPlatform({
                   <Info size={16} /> Forbruket er beregnet fra effektmåleren
                 </summary>
                 <p>
-                  Vi lagrer timegjennomsnitt som estimert kWh. Velg en egen
-                  energimåler for målt forbruk. Historikk vises etter første
-                  ferdige time med statistikk i HA.
+                  SMARTi beregner estimert kWh fra effektmålinger hvert minutt.
+                  Grafen vises etter de første målingene. Hull betyr manglende
+                  data. Velg en egen energimåler for målt forbruk.
                 </p>
               </details>
             )}
@@ -576,7 +578,7 @@ export function EnergyPlatform({
                   />
                   <p className="ep-chart-detail" aria-live="polite">
                     {active
-                      ? `${active.label} · ${fmt(active.kwh)} kWh · ${active.priced ? fmt(active.cost) + " kr uten faste beløp" : "kostnad ikke tilgjengelig"}`
+                      ? `${active.label}${active.partial ? " · ufullstendig / pågående" : ""} · ${fmt(active.kwh)} kWh · ${active.priced ? fmt(active.cost) + " kr uten faste beløp" : "kostnad ikke tilgjengelig"}`
                       : "Trykk på en søyle for å se forbruk og kostnad."}
                   </p>
                 </>
@@ -589,8 +591,9 @@ export function EnergyPlatform({
                       : "Her kommer forbruket ditt"}
                   </h4>
                   <p>
-                    Vi henter fullførte timer fra måleren. Manglende målinger
-                    blir aldri vist som null.
+                    Vi samler målinger fra hjemmet. Med en effektmåler vises
+                    beregnet forbruk normalt innen 2–3 minutter. Manglende
+                    målinger blir aldri vist som null.
                   </p>
                 </div>
               )}
@@ -615,7 +618,9 @@ export function EnergyPlatform({
                     </small>
                     <small>
                       {data?.totals?.[key]?.complete
-                        ? "Målt forbruk"
+                        ? data?.history_estimated
+                          ? "Estimert forbruk"
+                          : "Målt forbruk"
                         : "Ufullstendig målegrunnlag"}
                     </small>
                   </div>

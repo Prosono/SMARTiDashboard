@@ -144,7 +144,10 @@ def chart_points(points, start, end):
     """Bound chart size without compressing missing hours or joining DST repeats."""
     if start >= end:
         return []
-    by_start = {p["start"]: p for p in points}
+    by_hour = {}
+    for point in points:
+        hour = point["start"].replace(minute=0, second=0, microsecond=0)
+        by_hour.setdefault(hour, []).append(point)
     days = (end - start).total_seconds() / 86400
     groups = {}
     cursor = start
@@ -156,20 +159,32 @@ def chart_points(points, start, end):
         if days > 62:
             key = local.replace(day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(UTC)
         group = groups.setdefault(
-            key, {"start": key, "end": cursor, "kwh": ZERO, "cost": {"total": ZERO}, "missing": 0}
+            key,
+            {
+                "start": key,
+                "end": cursor,
+                "kwh": None,
+                "cost": {"total": ZERO},
+                "missing": 0,
+                "partial": False,
+            },
         )
-        point = by_start.get(cursor)
         group["end"] = min(cursor + timedelta(hours=1), end)
-        if not point:
+        readings = by_hour.get(cursor, [])
+        covered = sum((p["end"] - p["start"]).total_seconds() for p in readings if p["kwh"] is not None)
+        if covered < (group["end"] - cursor).total_seconds():
             group["missing"] += 1
-            group["kwh"] = None
+            group["partial"] = True
             group["cost"]["total"] = None
-        else:
-            if group["kwh"] is not None:
-                group["kwh"] += point["kwh"]
+        for point in readings:
+            if point["kwh"] is not None:
+                group["kwh"] = (group["kwh"] or ZERO) + point["kwh"]
             if point["cost"]["total"] is None:
                 group["cost"]["total"] = None
             elif group["cost"]["total"] is not None:
                 group["cost"]["total"] += point["cost"]["total"]
+        # A running hour is explicitly provisional even if all elapsed minutes are covered.
+        if group["end"] < cursor + timedelta(hours=1):
+            group["partial"] = True
         cursor += timedelta(hours=1)
     return list(groups.values())

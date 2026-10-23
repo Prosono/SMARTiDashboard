@@ -1,3 +1,10 @@
+## 1.36.14
+
+- SMARTi samler nå husets effektmåling hvert minutt og beregner egen kWh-historikk når ingen separat energimåler er valgt. Innsamlingen krever ikke HA-statistikk.
+- Beregnet forbruk lagres lokalt og synkroniseres med eksisterende skyarkiv. Sammenhengende minutter samles i timer uten å fylle ut målebrudd.
+- Grafen viser også pågående og ufullstendige timer. Komplette timer brukes til kapasitetsberegning; nullforbruk skilles fra manglende data.
+- Gamle sensorverdier, omstart og forbindelsesbrudd gir hull i stedet for oppdiktet forbruk. Recorder-historikk kan ikke overskrive direkte innsamlede perioder.
+
 ## 1.36.13
 
 - Ny utforming av energihistorikken med tydelige nøkkeltall, kompakte kontroller og egne oppsummeringer for forbruk og dagens strømpriser.

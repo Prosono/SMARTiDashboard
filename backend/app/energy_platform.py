@@ -3,7 +3,9 @@
 import asyncio
 import hashlib
 import json
+import logging
 import math
+import sqlite3
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -33,6 +35,7 @@ class EnergyPlatform:
         self.ha, self.store, self.settings = ha, store, settings
         self.repo = EnergyRepository(store)
         self.lock = asyncio.Lock()
+        self.power_sample = None
 
     async def prices(self, area, day):
         cached = self.repo.prices(area, day)
@@ -99,16 +102,23 @@ class EnergyPlatform:
                 ranges = [(start, end)]
                 if older > end - timedelta(days=366):
                     ranges.append((older - timedelta(days=1), older))
+                backfill_ok = False
                 for a, b in ranges:
-                    data = await self.ha.request(
-                        "recorder/statistics_during_period",
-                        start_time=a.isoformat(),
-                        end_time=b.isoformat(),
-                        statistic_ids=entities,
-                        period="hour",
-                        units={"energy": "kWh", "power": "W"},
-                        types=["change", "mean"],
-                    )
+                    try:
+                        data = await self.ha.request(
+                            "recorder/statistics_during_period",
+                            start_time=a.isoformat(),
+                            end_time=b.isoformat(),
+                            statistic_ids=entities,
+                            period="hour",
+                            units={"energy": "kWh", "power": "W"},
+                            types=["change", "mean"],
+                        )
+                    except (HAError, TimeoutError, OSError):
+                        # Direct collection and cloud sync must not depend on Recorder.
+                        continue
+                    if len(ranges) > 1 and (a, b) == ranges[-1]:
+                        backfill_ok = True
                     if self.store.get("energy_generation") != generation or self.repo.config() is None:
                         return
                     for entity in entities:
@@ -133,7 +143,7 @@ class EnergyPlatform:
                                 )
                             )
                         self.repo.put(entity, readings)
-                if len(ranges) > 1:
+                if backfill_ok:
                     self.store.set("energy_backfill", ranges[-1][0].isoformat())
                     historical = self.repo.config(ranges[-1][0])
                     if historical:
@@ -220,7 +230,65 @@ class EnergyPlatform:
         self.store.set("energy_cloud_state", "pending" if pending else "synced")
         self.store.set("energy_cloud_at", datetime.now(UTC).isoformat())
 
+    def sample_power(self, now=None):
+        now = now or datetime.now(UTC)
+        config = self.repo.config()
+        with self.store.connect() as db:
+            resetting = (
+                db.execute("SELECT 1 FROM sqlite_master WHERE name='factory_resets'").fetchone()
+                and db.execute("SELECT 1 FROM factory_resets WHERE status='running'").fetchone()
+            )
+        if (
+            resetting
+            or self.settings.mode == "demo"
+            or not config
+            or not config.power_entity
+            or any(m.role == "grid" for m in config.meters)
+        ):
+            self.power_sample = None
+            return
+        control = next((c for c in self.ha.controls() if c.entity_id == config.power_entity), None)
+        watts, status, _ = power_reading(control, getattr(self.ha, "states", {}), self.ha.connected, now, 300)
+        if status != "ok" or watts is None or watts < 0:
+            self.power_sample = None
+            return
+        stamp = now.replace(second=0, microsecond=0)
+        identity = (config.power_entity, self.store.get("energy_generation"), getattr(self.ha, "epoch", 0))
+        previous = self.power_sample
+        self.power_sample = (identity, stamp, now, Decimal(str(watts)))
+        if previous:
+            key, before, observed, power = previous
+            if (
+                key == identity
+                and stamp - before == timedelta(minutes=1)
+                and 45 <= (now - observed).total_seconds() <= 75
+            ):
+                self.repo.append_power(
+                    config.power_entity, before, stamp, (power + Decimal(str(watts))) / 2 / 60000
+                )
+
+    async def sample_loop(self):
+        while True:
+            now = datetime.now(UTC)
+            await asyncio.sleep(60 - now.second - now.microsecond / 1000000)
+            try:
+                self.sample_power()
+            except (ValueError, OSError, TypeError, sqlite3.Error):
+                self.power_sample = None
+                logging.getLogger(__name__).exception("Direct energy collection failed; retrying next minute")
+
     async def run(self):
+        sampler = asyncio.create_task(self.sample_loop())
+        try:
+            await self.collect_loop()
+        finally:
+            sampler.cancel()
+            try:
+                await sampler
+            except asyncio.CancelledError:
+                pass
+
+    async def collect_loop(self):
         while True:
             try:
                 await self.collect()
@@ -322,7 +390,7 @@ def platform_router(service, user, admin):
         config = history_config(config)
         a, _ = local_day(start)
         b, _ = local_day(end)
-        b = min(b, datetime.now(UTC).replace(minute=0, second=0, microsecond=0))
+        b = min(b, datetime.now(UTC).replace(second=0, microsecond=0))
         controls = {c.entity_id: c for c in ha.controls() if visible(current, c)}
         meters = []
         power_consumers = []
