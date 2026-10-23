@@ -1294,41 +1294,36 @@ function EnergyWizard({
                 )}
               </section>
             ))}
-            <details>
-              <summary>Varmepumpe, varmtvann og andre forbrukere</summary>
-              {setup.sensors
-                .filter(
-                  (s) =>
-                    ["kWh", "Wh"].includes(s.unit) &&
-                    (!draft.meters.some((m) => m.entity === s.entity) ||
-                      draft.meters.some(
-                        (m) => m.entity === s.entity && m.role === "consumer",
-                      )),
-                )
-                .map((s) => (
-                  <label className="ep-check" key={s.entity}>
-                    <input
-                      type="checkbox"
-                      checked={draft.meters.some((m) => m.entity === s.entity)}
-                      onChange={(e) =>
-                        change({
-                          meters: e.target.checked
-                            ? [
-                                ...draft.meters,
-                                {
-                                  entity: s.entity,
-                                  name: s.name,
-                                  role: "consumer",
-                                },
-                              ]
-                            : draft.meters.filter((m) => m.entity !== s.entity),
-                        })
-                      }
-                    />
-                    {s.name}
-                  </label>
-                ))}
-            </details>
+            <EnergySensorPicker
+              multiple
+              label="Varmepumpe, varmtvann og andre forbrukere"
+              hint="Velg energimålingene (kWh) for enhetene du vil følge hver for seg."
+              sensors={setup.sensors.filter(
+                (s) =>
+                  ["kWh", "Wh"].includes(s.unit) &&
+                  !draft.meters.some(
+                    (m) => m.entity === s.entity && m.role !== "consumer",
+                  ),
+              )}
+              value={draft.meters
+                .filter((m) => m.role === "consumer")
+                .map((m) => m.entity)}
+              onChange={(entities) =>
+                change({
+                  meters: [
+                    ...draft.meters.filter((m) => m.role !== "consumer"),
+                    ...entities.map((entity) => ({
+                      entity,
+                      name:
+                        setup.sensors.find((s) => s.entity === entity)?.name ||
+                        draft.meters.find((m) => m.entity === entity)?.name ||
+                        entity,
+                      role: "consumer" as const,
+                    })),
+                  ],
+                })
+              }
+            />
             <div className="ep-help">
               <Info size={20} />
               <p>

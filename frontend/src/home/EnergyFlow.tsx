@@ -1,4 +1,4 @@
-import { energySensorReading } from "./energySensorReading";
+import { EnergySensorPicker } from "./EnergySensorPicker";
 import { SettingsDialog } from "./SettingsDialog";
 import {
   Component,
@@ -96,7 +96,7 @@ export function EnergyFlow({
     const target = bindingRefs.current[editingRole];
     target?.scrollIntoView({ block: "nearest", behavior: "instant" });
     target
-      ?.querySelector<HTMLSelectElement>("select")
+      ?.querySelector<HTMLButtonElement>(".energy-picker-trigger")
       ?.focus({ preventScroll: true });
   }, [focusRequest, editingRole]);
   const labels: Record<FlowRole, string> = {
@@ -244,29 +244,19 @@ export function EnergyFlow({
     label?: string,
   ) {
     return (
-      <select
-        aria-label={label}
+      <EnergySensorPicker
+        label={label || t("Velg måling", "Choose reading")}
+        hint=""
+        lang={lang}
         value={value || ""}
-        onChange={(e) => change(e.target.value || null)}
-      >
-        <option value="">{t("Ikke valgt", "Not selected")}</option>
-        {value && !options.some((c) => c.entity_id === value) && (
-          <option value={value}>
-            {t("Tidligere måler mangler", "Previous sensor missing")}
-          </option>
-        )}
-        {options.map((c) => (
-          <option key={c.id} value={c.entity_id}>
-            {c.name} ·{" "}
-            {energySensorReading(
-              offline || !home.connected ? "unavailable" : c.state,
-              String(c.attributes.unit_of_measurement),
-              lang,
-            )}{" "}
-            · {c.entity_id}
-          </option>
-        ))}
-      </select>
+        onChange={(entity) => change(entity || null)}
+        sensors={options.map((c) => ({
+          entity: c.entity_id,
+          name: c.name,
+          unit: String(c.attributes.unit_of_measurement),
+          state: offline || !home.connected ? "unavailable" : c.state,
+        }))}
+      />
     );
   }
   return (
@@ -427,8 +417,7 @@ export function EnergyFlow({
                     </strong>
                     {draft[role].visible && (
                       <>
-                        <label>
-                          {t("Effektmåler", "Power sensor")} · {labels[role]}
+                        <div>
                           {picker(
                             draft[role].source,
                             (source) =>
@@ -439,7 +428,7 @@ export function EnergyFlow({
                             sensors,
                             `${t("Effektmåler", "Power sensor")} · ${labels[role]}`,
                           )}
-                        </label>
+                        </div>
                         {["grid", "battery"].includes(role) && (
                           <>
                             <label>
@@ -465,7 +454,7 @@ export function EnergyFlow({
                                 </option>
                               </select>
                             </label>
-                            <label>
+                            <div>
                               {t(
                                 "Egen måler for motsatt retning (valgfritt)",
                                 "Separate opposite-direction sensor (optional)",
@@ -478,7 +467,7 @@ export function EnergyFlow({
                                     [role]: { ...draft[role], return_source },
                                   }),
                               )}
-                            </label>
+                            </div>
                             <small>
                               {t(
                                 "Én måler: minus betyr motsatt retning. To målere: begge må være positive; vi viser nettoforskjellen.",
@@ -494,14 +483,14 @@ export function EnergyFlow({
             </div>
             {(!editingRole || editingRole === "battery") && (
               <div className="flow-extra-settings">
-                <label>
+                <div>
                   {t("Batterinivå (%)", "Battery level (%)")}
                   {picker(
                     draft.battery_level,
                     (battery_level) => edit({ ...draft, battery_level }),
                     percents,
                   )}
-                </label>
+                </div>
                 {!editingRole && (
                   <>
                     <label>

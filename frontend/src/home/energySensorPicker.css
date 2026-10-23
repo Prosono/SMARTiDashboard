@@ -1,0 +1,137 @@
+.energy-picker-label {
+  display: block;
+  font-weight: 600;
+}
+.ep-sensor-picker > small {
+  display: block;
+  margin: 4px 0 10px;
+}
+.energy-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  text-align: left;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+.energy-picker-trigger > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.energy-picker-trigger small,
+.energy-picker-trigger strong {
+  display: block;
+  margin-top: 4px;
+}
+.energy-picker-trigger > svg {
+  flex-shrink: 0;
+}
+.energy-picker-dialog {
+  min-width: 0;
+}
+.energy-picker-dialog .energy-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+}
+.energy-picker-search input {
+  min-width: 0;
+  width: 100%;
+  font-size: 16px;
+}
+.energy-picker-list {
+  max-height: 48dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.energy-picker-dialog .energy-picker-option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 14px 10px;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.energy-picker-option[data-selected="true"] {
+  background: color-mix(in srgb, #ff7900 10%, transparent);
+}
+.energy-picker-option .energy-picker-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.energy-picker-option small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.energy-picker-reading {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  max-width: 40%;
+}
+.energy-picker-option input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  margin: 0;
+  accent-color: #ff7900;
+}
+.energy-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 18px;
+}
+.energy-picker-footer > span {
+  margin-right: auto;
+}
+.energy-picker-footer button {
+  min-height: 44px;
+}
+.energy-picker-empty {
+  padding: 20px 8px;
+  color: var(--muted);
+}
+@media (max-width: 500px) {
+  .energy-picker-dialog .energy-picker-option {
+    gap: 8px;
+    padding: 14px 6px;
+  }
+  .energy-picker-reading {
+    font-size: 0.9rem;
+  }
+}
+/* Wizard labels normally stack vertically; selection rows stay horizontal. */
+.dashboard-settings-dialog .energy-picker-dialog .energy-picker-search,
+.dashboard-settings-dialog .energy-picker-dialog .energy-picker-option {
+  flex-direction: row;
+  text-align: left;
+}
+.dashboard-settings-dialog .energy-picker-dialog .energy-picker-option {
+  justify-content: flex-start;
+}
+.energy-picker-dialog .energy-picker-option .energy-picker-name {
+  text-align: left;
+}

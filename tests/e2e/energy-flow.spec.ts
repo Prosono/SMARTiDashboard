@@ -335,8 +335,12 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(evSettings).toBeVisible();
   await expect(evSettings.locator(".flow-binding")).toHaveCount(1);
   await evSettings
-    .getByLabel("Effektmåler · Elbil", { exact: true })
-    .selectOption("sensor.test_power");
+    .getByRole("button", { name: "Effektmåler · Elbil", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Effektmåler · Elbil", exact: true })
+    .getByRole("button", { name: /sensor.test_power/ })
+    .click();
   await evSettings.screenshot({
     path: `../artifacts/${test.info().project.name}-energy-settings.png`,
   });
@@ -349,10 +353,21 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await expect(
     page.getByRole("dialog", { name: "Konfigurer energiflyt" }),
   ).toBeVisible();
-  for (const label of ["Solceller", "Hjemmet", "Elbil", "Batteri", "Strømnett"])
+  for (const label of [
+    "Solceller",
+    "Hjemmet",
+    "Elbil",
+    "Batteri",
+    "Strømnett",
+  ]) {
     await flow
-      .getByLabel("Effektmåler · " + label, { exact: true })
-      .selectOption("sensor.test_power");
+      .getByRole("button", { name: "Effektmåler · " + label, exact: true })
+      .click();
+    await page
+      .getByRole("dialog", { name: "Effektmåler · " + label, exact: true })
+      .getByRole("button", { name: /sensor.test_power/ })
+      .click();
+  }
   await flow
     .getByRole("button", { name: "Lagre energiflyt", exact: true })
     .click();

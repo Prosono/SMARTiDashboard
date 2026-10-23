@@ -24,6 +24,18 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
         ],
         sensors: [
           {
+            entity: "sensor.heater",
+            name: "Varmtvannsbereder",
+            unit: "kWh",
+            state: "15.2",
+          },
+          {
+            entity: "sensor.heatpump",
+            name: "Varmepumpe",
+            unit: "kWh",
+            state: "42",
+          },
+          {
             entity: "sensor.grid",
             name: "Strømmåler · forbruk",
             unit: "kWh",
@@ -80,45 +92,74 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   await dialog.getByLabel("Støtteordning").selectOption("norgespris");
   await dialog.getByRole("button", { name: "Fortsett" }).click();
   await dialog
-    .locator(".ep-sensor-picker")
-    .filter({ has: page.getByText("Kjøpt strøm fra nettet", { exact: true }) })
-    .locator("summary")
+    .getByRole("button", { name: "Kjøpt strøm fra nettet", exact: true })
     .click();
+  let picker = page.getByRole("dialog", {
+    name: "Kjøpt strøm fra nettet",
+    exact: true,
+  });
+  await picker.getByLabel("Søk etter måler").fill("Strømmåler");
+  await picker.getByRole("button", { name: /Strømmåler · forbruk/ }).click();
   await dialog
-    .getByRole("combobox", { name: "Kjøpt strøm fra nettet", exact: true })
-    .selectOption("sensor.grid");
-  await dialog
-    .locator(".ep-sensor-picker")
-    .filter({ has: page.getByText("Effekt fra strømnettet", { exact: true }) })
-    .locator("summary")
+    .getByRole("button", { name: "Effekt fra strømnettet", exact: true })
     .click();
-  await dialog
-    .getByRole("combobox", { name: "Effekt fra strømnettet", exact: true })
-    .selectOption("sensor.power");
-  const powerPicker = dialog.getByRole("combobox", {
+  picker = page.getByRole("dialog", {
     name: "Effekt fra strømnettet",
     exact: true,
   });
-  await expect(powerPicker.locator('option[value="sensor.power"]')).toHaveText(
-    /845 W/,
-  );
+  await expect(
+    picker.getByRole("button", { name: /Strømmåler · effekt/ }),
+  ).toContainText("845 W");
   powerReading = "0";
-  await expect(powerPicker.locator('option[value="sensor.power"]')).toHaveText(
-    /0 W/,
-    { timeout: 10000 },
-  );
-  await expect(powerPicker).toHaveValue("sensor.power");
+  await expect(
+    picker.getByRole("button", { name: /Strømmåler · effekt/ }),
+  ).toContainText("0 W", { timeout: 10000 });
+  await picker.getByRole("button", { name: /Strømmåler · effekt/ }).click();
   powerReading = "unavailable";
-  await expect(powerPicker.locator('option[value="sensor.power"]')).toHaveText(
-    /Utilgjengelig/,
-    { timeout: 10000 },
+  await expect(
+    dialog.getByRole("button", { name: "Effekt fra strømnettet", exact: true }),
+  ).toContainText("Utilgjengelig", { timeout: 10000 });
+  const consumerLabel = "Varmepumpe, varmtvann og andre forbrukere";
+  await dialog
+    .getByRole("button", { name: consumerLabel, exact: true })
+    .click();
+  const consumers = page.getByRole("dialog", {
+    name: consumerLabel,
+    exact: true,
+  });
+  await consumers
+    .getByRole("checkbox", { name: "Varmtvannsbereder", exact: true })
+    .check();
+  await consumers
+    .getByRole("checkbox", { name: "Varmepumpe", exact: true })
+    .check();
+  await expect(consumers.getByRole("status")).toHaveText("2 valgt");
+  await expect(consumers.locator(".energy-picker-option").first()).toHaveCSS(
+    "flex-direction",
+    "row",
   );
   await expect(
-    dialog.getByRole("combobox", {
-      name: "Kjøpt strøm fra nettet",
-      exact: true,
-    }),
-  ).toHaveValue("sensor.grid");
+    consumers.getByRole("button", { name: "Bruk valgte", exact: true }),
+  ).toBeInViewport();
+  await page.screenshot({
+    path: `/tmp/smarti-sensor-picker-${info.project.name}.png`,
+  });
+  await consumers
+    .getByRole("button", { name: "Bruk valgte", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", { name: consumerLabel, exact: true }),
+  ).toContainText("2 målinger valgt");
+  await dialog
+    .getByRole("button", { name: consumerLabel, exact: true })
+    .click();
+  await consumers
+    .getByRole("checkbox", { name: "Varmepumpe", exact: true })
+    .uncheck();
+  await consumers.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(
+    dialog.getByRole("button", { name: consumerLabel, exact: true }),
+  ).toContainText("2 målinger valgt");
   const battery = dialog.getByRole("group", { name: "Har du hjemmebatteri?" });
   await expect(
     dialog.getByText("Strøm inn på batteriet", { exact: true }),
@@ -142,6 +183,11 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   await dialog.getByRole("button", { name: "Fortsett" }).click();
   await dialog.getByRole("button", { name: "Åpne energioversikten" }).click();
   await expect(dialog).not.toBeVisible();
+  expect(
+    config.meters
+      .filter((m: any) => m.role === "consumer")
+      .map((m: any) => m.entity),
+  ).toEqual(["sensor.heater", "sensor.heatpump"]);
   expect(config.cloud_history).toBe(true);
   expect(config.scheme).toBe("norgespris");
   expect(config.meters[0].entity).toBe("sensor.grid");

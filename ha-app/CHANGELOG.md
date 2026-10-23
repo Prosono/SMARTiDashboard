@@ -1,3 +1,9 @@
+## 1.36.9
+
+- Ny søkbar popup for valg av energimålere, med tydelig navn, siste måleverdi og enhet på egne plasser. Brukes også for målere i 3D-innstillingene.
+- Varmepumpe, varmtvannsbereder og andre forbrukere velges samlet med avkrysning, antall valgte og «Bruk valgte». Avbryt beholder tidligere valg.
+- Tilpasset mobil og desktop, med tydelige tomme treff og manglende målere, samt tastaturstyring og fokus tilbake til velgeren.
+
 ## 1.36.8
 
 - Oppdatering av SMARTi viser nå en animert SMARTi-logo med status under installasjon og omstart på mobil og desktop.
