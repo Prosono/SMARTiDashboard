@@ -1,0 +1,17 @@
+.account-delete-section {margin-top:32px;padding-top:24px;border-top:1px solid var(--border,#ddd)}
+.account-delete-section h2 {font-size:1.15rem;margin:0 0 8px}
+.account-delete-section p {max-width:60ch}
+.account-deletion-dialog {max-width:calc(100vw - 32px)}
+.account-deletion-dialog h2 {margin:0}
+.account-deletion-dialog p {margin:0;line-height:1.55}
+.account-deletion-dialog .deletion-name {font-weight:600;overflow-wrap:anywhere}
+.account-deletion-dialog .deletion-confirm {display:grid;gap:16px}
+.account-deletion-dialog [hidden] {display:none!important}
+.account-deletion-dialog .deletion-ack {display:flex;align-items:flex-start;gap:12px}
+.account-deletion-dialog .deletion-ack input {width:20px;height:20px;flex:0 0 20px;margin:2px 0}
+.account-deletion-dialog button.danger {background:#b42318;color:white;border-color:#b42318}
+.account-deletion-dialog button:disabled {opacity:.45;cursor:not-allowed}
+@media(max-width:500px){.account-deletion-dialog {padding:20px}.account-deletion-dialog .dialog-actions {flex-direction:column-reverse}.account-deletion-dialog button {min-height:44px;width:100%}}
+.account-deletion-dialog button.danger {background:#b42318!important;color:#fff!important;border-color:#b42318!important}
+.account-deletion-dialog button.danger:hover {background:#912018!important}
+.account-deletion-dialog input[name=confirmation] {min-height:48px;padding:10px 12px;border:1px solid #8888;border-radius:8px}

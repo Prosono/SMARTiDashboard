@@ -525,6 +525,10 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
 
     install_hub_credentials(app, db, session, is_admin, home_auth)
 
+    from .cloud_account_deletion import install_account_deletion
+
+    install_account_deletion(app, db, session)
+
     @app.middleware("http")
     async def staff_destination(request: Request, call_next):
         # Route staff before customer HTML is rendered, including bookmarked pages.

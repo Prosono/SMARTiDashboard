@@ -169,7 +169,10 @@ def install_admin(app, db, session, relay_status_url):
                 dict(row)
                 for row in c.execute(
                     "SELECT h.action,h.target,h.created,a.username AS actor FROM admin_audit h "
-                    "JOIN accounts a ON a.id=h.actor ORDER BY h.id DESC LIMIT 100"
+                    "JOIN accounts a ON a.id=h.actor UNION ALL "
+                    "SELECT d.action,d.target,d.created,COALESCE(a.username, 'Slettet konto') AS actor "
+                    "FROM deleted_account_audit d LEFT JOIN accounts a ON a.id=d.actor "
+                    "ORDER BY created DESC LIMIT 100"
                 )
             ]
 
