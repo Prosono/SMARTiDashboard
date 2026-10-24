@@ -118,3 +118,35 @@ def test_architecture_is_admin_only_and_sources_exist(tmp_path):
         c.execute("DELETE FROM portal_admins")
     assert staff.get("/api/admin/architecture").status_code == 403
     assert staff.get("/admin/architecture").status_code == 403
+
+
+def test_admin_changes_only_own_password_and_keeps_current_session(tmp_path):
+    app, path, staff, customer = setup(tmp_path)
+    other = TestClient(app, base_url=ORIGIN, headers={"Origin": ORIGIN})
+    assert other.post('/api/login', json={'username':'support','password':'test-cloud-password-only'}).status_code == 200
+    route = '/api/admin/account/password'
+    body = {'current_password':'test-cloud-password-only','password':'new-admin-password-2026','password_confirmation':'new-admin-password-2026'}
+    assert customer.post(route, json=body).status_code == 403
+    assert customer.get('/admin/account').status_code == 403
+    assert staff.get('/api/admin/account').json() == {'username':'support'}
+    assert staff.post(route, json=body, headers={'X-CSRF-Token':'wrong'}).status_code == 403
+    assert staff.post(route, json=body | {'current_password':'wrong'}).status_code == 400
+    assert staff.post(route, json=body | {'password_confirmation':'different-password'}).status_code == 422
+    assert staff.post(route, json=body | {'password':'short','password_confirmation':'short'}).status_code == 422
+    assert staff.post(route, json=body).status_code == 200
+    assert staff.get('/api/admin/account').status_code == 200
+    assert other.get('/api/session').status_code == 401
+    assert customer.get('/api/session').status_code == 200
+    assert other.post('/api/login', json={'username':'support','password':'test-cloud-password-only'}).status_code == 401
+    assert other.post('/api/login', json={'username':'support','password':body['password']}).status_code == 200
+    audit=staff.get('/api/admin/audit').json()
+    assert any(r['action']=='change_own_password' for r in audit)
+    assert body['password'] not in str(audit)
+
+
+def test_admin_password_verification_is_rate_limited(tmp_path):
+    app, path, staff, customer = setup(tmp_path)
+    body={'current_password':'incorrect','password':'new-admin-password','password_confirmation':'new-admin-password'}
+    for _ in range(8):
+        assert staff.post('/api/admin/account/password',json=body).status_code == 400
+    assert staff.post('/api/admin/account/password',json=body).status_code == 429

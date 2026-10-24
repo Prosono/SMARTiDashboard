@@ -13,12 +13,13 @@
     }
     document.querySelector('.masthead > a')?.setAttribute('href','/admin');
     const nav = document.querySelector('.masthead nav');
-    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/users','Brukere'],['/admin/support','Support'],['/admin/support/prices','Prisliste'],['/admin/architecture','Arkitektur']];
+    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/users','Brukere'],['/admin/support','Support'],['/admin/support/prices','Prisliste'],['/admin/architecture','Arkitektur'],['/admin/account','Konto']];
     if (nav) {
       for (const [href, label] of links) {
         const existing = nav.querySelector(`a[href="${href}"]:not([id])`);
         const link = existing || document.createElement('a');
         link.href = href; link.textContent = label;
+        if (href === "/admin/account") link.style.setProperty("--icon", "url(/assets/icon-users.svg)");
         if (href === "/admin/architecture") link.style.setProperty("--icon", "url(/assets/icon-grid.svg)");
         nav.append(link);
       }

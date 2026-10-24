@@ -17,7 +17,13 @@ class SupportNote(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
 
 
-def install_admin(app, db, session, relay_status_url):
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1, max_length=256)
+    password: str = Field(min_length=12, max_length=256)
+    password_confirmation: str = Field(min_length=12, max_length=256)
+
+
+def install_admin(app, db, session, relay_status_url, throttle):
     with db() as c:
         c.executescript("""
         CREATE TABLE IF NOT EXISTS portal_admins(
@@ -75,6 +81,47 @@ def install_admin(app, db, session, relay_status_url):
     @app.get("/admin")
     def admin_page():
         return FileResponse(Path(__file__).with_name("cloud_web") / "admin.html")
+
+    @app.get("/admin/account")
+    def account_page(s=Depends(admin)):
+        return FileResponse(Path(__file__).with_name("cloud_web") / "admin-account.html")
+
+    @app.get("/api/admin/account")
+    def own_account(s=Depends(admin)):
+        with db() as c:
+            row = c.execute("SELECT username FROM accounts WHERE id=?", (s["account"],)).fetchone()
+        return {"username": row["username"]}
+
+    @app.post("/api/admin/account/password")
+    def change_password(body: PasswordChange, s=Depends(admin)):
+        from .cloud import PASSWORDS, PASSWORD_WORKERS
+
+        if body.password != body.password_confirmation:
+            raise HTTPException(422, "password_confirmation_mismatch")
+        if body.password == body.current_password:
+            raise HTTPException(422, "password_unchanged")
+        key = "admin-password:" + s["account"]
+        throttle(key)
+        with db() as c:
+            row = c.execute("SELECT password FROM accounts WHERE id=?", (s["account"],)).fetchone()
+        with PASSWORD_WORKERS:
+            if not PASSWORDS.verify(body.current_password, row["password"]):
+                raise HTTPException(400, "current_password_incorrect")
+            hashed = PASSWORDS.hash(body.password)
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            # Recheck the role and old hash in the same transaction as the update.
+            result = c.execute(
+                "UPDATE accounts SET password=? WHERE id=? AND password=? "
+                "AND EXISTS(SELECT 1 FROM portal_admins WHERE account=accounts.id)",
+                (hashed, s["account"], row["password"]),
+            )
+            if result.rowcount != 1:
+                raise HTTPException(409, "account_changed")
+            c.execute("DELETE FROM sessions WHERE account=? AND token<>?", (s["account"], s["token"]))
+            c.execute("DELETE FROM attempts WHERE key=?", (key,))
+            audit(c, s, "change_own_password", s["account"])
+        return {"changed": True}
 
     @app.get("/admin/architecture")
     def architecture_page(s=Depends(admin)):

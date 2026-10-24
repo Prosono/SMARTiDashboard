@@ -465,3 +465,9 @@ hjem. Published before HA app 1.35.69. Cloud database was backed up before deplo
 the previous admin-logout-20261020 image and compose backup are retained on server.
 Do not roll back cloud while a hub reset is active: older software cannot coordinate
 its owner setup. No customer hub reset was executed as part of publication.
+
+## Administratorens kontoside — 24. oktober 2026
+
+`/admin/account` gir portaladministratorer tilgang til eget brukernavn og passordendring. `POST /api/admin/account/password` krever gyldig økt, Origin/CSRF, portaladministratorrolle, dagens passord og to like nye passord (12–256 tegn). Gjentatte forsøk begrenses per konto. Endringen kontrollerer kontoens gamle hash og rolle i samme transaksjon; andre portaløkter for samme konto avsluttes, mens inneværende økt beholdes. Kundetilkoblinger og andre kontoer endres ikke. Revisjonsloggen registrerer handlingen uten passord.
+
+Publisert som `smartihome:admin-account-20261024`. Syv backendtester og to nettlesertester (mobil/desktop) bestod. Publisert side og kontoendepunkt ble verifisert med eksisterende administratorinnlogging, uten å endre administratorens faktiske passord.
