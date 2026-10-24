@@ -1,3 +1,4 @@
+import { flowLibraryIcon } from "./flowLibraryIcon";
 import { flowLibrary } from "./flowLibrary";
 import { routeWire, wirePath, smoothWirePath } from "./flowRouting";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -84,12 +85,14 @@ export function FlowCanvas({
             preset: undefined as string | undefined,
             label: paletteLabel(k),
             hint: "",
+            Icon: flowLibraryIcon(k),
           },
           ...flowLibrary(k, lang).map((item) => ({
             k,
             preset: item.id,
             label: item.title,
             hint: item.hint,
+            Icon: flowLibraryIcon(k, item.id),
           })),
         ])
         .filter(
@@ -305,6 +308,23 @@ export function FlowCanvas({
     },
     [],
   );
+  useEffect(() => {
+    const release = () => {
+      flushMove();
+      drag.current = null;
+      pan.current = null;
+      paletteDrag.current = null;
+      setDragPreview(null);
+    };
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
+    window.addEventListener("blur", release);
+    return () => {
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+      window.removeEventListener("blur", release);
+    };
+  }, []);
   function fitFlow() {
     const el = viewport.current;
     if (!el) return;
@@ -385,7 +405,7 @@ export function FlowCanvas({
           ))}
         </div>
         <div className="canvas-library-list">
-          {libraryItems.map(({ k, preset, label, hint }) => (
+          {libraryItems.map(({ k, preset, label, hint, Icon }) => (
             <button
               type="button"
               key={k + (preset || "")}
@@ -409,7 +429,6 @@ export function FlowCanvas({
               }
               onPointerDown={(e) => {
                 if (e.button !== 0) return;
-                e.preventDefault();
                 skipPaletteClick.current = false;
                 paletteDrag.current = {
                   kind: k,
@@ -422,6 +441,11 @@ export function FlowCanvas({
               onPointerMove={(e) => {
                 const d = paletteDrag.current;
                 if (!d) return;
+                if (!(e.buttons & 1)) {
+                  paletteDrag.current = null;
+                  setDragPreview(null);
+                  return;
+                }
                 if (
                   !d.moved &&
                   Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8
@@ -471,8 +495,8 @@ export function FlowCanvas({
                 onAdd(k, preset);
               }}
             >
-              <Plus size={16} />
-              {label}
+              <Icon size={20} aria-hidden="true" />
+              <span>{label}</span>
             </button>
           ))}
           {!libraryItems.some((item) => item.preset) && (
@@ -794,6 +818,10 @@ export function FlowCanvas({
                     )
                       return;
                     suppressClick.current = false;
+                    const target =
+                      (e.target as HTMLElement).closest("button") ||
+                      e.currentTarget;
+                    target.setPointerCapture(e.pointerId);
                     drag.current = {
                       id: n.id,
                       x: n.x,
@@ -805,13 +833,17 @@ export function FlowCanvas({
                   onPointerMove={(e) => {
                     const d = drag.current;
                     if (d?.id !== n.id) return;
+                    if (!(e.buttons & 1)) {
+                      flushMove();
+                      drag.current = null;
+                      return;
+                    }
                     if (
                       Math.hypot(e.clientX - d.startX, e.clientY - d.startY) <
                         5 &&
                       !suppressClick.current
                     )
                       return;
-                    e.currentTarget.setPointerCapture(e.pointerId);
                     suppressClick.current = true;
                     scheduleMove(
                       n.id,

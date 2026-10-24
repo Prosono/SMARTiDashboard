@@ -413,6 +413,8 @@ export function Automations({
               lang={lang}
               patch={patch}
               onAdvanced={rawMode}
+              saveMessage={w.message}
+              saving={w.busy}
             />
           )}
           {!advanced && !guided && !flow && (

@@ -284,6 +284,7 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
     pointerId: 1,
     pointerType: "mouse",
     button: 0,
+    buttons: 1,
   };
   if (test.info().project.name === "desktop") {
     await page.mouse.move(origin!.x + 20, origin!.y + 20);
@@ -366,8 +367,49 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
         moving.evaluate((el) => parseFloat((el as HTMLElement).style.left)),
       )
       .toBeGreaterThan(before + 40);
+    const releasedLeft = await moving.evaluate(
+      (el) => (el as HTMLElement).style.left,
+    );
+    await page.mouse.move(rect!.x + 150, rect!.y + 70, { steps: 8 });
+    await expect
+      .poll(() => moving.evaluate((el) => (el as HTMLElement).style.left))
+      .toBe(releasedLeft);
+    await moving.locator(".canvas-node-content").click();
+    await expect(page.locator(".flow-step-panel")).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Ferdig med steget", exact: true })
+      .click();
+    const countBefore = await page.locator(".canvas-actions").count();
+    await waitCard.click();
+    await expect(page.locator(".flow-step-panel")).toBeVisible();
+    await expect(page.locator(".canvas-actions")).toHaveCount(countBefore + 1);
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Ferdig med steget", exact: true })
+      .click();
+    const focus = await page.locator(".canvas-expanded").boundingBox();
+    expect(focus!.width).toBeGreaterThan(1550);
+    expect(focus!.height).toBeGreaterThan(950);
     await page
       .locator(".flow-editor-shell")
       .screenshot({ path: "/tmp/smarti-flow-fixed.png" });
+    const focusedSave = page.waitForResponse(
+      (r) =>
+        r.url().endsWith(`/api/manage/automations/${saved.id}`) &&
+        r.request().method() === "PUT",
+    );
+    await page
+      .getByRole("button", { name: "Lagre flyten", exact: true })
+      .click();
+    expect((await focusedSave).ok()).toBeTruthy();
+    await page
+      .getByRole("button", { name: "Vanlig størrelse", exact: true })
+      .click();
+    await expect(page.locator(".canvas-expanded")).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Utvid arbeidsflate", exact: true })
+      .click();
+    await expect(page.locator(".canvas-expanded")).toBeVisible();
   }
 });

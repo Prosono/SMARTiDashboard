@@ -42,7 +42,79 @@ export function flowPresets(kind: FlowKind, lang: string) {
       hint: t(hnb, hen),
       step,
     });
-  if (kind === "actions") return rows;
+  if (kind === "actions") {
+    add(
+      "dim-lights",
+      "devices",
+      "Demp lyset til 30 %",
+      "Dim lights to 30%",
+      "Velg lys og tilpass lysstyrken.",
+      "Choose lights and adjust brightness.",
+      {
+        action: "light.turn_on",
+        target: { entity_id: "" },
+        data: { brightness_pct: 30 },
+      },
+    );
+    add(
+      "bright-lights",
+      "devices",
+      "Sett full lysstyrke",
+      "Set full brightness",
+      "Velg lysene som skal settes til 100 %.",
+      "Choose lights to set to 100%.",
+      {
+        action: "light.turn_on",
+        target: { entity_id: "" },
+        data: { brightness_pct: 100 },
+      },
+    );
+    add(
+      "comfort",
+      "climate",
+      "Sett komforttemperatur",
+      "Set comfort temperature",
+      "Velg termostat. Forslag: 21 grader, tilpass til hjemmet.",
+      "Choose a thermostat. Suggested temperature: 21 degrees.",
+      {
+        action: "climate.set_temperature",
+        target: { entity_id: "" },
+        data: { temperature: 21 },
+      },
+    );
+    add(
+      "eco",
+      "climate",
+      "Senk temperaturen",
+      "Lower temperature",
+      "Velg termostat. Forslag: 18 grader, tilpass til hjemmet.",
+      "Choose a thermostat. Suggested temperature: 18 degrees.",
+      {
+        action: "climate.set_temperature",
+        target: { entity_id: "" },
+        data: { temperature: 18 },
+      },
+    );
+    add(
+      "wait-short",
+      "time",
+      "Vent 30 sekunder",
+      "Wait 30 seconds",
+      "Kort pause før neste handling.",
+      "A short pause before the next action.",
+      { delay: 30 },
+    );
+    add(
+      "wait-long",
+      "time",
+      "Vent 5 minutter",
+      "Wait 5 minutes",
+      "Pause som kan tilpasses.",
+      "An adjustable pause.",
+      { delay: 300 },
+    );
+    return rows;
+  }
   if (trigger) {
     add(
       "sunrise",
@@ -204,6 +276,23 @@ export function flowPresets(kind: FlowKind, lang: string) {
   );
 
   for (const [id, category, nb, en, value] of [
+    ["device-on", "devices", "Enheten slås på", "Device turns on", "on"],
+    ["device-off", "devices", "Enheten slås av", "Device turns off", "off"],
+    [
+      "unavailable",
+      "devices",
+      "Enheten er utilgjengelig",
+      "Device is unavailable",
+      "unavailable",
+    ],
+    [
+      "alarm-active",
+      "devices",
+      "Alarmen utløses",
+      "Alarm is triggered",
+      "triggered",
+    ],
+    ["rain", "climate", "Regn registreres", "Rain is detected", "on"],
     ["away", "presence", "Personen er borte", "Person is away", "not_home"],
     ["still", "presence", "Ingen bevegelse", "No motion", "off"],
     ["closed", "presence", "Døren er lukket", "Door is closed", "off"],
@@ -227,6 +316,17 @@ export function flowPresets(kind: FlowKind, lang: string) {
       state(value),
     );
   for (const [id, category, nb, en, direction, value] of [
+    [
+      "battery-full",
+      "devices",
+      "Batteriet er nesten fullt",
+      "Battery is nearly full",
+      "above",
+      90,
+    ],
+    ["humidity-low", "climate", "Luften er tørr", "Air is dry", "below", 30],
+    ["wind", "climate", "Det blåser mye", "Wind is strong", "above", 10],
+    ["power-low", "energy", "Effekten synker", "Power drops", "below", 0],
     ["dark", "devices", "Det er lite lys", "Light level is low", "below", 50],
     [
       "battery-low",

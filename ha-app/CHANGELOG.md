@@ -1,3 +1,9 @@
+## 1.36.35
+- Retter musehåndtering: samme element beholder musefangsten gjennom dragging, og slipp utenfor kortet rydder dra-tilstanden.
+- Fri arbeidsflate åpner utvidet på desktop, med lagreknapp, lagringsmelding og valg for vanlig størrelse. Mobil kan utvides manuelt.
+- Byggesteiner har egne ikoner både i sidepanelet og i velgeren.
+- Flere forslag for dimming, komforttemperatur, temperatursenking, ventetid, enhetsstatus, alarm, regn, vind og batterinivå.
+
 ## 1.36.34
 - Raskere flyteditor: linjer, kortinformasjon og gyldige koblinger beregnes bare når grunnlaget endrer seg.
 - Ruting bruker raske klarbane-sjekker og A*-søk med prioritetskø rundt hindringer.

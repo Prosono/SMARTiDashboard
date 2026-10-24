@@ -1,10 +1,12 @@
+import { Feedback } from "./shared";
+import { flowLibraryIcon } from "./flowLibraryIcon";
 import { FlowStepPanel } from "./FlowStepPanel";
 import { flowCategories } from "./flowPresets";
 import { useEffect, useState } from "react";
 import {
-  Sun,
-  PersonStanding,
-  Thermometer,
+  Maximize2,
+  Minimize2,
+  Save,
   ArrowDown,
   ArrowLeft,
   ArrowUp,
@@ -44,14 +46,19 @@ export function AutomationFlow({
   lang,
   patch,
   onAdvanced,
+  saveMessage = "",
+  saving = false,
 }: {
   config: Config;
   home: Home;
   lang: string;
   patch: (c: Config) => void;
   onAdvanced: () => void;
+  saveMessage?: string;
+  saving?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const [expanded, setExpanded] = useState(() => window.innerWidth >= 1000);
   const [view, setView] = useState<"canvas" | "structure">("structure");
   const [selected, setSelected] = useState<FlowPath | null>(null);
   const [trail, setTrail] = useState<FlowPath[]>([]);
@@ -59,6 +66,14 @@ export function AutomationFlow({
     path: FlowPath;
     kind: FlowKey;
   } | null>(null);
+  useEffect(() => {
+    if (view !== "canvas" || !expanded) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [view, expanded]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [valid, setValid] = useState(true);
@@ -149,7 +164,9 @@ export function AutomationFlow({
     setSelected([...selected.slice(0, -1), nextIndex]);
   }
   return (
-    <div className="automation-flow flow-designer">
+    <div
+      className={`automation-flow flow-designer ${view === "canvas" && expanded ? "canvas-expanded" : ""}`}
+    >
       <div className="flow-intro">
         <label>
           {t("Navn på rutinen", "Routine name")}
@@ -233,18 +250,45 @@ export function AutomationFlow({
             {t("Fri arbeidsflate", "Free canvas")}
           </button>
         </div>
-        <span>
-          {view === "structure"
-            ? t(
-                "Hendelser → krav → handlinger",
-                "Events → requirements → actions",
-              )
-            : t(
-                "Flytt kort og utforsk forbindelser",
-                "Move cards and explore connections",
-              )}
+        <span className="flow-workspace-title">
+          {c.alias || t("Ny automasjon", "New automation")}
         </span>
+        {view === "canvas" && (
+          <div className="flow-focus-actions">
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              aria-pressed={expanded}
+            >
+              {expanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+              {expanded
+                ? t("Vanlig størrelse", "Restore size")
+                : t("Utvid arbeidsflate", "Expand workspace")}
+            </button>
+            {expanded && (
+              <button
+                type="button"
+                className="primary"
+                disabled={saving || !!selected || !!adding}
+                onClick={(e) =>
+                  e.currentTarget
+                    .closest("form")
+                    ?.querySelector<HTMLButtonElement>(
+                      ".editor-footer button.primary",
+                    )
+                    ?.click()
+                }
+              >
+                <Save size={18} />
+                {saving
+                  ? t("Lagrer …", "Saving …")
+                  : t("Lagre flyten", "Save flow")}
+              </button>
+            )}
+          </div>
+        )}
       </div>
+      {view === "canvas" && expanded && <Feedback message={saveMessage} />}
       <div
         className={`flow-editor-shell ${view === "canvas" && selected ? "has-step-panel" : ""}`}
       >
@@ -433,18 +477,7 @@ export function AutomationFlow({
                     .includes(search.toLowerCase()),
                 )
                 .map((item) => {
-                  const Symbol = item.id.startsWith("preset:")
-                    ? {
-                        time: Sun,
-                        presence: PersonStanding,
-                        climate: Thermometer,
-                        energy: Zap,
-                      }[item.category] || Zap
-                    : flowIcon(
-                        newFlowStep(adding.kind, item.id),
-                        adding.kind,
-                        home,
-                      );
+                  const Symbol = flowLibraryIcon(adding.kind, item.id);
                   return (
                     <button
                       type="button"
