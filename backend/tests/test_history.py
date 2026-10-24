@@ -143,3 +143,24 @@ def test_house_report_temperature_ignores_non_finite_values(history):
     assert data["temperatures"][0]["minimum"] == 21
     assert data["temperatures"][0]["maximum"] == 21
     assert data["categories"]["Klima"] == 1
+
+
+def test_house_report_reads_people_lights_and_humidity_history(history):
+    client, ha, calls, enabled, params = history
+    ha.states.update({
+        "person.alex": {"state": "home", "attributes": {"friendly_name": "Alex"}},
+        "light.hall": {"state": "on", "attributes": {"friendly_name": "Gang"}},
+        "sensor.humidity": {"state": "45", "attributes": {"device_class": "humidity", "unit_of_measurement": "%"}},
+    })
+    async def rest(method, path):
+        if path.startswith("logbook"):
+            return []
+        ids = parse_qs(urlparse(path).query)["filter_entity_id"][0].split(",")
+        return [[{"entity_id": entity, "state": ha.states[entity]["state"], "last_changed": params["start"]}] for entity in ids]
+    ha.rest = rest
+    data = client.get("/api/history/report", params=params).json()["statistics"]
+    assert data["people"]["items"][0]["name"] == "Alex"
+    assert data["people"]["items"][0]["active_hours"] > 1
+    assert data["people"]["items"][0]["activations"] == 0
+    assert data["lights"]["items"][0]["coverage"] == 1
+    assert data["humidity"]["items"][0]["average"] == 45

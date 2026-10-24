@@ -3,6 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { FileText, ScrollText, Zap, Printer } from "lucide-react";
 import { api } from "./api";
 import type { Home } from "./types";
+import { ReportBrand } from "./ReportBrand";
+import {
+  HouseReportStatistics,
+  type HouseStatistics,
+} from "./HouseReportStatistics";
 import { ReportLoading } from "./ReportLoading";
 import { HistoryExplorer } from "./HistoryExplorer";
 import { EnergyReport } from "./home/EnergyReport";
@@ -11,6 +16,7 @@ import "./home/energyPlatform.css";
 import "./home/energyReport.css";
 
 type Report = {
+  statistics?: HouseStatistics;
   events: number;
   analyzed_events: number;
   truncated: boolean;
@@ -208,7 +214,9 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
                 </p>
               )}
             </form>
-            {(report.isFetching || (period && energy.isFetching)) && <ReportLoading />}
+            {(report.isFetching || (period && energy.isFetching)) && (
+              <ReportLoading />
+            )}
             {report.isError && (
               <p role="alert">
                 Husloggen kunne ikke hentes. Kontroller tilkoblingen til huben
@@ -233,7 +241,7 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
               >
                 <header className="er-document-head">
                   <div>
-                    <span className="ep-eyebrow">SMARTi / HJEMMERAPPORT</span>
+                    <ReportBrand title="Hjemmerapport" />
                     <h2>{home.home_name || "Hjemmet ditt"}</h2>
                     <p>
                       {new Date(period.start).toLocaleString("nb-NO")} –{" "}
@@ -339,37 +347,44 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
                     </p>
                   </div>
                 </section>
-                <section>
-                  <h3>Temperaturer i perioden</h3>
-                  <p>
-                    Laveste og høyeste lagrede verdi for opptil seks
-                    temperaturmålere.{" "}
-                    {r.temperature_sensor_count > 6 &&
-                      `${r.temperature_sensor_count} målere finnes; bruk Historikk for å utforske andre.`}
-                  </p>
-                  {r.climate_unavailable ? (
-                    <p>Temperaturhistorikken kunne ikke hentes.</p>
-                  ) : (
-                    <dl className="er-ledger">
-                      {r.temperatures.map((t, i) => (
-                        <div key={i}>
-                          <dt>
-                            {t.name}
-                            <small>
-                              {number(t.samples)} registrerte tilstander
-                            </small>
-                          </dt>
-                          <dd>
-                            {number(t.minimum)} – {number(t.maximum)} {t.unit}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  )}
-                  {!r.temperatures.length && !r.climate_unavailable && (
-                    <p>Ingen temperaturmålinger tilgjengelig.</p>
-                  )}
-                </section>
+                {r.statistics ? (
+                  <HouseReportStatistics statistics={r.statistics} />
+                ) : (
+                  <>
+                    <section>
+                      <h3>Temperaturer i perioden</h3>
+                      <p>
+                        Laveste og høyeste lagrede verdi for opptil seks
+                        temperaturmålere.{" "}
+                        {r.temperature_sensor_count > 6 &&
+                          `${r.temperature_sensor_count} målere finnes; bruk Historikk for å utforske andre.`}
+                      </p>
+                      {r.climate_unavailable ? (
+                        <p>Temperaturhistorikken kunne ikke hentes.</p>
+                      ) : (
+                        <dl className="er-ledger">
+                          {r.temperatures.map((t, i) => (
+                            <div key={i}>
+                              <dt>
+                                {t.name}
+                                <small>
+                                  {number(t.samples)} registrerte tilstander
+                                </small>
+                              </dt>
+                              <dd>
+                                {number(t.minimum)} – {number(t.maximum)}{" "}
+                                {t.unit}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                      {!r.temperatures.length && !r.climate_unavailable && (
+                        <p>Ingen temperaturmålinger tilgjengelig.</p>
+                      )}
+                    </section>
+                  </>
+                )}
                 <section className="er-solar">
                   <h3>Energi · kalenderdagene i perioden</h3>
                   <p>

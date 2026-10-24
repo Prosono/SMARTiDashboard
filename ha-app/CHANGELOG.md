@@ -1,3 +1,11 @@
+## 1.36.25
+
+- SMARTi-logo og profilering i hjemme- og energirapporter, også ved utskrift/PDF.
+- Hjemmerapporten viser personvis registrert tid hjemme og hjemkomster, samt på-tid og påslag for lys.
+- Temperatur og luftfuktighet viser minimum, maksimum og tidsvektet gjennomsnitt fra lagret historikk.
+- Kjente og ukjente perioder synliggjøres. Første tilstand telles ikke som en hjemkomst eller et påslag, og utilgjengelige målinger behandles ikke som null.
+- Historikken hentes for opptil 12 personer, 24 lys og 12 målere av hver klimatype. Rapporten opplyser når flere kilder finnes.
+
 ## 1.36.24
 
 - Animert SMARTi-logo mens hjemmerapporten og energirapporten lastes. Rolig pulsering og tydelig statusmelding.

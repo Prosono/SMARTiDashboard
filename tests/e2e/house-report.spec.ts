@@ -1,8 +1,11 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
 test("whole-home reporting shares sidebar destination with house log", async ({page}, info) => {
+  const reading = {entity_id:"sensor.test",name:"Stue",unit:"°C",samples:40,known_hours:20,unknown_hours:4,coverage:20/24,active_hours:8,activations:2,minimum:20,maximum:24,average:22};
+  const group = (items: any[]) => ({items,total:items.length,limit:12,unavailable:false});
   let release!: () => void;
   const gate = new Promise<void>(resolve => { release = resolve; });
   await page.route("**/api/history/report?*", async r => { await gate; return r.fulfill({json: {
+    statistics: {people:group([{...reading,entity_id:"person.alex",name:"Alex"}]),lights:group([{...reading,entity_id:"light.hall",name:"Gang"}]),temperatures:group([reading]),humidity:group([{...reading,entity_id:"sensor.humidity",name:"Bad",unit:"%",minimum:35,maximum:65,average:48}])},
     events: 1200, analyzed_events: 1000, truncated: true, active_entities: 12, alarm_events: 2, unavailable_events: 3,
     categories: {Lys: 600, Klima: 300, Sikkerhet: 100}, daily: {"2026-10-22": 600, "2026-10-23": 400},
     top_entities: [{name:"Stuelampe",count:400}], temperatures:[{name:"Stue",minimum:20,maximum:24,unit:"°C",samples:40}], temperature_sensor_count:1, climate_unavailable:false
@@ -27,7 +30,11 @@ test("whole-home reporting shares sidebar destination with house log", async ({p
   const report = page.getByRole("article",{name:"Rapport for hele hjemmet"});
   await expect(report).toContainText("Fordeling og nøkkeltall nedenfor bygger på de siste");
   await expect(report).toContainText("Stuelampe");
-  await expect(report).toContainText("20 – 24 °C");
+  await expect(report.getByRole("region",{name:"Tilstedeværelse",exact:true})).toContainText("Alex");
+  await expect(report.getByRole("region",{name:"Lysstatistikk",exact:true})).toContainText("8 t 0 min");
+  await expect(report.getByRole("region",{name:"Temperaturstatistikk",exact:true})).toContainText("22 °C");
+  await expect(report.getByRole("region",{name:"Luftfuktighet",exact:true})).toContainText("48 %");
+  await expect(report.locator(".report-brand img")).toBeVisible();
   await expect(report).toContainText("Ingen energimåler konfigurert eller tilgjengelig");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.screenshot({path:`/tmp/smarti-house-report-${info.project.name}.png`,fullPage:true});

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, Printer, BarChart3, AlertCircle } from "lucide-react";
+import { ReportBrand } from "../ReportBrand";
 import { ReportLoading } from "../ReportLoading";
 import { api } from "../api";
 import type { Dashboard } from "./EnergyPlatform";
@@ -137,11 +138,7 @@ export function EnergyReport() {
     window.print();
   }
   return (
-    <div
-      role="region"
-      aria-label="Energirapportgenerator"
-      className="er"
-    >
+    <div role="region" aria-label="Energirapportgenerator" className="er">
       <header className="er-intro">
         <span className="ep-eyebrow">RAPPORTER OG INNSIKT</span>
         <h2>Forstå energien i hjemmet.</h2>
@@ -224,7 +221,7 @@ export function EnergyReport() {
         <article className="er-document" aria-label="Energirapport">
           <header className="er-document-head">
             <div>
-              <span className="ep-eyebrow">SMARTi / ENERGIRAPPORT</span>
+              <ReportBrand title="Energirapport" />
               <h2>
                 {date(request.from)} – {date(request.to)}
               </h2>

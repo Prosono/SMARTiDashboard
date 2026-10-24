@@ -352,8 +352,94 @@
     gap: 8px;
   }
 }
-.er-columns > section { margin-top: 0; }
-@media(min-width: 901px) {
+.er-columns > section {
+  margin-top: 0;
+}
+@media (min-width: 901px) {
   .sidebar .nav-item[aria-label="Rapporter og innsikt"] > span:not(.nav-dot),
-  .sidebar .nav-item[aria-label="Reports and insights"] > span:not(.nav-dot) { white-space: normal; line-height: 1.3; text-align: left; }
+  .sidebar .nav-item[aria-label="Reports and insights"] > span:not(.nav-dot) {
+    white-space: normal;
+    line-height: 1.3;
+    text-align: left;
+  }
+}
+.report-brand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.report-brand > div {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.report-brand img {
+  object-fit: contain;
+}
+.report-brand strong {
+  color: var(--text);
+  font-size: 1.3rem;
+  letter-spacing: 0.03em;
+}
+.report-brand > span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+}
+.house-statistics {
+  margin-top: 32px;
+}
+.house-statistics > section {
+  margin: 32px 0;
+  break-inside: auto;
+}
+.house-statistics p {
+  font-size: 0.88rem;
+}
+.house-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+  break-inside: avoid;
+}
+.house-stat-name small {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 5px;
+}
+.house-stat-row dl {
+  display: flex;
+  gap: 24px;
+  margin: 0;
+}
+.house-stat-row dt {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.house-stat-row dd {
+  margin: 5px 0 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 700px) {
+  .house-stat-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .house-stat-row dl {
+    gap: 12px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .house-stat-row dd {
+    font-size: 1rem;
+  }
 }

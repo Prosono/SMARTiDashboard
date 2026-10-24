@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .ha import HAError
 from .models import Control
+from .report_statistics import summarize_states
 
 
 def history_router(ha, user, settings):
@@ -124,6 +125,11 @@ def history_router(ha, user, settings):
             values = [p["value"] for p in points if p["value"] is not None]
             series.append(
                 {
+                    "statistics": summarize_states(
+                        points, start, end,
+                        catalog[entity].domain if catalog[entity].domain in {"light", "person"}
+                        else catalog[entity].attributes.get("device_class"),
+                    ),
                     "entity_id": entity,
                     "points": points[-2000:],
                     "samples": len(points),
@@ -210,23 +216,30 @@ def history_router(ha, user, settings):
                 alerts += 1
             if entry.get("state") == "unavailable":
                 unavailable += 1
-        temperature_ids = sorted(
-            c.entity_id for c in catalog.values()
-            if c.attributes.get("device_class") == "temperature"
-            and c.attributes.get("unit_of_measurement") in {"°C", "°F"}
-        )
-        climate = []
-        climate_unavailable = False
-        if temperature_ids:
-            try:
-                readings = await states(start, end, ",".join(temperature_ids[:6]), current)
-                climate = [
-                    {"name": catalog[row["entity_id"]].name, "minimum": row["minimum"],
-                     "maximum": row["maximum"], "unit": row["unit"], "samples": row["samples"]}
-                    for row in readings["series"]
-                ]
-            except HTTPException:
-                climate_unavailable = True
+        groups = {
+            "temperatures": sorted(c.entity_id for c in catalog.values()
+                if c.attributes.get("device_class") == "temperature"
+                and c.attributes.get("unit_of_measurement") in {"°C", "°F"}),
+            "humidity": sorted(c.entity_id for c in catalog.values()
+                if c.attributes.get("device_class") == "humidity"
+                and c.attributes.get("unit_of_measurement") == "%"),
+            "people": sorted(c.entity_id for c in catalog.values() if c.domain == "person"),
+            "lights": sorted(c.entity_id for c in catalog.values() if c.domain == "light"),
+        }
+        summaries = {}
+        for kind, ids in groups.items():
+            limit = 24 if kind == "lights" else 12
+            items = []
+            failed = False
+            for offset in range(0, min(len(ids), limit), 12):
+                try:
+                    readings = await states(start, end, ",".join(ids[offset:offset + 12]), current)
+                    items.extend({"entity_id": row["entity_id"], "name": catalog[row["entity_id"]].name,
+                        "unit": row["unit"], "samples": row["samples"], **row["statistics"]}
+                        for row in readings["series"])
+                except HTTPException:
+                    failed = True
+            summaries[kind] = {"items": items, "total": len(ids), "limit": limit, "unavailable": failed}
         return {
             "start": start, "end": end, "events": log["total"],
             "analyzed_events": len(log["entries"]), "truncated": log["truncated"],
@@ -234,8 +247,10 @@ def history_router(ha, user, settings):
             "active_entities": len(devices), "alarm_events": alerts, "unavailable_events": unavailable,
             "top_entities": [{"name": catalog[e].name if e in catalog else e, "count": count}
                              for e, count in devices.most_common(6)],
-            "temperatures": climate, "temperature_sensor_count": len(temperature_ids),
-            "climate_unavailable": climate_unavailable,
+            "temperatures": summaries["temperatures"]["items"],
+            "temperature_sensor_count": summaries["temperatures"]["total"],
+            "climate_unavailable": summaries["temperatures"]["unavailable"],
+            "statistics": summaries,
         }
 
     return router
