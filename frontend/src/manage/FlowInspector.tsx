@@ -126,6 +126,20 @@ function Field({
   ]);
   useEffect(() => () => report(id, true), [id, report]);
   const expression = flowTemplate(value);
+  if (typeof value === "boolean")
+    return (
+      <label className="flow-form-field" htmlFor={id}>
+        <span>{label}</span>
+        <select
+          id={id}
+          value={String(value)}
+          onChange={(e) => onChange(e.target.value === "true")}
+        >
+          <option value="true">{t("Ja", "Yes")}</option>
+          <option value="false">{t("Nei", "No")}</option>
+        </select>
+      </label>
+    );
   if (value != null && !["string", "number"].includes(typeof value))
     return (
       <p className="flow-preserved-value">
@@ -605,7 +619,9 @@ export function FlowInspector({
   const entity = Array.isArray(row.entity_id)
     ? row.entity_id[0]
     : row.entity_id;
-  const selectedControl = home.controls.find((c) => c.entity_id === entity);
+  const selectedControl = home.controls.find(
+    (c) => c.entity_id === entity || c.id === entity,
+  );
   const stateChoices =
     selectedControl && !row.attribute
       ? selectedControl.domain === "lock"
@@ -1100,8 +1116,16 @@ export function FlowInspector({
               </select>
             </label>
           )}
-          {action.startsWith("notify.mobile_app_") && <NotificationRecipient value={action} lang={lang} report={report}
-            onChange={(value) => set([has(row, "action") ? "action" : "service"], value)} />}
+          {action.startsWith("notify.mobile_app_") && (
+            <NotificationRecipient
+              value={action}
+              lang={lang}
+              report={report}
+              onChange={(value) =>
+                set([has(row, "action") ? "action" : "service"], value)
+              }
+            />
+          )}
           {(() => {
             if (action.startsWith("notify.mobile_app_")) return null;
             const domain = action.split(".")[0],

@@ -1,3 +1,4 @@
+import { FlowDeviceLibrary } from "./FlowDeviceLibrary";
 import { flowLibraryIcon } from "./flowLibraryIcon";
 import { flowLibrary } from "./flowLibrary";
 import { routeWire, wirePath, smoothWirePath } from "./flowRouting";
@@ -31,6 +32,8 @@ export function FlowCanvas({
   lang,
   onSelect,
   onAdd,
+  onAddRow,
+  canAdd = true,
   onRemove,
   onConnect,
 }: {
@@ -39,6 +42,8 @@ export function FlowCanvas({
   lang: string;
   onSelect: (p: FlowPath) => void;
   onAdd: (k: FlowKey, preset?: string) => void;
+  canAdd?: boolean;
+  onAddRow: (k: FlowKey, row: Record<string, any>) => void;
   onRemove: (p: FlowPath) => void;
   onConnect: (patch: Record<string, any>) => void;
 }) {
@@ -73,6 +78,9 @@ export function FlowCanvas({
     [positions, setPositions] = useState<
       Record<string, { x: number; y: number }>
     >({});
+  const [libraryTab, setLibraryTab] = useState<"presets" | "devices">(
+    "presets",
+  );
   const [librarySearch, setLibrarySearch] = useState("");
   const [libraryKind, setLibraryKind] = useState<FlowKey | "all">("all");
   const libraryItems = useMemo(
@@ -372,142 +380,194 @@ export function FlowCanvas({
         <strong className="canvas-library-heading">
           {t("Byggesteiner", "Building blocks")}
         </strong>
-        <input
-          className="canvas-library-search"
-          aria-label={t("Søk i byggesteiner", "Search building blocks")}
-          placeholder={t(
-            "Søk etter lys, bevegelse …",
-            "Search lights, motion …",
-          )}
-          value={librarySearch}
-          onChange={(e) => setLibrarySearch(e.target.value)}
-        />
         <div
           className="canvas-library-filter"
           role="group"
-          aria-label={t("Type byggestein", "Building block type")}
+          aria-label={t("Bibliotek", "Library")}
         >
-          {(["all", "triggers", "conditions", "actions"] as const).map((k) => (
-            <button
-              type="button"
-              key={k}
-              aria-pressed={libraryKind === k}
-              onClick={() => setLibraryKind(k)}
-            >
-              {k === "all"
-                ? t("Alle", "All")
-                : k === "triggers"
-                  ? t("Når", "When")
-                  : k === "conditions"
-                    ? t("Hvis", "If")
-                    : t("Gjør", "Do")}
-            </button>
-          ))}
+          <button
+            type="button"
+            aria-pressed={libraryTab === "presets"}
+            onClick={() => setLibraryTab("presets")}
+          >
+            {t("Forslag", "Suggestions")}
+          </button>
+          <button
+            type="button"
+            aria-pressed={libraryTab === "devices"}
+            onClick={() => setLibraryTab("devices")}
+          >
+            {t("Enheter", "Devices")}
+          </button>
         </div>
-        <div className="canvas-library-list">
-          {libraryItems.map(({ k, preset, label, hint, Icon }) => (
-            <button
-              type="button"
-              key={k + (preset || "")}
-              className={`canvas-palette-card library-${k} ${preset ? "is-preset" : "is-category"}`}
-              draggable={false}
-              aria-label={
-                preset
-                  ? label
-                  : k === "triggers"
-                    ? t("Legg til hendelse", "Add event")
-                    : k === "conditions"
-                      ? t("Legg til krav", "Add requirement")
-                      : t("Legg til handling", "Add action")
-              }
-              title={
-                hint ||
-                t(
-                  "Dra til lerretet, eller trykk for å velge kort",
-                  "Drag onto the canvas, or click to choose a card",
-                )
-              }
-              onPointerDown={(e) => {
-                if (e.button !== 0) return;
-                skipPaletteClick.current = false;
-                paletteDrag.current = {
-                  kind: k,
-                  x: e.clientX,
-                  y: e.clientY,
-                  moved: false,
-                };
-                e.currentTarget.setPointerCapture(e.pointerId);
-              }}
-              onPointerMove={(e) => {
-                const d = paletteDrag.current;
-                if (!d) return;
-                if (!(e.buttons & 1)) {
-                  paletteDrag.current = null;
-                  setDragPreview(null);
-                  return;
-                }
-                if (
-                  !d.moved &&
-                  Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8
-                )
-                  return;
-                d.moved = true;
-                skipPaletteClick.current = true;
-                setDragPreview({ kind: k, x: e.clientX, y: e.clientY });
-              }}
-              onPointerUp={(e) => {
-                const d = paletteDrag.current;
-                paletteDrag.current = null;
-                setDragPreview(null);
-                if (!d?.moved) return;
-                const bounds = viewport.current?.getBoundingClientRect(),
-                  canvas = plane.current?.getBoundingClientRect();
-                if (
-                  bounds &&
-                  canvas &&
-                  e.clientX >= bounds.left &&
-                  e.clientX <= bounds.right &&
-                  e.clientY >= bounds.top &&
-                  e.clientY <= bounds.bottom
-                ) {
-                  move(
-                    JSON.stringify([k, (config[k] || []).length]),
-                    (e.clientX - canvas.left) / zoom,
-                    (e.clientY - canvas.top) / zoom,
-                  );
-                  onAdd(k, preset);
-                }
-              }}
-              onPointerCancel={() => {
-                paletteDrag.current = null;
-                setDragPreview(null);
-                skipPaletteClick.current = true;
-              }}
-              onLostPointerCapture={() => {
-                paletteDrag.current = null;
-                setDragPreview(null);
-              }}
-              onClick={() => {
-                if (skipPaletteClick.current) {
-                  skipPaletteClick.current = false;
-                  return;
-                }
-                onAdd(k, preset);
-              }}
-            >
-              <Icon size={20} aria-hidden="true" />
-              <span>{label}</span>
-            </button>
-          ))}
-          {!libraryItems.some((item) => item.preset) && (
-            <p className="muted">
-              {t(
-                "Ingen forslag passer søket.",
-                "No suggestions match your search.",
+        {libraryTab === "devices" ? (
+          <FlowDeviceLibrary
+            disabled={!canAdd}
+            home={home}
+            lang={lang}
+            canDrop={(x, y) => {
+              const r = viewport.current?.getBoundingClientRect();
+              return (
+                !!r &&
+                x >= r.left &&
+                x <= r.right &&
+                y >= r.top &&
+                y <= r.bottom
+              );
+            }}
+            onCreate={(kind, row, point) => {
+              const r = plane.current?.getBoundingClientRect();
+              if (point && r)
+                move(
+                  JSON.stringify([kind, (config[kind] || []).length]),
+                  (point.x - r.left) / zoom,
+                  (point.y - r.top) / zoom,
+                );
+              onAddRow(kind, row);
+            }}
+          />
+        ) : (
+          <>
+            <input
+              className="canvas-library-search"
+              aria-label={t("Søk i byggesteiner", "Search building blocks")}
+              placeholder={t(
+                "Søk etter lys, bevegelse …",
+                "Search lights, motion …",
               )}
-            </p>
-          )}
-        </div>
+              value={librarySearch}
+              onChange={(e) => setLibrarySearch(e.target.value)}
+            />
+            <div
+              className="canvas-library-filter"
+              role="group"
+              aria-label={t("Type byggestein", "Building block type")}
+            >
+              {(["all", "triggers", "conditions", "actions"] as const).map(
+                (k) => (
+                  <button
+                    type="button"
+                    key={k}
+                    aria-pressed={libraryKind === k}
+                    onClick={() => setLibraryKind(k)}
+                  >
+                    {k === "all"
+                      ? t("Alle", "All")
+                      : k === "triggers"
+                        ? t("Når", "When")
+                        : k === "conditions"
+                          ? t("Hvis", "If")
+                          : t("Gjør", "Do")}
+                  </button>
+                ),
+              )}
+            </div>
+            <div className="canvas-library-list">
+              {libraryItems.map(({ k, preset, label, hint, Icon }) => (
+                <button
+                  type="button"
+                  key={k + (preset || "")}
+                  className={`canvas-palette-card library-${k} ${preset ? "is-preset" : "is-category"}`}
+                  draggable={false}
+                  aria-label={
+                    preset
+                      ? label
+                      : k === "triggers"
+                        ? t("Legg til hendelse", "Add event")
+                        : k === "conditions"
+                          ? t("Legg til krav", "Add requirement")
+                          : t("Legg til handling", "Add action")
+                  }
+                  title={
+                    hint ||
+                    t(
+                      "Dra til lerretet, eller trykk for å velge kort",
+                      "Drag onto the canvas, or click to choose a card",
+                    )
+                  }
+                  onPointerDown={(e) => {
+                    if (e.button !== 0) return;
+                    skipPaletteClick.current = false;
+                    paletteDrag.current = {
+                      kind: k,
+                      x: e.clientX,
+                      y: e.clientY,
+                      moved: false,
+                    };
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                  }}
+                  onPointerMove={(e) => {
+                    const d = paletteDrag.current;
+                    if (!d) return;
+                    if (!(e.buttons & 1)) {
+                      paletteDrag.current = null;
+                      setDragPreview(null);
+                      return;
+                    }
+                    if (
+                      !d.moved &&
+                      Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8
+                    )
+                      return;
+                    d.moved = true;
+                    skipPaletteClick.current = true;
+                    setDragPreview({ kind: k, x: e.clientX, y: e.clientY });
+                  }}
+                  onPointerUp={(e) => {
+                    const d = paletteDrag.current;
+                    paletteDrag.current = null;
+                    setDragPreview(null);
+                    if (!d?.moved) return;
+                    const bounds = viewport.current?.getBoundingClientRect(),
+                      canvas = plane.current?.getBoundingClientRect();
+                    if (
+                      bounds &&
+                      canvas &&
+                      e.clientX >= bounds.left &&
+                      e.clientX <= bounds.right &&
+                      e.clientY >= bounds.top &&
+                      e.clientY <= bounds.bottom
+                    ) {
+                      move(
+                        JSON.stringify([k, (config[k] || []).length]),
+                        (e.clientX - canvas.left) / zoom,
+                        (e.clientY - canvas.top) / zoom,
+                      );
+                      onAdd(k, preset);
+                    }
+                  }}
+                  onPointerCancel={() => {
+                    paletteDrag.current = null;
+                    setDragPreview(null);
+                    skipPaletteClick.current = true;
+                  }}
+                  onLostPointerCapture={() => {
+                    paletteDrag.current = null;
+                    setDragPreview(null);
+                  }}
+                  onClick={() => {
+                    if (skipPaletteClick.current) {
+                      skipPaletteClick.current = false;
+                      return;
+                    }
+                    onAdd(k, preset);
+                  }}
+                >
+                  <Icon size={20} aria-hidden="true" />
+                  <span>{label}</span>
+                </button>
+              ))}
+              {!libraryItems.some((item) => item.preset) && (
+                <p className="muted">
+                  {t(
+                    "Ingen forslag passer søket.",
+                    "No suggestions match your search.",
+                  )}
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="canvas-toolbar">

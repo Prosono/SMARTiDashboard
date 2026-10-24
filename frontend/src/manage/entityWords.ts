@@ -7,7 +7,7 @@ export function entityState(
   lang: string,
 ): string {
   return controlState(
-    home.controls.find((c) => c.entity_id === id),
+    home.controls.find((c) => (c.entity_id === id || c.id === id)),
     state,
     lang,
   );

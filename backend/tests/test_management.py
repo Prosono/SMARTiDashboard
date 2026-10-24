@@ -260,6 +260,7 @@ def test_detailed_entity_catalog_includes_helpers_with_safe_metadata(live):
     catalog = {row["entity_id"]: row for row in response.json()}
     assert catalog["input_number.target_temperature"] == {
         "entity_id": "input_number.target_temperature",
+        "id": "input_number.target_temperature", "device_name": None,
         "name": "Target temperature",
         "domain": "input_number",
         "state": "21.5",
@@ -268,11 +269,11 @@ def test_detailed_entity_catalog_includes_helpers_with_safe_metadata(live):
         "area_id": "bedroom",
     }
     assert catalog["device_tracker.phone"] == {
-        "entity_id": "device_tracker.phone", "name": "Phone", "domain": "device_tracker",
+        "entity_id": "device_tracker.phone", "id": "device_tracker.phone", "device_name": None, "name": "Phone", "domain": "device_tracker",
         "state": "home", "attributes": {}, "device_id": "catalog_device", "area_id": "living",
     }
     assert catalog["input_boolean.guest_mode"] == {
-        "entity_id": "input_boolean.guest_mode", "name": "input_boolean.guest_mode",
+        "entity_id": "input_boolean.guest_mode", "id": "input_boolean.guest_mode", "device_name": None, "name": "input_boolean.guest_mode",
         "domain": "input_boolean", "state": "off", "attributes": {},
         "device_id": None, "area_id": None,
     }
@@ -501,3 +502,43 @@ def test_notification_recipients_use_registered_ha_services(tmp_path):
 
 def test_demo_has_no_real_notification_recipients(client):
     assert client.get("/api/manage/notification-recipients").json() == []
+
+
+def test_automation_services_are_read_only_and_filter_entity_features():
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from fastapi import FastAPI
+    from app.management import management_router
+
+    rest = AsyncMock(
+        return_value=[
+            {
+                "domain": "siren",
+                "services": {
+                    "turn_on": {
+                        "name": "Start siren",
+                        "target": {"entity": [{"domain": ["siren"], "supported_features": [1]}]},
+                        "fields": {"duration": {"selector": {"number": {"min": 1}}}},
+                    },
+                    "turn_off": {"target": {"entity": [{"supported_features": [2]}]}},
+                    "global_operation": {"fields": {}},
+                },
+            },
+            {"domain": "light", "services": {"turn_on": {"target": {}}}},
+        ]
+    )
+    app = FastAPI()
+    manager = SimpleNamespace(
+        demo=False,
+        connected=lambda: None,
+        rest=rest,
+        ha=SimpleNamespace(states={"siren.hall": {"attributes": {"supported_features": 1}}}),
+    )
+    app.include_router(management_router(manager, lambda: True))
+    with TestClient(app) as c:
+        result = c.get("/api/manage/automation-services?entity_id=siren.hall")
+        assert result.status_code == 200
+        assert [row["action"] for row in result.json()] == ["siren.turn_on"]
+        assert result.json()[0]["fields"]["duration"]["selector"]["number"]["min"] == 1
+        rest.assert_awaited_once_with("GET", "services")
+        assert c.get("/api/manage/automation-services?entity_id=siren.missing").status_code == 404

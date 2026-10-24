@@ -24,13 +24,21 @@ export function flowNarrative(
 ): FlowNarrative {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const name = (id: any): string => {
+    if (id == null) return "";
     if (Array.isArray(id)) return id.map(name).join(", ");
     if (id === "all") return t("Alle enheter", "All entities");
-    return home.controls.find((c) => c.entity_id === id)?.name || text(id);
+    return (
+      home.controls.find((c) => c.entity_id === id || c.id === id)?.name ||
+      text(id)
+    );
   };
   const device = (id: any): string =>
     items(id)
       .map((value) => {
+        const registered =
+          home.devices?.find((d) => d.id === value)?.name ||
+          home.controls.find((c) => c.device_id === value)?.device_name;
+        if (registered) return registered;
         const controls = home.controls.filter((c) => c.device_id === value);
         const names = [...new Set(controls.map((c) => c.name))];
         return names.length
@@ -384,6 +392,14 @@ export function flowNarrative(
     (key === "actions" && !kind && row.device_id && row.domain && row.type)
   ) {
     const types: Record<string, [string, string]> = {
+      temperature: ["Temperatur", "Temperature"],
+      is_temperature: ["Temperatur", "Temperature"],
+      humidity: ["Luftfuktighet", "Humidity"],
+      is_humidity: ["Luftfuktighet", "Humidity"],
+      power: ["Effekt", "Power"],
+      is_power: ["Effekt", "Power"],
+      energy: ["Energi", "Energy"],
+      is_energy: ["Energi", "Energy"],
       opened: ["Åpnes", "Opens"],
       closed: ["Lukkes", "Closes"],
       opening: ["Åpner seg", "Opening"],

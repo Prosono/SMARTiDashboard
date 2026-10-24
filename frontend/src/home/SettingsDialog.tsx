@@ -43,7 +43,7 @@ export function SettingsDialog({
       ref={ref}
       className="dashboard-settings-dialog"
       data-compact={compact || undefined}
-      aria-labelledby={heading}
+      aria-label={title}
       aria-busy={busy}
       tabIndex={-1}
       onKeyDown={(event) => {

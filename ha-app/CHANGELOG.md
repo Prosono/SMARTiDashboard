@@ -1,3 +1,9 @@
+## 1.36.36
+- Enhetsnavn vises også når automasjonen bruker Home Assistants interne register-ID.
+- Ny Enheter-fane i flytens byggesteiner: dra inn eller velg en enhet, velg funksjon og bruk den under Når, Og eller Så.
+- Viser målinger, tilstander og egenskaper med nåverdi, søk og ikoner. Også funksjoner uten eget kontrollkort er tilgjengelige.
+- Styrbare handlinger og innstillinger hentes fra Home Assistant og filtreres etter tilgjengelige funksjoner.
+
 ## 1.36.35
 - Retter musehåndtering: samme element beholder musefangsten gjennom dragging, og slipp utenfor kortet rydder dra-tilstanden.
 - Fri arbeidsflate åpner utvidet på desktop, med lagreknapp, lagringsmelding og valg for vanlig størrelse. Mobil kan utvides manuelt.

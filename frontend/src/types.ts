@@ -10,6 +10,7 @@ export type Control = {
   id: string;
   entity_id: string;
   device_id: string | null;
+  device_name?: string | null;
   area_id: string | null;
   name: string;
   domain: string;
@@ -32,7 +33,7 @@ export type Home = {
   last_sync: string | null;
   revision: number;
   areas: { area_id: string; name: string }[];
-  devices: { id: string; availability: string }[];
+  devices: { id: string; name?: string | null; availability: string; area_id?: string | null }[];
   controls: Control[];
   favorites: string[];
 };

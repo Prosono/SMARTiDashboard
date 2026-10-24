@@ -368,16 +368,138 @@ def management_router(service, admin):
     async def entities(details: bool = False):
         m.connected()
         return [
-            {"entity_id": eid, "name": state.get("attributes", {}).get("friendly_name") or eid}
-            | ({
-                "domain": eid.split(".", 1)[0],
-                "state": state.get("state", "unknown"),
-                "attributes": {key: state.get("attributes", {})[key] for key in ("device_class", "unit_of_measurement") if key in state.get("attributes", {})},
-                "device_id": m.ha.entities.get(eid, {}).get("device_id"),
-                "area_id": m.ha.entities.get(eid, {}).get("area_id") or m.ha.devices.get(m.ha.entities.get(eid, {}).get("device_id"), {}).get("area_id"),
-            } if details else {})
+            {
+                "entity_id": eid,
+                "name": m.ha.entities.get(eid, {}).get("name")
+                or state.get("attributes", {}).get("friendly_name")
+                or eid,
+            }
+            | (
+                {
+                    "id": m.ha.entities.get(eid, {}).get("id") or eid,
+                    "device_name": (
+                        m.ha.devices.get(m.ha.entities.get(eid, {}).get("device_id"), {}).get("name_by_user")
+                        or m.ha.devices.get(m.ha.entities.get(eid, {}).get("device_id"), {}).get("name")
+                    ),
+                    "domain": eid.split(".", 1)[0],
+                    "state": state.get("state", "unknown"),
+                    "attributes": {
+                        key: state.get("attributes", {})[key]
+                        for key in (
+                            "device_class",
+                            "unit_of_measurement",
+                            "current_temperature",
+                            "temperature",
+                            "current_humidity",
+                            "humidity",
+                            "battery_level",
+                            "battery",
+                            "brightness",
+                            "color_temp_kelvin",
+                            "hvac_action",
+                            "hvac_modes",
+                            "fan_mode",
+                            "fan_modes",
+                            "preset_mode",
+                            "preset_modes",
+                            "current_position",
+                            "volume_level",
+                            "is_volume_muted",
+                            "percentage",
+                            "options",
+                            "min",
+                            "max",
+                            "step",
+                            "min_temp",
+                            "max_temp",
+                            "supported_features",
+                            "event_type",
+                            "event_types",
+                            "remaining",
+                            "duration",
+                            "illuminance",
+                            "power",
+                            "voltage",
+                            "current",
+                        )
+                        if key in state.get("attributes", {})
+                    },
+                    "device_id": m.ha.entities.get(eid, {}).get("device_id"),
+                    "area_id": m.ha.entities.get(eid, {}).get("area_id")
+                    or m.ha.devices.get(m.ha.entities.get(eid, {}).get("device_id"), {}).get("area_id"),
+                }
+                if details
+                else {}
+            )
             for eid, state in m.ha.states.items()
         ]
+
+    @router.get("/automation-services")
+    async def automation_services(entity_id: str):
+        """Read-only, entity-scoped action catalogue; never executes a service."""
+        m.connected()
+        state = m.ha.states.get(entity_id)
+        if state is None:
+            raise HTTPException(404, "not_found")
+        domain = entity_id.split(".", 1)[0]
+        if m.demo:
+            services = [
+                {
+                    "domain": "light",
+                    "services": {
+                        "turn_on": {"name": "Slå på", "target": {}},
+                        "turn_off": {"name": "Slå av", "target": {}},
+                    },
+                }
+            ]
+        else:
+            services = await m.rest("GET", "services")
+        attributes = state.get("attributes", {})
+
+        def values(value):
+            return value if isinstance(value, list) else [value]
+
+        def matches(rule):
+            if rule.get("domain") and domain not in values(rule["domain"]):
+                return False
+            if rule.get("device_class") and attributes.get("device_class") not in values(rule["device_class"]):
+                return False
+            features = attributes.get("supported_features", 0) or 0
+            if rule.get("supported_features") and not any(
+                features & mask == mask for mask in values(rule["supported_features"])
+            ):
+                return False
+            return all(
+                any(value in values(attributes.get(key)) for value in values(expected))
+                for key, expected in rule.get("attribute", {}).items()
+            )
+
+        def fields_for_entity(fields):
+            result = {}
+            for key, field in fields.items():
+                if not matches(field.get("filter", {})):
+                    continue
+                if "fields" in field:
+                    field = {**field, "fields": fields_for_entity(field["fields"])}
+                result[key] = field
+            return result
+
+        result = []
+        for group in services:
+            if group.get("domain") != domain:
+                continue
+            for key, service in group.get("services", {}).items():
+                if "target" not in service:
+                    continue
+                filters = (service.get("target") or {}).get("entity", [])
+                if filters and not any(matches(f) for f in values(filters)):
+                    continue
+                result.append({
+                    "action": f"{domain}.{key}",
+                    "name": service.get("name") or key.replace("_", " "),
+                    "fields": fields_for_entity(service.get("fields", {})),
+                })
+        return result
 
     @router.get("/automations")
     async def automations():

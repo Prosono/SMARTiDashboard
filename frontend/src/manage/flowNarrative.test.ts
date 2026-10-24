@@ -404,3 +404,12 @@ describe("HA flow narratives preserve meaning", () => {
     ).toContain("at least once");
   });
 });
+
+it("resolves HA registry IDs without rewriting device automation configuration", () => {
+  const h = { ...home, controls: [{...home.controls[2], id: "registry-temperature"}] };
+  const row = {trigger:"device", domain:"sensor", device_id:"dev1", entity_id:"registry-temperature", type:"temperature", above:22};
+  const before = structuredClone(row);
+  expect(flowNarrative(row,"triggers",h,"nb").detail).toContain("Temperatur");
+  expect(flowNarrative(row,"triggers",h,"nb").detail).not.toContain("registry-temperature");
+  expect(row).toEqual(before);
+});

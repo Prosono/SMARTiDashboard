@@ -1,5 +1,7 @@
 import {
   AlarmClock,
+  BatteryMedium,
+  Droplets,
   Bell,
   CalendarClock,
   CheckCheck,
@@ -97,9 +99,27 @@ export function flowIcon(row: any, kind: FlowKind, home?: Home) {
   )
     return CheckCheck;
   if (type === "zone" || type.startsWith("zone.")) return MapPin;
-  const id = Array.isArray(row.entity_id) ? row.entity_id[0] : row.entity_id;
-  const cls = home?.controls.find((c) => c.entity_id === id)?.attributes
-    ?.device_class;
+  const target = row.entity_id || row.target?.entity_id;
+  const id = Array.isArray(target) ? target[0] : target;
+  const control = home?.controls.find(
+    (c) => c.entity_id === id || (id != null && c.id === id),
+  );
+  const domain =
+    control?.domain || (typeof id === "string" ? id.split(".")[0] : "");
+  const cls = row.attribute?.includes("temperature")
+    ? "temperature"
+    : row.attribute?.includes("battery")
+      ? "battery"
+      : row.attribute?.includes("humidity")
+        ? "humidity"
+        : control?.attributes?.device_class;
+  if (cls === "battery") return BatteryMedium;
+  if (["humidity", "moisture"].includes(String(cls))) return Droplets;
+  if (["power", "energy", "voltage", "current"].includes(String(cls)))
+    return Zap;
+  if (["smoke", "carbon_monoxide", "gas", "safety"].includes(String(cls)))
+    return Shield;
+  if (domain === "siren") return Bell;
   if (
     ["door", "window", "opening", "garage_door"].includes(String(cls)) ||
     type.startsWith("door.") ||
@@ -111,8 +131,13 @@ export function flowIcon(row: any, kind: FlowKind, home?: Home) {
     /motion|occupancy/.test(type)
   )
     return PersonStanding;
-  if (cls === "temperature" || type.startsWith("climate.")) return Thermometer;
-  if (type.startsWith("light.")) return Lightbulb;
+  if (
+    cls === "temperature" ||
+    type.startsWith("climate.") ||
+    domain === "climate"
+  )
+    return Thermometer;
+  if (type.startsWith("light.") || domain === "light") return Lightbulb;
   if (type.startsWith("switch.") || type.startsWith("input_boolean."))
     return ToggleLeft;
   if (type.startsWith("notify.")) return Bell;

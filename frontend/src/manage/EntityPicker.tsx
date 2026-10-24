@@ -35,7 +35,8 @@ export function EntityPicker({
     opener = useRef<HTMLButtonElement>(null);
   const [search, setSearch] = useState(""),
     [area, setArea] = useState("*");
-  const control = (id: string) => home.controls.find((c) => c.entity_id === id);
+  const control = (id: string) =>
+    home.controls.find((c) => c.entity_id === id || c.id === id);
   const room = (id: string) =>
     home.areas.find((a) => a.area_id === control(id)?.area_id)?.name ||
     t("Uten rom", "No room");
@@ -54,7 +55,8 @@ export function EntityPicker({
               ? Plug
               : Radio;
   };
-  const selected = choices.find((c) => c.entity_id === value);
+  const selectedId = control(value)?.entity_id || value;
+  const selected = choices.find((c) => c.entity_id === value) || control(value);
   const Icon = icon(value);
   const visible = choices.filter(
     (c) =>
@@ -190,7 +192,7 @@ export function EntityPicker({
                         <button
                           type="button"
                           key={c.entity_id}
-                          aria-pressed={value === c.entity_id}
+                          aria-pressed={selectedId === c.entity_id}
                           onClick={() => {
                             onChange(c.entity_id);
                             close();
@@ -219,7 +221,7 @@ export function EntityPicker({
                                     )}
                             </small>
                           </span>
-                          {value === c.entity_id && <Check size={18} />}
+                          {selectedId === c.entity_id && <Check size={18} />}
                         </button>
                       );
                     })}

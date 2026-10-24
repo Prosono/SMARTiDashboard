@@ -307,6 +307,18 @@ export function AutomationFlow({
                 add(preset, { path: [key], kind: key });
               } else startAdd([key], key);
             }}
+            canAdd={!selected || valid}
+            onAddRow={(key, row) => {
+              if (selected && !valid) return;
+              const list = c[key];
+              replace([key], [...list, row]);
+              setTrail([]);
+              setStepNew(true);
+              setStepOriginal(structuredClone(row));
+              setSelected([key, list.length]);
+              setValid(true);
+              setAdding(null);
+            }}
             onRemove={(path) => {
               const list = readFlowPath(c, path.slice(0, -1));
               if (Array.isArray(list))

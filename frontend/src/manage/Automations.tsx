@@ -5,7 +5,7 @@ import { AutomationIcon, AutomationTrigger } from "./AutomationDetails";
 import "./automations.css";
 import { homeAsset } from "../home/HomeOverview";
 import { AutomationFlow } from "./AutomationFlow";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Workflow,
@@ -66,6 +66,8 @@ export function Automations({
       api<
         Pick<
           Control,
+          | "id"
+          | "device_name"
           | "entity_id"
           | "name"
           | "domain"
@@ -76,25 +78,32 @@ export function Automations({
         >[]
       >("manage/entities?details=true"),
     staleTime: 60_000,
+    refetchInterval: 30_000,
   });
-  const known = new Set(sourceHome.controls.map((c) => c.entity_id));
-  const home: Home = {
-    ...sourceHome,
-    controls: [
-      ...sourceHome.controls,
-      ...(catalog.data || [])
-        .filter((c) => !known.has(c.entity_id))
-        .map((c) => ({
+  const home = useMemo<Home>(() => {
+    const known = new Set(sourceHome.controls.map((c) => c.entity_id));
+    const details = new Map((catalog.data || []).map((c) => [c.entity_id, c]));
+    return {
+      ...sourceHome,
+      controls: [
+        ...sourceHome.controls.map((c) => ({
           ...c,
-          id: c.entity_id,
-          capabilities: [],
-          availability: c.state === "unavailable" ? "unavailable" : "unknown",
-          updated_at: null,
-          integration: null,
-          diagnostic: false,
+          device_name: details.get(c.entity_id)?.device_name,
         })),
-    ],
-  };
+        ...(catalog.data || [])
+          .filter((c) => !known.has(c.entity_id))
+          .map((c) => ({
+            ...c,
+            id: c.id || c.entity_id,
+            capabilities: [],
+            availability: c.state === "unavailable" ? "unavailable" : "unknown",
+            updated_at: null,
+            integration: null,
+            diagnostic: false,
+          })),
+      ],
+    };
+  }, [sourceHome, catalog.data]);
 
   const q = useQuery({
     queryKey: ["manage", "automations"],

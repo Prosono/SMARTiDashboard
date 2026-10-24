@@ -1562,3 +1562,32 @@
   text-align: left;
   line-height: 1.45;
 }
+
+/* Device-first building blocks: readable functions, live values and a clear role choice. */
+.flow-device-search { display:flex; align-items:center; gap:8px; }
+.flow-device-search input { min-width:0; width:100%; }
+.flow-device-list .canvas-palette-card { gap:9px; }
+.flow-device-list .canvas-palette-card > span { flex:1; min-width:0; }
+.flow-device-list strong, .flow-device-list small { display:block; text-align:left; overflow-wrap:anywhere; }
+.flow-device-list small { color:var(--muted); font-size:11px; margin-top:4px; }
+.flow-device-picker { display:grid; gap:16px; }
+.flow-device-picker h3, .flow-device-picker h4, .flow-device-picker p { margin:0; }
+.flow-device-picker label { display:grid; gap:6px; }
+.flow-device-picker input, .flow-device-picker select { width:100%; min-width:0; }
+.flow-device-back { justify-self:start; display:flex; align-items:center; gap:8px; }
+.flow-device-current { display:flex; justify-content:space-between; gap:16px; padding:16px; background:var(--soft); border-radius:12px; }
+.flow-device-current strong { overflow-wrap:anywhere; }
+.flow-device-features, .flow-device-roles, .flow-device-actions { display:grid; gap:10px; }
+.flow-device-features > button, .flow-device-roles > button { display:flex; align-items:center; gap:12px; padding:14px; text-align:left; min-height:66px; }
+.flow-device-features > button > span, .flow-device-roles > button > span { flex:1; min-width:0; }
+.flow-device-features strong, .flow-device-features small, .flow-device-roles strong, .flow-device-roles small { display:block; overflow-wrap:anywhere; }
+.flow-device-features small, .flow-device-roles small { color:var(--muted); font-size:12px; margin-top:3px; }
+.flow-device-features b { max-width:35%; overflow-wrap:anywhere; font-size:13px; }
+.flow-device-actions { border-top:1px solid var(--line); padding-top:18px; }
+.flow-device-actions h4 { display:flex; align-items:center; gap:8px; }
+.flow-device-picker svg { flex-shrink:0; }
+.flow-device-list .canvas-palette-card { --node-color:var(--accent); }
+.flow-device-roles .library-triggers > svg { color:#e24265; }
+.flow-device-roles .library-conditions > svg { color:#2582e8; }
+.flow-device-actions h4 > svg { color:#14996b; }
+.flow-device-picker textarea { width:100%; min-height:90px; }
