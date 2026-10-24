@@ -68,7 +68,10 @@ test("energy report validates dates, preserves missing data and prints on deskto
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
-  await page.getByRole("tab", { name: "Rapporter og innsikt" }).click();
+  await page
+    .getByRole("button", { name: "Rapporter og innsikt", exact: true })
+    .click();
+  await page.getByRole("tab", { name: "Energirapport", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Ditt hjem. Dine tall." }),
   ).toBeVisible();

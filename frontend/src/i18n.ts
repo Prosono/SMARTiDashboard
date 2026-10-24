@@ -1,6 +1,6 @@
 export const nb = {
   history: "Historikk",
-  logbook: "Huslogg",
+  logbook: "Rapporter og innsikt",
   home: "Hjem",
   rooms: "Rom",
   devices: "Enheter",
@@ -139,7 +139,7 @@ export const nb = {
 };
 export const en: typeof nb = {
   history: "History",
-  logbook: "Activity",
+  logbook: "Reports and insights",
   home: "Home",
   rooms: "Rooms",
   devices: "Devices",

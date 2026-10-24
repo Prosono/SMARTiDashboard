@@ -319,3 +319,41 @@
     position: static;
   }
 }
+.house-insights > .er-intro {
+  padding: 0 16px;
+}
+.house-report-body {
+  padding: clamp(12px, 2vw, 24px);
+}
+.house-report-days {
+  margin: 28px 0;
+}
+.house-report-days > div {
+  display: grid;
+  grid-template-columns: 100px 1fr 60px;
+  gap: 12px;
+  align-items: center;
+  margin: 10px 0;
+  font-size: 0.85rem;
+}
+.house-report-days meter {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.house-report-days strong {
+  text-align: right;
+}
+@media (max-width: 600px) {
+  .house-insights > .ep-view-tabs {
+    flex-wrap: wrap;
+  }
+  .house-report-days > div {
+    grid-template-columns: 85px 1fr 40px;
+    gap: 8px;
+  }
+}
+.er-columns > section { margin-top: 0; }
+@media(min-width: 901px) {
+  .sidebar .nav-item[aria-label="Rapporter og innsikt"] > span:not(.nav-dot),
+  .sidebar .nav-item[aria-label="Reports and insights"] > span:not(.nav-dot) { white-space: normal; line-height: 1.3; text-align: left; }
+}

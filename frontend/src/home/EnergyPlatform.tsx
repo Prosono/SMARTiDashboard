@@ -19,7 +19,6 @@ import { api } from "../api";
 import { SettingsDialog } from "./SettingsDialog";
 import "./energyPlatform.css";
 import { EnergyPriceChart } from "./EnergyPriceChart";
-import { EnergyReport } from "./EnergyReport";
 import { EnergySensorPicker } from "./EnergySensorPicker";
 
 import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
@@ -344,7 +343,6 @@ export function EnergyPlatform({
             {[
               ["overview", "3D-oversikt"],
               ["history", "Historikk og strømpriser"],
-              ["reports", "Rapporter og innsikt"],
             ].map(([id, label]) => (
               <button
                 key={id}
@@ -360,17 +358,13 @@ export function EnergyPlatform({
                     ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
                   ) {
                     e.preventDefault();
-                    const tabs = ["overview", "history", "reports"];
+                    const tabs = ["overview", "history"];
                     const next =
                       e.key === "Home"
                         ? tabs[0]
                         : e.key === "End"
-                          ? tabs[2]
-                          : tabs[
-                              (tabs.indexOf(view) +
-                                (e.key === "ArrowRight" ? 1 : 2)) %
-                                3
-                            ];
+                          ? tabs[1]
+                          : tabs[(tabs.indexOf(view) + 1) % 2];
                     setView(next);
                     document.getElementById(`energy-view-${next}`)?.focus();
                   }
@@ -413,8 +407,6 @@ export function EnergyPlatform({
               <p>En administrator må sette opp energien først.</p>
             )}
           </div>
-        ) : view === "reports" ? (
-          <EnergyReport />
         ) : view === "history" ? (
           <div
             role="tabpanel"

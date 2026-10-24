@@ -102,6 +102,7 @@ import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
+import { HouseInsights } from "./HouseInsights";
 import { HistoryExplorer } from "./HistoryExplorer";
 import { ProtocolDevices } from "./ProtocolDevices";
 import { DeviceSetup } from "./DeviceSetup";
@@ -209,8 +210,7 @@ function App() {
   }
   useEffect(() => {
     setPage((p) =>
-      mode === "simple" &&
-      !["home", "support", "more"].includes(p)
+      mode === "simple" && !["home", "support", "more"].includes(p)
         ? "home"
         : p,
     );
@@ -357,11 +357,7 @@ function App() {
                 (p) =>
                   mode === "advanced" ||
                   (mode === "simple"
-                    ? [
-                        "home",
-                        "support",
-                        "more",
-                      ].includes(p)
+                    ? ["home", "support", "more"].includes(p)
                     : !["integrations", "apps", "updates"].includes(p)),
               )
               .map((p) => {
@@ -1191,13 +1187,10 @@ function Dashboard({
               </>
             )}
           </>
-        ) : page === "history" || page === "logbook" ? (
-          <HistoryExplorer
-            key={page}
-            home={h}
-            lang={lang}
-            activity={page === "logbook"}
-          />
+        ) : page === "logbook" ? (
+          <HouseInsights home={h} lang={lang} />
+        ) : page === "history" ? (
+          <HistoryExplorer key={page} home={h} lang={lang} activity={false} />
         ) : page === "support" ? (
           <section className="support-home">
             <LifeBuoy size={34} aria-hidden="true" />
@@ -1239,7 +1232,11 @@ function Dashboard({
             <div className="page-heading settings-hero">
               <span className="eyebrow">SMARTi</span>
               <h1>{t.settings}</h1>
-              <p>{lang === "en" ? "Make your home yours, and choose how SMARTi works for you." : "Tilpass hjemmet ditt, og hvordan SMARTi fungerer."}</p>
+              <p>
+                {lang === "en"
+                  ? "Make your home yours, and choose how SMARTi works for you."
+                  : "Tilpass hjemmet ditt, og hvordan SMARTi fungerer."}
+              </p>
             </div>
             <PhoneSettings lang={lang} />
             <ExperiencePicker lang={lang} />
@@ -1262,7 +1259,12 @@ function Dashboard({
                       ],
                       ["network", lang === "en" ? "Network" : "Nettverk"],
                       ["system", "System"],
-                      ["updates", lang === "en" ? "SMARTi updates" : "SMARTi-oppdateringer"],
+                      [
+                        "updates",
+                        lang === "en"
+                          ? "SMARTi updates"
+                          : "SMARTi-oppdateringer",
+                      ],
                       ...(mode === "advanced"
                         ? [["debugging", "Debugging"]]
                         : []),
@@ -1291,14 +1293,32 @@ function Dashboard({
                   }
                   onClick={() => guard(() => setSettingsSection(key))}
                 >
-                  {key === "household" ? <House size={19} /> : key === "backups" ? <Database size={19} /> : key === "network" ? <Network size={19} /> : key === "system" ? <Server size={19} /> : key === "debugging" ? <Code size={19} /> : key === "updates" ? <DownloadCloud size={19} /> : <Palette size={19} />}
+                  {key === "household" ? (
+                    <House size={19} />
+                  ) : key === "backups" ? (
+                    <Database size={19} />
+                  ) : key === "network" ? (
+                    <Network size={19} />
+                  ) : key === "system" ? (
+                    <Server size={19} />
+                  ) : key === "debugging" ? (
+                    <Code size={19} />
+                  ) : key === "updates" ? (
+                    <DownloadCloud size={19} />
+                  ) : (
+                    <Palette size={19} />
+                  )}
                   {label}
                 </button>
               ))}
             </nav>
-            {mode !== "simple" && session.role === "admin" && settingsSection === "updates" ? <Updates lang={lang} embedded /> : mode === "advanced" &&
+            {mode !== "simple" &&
             session.role === "admin" &&
-            settingsSection === "debugging" ? (
+            settingsSection === "updates" ? (
+              <Updates lang={lang} embedded />
+            ) : mode === "advanced" &&
+              session.role === "admin" &&
+              settingsSection === "debugging" ? (
               <Debugging lang={lang} />
             ) : mode !== "simple" &&
               session.role === "admin" &&
@@ -1370,7 +1390,12 @@ function Dashboard({
                 </div>
               </>
             )}
-            <div className="settings-signout"><button onClick={logout}><LogOut size={18} />{t.logout}</button></div>
+            <div className="settings-signout">
+              <button onClick={logout}>
+                <LogOut size={18} />
+                {t.logout}
+              </button>
+            </div>
           </section>
         )}
       </main>
@@ -1504,7 +1529,15 @@ function Device({
       const result = await api<{ status: string }>(
         `controls/${encodeURIComponent(c.entity_id)}/commands`,
         "POST",
-        { action, confirmed, ...(action === "set_hvac_mode" ? { hvac_mode: value } : value === undefined ? {} : { value }) },
+        {
+          action,
+          confirmed,
+          ...(action === "set_hvac_mode"
+            ? { hvac_mode: value }
+            : value === undefined
+              ? {}
+              : { value }),
+        },
       );
       setMessage(
         result.status === "simulated"

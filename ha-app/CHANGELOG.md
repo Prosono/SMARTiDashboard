@@ -1,3 +1,10 @@
+## 1.36.23
+
+- «Rapporter og innsikt» er nå et felles sted i sidepanelet for hele hjemmet, med fanene Hjemmerapport, Huslogg og Energirapport. Rapportfanen er fjernet fra energiwidgeten.
+- Hjemmerapport for opptil 31 dager med aktivitet fordelt på funksjoner, mest aktive enheter, hendelser per dag, alarmutløsninger, tilgjengelighetshendelser og temperaturspenn for opptil seks målere.
+- Energioppsummering merkes med eget tidsgrunnlag. Manglende og avkortet historikk forklares tydelig. Rapporten kan skrives ut eller lagres som PDF fra nettleseren.
+- Husloggen og detaljert energirapport beholdes. Den samlede siden er fortsatt skjult i enkel modus.
+
 ## 1.36.22
 
 - Ny energifane «Rapporter og innsikt» med valgfritt datointervall og hurtigvalg for 7, 30 og 90 dager.

@@ -1,6 +1,8 @@
 """Read-only household history and activity from Home Assistant's recorder."""
 
 import math
+from collections import Counter
+from zoneinfo import ZoneInfo
 from datetime import UTC, datetime, timedelta
 from urllib.parse import quote, urlencode
 
@@ -177,5 +179,63 @@ def history_router(ha, user, settings):
             row["when"] = datetime.fromisoformat(row["when"]).astimezone(UTC).isoformat()
         rows.sort(key=lambda r: r["when"], reverse=True)
         return {"entries": rows[:1000], "truncated": len(rows) > 1000, "total": len(rows)}
+
+    @router.get("/report")
+    async def report(start: datetime, end: datetime, current=Depends(user)):
+        log = await activity(start, end, "", current)
+        catalog = entities()
+        categories = Counter()
+        devices = Counter()
+        daily = Counter()
+        alerts = 0
+        unavailable = 0
+        for entry in log["entries"]:
+            entity = entry.get("entity_id") or ""
+            domain = entity.split(".")[0]
+            control = catalog.get(entity)
+            device_class = control.attributes.get("device_class") if control else None
+            category = (
+                "Lys" if domain == "light" else
+                "Klima" if domain in {"climate", "fan", "humidifier"} or device_class in {"temperature", "humidity"} else
+                "Sikkerhet" if domain in {"lock", "alarm_control_panel", "camera"} or device_class in {"door", "window", "motion", "smoke", "gas", "moisture", "safety"} else
+                "Multimedia" if domain == "media_player" else
+                "Automasjoner og scener" if domain in {"automation", "script", "scene"} else
+                "Andre hendelser"
+            )
+            categories[category] += 1
+            if entity:
+                devices[entity] += 1
+            daily[datetime.fromisoformat(entry["when"]).astimezone(ZoneInfo("Europe/Oslo")).date().isoformat()] += 1
+            if entry.get("state") == "triggered" and domain == "alarm_control_panel":
+                alerts += 1
+            if entry.get("state") == "unavailable":
+                unavailable += 1
+        temperature_ids = sorted(
+            c.entity_id for c in catalog.values()
+            if c.attributes.get("device_class") == "temperature"
+            and c.attributes.get("unit_of_measurement") in {"°C", "°F"}
+        )
+        climate = []
+        climate_unavailable = False
+        if temperature_ids:
+            try:
+                readings = await states(start, end, ",".join(temperature_ids[:6]), current)
+                climate = [
+                    {"name": catalog[row["entity_id"]].name, "minimum": row["minimum"],
+                     "maximum": row["maximum"], "unit": row["unit"], "samples": row["samples"]}
+                    for row in readings["series"]
+                ]
+            except HTTPException:
+                climate_unavailable = True
+        return {
+            "start": start, "end": end, "events": log["total"],
+            "analyzed_events": len(log["entries"]), "truncated": log["truncated"],
+            "categories": dict(categories), "daily": dict(sorted(daily.items())),
+            "active_entities": len(devices), "alarm_events": alerts, "unavailable_events": unavailable,
+            "top_entities": [{"name": catalog[e].name if e in catalog else e, "count": count}
+                             for e, count in devices.most_common(6)],
+            "temperatures": climate, "temperature_sensor_count": len(temperature_ids),
+            "climate_unavailable": climate_unavailable,
+        }
 
     return router

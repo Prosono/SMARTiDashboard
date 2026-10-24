@@ -64,7 +64,7 @@ def history():
 def test_history_requires_login_and_valid_bounded_period(history):
     client, ha, calls, enabled, params = history
     enabled[0] = False
-    for path in ["entities", "states", "activity"]:
+    for path in ["entities", "states", "activity", "report"]:
         assert (
             client.get(
                 "/api/history/" + path, params=params | {"entity_ids": "sensor.temperature"}
@@ -111,3 +111,35 @@ def test_sources_history_initial_state_nan_and_ha_parameters(history):
     log = client.get("/api/history/activity", params=params).json()
     assert len(log["entries"]) == 1
     assert not log["truncated"]
+
+
+def test_house_report_categorizes_activity_and_marks_truncation(history):
+    client, ha, calls, enabled, params = history
+    async def rest(method, path):
+        if path.startswith("logbook"):
+            return [{"when": params["end"], "entity_id": "light.kitchen", "state": "on"}] * 1001 + [
+                {"when": params["end"], "entity_id": "alarm_control_panel.home", "state": "triggered"},
+            ]
+        return []
+    ha.rest = rest
+    response = client.get("/api/history/report", params=params)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["events"] == 1002
+    assert data["analyzed_events"] == 1000
+    assert data["truncated"] is True
+    assert sum(data["categories"].values()) == 1000
+    assert data["categories"]["Lys"] == 1000
+    assert data["active_entities"] == 1
+
+
+def test_house_report_temperature_ignores_non_finite_values(history):
+    client, ha, calls, enabled, params = history
+    ha.states["sensor.temperature"]["attributes"]["device_class"] = "temperature"
+    result = client.get("/api/history/report", params=params)
+    assert result.status_code == 200
+    data = result.json()
+    assert data["temperature_sensor_count"] == 1
+    assert data["temperatures"][0]["minimum"] == 21
+    assert data["temperatures"][0]["maximum"] == 21
+    assert data["categories"]["Klima"] == 1

@@ -137,9 +137,8 @@ export function EnergyReport() {
   }
   return (
     <div
-      role="tabpanel"
-      id="energy-panel-reports"
-      aria-labelledby="energy-view-reports"
+      role="region"
+      aria-label="Energirapportgenerator"
       className="er"
     >
       <header className="er-intro">
