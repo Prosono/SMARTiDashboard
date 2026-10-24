@@ -4,7 +4,8 @@
   // Keep the administration destinations in the same order on every staff page.
   if (path === '/admin' || path.startsWith('/admin/')) {
     document.body.classList.add('staff-page');
-    const fleetStyle=document.createElement('link');fleetStyle.rel='stylesheet';fleetStyle.href='/assets/fleet.css?v=4';document.head.append(fleetStyle);
+    const fleetStyle=document.createElement('link');fleetStyle.rel='stylesheet';fleetStyle.href='/assets/fleet.css?v=5';document.head.append(fleetStyle);
+    const about=document.createElement('a');about.href='https://www.smarti.no/';about.textContent='Om SMARTi ↗';about.className='sidebar-about';document.querySelector('.masthead').append(about);
     const brandLabel = document.querySelector('.masthead > a span');
     if (brandLabel) brandLabel.textContent = 'Administrasjon';
     if (path === '/admin/support') {
