@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { routeWire, wirePath, blocked, type Box } from "./flowRouting";
+import {
+  routeWire,
+  wirePath,
+  smoothWirePath,
+  blocked,
+  type Box,
+} from "./flowRouting";
 const box = (id: string, x: number, y: number, height = 150): Box => ({
   id,
   x,
@@ -86,4 +92,16 @@ describe("flow wire routing", () => {
       ),
     ).not.toContain("Q");
   });
+});
+
+it("uses one sweeping curve through open space, but never through a card", () => {
+  const a = box("a", 20, 20),
+    b = box("b", 650, 240);
+  const points = routeWire(a, b, [a, b]);
+  const smooth = smoothWirePath(points, [a, b]);
+  expect(smooth).toMatch(/^M280 85 C/);
+  expect(smooth?.match(/C/g)).toHaveLength(1);
+  expect(
+    smoothWirePath(points, [a, b, box("obstacle", 350, 40, 350)]),
+  ).toBeNull();
 });

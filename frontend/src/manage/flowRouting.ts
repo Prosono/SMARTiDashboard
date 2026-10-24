@@ -22,7 +22,11 @@ export function routeWire(
 ): Point[] {
   const start = { x: source.x + source.width, y: source.y + 65 };
   const end = { x: target.x, y: target.y + 65 };
-  const gap = 20 + lane * 8;
+  const gap =
+    end.x > start.x
+      ? Math.min(64 + lane * 12, (end.x - start.x) / 3)
+      : 64 + lane * 12;
+  const clearance = Math.min(36, Math.max(4, gap - 8));
   const a = { x: start.x + gap, y: start.y },
     b = { x: end.x - gap, y: end.y };
   if (
@@ -40,10 +44,10 @@ export function routeWire(
     return [];
   const obstacles = all.map((r) => ({
     ...r,
-    x: r.x - 12,
-    y: r.y - 12,
-    width: r.width + 24,
-    height: r.height + 24,
+    x: r.x - clearance,
+    y: r.y - clearance,
+    width: r.width + clearance * 2,
+    height: r.height + clearance * 2,
   }));
   const xs = [
     ...new Set([
@@ -142,7 +146,7 @@ export function wirePath(points: Point[], earlier: Point[][]): string {
       next = points[i + 1];
     const r = next
       ? Math.min(
-          10,
+          36,
           Math.hypot(p.x - cursor.x, p.y - cursor.y) / 2,
           Math.hypot(next.x - p.x, next.y - p.y) / 2,
         )
@@ -207,4 +211,53 @@ export function wirePath(points: Point[], earlier: Point[][]): string {
     } else cursor = p;
   }
   return d;
+}
+
+/** Prefer a single flowing Bezier when its full curve clears every card. */
+export function smoothWirePath(
+  points: Point[],
+  boxes: Box[],
+  earlier: Point[][] = [],
+): string | null {
+  if (points.length < 2) return null;
+  const a = points[0],
+    b = points[points.length - 1];
+  // Retain the bridge-aware router wherever another connection could cross.
+  if (
+    earlier.some((line) =>
+      line.some(
+        (p) =>
+          p.x > Math.min(a.x, b.x) &&
+          p.x < Math.max(a.x, b.x) &&
+          p.y >= Math.min(a.y, b.y) - 24 &&
+          p.y <= Math.max(a.y, b.y) + 24,
+      ),
+    )
+  )
+    return null;
+  const reach = Math.max(60, Math.abs(b.x - a.x) * 0.48);
+  const aligned = Math.abs(b.y - a.y) < 2;
+  const c = { x: a.x + reach, y: a.y - (aligned ? 24 : 0) };
+  const d = { x: b.x - reach, y: b.y - (aligned ? 24 : 0) };
+  for (let i = 1; i < 200; i++) {
+    const t = i / 200,
+      u = 1 - t;
+    const x =
+      u * u * u * a.x +
+      3 * u * u * t * c.x +
+      3 * u * t * t * d.x +
+      t * t * t * b.x;
+    const y =
+      u * u * u * a.y +
+      3 * u * u * t * c.y +
+      3 * u * t * t * d.y +
+      t * t * t * b.y;
+    if (
+      boxes.some(
+        (r) => x > r.x && x < r.x + r.width && y > r.y && y < r.y + r.height,
+      )
+    )
+      return null;
+  }
+  return `M${a.x} ${a.y} C${c.x} ${c.y} ${d.x} ${d.y} ${b.x} ${b.y}`;
 }

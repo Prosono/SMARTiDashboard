@@ -1,4 +1,4 @@
-import { routeWire, wirePath } from "./flowRouting";
+import { routeWire, wirePath, smoothWirePath } from "./flowRouting";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   GripHorizontal,
@@ -36,7 +36,7 @@ export function FlowCanvas({
   home: Home;
   lang: string;
   onSelect: (p: FlowPath) => void;
-  onAdd: (k: FlowKey) => void;
+  onAdd: (k: FlowKey, preset?: string) => void;
   onRemove: (p: FlowPath) => void;
   onConnect: (patch: Record<string, any>) => void;
 }) {
@@ -61,7 +61,7 @@ export function FlowCanvas({
         ? t("Og dette stemmer", "And this is true")
         : t("Så gjør dette", "Then do this");
   }
-  const [zoom, setZoom] = useState(0.8),
+  const [zoom, setZoom] = useState(1),
     [positions, setPositions] = useState<
       Record<string, { x: number; y: number }>
     >({});
@@ -224,96 +224,129 @@ export function FlowCanvas({
           "Drag a card onto the canvas, or click to choose.",
         )}
       </p>
-      <div className="canvas-toolbar">
-        <div className="canvas-add">
-          <strong className="canvas-library-heading">
-            {t("Byggesteiner", "Building blocks")}
-          </strong>
-          {(["triggers", "conditions", "actions"] as FlowKey[]).map((k) => (
-            <button
-              type="button"
-              key={k}
-              className="canvas-palette-card"
-              aria-label={
-                k === "triggers"
+      <div className="canvas-add">
+        <strong className="canvas-library-heading">
+          {t("Byggesteiner", "Building blocks")}
+        </strong>
+        {(
+          [
+            { k: "triggers", label: paletteLabel("triggers") },
+            {
+              k: "triggers",
+              preset: "numeric_state",
+              label: t("Temperatur", "Temperature"),
+            },
+            {
+              k: "triggers",
+              preset: "sun",
+              label: t("Solen går ned", "Sunset"),
+            },
+            { k: "conditions", label: paletteLabel("conditions") },
+            {
+              k: "conditions",
+              preset: "preset:daylight",
+              label: t("Solen er oppe", "Daylight"),
+            },
+            {
+              k: "conditions",
+              preset: "state",
+              label: t("En tilstand stemmer", "A state matches"),
+            },
+            { k: "actions", label: paletteLabel("actions") },
+            {
+              k: "actions",
+              preset: "light.turn_on",
+              label: t("Slå på lys", "Turn on lights"),
+            },
+            { k: "actions", preset: "delay", label: t("Vent litt", "Wait") },
+          ] as { k: FlowKey; preset?: string; label: string }[]
+        ).map(({ k, preset, label }) => (
+          <button
+            type="button"
+            key={k + (preset || "")}
+            className={`canvas-palette-card library-${k} ${preset ? "is-preset" : "is-category"}`}
+            draggable={false}
+            aria-label={
+              preset
+                ? label
+                : k === "triggers"
                   ? t("Legg til hendelse", "Add event")
                   : k === "conditions"
                     ? t("Legg til krav", "Add requirement")
                     : t("Legg til handling", "Add action")
+            }
+            title={t(
+              "Dra til lerretet, eller trykk for å velge kort",
+              "Drag onto the canvas, or click to choose a card",
+            )}
+            onPointerDown={(e) => {
+              if (e.button !== 0) return;
+              e.preventDefault();
+              skipPaletteClick.current = false;
+              paletteDrag.current = {
+                kind: k,
+                x: e.clientX,
+                y: e.clientY,
+                moved: false,
+              };
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+              const d = paletteDrag.current;
+              if (!d) return;
+              if (!d.moved && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8)
+                return;
+              d.moved = true;
+              skipPaletteClick.current = true;
+              setDragPreview({ kind: k, x: e.clientX, y: e.clientY });
+            }}
+            onPointerUp={(e) => {
+              const d = paletteDrag.current;
+              paletteDrag.current = null;
+              setDragPreview(null);
+              if (!d?.moved) return;
+              const bounds = viewport.current?.getBoundingClientRect(),
+                canvas = plane.current?.getBoundingClientRect();
+              if (
+                bounds &&
+                canvas &&
+                e.clientX >= bounds.left &&
+                e.clientX <= bounds.right &&
+                e.clientY >= bounds.top &&
+                e.clientY <= bounds.bottom
+              ) {
+                move(
+                  JSON.stringify([k, (config[k] || []).length]),
+                  (e.clientX - canvas.left) / zoom,
+                  (e.clientY - canvas.top) / zoom,
+                );
+                onAdd(k, preset);
               }
-              title={t(
-                "Dra til lerretet, eller trykk for å velge kort",
-                "Drag onto the canvas, or click to choose a card",
-              )}
-              onPointerDown={(e) => {
-                if (e.button !== 0) return;
+            }}
+            onPointerCancel={() => {
+              paletteDrag.current = null;
+              setDragPreview(null);
+              skipPaletteClick.current = true;
+            }}
+            onLostPointerCapture={() => {
+              paletteDrag.current = null;
+              setDragPreview(null);
+            }}
+            onClick={() => {
+              if (skipPaletteClick.current) {
                 skipPaletteClick.current = false;
-                paletteDrag.current = {
-                  kind: k,
-                  x: e.clientX,
-                  y: e.clientY,
-                  moved: false,
-                };
-                e.currentTarget.setPointerCapture(e.pointerId);
-              }}
-              onPointerMove={(e) => {
-                const d = paletteDrag.current;
-                if (!d) return;
-                if (
-                  !d.moved &&
-                  Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8
-                )
-                  return;
-                d.moved = true;
-                skipPaletteClick.current = true;
-                setDragPreview({ kind: k, x: e.clientX, y: e.clientY });
-              }}
-              onPointerUp={(e) => {
-                const d = paletteDrag.current;
-                paletteDrag.current = null;
-                setDragPreview(null);
-                if (!d?.moved) return;
-                const bounds = viewport.current?.getBoundingClientRect(),
-                  canvas = plane.current?.getBoundingClientRect();
-                if (
-                  bounds &&
-                  canvas &&
-                  e.clientX >= bounds.left &&
-                  e.clientX <= bounds.right &&
-                  e.clientY >= bounds.top &&
-                  e.clientY <= bounds.bottom
-                ) {
-                  move(
-                    JSON.stringify([k, (config[k] || []).length]),
-                    (e.clientX - canvas.left) / zoom,
-                    (e.clientY - canvas.top) / zoom,
-                  );
-                  onAdd(k);
-                }
-              }}
-              onPointerCancel={() => {
-                paletteDrag.current = null;
-                setDragPreview(null);
-                skipPaletteClick.current = true;
-              }}
-              onLostPointerCapture={() => {
-                paletteDrag.current = null;
-                setDragPreview(null);
-              }}
-              onClick={() => {
-                if (skipPaletteClick.current) {
-                  skipPaletteClick.current = false;
-                  return;
-                }
-                onAdd(k);
-              }}
-            >
-              <Plus size={16} />
-              {paletteLabel(k)}
-            </button>
-          ))}
-        </div>
+                return;
+              }
+              onAdd(k, preset);
+            }}
+          >
+            <Plus size={16} />
+            {label}
+          </button>
+        ))}
+      </div>
 
+      <div className="canvas-toolbar">
         <div className="canvas-legend">
           <span>
             <Zap size={15} />
@@ -341,7 +374,7 @@ export function FlowCanvas({
               onChange={(e) => setPalette(e.target.value)}
             >
               <option value="vivid">
-                {t("Livlige farger", "Vivid colors")}
+                {t("SMARTi varme toner", "SMARTi warm tones")}
               </option>
               <option value="calm">{t("Rolige farger", "Calm colors")}</option>
             </select>
@@ -390,7 +423,7 @@ export function FlowCanvas({
             type="button"
             onClick={() => {
               setPositions({});
-              setZoom(0.8);
+              setZoom(1);
               viewport.current?.scrollTo({ top: 0, left: 0 });
             }}
           >
@@ -569,20 +602,33 @@ export function FlowCanvas({
                         Math.abs(p.y - points[j].y),
                     }))
                     .sort((a, b) => b.length - a.length)[0];
-                  const midpoint = {
-                    x: (segment.a.x + segment.b.x) / 2,
-                    y: (segment.a.y + segment.b.y) / 2,
-                  };
+                  const smooth = smoothWirePath(
+                    points,
+                    boxes,
+                    routes.slice(0, i).map((r) => r.points),
+                  );
+                  const midpoint = smooth
+                    ? {
+                        x: (points[0].x + points.at(-1)!.x) / 2,
+                        y: (points[0].y + points.at(-1)!.y) / 2,
+                      }
+                    : {
+                        x: (segment.a.x + segment.b.x) / 2,
+                        y: (segment.a.y + segment.b.y) / 2,
+                      };
                   return (
                     <g
                       key={`${e.from}-${e.to}`}
                       className={`canvas-route branch-${branch % 4}`}
                     >
                       <path
-                        d={wirePath(
-                          points,
-                          routes.slice(0, i).map((r) => r.points),
-                        )}
+                        d={
+                          smooth ||
+                          wirePath(
+                            points,
+                            routes.slice(0, i).map((r) => r.points),
+                          )
+                        }
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"

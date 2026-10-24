@@ -1140,3 +1140,184 @@
 .flow-designer .canvas-connection-status.is-idle {
   display: none;
 }
+
+/* The library belongs alongside the drawing surface, not in its toolbar. */
+.flow-designer .canvas-add {
+  padding: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: color-mix(in srgb, #956640 5%, var(--surface));
+}
+.flow-designer .canvas-library-heading {
+  display: block;
+  width: 100%;
+}
+.flow-designer .canvas-palette-card {
+  min-height: 54px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text);
+  box-shadow: 0 3px 8px #52321d0b;
+  border: 1px solid color-mix(in srgb, #956640 25%, var(--line));
+}
+.flow-designer .canvas-palette-card svg {
+  color: #b35d22;
+}
+.flow-designer .canvas-node {
+  background: color-mix(in srgb, #956640 5%, var(--surface));
+  box-shadow:
+    0 8px 20px #51331f20,
+    0 2px 4px #51331f12;
+}
+.flow-designer .canvas-viewport {
+  background-color: color-mix(in srgb, #956640 4%, var(--bg));
+}
+.flow-designer .canvas-route {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.flow-designer .flow-view-tabs button[aria-pressed="true"] {
+  background: #795039;
+  color: #fff8f0;
+}
+@media (min-width: 1000px) {
+  .management-page:has(.flow-designer) .page-heading h1 {
+    font-size: 28px;
+    margin: 8px 0 16px;
+  }
+  .flow-designer .flow-intro {
+    margin: 10px 0;
+    grid-template-columns: minmax(180px, 400px) 1fr;
+  }
+  .flow-designer .flow-intro input {
+    font-size: 16px;
+    padding: 10px 12px;
+  }
+  .flow-designer .flow-intro p {
+    display: none;
+  }
+  .flow-designer .flow-view-bar {
+    margin: 12px 0;
+  }
+  .flow-designer .flow-workspace {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-rows: max-content max-content max-content minmax(
+        480px,
+        68vh
+      ) max-content;
+    align-content: start;
+  }
+  .flow-designer .canvas-palette-hint {
+    display: none;
+  }
+  .flow-designer .canvas-add {
+    grid-column: 1;
+    grid-row: 1 / 6;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    padding: 22px 14px;
+    gap: 12px;
+    border-right: 1px solid var(--line);
+  }
+  .flow-designer .canvas-add:after {
+    content: "Dra en byggestein inn på arbeidsflaten, eller trykk for å velge.";
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+  .flow-designer .canvas-library-heading {
+    font-size: 16px;
+    margin: 0 0 10px;
+  }
+  .flow-designer .canvas-add button {
+    text-align: left;
+    justify-content: flex-start;
+  }
+  .flow-designer .canvas-toolbar {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 12px 16px;
+    min-height: 0;
+  }
+  .flow-designer .canvas-legend {
+    display: none;
+  }
+  .flow-designer .canvas-tools {
+    padding: 0;
+    border: 0;
+    gap: 6px;
+  }
+  .flow-designer .canvas-tools button {
+    min-height: 36px;
+    padding: 7px 10px;
+  }
+  .flow-designer .canvas-connection-tools {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  .flow-designer .canvas-connection-status {
+    grid-column: 2;
+    grid-row: 3;
+    margin: 0;
+  }
+  .flow-designer .canvas-viewport {
+    grid-column: 2;
+    grid-row: 4;
+    height: 100%;
+    min-width: 0;
+  }
+  .flow-designer .canvas-help {
+    grid-column: 2;
+    grid-row: 5;
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 1000px) {
+  .management-page:has(.flow-designer) .page-heading {
+    margin: 8px 0 16px;
+    padding: 0;
+  }
+  .management-page:has(.flow-designer) .page-heading .eyebrow {
+    display: none;
+  }
+  .flow-designer .canvas-help[role="status"] {
+    grid-row: 6;
+  }
+  .flow-designer .canvas-tools .canvas-palette {
+    display: none;
+  }
+}
+.flow-designer .canvas-add .canvas-palette-card {
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, #956640 22%, var(--line));
+  color: var(--text);
+}
+.flow-designer .canvas-add .is-category {
+  background: color-mix(in srgb, #956640 13%, var(--surface));
+  font-weight: 600;
+}
+.flow-designer .canvas-add .is-category:not(:first-of-type) {
+  margin-top: 12px;
+}
+.flow-designer .canvas-add .is-preset {
+  min-height: 42px;
+  font-size: 13px;
+}
+@media (min-width: 1000px) {
+  .flow-designer .canvas-add {
+    gap: 8px;
+  }
+}
+@media (max-width: 999px) {
+  .flow-designer .canvas-add .is-preset {
+    display: none;
+  }
+}

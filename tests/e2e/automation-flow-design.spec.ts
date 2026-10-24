@@ -2,6 +2,8 @@ import { test, expect } from "../../frontend/node_modules/@playwright/test";
 test("nested flows edit one field, preserve HA logic, validate and discard drafts", async ({
   page,
 }) => {
+  if (test.info().project.name === "desktop")
+    await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
   await page
@@ -206,6 +208,7 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   expect(parseInt(zoom)).toBeGreaterThanOrEqual(20);
   expect(parseInt(zoom)).toBeLessThanOrEqual(100);
   await expect(page.locator(".canvas-node").first()).toBeVisible();
+  await expect(page.locator(".canvas-route path")).toHaveCount(4);
   await page.locator(".flow-workspace").screenshot({
     path: `../artifacts/${test.info().project.name}-flow-canvas.png`,
     animations: "disabled",
@@ -258,6 +261,7 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
     name: "Legg til handling",
     exact: true,
   });
+  await palette.scrollIntoViewIfNeeded();
   const bounds = await page.locator(".canvas-viewport").boundingBox();
   const origin = await palette.boundingBox();
   const planeBounds = await page.locator(".canvas-plane").boundingBox();
@@ -271,14 +275,22 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
     pointerType: "mouse",
     button: 0,
   };
-  await palette.dispatchEvent("pointerdown", {
-    ...target,
-    clientX: origin!.x + 10,
-    clientY: origin!.y + 10,
-  });
-  await palette.dispatchEvent("pointermove", target);
-  await expect(page.locator(".canvas-new-card-preview")).toBeVisible();
-  await palette.dispatchEvent("pointerup", target);
+  if (test.info().project.name === "desktop") {
+    await page.mouse.move(origin!.x + 20, origin!.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(target.clientX, target.clientY, { steps: 18 });
+    await expect(page.locator(".canvas-new-card-preview")).toBeVisible();
+    await page.mouse.up();
+  } else {
+    await palette.dispatchEvent("pointerdown", {
+      ...target,
+      clientX: origin!.x + 10,
+      clientY: origin!.y + 10,
+    });
+    await palette.dispatchEvent("pointermove", target);
+    await expect(page.locator(".canvas-new-card-preview")).toBeVisible();
+    await palette.dispatchEvent("pointerup", target);
+  }
   await expect(
     page.getByRole("dialog", { name: "Hva vil du legge til?" }),
   ).toBeVisible();
@@ -308,4 +320,28 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
     ),
   );
   await expect(page.locator(".canvas-new-card-preview")).toHaveCount(0);
+  if (test.info().project.name === "desktop") {
+    const waitCard = page
+      .locator(".canvas-add")
+      .getByRole("button", { name: "Vent litt", exact: true });
+    await waitCard.scrollIntoViewIfNeeded();
+    const source = await waitCard.boundingBox();
+    const canvas = await page.locator(".canvas-viewport").boundingBox();
+    await page.mouse.move(source!.x + 20, source!.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(canvas!.x + 200, canvas!.y + 250, { steps: 20 });
+    await page.mouse.up();
+    await expect(
+      page.getByRole("dialog", { name: "Hva vil du legge til?" }),
+    ).toHaveCount(0);
+    await expect(page.locator(".flow-step-panel")).toBeVisible();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Ferdig med steget", exact: true })
+      .click();
+    await expect(page.locator(".canvas-actions")).toHaveCount(4);
+    await page
+      .locator(".flow-editor-shell")
+      .screenshot({ path: "/tmp/smarti-flow-fixed.png" });
+  }
 });

@@ -1,3 +1,9 @@
+## 1.36.32
+- Flyteditoren har et faktisk sidepanel med byggesteiner, ferdige forslag og dra-og-slipp direkte til arbeidsflaten på desktop.
+- Lange Bézier-kurver brukes der banen er fri. Ruting rundt kort har større avrundinger og tilpasses avstanden mellom kortene.
+- Varmere SMARTi-flater, tydeligere kortskygger, mindre toppområde og 100 prosent startzoom.
+- Dra-og-slipp er kontrollert med faktisk musebevegelse i nettlesertest, både for kategorier og ferdige forslag.
+
 ## 1.36.31
 
 - Flyteditor med byggesteiner til venstre og et eget panel til høyre for valgt kort på store skjermer. Mobil beholder dialogvisning.

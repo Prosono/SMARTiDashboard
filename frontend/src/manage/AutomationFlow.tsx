@@ -120,15 +120,15 @@ export function AutomationFlow({
       setRemoving(false);
     }
   }
-  function add(type: string) {
-    if (!adding) return;
-    const list = readFlowPath(c, adding.path);
+  function add(type: string, destination = adding) {
+    if (!destination) return;
+    const list = readFlowPath(c, destination.path);
     if (!Array.isArray(list)) return;
-    const row = newFlowStep(adding.kind, type);
-    replace(adding.path, [...list, row]);
+    const row = newFlowStep(destination.kind, type);
+    replace(destination.path, [...list, row]);
     setStepNew(true);
     setStepOriginal(structuredClone(row));
-    setSelected([...adding.path, list.length]);
+    setSelected([...destination.path, list.length]);
     setValid(true);
     setAdding(null);
   }
@@ -256,8 +256,12 @@ export function AutomationFlow({
             onSelect={(path) => {
               if (!selected || valid) select(path);
             }}
-            onAdd={(key) => {
-              if (!selected || valid) startAdd([key], key);
+            onAdd={(key, preset) => {
+              if (selected && !valid) return;
+              if (preset) {
+                setTrail([]);
+                add(preset, { path: [key], kind: key });
+              } else startAdd([key], key);
             }}
             onRemove={(path) => {
               const list = readFlowPath(c, path.slice(0, -1));
