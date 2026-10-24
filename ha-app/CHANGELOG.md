@@ -1,3 +1,10 @@
+## 1.36.26
+
+- Ny utforming av hjemmerapporten med SMARTi-profil, husillustrasjon, store nøkkeltall og nummererte oppfølgingspunkter.
+- Egne målerkort for tilstedeværelse, lys, temperatur og luftfuktighet, tilpasset mobil og utskrift.
+- Energisammendraget viser forbruksgraf når målinger finnes. Hendelsesdetaljer er samlet i et eget vedlegg.
+- Manglende målinger og ufullstendig grunnlag er fortsatt tydelig merket.
+
 ## 1.36.25
 
 - SMARTi-logo og profilering i hjemme- og energirapporter, også ved utskrift/PDF.

@@ -1,3 +1,4 @@
+import { Thermometer, Droplets, Users, Lightbulb } from "lucide-react";
 type Reading = {
   entity_id: string;
   name: string;
@@ -39,10 +40,12 @@ export function HouseReportStatistics({
       {(["people", "lights", "temperatures", "humidity"] as const).map(
         (kind) => {
           const group = statistics[kind];
+          const Icon = { people: Users, lights: Lightbulb, temperatures: Thermometer, humidity: Droplets }[kind];
           const numeric = kind === "temperatures" || kind === "humidity";
           return (
             <section
               key={kind}
+              className={`hr-stat-section hr-stat-${kind}`}
               aria-label={
                 {
                   people: "Tilstedeværelse",
@@ -52,6 +55,7 @@ export function HouseReportStatistics({
                 }[kind]
               }
             >
+              <span className="hr-section-icon"><Icon aria-hidden="true" /></span>
               <h3>
                 {
                   {
@@ -92,6 +96,7 @@ export function HouseReportStatistics({
                 {group.items.map((item) => (
                   <div className="house-stat-row" key={item.entity_id}>
                     <div className="house-stat-name">
+                      <Icon className="hr-reading-icon" aria-hidden="true" />
                       <strong>{item.name}</strong>
                       <small>
                         {fmt(item.coverage * 100)} % kjent tilstand ·{" "}

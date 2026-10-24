@@ -11,9 +11,11 @@ import {
 import { ReportLoading } from "./ReportLoading";
 import { HistoryExplorer } from "./HistoryExplorer";
 import { EnergyReport } from "./home/EnergyReport";
+import { EnergyHistoryChart } from "./home/EnergyHistoryChart";
 import type { Dashboard } from "./home/EnergyPlatform";
 import "./home/energyPlatform.css";
 import "./home/energyReport.css";
+import "./home/houseReport.css";
 
 type Report = {
   statistics?: HouseStatistics;
@@ -47,6 +49,7 @@ const osloDay = (d: string) =>
     new Date(d),
   );
 export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
+  const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
   const [tab, setTab] = useState("report");
   const [from, setFrom] = useState(local(new Date(Date.now() - 7 * 86400000)));
   const [to, setTo] = useState(local(new Date()));
@@ -236,13 +239,14 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
             )}
             {r && period && (
               <article
-                className="er-document"
+                className="er-document hr-document"
                 aria-label="Rapport for hele hjemmet"
               >
                 <header className="er-document-head">
                   <div>
                     <ReportBrand title="Hjemmerapport" />
-                    <h2>{home.home_name || "Hjemmet ditt"}</h2>
+                    <h2>Hjemmet ditt.<br />I én oversikt.</h2>
+                    <p className="hr-home-name">{home.home_name || "Hjemmet ditt"}</p>
                     <p>
                       {new Date(period.start).toLocaleString("nb-NO")} –{" "}
                       {new Date(period.end).toLocaleString("nb-NO")}
@@ -253,6 +257,10 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
                     Skriv ut / lagre PDF
                   </button>
                 </header>
+                <div className="hr-cover-art" aria-hidden="true">
+                  <img src="./brand/report-home.svg" alt="" />
+                  <span>SMARTi · Hjemmerapport</span>
+                </div>
                 <p>
                   Basert på lagrede hendelser og målinger. Ingen hendelser betyr
                   ikke nødvendigvis at ingenting har skjedd.
@@ -265,75 +273,20 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
                     detalj.
                   </p>
                 )}
-                <dl className="er-kpis">
-                  <div>
-                    <dt>Lagrede hendelser</dt>
-                    <dd>{number(r.events)}</dd>
-                    <p>I valgt tidsrom</p>
-                  </div>
-                  <div>
-                    <dt>Enheter med registrert aktivitet</dt>
-                    <dd>{number(r.active_entities)}</dd>
-                    <p>I analyserte hendelser</p>
-                  </div>
-                  <div>
-                    <dt>Registrerte alarmutløsninger</dt>
-                    <dd>{number(r.alarm_events)}</dd>
-                    <p>Fra alarmanlegg · ikke alle sikkerhetshendelser</p>
-                  </div>
+                <dl className="er-kpis hr-cover-kpis">
+                  <div><Zap aria-hidden="true" /><dt>Registrert forbruk</dt><dd>{number(grid?.summary.available_kwh)} <small>kWh</small></dd><p>{grid ? (grid.summary.complete ? "Komplett målegrunnlag" : "Ufullstendig målegrunnlag") : "Ingen energimålinger tilgjengelig"}</p></div>
+                  <div><FileText aria-hidden="true" /><dt>Estimert kostnad</dt><dd>{number(grid?.cost_total ?? grid?.available_cost)} <small>kr</small></dd><p>{grid?.cost_total != null ? "Inkludert fordelte faste beløp" : "For registrert forbruk · uten faste beløp"}</p></div>
+                  <div><ScrollText aria-hidden="true" /><dt>Enheter med aktivitet</dt><dd>{number(r.active_entities)}</dd><p>I analyserte hendelser</p></div>
                 </dl>
-                <div className="er-columns">
-                  <section>
-                    <h3>Aktivitet i hjemmet</h3>
-                    <p>
-                      Antall logghendelser, ikke brukstid eller energiforbruk.
-                    </p>
-                    <dl className="er-ledger">
-                      {Object.entries(r.categories).map(([name, count]) => (
-                        <div key={name}>
-                          <dt>{name}</dt>
-                          <dd>{number(count)}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                    {!r.analyzed_events && (
-                      <p>Ingen lagrede hendelser i perioden.</p>
-                    )}
-                  </section>
-                  <section>
-                    <h3>Mest registrert aktivitet</h3>
-                    <dl className="er-ledger">
-                      {r.top_entities.map((item, i) => (
-                        <div key={i}>
-                          <dt>{item.name}</dt>
-                          <dd>{number(item.count)} hendelser</dd>
-                        </div>
-                      ))}
-                    </dl>
-                    <p>
-                      Enheter rapporterer ulikt. Mange hendelser betyr ikke
-                      nødvendigvis høyere bruk.
-                    </p>
-                  </section>
-                </div>
-                <section className="house-report-days">
-                  <h3>Hendelser per dag</h3>
-                  <p>
-                    Dager uten registrerte hendelser vises ikke. Datoene følger
-                    Oslo-tid.
-                  </p>
-                  {Object.entries(r.daily).map(([date, count]) => (
-                    <div key={date}>
-                      <span>{date}</span>
-                      <meter
-                        aria-label={`Hendelser ${date}`}
-                        min={0}
-                        max={Math.max(1, ...Object.values(r.daily))}
-                        value={count}
-                      />
-                      <strong>{number(count)}</strong>
-                    </div>
-                  ))}
+                <p className="hr-basis">Energi gjelder berørte kalenderdager til siste tilgjengelige måling. Hendelser følger det valgte tidsrommet.</p>
+                <section className="hr-followup">
+                  <span className="hr-kicker">DET VIKTIGSTE FØRST</span>
+                  <h3>Dette kan du se nærmere på</h3>
+                  <ol>
+                    <li><div><strong>Kontroller målegrunnlaget</strong><p>{grid?.summary.complete ? "Energimålingene dekker perioden. Se energioversikten for beregningsgrunnlaget." : "Forbruksgrunnlaget er ufullstendig eller mangler. Kontroller målerne før du sammenligner perioder."}</p></div></li>
+                    <li><div><strong>Se på hjemmets inneklima</strong><p>Se gjennomsnitt og variasjon for hver måler nedenfor. Kontroller plassering og sensortype før du tolker avvik.</p></div></li>
+                    <li><div><strong>Følg opp tilgjengelighet</strong><p>{number(r.unavailable_events)} hendelser med status «utilgjengelig» i hendelsesutvalget. Dette er ikke en måling av oppetid.</p></div></li>
+                  </ol>
                 </section>
                 <section className="er-insight">
                   <div>
@@ -400,6 +353,9 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
                     <p>Ingen energimåler konfigurert eller tilgjengelig.</p>
                   ) : (
                     <>
+                      {!!grid.points?.length && <EnergyHistoryChart
+                        points={grid.points.map(p => ({...p, label: new Date(p.start).toLocaleString("nb-NO", {timeZone:"Europe/Oslo"}), kwh: p.kwh == null ? null : Number(p.kwh), cost: Number(p.cost.total ?? 0), priced: p.cost.total != null, tickLabel: new Date(p.start).toLocaleDateString("nb-NO", {timeZone: "Europe/Oslo", day: "2-digit", month: "2-digit"})}))}
+                        prices={[]} selected={selectedPoint} onSelect={setSelectedPoint} />}
                       <dl className="er-ledger">
                         <div>
                           <dt>Registrert forbruk</dt>
@@ -426,6 +382,64 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
                       </p>
                     </>
                   )}
+                </section>
+                <section className="hr-appendix">
+                  <span className="hr-kicker">VEDLEGG</span>
+                  <h3>Hendelser og datagrunnlag</h3>
+                  <p>{number(r.events)} lagrede hendelser. Detaljene viser {number(r.analyzed_events)} analyserte hendelser.</p>
+                <div className="er-columns">
+                  <section>
+                    <h3>Aktivitet i hjemmet</h3>
+                    <p>
+                      Antall logghendelser, ikke brukstid eller energiforbruk.
+                    </p>
+                    <dl className="er-ledger">
+                      {Object.entries(r.categories).map(([name, count]) => (
+                        <div key={name}>
+                          <dt>{name}</dt>
+                          <dd>{number(count)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {!r.analyzed_events && (
+                      <p>Ingen lagrede hendelser i perioden.</p>
+                    )}
+                  </section>
+                  <section>
+                    <h3>Mest registrert aktivitet</h3>
+                    <dl className="er-ledger">
+                      {r.top_entities.map((item, i) => (
+                        <div key={i}>
+                          <dt>{item.name}</dt>
+                          <dd>{number(item.count)} hendelser</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <p>
+                      Enheter rapporterer ulikt. Mange hendelser betyr ikke
+                      nødvendigvis høyere bruk.
+                    </p>
+                  </section>
+                </div>
+                <section className="house-report-days">
+                  <h3>Hendelser per dag</h3>
+                  <p>
+                    Dager uten registrerte hendelser vises ikke. Datoene følger
+                    Oslo-tid.
+                  </p>
+                  {Object.entries(r.daily).map(([date, count]) => (
+                    <div key={date}>
+                      <span>{date}</span>
+                      <meter
+                        aria-label={`Hendelser ${date}`}
+                        min={0}
+                        max={Math.max(1, ...Object.values(r.daily))}
+                        value={count}
+                      />
+                      <strong>{number(count)}</strong>
+                    </div>
+                  ))}
+                </section>
                 </section>
                 <footer>
                   <strong>SMARTi · Hele hjemmet i én oversikt.</strong>
