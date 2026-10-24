@@ -649,3 +649,220 @@
   color: var(--node-color) !important;
   background: color-mix(in srgb, var(--node-color) 10%, var(--surface));
 }
+
+/* SMARTi flow cards: a compact, readable canvas and matching guided lanes. */
+.flow-designer {
+  --flow-event: var(--accent);
+}
+.flow-designer .flow-story {
+  border-radius: 12px;
+}
+.flow-designer .flow-story-part {
+  padding: 12px 16px;
+}
+.flow-designer .flow-intro {
+  margin: 16px 0;
+}
+.flow-designer .flow-workspace {
+  overflow: hidden;
+  border-radius: 14px;
+}
+.flow-designer .canvas-toolbar {
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+}
+.flow-designer .canvas-toolbar .canvas-add {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.flow-designer .canvas-add button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 8px;
+  min-height: 40px;
+}
+.flow-designer .canvas-add button:first-child {
+  background: var(--accent);
+  color: var(--on-primary);
+  border-color: var(--accent);
+}
+.flow-designer .canvas-legend {
+  margin-left: auto;
+}
+.flow-designer .canvas-tools {
+  width: 100%;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.flow-designer .canvas-viewport {
+  height: clamp(480px, 65vh, 850px);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--line) 55%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--line) 55%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 20px 20px;
+}
+.flow-designer .canvas-viewport.no-grid {
+  background-image: none;
+}
+.flow-designer .canvas-node {
+  border-radius: 10px;
+  border-color: var(--line);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--text) 9%, transparent);
+}
+.flow-designer .canvas-drag {
+  min-height: 30px;
+  padding: 5px 38px 5px 12px;
+  background: transparent;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  font-size: 10px;
+}
+.flow-designer .canvas-node-content {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 5px 10px;
+  padding: 4px 14px 14px;
+  align-content: start;
+  min-height: 100px;
+}
+.flow-designer .canvas-card-icon {
+  grid-column: 1;
+  grid-row: 1/4;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  background: var(--node-color);
+  color: var(--surface) !important;
+}
+.flow-designer .canvas-node-content strong {
+  grid-column: 2;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.flow-designer .canvas-node-content > span:not(.canvas-card-icon),
+.flow-designer .canvas-node-content small {
+  grid-column: 2;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.flow-designer .canvas-node-content > span:not(.canvas-card-icon) {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.flow-designer .canvas-node:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.flow-designer .canvas-triggers {
+  --node-color: var(--accent);
+}
+.flow-designer .flow-lane {
+  border-radius: 12px;
+  padding: 18px;
+  background: color-mix(in srgb, var(--surface) 65%, var(--bg));
+}
+.flow-designer .flow-lane > header {
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.flow-designer .flow-lane > header > span:first-child {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+.flow-designer .flow-lane header h2 {
+  font-size: 18px;
+}
+.flow-designer .flow-node-heading {
+  padding: 12px;
+}
+.flow-designer .flow-tree-node {
+  border-radius: 10px;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--text) 4%, transparent);
+}
+.flow-node-icon {
+  border-radius: 50%;
+}
+@media (min-width: 1100px) {
+  .flow-designer .flow-board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+  }
+  .flow-designer .flow-lane.flow-actions {
+    grid-column: auto;
+  }
+  .flow-designer .flow-node-heading {
+    flex-wrap: wrap;
+  }
+  .flow-designer .flow-node-title {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+@media (max-width: 700px) {
+  .flow-designer .canvas-toolbar .canvas-add {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+  .flow-designer .canvas-add button {
+    font-size: 11px;
+    padding: 8px 5px;
+    gap: 4px;
+  }
+  .flow-designer .canvas-legend {
+    display: none;
+  }
+  .flow-designer .canvas-tools {
+    gap: 6px;
+  }
+  .flow-designer .canvas-viewport {
+    height: 60svh;
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 700px) {
+  .flow-designer .canvas-tools {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    padding-bottom: 4px;
+  }
+  .flow-designer .canvas-tools > * {
+    flex-shrink: 0;
+  }
+  .flow-designer .canvas-connection-tools {
+    padding: 10px 12px;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .flow-designer .canvas-connection-status {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .flow-designer .canvas-connection-status button:disabled {
+    display: none;
+  }
+  .flow-designer .canvas-help {
+    font-size: 11px;
+    padding: 12px;
+  }
+}

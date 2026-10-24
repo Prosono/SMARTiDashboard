@@ -197,7 +197,7 @@ export function AutomationTrigger({
           : t("Ingen utløsere", "No triggers");
   return (
     <div className="automation-trigger" ref={triggerRef}>
-      <span className="automation-field-label">{t("Utløser", "Trigger")}</span>
+      <span className="automation-field-label">{t("Når", "When")}</span>
       <button
         disabled={!config}
         onClick={() => setOpen(true)}
@@ -223,6 +223,37 @@ export function AutomationTrigger({
           )}
         </span>
       </button>
+      {config && !config.use_blueprint && (
+        <div
+          className="automation-flow-preview"
+          aria-label={t("Krav og handlinger", "Conditions and actions")}
+        >
+          {(["conditions", "actions"] as const).map((kind) => {
+            const value =
+              config[kind] ??
+              config[kind === "conditions" ? "condition" : "action"] ??
+              [];
+            const steps = Array.isArray(value) ? value : [value];
+            const info = steps.length
+              ? flowSummary(steps[0], kind, home, lang)
+              : null;
+            return (
+              <div key={kind} className={`preview-${kind}`}>
+                <b>
+                  {kind === "conditions" ? t("Og", "And") : t("Så", "Then")}
+                </b>
+                <span>
+                  {info?.title ||
+                    (kind === "conditions"
+                      ? t("Ingen ekstra krav", "No extra conditions")
+                      : t("Ingen handlinger", "No actions"))}
+                  {steps.length > 1 && <small> +{steps.length - 1}</small>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {open && (
         <SettingsDialog
           title={t("Hva starter rutinen?", "What starts this routine?")}

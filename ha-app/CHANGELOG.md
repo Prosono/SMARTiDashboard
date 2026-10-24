@@ -1,3 +1,11 @@
+## 1.36.27
+
+- Mer kompakt flytredigering med SMARTi-tema, rutenett, runde kortikoner og tydelige koblinger.
+- «Når – Og – Så» vises som tre kolonner på store skjermer og følger hverandre på mobil.
+- Hendelser, krav og handlinger kan legges til fra toppen av lerretet. «Vis hele flyten» tilpasser zoomen.
+- Automasjonsoversikten viser også krav og handlinger. Trykk på navnet for å åpne redigering.
+- Eksisterende kjørelogikk og delflyter beholdes. Visuelle kortplasseringer lagres fortsatt ikke.
+
 ## 1.36.26
 
 - Ny utforming av hjemmerapporten med SMARTi-profil, husillustrasjon, store nøkkeltall og nummererte oppfølgingspunkter.

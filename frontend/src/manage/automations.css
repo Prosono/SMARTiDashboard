@@ -457,10 +457,9 @@
   }
 }
 .automation-item {
-  grid-template-columns: 50px minmax(150px, 1fr) minmax(170px, 0.8fr) minmax(
-      130px,
-      0.6fr
-    ) auto;
+  grid-template-columns:
+    50px minmax(150px, 1fr) minmax(170px, 0.8fr) minmax(130px, 0.6fr)
+    auto;
 }
 .automation-icon-button {
   position: relative;
@@ -650,4 +649,56 @@
   .automation-icon-picker {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+.automation-open-flow {
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.automation-open-flow:hover {
+  color: var(--accent);
+}
+.automation-open-flow:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.automation-flow-preview {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.automation-flow-preview > div {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  font-size: 12px;
+}
+.automation-flow-preview b {
+  color: var(--accent);
+  font-size: 11px;
+}
+.automation-flow-preview span {
+  overflow-wrap: anywhere;
+}
+.automation-flow-preview small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.automation-results.grid .automation-item {
+  border-radius: 14px;
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--text) 4%, transparent);
+}
+.automation-results.grid .automation-trigger {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--soft) 45%, var(--surface));
 }

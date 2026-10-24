@@ -14,6 +14,7 @@ import {
   X,
   Link2,
   Palette,
+  Scan,
 } from "lucide-react";
 import type { Home } from "../types";
 import { planConnection, type ConnectionMode } from "./flowConnections";
@@ -118,6 +119,19 @@ export function FlowCanvas({
       },
     }));
   }
+  function fitFlow() {
+    const el = viewport.current;
+    if (!el) return;
+    const right = Math.max(...nodes.map((n) => n.x + 300));
+    const bottom = Math.max(...nodes.map((n) => n.y + 240));
+    setZoom(
+      Math.max(
+        0.2,
+        Math.min(1, el.clientWidth / right, el.clientHeight / bottom),
+      ),
+    );
+    el.scrollTo({ top: 0, left: 0 });
+  }
   return (
     <section
       className={"flow-workspace palette-" + palette}
@@ -130,6 +144,19 @@ export function FlowCanvas({
       aria-label={t("Arbeidsflate for automasjon", "Automation canvas")}
     >
       <div className="canvas-toolbar">
+        <div className="canvas-add">
+          {(["triggers", "conditions", "actions"] as FlowKey[]).map((k) => (
+            <button type="button" key={k} onClick={() => onAdd(k)}>
+              <Plus size={16} />
+              {k === "triggers"
+                ? t("Legg til hendelse", "Add event")
+                : k === "conditions"
+                  ? t("Legg til krav", "Add requirement")
+                  : t("Legg til handling", "Add action")}
+            </button>
+          ))}
+        </div>
+
         <div className="canvas-legend">
           <span>
             <Zap size={15} />
@@ -145,6 +172,10 @@ export function FlowCanvas({
           </span>
         </div>
         <div className="canvas-tools">
+          <button type="button" onClick={fitFlow}>
+            <Scan size={17} />
+            {t("Vis hele flyten", "Fit flow")}
+          </button>
           <label className="canvas-palette">
             <Palette size={17} />
             <select
@@ -180,9 +211,9 @@ export function FlowCanvas({
           <button
             type="button"
             aria-label={t("Zoom ut", "Zoom out")}
-            disabled={zoom <= 0.4}
+            disabled={zoom <= 0.2}
             onClick={() =>
-              setZoom((v) => Math.max(0.4, Math.round((v - 0.1) * 10) / 10))
+              setZoom((v) => Math.max(0.2, Math.round((v - 0.1) * 10) / 10))
             }
           >
             <Minus size={17} />
@@ -375,7 +406,7 @@ export function FlowCanvas({
                         d={`M${ax} ${ay} C${ax + 60} ${ay},${bx - 60} ${by},${bx} ${by}`}
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth="3"
+                        strokeWidth="2"
                         markerEnd="url(#flow-tip)"
                       />
                       <text
@@ -681,18 +712,6 @@ export function FlowCanvas({
             })}
           </div>
         </div>
-      </div>
-      <div className="canvas-add">
-        {(["triggers", "conditions", "actions"] as FlowKey[]).map((k) => (
-          <button type="button" key={k} onClick={() => onAdd(k)}>
-            <Plus size={16} />
-            {k === "triggers"
-              ? t("Legg til hendelse", "Add event")
-              : k === "conditions"
-                ? t("Legg til krav", "Add requirement")
-                : t("Legg til handling", "Add action")}
-          </button>
-        ))}
       </div>
       <small className="canvas-help">
         {t(

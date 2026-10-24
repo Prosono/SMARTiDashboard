@@ -806,7 +806,15 @@ export function Automations({
                 lang={lang}
               />
               <div className="automation-identity">
-                <h2>{a.name}</h2>
+                <h2>
+                  <button
+                    className="automation-open-flow"
+                    disabled={w.busy || !a.id}
+                    onClick={() => void edit(a)}
+                  >
+                    {a.name}
+                  </button>
+                </h2>
                 <p
                   className={`automation-state ${a.state === "on" ? "active" : ""}`}
                 >

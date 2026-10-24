@@ -199,6 +199,13 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   await expect(
     page.getByRole("region", { name: "Arbeidsflate for automasjon" }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Vis hele flyten", exact: true })
+    .click();
+  const zoom = await page.locator(".canvas-tools output").innerText();
+  expect(parseInt(zoom)).toBeGreaterThanOrEqual(20);
+  expect(parseInt(zoom)).toBeLessThanOrEqual(100);
+  await expect(page.locator(".canvas-node").first()).toBeVisible();
   await page.locator(".flow-workspace").screenshot({
     path: `../artifacts/${test.info().project.name}-flow-canvas.png`,
     animations: "disabled",
