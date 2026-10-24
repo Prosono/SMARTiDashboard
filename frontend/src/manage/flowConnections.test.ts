@@ -43,12 +43,18 @@ describe("real canvas connections", () => {
       expect(saved.variables).toEqual(before.variables);
       expect(saved.mode).toBe("queued");
       expect(config).toEqual(before);
-      expect(canvasModel(saved, "nb").edges).toHaveLength(4);
+      expect(canvasModel(saved, "nb").edges).toHaveLength(3);
     }
   });
-  it("can select a different first action from Start", () => {
+  it("can select a different first action from an event", () => {
     const c = fixture();
-    const p = planConnection(c, "start", id("actions", 2), "sequence", "nb");
+    const p = planConnection(
+      c,
+      id("triggers", 0),
+      id("actions", 2),
+      "sequence",
+      "nb",
+    );
     expect(p.ok && p.patch.actions).toEqual([
       c.actions[2],
       c.actions[0],
@@ -184,7 +190,7 @@ describe("real canvas connections", () => {
       ],
     };
     for (const [from, to] of [
-      ["start", id("actions", 1)],
+      [id("triggers", 0), id("actions", 1)],
       [id("conditions", 0), id("actions", 1)],
       [id("actions", 0), id("triggers", 0)],
       [id("actions", 0), id("conditions", 0)],

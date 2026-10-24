@@ -1,3 +1,10 @@
+## 1.36.28
+
+- Flyteditoren bruker varme SMARTi-bruntoner. Separate utgående grener får ulike linjefarger.
+- Det visuelle Start-kortet er fjernet; hendelser kobles direkte til første krav eller handling, uten å endre HA-logikken.
+- Linjer rutes rundt kortenes faktiske størrelse med avrundede hjørner og små hopp ved kryssinger.
+- Overlappende kort som sperrer en forbindelse gir beskjed om å flytte kortene fra hverandre.
+
 ## 1.36.27
 
 - Mer kompakt flytredigering med SMARTi-tema, rutenett, runde kortikoner og tydelige koblinger.

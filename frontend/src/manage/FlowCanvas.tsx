@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from "react";
+import { routeWire, wirePath } from "./flowRouting";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   GripHorizontal,
   Minus,
@@ -107,7 +108,49 @@ export function FlowCanvas({
     startX: number;
     startY: number;
   } | null>(null);
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      setHeights((old) => {
+        const next = { ...old };
+        let changed = false;
+        for (const entry of entries) {
+          const el = entry.target as HTMLElement,
+            id = el.dataset.nodeId!;
+          if (next[id] !== el.offsetHeight) {
+            next[id] = el.offsetHeight;
+            changed = true;
+          }
+        }
+        return changed ? next : old;
+      });
+    });
+    plane.current
+      ?.querySelectorAll<HTMLElement>(".canvas-node")
+      .forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [graph]);
   const nodes = graph.nodes.map((n) => ({ ...n, ...positions[n.id] }));
+  const boxes = nodes.map((n) => ({
+    ...n,
+    width: 260,
+    height: heights[n.id] || 150,
+  }));
+  const routes = graph.edges.map((e, i) => {
+    const branch = graph.edges
+      .slice(0, i)
+      .filter((other) => other.from === e.from).length;
+    return {
+      edge: e,
+      branch,
+      points: routeWire(
+        boxes.find((n) => n.id === e.from)!,
+        boxes.find((n) => n.id === e.to)!,
+        boxes,
+        branch,
+      ),
+    };
+  });
   const width = Math.max(1800, ...nodes.map((n) => n.x + 340)),
     height = Math.max(900, ...nodes.map((n) => n.y + 200));
   function move(id: string, x: number, y: number) {
@@ -393,27 +436,38 @@ export function FlowCanvas({
                     <path d="M0,0 L7,3.5 L0,7" fill="context-stroke" />
                   </marker>
                 </defs>
-                {graph.edges.map((e, i) => {
-                  const a = nodes.find((n) => n.id === e.from)!,
-                    b = nodes.find((n) => n.id === e.to)!;
-                  const ax = a.x + 260,
-                    ay = a.y + 65,
-                    bx = b.x,
-                    by = b.y + 65;
+                {routes.map(({ edge: e, branch, points }, i) => {
+                  if (!points.length) return null;
+                  const segment = points
+                    .slice(1)
+                    .map((p, j) => ({
+                      a: points[j],
+                      b: p,
+                      length:
+                        Math.abs(p.x - points[j].x) +
+                        Math.abs(p.y - points[j].y),
+                    }))
+                    .sort((a, b) => b.length - a.length)[0];
+                  const midpoint = {
+                    x: (segment.a.x + segment.b.x) / 2,
+                    y: (segment.a.y + segment.b.y) / 2,
+                  };
                   return (
-                    <g key={i} className={"canvas-wire-" + a.kind}>
+                    <g
+                      key={`${e.from}-${e.to}`}
+                      className={`canvas-route branch-${branch % 4}`}
+                    >
                       <path
-                        d={`M${ax} ${ay} C${ax + 60} ${ay},${bx - 60} ${by},${bx} ${by}`}
+                        d={wirePath(
+                          points,
+                          routes.slice(0, i).map((r) => r.points),
+                        )}
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                         markerEnd="url(#flow-tip)"
                       />
-                      <text
-                        x={(ax + bx) / 2}
-                        y={(ay + by) / 2 - 10}
-                        textAnchor="middle"
-                      >
+                      <text x={midpoint.x + 8} y={midpoint.y - 10}>
                         {e.label}
                       </text>
                     </g>
@@ -713,6 +767,14 @@ export function FlowCanvas({
           </div>
         </div>
       </div>
+      {routes.some((r) => !r.points.length) && (
+        <p role="status" className="canvas-help">
+          {t(
+            "Flytt kortene litt fra hverandre for å vise alle forbindelsene.",
+            "Move overlapping cards apart to show all connections.",
+          )}
+        </p>
+      )}
       <small className="canvas-help">
         {t(
           "Kortplasseringer lagres ikke. Flytting er visuelt; bekreftede koblinger endrer kjøringen når du lagrer. Forgreninger med egne krav redigeres i delflyten.",

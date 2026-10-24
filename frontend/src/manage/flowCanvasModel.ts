@@ -82,5 +82,18 @@ export function canvasModel(config: Record<string, any>, lang: string) {
       });
     previous = isUnconditionalStop(config.actions[i]) ? "" : previous ? id : "";
   }
-  return { nodes, edges };
+  // The synthetic start is execution bookkeeping, not an editable card.
+  const outgoing = edges.filter((e) => e.from === gate);
+  const incoming = edges.filter((e) => e.to === gate);
+  return {
+    nodes: nodes
+      .filter((n) => n.id !== gate)
+      .map((n) => ({ ...n, x: n.x > 370 ? n.x - 340 : n.x })),
+    edges: [
+      ...edges.filter((e) => e.from !== gate && e.to !== gate),
+      ...incoming.flatMap((a) =>
+        outgoing.map((b) => ({ from: a.from, to: b.to, label: b.label })),
+      ),
+    ],
+  };
 }

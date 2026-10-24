@@ -866,3 +866,46 @@
     padding: 12px;
   }
 }
+/* Warm SMARTi palette; outgoing branches retain distinct, theme-aware tones. */
+.flow-designer .flow-workspace {
+  --flow-event: var(--accent);
+  --flow-condition: #956640;
+  --flow-action: #725340;
+  --flow-start: #887665;
+}
+[data-theme="dark"] .flow-designer .flow-workspace {
+  --flow-condition: #d6b18b;
+  --flow-action: #c69e83;
+  --flow-start: #c2b3a3;
+}
+.flow-designer .canvas-conditions {
+  --node-color: var(--flow-condition);
+}
+.flow-designer .canvas-actions {
+  --node-color: var(--flow-action);
+}
+.flow-designer .canvas-route {
+  color: var(--accent);
+}
+.flow-designer .canvas-route.branch-1 {
+  color: var(--flow-condition);
+}
+.flow-designer .canvas-route.branch-2 {
+  color: #377e91;
+}
+.flow-designer .canvas-route.branch-3 {
+  color: #8f629c;
+}
+[data-theme="dark"] .flow-designer .canvas-route.branch-2 {
+  color: #87c7d7;
+}
+[data-theme="dark"] .flow-designer .canvas-route.branch-3 {
+  color: #c7a3d1;
+}
+.flow-designer .canvas-route text {
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  fill: var(--muted);
+}

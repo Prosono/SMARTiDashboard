@@ -123,14 +123,10 @@ export function planConnection(
       "Disse kortene er allerede koblet sammen.",
       "These cards are already connected.",
     );
-  if (
-    source.kind === "triggers" ||
-    target.kind === "triggers" ||
-    target.kind === "gate"
-  )
+  if (target.kind === "triggers" || target.kind === "gate")
     return fail(
-      "Hendelser er alternative startpunkter og kobles via Start. Koble videre fra Start-kortet.",
-      "Events are alternative starting points connected through Start. Connect from the Start card.",
+      "Hendelser er alternative startpunkter. Koble fra en hendelse til første krav eller handling.",
+      "Events are alternative starting points. Connect an event to the first requirement or action.",
     );
   if (target.kind !== "conditions" && target.kind !== "actions")
     return fail(
@@ -150,7 +146,7 @@ export function planConnection(
       );
     insertAfter = sourceIndex!;
   } else if (
-    source.kind === "gate" &&
+    source.kind === "triggers" &&
     (key === "conditions" || !(config.conditions || []).length)
   ) {
     insertAfter = -1;
@@ -174,8 +170,8 @@ export function planConnection(
     ok: true,
     patch: { [key]: result },
     message: t(
-      "Målkortet flyttes rett etter kortet du kobler fra. De øvrige kortene beholder sin innbyrdes rekkefølge, og linjene kobles om. Ingen kort slettes.",
-      "The target moves directly after the source. Other cards keep their relative order and their connections are updated. No cards are deleted.",
+      "Alle hendelser starter samme løp. Målkortet flyttes rett etter kortet du kobler fra. De øvrige kortene beholder sin innbyrdes rekkefølge, og linjene kobles om. Ingen kort slettes.",
+      "All events start the same sequence. The target moves directly after the source. Other cards keep their relative order and their connections are updated. No cards are deleted.",
     ),
   };
 }

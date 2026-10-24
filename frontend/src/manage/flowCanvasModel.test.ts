@@ -9,8 +9,9 @@ describe("canvas preserves HA control flow", () => {
     };
     const original = structuredClone(c),
       g = canvasModel(c, "nb");
-    expect(g.nodes).toHaveLength(6);
-    expect(g.edges.filter((e) => e.to === "start")).toHaveLength(2);
+    expect(g.nodes).toHaveLength(5);
+    expect(g.nodes.some((n) => n.id === "start")).toBe(false);
+    expect(g.edges.filter((e) => e.to === '["conditions",0]')).toHaveLength(2);
     expect(
       g.edges.some(
         (e) => e.from === '["actions",0]' && e.to === '["actions",1]',
