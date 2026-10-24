@@ -1,5 +1,11 @@
+import { flowPresets, categoryForFlowCard } from "./flowPresets";
 import type { FlowKind } from "./flowPresentation";
 export function newFlowStep(kind: FlowKind, type: string): Record<string, any> {
+  if (type.startsWith("preset:")) {
+    const preset = flowPresets(kind, "nb").find((p) => p.id === type);
+    if (!preset) throw new Error("Unknown flow preset");
+    return structuredClone(preset.step);
+  }
   if (kind === "triggers") {
     if (type === "time") return { trigger: "time", at: "20:00:00" };
     if (type === "sun") return { trigger: "sun", event: "sunset" };
@@ -19,7 +25,8 @@ export function newFlowStep(kind: FlowKind, type: string): Record<string, any> {
       ...(type === "state" ? { state: "on" } : { above: 0 }),
     };
   }
-  if (type === "notify.mobile_app_") return { action: type, data: { title: "SMARTi", message: "" } };
+  if (type === "notify.mobile_app_")
+    return { action: type, data: { title: "SMARTi", message: "" } };
   if (type === "delay") return { delay: 60 };
   if (type === "if") return { if: [], then: [], else: [] };
   if (type === "choose")
@@ -138,8 +145,14 @@ export function flowLibrary(kind: FlowKind, lang: string) {
             ],
             [
               "notify.mobile_app_",
-              t("Send notifikasjon til SMARTi-appen", "Send a notification to the SMARTi app"),
-              t("Velg bruker og skriv en beskjed.", "Choose a phone and write a message."),
+              t(
+                "Send notifikasjon til SMARTi-appen",
+                "Send a notification to the SMARTi app",
+              ),
+              t(
+                "Velg bruker og skriv en beskjed.",
+                "Choose a phone and write a message.",
+              ),
             ],
             [
               "light.turn_off",
@@ -229,5 +242,13 @@ export function flowLibrary(kind: FlowKind, lang: string) {
               ),
             ],
           ];
-  return rows.map(([id, title, hint]) => ({ id, title, hint }));
+  return [
+    ...flowPresets(kind, lang),
+    ...rows.map(([id, title, hint]) => ({
+      id,
+      title,
+      hint,
+      category: categoryForFlowCard(id),
+    })),
+  ];
 }

@@ -1,5 +1,9 @@
+import { flowCategories } from "./flowPresets";
 import { useEffect, useState } from "react";
 import {
+  Sun,
+  PersonStanding,
+  Thermometer,
   ArrowDown,
   ArrowLeft,
   ArrowUp,
@@ -55,12 +59,14 @@ export function AutomationFlow({
     kind: FlowKey;
   } | null>(null);
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
   const [valid, setValid] = useState(true);
   const [removing, setRemoving] = useState(false);
   const [stepOriginal, setStepOriginal] = useState<any>(null);
   const [stepNew, setStepNew] = useState(false);
   useEffect(() => {
     setSearch("");
+    setCategory("all");
   }, [adding]);
   const groups = [
     {
@@ -368,22 +374,63 @@ export function AutomationFlow({
                 "Search lights, time, temperature …",
               )}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCategory("all");
+              }}
             />
           </div>
+          <div
+            className="flow-library-categories"
+            role="group"
+            aria-label={t("Kortkategorier", "Card categories")}
+          >
+            {flowCategories
+              .filter(
+                ([id]) =>
+                  id === "all" ||
+                  flowLibrary(adding.kind, lang).some(
+                    (item) => item.category === id,
+                  ),
+              )
+              .map(([id, nb, en]) => (
+                <button
+                  type="button"
+                  key={id}
+                  aria-pressed={category === id}
+                  onClick={() => setCategory(id)}
+                >
+                  {t(nb, en)}
+                </button>
+              ))}
+          </div>
+          <p className="flow-library-note">
+            {t(
+              "Velg et forslag, og tilpass enhet og verdier i neste steg.",
+              "Choose a suggestion, then customize devices and values in the next step.",
+            )}
+          </p>
           <div className="flow-card-library">
             {flowLibrary(adding.kind, lang)
+              .filter((x) => category === "all" || x.category === category)
               .filter((x) =>
                 `${x.title} ${x.hint}`
                   .toLowerCase()
                   .includes(search.toLowerCase()),
               )
               .map((item) => {
-                const Symbol = flowIcon(
-                  newFlowStep(adding.kind, item.id),
-                  adding.kind,
-                  home,
-                );
+                const Symbol = item.id.startsWith("preset:")
+                  ? {
+                      time: Sun,
+                      presence: PersonStanding,
+                      climate: Thermometer,
+                      energy: Zap,
+                    }[item.category] || Zap
+                  : flowIcon(
+                      newFlowStep(adding.kind, item.id),
+                      adding.kind,
+                      home,
+                    );
                 return (
                   <button
                     type="button"

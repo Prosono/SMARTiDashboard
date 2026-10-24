@@ -277,6 +277,13 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   ).toBeVisible();
   await page
     .getByRole("dialog")
+    .getByRole("button", { name: "Tid og sol", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog").getByRole("button", { name: /Slå på lys/ }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("dialog")
     .getByRole("button", { name: /Vent litt/ })
     .click();
   await page

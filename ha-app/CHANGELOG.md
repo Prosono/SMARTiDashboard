@@ -1,3 +1,9 @@
+## 1.36.30
+
+- Kortvelgeren har søk og kategorier for tid/sol, bevegelse, klima, energi/lading, enheter og logikk.
+- Nye forvalg for soloppgang, solnedgang, dagslys, morgen, kveld, ukedager, helg, bevegelse, hjemkomst, dør, temperatur, luftfuktighet, effekt, energi og ladestatus.
+- Forslagene skiller mellom hendelser og krav. Velg riktig sensor og tilpass grense eller tilstand før lagring.
+
 ## 1.36.29
 
 - Dra «Når dette skjer», «Og dette stemmer» og «Så gjør dette» til lerretet for å velge et nytt kort på ønsket plassering.
