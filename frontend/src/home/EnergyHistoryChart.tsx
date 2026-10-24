@@ -3,6 +3,7 @@ import { useId } from "react";
 export type HistoryBucket = {
   partial?: boolean;
   label: string;
+  tickLabel?: string;
   start: string;
   end: string;
   kwh: number | null;
@@ -136,7 +137,10 @@ export function EnergyHistoryChart({
             {(i % Math.max(1, Math.ceil(points.length / 8)) === 0 ||
               i === points.length - 1) && (
               <text x={x(i)} y="272" textAnchor="middle">
-                {p.label.includes(":") ? p.label.slice(0, 5) : p.label.slice(5)}
+                {p.tickLabel ??
+                  (p.label.includes(":")
+                    ? p.label.slice(0, 5)
+                    : p.label.slice(5))}
               </text>
             )}
           </g>

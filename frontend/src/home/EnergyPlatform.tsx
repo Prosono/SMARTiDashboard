@@ -19,6 +19,7 @@ import { api } from "../api";
 import { SettingsDialog } from "./SettingsDialog";
 import "./energyPlatform.css";
 import { EnergyPriceChart } from "./EnergyPriceChart";
+import { EnergyReport } from "./EnergyReport";
 import { EnergySensorPicker } from "./EnergySensorPicker";
 
 import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
@@ -65,7 +66,10 @@ type Point = {
     parts?: Record<string, number | string>;
   };
 };
-type Dashboard = {
+export type Dashboard = {
+  period_prices?:
+    { time_start: string; time_end: string; NOK_per_kWh: number }[] | null;
+  price_area?: string;
   outlook?: {
     start: string;
     end: string;
@@ -340,6 +344,7 @@ export function EnergyPlatform({
             {[
               ["overview", "3D-oversikt"],
               ["history", "Historikk og strømpriser"],
+              ["reports", "Rapporter og innsikt"],
             ].map(([id, label]) => (
               <button
                 key={id}
@@ -355,14 +360,17 @@ export function EnergyPlatform({
                     ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
                   ) {
                     e.preventDefault();
+                    const tabs = ["overview", "history", "reports"];
                     const next =
                       e.key === "Home"
-                        ? "overview"
+                        ? tabs[0]
                         : e.key === "End"
-                          ? "history"
-                          : view === "overview"
-                            ? "history"
-                            : "overview";
+                          ? tabs[2]
+                          : tabs[
+                              (tabs.indexOf(view) +
+                                (e.key === "ArrowRight" ? 1 : 2)) %
+                                3
+                            ];
                     setView(next);
                     document.getElementById(`energy-view-${next}`)?.focus();
                   }
@@ -405,6 +413,8 @@ export function EnergyPlatform({
               <p>En administrator må sette opp energien først.</p>
             )}
           </div>
+        ) : view === "reports" ? (
+          <EnergyReport />
         ) : view === "history" ? (
           <div
             role="tabpanel"
@@ -505,7 +515,9 @@ export function EnergyPlatform({
                 </strong>
                 <p>
                   {totalCost != null
-                    ? (grid?.cost_total != null ? "Estimat inkl. fordelte faste beløp" : "Registrert forbruk · uten faste beløp")
+                    ? grid?.cost_total != null
+                      ? "Estimat inkl. fordelte faste beløp"
+                      : "Registrert forbruk · uten faste beløp"
                     : "Mangler komplett pris- eller støttegrunnlag"}
                 </p>
               </article>
@@ -653,7 +665,9 @@ export function EnergyPlatform({
                     </strong>
                     <small>
                       Estimert kostnad: {fmt(data?.totals?.[key]?.cost, 2)} kr
-                      {data?.totals?.[key]?.cost_note && <span> · {data.totals[key].cost_note}</span>}
+                      {data?.totals?.[key]?.cost_note && (
+                        <span> · {data.totals[key].cost_note}</span>
+                      )}
                     </small>
                     <small>
                       {data?.totals?.[key]?.complete
@@ -927,7 +941,7 @@ export function EnergyPlatform({
                 </strong>
                 <small>
                   {todayCost != null
-                    ? (data?.totals?.today?.cost_note || "Foreløpig kostnad")
+                    ? data?.totals?.today?.cost_note || "Foreløpig kostnad"
                     : "Mangler komplett beregningsgrunnlag"}
                 </small>
               </button>

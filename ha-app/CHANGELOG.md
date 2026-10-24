@@ -1,3 +1,10 @@
+## 1.36.22
+
+- Ny energifane «Rapporter og innsikt» med valgfritt datointervall og hurtigvalg for 7, 30 og 90 dager.
+- Rapport med forbruksgraf, beregnede kostnader, datadekning, sammenligning, historiske spotpriser, målte forbrukere og solenergi der data finnes.
+- Ufullstendige målinger og kostnadsestimater merkes tydelig. Ingen fiktive nøkkeltall eller sammenligninger ved manglende grunnlag.
+- Tilpasset mobil og desktop, med egen utskriftsvisning for utskrift eller lagring som PDF.
+
 ## 1.36.21
 
 - Energikostnader kan vises for registrert forbruk selv om månedshistorikken er ufullstendig. Estimatet merkes tydelig og utelater faste beløp og kapasitetsledd når komplett kostnad mangler.

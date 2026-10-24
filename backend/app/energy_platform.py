@@ -380,7 +380,7 @@ def platform_router(service, user, admin):
         return {"refreshed": True}
 
     @router.get("/dashboard")
-    def dashboard(start: date, end: date, current=Depends(user)):
+    def dashboard(start: date, end: date, report: bool = False, current=Depends(user)):
         if not 0 < (end - start).days <= 366:
             raise HTTPException(422, "invalid_energy_period")
         config = repo.config()
@@ -537,7 +537,19 @@ def platform_router(service, user, admin):
         power, state, _ = power_reading(
             controls.get(config.power_entity), getattr(ha, "states", {}), ha.connected, datetime.now(UTC), 300
         )
+        period_prices = []
+        if report:
+            price_day = start
+            while price_day < end and price_day <= today:
+                for price in repo.prices(config.area, price_day) or []:
+                    begin = max(a, datetime.fromisoformat(price["time_start"]))
+                    finish = min(b, datetime.fromisoformat(price["time_end"]))
+                    if begin < finish:
+                        period_prices.append({**price, "time_start": begin.isoformat(), "time_end": finish.isoformat()})
+                price_day += timedelta(days=1)
         return {
+            "period_prices": period_prices if report else None,
+            "price_area": config.area,
             "configured": True,
             "history_estimated": estimated_history,
             "outlook": outlook,

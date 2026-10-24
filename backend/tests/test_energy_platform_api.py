@@ -230,3 +230,24 @@ def test_direct_minutes_are_visible_before_hour_finishes(client):  # noqa: F811
     assert sum(p["kwh"] for p in points) == 0.04
     assert all(p["partial"] for p in points)
     assert meter["capacity"] is None
+
+
+def test_report_prices_follow_requested_period_and_are_opt_in(client):  # noqa: F811
+    import json
+
+    install(client.app.state.ha, "sensor.import", 100, "kWh")
+    body = {"area": "NO2", "company": "elvia", "meters": [{"role": "grid", "entity": "sensor.import", "name": "Forbruk"}]}
+    assert client.put("/api/home/energy/platform/setup", json=body).status_code == 200
+    prices = [{"time_start": "2026-07-01T00:00:00+02:00", "time_end": "2026-07-01T01:00:00+02:00", "NOK_per_kWh": -0.1}]
+    with client.app.state.store.connect() as db:
+        db.execute("INSERT OR REPLACE INTO energy_prices VALUES(?,?,?,?)", ("NO2", "2026-07-01", json.dumps(prices), "2026-07-01T00:00:00Z"))
+    params = {"start": "2026-07-01", "end": "2026-07-02"}
+    normal = client.get("/api/home/energy/platform/dashboard", params=params).json()
+    assert normal["period_prices"] is None
+    report = client.get("/api/home/energy/platform/dashboard", params=params | {"report": "true"}).json()
+    assert report["price_area"] == "NO2"
+    assert len(report["period_prices"]) == 1
+    assert report["period_prices"][0]["NOK_per_kWh"] == -0.1
+    for key in ["time_start", "time_end"]:
+        assert datetime.fromisoformat(report["period_prices"][0][key]) == datetime.fromisoformat(prices[0][key])
+    assert client.get("/api/home/energy/platform/dashboard", params={"start": "2024-01-01", "end": "2026-01-01", "report": "true"}).status_code == 422

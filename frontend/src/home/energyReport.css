@@ -1,0 +1,321 @@
+.er {
+  padding: clamp(16px, 3vw, 40px);
+}
+.er-intro {
+  max-width: 680px;
+  margin-bottom: 24px;
+}
+.er-intro p {
+  margin-bottom: 0;
+}
+.er-builder {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.er-presets,
+.er-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.er-presets {
+  margin-bottom: 18px;
+}
+.er .er-presets button {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+.er-fields label {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+  min-width: 160px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.er input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 16px;
+}
+.er button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.er-welcome {
+  max-width: 580px;
+  margin: 56px auto;
+  text-align: center;
+}
+.er-welcome svg {
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+.er-document {
+  margin-top: 32px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: clamp(18px, 3vw, 40px);
+  background: var(--surface);
+}
+.er-document-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 20px;
+}
+.er-document-head h2 {
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+}
+.er-document-head p {
+  font-size: 0.8rem;
+}
+.er-print {
+  flex-shrink: 0;
+}
+.er-coverage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.er-coverage strong {
+  margin-left: auto;
+}
+.er-coverage progress {
+  width: 100px;
+  height: 6px;
+  accent-color: var(--accent);
+}
+.er-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin: 32px 0 40px;
+}
+.er-kpis dt {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+.er-kpis dd {
+  margin: 10px 0 0;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.er-kpis dd small {
+  font-size: 1rem;
+  font-weight: 400;
+}
+.er-kpis p {
+  font-size: 0.8rem;
+  margin: 4px 0;
+}
+.er-chart {
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+.er-chart > p {
+  font-size: 0.85rem;
+}
+.er-insight {
+  display: flex;
+  align-items: start;
+  gap: 16px;
+  padding: 24px;
+  margin: 28px 0;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  border-radius: 12px;
+}
+.er-insight svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.er-insight p {
+  margin-bottom: 0;
+}
+.er-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+.er-columns p,
+.er-solar p {
+  font-size: 0.88rem;
+}
+.er-ledger {
+  margin: 20px 0;
+}
+.er-ledger > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.er-ledger dd {
+  margin: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.er-ledger dt small {
+  display: block;
+  font-size: 0.75rem;
+}
+.er-total {
+  font-weight: 600;
+}
+.er-solar {
+  margin-top: 28px;
+}
+.er-document footer {
+  border-top: 1px solid var(--line);
+  margin-top: 40px;
+  padding-top: 20px;
+  font-size: 0.8rem;
+}
+.er-document footer strong {
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .er-document-head {
+    flex-direction: column;
+  }
+  .er-columns {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .er-kpis {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin: 24px 0;
+  }
+  .er-kpis > div {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px;
+  }
+  .er-kpis dd {
+    margin-top: 4px;
+  }
+  .er-fields {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .er-fields label {
+    min-width: 0;
+  }
+  .er-presets {
+    gap: 6px;
+  }
+  .er-coverage progress {
+    width: 100%;
+  }
+  .er-insight {
+    padding: 16px;
+  }
+  .er-builder {
+    padding: 14px;
+  }
+}
+@media print {
+  body.printing-energy-report * {
+    visibility: hidden;
+  }
+  body.printing-energy-report .er-document,
+  body.printing-energy-report .er-document * {
+    visibility: visible;
+  }
+  body.printing-energy-report .er-document {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 16px;
+    color: #202020;
+    background: white;
+    --text: #202020;
+    --muted: #505050;
+    --surface: white;
+    --line: #ddd;
+    --accent: #c85a00;
+  }
+  body.printing-energy-report .er-print {
+    display: none;
+  }
+  body.printing-energy-report .ep-chart-scroll {
+    overflow: visible;
+  }
+  body.printing-energy-report .ep-chart {
+    min-width: 0;
+    width: 100%;
+  }
+  body.printing-energy-report .ep-chart-mobile-hint {
+    display: none;
+  }
+  body.printing-energy-report .er-kpis {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  body.printing-energy-report .er-document section,
+  body.printing-energy-report .er-kpis {
+    break-inside: avoid;
+  }
+}
+.ep .er-intro h2 {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1.2;
+}
+.ep .er-document-head h2 {
+  font-size: clamp(1.25rem, 2.4vw, 1.9rem);
+  line-height: 1.3;
+}
+.er-price-summary {
+  margin-top: 28px;
+}
+.er-price-summary p {
+  font-size: 0.85rem;
+}
+.er-document footer {
+  display: block;
+}
+@media print {
+  body.printing-energy-report
+    *:not(:has(.er-document)):not(.er-document):not(.er-document *) {
+    display: none !important;
+  }
+  body.printing-energy-report :has(.er-document) {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    border: 0 !important;
+  }
+  body.printing-energy-report .er-document {
+    position: static;
+  }
+}
