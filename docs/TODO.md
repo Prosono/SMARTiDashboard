@@ -1,6 +1,6 @@
 # SMARTi – utsatt arbeid
 
-Oppdatert 14. oktober 2026. Dette er en huskeliste over arbeid vi har avtalt å ta senere, ikke en plan om å starte det nå. Ingen automatisk overvåking eller publisering er satt opp.
+Oppdatert 24. oktober 2026. Dette er en huskeliste over arbeid vi har avtalt å ta senere, ikke en plan om å starte det nå. Ingen automatisk overvåking eller publisering er satt opp.
 
 ## Egen mobilapp og direkte Matter-oppsett
 
@@ -45,3 +45,13 @@ HA-entiteter/API-er per integrasjon, ikke antakelser om støvsugermerket.
 ## Hubaktivering – senere
 
 - [ ] Selvbetjent erstatning/rotasjon av mistet eller kompromittert QR-aktiveringskode, med eierskapskontroll og revisjonslogg. Førstegangsoppsett bruker nå hemmeligheten i QR-etiketten.
+
+## Produktroadmap
+
+- [ ] Tidsbegrenset gjestetilgang: tilgang til utvalgte deler av hjemmet med automatisk utløp.
+- [ ] Enklere oppsett: færre steg fra ny hub til et ferdig hjem.
+- [ ] Videreutvikle energikontroll for norske forhold: strømavtaler, nettselskaper, nettleie og effekttopper.
+- [ ] Meshing: flere hubber i samme hjem med samlet styring på tvers av hubber.
+- [ ] Tilrettelegge for fleksibilitetsmarkedet, fremtidige tjenester og samarbeidspartnere.
+
+Planer og prioriteringer kan endres. Ingen leveringsdato er avtalt.

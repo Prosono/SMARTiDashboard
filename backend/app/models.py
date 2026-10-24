@@ -43,6 +43,7 @@ class Command(BaseModel):
         "turn_on",
         "turn_off",
         "set_temperature",
+        "set_hvac_mode",
         "set_brightness",
         "activate",
         "lock",
@@ -61,12 +62,13 @@ class Command(BaseModel):
         "set_color_temp",
     ]
     value: Annotated[float, Field(allow_inf_nan=False)] | tuple[int, int, int] | None = None
+    hvac_mode: str | None = Field(default=None, max_length=40)
     fan_speed: str | None = Field(default=None, max_length=100)
     area_ids: list[str] = Field(default_factory=list, max_length=100)
     confirmed: bool = False
 
 
-def normalize(states, entities, devices):
+def normalize(states, entities, devices, temperature_unit=None):
     result = []
     for entity_id, state in states.items():
         registry = entities.get(entity_id, {})
@@ -93,6 +95,8 @@ def normalize(states, entities, devices):
         }:
             continue
         a = state.get("attributes", {})
+        if domain == "climate" and temperature_unit:
+            a = {"temperature_unit": temperature_unit, **a}
         caps = []
         if domain in {"light", "switch", "automation"}:
             caps.append(Capability(kind="power", actions=["turn_on", "turn_off"]))
@@ -123,12 +127,15 @@ def normalize(states, entities, devices):
                         unit="K",
                     )
                 )
+        # Match HA controls: explicit device step wins; otherwise 0.5 °C / 1 °F.
+        temperature_step = a.get("target_temp_step") or (1 if a.get("temperature_unit") == "°F" else 0.5)
         if (
             domain == "climate"
             and a.get("supported_features", 0) & 1
-            and all(isinstance(a.get(k), (int, float)) for k in ("min_temp", "max_temp", "target_temp_step"))
+            and all(isinstance(a.get(k), (int, float)) for k in ("min_temp", "max_temp"))
             and a["min_temp"] <= a["max_temp"]
-            and a["target_temp_step"] > 0
+            and isinstance(temperature_step, (int, float))
+            and temperature_step > 0
         ):
             caps.append(
                 Capability(
@@ -136,10 +143,15 @@ def normalize(states, entities, devices):
                     actions=["set_temperature"],
                     minimum=a["min_temp"],
                     maximum=a["max_temp"],
-                    step=a["target_temp_step"],
+                    step=temperature_step,
                     unit=a.get("temperature_unit"),
                 )
             )
+        if domain == "climate" and isinstance(a.get("hvac_modes"), list) and any(
+            mode in {"off", "heat", "cool", "heat_cool", "auto", "dry", "fan_only"}
+            for mode in a["hvac_modes"] if isinstance(mode, str)
+        ):
+            caps.append(Capability(kind="hvac_mode", actions=["set_hvac_mode"]))
         if domain in {"sensor", "binary_sensor", "lock"}:
             caps.append(Capability(kind=a.get("device_class", domain), unit=a.get("unit_of_measurement")))
         if domain in {"scene", "script"}:

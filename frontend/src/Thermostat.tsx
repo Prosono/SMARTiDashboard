@@ -15,11 +15,13 @@ export function Thermostat({
   lang,
   disabled,
   change,
+  changeMode,
 }: {
   c: Control;
   lang: string;
   disabled: boolean;
   change: (value: number) => void;
+  changeMode: (mode: string) => void;
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
@@ -113,6 +115,23 @@ export function Thermostat({
             : ""}
         </small>
       </div>
+      {c.capabilities.some((v) => v.actions.includes("set_hvac_mode")) &&
+        Array.isArray(c.attributes.hvac_modes) && (
+          <label className="thermostat-mode-select">
+            <span>{t("Modus", "Mode")}</span>
+            <select
+              aria-label={`${c.name}: ${t("Modus", "Mode")}`}
+              value={c.state}
+              disabled={!available}
+              onChange={(e) => changeMode(e.target.value)}
+            >
+              {!c.attributes.hvac_modes.includes(c.state) && <option value={c.state} disabled>{t("Ukjent", "Unknown")}</option>}
+              {c.attributes.hvac_modes.filter((mode): mode is string => typeof mode === "string" && mode in modes).map((mode) => (
+                <option key={mode} value={mode}>{modes[mode]}</option>
+              ))}
+            </select>
+          </label>
+        )}
       <div className="thermostat-dial">
         <svg viewBox="0 0 240 145" aria-hidden="true">
           <path

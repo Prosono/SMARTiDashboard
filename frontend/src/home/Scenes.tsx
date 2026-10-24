@@ -166,15 +166,7 @@ export function Scenes({
   const rows = scenes.data || [],
     favorites = rows.filter((s) => home.favorites.includes(s.entity_id));
   async function activate(s: Scene) {
-    if (
-      !window.confirm(
-        t(
-          `Aktivere «${s.name}»? Enhetene i scenen endres til de lagrede innstillingene.`,
-          `Activate “${s.name}”? Devices will change to the saved settings.`,
-        ),
-      )
-    )
-      return;
+    if (busy || offline || !s.available || !allControls(home)) return;
     setBusy(true);
     setMessage("");
     try {

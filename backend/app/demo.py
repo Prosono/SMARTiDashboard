@@ -57,6 +57,7 @@ class Demo(HomeAssistant):
                     "min_temp": 10,
                     "max_temp": 30,
                     "target_temp_step": 0.5,
+                    "hvac_modes": ["off", "heat", "auto"],
                     "supported_features": 1,
                 },
                 "d3",
@@ -158,6 +159,8 @@ class Demo(HomeAssistant):
             state["attributes"]["is_volume_muted"] = bool(value)
         elif action in {"media_play", "media_pause", "media_stop"}:
             state["state"] = {"media_play": "playing", "media_pause": "paused", "media_stop": "idle"}[action]
+        elif action == "set_hvac_mode":
+            state["state"] = value
         elif action == "set_temperature":
             state["attributes"]["temperature"] = value
         state["last_updated"] = datetime.now(UTC).isoformat()

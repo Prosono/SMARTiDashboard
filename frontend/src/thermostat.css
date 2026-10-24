@@ -157,3 +157,6 @@
     font-size: 1.7rem;
   }
 }
+
+.thermostat-mode-select { display: grid; gap: 6px; width: 100%; text-align: left; }
+.thermostat-mode-select select { width: 100%; min-height: 44px; font: inherit; }

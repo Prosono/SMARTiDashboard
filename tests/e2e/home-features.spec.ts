@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   await expect(page.locator(".home-welcome")).toBeVisible();
 });
-test("scenes create without execution, edit targets, favorite and confirm activation", async ({
+test("scenes create without execution, edit targets, favorite and activate directly", async ({
   page,
 }) => {
   const sceneName = `Filmtest ${test.info().project.name} ${Date.now()}`;
@@ -52,12 +52,11 @@ test("scenes create without execution, edit targets, favorite and confirm activa
   await edit.getByRole("button", { name: "Neste", exact: true }).click();
   await edit.getByRole("button", { name: "Lagre scene", exact: true }).click();
   await expect(edit).not.toBeVisible();
-  page.once("dialog", (d) => d.dismiss());
-  await card.getByRole("button", { name: "Aktiver", exact: true }).click();
-  expect(activations).toBe(0);
-  page.once("dialog", (d) => d.accept());
+  let dialogs = 0;
+  page.on("dialog", async (d) => { dialogs++; await d.dismiss(); });
   await card.getByRole("button", { name: "Aktiver", exact: true }).click();
   await expect.poll(() => activations).toBe(1);
+  expect(dialogs).toBe(0);
   await expect(page.locator(".home-scenes")).toContainText(
     "Simulert i demohjemmet",
   );

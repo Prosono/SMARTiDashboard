@@ -289,3 +289,37 @@ def test_event_poll_requires_auth_and_returns_revisions(client):
     assert isinstance(response.json()["radio_revision"], int)
     assert response.headers["cache-control"] == "no-store"
     assert client.get("/api/events?poll=true", headers={"origin": "https://evil.example"}).status_code == 403
+
+
+def test_climate_mode_only_accepts_supported_modes(client):
+    login(client)
+    path = "/api/controls/climate.living/commands"
+    assert client.post(path, json={"action": "set_hvac_mode", "hvac_mode": "auto"}).status_code == 200
+    control = next(c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == "climate.living")
+    assert control["state"] == "auto"
+    for body in [
+        {"action": "set_hvac_mode", "hvac_mode": "cool"},
+        {"action": "set_hvac_mode"},
+        {"action": "set_hvac_mode", "hvac_mode": "off", "value": 22},
+        {"action": "set_temperature", "hvac_mode": "off", "value": 22},
+    ]:
+        assert client.post(path, json=body).status_code == 422
+    assert client.post("/api/controls/switch.kitchen/commands", json={
+        "action": "set_hvac_mode", "hvac_mode": "off"
+    }).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_climate_mode_ha_service_payload():
+    from app.ha import HomeAssistant
+    ha = HomeAssistant("http://example.invalid", "unused")
+    ha.connected = True
+    async def request(kind, **kwargs):
+        assert kind == "call_service"
+        assert kwargs == {"domain": "climate", "service": "set_hvac_mode",
+                          "target": {"entity_id": "climate.stue"},
+                          "service_data": {"hvac_mode": "cool"}}
+        ha.states["climate.stue"] = {"context": {"id": "test"}}
+        return {"context": {"id": "test"}}
+    ha.request = request
+    assert (await ha.command("climate.stue", "set_hvac_mode", "cool"))["status"] == "state_updated"

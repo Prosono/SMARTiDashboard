@@ -1467,7 +1467,7 @@ function Device({
                       : c.domain === "automation"
                         ? Zap
                         : Activity;
-  async function command(action: string, value?: number | number[]) {
+  async function command(action: string, value?: number | number[] | string) {
     const actionNames: Record<string, string> =
       document.documentElement.lang === "en"
         ? {
@@ -1491,7 +1491,11 @@ function Device({
       "open_cover",
       "close_cover",
     ].includes(action);
-    if (confirmed && !window.confirm(`${c.name}: ${actionNames[action]}?`))
+    if (
+      confirmed &&
+      !(action === "activate" && c.domain === "scene") &&
+      !window.confirm(`${c.name}: ${actionNames[action]}?`)
+    )
       return;
     setBusy(true);
     setMessage("");
@@ -1500,7 +1504,7 @@ function Device({
       const result = await api<{ status: string }>(
         `controls/${encodeURIComponent(c.entity_id)}/commands`,
         "POST",
-        { action, confirmed, ...(value === undefined ? {} : { value }) },
+        { action, confirmed, ...(action === "set_hvac_mode" ? { hvac_mode: value } : value === undefined ? {} : { value }) },
       );
       setMessage(
         result.status === "simulated"
@@ -1618,6 +1622,7 @@ function Device({
             lang={document.documentElement.lang}
             disabled={!can || busy}
             change={(value) => void command("set_temperature", value)}
+            changeMode={(mode) => void command("set_hvac_mode", mode)}
           />
         ) : c.domain === "sensor" && c.availability === "available" ? (
           <span className="big-value">

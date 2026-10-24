@@ -1,3 +1,9 @@
+## 1.36.20
+
+- Modusvalg på termostater: viser bare moduser enheten tilbyr i Home Assistant, som varme, kjøling, auto og av. Modusendringer valideres mot den enkelte enheten.
+- Scener aktiveres direkte uten bekreftelsesdialog, både fra sceneoversikten og enhetskort.
+- Temperaturstyring beholder enhetens egne temperatursteg. Når steg mangler, brukes samme standard som Home Assistant: 0,5 °C eller 1 °F.
+
 ## 1.36.19
 
 - Fire nye fargepaletter: SMARTi Sort, Midnatt, Kobber og Grafitt. Alle kan kombineres med lyst og mørkt modus.

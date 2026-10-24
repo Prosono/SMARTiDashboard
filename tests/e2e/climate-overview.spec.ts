@@ -84,3 +84,59 @@ test("climate overview filters and opens real room controls", async ({
     fullPage: true,
   });
 });
+
+for (const step of [0.1, 0.5, 1]) {
+  test(`temperature controls preserve device step ${step}`, async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
+    await page.getByLabel("Passord", { exact: true }).fill("test-password-not-for-live");
+    await page.getByRole("button", { name: "Logg inn", exact: true }).click();
+    await expect(page.locator(".home-welcome")).toBeVisible();
+    await page.route("**/api/home", async (route) => {
+      const response = await route.fetch();
+      const home = await response.json();
+      for (const control of home.controls) {
+        if (control.entity_id !== "climate.living") continue;
+        control.attributes.temperature = 21;
+        control.attributes.target_temp_step = step;
+        control.attributes.current_temperature = 20.1;
+        for (const capability of control.capabilities) {
+          if (capability.actions.includes("set_temperature")) capability.step = step;
+        }
+      }
+      await route.fulfill({ json: home });
+    });
+    const values: number[] = [];
+    await page.route("**/controls/climate.living/commands", async (route) => {
+      values.push(route.request().postDataJSON().value);
+      await route.fulfill({ json: { status: "accepted_unconfirmed" } });
+    });
+    await page.reload();
+    await page.getByRole("navigation").getByRole("button", { name: "Enheter", exact: true }).click();
+    await page.locator(".device-toolbar select").selectOption("climate");
+    const climate = page.locator(".climate-overview");
+    await climate.getByRole("button", { name: "Øk temperatur Gulvvarme", exact: true }).click();
+    await expect.poll(() => values).toEqual([21 + step]);
+    await climate.getByRole("button", { name: "Åpne klima for Stue", exact: true }).click();
+    const thermostat = page.getByRole("dialog").locator(".thermostat");
+    await thermostat.getByRole("button", { name: "Gulvvarme: Ønsket temperatur −", exact: true }).click();
+    await expect.poll(() => values).toEqual([21 + step, 21 - step]);
+  });
+}
+
+test("thermostat modes use device options and send the selected mode", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
+  await page.getByLabel("Passord", { exact: true }).fill("test-password-not-for-live");
+  await page.getByRole("button", { name: "Logg inn", exact: true }).click();
+  await page.getByRole("navigation").getByRole("button", { name: "Enheter", exact: true }).click();
+  await page.locator(".device-toolbar select").selectOption("climate");
+  await page.getByRole("button", { name: "Åpne klima for Stue", exact: true }).click();
+  const select = page.getByRole("dialog").getByRole("combobox", { name: "Gulvvarme: Modus" });
+  await expect(select.locator("option")).toHaveText(["Av", "Varme", "Auto"]);
+  const request = page.waitForRequest(r => r.method() === "POST" && r.url().includes("climate.living/commands"));
+  await select.selectOption("auto");
+  expect((await request).postDataJSON()).toEqual({ action: "set_hvac_mode", hvac_mode: "auto", confirmed: false });
+  await expect(select).toHaveValue("auto");
+  await page.getByRole("dialog").screenshot({ path: `/tmp/smarti-thermostat-mode-${test.info().project.name}.png` });
+});

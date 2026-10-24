@@ -602,8 +602,16 @@ def create_app(
             raise HTTPException(422, "unexpected_fan_speed")
         if body.action != "clean_area" and body.area_ids:
             raise HTTPException(422, "unexpected_area_ids")
+        if body.action != "set_hvac_mode" and body.hvac_mode is not None:
+            raise HTTPException(422, "unexpected_hvac_mode")
         command_value = body.value
-        if body.action == "set_fan_speed":
+        if body.action == "set_hvac_mode":
+            if (body.value is not None or body.hvac_mode not in {
+                "off", "heat", "cool", "heat_cool", "auto", "dry", "fan_only"
+            } or body.hvac_mode not in control.attributes.get("hvac_modes", [])):
+                raise HTTPException(422, "invalid_hvac_mode")
+            command_value = body.hvac_mode
+        elif body.action == "set_fan_speed":
             if (
                 body.value is not None
                 or not body.fan_speed

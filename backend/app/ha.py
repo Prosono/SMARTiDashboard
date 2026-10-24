@@ -54,11 +54,7 @@ class HomeAssistant:
         self.revision += 1
 
     def controls(self):
-        controls = normalize(self.states, self.entities, self.devices)
-        for c in controls:
-            if c.domain == "climate" and self.temperature_unit:
-                c.attributes.setdefault("temperature_unit", self.temperature_unit)
-        return controls
+        return normalize(self.states, self.entities, self.devices, self.temperature_unit)
 
     async def request(self, kind, _callback=None, _timeout=12, **data):
         if self.ws is None:
@@ -328,7 +324,9 @@ class HomeAssistant:
         domain = entity_id.split(".")[0]
         data = {}
         service = "turn_on" if action == "activate" else action
-        if action == "set_fan_speed":
+        if action == "set_hvac_mode":
+            data = {"hvac_mode": value}
+        elif action == "set_fan_speed":
             data = {"fan_speed": value}
         elif action == "clean_area":
             data = {"cleaning_area_id": value}

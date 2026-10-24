@@ -330,14 +330,14 @@ export function DeviceControl({
       : Number(c.attributes.temperature ?? numeric?.minimum ?? 0);
   const [value, setValue] = useState(current);
   useEffect(() => setValue(current), [current]);
-  async function command(action: string, amount?: number | number[]) {
+  async function command(action: string, amount?: number | number[] | string) {
     setBusy(true);
     setMessage("");
     try {
       const result = await api<{ status: string }>(
         `controls/${encodeURIComponent(c.entity_id)}/commands`,
         "POST",
-        { action, ...(amount == null ? {} : { value: amount }) },
+        { action, ...(action === "set_hvac_mode" ? { hvac_mode: amount } : amount == null ? {} : { value: amount }) },
       );
       setMessage(
         result.status === "state_updated"
@@ -392,6 +392,7 @@ export function DeviceControl({
           lang={no ? "nb" : "en"}
           disabled={blocked}
           change={(v) => void command("set_temperature", v)}
+            changeMode={(mode) => void command("set_hvac_mode", mode)}
         />
       )}
       {c.domain === "light" && (
