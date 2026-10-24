@@ -1,3 +1,8 @@
+## 1.36.33
+- Friske RGB-farger i fri arbeidsflate: rosa/rødt for hendelser, blått for vilkår og grønt for handlinger, med tilpassede mørke farger.
+- Hele byggesteinbiblioteket er tilgjengelig i sidepanelet med søk, typefilter og dra-og-slipp.
+- Flere forslag for tilstedeværelse, strømpris, solproduksjon, lading, batterinivå, CO₂, lekkasje og røyk. Måler og terskler tilpasses før bruk.
+
 ## 1.36.32
 - Flyteditoren har et faktisk sidepanel med byggesteiner, ferdige forslag og dra-og-slipp direkte til arbeidsflaten på desktop.
 - Lange Bézier-kurver brukes der banen er fri. Ruting rundt kort har større avrundinger og tilpasses avstanden mellom kortene.

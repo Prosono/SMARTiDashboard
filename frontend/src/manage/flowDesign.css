@@ -1203,10 +1203,9 @@
   .flow-designer .flow-workspace {
     display: grid;
     grid-template-columns: 200px minmax(0, 1fr);
-    grid-template-rows: max-content max-content max-content minmax(
-        480px,
-        68vh
-      ) max-content;
+    grid-template-rows:
+      max-content max-content max-content minmax(480px, 68vh)
+      max-content;
     align-content: start;
   }
   .flow-designer .canvas-palette-hint {
@@ -1319,5 +1318,159 @@
 @media (max-width: 999px) {
   .flow-designer .canvas-add .is-preset {
     display: none;
+  }
+}
+
+/* RGB category accents are local to the free canvas, independent of app theme. */
+.flow-designer .flow-workspace {
+  --flow-event: #df3155;
+  --flow-condition: #2866db;
+  --flow-action: #008466;
+}
+[data-theme="dark"] .flow-designer .flow-workspace {
+  --flow-event: #ff708f;
+  --flow-condition: #82aaff;
+  --flow-action: #3ae0ae;
+}
+.flow-designer .canvas-triggers,
+.flow-designer .library-triggers {
+  --node-color: var(--flow-event);
+}
+.flow-designer .canvas-conditions,
+.flow-designer .library-conditions {
+  --node-color: var(--flow-condition);
+}
+.flow-designer .canvas-actions,
+.flow-designer .library-actions {
+  --node-color: var(--flow-action);
+}
+.flow-designer .canvas-node {
+  background: color-mix(in srgb, var(--node-color) 5%, var(--surface));
+  border-color: color-mix(in srgb, var(--node-color) 65%, var(--line));
+  box-shadow:
+    0 8px 22px color-mix(in srgb, var(--node-color) 12%, transparent),
+    0 2px 5px #0001;
+}
+.flow-designer .canvas-viewport {
+  background-color: var(--bg);
+}
+.flow-designer .canvas-add {
+  background: var(--surface);
+}
+.flow-designer .canvas-add:after {
+  content: none;
+}
+.flow-designer .canvas-add .canvas-palette-card {
+  color: var(--text);
+  background: color-mix(in srgb, var(--node-color) 6%, var(--surface));
+  border-color: color-mix(in srgb, var(--node-color) 25%, var(--line));
+  flex-shrink: 0;
+  width: 100%;
+}
+.flow-designer .canvas-add .canvas-palette-card svg {
+  color: var(--node-color);
+  flex-shrink: 0;
+}
+.flow-designer .canvas-add .canvas-palette-card:hover {
+  background: color-mix(in srgb, var(--node-color) 14%, var(--surface));
+  border-color: var(--node-color);
+}
+.flow-designer .canvas-add .is-category {
+  color: var(--node-color);
+  background: color-mix(in srgb, var(--node-color) 12%, var(--surface));
+  margin-top: 10px;
+}
+.flow-designer .canvas-route.from-triggers {
+  color: var(--flow-event);
+}
+.flow-designer .canvas-route.from-conditions {
+  color: var(--flow-condition);
+}
+.flow-designer .canvas-route.from-actions {
+  color: var(--flow-action);
+}
+.flow-designer .canvas-route.branch-1 {
+  color: #9b59e8;
+}
+.flow-designer .canvas-route.branch-2 {
+  color: #df851b;
+}
+.flow-designer .canvas-route.branch-3 {
+  color: #1caac5;
+}
+.canvas-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0 4px 12px 0;
+  scrollbar-width: thin;
+}
+.flow-designer .canvas-library-search {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  font-size: 13px;
+}
+.flow-designer .canvas-library-filter {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.flow-designer .canvas-library-filter button {
+  font-size: 12px;
+  min-height: 34px;
+  padding: 6px 8px;
+  flex: 1;
+  justify-content: center;
+}
+.flow-designer .canvas-library-filter button[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--soft);
+  border-color: var(--muted);
+}
+@media (min-width: 1000px) {
+  .flow-designer .flow-workspace {
+    grid-template-columns: 238px minmax(0, 1fr);
+  }
+  .flow-designer .canvas-add {
+    max-height: calc(68vh + 150px);
+    min-height: 0;
+    overflow: hidden;
+  }
+  .canvas-library-list {
+    flex: 1;
+  }
+}
+@media (max-width: 999px) {
+  .flow-designer .canvas-add {
+    display: flex;
+    flex-direction: column;
+  }
+  .flow-designer .canvas-add .is-preset {
+    display: flex;
+  }
+  .canvas-library-list {
+    max-height: 230px;
+  }
+}
+.flow-designer .canvas-add .canvas-palette-card.is-category {
+  color: var(--node-color);
+  background: color-mix(in srgb, var(--node-color) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--node-color) 40%, var(--line));
+}
+@media (min-width: 1000px) {
+  .flow-designer .flow-workspace {
+    position: relative;
+  }
+  .flow-designer .canvas-add {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 238px;
+    height: 100%;
+    max-height: none;
+    grid-column: auto;
+    grid-row: auto;
   }
 }

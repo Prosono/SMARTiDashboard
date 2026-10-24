@@ -202,6 +202,82 @@ export function flowPresets(kind: FlowKind, lang: string) {
     "Choose charging status. Default is on; adjust if your charger uses e.g. charging.",
     state("on"),
   );
+
+  for (const [id, category, nb, en, value] of [
+    ["away", "presence", "Personen er borte", "Person is away", "not_home"],
+    ["still", "presence", "Ingen bevegelse", "No motion", "off"],
+    ["closed", "presence", "Døren er lukket", "Door is closed", "off"],
+    ["leak", "devices", "Vannlekkasje oppdages", "Water leak detected", "on"],
+    ["smoke", "devices", "Røyk oppdages", "Smoke detected", "on"],
+    [
+      "charging-done",
+      "energy",
+      "Ladingen er avsluttet",
+      "Charging has stopped",
+      "off",
+    ],
+  ])
+    add(
+      id,
+      category,
+      nb,
+      en,
+      "Velg riktig sensor eller person. Kontroller tilstanden som enheten rapporterer.",
+      "Choose the sensor or person. Check the state reported by the device.",
+      state(value),
+    );
+  for (const [id, category, nb, en, direction, value] of [
+    ["dark", "devices", "Det er lite lys", "Light level is low", "below", 50],
+    [
+      "battery-low",
+      "devices",
+      "Batterinivået er lavt",
+      "Battery level is low",
+      "below",
+      20,
+    ],
+    [
+      "co2-high",
+      "climate",
+      "CO₂-nivået er høyt",
+      "CO₂ level is high",
+      "above",
+      1000,
+    ],
+    [
+      "price-high",
+      "energy",
+      "Strømprisen er høy",
+      "Electricity price is high",
+      "above",
+      0,
+    ],
+    [
+      "price-low",
+      "energy",
+      "Strømprisen er lav",
+      "Electricity price is low",
+      "below",
+      0,
+    ],
+    [
+      "solar",
+      "energy",
+      "Solcellene produserer",
+      "Solar panels are producing",
+      "above",
+      0,
+    ],
+  ] as const)
+    add(
+      id,
+      category,
+      nb,
+      en,
+      "Velg måler og tilpass grensen til enheten den viser. Verdien er et forslag.",
+      "Choose a sensor and adjust the threshold to its unit. The value is a suggestion.",
+      number(direction, value),
+    );
   return rows;
 }
 export function categoryForFlowCard(id: string) {

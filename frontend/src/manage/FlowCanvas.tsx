@@ -1,3 +1,4 @@
+import { flowLibrary } from "./flowLibrary";
 import { routeWire, wirePath, smoothWirePath } from "./flowRouting";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -65,6 +66,31 @@ export function FlowCanvas({
     [positions, setPositions] = useState<
       Record<string, { x: number; y: number }>
     >({});
+  const [librarySearch, setLibrarySearch] = useState("");
+  const [libraryKind, setLibraryKind] = useState<FlowKey | "all">("all");
+  const libraryItems = (["triggers", "conditions", "actions"] as FlowKey[])
+    .filter((k) => libraryKind === "all" || libraryKind === k)
+    .flatMap((k) => [
+      {
+        k,
+        preset: undefined as string | undefined,
+        label: paletteLabel(k),
+        hint: "",
+      },
+      ...flowLibrary(k, lang).map((item) => ({
+        k,
+        preset: item.id,
+        label: item.title,
+        hint: item.hint,
+      })),
+    ])
+    .filter(
+      (item) =>
+        !item.preset ||
+        `${item.label} ${item.hint}`
+          .toLowerCase()
+          .includes(librarySearch.toLowerCase()),
+    );
   const [showGrid, setShowGrid] = useState(true);
   const [showLines, setShowLines] = useState(true);
   const [palette, setPalette] = useState("vivid");
@@ -228,122 +254,138 @@ export function FlowCanvas({
         <strong className="canvas-library-heading">
           {t("Byggesteiner", "Building blocks")}
         </strong>
-        {(
-          [
-            { k: "triggers", label: paletteLabel("triggers") },
-            {
-              k: "triggers",
-              preset: "numeric_state",
-              label: t("Temperatur", "Temperature"),
-            },
-            {
-              k: "triggers",
-              preset: "sun",
-              label: t("Solen går ned", "Sunset"),
-            },
-            { k: "conditions", label: paletteLabel("conditions") },
-            {
-              k: "conditions",
-              preset: "preset:daylight",
-              label: t("Solen er oppe", "Daylight"),
-            },
-            {
-              k: "conditions",
-              preset: "state",
-              label: t("En tilstand stemmer", "A state matches"),
-            },
-            { k: "actions", label: paletteLabel("actions") },
-            {
-              k: "actions",
-              preset: "light.turn_on",
-              label: t("Slå på lys", "Turn on lights"),
-            },
-            { k: "actions", preset: "delay", label: t("Vent litt", "Wait") },
-          ] as { k: FlowKey; preset?: string; label: string }[]
-        ).map(({ k, preset, label }) => (
-          <button
-            type="button"
-            key={k + (preset || "")}
-            className={`canvas-palette-card library-${k} ${preset ? "is-preset" : "is-category"}`}
-            draggable={false}
-            aria-label={
-              preset
-                ? label
+        <input
+          className="canvas-library-search"
+          aria-label={t("Søk i byggesteiner", "Search building blocks")}
+          placeholder={t(
+            "Søk etter lys, bevegelse …",
+            "Search lights, motion …",
+          )}
+          value={librarySearch}
+          onChange={(e) => setLibrarySearch(e.target.value)}
+        />
+        <div
+          className="canvas-library-filter"
+          role="group"
+          aria-label={t("Type byggestein", "Building block type")}
+        >
+          {(["all", "triggers", "conditions", "actions"] as const).map((k) => (
+            <button
+              type="button"
+              key={k}
+              aria-pressed={libraryKind === k}
+              onClick={() => setLibraryKind(k)}
+            >
+              {k === "all"
+                ? t("Alle", "All")
                 : k === "triggers"
-                  ? t("Legg til hendelse", "Add event")
+                  ? t("Når", "When")
                   : k === "conditions"
-                    ? t("Legg til krav", "Add requirement")
-                    : t("Legg til handling", "Add action")
-            }
-            title={t(
-              "Dra til lerretet, eller trykk for å velge kort",
-              "Drag onto the canvas, or click to choose a card",
-            )}
-            onPointerDown={(e) => {
-              if (e.button !== 0) return;
-              e.preventDefault();
-              skipPaletteClick.current = false;
-              paletteDrag.current = {
-                kind: k,
-                x: e.clientX,
-                y: e.clientY,
-                moved: false,
-              };
-              e.currentTarget.setPointerCapture(e.pointerId);
-            }}
-            onPointerMove={(e) => {
-              const d = paletteDrag.current;
-              if (!d) return;
-              if (!d.moved && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8)
-                return;
-              d.moved = true;
-              skipPaletteClick.current = true;
-              setDragPreview({ kind: k, x: e.clientX, y: e.clientY });
-            }}
-            onPointerUp={(e) => {
-              const d = paletteDrag.current;
-              paletteDrag.current = null;
-              setDragPreview(null);
-              if (!d?.moved) return;
-              const bounds = viewport.current?.getBoundingClientRect(),
-                canvas = plane.current?.getBoundingClientRect();
-              if (
-                bounds &&
-                canvas &&
-                e.clientX >= bounds.left &&
-                e.clientX <= bounds.right &&
-                e.clientY >= bounds.top &&
-                e.clientY <= bounds.bottom
-              ) {
-                move(
-                  JSON.stringify([k, (config[k] || []).length]),
-                  (e.clientX - canvas.left) / zoom,
-                  (e.clientY - canvas.top) / zoom,
-                );
-                onAdd(k, preset);
+                    ? t("Hvis", "If")
+                    : t("Gjør", "Do")}
+            </button>
+          ))}
+        </div>
+        <div className="canvas-library-list">
+          {libraryItems.map(({ k, preset, label, hint }) => (
+            <button
+              type="button"
+              key={k + (preset || "")}
+              className={`canvas-palette-card library-${k} ${preset ? "is-preset" : "is-category"}`}
+              draggable={false}
+              aria-label={
+                preset
+                  ? label
+                  : k === "triggers"
+                    ? t("Legg til hendelse", "Add event")
+                    : k === "conditions"
+                      ? t("Legg til krav", "Add requirement")
+                      : t("Legg til handling", "Add action")
               }
-            }}
-            onPointerCancel={() => {
-              paletteDrag.current = null;
-              setDragPreview(null);
-              skipPaletteClick.current = true;
-            }}
-            onLostPointerCapture={() => {
-              paletteDrag.current = null;
-              setDragPreview(null);
-            }}
-            onClick={() => {
-              if (skipPaletteClick.current) {
+              title={
+                hint ||
+                t(
+                  "Dra til lerretet, eller trykk for å velge kort",
+                  "Drag onto the canvas, or click to choose a card",
+                )
+              }
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
                 skipPaletteClick.current = false;
-                return;
-              }
-              onAdd(k, preset);
-            }}
-          >
-            <Plus size={16} />
-            {label}
-          </button>
-        ))}
+                paletteDrag.current = {
+                  kind: k,
+                  x: e.clientX,
+                  y: e.clientY,
+                  moved: false,
+                };
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerMove={(e) => {
+                const d = paletteDrag.current;
+                if (!d) return;
+                if (
+                  !d.moved &&
+                  Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8
+                )
+                  return;
+                d.moved = true;
+                skipPaletteClick.current = true;
+                setDragPreview({ kind: k, x: e.clientX, y: e.clientY });
+              }}
+              onPointerUp={(e) => {
+                const d = paletteDrag.current;
+                paletteDrag.current = null;
+                setDragPreview(null);
+                if (!d?.moved) return;
+                const bounds = viewport.current?.getBoundingClientRect(),
+                  canvas = plane.current?.getBoundingClientRect();
+                if (
+                  bounds &&
+                  canvas &&
+                  e.clientX >= bounds.left &&
+                  e.clientX <= bounds.right &&
+                  e.clientY >= bounds.top &&
+                  e.clientY <= bounds.bottom
+                ) {
+                  move(
+                    JSON.stringify([k, (config[k] || []).length]),
+                    (e.clientX - canvas.left) / zoom,
+                    (e.clientY - canvas.top) / zoom,
+                  );
+                  onAdd(k, preset);
+                }
+              }}
+              onPointerCancel={() => {
+                paletteDrag.current = null;
+                setDragPreview(null);
+                skipPaletteClick.current = true;
+              }}
+              onLostPointerCapture={() => {
+                paletteDrag.current = null;
+                setDragPreview(null);
+              }}
+              onClick={() => {
+                if (skipPaletteClick.current) {
+                  skipPaletteClick.current = false;
+                  return;
+                }
+                onAdd(k, preset);
+              }}
+            >
+              <Plus size={16} />
+              {label}
+            </button>
+          ))}
+          {!libraryItems.some((item) => item.preset) && (
+            <p className="muted">
+              {t(
+                "Ingen forslag passer søket.",
+                "No suggestions match your search.",
+              )}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="canvas-toolbar">
@@ -373,9 +415,7 @@ export function FlowCanvas({
               value={palette}
               onChange={(e) => setPalette(e.target.value)}
             >
-              <option value="vivid">
-                {t("SMARTi varme toner", "SMARTi warm tones")}
-              </option>
+              <option value="vivid">{t("RGB-farger", "RGB colors")}</option>
               <option value="calm">{t("Rolige farger", "Calm colors")}</option>
             </select>
           </label>
@@ -619,7 +659,7 @@ export function FlowCanvas({
                   return (
                     <g
                       key={`${e.from}-${e.to}`}
-                      className={`canvas-route branch-${branch % 4}`}
+                      className={`canvas-route branch-${branch % 4} from-${nodes.find((n) => n.id === e.from)?.kind || "triggers"}`}
                     >
                       <path
                         d={

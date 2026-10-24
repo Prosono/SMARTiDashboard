@@ -257,6 +257,16 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   await expect(
     page.getByRole("region", { name: "Arbeidsflate for automasjon" }),
   ).toBeVisible();
+  const librarySearch = page.getByRole("textbox", {
+    name: "Søk i byggesteiner",
+    exact: true,
+  });
+  await librarySearch.fill("CO₂");
+  await expect(page.locator(".canvas-library-list .is-preset")).toHaveCount(2);
+  await librarySearch.fill("");
+  expect(
+    await page.locator(".canvas-library-list .is-preset").count(),
+  ).toBeGreaterThan(50);
   const palette = page.getByRole("button", {
     name: "Legg til handling",
     exact: true,
