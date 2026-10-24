@@ -350,6 +350,22 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
       .getByRole("button", { name: "Ferdig med steget", exact: true })
       .click();
     await expect(page.locator(".canvas-actions")).toHaveCount(4);
+    const moving = page.locator(".canvas-actions").last();
+    const before = await moving.evaluate((el) =>
+      parseFloat((el as HTMLElement).style.left),
+    );
+    const handle = moving.locator(".canvas-drag");
+    await handle.scrollIntoViewIfNeeded();
+    const rect = await handle.boundingBox();
+    await page.mouse.move(rect!.x + 20, rect!.y + 10);
+    await page.mouse.down();
+    await page.mouse.move(rect!.x + 95, rect!.y + 40, { steps: 12 });
+    await page.mouse.up();
+    await expect
+      .poll(() =>
+        moving.evaluate((el) => parseFloat((el as HTMLElement).style.left)),
+      )
+      .toBeGreaterThan(before + 40);
     await page
       .locator(".flow-editor-shell")
       .screenshot({ path: "/tmp/smarti-flow-fixed.png" });

@@ -42,7 +42,13 @@ export function FlowCanvas({
   onConnect: (patch: Record<string, any>) => void;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
-  const graph = useMemo(() => canvasModel(config, lang), [config, lang]);
+  const graphDefinition = useMemo(
+    () => canvasModel(config, lang),
+    [config, lang],
+  );
+  // Editing a temperature or name changes card content, not routing geometry.
+  const graphKey = JSON.stringify(graphDefinition);
+  const graph = useMemo(() => graphDefinition, [graphKey]);
   const paletteDrag = useRef<{
     kind: FlowKey;
     x: number;
@@ -68,29 +74,33 @@ export function FlowCanvas({
     >({});
   const [librarySearch, setLibrarySearch] = useState("");
   const [libraryKind, setLibraryKind] = useState<FlowKey | "all">("all");
-  const libraryItems = (["triggers", "conditions", "actions"] as FlowKey[])
-    .filter((k) => libraryKind === "all" || libraryKind === k)
-    .flatMap((k) => [
-      {
-        k,
-        preset: undefined as string | undefined,
-        label: paletteLabel(k),
-        hint: "",
-      },
-      ...flowLibrary(k, lang).map((item) => ({
-        k,
-        preset: item.id,
-        label: item.title,
-        hint: item.hint,
-      })),
-    ])
-    .filter(
-      (item) =>
-        !item.preset ||
-        `${item.label} ${item.hint}`
-          .toLowerCase()
-          .includes(librarySearch.toLowerCase()),
-    );
+  const libraryItems = useMemo(
+    () =>
+      (["triggers", "conditions", "actions"] as FlowKey[])
+        .filter((k) => libraryKind === "all" || libraryKind === k)
+        .flatMap((k) => [
+          {
+            k,
+            preset: undefined as string | undefined,
+            label: paletteLabel(k),
+            hint: "",
+          },
+          ...flowLibrary(k, lang).map((item) => ({
+            k,
+            preset: item.id,
+            label: item.title,
+            hint: item.hint,
+          })),
+        ])
+        .filter(
+          (item) =>
+            !item.preset ||
+            `${item.label} ${item.hint}`
+              .toLowerCase()
+              .includes(librarySearch.toLowerCase()),
+        ),
+    [lang, librarySearch, libraryKind],
+  );
   const [showGrid, setShowGrid] = useState(true);
   const [showLines, setShowLines] = useState(true);
   const [palette, setPalette] = useState("vivid");
@@ -107,10 +117,28 @@ export function FlowCanvas({
   );
   const ignorePortClick = useRef(false);
   const plane = useRef<HTMLDivElement>(null);
-  const pending =
-    linkFrom && linkTarget
-      ? planConnection(config, linkFrom, linkTarget, connectionMode, lang)
-      : null;
+  const pending = useMemo(
+    () =>
+      linkFrom && linkTarget
+        ? planConnection(config, linkFrom, linkTarget, connectionMode, lang)
+        : null,
+    [config, linkFrom, linkTarget, connectionMode, lang],
+  );
+  const connectableIds = useMemo(
+    () =>
+      new Set(
+        linkFrom
+          ? graph.nodes
+              .filter(
+                (n) =>
+                  planConnection(config, linkFrom, n.id, connectionMode, lang)
+                    .ok,
+              )
+              .map((n) => n.id)
+          : [],
+      ),
+    [graph, config, linkFrom, connectionMode, lang],
+  );
   function selectTarget(id: string) {
     if (!linkFrom) {
       setConnectionMessage(
@@ -175,38 +203,108 @@ export function FlowCanvas({
       .forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, [graph]);
-  const nodes = graph.nodes.map((n) => ({ ...n, ...positions[n.id] }));
-  const boxes = nodes.map((n) => ({
-    ...n,
-    width: 260,
-    height: heights[n.id] || 150,
-  }));
-  const routes = graph.edges.map((e, i) => {
-    const branch = graph.edges
-      .slice(0, i)
-      .filter((other) => other.from === e.from).length;
-    return {
-      edge: e,
-      branch,
-      points: routeWire(
-        boxes.find((n) => n.id === e.from)!,
-        boxes.find((n) => n.id === e.to)!,
-        boxes,
-        branch,
+  const nodes = useMemo(
+    () => graph.nodes.map((n) => ({ ...n, ...positions[n.id] })),
+    [graph, positions],
+  );
+  const boxes = useMemo(
+    () =>
+      nodes.map((n) => ({ ...n, width: 260, height: heights[n.id] || 150 })),
+    [nodes, heights],
+  );
+  const routes = useMemo(() => {
+    const byId = new Map(boxes.map((n) => [n.id, n]));
+    const branches = new Map<string, number>();
+    const earlier: ReturnType<typeof routeWire>[] = [];
+    return graph.edges.map((e) => {
+      const branch = branches.get(e.from) || 0;
+      branches.set(e.from, branch + 1);
+      const source = byId.get(e.from)!,
+        target = byId.get(e.to)!;
+      const points = routeWire(source, target, boxes, branch);
+      const smooth = smoothWirePath(points, boxes, earlier);
+      const path = smooth || wirePath(points, earlier);
+      const segment = points
+        .slice(1)
+        .map((p, j) => ({
+          a: points[j],
+          b: p,
+          length: Math.hypot(p.x - points[j].x, p.y - points[j].y),
+        }))
+        .sort((a, b) => b.length - a.length)[0];
+      const midpoint = smooth
+        ? {
+            x: (points[0].x + points.at(-1)!.x) / 2,
+            y: (points[0].y + points.at(-1)!.y) / 2,
+          }
+        : segment
+          ? {
+              x: (segment.a.x + segment.b.x) / 2,
+              y: (segment.a.y + segment.b.y) / 2,
+            }
+          : { x: 0, y: 0 };
+      earlier.push(points);
+      return { edge: e, branch, points, path, midpoint, kind: source.kind };
+    });
+  }, [graph, boxes]);
+  const presentations = useMemo(
+    () =>
+      new Map(
+        graph.nodes.map((n) => {
+          const row = n.path ? readFlowPath(config, n.path) : null;
+          return [
+            n.id,
+            {
+              row,
+              summary:
+                n.kind === "gate"
+                  ? { title: n.label!, detail: "" }
+                  : flowSummary(row, n.kind as FlowKey, home, lang),
+              branches: n.path ? flowGroups(row, n.path, lang) : [],
+              CardIcon: flowIcon(
+                row,
+                n.kind === "gate" ? "triggers" : n.kind,
+                home,
+              ),
+            },
+          ];
+        }),
       ),
-    };
-  });
+    [graph, config, home, lang],
+  );
   const width = Math.max(1800, ...nodes.map((n) => n.x + 340)),
     height = Math.max(900, ...nodes.map((n) => n.y + 200));
   function move(id: string, x: number, y: number) {
-    setPositions((old) => ({
-      ...old,
-      [id]: {
-        x: Math.max(10, Math.round(x / 10) * 10),
-        y: Math.max(20, Math.round(y / 10) * 10),
-      },
-    }));
+    const next = {
+      x: Math.max(10, Math.round(x / 10) * 10),
+      y: Math.max(20, Math.round(y / 10) * 10),
+    };
+    setPositions((old) =>
+      old[id]?.x === next.x && old[id]?.y === next.y
+        ? old
+        : { ...old, [id]: next },
+    );
   }
+  const moveFrame = useRef<number | null>(null);
+  const pendingMove = useRef<{ id: string; x: number; y: number } | null>(null);
+  function flushMove() {
+    if (moveFrame.current !== null) cancelAnimationFrame(moveFrame.current);
+    moveFrame.current = null;
+    const next = pendingMove.current;
+    pendingMove.current = null;
+    if (next) move(next.id, next.x, next.y);
+  }
+  function scheduleMove(id: string, x: number, y: number) {
+    pendingMove.current = { id, x, y };
+    if (moveFrame.current === null)
+      moveFrame.current = requestAnimationFrame(flushMove);
+  }
+  useEffect(
+    () => () => {
+      if (moveFrame.current !== null) cancelAnimationFrame(moveFrame.current);
+    },
+    [],
+  );
   function fitFlow() {
     const el = viewport.current;
     if (!el) return;
@@ -630,56 +728,28 @@ export function FlowCanvas({
                     <path d="M0,0 L7,3.5 L0,7" fill="context-stroke" />
                   </marker>
                 </defs>
-                {routes.map(({ edge: e, branch, points }, i) => {
-                  if (!points.length) return null;
-                  const segment = points
-                    .slice(1)
-                    .map((p, j) => ({
-                      a: points[j],
-                      b: p,
-                      length:
-                        Math.abs(p.x - points[j].x) +
-                        Math.abs(p.y - points[j].y),
-                    }))
-                    .sort((a, b) => b.length - a.length)[0];
-                  const smooth = smoothWirePath(
-                    points,
-                    boxes,
-                    routes.slice(0, i).map((r) => r.points),
-                  );
-                  const midpoint = smooth
-                    ? {
-                        x: (points[0].x + points.at(-1)!.x) / 2,
-                        y: (points[0].y + points.at(-1)!.y) / 2,
-                      }
-                    : {
-                        x: (segment.a.x + segment.b.x) / 2,
-                        y: (segment.a.y + segment.b.y) / 2,
-                      };
-                  return (
-                    <g
-                      key={`${e.from}-${e.to}`}
-                      className={`canvas-route branch-${branch % 4} from-${nodes.find((n) => n.id === e.from)?.kind || "triggers"}`}
-                    >
-                      <path
-                        d={
-                          smooth ||
-                          wirePath(
-                            points,
-                            routes.slice(0, i).map((r) => r.points),
-                          )
-                        }
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        markerEnd="url(#flow-tip)"
-                      />
-                      <text x={midpoint.x + 8} y={midpoint.y - 10}>
-                        {e.label}
-                      </text>
-                    </g>
-                  );
-                })}
+                {routes.map(
+                  ({ edge: e, branch, points, path, midpoint, kind }) => {
+                    if (!points.length) return null;
+                    return (
+                      <g
+                        key={`${e.from}-${e.to}`}
+                        className={`canvas-route branch-${branch % 4} from-${kind}`}
+                      >
+                        <path
+                          d={path}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          markerEnd="url(#flow-tip)"
+                        />
+                        <text x={midpoint.x + 8} y={midpoint.y - 10}>
+                          {e.label}
+                        </text>
+                      </g>
+                    );
+                  },
+                )}
               </svg>
             )}
             {linkFrom &&
@@ -701,34 +771,16 @@ export function FlowCanvas({
                 );
               })()}
             {nodes.map((n) => {
-              const row = n.path ? readFlowPath(config, n.path) : null;
-              const summary =
-                n.kind === "gate"
-                  ? {
-                      title: n.label!,
-                      detail: t(
-                        "Hendelsene er alternative startpunkter.",
-                        "Events are alternative starting points.",
-                      ),
-                    }
-                  : flowSummary(row, n.kind as FlowKey, home, lang);
-              const branches = n.path ? flowGroups(row, n.path, lang) : [];
-              const CardIcon = flowIcon(
-                row,
-                n.kind === "gate" ? "triggers" : n.kind,
-                home,
-              );
+              const { row, summary, branches, CardIcon } = presentations.get(
+                n.id,
+              )!;
               return (
                 <article
                   className={
                     "canvas-node canvas-" +
                     n.kind +
                     (n.id === linkFrom ? " is-connecting" : "") +
-                    (linkFrom &&
-                    planConnection(config, linkFrom, n.id, connectionMode, lang)
-                      .ok
-                      ? " is-connectable"
-                      : "")
+                    (connectableIds.has(n.id) ? " is-connectable" : "")
                   }
                   data-node-id={n.id}
                   key={n.id}
@@ -761,13 +813,14 @@ export function FlowCanvas({
                       return;
                     e.currentTarget.setPointerCapture(e.pointerId);
                     suppressClick.current = true;
-                    move(
+                    scheduleMove(
                       n.id,
                       d.x + (e.clientX - d.startX) / zoom,
                       d.y + (e.clientY - d.startY) / zoom,
                     );
                   }}
                   onPointerUp={() => {
+                    flushMove();
                     drag.current = null;
                   }}
                   onPointerCancel={() => {
@@ -775,6 +828,7 @@ export function FlowCanvas({
                     suppressClick.current = false;
                   }}
                   onLostPointerCapture={() => {
+                    flushMove();
                     drag.current = null;
                   }}
                   onClickCapture={(e) => {

@@ -1,3 +1,9 @@
+## 1.36.34
+- Raskere flyteditor: linjer, kortinformasjon og gyldige koblinger beregnes bare når grunnlaget endrer seg.
+- Ruting bruker raske klarbane-sjekker og A*-søk med prioritetskø rundt hindringer.
+- Kortflytting oppdateres maksimalt én gang per skjermbilde; sluttposisjonen beholdes når kortet slippes.
+- Ytelsen er sammenlignet med en lokal testflyt på 30 kort. Dragging og eksisterende redigering er kontrollert i nettleser.
+
 ## 1.36.33
 - Friske RGB-farger i fri arbeidsflate: rosa/rødt for hendelser, blått for vilkår og grønt for handlinger, med tilpassede mørke farger.
 - Hele byggesteinbiblioteket er tilgjengelig i sidepanelet med søk, typefilter og dra-og-slipp.

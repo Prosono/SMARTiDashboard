@@ -49,6 +49,16 @@ export function routeWire(
     width: r.width + clearance * 2,
     height: r.height + clearance * 2,
   }));
+  // Most edits leave a clear elbow route. Avoid building/searching the full
+  // visibility grid unless another card actually blocks both simple paths.
+  for (const corner of [
+    { x: b.x, y: a.y },
+    { x: a.x, y: b.y },
+  ]) {
+    const middle = [a, corner, b];
+    if (!blocked(a, corner, obstacles) && !blocked(corner, b, obstacles))
+      return simplifyRoute([start, ...middle, end]);
+  }
   const xs = [
     ...new Set([
       a.x,
@@ -67,17 +77,46 @@ export function routeWire(
   const si = points.findIndex((p) => p.x === a.x && p.y === a.y),
     ti = points.findIndex((p) => p.x === b.x && p.y === b.y);
   const dist = new Map<number, number>([[si, 0]]),
-    prev = new Map<number, number>(),
-    todo = new Set([si]);
-  while (todo.size) {
-    let u = -1,
-      best = Infinity;
-    for (const v of todo)
-      if (dist.get(v)! < best) {
-        u = v;
-        best = dist.get(v)!;
+    prev = new Map<number, number>();
+  // A* with a binary heap: visit promising grid points without scanning the frontier.
+  const todo: { v: number; cost: number; rank: number }[] = [];
+  function enqueue(v: number, cost: number) {
+    const entry = {
+      v,
+      cost,
+      rank: cost + Math.abs(points[v].x - b.x) + Math.abs(points[v].y - b.y),
+    };
+    let i = todo.length;
+    todo.push(entry);
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (todo[p].rank <= entry.rank) break;
+      todo[i] = todo[p];
+      i = p;
+    }
+    todo[i] = entry;
+  }
+  function dequeue() {
+    const first = todo[0],
+      last = todo.pop()!;
+    if (todo.length) {
+      let i = 0;
+      while (i * 2 + 1 < todo.length) {
+        let child = i * 2 + 1;
+        if (child + 1 < todo.length && todo[child + 1].rank < todo[child].rank)
+          child++;
+        if (todo[child].rank >= last.rank) break;
+        todo[i] = todo[child];
+        i = child;
       }
-    todo.delete(u);
+      todo[i] = last;
+    }
+    return first;
+  }
+  enqueue(si, 0);
+  while (todo.length) {
+    const { v: u, cost: best } = dequeue();
+    if (best !== dist.get(u)) continue;
     if (u === ti) break;
     const col = u % xs.length,
       row = Math.floor(u / xs.length);
@@ -95,7 +134,7 @@ export function routeWire(
       if (cost < (dist.get(v) ?? Infinity)) {
         dist.set(v, cost);
         prev.set(v, u);
-        todo.add(v);
+        enqueue(v, cost);
       }
     }
   }
@@ -110,16 +149,23 @@ export function routeWire(
   result.unshift(a);
   result.unshift(start);
   result.push(end);
-  return result.filter(
+  return simplifyRoute(result);
+}
+function simplifyRoute(points: Point[]): Point[] {
+  const unique = points.filter(
+    (p, i) => !i || p.x !== points[i - 1].x || p.y !== points[i - 1].y,
+  );
+  return unique.filter(
     (p, i) =>
       !i ||
-      i === result.length - 1 ||
+      i === unique.length - 1 ||
       !(
-        (result[i - 1].x === p.x && p.x === result[i + 1].x) ||
-        (result[i - 1].y === p.y && p.y === result[i + 1].y)
+        (unique[i - 1].x === p.x && p.x === unique[i + 1].x) ||
+        (unique[i - 1].y === p.y && p.y === unique[i + 1].y)
       ),
   );
 }
+
 export function wirePath(points: Point[], earlier: Point[][]): string {
   if (points.length < 2) return "";
   let d = `M${points[0].x} ${points[0].y}`;
