@@ -123,6 +123,19 @@ export function wirePath(points: Point[], earlier: Point[][]): string {
     const l = Math.hypot(b.x - a.x, b.y - a.y);
     return { x: a.x + ((b.x - a.x) * n) / l, y: a.y + ((b.y - a.y) * n) / l };
   };
+  let pen = points[0];
+  // A small bow keeps even aligned connections curved, inside routing clearance.
+  const curveTo = (end: Point) => {
+    const dx = end.x - pen.x,
+      dy = end.y - pen.y,
+      len = Math.hypot(dx, dy);
+    if (!len) return;
+    const bow = Math.min(5, len / 8),
+      nx = (-dy / len) * bow,
+      ny = (dx / len) * bow;
+    d += ` C${pen.x + dx / 3 + nx} ${pen.y + dy / 3 + ny} ${pen.x + (dx * 2) / 3 + nx} ${pen.y + (dy * 2) / 3 + ny} ${end.x} ${end.y}`;
+    pen = end;
+  };
   let cursor = points[0];
   for (let i = 1; i < points.length; i++) {
     const p = points[i],
@@ -154,7 +167,9 @@ export function wirePath(points: Point[], earlier: Point[][]): string {
         (a, b) => (a - b) * direction,
       )) {
         if (Math.abs(x - last) < 18) continue;
-        d += ` L${x - 7 * direction} ${cursor.y} Q${x} ${cursor.y - 14} ${x + 7 * direction} ${cursor.y}`;
+        curveTo({ x: x - 7 * direction, y: cursor.y });
+        d += ` Q${x} ${cursor.y - 14} ${x + 7 * direction} ${cursor.y}`;
+        pen = { x: x + 7 * direction, y: cursor.y };
         last = x;
       }
     }
@@ -177,15 +192,18 @@ export function wirePath(points: Point[], earlier: Point[][]): string {
         (a, b) => (a - b) * direction,
       )) {
         if (Math.abs(y - last) < 18) continue;
-        d += ` L${cursor.x} ${y - 7 * direction} Q${cursor.x + 14} ${y} ${cursor.x} ${y + 7 * direction}`;
+        curveTo({ x: cursor.x, y: y - 7 * direction });
+        d += ` Q${cursor.x + 14} ${y} ${cursor.x} ${y + 7 * direction}`;
+        pen = { x: cursor.x, y: y + 7 * direction };
         last = y;
       }
     }
-    d += ` L${finish.x} ${finish.y}`;
+    curveTo(finish);
     if (r) {
       const after = towards(p, next, r);
       d += ` Q${p.x} ${p.y} ${after.x} ${after.y}`;
       cursor = after;
+      pen = after;
     } else cursor = p;
   }
   return d;

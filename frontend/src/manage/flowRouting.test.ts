@@ -8,6 +8,18 @@ const box = (id: string, x: number, y: number, height = 150): Box => ({
   height,
 });
 describe("flow wire routing", () => {
+  it("curves even perfectly aligned connections", () => {
+    const path = wirePath(
+      [
+        { x: 0, y: 30 },
+        { x: 100, y: 30 },
+      ],
+      [],
+    );
+    expect(path).toContain(" C");
+    expect(path).not.toContain(" L");
+    expect(path).not.toContain("C33.333333333333336 30");
+  });
   it("routes vertically stacked cards around their boundaries with curves", () => {
     const a = box("a", 100, 40),
       b = box("b", 100, 340);

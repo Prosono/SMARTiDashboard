@@ -1,3 +1,10 @@
+## 1.36.31
+
+- Flyteditor med byggesteiner til venstre og et eget panel til høyre for valgt kort på store skjermer. Mobil beholder dialogvisning.
+- Større fokus på arbeidsflaten med prikket bakgrunn, tydelige kortkanter og mindre hjelpetekst når ingen kobling pågår.
+- Stegvisningen følger en vertikal struktur. Automasjonens navn vises som sidetittel.
+- Alle forbindelser tegnes med kurver, også mellom kort som står på samme linje. Hinderruting og krysningshopp beholdes.
+
 ## 1.36.30
 
 - Kortvelgeren har søk og kategorier for tid/sol, bevegelse, klima, energi/lading, enheter og logikk.

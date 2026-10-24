@@ -226,6 +226,9 @@ export function FlowCanvas({
       </p>
       <div className="canvas-toolbar">
         <div className="canvas-add">
+          <strong className="canvas-library-heading">
+            {t("Byggesteiner", "Building blocks")}
+          </strong>
           {(["triggers", "conditions", "actions"] as FlowKey[]).map((k) => (
             <button
               type="button"
@@ -425,7 +428,10 @@ export function FlowCanvas({
         </div>
       </div>
       <div
-        className="canvas-connection-status"
+        className={
+          "canvas-connection-status" +
+          (!linkFrom && !connectionMessage ? " is-idle" : "")
+        }
         role="status"
         aria-live="polite"
       >

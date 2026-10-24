@@ -221,6 +221,13 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
     document.documentElement.dataset.theme = "light";
   });
   await page.locator(".canvas-actions .canvas-node-content").first().click();
+  if (test.info().project.name === "desktop") {
+    await expect(page.locator(".flow-step-panel")).toBeVisible();
+    await page
+      .locator(".flow-editor-shell")
+      .screenshot({ path: "/tmp/smarti-docked-flow.png" });
+  }
+
   await expect(page.getByRole("dialog")).toBeVisible();
   await page
     .getByRole("dialog")

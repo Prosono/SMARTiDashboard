@@ -293,7 +293,9 @@ export function Automations({
               ? t("Rediger automasjon", "Edit automation")
               : t("Ny automasjon", "New automation")}
           </span>
-          <h1>{t("La hjemmet hjelpe til.", "Let your home help.")}</h1>
+          <h1>
+            {editing.config.alias || t("Ny automasjon", "New automation")}
+          </h1>
         </div>
         <Feedback message={w.message} />
         <form

@@ -1,3 +1,4 @@
+import { FlowStepPanel } from "./FlowStepPanel";
 import { flowCategories } from "./flowPresets";
 import { useEffect, useState } from "react";
 import {
@@ -244,414 +245,427 @@ export function AutomationFlow({
               )}
         </span>
       </div>
-      {view === "canvas" && (
-        <FlowCanvas
-          config={c}
-          home={home}
-          lang={lang}
-          onSelect={select}
-          onAdd={(key) => startAdd([key], key)}
-          onRemove={(path) => {
-            const list = readFlowPath(c, path.slice(0, -1));
-            if (Array.isArray(list))
-              replace(
-                path.slice(0, -1),
-                list.filter((_: any, i: number) => i !== path.at(-1)),
-              );
-          }}
-          onConnect={patch}
-        />
-      )}
       <div
-        className="flow-board"
-        hidden={view !== "structure"}
-        aria-label={t("Automasjonsflyt", "Automation flow")}
+        className={`flow-editor-shell ${view === "canvas" && selected ? "has-step-panel" : ""}`}
       >
-        {groups.map(({ key, title, hint, Icon }, g) => (
-          <section key={key} className={`flow-lane flow-${key}`}>
-            <header>
-              <span>
-                <Icon size={22} />
-              </span>
-              <div>
-                <small>
-                  {t("DEL", "PART")} {g + 1}
-                </small>
-                <h2>{title}</h2>
-                <p>{hint}</p>
-              </div>
-              <span className="flow-lane-count">{c[key].length}</span>
-            </header>
-            <div className="flow-cards">
-              {c[key].map((item: any, i: number) => (
-                <div key={i} className="flow-step-wrap">
-                  {i > 0 && (
-                    <span className="flow-step-join">
-                      {key === "triggers"
-                        ? t("ELLER", "OR")
-                        : key === "conditions"
-                          ? t("OG", "AND")
-                          : t("DERETTER", "THEN")}
-                    </span>
-                  )}
-                  <FlowTree
-                    row={item}
-                    path={[key, i]}
-                    kind={key}
-                    home={home}
-                    lang={lang}
-                    onSelect={select}
-                    onAppend={(path, kind) => startAdd(path, kind)}
-                  />
-                </div>
-              ))}
-              {!c[key].length && (
-                <div className="flow-empty">
-                  {key === "conditions"
-                    ? t(
-                        "Ingen ekstra krav. Rutinen går videre når en hendelse inntreffer.",
-                        "No extra requirements. The routine continues when an event occurs.",
-                      )
-                    : key === "triggers"
-                      ? t(
-                          "Hva skal sette rutinen i gang?",
-                          "What should start the routine?",
-                        )
-                      : t(
-                          "Hva skal hjemmet gjøre for deg?",
-                          "What should your home do for you?",
-                        )}
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              className="flow-add"
-              onClick={() => startAdd([key], key)}
-            >
-              <Plus size={18} />
-              {key === "triggers"
-                ? t("Legg til hendelse", "Add event")
-                : key === "conditions"
-                  ? t("Legg til krav", "Add requirement")
-                  : t("Legg til handling", "Add action")}
-            </button>
-          </section>
-        ))}
-      </div>
-      {adding && (
-        <SettingsDialog
-          title={t("Hva vil du legge til?", "What would you like to add?")}
-          lang={lang}
-          onClose={() => {
-            setAdding(null);
-            if (trail.length)
-              select(trail[trail.length - 1], trail.slice(0, -1));
-          }}
-        >
-          <div className="flow-library-intro">
-            <p>
-              {adding.kind === "triggers"
-                ? t(
-                    "Velg hva som skal sette rutinen i gang.",
-                    "Choose what starts the routine.",
-                  )
-                : adding.kind === "conditions"
-                  ? t(
-                      "Velg et krav som må stemme før rutinen går videre.",
-                      "Choose a requirement for the routine to continue.",
-                    )
-                  : t(
-                      "Velg hva hjemmet skal gjøre, eller hvordan stegene skal kjøres.",
-                      "Choose what your home does, or how the steps should run.",
-                    )}
-            </p>
-            <input
-              className="wide-input"
-              aria-label={t("Søk etter kort", "Search cards")}
-              placeholder={t(
-                "Søk etter lys, tid, temperatur …",
-                "Search lights, time, temperature …",
-              )}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCategory("all");
-              }}
-            />
-          </div>
-          <div
-            className="flow-library-categories"
-            role="group"
-            aria-label={t("Kortkategorier", "Card categories")}
-          >
-            {flowCategories
-              .filter(
-                ([id]) =>
-                  id === "all" ||
-                  flowLibrary(adding.kind, lang).some(
-                    (item) => item.category === id,
-                  ),
-              )
-              .map(([id, nb, en]) => (
-                <button
-                  type="button"
-                  key={id}
-                  aria-pressed={category === id}
-                  onClick={() => setCategory(id)}
-                >
-                  {t(nb, en)}
-                </button>
-              ))}
-          </div>
-          <p className="flow-library-note">
-            {t(
-              "Velg et forslag, og tilpass enhet og verdier i neste steg.",
-              "Choose a suggestion, then customize devices and values in the next step.",
-            )}
-          </p>
-          <div className="flow-card-library">
-            {flowLibrary(adding.kind, lang)
-              .filter((x) => category === "all" || x.category === category)
-              .filter((x) =>
-                `${x.title} ${x.hint}`
-                  .toLowerCase()
-                  .includes(search.toLowerCase()),
-              )
-              .map((item) => {
-                const Symbol = item.id.startsWith("preset:")
-                  ? {
-                      time: Sun,
-                      presence: PersonStanding,
-                      climate: Thermometer,
-                      energy: Zap,
-                    }[item.category] || Zap
-                  : flowIcon(
-                      newFlowStep(adding.kind, item.id),
-                      adding.kind,
-                      home,
-                    );
-                return (
-                  <button
-                    type="button"
-                    key={item.id}
-                    onClick={() => add(item.id)}
-                  >
-                    <span>
-                      <Symbol size={23} />
-                    </span>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <small>{item.hint}</small>
-                    </div>
-                    <Plus size={17} />
-                  </button>
-                );
-              })}
-          </div>
-          {!flowLibrary(adding.kind, lang).some((x) =>
-            `${x.title} ${x.hint}`.toLowerCase().includes(search.toLowerCase()),
-          ) && (
-            <p className="quiet-notice">
-              {t(
-                "Ingen kort passer søket. Prøv et annet ord.",
-                "No cards match. Try another word.",
-              )}
-            </p>
-          )}
-        </SettingsDialog>
-      )}
-      {selected && row !== undefined && (
-        <SettingsDialog
-          title={t("Tilpass steget", "Customize step")}
-          lang={lang}
-          onClose={close}
-        >
-          {trail.length > 0 && (
-            <button
-              type="button"
-              className="text-button"
-              disabled={!valid}
-              onClick={close}
-            >
-              <ArrowLeft size={17} />
-              {t("Tilbake til forrige steg", "Back to parent step")}
-            </button>
-          )}
-          <div className={`flow-edit-summary flow-${kind}`}>
-            <Icon size={28} />
-            <div>
-              <strong>{info?.title}</strong>
-              <p>{info?.detail}</p>
-            </div>
-          </div>
-          <FlowInspector
-            key={JSON.stringify(selected)}
-            row={row}
-            kind={kind}
+        {view === "canvas" && (
+          <FlowCanvas
+            config={c}
             home={home}
             lang={lang}
-            onValidityChange={setValid}
-            onChange={(value) => replace(selected, value)}
-            onAdvanced={() => {
-              if (!valid) return;
-              setSelected(null);
-              onAdvanced();
+            onSelect={(path) => {
+              if (!selected || valid) select(path);
             }}
+            onAdd={(key) => {
+              if (!selected || valid) startAdd([key], key);
+            }}
+            onRemove={(path) => {
+              const list = readFlowPath(c, path.slice(0, -1));
+              if (Array.isArray(list))
+                replace(
+                  path.slice(0, -1),
+                  list.filter((_: any, i: number) => i !== path.at(-1)),
+                );
+            }}
+            onConnect={patch}
           />
-          {flowGroups(row, selected, lang).length > 0 && (
-            <section className="flow-subflow-editor">
-              <h3>{t("Stegene inni", "Steps inside")}</h3>
-              <p>
-                {t(
-                  "Trykk på et kort for å redigere det. Grenene beholder samme rekkefølge.",
-                  "Select a card to edit it. Branches keep their original order.",
-                )}
-              </p>
-              <fieldset disabled={!valid}>
-                {flowGroups(row, selected, lang).map((group) => (
-                  <section
-                    className={`flow-subflow-group flow-${group.kind}`}
-                    key={JSON.stringify(group.path)}
-                  >
-                    <h4>{group.label}</h4>
-                    {(Array.isArray(group.value)
-                      ? group.value
-                      : [group.value]
-                    ).map((item, i) => (
-                      <FlowTree
-                        key={i}
-                        row={item}
-                        path={
-                          Array.isArray(group.value)
-                            ? [...group.path, i]
-                            : group.path
-                        }
-                        kind={group.kind}
-                        home={home}
-                        lang={lang}
-                        onSelect={(path) => {
-                          if (valid) select(path, [...trail, selected]);
-                        }}
-                        onAppend={(path, kind) => {
-                          if (valid) {
-                            startAdd(path, kind, [...trail, selected]);
-                          }
-                        }}
-                      />
-                    ))}
-                    {Array.isArray(group.value) && (
-                      <button
-                        type="button"
-                        className="flow-add"
-                        onClick={() => {
-                          startAdd(group.path, group.kind, [
-                            ...trail,
-                            selected,
-                          ]);
-                        }}
-                      >
-                        <Plus size={16} />
-                        {t("Legg til steg her", "Add a step here")}
-                      </button>
+        )}
+        <div
+          className="flow-board"
+          hidden={view !== "structure"}
+          aria-label={t("Automasjonsflyt", "Automation flow")}
+        >
+          {groups.map(({ key, title, hint, Icon }, g) => (
+            <section key={key} className={`flow-lane flow-${key}`}>
+              <header>
+                <span>
+                  <Icon size={22} />
+                </span>
+                <div>
+                  <small>
+                    {t("DEL", "PART")} {g + 1}
+                  </small>
+                  <h2>{title}</h2>
+                  <p>{hint}</p>
+                </div>
+                <span className="flow-lane-count">{c[key].length}</span>
+              </header>
+              <div className="flow-cards">
+                {c[key].map((item: any, i: number) => (
+                  <div key={i} className="flow-step-wrap">
+                    {i > 0 && (
+                      <span className="flow-step-join">
+                        {key === "triggers"
+                          ? t("ELLER", "OR")
+                          : key === "conditions"
+                            ? t("OG", "AND")
+                            : t("DERETTER", "THEN")}
+                      </span>
                     )}
-                  </section>
+                    <FlowTree
+                      row={item}
+                      path={[key, i]}
+                      kind={key}
+                      home={home}
+                      lang={lang}
+                      onSelect={(path) => {
+                        if (!selected || valid) select(path);
+                      }}
+                      onAppend={(path, kind) => startAdd(path, kind)}
+                    />
+                  </div>
                 ))}
-              </fieldset>
+                {!c[key].length && (
+                  <div className="flow-empty">
+                    {key === "conditions"
+                      ? t(
+                          "Ingen ekstra krav. Rutinen går videre når en hendelse inntreffer.",
+                          "No extra requirements. The routine continues when an event occurs.",
+                        )
+                      : key === "triggers"
+                        ? t(
+                            "Hva skal sette rutinen i gang?",
+                            "What should start the routine?",
+                          )
+                        : t(
+                            "Hva skal hjemmet gjøre for deg?",
+                            "What should your home do for you?",
+                          )}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className="flow-add"
+                onClick={() => startAdd([key], key)}
+              >
+                <Plus size={18} />
+                {key === "triggers"
+                  ? t("Legg til hendelse", "Add event")
+                  : key === "conditions"
+                    ? t("Legg til krav", "Add requirement")
+                    : t("Legg til handling", "Add action")}
+              </button>
             </section>
-          )}
-          {!valid && (
-            <p role="alert" className="quiet-notice">
+          ))}
+        </div>
+        {adding && (
+          <SettingsDialog
+            title={t("Hva vil du legge til?", "What would you like to add?")}
+            lang={lang}
+            onClose={() => {
+              setAdding(null);
+              if (trail.length)
+                select(trail[trail.length - 1], trail.slice(0, -1));
+            }}
+          >
+            <div className="flow-library-intro">
+              <p>
+                {adding.kind === "triggers"
+                  ? t(
+                      "Velg hva som skal sette rutinen i gang.",
+                      "Choose what starts the routine.",
+                    )
+                  : adding.kind === "conditions"
+                    ? t(
+                        "Velg et krav som må stemme før rutinen går videre.",
+                        "Choose a requirement for the routine to continue.",
+                      )
+                    : t(
+                        "Velg hva hjemmet skal gjøre, eller hvordan stegene skal kjøres.",
+                        "Choose what your home does, or how the steps should run.",
+                      )}
+              </p>
+              <input
+                className="wide-input"
+                aria-label={t("Søk etter kort", "Search cards")}
+                placeholder={t(
+                  "Søk etter lys, tid, temperatur …",
+                  "Search lights, time, temperature …",
+                )}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCategory("all");
+                }}
+              />
+            </div>
+            <div
+              className="flow-library-categories"
+              role="group"
+              aria-label={t("Kortkategorier", "Card categories")}
+            >
+              {flowCategories
+                .filter(
+                  ([id]) =>
+                    id === "all" ||
+                    flowLibrary(adding.kind, lang).some(
+                      (item) => item.category === id,
+                    ),
+                )
+                .map(([id, nb, en]) => (
+                  <button
+                    type="button"
+                    key={id}
+                    aria-pressed={category === id}
+                    onClick={() => setCategory(id)}
+                  >
+                    {t(nb, en)}
+                  </button>
+                ))}
+            </div>
+            <p className="flow-library-note">
               {t(
-                "Rett feltet som er markert, eller forkast endringene i dette steget.",
-                "Correct the highlighted field, or discard this step’s changes.",
+                "Velg et forslag, og tilpass enhet og verdier i neste steg.",
+                "Choose a suggestion, then customize devices and values in the next step.",
               )}
             </p>
-          )}
-          <div className="flow-edit-footer">
-            <button
-              type="button"
-              className="primary compact"
-              disabled={!valid}
-              onClick={close}
-            >
-              <Check size={17} />
-              {t("Ferdig med steget", "Done with step")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (stepNew && Array.isArray(parent))
-                  replace(
-                    selected.slice(0, -1),
-                    parent.filter((_: any, i: number) => i !== index),
+            <div className="flow-card-library">
+              {flowLibrary(adding.kind, lang)
+                .filter((x) => category === "all" || x.category === category)
+                .filter((x) =>
+                  `${x.title} ${x.hint}`
+                    .toLowerCase()
+                    .includes(search.toLowerCase()),
+                )
+                .map((item) => {
+                  const Symbol = item.id.startsWith("preset:")
+                    ? {
+                        time: Sun,
+                        presence: PersonStanding,
+                        climate: Thermometer,
+                        energy: Zap,
+                      }[item.category] || Zap
+                    : flowIcon(
+                        newFlowStep(adding.kind, item.id),
+                        adding.kind,
+                        home,
+                      );
+                  return (
+                    <button
+                      type="button"
+                      key={item.id}
+                      onClick={() => add(item.id)}
+                    >
+                      <span>
+                        <Symbol size={23} />
+                      </span>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <small>{item.hint}</small>
+                      </div>
+                      <Plus size={17} />
+                    </button>
                   );
-                else replace(selected, stepOriginal);
-                setSelected(null);
-                setValid(true);
-              }}
-            >
-              {t("Forkast endringer i steget", "Discard step changes")}
-            </button>
-          </div>
-          {Array.isArray(parent) && typeof index === "number" && (
-            <div className="flow-edit-arrange">
-              <span>
-                {t(
-                  `Steg ${index + 1} av ${parent.length}`,
-                  `Step ${index + 1} of ${parent.length}`,
-                )}
-              </span>
-              <button
-                type="button"
-                disabled={!valid || index === 0}
-                onClick={() => move(-1)}
-              >
-                <ArrowUp size={16} />
-                {t("Flytt opp", "Move up")}
-              </button>
-              <button
-                type="button"
-                disabled={!valid || index === parent.length - 1}
-                onClick={() => move(1)}
-              >
-                <ArrowDown size={16} />
-                {t("Flytt ned", "Move down")}
-              </button>
-              <button type="button" onClick={() => setRemoving(true)}>
-                <Trash2 size={16} />
-                {t("Fjern steget", "Remove step")}
-              </button>
+                })}
             </div>
-          )}
-          {removing && (
-            <div className="inline-confirm">
-              <p>
+            {!flowLibrary(adding.kind, lang).some((x) =>
+              `${x.title} ${x.hint}`
+                .toLowerCase()
+                .includes(search.toLowerCase()),
+            ) && (
+              <p className="quiet-notice">
                 {t(
-                  "Fjerne dette steget og eventuelle steg inni det? Endringen tas i bruk når du lagrer automasjonen.",
-                  "Remove this step and any steps inside it? The change takes effect when you save the automation.",
+                  "Ingen kort passer søket. Prøv et annet ord.",
+                  "No cards match. Try another word.",
                 )}
               </p>
+            )}
+          </SettingsDialog>
+        )}
+        {selected && row !== undefined && (
+          <FlowStepPanel
+            docked={view === "canvas"}
+            title={t("Tilpass steget", "Customize step")}
+            lang={lang}
+            onClose={close}
+          >
+            {trail.length > 0 && (
+              <button
+                type="button"
+                className="text-button"
+                disabled={!valid}
+                onClick={close}
+              >
+                <ArrowLeft size={17} />
+                {t("Tilbake til forrige steg", "Back to parent step")}
+              </button>
+            )}
+            <div className={`flow-edit-summary flow-${kind}`}>
+              <Icon size={28} />
+              <div>
+                <strong>{info?.title}</strong>
+                <p>{info?.detail}</p>
+              </div>
+            </div>
+            <FlowInspector
+              key={JSON.stringify(selected)}
+              row={row}
+              kind={kind}
+              home={home}
+              lang={lang}
+              onValidityChange={setValid}
+              onChange={(value) => replace(selected, value)}
+              onAdvanced={() => {
+                if (!valid) return;
+                setSelected(null);
+                onAdvanced();
+              }}
+            />
+            {flowGroups(row, selected, lang).length > 0 && (
+              <section className="flow-subflow-editor">
+                <h3>{t("Stegene inni", "Steps inside")}</h3>
+                <p>
+                  {t(
+                    "Trykk på et kort for å redigere det. Grenene beholder samme rekkefølge.",
+                    "Select a card to edit it. Branches keep their original order.",
+                  )}
+                </p>
+                <fieldset disabled={!valid}>
+                  {flowGroups(row, selected, lang).map((group) => (
+                    <section
+                      className={`flow-subflow-group flow-${group.kind}`}
+                      key={JSON.stringify(group.path)}
+                    >
+                      <h4>{group.label}</h4>
+                      {(Array.isArray(group.value)
+                        ? group.value
+                        : [group.value]
+                      ).map((item, i) => (
+                        <FlowTree
+                          key={i}
+                          row={item}
+                          path={
+                            Array.isArray(group.value)
+                              ? [...group.path, i]
+                              : group.path
+                          }
+                          kind={group.kind}
+                          home={home}
+                          lang={lang}
+                          onSelect={(path) => {
+                            if (valid) select(path, [...trail, selected]);
+                          }}
+                          onAppend={(path, kind) => {
+                            if (valid) {
+                              startAdd(path, kind, [...trail, selected]);
+                            }
+                          }}
+                        />
+                      ))}
+                      {Array.isArray(group.value) && (
+                        <button
+                          type="button"
+                          className="flow-add"
+                          onClick={() => {
+                            startAdd(group.path, group.kind, [
+                              ...trail,
+                              selected,
+                            ]);
+                          }}
+                        >
+                          <Plus size={16} />
+                          {t("Legg til steg her", "Add a step here")}
+                        </button>
+                      )}
+                    </section>
+                  ))}
+                </fieldset>
+              </section>
+            )}
+            {!valid && (
+              <p role="alert" className="quiet-notice">
+                {t(
+                  "Rett feltet som er markert, eller forkast endringene i dette steget.",
+                  "Correct the highlighted field, or discard this step’s changes.",
+                )}
+              </p>
+            )}
+            <div className="flow-edit-footer">
+              <button
+                type="button"
+                className="primary compact"
+                disabled={!valid}
+                onClick={close}
+              >
+                <Check size={17} />
+                {t("Ferdig med steget", "Done with step")}
+              </button>
               <button
                 type="button"
                 onClick={() => {
-                  replace(
-                    selected.slice(0, -1),
-                    parent.filter((_: any, i: number) => i !== index),
-                  );
+                  if (stepNew && Array.isArray(parent))
+                    replace(
+                      selected.slice(0, -1),
+                      parent.filter((_: any, i: number) => i !== index),
+                    );
+                  else replace(selected, stepOriginal);
                   setSelected(null);
-                  setRemoving(false);
+                  setValid(true);
                 }}
               >
-                {t("Ja, fjern steget", "Yes, remove step")}
-              </button>
-              <button type="button" onClick={() => setRemoving(false)}>
-                {t("Behold steget", "Keep step")}
+                {t("Forkast endringer i steget", "Discard step changes")}
               </button>
             </div>
-          )}
-        </SettingsDialog>
-      )}
+            {Array.isArray(parent) && typeof index === "number" && (
+              <div className="flow-edit-arrange">
+                <span>
+                  {t(
+                    `Steg ${index + 1} av ${parent.length}`,
+                    `Step ${index + 1} of ${parent.length}`,
+                  )}
+                </span>
+                <button
+                  type="button"
+                  disabled={!valid || index === 0}
+                  onClick={() => move(-1)}
+                >
+                  <ArrowUp size={16} />
+                  {t("Flytt opp", "Move up")}
+                </button>
+                <button
+                  type="button"
+                  disabled={!valid || index === parent.length - 1}
+                  onClick={() => move(1)}
+                >
+                  <ArrowDown size={16} />
+                  {t("Flytt ned", "Move down")}
+                </button>
+                <button type="button" onClick={() => setRemoving(true)}>
+                  <Trash2 size={16} />
+                  {t("Fjern steget", "Remove step")}
+                </button>
+              </div>
+            )}
+            {removing && (
+              <div className="inline-confirm">
+                <p>
+                  {t(
+                    "Fjerne dette steget og eventuelle steg inni det? Endringen tas i bruk når du lagrer automasjonen.",
+                    "Remove this step and any steps inside it? The change takes effect when you save the automation.",
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    replace(
+                      selected.slice(0, -1),
+                      parent.filter((_: any, i: number) => i !== index),
+                    );
+                    setSelected(null);
+                    setRemoving(false);
+                  }}
+                >
+                  {t("Ja, fjern steget", "Yes, remove step")}
+                </button>
+                <button type="button" onClick={() => setRemoving(false)}>
+                  {t("Behold steget", "Keep step")}
+                </button>
+              </div>
+            )}
+          </FlowStepPanel>
+        )}
+      </div>
       <details className="flow-settings">
         <summary>
           {t(
