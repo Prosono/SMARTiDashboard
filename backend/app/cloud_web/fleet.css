@@ -57,3 +57,47 @@ html[data-portal-theme="dark"] .hub-complete-check::after{border-color:#10261b}
 .staff-page .traffic-history th,.staff-page .traffic-history td{padding:9px 4px;text-align:right;overflow-wrap:anywhere;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
 .staff-page .traffic-history th:first-child{width:30%;text-align:left;font-weight:500}
 .traffic-history p{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* Shared desktop navigation for every authenticated administration page. */
+@media screen and (min-width:1000px){
+ html[data-portal-session=authenticated] .staff-page{padding-left:244px}
+ html[data-portal-theme][data-portal-session=authenticated] .staff-page .masthead{
+  position:fixed;inset:0 auto 0 0;width:244px;height:100dvh;min-height:0;
+  display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;
+  justify-content:flex-start;gap:28px;padding:28px 18px 20px;
+  background:var(--surface);color:var(--ink);border:0;border-right:1px solid var(--line);
+  overflow-y:auto;z-index:30;
+ }
+ html[data-portal-session=authenticated] .staff-page .masthead>a{
+  display:flex;flex-wrap:wrap;gap:10px;font-size:24px;white-space:normal;
+  padding:0 8px;flex-shrink:0;
+ }
+ html[data-portal-session=authenticated] .staff-page .masthead>a span{
+  display:block;flex-basis:100%;border:0;padding:0;margin:2px 0 0 46px;
+  color:var(--muted);font-size:11px;letter-spacing:.08em;
+ }
+ html[data-portal-session=authenticated] .staff-page .masthead nav{
+  display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;
+  justify-content:flex-start;gap:6px;width:100%;overflow:visible;padding:0;
+ }
+ html[data-portal-theme][data-portal-session=authenticated] .staff-page .masthead nav a{
+  display:flex;align-items:center;gap:12px;min-height:46px;padding:12px 14px;
+  border-radius:9px;color:var(--muted);font-size:14px;white-space:normal;box-shadow:none;
+ }
+ html[data-portal-theme][data-portal-session=authenticated] .staff-page .masthead nav a:hover{
+  background:color-mix(in srgb,var(--ink) 5%,var(--surface));color:var(--ink);
+ }
+ html[data-portal-theme][data-portal-session=authenticated] .staff-page .masthead nav a[aria-current=page]{
+  color:var(--accent-ink);background:color-mix(in srgb,var(--accent) 10%,var(--surface));
+  box-shadow:inset 3px 0 var(--accent);font-weight:600;
+ }
+ html[data-portal-theme][data-portal-session=authenticated] .staff-page .masthead #logout{
+  margin:18px 0 0;padding:12px 14px;text-align:left;background:transparent;
+  color:var(--muted);border:1px solid var(--line);width:100%;
+ }
+ html[data-portal-session=authenticated] .staff-page .masthead .portal-theme{
+  margin: auto 0 0;padding-top:16px;align-self:flex-start;flex-shrink:0;
+ }
+ html[data-portal-session=authenticated] .staff-page main{width:100%;min-width:0}
+ html[data-portal-session=authenticated] .staff-page .site-footer{margin-left:0}
+}

@@ -30,5 +30,12 @@ test('administrator can change password with validation and feedback',async({pag
  await expect(page.getByRole('status')).toContainText('Passordet er endret');
  await expect(page.getByLabel('Nytt passord',{exact:true})).toHaveValue('');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ const nav=await page.locator('.masthead').boundingBox();
+ const main=await page.locator('main').boundingBox();
+ if(info.project.name==='desktop'){
+  expect(nav!.width).toBe(244);expect(main!.x).toBeGreaterThanOrEqual(244);
+  const links=await page.locator('.masthead nav a:visible').all();
+  for(const link of links)expect((await link.boundingBox())!.x).toBeLessThan(244);
+ }else{expect(main!.y).toBeGreaterThanOrEqual(nav!.y+nav!.height);}
  await page.screenshot({path:`/tmp/smarti-admin-account-${info.project.name}.png`,fullPage:true});
 });

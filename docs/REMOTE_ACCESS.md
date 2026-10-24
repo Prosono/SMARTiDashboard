@@ -471,3 +471,7 @@ its owner setup. No customer hub reset was executed as part of publication.
 `/admin/account` gir portaladministratorer tilgang til eget brukernavn og passordendring. `POST /api/admin/account/password` krever gyldig økt, Origin/CSRF, portaladministratorrolle, dagens passord og to like nye passord (12–256 tegn). Gjentatte forsøk begrenses per konto. Endringen kontrollerer kontoens gamle hash og rolle i samme transaksjon; andre portaløkter for samme konto avsluttes, mens inneværende økt beholdes. Kundetilkoblinger og andre kontoer endres ikke. Revisjonsloggen registrerer handlingen uten passord.
 
 Publisert som `smartihome:admin-account-20261024`. Syv backendtester og to nettlesertester (mobil/desktop) bestod. Publisert side og kontoendepunkt ble verifisert med eksisterende administratorinnlogging, uten å endre administratorens faktiske passord.
+
+## Administrasjonsmeny på desktop — 24. oktober 2026
+
+Alle administrasjonsfaner ligger i et fast sidepanel ved skjermbredde fra 1000 px. Mobil beholder toppnavigasjonen. Publisert som `smartihome:admin-sidebar-20261024`; fire nettlesertester for Konto og Arkitektur på desktop/mobil bestod. Serverens helsesjekk og publiserte CSS/JavaScript ble verifisert. Forrige compose er bevart som `compose.before-admin-sidebar-20261024.yaml`.
