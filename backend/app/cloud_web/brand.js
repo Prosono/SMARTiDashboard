@@ -13,12 +13,13 @@
     }
     document.querySelector('.masthead > a')?.setAttribute('href','/admin');
     const nav = document.querySelector('.masthead nav');
-    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/users','Brukere'],['/admin/support','Support'],['/admin/support/prices','Prisliste']];
+    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/users','Brukere'],['/admin/support','Support'],['/admin/support/prices','Prisliste'],['/admin/architecture','Arkitektur']];
     if (nav) {
       for (const [href, label] of links) {
         const existing = nav.querySelector(`a[href="${href}"]:not([id])`);
         const link = existing || document.createElement('a');
         link.href = href; link.textContent = label;
+        if (href === "/admin/architecture") link.style.setProperty("--icon", "url(/assets/icon-grid.svg)");
         nav.append(link);
       }
       // Role-controlled links retain their IDs for their page controllers.

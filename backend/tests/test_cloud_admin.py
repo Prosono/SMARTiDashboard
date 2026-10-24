@@ -92,3 +92,29 @@ def test_staff_customer_pages_redirect_before_rendering(tmp_path):
     with sqlite3.connect(path) as c:
         c.execute('DELETE FROM portal_admins')
     assert staff.get('/', follow_redirects=False).status_code == 200
+
+
+def test_architecture_is_admin_only_and_sources_exist(tmp_path):
+    import json
+    from pathlib import Path
+
+    app, path, staff, customer = setup(tmp_path)
+    for route in ("/admin/architecture", "/api/admin/architecture"):
+        assert TestClient(app, base_url=ORIGIN).get(route).status_code == 401
+        assert customer.get(route).status_code == 403
+        assert staff.get(route).status_code == 200
+    data = staff.get("/api/admin/architecture").json()
+    ids = {n["id"] for n in data["nodes"]}
+    assert len(ids) == len(data["nodes"])
+    root = Path(__file__).resolve().parents[2]
+    for n in data["nodes"]:
+        assert 0 <= n["zone"] < len(data["zones"])
+        for source in n["sources"]:
+            assert (root / source).is_file(), source
+    for edge in data["edges"]:
+        assert edge["source"] in ids and edge["target"] in ids
+    assert "test-cloud-password-only" not in json.dumps(data)
+    with sqlite3.connect(path) as c:
+        c.execute("DELETE FROM portal_admins")
+    assert staff.get("/api/admin/architecture").status_code == 403
+    assert staff.get("/admin/architecture").status_code == 403

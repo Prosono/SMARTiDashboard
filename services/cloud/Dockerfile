@@ -5,6 +5,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.lock && mkdir /data && chown
 COPY backend/app/cloud.py backend/app/cloud_push.py backend/app/cloud_admin.py backend/app/relay_traffic.py backend/app/cloud_admin_cli.py backend/app/cloud_support.py backend/app/cloud_onboarding.py backend/app/cloud_enrollment.py backend/app/cloud_accounts.py backend/app/cloud_hub_credentials.py backend/app/hub_credentials.py backend/app/cloud_factory_reset.py backend/app/reset_credentials.py ./app/
 COPY backend/app/cloud_energy.py backend/app/energy_repository.py backend/app/energy_intervals.py backend/app/energy_sources.py backend/app/energy_tariffs.py ./app/
 COPY backend/app/energy_data ./app/energy_data
+COPY backend/app/architecture.json ./app/
 COPY backend/app/cloud_web ./app/cloud_web
 ENV PYTHONUNBUFFERED=1
 USER 10001:10001

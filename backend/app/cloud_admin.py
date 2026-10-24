@@ -1,6 +1,7 @@
 """Operator support surface. Home ownership and hub permissions are never bypassed."""
 
 import os
+import json
 import time
 from pathlib import Path
 
@@ -74,6 +75,14 @@ def install_admin(app, db, session, relay_status_url):
     @app.get("/admin")
     def admin_page():
         return FileResponse(Path(__file__).with_name("cloud_web") / "admin.html")
+
+    @app.get("/admin/architecture")
+    def architecture_page(s=Depends(admin)):
+        return FileResponse(Path(__file__).with_name("cloud_web") / "architecture.html", headers={"Cache-Control": "no-store"})
+
+    @app.get("/api/admin/architecture")
+    def architecture(s=Depends(admin)):
+        return json.loads(Path(__file__).with_name("architecture.json").read_text())
 
     @app.get("/api/admin/traffic")
     def traffic(days: int = Query(30, ge=1, le=90), s=Depends(admin)):

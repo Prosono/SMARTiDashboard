@@ -1,0 +1,478 @@
+{
+  "updated": "2026-10-24",
+  "zones": [
+    "Brukere og klienter",
+    "SMARTi i skyen",
+    "Kundens hub",
+    "Enheter og eksterne tjenester"
+  ],
+  "nodes": [
+    {
+      "id": "browser",
+      "title": "Nettleser / SMARTi UI",
+      "zone": 0,
+      "row": 0,
+      "summary": "React · TypeScript · Vite",
+      "details": "Kundens grensesnitt for rom, enheter, automasjoner, energi og rapporter. Henter modeller fra hubens API og får endringsvarsler via SSE. Portalen er en egen nettflate.",
+      "stores": "Nettleserøkt og visningsvalg. HA-token holdes på backend.",
+      "sources": [
+        "frontend/src/main.tsx",
+        "backend/app/main.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "iphone",
+      "title": "SMARTi for iPhone",
+      "zone": 0,
+      "row": 1,
+      "summary": "SwiftUI · WKWebView",
+      "details": "Viser SMARTi, finner huber på lokalnettet og skanner QR-koder. Native funksjoner omfatter telefonparing, posisjon og varsler. Distribueres via TestFlight.",
+      "stores": "Telefonlegitimasjon i Keychain; samtykkestyrte telefonfunksjoner.",
+      "sources": [
+        "ios/SMARTiHome/PhoneModel.swift",
+        "ios/SMARTiHome/MobileClient.swift"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "staff",
+      "title": "SMARTi-administrator",
+      "zone": 0,
+      "row": 2,
+      "summary": "Administrasjon på home.smarti.dev",
+      "details": "Administrerer kunder, huber, QR-etiketter, support og priser. Portalrollen er separat fra kundens lokale administratorrolle og gir ikke automatisk styring av hjemmet.",
+      "stores": "Ingen egen database; bruker skyens tilgangskontrollerte API.",
+      "sources": [
+        "backend/app/cloud_admin.py",
+        "backend/app/cloud_enrollment.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "edge",
+      "title": "Internettinngang",
+      "zone": 1,
+      "row": 0,
+      "summary": "HAProxy · Caddy · DNS",
+      "details": "HAProxy ruter på TLS-vertsnavn. Portaltrafikk går til Caddy og skytjenesten. Hjemmenes HTTPS-trafikk går til reléet. Caddy tar også imot hubens utgående WSS-forbindelse.",
+      "stores": "Sertifikater for portal og rutekonfigurasjon. Hjemmets TLS avsluttes på huben.",
+      "sources": [
+        "services/cloud/haproxy.cfg",
+        "services/cloud/Caddyfile.server"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "cloud",
+      "title": "SMARTi-sky / portal",
+      "zone": 1,
+      "row": 1,
+      "summary": "FastAPI · home.smarti.dev",
+      "details": "Kontoer, verifisering, eierskap, QR-aktivering, onboarding, support, invitasjoner, reset-koordinering og energiarkiv. Tilgang kontrolleres per konto og hjem.",
+      "stores": "SQLite: kontoer, hjem, medlemskap, support, revisjonslogg, energiarkiv og prisdata.",
+      "sources": [
+        "backend/app/cloud.py",
+        "backend/app/cloud_accounts.py",
+        "backend/app/cloud_energy.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "relay",
+      "title": "Fjernaksess-relé",
+      "zone": 1,
+      "row": 2,
+      "summary": "Utgående tunnel fra huben",
+      "details": "Knytter hjemmeadressen til riktig hub og frakter krypterte bytes. Huben oppretter forbindelsen ut; kunden trenger ikke portåpning i ruteren. Reléet kan se trafikkmengde og forbindelsesmetadata.",
+      "stores": "Egen SQLite for trafikkhistorikk. Leser tilgangsgrunnlag fra skyens database.",
+      "sources": [
+        "backend/app/multihome_relay.py",
+        "backend/app/relay_traffic.py",
+        "services/cloud/compose.smartihome.yaml"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "cloudstore",
+      "title": "Skyens databaser",
+      "zone": 1,
+      "row": 3,
+      "summary": "SQLite · vedvarende Docker-volumer",
+      "details": "Kontodata og energiarkiv ligger i kontovolumet. Trafikkhistorikk ligger i et separat volum som portalen leser. Dette er separate data fra HA sin historikk på kundens hub.",
+      "stores": "cloud.sqlite og traffic.sqlite. Tilgang avgrenses i API-et.",
+      "sources": [
+        "services/cloud/compose.smartihome.yaml",
+        "backend/app/energy_repository.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "hub",
+      "title": "SMARTi på huben",
+      "zone": 2,
+      "row": 0,
+      "summary": "FastAPI · lokal backend",
+      "details": "Håndterer tillatelser, lokale økter, UI-modeller, rapporter, energiinnsamling og validerte kommandoer til HA. Lokal styring trenger ikke reléet; skyfunksjoner trenger internett.",
+      "stores": "Lokale brukere, innstillinger, bilder og energiarkiv. HA-legitimasjon forblir her.",
+      "sources": [
+        "backend/app/main.py",
+        "backend/app/home_overview.py",
+        "backend/app/history.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "connector",
+      "title": "Hubens fjernforbindelse",
+      "zone": 2,
+      "row": 1,
+      "summary": "WSS · lokal HTTPS",
+      "details": "Autentiserer huben mot skyen og holder en utgående tunnel åpen. Hjemmets HTTPS avsluttes lokalt på huben, ikke i skyreléet.",
+      "stores": "Installasjonsidentitet, tilkoblingslegitimasjon og hjemmets TLS-sertifikat.",
+      "sources": [
+        "backend/app/remote_runtime.py",
+        "backend/app/certificates.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "ha",
+      "title": "Home Assistant",
+      "zone": 2,
+      "row": 2,
+      "summary": "Tilstander · registre · automasjoner",
+      "details": "Autoritet for enheter, rom, entiteter, tilstander og automasjoner. SMARTi leser via WebSocket/REST og sender kontrollerte tjenestekall. HA-automatiseringer kjører også når SMARTi-grensesnittet er lukket.",
+      "stores": "HA-konfigurasjon og Recorder-historikk, separat fra SMARTi-databasen.",
+      "sources": [
+        "backend/app/ha.py",
+        "backend/app/history.py",
+        "backend/app/management.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "supervisor",
+      "title": "HA OS / Supervisor",
+      "zone": 2,
+      "row": 3,
+      "summary": "Apper · oppdatering · sikkerhetskopier",
+      "details": "Kjører og administrerer SMARTi og andre HA-apper. SMARTi tilbyr avgrensede administrasjonsoperasjoner for blant annet oppdateringer og reset.",
+      "stores": "Appdata, sikkerhetskopier og systemkonfigurasjon på hubens lagring.",
+      "sources": [
+        "ha-app/config.yaml",
+        "backend/app/management.py",
+        "docs/FACTORY_RESET.md"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "localstore",
+      "title": "Lokale arkiver",
+      "zone": 2,
+      "row": 4,
+      "summary": "SMARTi SQLite + HA Recorder",
+      "details": "SMARTi lagrer egne innstillinger og energiintervaller. Huslogg og tilstandshistorikk hentes fra HA. Energiarkiv kan synkroniseres til skyen; all HA-historikk speiles ikke automatisk.",
+      "stores": "Lokalt SMARTi-arkiv og HA sin konfigurerte Recorder-database.",
+      "sources": [
+        "backend/app/config.py",
+        "backend/app/energy_repository.py",
+        "backend/app/report_statistics.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "devices",
+      "title": "Enheter og integrasjoner",
+      "zone": 3,
+      "row": 0,
+      "summary": "Zigbee · Z-Wave · Wi-Fi · Matter",
+      "details": "Sensorer, lys, varme, låser, kameraer og andre enheter når SMARTi gjennom HA-integrasjoner. Zigbee2MQTT/MQTT og Z-Wave JS håndterer sine radionettverk. Tilgjengelige funksjoner avhenger av integrasjonen. Enkelte produsentintegrasjoner bruker produsentens sky; andre er helt lokale.",
+      "stores": "Paringer og nettverksnøkler i respektive radio-/integrasjonssystemer.",
+      "sources": [
+        "docs/COMPATIBILITY.md",
+        "backend/app/management.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "prices",
+      "title": "Pris- og tariffkilder",
+      "zone": 3,
+      "row": 1,
+      "summary": "Hva koster strømmen · Fri Nettleie",
+      "details": "Skyen henter spotprisdata fra Hva koster strømmen og tariffdata fra Fri Nettleie. SMARTi beregner kostnader med målegrunnlaget og valgte avtaler. Dette er ikke en direkte Elhub-forbindelse.",
+      "stores": "Pristabeller og kildeinformasjon caches i skyen.",
+      "sources": [
+        "backend/app/energy_sources.py",
+        "backend/app/energy_tariffs.py"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "mail",
+      "title": "E-postleverandør",
+      "zone": 3,
+      "row": 2,
+      "summary": "SMTP · SendGrid-oppsett",
+      "details": "Sender bekreftelser, passordlenker og invitasjoner via konfigurert SMTP. Skyen håndterer utkø og nye forsøk. Leverandøren får mottaker og e-postinnhold.",
+      "stores": "Midlertidig utkø i skyen; leverandørens egen behandling kommer i tillegg.",
+      "sources": [
+        "backend/app/cloud_accounts.py",
+        "services/cloud/compose.mail.example.yaml"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "apple",
+      "title": "Apple-tjenester",
+      "zone": 3,
+      "row": 3,
+      "summary": "APNs · TestFlight",
+      "details": "APNs leverer iPhone-varsler når leverandør og signering er konfigurert. TestFlight distribuerer iPhone-bygg. Dette er eksterne tjenester, ikke lokal hubstyring.",
+      "stores": "APNs-enhetstoken og varseldata behandles i varslingskjeden.",
+      "sources": [
+        "backend/app/cloud_push.py",
+        "ios/README.md"
+      ],
+      "status": "Implementert"
+    },
+    {
+      "id": "release",
+      "title": "Utgivelser og sertifikater",
+      "zone": 3,
+      "row": 4,
+      "summary": "GitHub · HA app-repository · ACME",
+      "details": "SMARTi-kilde og HA-apppakke distribueres via GitHub. Supervisor håndterer appoppdatering. Huben bruker ACME / Let’s Encrypt for hjemmets HTTPS-sertifikat.",
+      "stores": "Versjoner og pakkemanifest; sertifikatnøkler på huben.",
+      "sources": [
+        "scripts/package.py",
+        "ha-app/config.yaml",
+        "backend/app/certificates.py"
+      ],
+      "status": "Implementert"
+    }
+  ],
+  "edges": [
+    {
+      "source": "browser",
+      "target": "hub",
+      "label": "Lokalt API / SSE",
+      "flows": [
+        "local"
+      ]
+    },
+    {
+      "source": "iphone",
+      "target": "hub",
+      "label": "Lokal tilgang og telefon-API",
+      "flows": [
+        "local"
+      ]
+    },
+    {
+      "source": "hub",
+      "target": "ha",
+      "label": "WebSocket / REST",
+      "flows": [
+        "local",
+        "remote",
+        "energy"
+      ]
+    },
+    {
+      "source": "ha",
+      "target": "devices",
+      "label": "Integrasjoner og radionettverk",
+      "flows": [
+        "local",
+        "remote",
+        "energy"
+      ]
+    },
+    {
+      "source": "browser",
+      "target": "edge",
+      "label": "HTTPS",
+      "flows": [
+        "remote",
+        "onboarding"
+      ]
+    },
+    {
+      "source": "iphone",
+      "target": "edge",
+      "label": "HTTPS",
+      "flows": [
+        "remote",
+        "onboarding"
+      ]
+    },
+    {
+      "source": "staff",
+      "target": "cloud",
+      "label": "Administrator-API",
+      "flows": [
+        "onboarding"
+      ]
+    },
+    {
+      "source": "edge",
+      "target": "cloud",
+      "label": "Portal via Caddy",
+      "flows": [
+        "onboarding",
+        "energy"
+      ]
+    },
+    {
+      "source": "edge",
+      "target": "relay",
+      "label": "Hjemmets TLS-trafikk",
+      "flows": [
+        "remote"
+      ]
+    },
+    {
+      "source": "connector",
+      "target": "edge",
+      "label": "Utgående WSS via Caddy",
+      "flows": [
+        "remote"
+      ]
+    },
+    {
+      "source": "relay",
+      "target": "connector",
+      "label": "Tunnel med kryptert hjemmetrafikk",
+      "flows": [
+        "remote"
+      ]
+    },
+    {
+      "source": "connector",
+      "target": "hub",
+      "label": "Lokal TLS-avslutning",
+      "flows": [
+        "remote"
+      ]
+    },
+    {
+      "source": "hub",
+      "target": "cloud",
+      "label": "Registrering / onboarding / arkivsynk",
+      "flows": [
+        "onboarding",
+        "energy"
+      ]
+    },
+    {
+      "source": "cloud",
+      "target": "cloudstore",
+      "label": "Kontodata og energiarkiv",
+      "flows": [
+        "onboarding",
+        "energy"
+      ]
+    },
+    {
+      "source": "relay",
+      "target": "cloudstore",
+      "label": "Tilgangslesing / trafikkhistorikk",
+      "flows": [
+        "remote"
+      ]
+    },
+    {
+      "source": "cloud",
+      "target": "prices",
+      "label": "HTTPS: priser og tariffer",
+      "flows": [
+        "energy"
+      ]
+    },
+    {
+      "source": "cloud",
+      "target": "mail",
+      "label": "SMTP: verifisering / invitasjon",
+      "flows": [
+        "onboarding"
+      ]
+    },
+    {
+      "source": "hub",
+      "target": "localstore",
+      "label": "Innstillinger og energiintervaller",
+      "flows": [
+        "local",
+        "energy"
+      ]
+    },
+    {
+      "source": "ha",
+      "target": "localstore",
+      "label": "Recorder-historikk",
+      "flows": [
+        "local",
+        "energy"
+      ]
+    },
+    {
+      "source": "supervisor",
+      "target": "hub",
+      "label": "Appens livssyklus",
+      "flows": [
+        "updates"
+      ]
+    },
+    {
+      "source": "supervisor",
+      "target": "ha",
+      "label": "Core og systemdrift",
+      "flows": [
+        "updates"
+      ]
+    },
+    {
+      "source": "supervisor",
+      "target": "release",
+      "label": "Hent appoppdateringer",
+      "flows": [
+        "updates"
+      ]
+    },
+    {
+      "source": "connector",
+      "target": "release",
+      "label": "ACME-sertifikat",
+      "flows": [
+        "remote"
+      ]
+    },
+    {
+      "source": "hub",
+      "target": "cloud",
+      "label": "Varslingsforespørsel",
+      "flows": [
+        "notifications"
+      ]
+    },
+    {
+      "source": "cloud",
+      "target": "apple",
+      "label": "APNs-levering",
+      "flows": [
+        "notifications"
+      ]
+    },
+    {
+      "source": "apple",
+      "target": "iphone",
+      "label": "Push / TestFlight-bygg",
+      "flows": [
+        "notifications",
+        "updates"
+      ]
+    }
+  ]
+}
