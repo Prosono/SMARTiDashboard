@@ -1,3 +1,8 @@
+## 1.36.24
+
+- Animert SMARTi-logo mens hjemmerapporten og energirapporten lastes. Rolig pulsering og tydelig statusmelding.
+- Lastevisningen følger faktisk lasting og respekterer redusert bevegelse.
+
 ## 1.36.23
 
 - «Rapporter og innsikt» er nå et felles sted i sidepanelet for hele hjemmet, med fanene Hjemmerapport, Huslogg og Energirapport. Rapportfanen er fjernet fra energiwidgeten.

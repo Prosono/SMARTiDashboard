@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FileText, ScrollText, Zap, Printer } from "lucide-react";
 import { api } from "./api";
 import type { Home } from "./types";
+import { ReportLoading } from "./ReportLoading";
 import { HistoryExplorer } from "./HistoryExplorer";
 import { EnergyReport } from "./home/EnergyReport";
 import type { Dashboard } from "./home/EnergyPlatform";
@@ -207,9 +208,7 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
                 </p>
               )}
             </form>
-            {report.isFetching && (
-              <p role="status">Henter hjemmets historikk…</p>
-            )}
+            {(report.isFetching || (period && energy.isFetching)) && <ReportLoading />}
             {report.isError && (
               <p role="alert">
                 Husloggen kunne ikke hentes. Kontroller tilkoblingen til huben

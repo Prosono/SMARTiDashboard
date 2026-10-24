@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, Printer, BarChart3, AlertCircle } from "lucide-react";
+import { ReportLoading } from "../ReportLoading";
 import { api } from "../api";
 import type { Dashboard } from "./EnergyPlatform";
 import { EnergyHistoryChart } from "./EnergyHistoryChart";
@@ -203,9 +204,7 @@ export function EnergyReport() {
           </p>
         )}
       </form>
-      {report.isFetching && (
-        <p role="status">Henter målinger og beregner rapporten…</p>
-      )}
+      {report.isFetching && <ReportLoading />}
       {report.isError && (
         <p role="alert">
           Rapporten kunne ikke hentes. Prøv å generere den på nytt.
