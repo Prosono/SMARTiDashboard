@@ -46,7 +46,7 @@ def analyze(repo, config, meter, start, end, scenario=None):
             until = min(b, datetime.now(UTC).replace(minute=0, second=0, microsecond=0))
             readings = repo.rows(grid.entity, a, until) if grid and a < until else []
             summary = summarize_energy(readings, a, until) if a < until else {"total_kwh": None}
-            prefix, cursor, before = {}, a, ZERO
+            prefix, cursor, before, known = {}, a, ZERO, ZERO
             for reading in readings:
                 agreement = next((cfg for at, cfg in reversed(versions) if at <= reading.start), None)
                 binding = (
@@ -56,7 +56,9 @@ def analyze(repo, config, meter, start, end, scenario=None):
                 )
                 if reading.start != cursor or binding != grid.entity:
                     before = None
-                prefix[reading.start] = (before, reading.value)
+                prefix[reading.start] = (before, reading.value, known)
+                if binding == grid.entity and reading.value is not None:
+                    known += reading.value
                 if before is not None:
                     before += reading.value
                 cursor = reading.end
@@ -65,6 +67,8 @@ def analyze(repo, config, meter, start, end, scenario=None):
 
     priced = True
     fees = ZERO
+    available_cost = None
+    support_estimated = False
     capacity = None
     for row in rows:
         historical = next((cfg for at, cfg in reversed(versions) if at <= row.start), None)
@@ -77,7 +81,7 @@ def analyze(repo, config, meter, start, end, scenario=None):
             if key not in prices:
                 prices[key] = repo.prices(*key)
             usage, grid_rows, ma, mb, prefix = month(stamp)
-            usage, grid_kwh = prefix.get(row.start, (None, None))
+            usage, grid_kwh, known_usage = prefix.get(row.start, (None, None, None))
             # A different import meter earlier in the month makes support eligibility unknown.
             configured_grid = next((m.entity for m in historical.meters if m.role == "grid"), None)
             if not grid or configured_grid != grid.entity:
@@ -89,6 +93,20 @@ def analyze(repo, config, meter, start, end, scenario=None):
             if usage is not None and grid_kwh is not None and meter.role != "grid":
                 fraction = min(Decimal(1), max(ZERO, cap - usage) / grid_kwh) if grid_kwh > 0 else ZERO
             calculated = cost(row, historical, prices[key], usage, tariffs[historical.company], fraction)
+            display_cost = calculated
+            if (
+                calculated.get("reason") == "support_cap_requires_complete_month"
+                and historical.scheme == "norgespris"
+                and meter.role == "grid"
+                and configured_grid == grid.entity
+                and known_usage is not None
+            ):
+                # Known usage is a lower bound, never a claim of complete history.
+                # It still guarantees no support once recorded usage reaches the cap.
+                display_cost = cost(row, historical, prices[key], known_usage, tariffs[historical.company])
+                support_estimated = True
+            if display_cost["total"] is not None:
+                available_cost = (available_cost or ZERO) + display_cost["total"]
             if calculated["total"] is not None:
                 provenance.add((calculated["tariff_revision"], calculated["rules"]))
                 for name, value in calculated["parts"].items():
@@ -129,6 +147,12 @@ def analyze(repo, config, meter, start, end, scenario=None):
         "summary": summary,
         "points": points,
         "cost_total": sum(breakdown.values()) + fees if complete else None,
+        "available_cost": available_cost,
+        "available_cost_note": (
+            "Estimat for registrert forbruk, uten faste beløp og kapasitetsledd. "
+            + ("Månedshistorikken er ufullstendig: Norgespris er beregnet ut fra registrert forbruk; taket kan være nådd tidligere. " if support_estimated else "")
+            + "Norgespris gjelder inntil 5 000 kWh per måned for bolig (1 000 kWh for fritidsbolig). Forbruk over taket følger strømavtalen."
+        ),
         "breakdown": breakdown,
         "monthly_fees": fees if complete else None,
         "capacity": capacity,

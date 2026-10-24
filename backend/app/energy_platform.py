@@ -430,11 +430,12 @@ def platform_router(service, user, admin):
                 if began < finished:
                     values = repo.rows(grid.entity, began, finished)
                     totals[label] = summarize_energy(values, began, finished)
-                    totals[label]["cost"] = analyze(repo, config, grid, began, finished)["cost_total"]
+                    result = analyze(repo, config, grid, began, finished)
+                    totals[label]["cost"] = result["cost_total"] if result["cost_total"] is not None else result.get("available_cost")
+                    totals[label]["cost_note"] = result["cost_note"] if result["cost_total"] is not None else result.get("available_cost_note")
             month_start, _ = local_day(today.replace(day=1))
             if month_start < finished:
                 month_result = analyze(repo, config, grid, month_start, finished)
-                totals["month"]["cost"] = month_result["cost_total"]
                 if (
                     month_result["cost_total"] is not None
                     and (finished - month_start).total_seconds() >= 3 * 86400

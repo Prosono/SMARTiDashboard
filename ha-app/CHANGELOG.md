@@ -1,3 +1,9 @@
+## 1.36.21
+
+- Energikostnader kan vises for registrert forbruk selv om månedshistorikken er ufullstendig. Estimatet merkes tydelig og utelater faste beløp og kapasitetsledd når komplett kostnad mangler.
+- Norgespris følger månedstaket: bare forbruk innenfor 5 000 kWh for bolig / 1 000 kWh for fritidsbolig får prisjustering. Intervallet deles når taket krysses, og øvrig forbruk følger strømavtalen.
+- Manglende månedshistorikk gir en uttrykkelig usikkerhet om gjenværende Norgespris-kvote. Ufullstendige estimater brukes ikke som komplette prognoser eller avtalesammenligninger.
+
 ## 1.36.20
 
 - Modusvalg på termostater: viser bare moduser enheten tilbyr i Home Assistant, som varme, kjøling, auto og av. Modusendringer valideres mot den enkelte enheten.

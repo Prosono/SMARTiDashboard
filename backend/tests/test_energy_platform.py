@@ -207,9 +207,27 @@ def test_changed_grid_meter_does_not_reuse_prior_meter_support_allowance(tmp_pat
     result = analyze(repo, changed, new, start + timedelta(hours=1), start + timedelta(hours=2))
     assert result["cost_total"] is None
     assert result["points"][0]["cost"]["reason"] == "support_cap_requires_complete_month"
+    assert result["available_cost"] is not None
+    assert "taket kan være nådd tidligere" in result["available_cost_note"]
 
 
 def test_incomplete_upstream_tariff_cannot_crash_or_invent_costs():
     malformed = {"data": {"tariffer": [{"kundegrupper": ["husholdning"], "gyldig_fra": "2026-01-01"}]}}
     assert energy_rate("elvia", datetime(2026, 7, 1), source=malformed) == (None, None)
     assert capacity_rate("elvia", date(2026, 7, 1), [], source=malformed) is None
+
+
+@pytest.mark.parametrize("segment,cap", [("husholdning", 5000), ("fritid", 1000)])
+@pytest.mark.parametrize("contract", ["spot", "fixed"])
+def test_norgespris_only_applies_to_consumption_below_cap(segment, cap, contract):
+    start = datetime(2026, 7, 1, tzinfo=UTC)
+    row = Interval(start, start + timedelta(hours=1), Decimal(4), "test")
+    prices = [{"time_start": row.start.isoformat(), "time_end": row.end.isoformat(), "NOK_per_kWh": 1}]
+    config = EnergyConfig(company="elvia", scheme="norgespris", segment=segment,
+                          contract=contract, fixed_price=Decimal(".83"))
+    crossing = cost(row, config, prices, Decimal(cap - 1))
+    assert crossing["parts"]["support"] == Decimal("-.60")
+    above = cost(row, config, prices, Decimal(cap))
+    assert above["parts"]["support"] == 0
+    assert above["parts"]["electricity"] == Decimal(4) * (Decimal(".83") if contract == "fixed" else 1)
+    assert cost(row, config, prices, Decimal(0))["parts"]["support"] == Decimal("-2.40")

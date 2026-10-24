@@ -85,6 +85,7 @@ type Dashboard = {
       available_kwh: number | string | null;
       total_kwh: number | string | null;
       cost?: number | string | null;
+      cost_note?: string;
       complete: boolean;
     }
   >;
@@ -116,6 +117,8 @@ type Dashboard = {
     };
     points: Point[];
     cost_total: number | string | null;
+    available_cost?: number | string | null;
+    available_cost_note?: string;
     monthly_fees: number | string | null;
     breakdown: Record<string, number | string>;
     capacity: {
@@ -240,7 +243,7 @@ export function EnergyPlatform({
   }
   const points = [...grouped.values()],
     active = selected == null ? null : points[selected];
-  const totalCost = grid?.cost_total;
+  const totalCost = grid?.cost_total ?? grid?.available_cost;
   const currentPrice = data?.spot?.find(
     (p) =>
       new Date(p.time_start).getTime() <= Date.now() &&
@@ -502,7 +505,7 @@ export function EnergyPlatform({
                 </strong>
                 <p>
                   {totalCost != null
-                    ? "Estimat inkl. fordelte faste beløp"
+                    ? (grid?.cost_total != null ? "Estimat inkl. fordelte faste beløp" : "Registrert forbruk · uten faste beløp")
                     : "Mangler komplett pris- eller støttegrunnlag"}
                 </p>
               </article>
@@ -588,6 +591,9 @@ export function EnergyPlatform({
                   Dette er et foreløpig grunnlag for måneden.
                 </p>
               )}
+            {grid?.cost_total == null && grid?.available_cost != null && (
+              <p role="status">{grid.available_cost_note}</p>
+            )}
             <div className="ep-history" id="ep-consumption-chart" tabIndex={-1}>
               <header>
                 <h3>Forbruket ditt</h3>
@@ -647,6 +653,7 @@ export function EnergyPlatform({
                     </strong>
                     <small>
                       Estimert kostnad: {fmt(data?.totals?.[key]?.cost, 2)} kr
+                      {data?.totals?.[key]?.cost_note && <span> · {data.totals[key].cost_note}</span>}
                     </small>
                     <small>
                       {data?.totals?.[key]?.complete
@@ -905,7 +912,7 @@ export function EnergyPlatform({
               <button
                 onClick={() =>
                   openSummary(
-                    totalCost != null
+                    grid?.cost_total != null
                       ? "ep-cost-breakdown"
                       : "ep-consumption-chart",
                   )
@@ -920,7 +927,7 @@ export function EnergyPlatform({
                 </strong>
                 <small>
                   {todayCost != null
-                    ? "Ferdige timer · inkl. nettleie og faste beløp"
+                    ? (data?.totals?.today?.cost_note || "Foreløpig kostnad")
                     : "Mangler komplett beregningsgrunnlag"}
                 </small>
               </button>
