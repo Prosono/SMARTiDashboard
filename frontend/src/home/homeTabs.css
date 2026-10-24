@@ -299,3 +299,85 @@
     flex: 0 0 82px;
   }
 }
+
+/* Presence and actionable alerts belong to the welcome image in every mode. */
+.home-hero-status {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 2rem;
+  border-top: 1px solid #ffffff30;
+  padding-top: 1rem;
+  min-width: 0;
+}
+.home-hero-status .home-presence {
+  flex: 1 1 340px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: #fff;
+}
+.home-hero-status .people-heading {
+  flex-wrap: wrap;
+}
+.home-hero-status .people-heading button {
+  min-height: 44px;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #ffffff40;
+  background: #16221ac0;
+  color: #fff;
+  border-radius: 10px;
+}
+.home-hero-status .home-presence ul {
+  margin: 0.65rem 0 0;
+  gap: 0.75rem 1.25rem;
+}
+.home-hero-status .home-presence li {
+  min-width: 0;
+  max-width: 100%;
+}
+.home-hero-status .home-presence strong {
+  overflow-wrap: anywhere;
+}
+.home-hero-status .home-presence p,
+.home-hero-status .home-presence small {
+  color: #ffffffcf;
+}
+.home-hero-status .person-dot {
+  flex-shrink: 0;
+  background: #c3c9c5;
+}
+.home-hero-status .person-home .person-dot {
+  background: #65e2aa;
+}
+.home-hero-status .home-alert-banner {
+  flex: 0 1 360px;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  background: #292219e8;
+  border-color: #ffc27a80;
+  color: #fff;
+  padding: 0.8rem 1rem;
+}
+.home-hero-status .home-alert-banner > svg {
+  flex-shrink: 0;
+  color: #ffc27a;
+}
+.home-hero-status .home-alert-banner small {
+  color: #ffffffcf;
+}
+@media (max-width: 600px) {
+  .home-hero-status {
+    gap: 1rem;
+  }
+  .home-hero-status .home-presence,
+  .home-hero-status .home-alert-banner {
+    flex-basis: 100%;
+  }
+  .home-hero-status .home-presence li {
+    width: auto;
+  }
+}

@@ -929,6 +929,7 @@ function Dashboard({
         )}
         {mode === "simple" && ["home", "rooms"].includes(page) ? (
           <SimpleHome
+            admin={session.role === "admin"}
             home={h}
             lang={lang}
             offline={offline}

@@ -345,3 +345,21 @@
     min-width: 140px;
   }
 }
+
+.simple-home .simple-welcome {
+  flex-wrap: wrap;
+}
+.simple-welcome > .home-presence {
+  flex: 1 0 100%;
+  min-width: 0;
+  margin: 0.75rem 0 0;
+  padding: 1rem 0 0;
+  border-bottom: 0;
+  border-top: 1px solid var(--line);
+}
+.simple-welcome .people-heading {
+  flex-wrap: wrap;
+}
+.simple-welcome .people-heading button {
+  min-height: 44px;
+}

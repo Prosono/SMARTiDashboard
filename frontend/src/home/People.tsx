@@ -1,5 +1,6 @@
 import { SettingsDialog } from "./SettingsDialog";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Users, Settings2 } from "lucide-react";
 import { api } from "../api";
@@ -157,117 +158,119 @@ export function Presence({
           </button>
         </p>
       )}
-      {editing && (
-        <SettingsDialog
-          title={t("Personer hjemme", "People at home")}
-          lang={lang}
-          busy={busy}
-          onClose={() => edit(false)}
-        >
-          {error && <p role="alert">{error}</p>}{" "}
-          <fieldset className="people-settings" disabled={busy || !pref}>
-            <legend>
-              {t("Personer på din Hjem-side", "People on your Home page")}
-            </legend>
-            <p>
-              {t(
-                "Dette velger hvem du ser her. Tilstedeværelsen kommer fra hjemmesentralen. Ukjent status beholdes synlig.",
-                "Choose who appears here. Presence comes from the home hub. Unknown states remain visible.",
-              )}
-            </p>
-            <label>
-              <input
-                type="checkbox"
-                checked={!!pref?.only_home}
-                onChange={(e) =>
+      {editing &&
+        createPortal(
+          <SettingsDialog
+            title={t("Personer hjemme", "People at home")}
+            lang={lang}
+            busy={busy}
+            onClose={() => edit(false)}
+          >
+            {error && <p role="alert">{error}</p>}{" "}
+            <fieldset className="people-settings" disabled={busy || !pref}>
+              <legend>
+                {t("Personer på din Hjem-side", "People on your Home page")}
+              </legend>
+              <p>
+                {t(
+                  "Dette velger hvem du ser her. Tilstedeværelsen kommer fra hjemmesentralen. Ukjent status beholdes synlig.",
+                  "Choose who appears here. Presence comes from the home hub. Unknown states remain visible.",
+                )}
+              </p>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={!!pref?.only_home}
+                  onChange={(e) =>
+                    void savePreferences({
+                      people: pref?.people ?? null,
+                      only_home: e.target.checked,
+                    })
+                  }
+                />
+                {t("Vis bare de som er hjemme", "Show only people at home")}
+              </label>
+              <button
+                onClick={() =>
                   void savePreferences({
-                    people: pref?.people ?? null,
-                    only_home: e.target.checked,
+                    people: null,
+                    only_home: pref?.only_home ?? false,
                   })
                 }
-              />
-              {t("Vis bare de som er hjemme", "Show only people at home")}
-            </label>
-            <button
-              onClick={() =>
-                void savePreferences({
-                  people: null,
-                  only_home: pref?.only_home ?? false,
-                })
-              }
-            >
-              {t("Vis alle personer", "Show all people")}
+              >
+                {t("Vis alle personer", "Show all people")}
+              </button>
+              {people.map((c) => (
+                <div className="person-setting" key={c.entity_id}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={
+                        pref?.people === null ||
+                        !!pref?.people.includes(c.entity_id)
+                      }
+                      onChange={() => {
+                        const selected =
+                          pref?.people ?? people.map((p) => p.entity_id);
+                        void savePreferences({
+                          people: selected.includes(c.entity_id)
+                            ? selected.filter((id) => id !== c.entity_id)
+                            : [...selected, c.entity_id],
+                          only_home: pref?.only_home ?? false,
+                        });
+                      }}
+                    />
+                    {c.name}
+                  </label>
+                  {admin && (
+                    <div>
+                      <label className="person-upload">
+                        {t("Velg profilbilde", "Choose profile photo")}
+                        <input
+                          aria-label={`${t("Profilbilde", "Profile photo")}: ${c.name}`}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(e) => {
+                            if (e.target.files?.[0])
+                              void upload(c.entity_id, e.target.files[0]);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                      {pref?.photos[c.entity_id]?.custom && (
+                        <button
+                          onClick={() =>
+                            void save(() =>
+                              api(
+                                `home/people/${encodeURIComponent(c.entity_id)}/photo`,
+                                "PUT",
+                                { data: "" },
+                              ),
+                            )
+                          }
+                        >
+                          {t("Bruk systembildet", "Use system photo")}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {admin && (
+                <small>
+                  {t(
+                    "Bilder deles med hjemmet. Velg et bilde under 10 MB; det beskjæres til et kvadrat.",
+                    "Photos are shared with the home. Choose an image under 10 MB; it is cropped to a square.",
+                  )}
+                </small>
+              )}
+            </fieldset>
+            <button disabled={busy} onClick={() => edit(false)}>
+              {t("Ferdig", "Done")}
             </button>
-            {people.map((c) => (
-              <div className="person-setting" key={c.entity_id}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={
-                      pref?.people === null ||
-                      !!pref?.people.includes(c.entity_id)
-                    }
-                    onChange={() => {
-                      const selected =
-                        pref?.people ?? people.map((p) => p.entity_id);
-                      void savePreferences({
-                        people: selected.includes(c.entity_id)
-                          ? selected.filter((id) => id !== c.entity_id)
-                          : [...selected, c.entity_id],
-                        only_home: pref?.only_home ?? false,
-                      });
-                    }}
-                  />
-                  {c.name}
-                </label>
-                {admin && (
-                  <div>
-                    <label className="person-upload">
-                      {t("Velg profilbilde", "Choose profile photo")}
-                      <input
-                        aria-label={`${t("Profilbilde", "Profile photo")}: ${c.name}`}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(e) => {
-                          if (e.target.files?.[0])
-                            void upload(c.entity_id, e.target.files[0]);
-                          e.target.value = "";
-                        }}
-                      />
-                    </label>
-                    {pref?.photos[c.entity_id]?.custom && (
-                      <button
-                        onClick={() =>
-                          void save(() =>
-                            api(
-                              `home/people/${encodeURIComponent(c.entity_id)}/photo`,
-                              "PUT",
-                              { data: "" },
-                            ),
-                          )
-                        }
-                      >
-                        {t("Bruk systembildet", "Use system photo")}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-            {admin && (
-              <small>
-                {t(
-                  "Bilder deles med hjemmet. Velg et bilde under 10 MB; det beskjæres til et kvadrat.",
-                  "Photos are shared with the home. Choose an image under 10 MB; it is cropped to a square.",
-                )}
-              </small>
-            )}
-          </fieldset>
-          <button disabled={busy} onClick={() => edit(false)}>
-            {t("Ferdig", "Done")}
-          </button>
-        </SettingsDialog>
-      )}
+          </SettingsDialog>,
+          document.body,
+        )}
       {shown.length ? (
         <ul>
           {shown.map((c) => {

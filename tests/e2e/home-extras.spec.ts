@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await expect(page.locator(".home-welcome")).toBeVisible();
+  await expect(page.locator(".home-welcome, .simple-welcome")).toBeVisible();
 });
 test("people filter and photos persist, tomorrow forecast is distinct", async ({
   page,
@@ -105,15 +105,16 @@ test("people filter and photos persist, tomorrow forecast is distinct", async ({
   await people
     .getByRole("button", { name: "Velg personer", exact: true })
     .click();
-  await people.getByRole("checkbox", { name: "Ola", exact: true }).uncheck();
+  const dialog = page.getByRole("dialog", { name: "Personer hjemme" });
+  await dialog.getByRole("checkbox", { name: "Ola", exact: true }).uncheck();
   await expect(people.locator("li")).toHaveCount(1);
-  await people
+  await dialog
     .getByLabel("Profilbilde: Ada", { exact: true })
     .setInputFiles({ name: "ada.png", mimeType: "image/png", buffer: png });
   await expect(
-    people.getByRole("button", { name: "Bruk systembildet", exact: true }),
+    dialog.getByRole("button", { name: "Bruk systembildet", exact: true }),
   ).toBeVisible();
-  await people
+  await dialog
     .getByRole("checkbox", { name: "Vis bare de som er hjemme", exact: true })
     .check();
   await page.reload();
@@ -239,4 +240,92 @@ test("integration device opens details, statistics and gap-preserving history", 
   });
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
+});
+
+test("welcome contains presence and alerts in every experience mode", async ({
+  page,
+}) => {
+  const base = await (await page.request.get("/api/home")).json();
+  await page.route("**/api/home", (r) =>
+    r.fulfill({
+      json: {
+        ...base,
+        controls: [
+          ...base.controls,
+          {
+            id: "binary_sensor.test_smoke",
+            entity_id: "binary_sensor.test_smoke",
+            name: "Røykvarsler test",
+            domain: "binary_sensor",
+            state: "on",
+            availability: "available",
+            attributes: { device_class: "smoke" },
+            capabilities: [],
+            diagnostic: false,
+          },
+          {
+            id: "person.test",
+            entity_id: "person.test",
+            name: "Ada",
+            domain: "person",
+            state: "home",
+            availability: "available",
+            attributes: {},
+            capabilities: [],
+            diagnostic: false,
+          },
+        ],
+      },
+    }),
+  );
+  await page.route("**/api/home/people", (r) =>
+    r.fulfill({ json: { people: null, only_home: false, photos: {} } }),
+  );
+  await page.reload();
+  for (const mode of ["Enkel", "Normal", "Avansert"]) {
+    await page
+      .getByRole("navigation")
+      .getByRole("button", { name: "Innstillinger", exact: true })
+      .click();
+    await page
+      .locator(".experience-picker")
+      .getByRole("button", { name: new RegExp("^" + mode) })
+      .click();
+    await page
+      .getByRole("navigation")
+      .getByRole("button", { name: "Hjem", exact: true })
+      .click();
+    await expect(
+      page.locator(
+        ".home-welcome .home-presence, .simple-welcome .home-presence",
+      ),
+    ).toBeVisible();
+    await expect(page.locator(".home-presence")).toHaveCount(1);
+    await expect(
+      page.locator(
+        ".home-welcome .home-alert-banner, .simple-welcome .simple-warning-button",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.locator(".home-alert-banner, .simple-warning-button"),
+    ).toHaveCount(1);
+    expect(
+      await page
+        .locator("body")
+        .evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true);
+  }
+  await page.locator(".home-welcome").screenshot({
+    path: `/tmp/smarti-welcome-${test.info().project.name}.png`,
+  });
+
+  await page
+    .getByRole("button", { name: "Velg personer", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Personer hjemme" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Ferdig", exact: true }).click();
+  await page.locator(".home-alert-banner").click();
+  await expect(page.locator(".home-welcome")).toHaveCount(0);
 });

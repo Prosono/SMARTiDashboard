@@ -1,3 +1,4 @@
+import { Presence } from "./People";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
 import { SettingsDialog } from "./SettingsDialog";
@@ -12,7 +13,9 @@ export function SimpleHome({
   lang,
   offline,
   renderControls,
+  admin = false,
 }: {
+  admin?: boolean;
   home: Home;
   lang: string;
   offline: boolean;
@@ -112,6 +115,9 @@ export function SimpleHome({
               <span aria-hidden="true">{alerts.length}</span>
             </button>
           </div>
+        )}
+        {(!home.permissions || home.permissions.includes("people.view")) && (
+          <Presence home={home} offline={offline} lang={lang} admin={admin} />
         )}
       </header>
       {offline && (

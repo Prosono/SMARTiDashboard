@@ -15,6 +15,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   House,
+  TriangleAlert,
   Moon,
   Briefcase,
   Plane,
@@ -411,6 +412,47 @@ export function HomeOverview({
                 );
               })}
             </nav>
+            <div className="home-hero-status">
+              {canView("people") && (
+                <Presence
+                  home={h}
+                  offline={offline}
+                  lang={lang}
+                  admin={admin}
+                />
+              )}
+              {!!model.alerts.length && (
+                <button
+                  className="home-alert-banner"
+                  onClick={() => setTab("security")}
+                >
+                  <TriangleAlert size={22} />
+                  <span>
+                    <strong>
+                      {offline
+                        ? t(
+                            "Sikkerhetsstatus er ukjent",
+                            "Security status is unknown",
+                          )
+                        : t(
+                            "Sikkerhet trenger oppmerksomhet",
+                            "Security needs attention",
+                          )}
+                    </strong>
+                    <small>
+                      {model.alerts
+                        .slice(0, 3)
+                        .map((c) => c.name)
+                        .join(" · ")}
+                      {model.alerts.length > 3
+                        ? ` +${model.alerts.length - 3}`
+                        : ""}
+                    </small>
+                  </span>
+                  <ChevronRight size={20} />
+                </button>
+              )}
+            </div>
             <span className="home-hero-caption">
               {t("Stemningsbilde", "Decorative image")}
             </span>
@@ -673,40 +715,6 @@ export function HomeOverview({
         )}
         {tab === "overview" && (
           <>
-            {canView("people") && (
-              <Presence home={h} offline={offline} lang={lang} admin={admin} />
-            )}
-            {!!model.alerts.length && (
-              <button
-                className="home-alert-banner"
-                onClick={() => setTab("security")}
-              >
-                <AlertCircle size={22} />
-                <span>
-                  <strong>
-                    {offline
-                      ? t(
-                          "Sikkerhetsstatus er ukjent",
-                          "Security status is unknown",
-                        )
-                      : t(
-                          "Sikkerhet trenger oppmerksomhet",
-                          "Security needs attention",
-                        )}
-                  </strong>
-                  <small>
-                    {model.alerts
-                      .slice(0, 3)
-                      .map((c) => c.name)
-                      .join(" · ")}
-                    {model.alerts.length > 3
-                      ? ` +${model.alerts.length - 3}`
-                      : ""}
-                  </small>
-                </span>
-                <ChevronRight size={20} />
-              </button>
-            )}
             <div className="home-status-grid">
               {model.security.length > 0 && (
                 <button

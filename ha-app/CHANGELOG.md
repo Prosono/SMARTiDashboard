@@ -1,3 +1,8 @@
+## 1.36.37
+- Personer hjemme er samlet i velkomstbildet på Oversikt, også i Enkel modus.
+- Varseltrekanten vises i velkomstbildet i alle visningsmoduser. Den separate varselraden under bildet er fjernet.
+- Tilpasset mobil og desktop, med personvalg i egen dialog.
+
 ## 1.36.36
 - Enhetsnavn vises også når automasjonen bruker Home Assistants interne register-ID.
 - Ny Enheter-fane i flytens byggesteiner: dra inn eller velg en enhet, velg funksjon og bruk den under Når, Og eller Så.
