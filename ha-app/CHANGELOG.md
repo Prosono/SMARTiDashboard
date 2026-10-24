@@ -1,3 +1,9 @@
+## 1.36.29
+
+- Dra «Når dette skjer», «Og dette stemmer» og «Så gjør dette» til lerretet for å velge et nytt kort på ønsket plassering.
+- Forhåndsvisning følger pekeren under dragging, og lerretet markerer slippområdet. Vanlig trykk og tastatur fungerer fortsatt.
+- Tydeligere kortskygger i lyst og mørkt tema.
+
 ## 1.36.28
 
 - Flyteditoren bruker varme SMARTi-bruntoner. Separate utgående grener får ulike linjefarger.

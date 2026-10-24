@@ -42,6 +42,25 @@ export function FlowCanvas({
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const graph = useMemo(() => canvasModel(config, lang), [config, lang]);
+  const paletteDrag = useRef<{
+    kind: FlowKey;
+    x: number;
+    y: number;
+    moved: boolean;
+  } | null>(null);
+  const [dragPreview, setDragPreview] = useState<{
+    kind: FlowKey;
+    x: number;
+    y: number;
+  } | null>(null);
+  const skipPaletteClick = useRef(false);
+  function paletteLabel(k: FlowKey) {
+    return k === "triggers"
+      ? t("Når dette skjer", "When this happens")
+      : k === "conditions"
+        ? t("Og dette stemmer", "And this is true")
+        : t("Så gjør dette", "Then do this");
+  }
   const [zoom, setZoom] = useState(0.8),
     [positions, setPositions] = useState<
       Record<string, { x: number; y: number }>
@@ -180,22 +199,114 @@ export function FlowCanvas({
       className={"flow-workspace palette-" + palette}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
+          paletteDrag.current = null;
+          setDragPreview(null);
+          skipPaletteClick.current = true;
           cancelConnection();
           e.stopPropagation();
         }
       }}
       aria-label={t("Arbeidsflate for automasjon", "Automation canvas")}
     >
+      {dragPreview && (
+        <div
+          className="canvas-new-card-preview"
+          style={{ left: dragPreview.x + 16, top: dragPreview.y + 16 }}
+          aria-hidden="true"
+        >
+          <Plus size={18} />
+          {paletteLabel(dragPreview.kind)}
+        </div>
+      )}
+      <p className="canvas-palette-hint">
+        {t(
+          "Dra et kort til lerretet, eller trykk for å velge.",
+          "Drag a card onto the canvas, or click to choose.",
+        )}
+      </p>
       <div className="canvas-toolbar">
         <div className="canvas-add">
           {(["triggers", "conditions", "actions"] as FlowKey[]).map((k) => (
-            <button type="button" key={k} onClick={() => onAdd(k)}>
+            <button
+              type="button"
+              key={k}
+              className="canvas-palette-card"
+              aria-label={
+                k === "triggers"
+                  ? t("Legg til hendelse", "Add event")
+                  : k === "conditions"
+                    ? t("Legg til krav", "Add requirement")
+                    : t("Legg til handling", "Add action")
+              }
+              title={t(
+                "Dra til lerretet, eller trykk for å velge kort",
+                "Drag onto the canvas, or click to choose a card",
+              )}
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                skipPaletteClick.current = false;
+                paletteDrag.current = {
+                  kind: k,
+                  x: e.clientX,
+                  y: e.clientY,
+                  moved: false,
+                };
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerMove={(e) => {
+                const d = paletteDrag.current;
+                if (!d) return;
+                if (
+                  !d.moved &&
+                  Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8
+                )
+                  return;
+                d.moved = true;
+                skipPaletteClick.current = true;
+                setDragPreview({ kind: k, x: e.clientX, y: e.clientY });
+              }}
+              onPointerUp={(e) => {
+                const d = paletteDrag.current;
+                paletteDrag.current = null;
+                setDragPreview(null);
+                if (!d?.moved) return;
+                const bounds = viewport.current?.getBoundingClientRect(),
+                  canvas = plane.current?.getBoundingClientRect();
+                if (
+                  bounds &&
+                  canvas &&
+                  e.clientX >= bounds.left &&
+                  e.clientX <= bounds.right &&
+                  e.clientY >= bounds.top &&
+                  e.clientY <= bounds.bottom
+                ) {
+                  move(
+                    JSON.stringify([k, (config[k] || []).length]),
+                    (e.clientX - canvas.left) / zoom,
+                    (e.clientY - canvas.top) / zoom,
+                  );
+                  onAdd(k);
+                }
+              }}
+              onPointerCancel={() => {
+                paletteDrag.current = null;
+                setDragPreview(null);
+                skipPaletteClick.current = true;
+              }}
+              onLostPointerCapture={() => {
+                paletteDrag.current = null;
+                setDragPreview(null);
+              }}
+              onClick={() => {
+                if (skipPaletteClick.current) {
+                  skipPaletteClick.current = false;
+                  return;
+                }
+                onAdd(k);
+              }}
+            >
               <Plus size={16} />
-              {k === "triggers"
-                ? t("Legg til hendelse", "Add event")
-                : k === "conditions"
-                  ? t("Legg til krav", "Add requirement")
-                  : t("Legg til handling", "Add action")}
+              {paletteLabel(k)}
             </button>
           ))}
         </div>
@@ -376,7 +487,11 @@ export function FlowCanvas({
         }
       </div>
       <div
-        className={"canvas-viewport" + (showGrid ? "" : " no-grid")}
+        className={
+          "canvas-viewport" +
+          (showGrid ? "" : " no-grid") +
+          (dragPreview ? " is-drop-target" : "")
+        }
         ref={viewport}
         onPointerDown={(e) => {
           if (

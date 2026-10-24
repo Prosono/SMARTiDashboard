@@ -247,4 +247,51 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   await expect(
     page.getByRole("region", { name: "Arbeidsflate for automasjon" }),
   ).toBeVisible();
+  const palette = page.getByRole("button", {
+    name: "Legg til handling",
+    exact: true,
+  });
+  const bounds = await page.locator(".canvas-viewport").boundingBox();
+  const origin = await palette.boundingBox();
+  const planeBounds = await page.locator(".canvas-plane").boundingBox();
+  const scale = await page
+    .locator(".canvas-plane")
+    .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
+  const target = {
+    clientX: bounds!.x + 120,
+    clientY: bounds!.y + 160,
+    pointerId: 1,
+    pointerType: "mouse",
+    button: 0,
+  };
+  await palette.dispatchEvent("pointerdown", {
+    ...target,
+    clientX: origin!.x + 10,
+    clientY: origin!.y + 10,
+  });
+  await palette.dispatchEvent("pointermove", target);
+  await expect(page.locator(".canvas-new-card-preview")).toBeVisible();
+  await palette.dispatchEvent("pointerup", target);
+  await expect(
+    page.getByRole("dialog", { name: "Hva vil du legge til?" }),
+  ).toBeVisible();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /Vent litt/ })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Ferdig med steget", exact: true })
+    .click();
+  const added = page.locator(".canvas-actions").last();
+  await expect(added).toBeVisible();
+  expect(
+    await added.evaluate((el) => parseFloat((el as HTMLElement).style.left)),
+  ).toBe(
+    Math.max(
+      10,
+      Math.round((target.clientX - planeBounds!.x) / scale / 10) * 10,
+    ),
+  );
+  await expect(page.locator(".canvas-new-card-preview")).toHaveCount(0);
 });
