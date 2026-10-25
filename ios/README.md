@@ -418,3 +418,12 @@ Physical-device delivery remains to be verified. Build 16 was added to «SMARTi 
 25 October 2026. App Store Connect build ID:
 `e74bc5c4-5f12-4ee0-8d58-738c2923ac63`.
 Verification screenshot: `/tmp/smarti-build16-testflight.png`.
+
+### Build 17 — black app icon, 25 October 2026
+
+App icon background changed to black. The 1024×1024 PNG is opaque.
+Signed Release archive and Apple upload succeeded for 0.1.0 (17).
+Archive: `/tmp/SMARTiHome-build17.xcarchive`.
+Added to «SMARTi intern test» and confirmed **Testing** on 25 October 2026.
+App Store Connect build ID: `f07c9483-332d-4c20-8882-8a6af2dd8cd6`.
+Verification screenshot: `/tmp/smarti-build17-testflight.png`.
