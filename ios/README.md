@@ -414,5 +414,7 @@ Includes active-home/user phone synchronization, scoped push registration and
 transient-refresh recovery described above, plus synchronization after the home
 page finishes loading. HA app 1.36.38 supplies the immediate authenticated-session
 signal for in-page login. Existing iOS notification permission is still required.
-Physical-device delivery remains to be verified. Internal test group assignment
-and Apple's Ready to Test/Testing status have not yet been confirmed.
+Physical-device delivery remains to be verified. Build 16 was added to «SMARTi intern test» and confirmed **Testing** on
+25 October 2026. App Store Connect build ID:
+`e74bc5c4-5f12-4ee0-8d58-738c2923ac63`.
+Verification screenshot: `/tmp/smarti-build16-testflight.png`.
