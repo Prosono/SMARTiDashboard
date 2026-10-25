@@ -14,6 +14,7 @@ import UserNotifications
     private let location = CLLocationManager()
     private var pushFailureObserver: NSObjectProtocol?
     private var logoutObserver: NSObjectProtocol?
+    private var notificationScope: String?
     private var wantsNotifications = false
     private var sending = false
     private var lastSent: Date = .distantPast
@@ -42,6 +43,15 @@ import UserNotifications
         }
         Task { await refresh() }
     }
+    func resetConnectionState() {
+        stopLocation()
+        sharing = false
+        paired = false
+        wantsNotifications = false
+        notificationScope = nil
+        notificationsReady = false
+        notificationStatus = "Kontrollerer varsler for dette hjemmet …"
+    }
     func refresh() async {
         paired = await MobileClient.shared.paired()
         guard paired, let scope = CredentialStore.load()?.scope else { return }
@@ -49,29 +59,34 @@ import UserNotifications
             let data = try await MobileClient.shared.send("companion", method: "GET")
             let info = try JSONDecoder().decode(CompanionStatus.self, from: data)
             guard CredentialStore.load()?.scope == scope else { return }
-            notificationsReady = info.notifications_ready
-            notificationStatus = info.notifications_ready ? "Varsler er aktivert for dette hjemmet." : "Varsler er ikke aktivert."
-            wantsNotifications = info.notifications_ready
-            if info.notifications_ready {
-                let settings = await UNUserNotificationCenter.current().notificationSettings()
-                if settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional {
-                    UIApplication.shared.registerForRemoteNotifications()
-                } else if settings.authorizationStatus == .denied {
-                    await disableNotifications()
-                }
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            guard CredentialStore.load()?.scope == scope else { return }
+            let allowed = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
+            let optedOut = UserDefaults.standard.bool(forKey: "smarti.notifications.disabled." + scope)
+            notificationScope = scope
+            notificationsReady = info.notifications_ready && allowed
+            wantsNotifications = allowed && !optedOut
+            notificationStatus = notificationsReady ? "Varsler er aktivert for dette hjemmet." : "Varsler er ikke aktivert."
+            if wantsNotifications && info.registered {
+                UIApplication.shared.registerForRemoteNotifications()
+            } else if settings.authorizationStatus == .denied && info.notifications_ready {
+                await disableNotifications()
             }
             sharing = info.location_enabled
             status = info.registered ? "Telefonen er registrert i hjemmet." : "Telefonen er koblet til. Fullfør registreringen."
-            if sharing { startLocation() }
+            if sharing { startLocation() } else { stopLocation() }
         } catch { self.error = error.localizedDescription }
     }
     func register() async throws {
+        guard let scope = CredentialStore.load()?.scope else { throw CancellationError() }
         try await MobileClient.shared.send("companion", body: ["name": UIDevice.current.name,
             "model": UIDevice.current.model, "os_version": UIDevice.current.systemVersion,
-            "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"])
+            "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1"], expectedScope: scope)
+        guard CredentialStore.load()?.scope == scope else { throw CancellationError() }
         await refresh()
     }
     func enableNotifications() async {
+        guard let requestedScope = CredentialStore.load()?.scope else { return }
         busy = true; defer { busy = false }
         do {
             try await register()
@@ -79,30 +94,39 @@ import UserNotifications
                 notificationStatus = "Tillat varsler i iPhone-innstillingene for å fortsette."
                 return
             }
+            guard let scope = CredentialStore.load()?.scope, scope == requestedScope else { return }
+            notificationScope = scope
+            UserDefaults.standard.removeObject(forKey: "smarti.notifications.disabled." + scope)
             wantsNotifications = true
             notificationStatus = "Registrerer varsler …"
             UIApplication.shared.registerForRemoteNotifications()
         } catch { self.error = error.localizedDescription }
     }
     func registerPushToken(_ token: String) async {
-        guard wantsNotifications, await MobileClient.shared.paired() else { return }
+        guard wantsNotifications, let scope = notificationScope,
+              CredentialStore.load()?.scope == scope else { return }
         #if DEBUG
         let environment = "development"
         #else
         let environment = "production"
         #endif
         do {
-            try await MobileClient.shared.send("notifications", method: "PUT", body: ["token": token, "environment": environment])
+            try await MobileClient.shared.send("notifications", method: "PUT", body: ["token": token, "environment": environment], expectedScope: scope)
+            guard CredentialStore.load()?.scope == scope else { return }
             notificationsReady = true
             notificationStatus = "Varsler er aktivert for dette hjemmet."
         } catch {
+            guard CredentialStore.load()?.scope == scope else { return }
             notificationsReady = false
             notificationStatus = "Kunne ikke aktivere varsler. Kontroller at huben er oppdatert, og prøv igjen."
         }
     }
     func disableNotifications() async {
+        guard let scope = CredentialStore.load()?.scope else { return }
         do {
-            try await MobileClient.shared.send("notifications", method: "DELETE")
+            try await MobileClient.shared.send("notifications", method: "DELETE", expectedScope: scope)
+            guard CredentialStore.load()?.scope == scope else { return }
+            UserDefaults.standard.set(true, forKey: "smarti.notifications.disabled." + scope)
             wantsNotifications = false
             notificationsReady = false
             notificationStatus = "Varsler er slått av for dette hjemmet."

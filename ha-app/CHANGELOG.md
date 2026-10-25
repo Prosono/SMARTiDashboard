@@ -1,3 +1,7 @@
+## 1.36.38
+- Varsler iPhone-appen når en bruker logger inn, slik at telefonkobling og pushvarsler kan følge aktivt hjem og bruker.
+- Automatisk synkronisering krever iPhone-app 0.1.0 build 16 eller nyere.
+
 ## 1.36.37
 - Personer hjemme er samlet i velkomstbildet på Oversikt, også i Enkel modus.
 - Varseltrekanten vises i velkomstbildet i alle visningsmoduser. Den separate varselraden under bildet er fjernet.

@@ -382,3 +382,37 @@ telefonkoblinger. Simulatorbygg er kontrollert; fysisk kontobytte må testes.
 
 Signert Release-arkiv og opplasting til Apple er fullført. Build 15 er lagt til
 «SMARTi intern test» og bekreftet med status «Testing» 21. oktober 2026.
+
+## Active-home notification synchronization — 2026-10-24
+
+The dashboard now signals an authenticated session to the native shell. On that
+signal and when the app becomes active, the shell verifies the web user against
+the paired mobile user and home. A confirmed mismatch replaces the old pairing;
+a failed network check does not count as a mismatch. Location and notification
+state are reset when changing the pairing. Notification token uploads are scoped
+to the pairing that requested them, including completion/error state updates.
+
+For a registered phone, existing iOS notification permission now restores APNs
+registration even when the new hub registration has no token yet. Explicit
+notification opt-out is retained for the current pairing. A transient token
+refresh failure no longer discards Keychain credentials; a definitive 401 still
+does. Replayed refresh tokens remain subject to the server's revocation policy.
+
+Validation: unsigned iOS simulator build, frontend TypeScript check, standalone
+NotificationHomeTests, and 18 backend mobile/push/inbox tests pass. Not uploaded
+to TestFlight or verified on a physical phone. Verify foreground/background
+delivery, switching users in one home, switching homes, denied permission,
+explicit opt-out, and network loss during switching before distribution.
+Automations targeting an old revoked phone registration must select the current
+phone recipient. Revocation on a disconnected old hub remains best-effort.
+
+### Build 16 — TestFlight upload, 25 October 2026
+
+Signed Release archive and Apple upload succeeded for 0.1.0 (16).
+Archive: `/tmp/SMARTiHome-build16.xcarchive`.
+Includes active-home/user phone synchronization, scoped push registration and
+transient-refresh recovery described above, plus synchronization after the home
+page finishes loading. HA app 1.36.38 supplies the immediate authenticated-session
+signal for in-page login. Existing iOS notification permission is still required.
+Physical-device delivery remains to be verified. Internal test group assignment
+and Apple's Ready to Test/Testing status have not yet been confirmed.

@@ -26,8 +26,9 @@ struct CompanionStatus: Decodable {
 }
 
 enum PhoneError: LocalizedError {
+    case unauthorized
     case message(String)
-    var errorDescription: String? { if case let .message(text) = self { return text }; return nil }
+    var errorDescription: String? { if case let .message(text) = self { return text }; return "Telefonens tilgang har utløpt. Koble telefonen til hjemmet igjen." }
 }
 
 enum CredentialStore {
@@ -101,7 +102,7 @@ actor MobileClient {
         let (data, response) = try await session.data(for: r)
         guard let response = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         guard (200..<300).contains(response.statusCode) else {
-            if response.statusCode == 401 { throw PhoneError.message("Telefonens tilgang har utløpt. Koble telefonen til hjemmet igjen.") }
+            if response.statusCode == 401 { throw PhoneError.unauthorized }
             if response.statusCode == 404 { throw PhoneError.message("Oppdater SMARTi på huben før du kobler til telefonen.") }
             throw PhoneError.message("Hjemmet kunne ikke fullføre handlingen (\(response.statusCode)). Prøv igjen når forbindelsen er tilbake.")
         }
@@ -141,14 +142,19 @@ actor MobileClient {
             guard generation == epoch, CredentialStore.load()?.scope == current.scope else { throw CancellationError() }
             credentials = updated; refreshTask = nil; return updated
         } catch {
-            // A lost refresh response is ambiguous: do not replay a rotated credential.
-            if generation == epoch { credentials = nil; CredentialStore.clear(); refreshTask = nil }
+            // Keep credentials on transient failures. The server rejects and revokes
+            // a rotated-token replay; only a definitive 401 clears the local pair.
+            if generation == epoch {
+                refreshTask = nil
+                if case PhoneError.unauthorized = error { credentials = nil; CredentialStore.clear() }
+            }
             throw error
         }
     }
 
-    @discardableResult func send(_ path: String, method: String = "POST", body: [String: Any] = [:]) async throws -> Data {
+    @discardableResult func send(_ path: String, method: String = "POST", body: [String: Any] = [:], expectedScope: String? = nil) async throws -> Data {
         let current = try await authorized()
+        if let expectedScope, current.scope != expectedScope { throw CancellationError() }
         let epoch = generation
         let data = try await request(origin: current.origin, path: path, method: method,
             body: method == "GET" ? nil : JSONSerialization.data(withJSONObject: body), token: current.accessToken)

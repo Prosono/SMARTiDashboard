@@ -6,6 +6,7 @@ import UserNotifications
 
 @main struct SMARTiHomeApp: App {
     @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var pushDelegate
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var phone = PhoneModel()
     @StateObject private var home = HomeBrowser()
     @StateObject private var inbox = NotificationInbox.shared
@@ -34,6 +35,12 @@ import UserNotifications
             }
             .sheet(isPresented: $home.showScanner) { HubScanner(home: home) }
             .sheet(isPresented: $home.showDiscovery, onDismiss: { home.discoveryDismissed() }) { HubDiscoveryView(home: home) }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SMARTiAuthenticated"))) { _ in
+                Task { await home.synchronizePhone(phone) }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await home.synchronizePhone(phone) } }
+            }
             .onOpenURL { url in _ = home.openActivation(url.absoluteString) }
             .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
                 if let url = activity.webpageURL { _ = home.openActivation(url.absoluteString) }
@@ -320,6 +327,14 @@ struct PhoneSettingsView: View {
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "smartiSession", message.frameInfo.isMainFrame,
+           message.body as? String == "authenticated",
+           let url = message.frameInfo.request.url, MobileClient.isHome(url),
+           webView.url?.host == url.host {
+            NotificationCenter.default.post(name: Notification.Name("SMARTiAuthenticated"), object: nil)
+            return
+        }
+
+        if message.name == "smartiSession", message.frameInfo.isMainFrame,
            message.body as? String == "logout",
            let url = message.frameInfo.request.url, url.scheme == "https",
            url.host == "home.smarti.dev" || MobileClient.isHome(url),
@@ -363,6 +378,10 @@ struct PhoneSettingsView: View {
         if let url = webView.url, MobileClient.isHome(url), let host = url.host {
             UserDefaults.standard.set("https://" + host + "/", forKey: Self.savedHomeKey)
         }
+    }
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard !signingOut, let url = webView.url, MobileClient.isHome(url) else { return }
+        NotificationCenter.default.post(name: Notification.Name("SMARTiAuthenticated"), object: nil)
     }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         if recovery.allowAutomaticRecovery(at: ProcessInfo.processInfo.systemUptime) {
@@ -443,6 +462,45 @@ struct PhoneSettingsView: View {
               let user = result as? NSNumber, let pairedUser = mobile?["id"] as? NSNumber,
               user == pairedUser else {
             throw PhoneError.message("Telefonen er koblet til en annen bruker. Koble denne telefonen til brukeren du er innlogget som for å se dine varsler.")
+        }
+    }
+
+    private var synchronizingPhone = false
+
+    // Resolve the web user before touching native credentials; a network failure is
+    // not evidence of a different user and must not destroy a working registration.
+    func synchronizePhone(_ phone: PhoneModel) async {
+        guard !synchronizingPhone, !signingOut,
+              let url = webView.url, MobileClient.isHome(url) else { return }
+        synchronizingPhone = true
+        defer { synchronizingPhone = false }
+        do {
+            let result = try await webView.callAsyncJavaScript("""
+                const r = await fetch('/api/session', {credentials:'same-origin', cache:'no-store'});
+                if (!r.ok) return null;
+                return (await r.json()).id;
+                """, arguments: [:], in: nil, contentWorld: .page)
+            guard !signingOut, webView.url?.host == url.host, let user = result as? NSNumber else { return }
+            var matches = false
+            if let credentials = CredentialStore.load(), credentials.origin.host == url.host {
+                do {
+                    let data = try await MobileClient.shared.send("session", method: "GET")
+                    let mobile = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    matches = mobile?["id"] as? NSNumber == user
+                } catch PhoneError.unauthorized {
+                    matches = false
+                }
+            }
+            guard !signingOut, webView.url?.host == url.host else { return }
+            if !matches {
+                phone.resetConnectionState()
+                await MobileClient.shared.forget()
+                guard !signingOut, webView.url?.host == url.host else { return }
+                try await pair()
+            }
+            try await phone.register()
+        } catch {
+            phone.error = error.localizedDescription
         }
     }
 

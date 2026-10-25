@@ -153,6 +153,19 @@ function App() {
     writePreference("smarti-palette", palette);
   }, [palette]);
   const [session, updateSession] = useState<Session | null>(null);
+  useEffect(() => {
+    if (!session) return;
+    (
+      window as Window & {
+        webkit?: {
+          messageHandlers?: {
+            smartiSession?: { postMessage: (message: string) => void };
+          };
+        };
+      }
+    ).webkit?.messageHandlers?.smartiSession?.postMessage("authenticated");
+  }, [session]);
+
   const attention = useDiscoveries(session?.role === "admin", true);
   const attentionCount =
     session?.role === "admin" && !attention.isError
