@@ -154,6 +154,7 @@ def create_app(
         remote_task = None
         onboarding_task = None
         energy_task = None
+        releases_task = None
 
         def start_remote():
             nonlocal remote_task
@@ -179,8 +180,13 @@ def create_app(
                 )
             if not mobile_only and not remote_surface:
                 energy_task = asyncio.create_task(energy_platform.run())
+                releases_task = asyncio.create_task(management.update_approval.run())
             yield
         finally:
+            if releases_task:
+                releases_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await releases_task
             if energy_task:
                 energy_task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):

@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, field_validator
 
 from .ha import HAError
+from .update_approval import UpdateApproval, component
 
 
 class NameBody(BaseModel):
@@ -52,8 +53,22 @@ class AutomationBody(BaseModel):
 class AutomationAppearance(BaseModel):
     model_config = {"extra": "forbid"}
     icon: Literal[
-        "auto", "light", "sun", "moon", "home", "climate", "shield", "lock",
-        "door", "motion", "music", "energy", "clock", "leaf", "blinds", "vacuum",
+        "auto",
+        "light",
+        "sun",
+        "moon",
+        "home",
+        "climate",
+        "shield",
+        "lock",
+        "door",
+        "motion",
+        "music",
+        "energy",
+        "clock",
+        "leaf",
+        "blinds",
+        "vacuum",
     ]
 
 
@@ -86,6 +101,7 @@ class Management:
         self.demo = settings.mode == "demo"
         self.lock = asyncio.Lock()
         self.pending_updates = {}
+        self.update_approval = UpdateApproval(settings, ha)
         self.demo_automations = {
             "evening": {
                 "id": "evening",
@@ -261,6 +277,10 @@ class Management:
                 continue
             a = state.get("attributes", {})
             raw = a.get("title") or a.get("friendly_name") or eid
+            key = component(self.ha, eid, a)
+            approved = not key or self.update_approval.approved(key, a.get("latest_version"))
+            if not approved:
+                continue
             progress = a.get("in_progress")
             pending = self.pending_updates.get(eid)
             if pending and (a.get("installed_version") == pending[0] or time.monotonic() - pending[1] > 180):
@@ -277,7 +297,9 @@ class Management:
                     "in_progress": progress is not None and progress is not False,
                     "percentage": a.get("update_percentage"),
                     "pending": bool(pending),
-                    "can_install": bool(a.get("supported_features", 0) & 1),
+                    "can_install": bool(a.get("supported_features", 0) & 1) and approved,
+                    "component": key,
+                    "approved": approved,
                     "can_backup": bool(a.get("supported_features", 0) & 8),
                     "summary": brand(a.get("release_summary"))[:12000],
                 }
@@ -296,7 +318,8 @@ def management_router(service, admin):
         services = await m.rest("GET", "services")
         available = {
             "notify." + name
-            for domain in services if domain.get("domain") == "notify"
+            for domain in services
+            if domain.get("domain") == "notify"
             for name in domain.get("services", {})
         }
         recipients = []
@@ -462,7 +485,9 @@ def management_router(service, admin):
         def matches(rule):
             if rule.get("domain") and domain not in values(rule["domain"]):
                 return False
-            if rule.get("device_class") and attributes.get("device_class") not in values(rule["device_class"]):
+            if rule.get("device_class") and attributes.get("device_class") not in values(
+                rule["device_class"]
+            ):
                 return False
             features = attributes.get("supported_features", 0) or 0
             if rule.get("supported_features") and not any(
@@ -494,11 +519,13 @@ def management_router(service, admin):
                 filters = (service.get("target") or {}).get("entity", [])
                 if filters and not any(matches(f) for f in values(filters)):
                     continue
-                result.append({
-                    "action": f"{domain}.{key}",
-                    "name": service.get("name") or key.replace("_", " "),
-                    "fields": fields_for_entity(service.get("fields", {})),
-                })
+                result.append(
+                    {
+                        "action": f"{domain}.{key}",
+                        "name": service.get("name") or key.replace("_", " "),
+                        "fields": fields_for_entity(service.get("fields", {})),
+                    }
+                )
         return result
 
     @router.get("/automations")
@@ -639,6 +666,7 @@ def management_router(service, admin):
 
     @router.get("/updates")
     async def updates():
+        await m.update_approval.refresh()
         return m.updates()
 
     @router.post("/updates/{entity_id}/install")
@@ -650,6 +678,7 @@ def management_router(service, admin):
                 for s in states:
                     if s["entity_id"].startswith("update."):
                         m.ha.states[s["entity_id"]] = s
+            await m.update_approval.refresh(force=True)
             item = next((u for u in m.updates() if u["entity_id"] == entity_id), None)
             if (
                 not item
@@ -670,6 +699,11 @@ def management_router(service, admin):
                 domain="update",
                 service="install",
                 service_data={"entity_id": entity_id}
+                | (
+                    {"version": body.version}
+                    if m.ha.states[entity_id].get("attributes", {}).get("supported_features", 0) & 2
+                    else {}
+                )
                 | ({"backup": body.backup} if item["can_backup"] else {}),
             )
             return {"status": "accepted"}

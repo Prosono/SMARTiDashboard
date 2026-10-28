@@ -14,7 +14,7 @@
     }
     document.querySelector('.masthead > a')?.setAttribute('href','/admin');
     const nav = document.querySelector('.masthead nav');
-    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/users','Brukere'],['/admin/support','Support'],['/admin/support/prices','Prisliste'],['/admin/architecture','Arkitektur'],['/admin/account','Konto']];
+    const links = [['/admin','Oversikt'],['/admin/hubs','Huber'],['/admin/users','Brukere'],['/admin/support','Support'],['/admin/support/prices','Prisliste'],['/admin/updates','Oppdateringer'],['/admin/architecture','Arkitektur'],['/admin/account','Konto']];
     if (nav) {
       for (const [href, label] of links) {
         const existing = nav.querySelector(`a[href="${href}"]:not([id])`);

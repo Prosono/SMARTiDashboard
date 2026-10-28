@@ -1,3 +1,8 @@
+## 1.36.39
+- HA-baserte systemoppdateringer (Core, OS og Supervisor) krever sentral godkjenning per versjon før de vises og kan installeres i SMARTi.
+- Tilgjengelige systemversjoner rapporteres til adminpanelet; godkjenning kontrolleres på nytt før installasjon.
+- Krever oppdatert sky med siden Administrasjon → Oppdateringer. Manglende kontakt med godkjenningstjenesten blokkerer systeminstallasjon.
+
 ## 1.36.38
 - Varsler iPhone-appen når en bruker logger inn, slik at telefonkobling og pushvarsler kan følge aktivt hjem og bruker.
 - Automatisk synkronisering krever iPhone-app 0.1.0 build 16 eller nyere.

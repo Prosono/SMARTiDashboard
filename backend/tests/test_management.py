@@ -2,13 +2,12 @@ import json
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
-from test_api import ORIGIN, SECRET, login
-
 from app.config import Settings
 from app.demo import Demo
 from app.ha import HAError, HomeAssistant
 from app.main import create_app
+from fastapi.testclient import TestClient
+from test_api import ORIGIN, SECRET, login
 
 
 @pytest.fixture
@@ -23,6 +22,9 @@ def client(tmp_path):
             bootstrap_secret=SECRET,
         ),
         Demo(),
+    )
+    app.state.management.update_approval.transport = httpx.MockTransport(
+        lambda request: httpx.Response(200, json={"releases": [{"component": "core", "version": "2"}]})
     )
     with TestClient(app) as c:
         c.headers["origin"] = ORIGIN
@@ -61,7 +63,11 @@ def test_management_admin_csrf_and_room_registry_semantics(client):
     client.post("/api/logout")
     login(client, "resident", "another long password")
     for path in [
-        "rooms", "automations", "integrations", "updates", "entities",
+        "rooms",
+        "automations",
+        "integrations",
+        "updates",
+        "entities",
         "automation-preview/automation.evening",
     ]:
         assert client.get("/api/manage/" + path).status_code == 403
@@ -159,6 +165,9 @@ def live(tmp_path):
         ),
         ha,
     )
+    app.state.management.update_approval.transport = httpx.MockTransport(
+        lambda request: httpx.Response(200, json={"releases": [{"component": "core", "version": "2"}]})
+    )
     with TestClient(app) as c:
         c.headers["origin"] = ORIGIN
         login(c)
@@ -217,7 +226,9 @@ def test_live_api_contracts_and_update_branding(live):
 def test_detailed_entity_catalog_includes_helpers_with_safe_metadata(live):
     client, ha = live
     ha.devices["catalog_device"] = {
-        "id": "catalog_device", "area_id": "living", "secret": "never-return-device",
+        "id": "catalog_device",
+        "area_id": "living",
+        "secret": "never-return-device",
     }
     ha.states["input_number.target_temperature"] = {
         "entity_id": "input_number.target_temperature",
@@ -242,16 +253,22 @@ def test_detailed_entity_catalog_includes_helpers_with_safe_metadata(live):
         "attributes": {"friendly_name": "Phone", "latitude": 59.0},
     }
     ha.entities["device_tracker.phone"] = {
-        "entity_id": "device_tracker.phone", "device_id": "catalog_device",
+        "entity_id": "device_tracker.phone",
+        "device_id": "catalog_device",
     }
     ha.states["input_boolean.guest_mode"] = {
-        "entity_id": "input_boolean.guest_mode", "state": "off", "attributes": {},
+        "entity_id": "input_boolean.guest_mode",
+        "state": "off",
+        "attributes": {},
     }
     # Helpers and trackers need not be supported dashboard controls to remain
     # available as automation inputs, conditions or targets.
     assert not any(
-        control.entity_id in {
-            "input_number.target_temperature", "device_tracker.phone", "input_boolean.guest_mode",
+        control.entity_id
+        in {
+            "input_number.target_temperature",
+            "device_tracker.phone",
+            "input_boolean.guest_mode",
         }
         for control in ha.controls()
     )
@@ -260,7 +277,8 @@ def test_detailed_entity_catalog_includes_helpers_with_safe_metadata(live):
     catalog = {row["entity_id"]: row for row in response.json()}
     assert catalog["input_number.target_temperature"] == {
         "entity_id": "input_number.target_temperature",
-        "id": "input_number.target_temperature", "device_name": None,
+        "id": "input_number.target_temperature",
+        "device_name": None,
         "name": "Target temperature",
         "domain": "input_number",
         "state": "21.5",
@@ -269,20 +287,34 @@ def test_detailed_entity_catalog_includes_helpers_with_safe_metadata(live):
         "area_id": "bedroom",
     }
     assert catalog["device_tracker.phone"] == {
-        "entity_id": "device_tracker.phone", "id": "device_tracker.phone", "device_name": None, "name": "Phone", "domain": "device_tracker",
-        "state": "home", "attributes": {}, "device_id": "catalog_device", "area_id": "living",
+        "entity_id": "device_tracker.phone",
+        "id": "device_tracker.phone",
+        "device_name": None,
+        "name": "Phone",
+        "domain": "device_tracker",
+        "state": "home",
+        "attributes": {},
+        "device_id": "catalog_device",
+        "area_id": "living",
     }
     assert catalog["input_boolean.guest_mode"] == {
-        "entity_id": "input_boolean.guest_mode", "id": "input_boolean.guest_mode", "device_name": None, "name": "input_boolean.guest_mode",
-        "domain": "input_boolean", "state": "off", "attributes": {},
-        "device_id": None, "area_id": None,
+        "entity_id": "input_boolean.guest_mode",
+        "id": "input_boolean.guest_mode",
+        "device_name": None,
+        "name": "input_boolean.guest_mode",
+        "domain": "input_boolean",
+        "state": "off",
+        "attributes": {},
+        "device_id": None,
+        "area_id": None,
     }
     assert "never-return" not in response.text
     assert "latitude" not in response.text
     # Opting out keeps the original compact endpoint contract.
     compact = {row["entity_id"]: row for row in client.get("/api/manage/entities").json()}
     assert compact["input_number.target_temperature"] == {
-        "entity_id": "input_number.target_temperature", "name": "Target temperature",
+        "entity_id": "input_number.target_temperature",
+        "name": "Target temperature",
     }
 
 
@@ -320,13 +352,19 @@ def test_automation_preview_is_resolved_read_only_and_preserves_blueprint(live):
     response = client.get("/api/manage/automation-preview/automation.evening")
     assert response.status_code == 200
     assert response.json() == {
-        "entity_id": "automation.evening", "config": resolved, "read_only": True,
+        "entity_id": "automation.evening",
+        "config": resolved,
+        "read_only": True,
     }
     assert ha.calls[before:] == [("automation/config", {"entity_id": "automation.evening"})]
     assert client.get("/api/manage/automations/file-id").json() == original
-    assert client.put(
-        "/api/manage/automation-preview/automation.evening", json={"config": resolved},
-    ).status_code == 405
+    assert (
+        client.put(
+            "/api/manage/automation-preview/automation.evening",
+            json={"config": resolved},
+        ).status_code
+        == 405
+    )
     # Even with the original file's revision, a resolved preview cannot replace
     # the linked blueprint. Editing normal blueprint inputs still works.
     result = client.put(
@@ -342,12 +380,19 @@ def test_automation_preview_is_resolved_read_only_and_preserves_blueprint(live):
     assert updated.json()["config"]["use_blueprint"] == original["config"]["use_blueprint"]
 
 
-@pytest.mark.parametrize("payload", [
-    None, [], {}, {"config": None}, {"config": []},
-    {"config": {"alias": "Missing steps"}},
-    {"config": {"triggers": [], "actions": [], "use_blueprint": {"path": "unresolved.yaml"}}},
-    {"config": {"triggers": "unexpected", "actions": []}},
-])
+@pytest.mark.parametrize(
+    "payload",
+    [
+        None,
+        [],
+        {},
+        {"config": None},
+        {"config": []},
+        {"config": {"alias": "Missing steps"}},
+        {"config": {"triggers": [], "actions": [], "use_blueprint": {"path": "unresolved.yaml"}}},
+        {"config": {"triggers": "unexpected", "actions": []}},
+    ],
+)
 def test_automation_preview_rejects_malformed_response(live, payload):
     client, ha = live
     ha.preview_response = payload
@@ -451,43 +496,56 @@ async def test_brand_image_bounded_authenticated_no_redirects(monkeypatch):
 
 
 def test_automation_icon_saved_without_changing_config(client):
-    row = client.get('/api/manage/automations').json()[0]
-    path = '/api/manage/automation-appearance/' + row['entity_id']
-    original = client.get('/api/manage/automations/' + row['id']).json()
-    assert client.put(path, json={'icon': 'moon'}).status_code == 200
-    saved = client.get('/api/manage/automations').json()[0]
-    assert saved['icon'] == 'moon'
-    assert client.get('/api/manage/automations/' + row['id']).json() == original
-    assert client.put(path, json={'icon': '<script>'}).status_code == 422
-    assert client.put('/api/manage/automation-appearance/light.missing', json={'icon': 'sun'}).status_code == 404
-    client.post('/api/users', json={'name': 'viewer', 'password': 'another long password', 'role': 'user'})
-    client.post('/api/logout')
-    login(client, 'viewer', 'another long password')
-    assert client.put(path, json={'icon': 'sun'}).status_code == 403
+    row = client.get("/api/manage/automations").json()[0]
+    path = "/api/manage/automation-appearance/" + row["entity_id"]
+    original = client.get("/api/manage/automations/" + row["id"]).json()
+    assert client.put(path, json={"icon": "moon"}).status_code == 200
+    saved = client.get("/api/manage/automations").json()[0]
+    assert saved["icon"] == "moon"
+    assert client.get("/api/manage/automations/" + row["id"]).json() == original
+    assert client.put(path, json={"icon": "<script>"}).status_code == 422
+    assert (
+        client.put("/api/manage/automation-appearance/light.missing", json={"icon": "sun"}).status_code == 404
+    )
+    client.post("/api/users", json={"name": "viewer", "password": "another long password", "role": "user"})
+    client.post("/api/logout")
+    login(client, "viewer", "another long password")
+    assert client.put(path, json={"icon": "sun"}).status_code == 403
 
 
 def test_notification_recipients_use_registered_ha_services(tmp_path):
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
-    from fastapi import FastAPI
-    from app.management import management_router
 
-    rest = AsyncMock(return_value=[
-        {"domain": "light", "services": {"turn_on": {}}},
-        {"domain": "notify", "services": {
-            "mobile_app_new_iphone": {"name": "New iPhone"},
-            "mobile_app_annas_phone": {},
-            "persistent_notification": {},
-            "send_message": {},
-        }},
-    ])
-    from app.storage import Store
+    from app.management import management_router
+    from fastapi import FastAPI
+
+    rest = AsyncMock(
+        return_value=[
+            {"domain": "light", "services": {"turn_on": {}}},
+            {
+                "domain": "notify",
+                "services": {
+                    "mobile_app_new_iphone": {"name": "New iPhone"},
+                    "mobile_app_annas_phone": {},
+                    "persistent_notification": {},
+                    "send_message": {},
+                },
+            },
+        ]
+    )
     import time
+
+    from app.storage import Store
+
     store = Store(tmp_path / "recipients.sqlite")
     with store.connect() as db:
         db.execute("INSERT INTO users(id,name,password,role) VALUES(1,'Anna','unused','admin')")
         for id, revoked in [("phone", 0), ("old", 1)]:
-            db.execute("INSERT INTO mobile_devices(id,user_id,name,created,expires,revoked) VALUES(?,1,'iPhone',?,?,?)", (id, time.time(), time.time()+3600, revoked))
+            db.execute(
+                "INSERT INTO mobile_devices(id,user_id,name,created,expires,revoked) VALUES(?,1,'iPhone',?,?,?)",
+                (id, time.time(), time.time() + 3600, revoked),
+            )
             store_value = {"push_token": "private", "notify_service": "notify.mobile_app_annas_phone"}
     store.set("companion:phone", json.dumps(store_value))
     store.set("companion:old", json.dumps(store_value))
@@ -507,8 +565,9 @@ def test_demo_has_no_real_notification_recipients(client):
 def test_automation_services_are_read_only_and_filter_entity_features():
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
-    from fastapi import FastAPI
+
     from app.management import management_router
+    from fastapi import FastAPI
 
     rest = AsyncMock(
         return_value=[
@@ -542,3 +601,28 @@ def test_automation_services_are_read_only_and_filter_entity_features():
         assert result.json()[0]["fields"]["duration"]["selector"]["number"]["min"] == 1
         rest.assert_awaited_once_with("GET", "services")
         assert c.get("/api/manage/automation-services?entity_id=siren.missing").status_code == 404
+
+
+def test_update_gate_rechecks_before_install_and_hides_pending(live):
+    client, ha = live
+    gate = client.app.state.management.update_approval
+    assert any(u["entity_id"] == "update.core" for u in client.get("/api/manage/updates").json())
+    # Cached listing was approved, but operator withdraws before the click.
+    gate.transport = httpx.MockTransport(lambda r: httpx.Response(200, json={"releases": []}))
+    assert client.post("/api/manage/updates/update.core/install", json={"version": "2"}).status_code == 409
+    assert not any(c[0] == "call_service" and c[1].get("domain") == "update" for c in ha.calls)
+    assert not any(u["entity_id"] == "update.core" for u in client.get("/api/manage/updates").json())
+
+
+def test_update_gate_pins_approved_version(live):
+    client, ha = live
+    ha.states["update.core"]["attributes"]["supported_features"] = 11
+    assert client.post("/api/manage/updates/update.core/install", json={"version": "2"}).status_code == 200
+    assert (
+        "call_service",
+        {
+            "domain": "update",
+            "service": "install",
+            "service_data": {"entity_id": "update.core", "version": "2", "backup": False},
+        },
+    ) in ha.calls

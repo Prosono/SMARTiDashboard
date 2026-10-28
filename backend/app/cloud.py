@@ -515,6 +515,9 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     install_sources(app, db)
     install_prices(app, db)
     is_admin = install_admin(app, db, session, relay_status_url, throttle)
+    from .cloud_releases import install_releases
+
+    install_releases(app, db, session, is_admin, home_auth)
     install_support(app, db, session, is_admin, home_auth, origin)
 
     install_onboarding(

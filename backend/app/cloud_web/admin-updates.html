@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="nb">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SMARTi · Oppdateringer</title>
+    <script src="/assets/appearance.js?v=2"></script>
+    <link rel="stylesheet" href="/assets/admin.css" />
+    <link rel="stylesheet" href="/assets/brand.css" />
+    <link rel="stylesheet" href="/assets/theme.css?v=9" />
+    <link rel="stylesheet" href="/assets/admin-updates.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a href="/admin">SMARTi <span>Administrasjon</span></a>
+      <nav aria-label="Hovedmeny"><a href="/admin">Oversikt</a></nav>
+    </header>
+    <main>
+      <p class="eyebrow">TEST FØR PUBLISERING</p>
+      <div class="heading">
+        <div>
+          <h1>SMARTi-oppdateringer.</h1>
+          <p>
+            Godkjenn hver systemversjon når den er testet og klar for kundene.
+          </p>
+        </div>
+        <button id="refresh">Oppdater listen</button>
+      </div>
+      <p id="message" role="status" aria-live="polite"></p>
+      <p>
+        Hubene rapporterer tilgjengelige versjoner automatisk. En ny versjon
+        venter på godkjenning, selv om en eldre versjon er godkjent.
+      </p>
+      <form id="release-form">
+        <h2>Registrer en versjon for testing</h2>
+        <div class="release-fields">
+          <label
+            >Komponent<select name="component">
+              <option value="core">SMARTi Core</option>
+              <option value="os">SMARTi OS</option>
+              <option value="supervisor">SMARTi Supervisor</option>
+            </select></label
+          ><label
+            >Versjon<input
+              name="version"
+              required
+              maxlength="100"
+              pattern="[A-Za-z0-9][A-Za-z0-9._+\-]{0,99}"
+              placeholder="2026.10.4"
+          /></label>
+        </div>
+        <button>Legg til uten godkjenning</button>
+      </form>
+      <section aria-label="Systemversjoner" id="releases"></section>
+      <p class="note">
+        Godkjenningen gjelder oppdateringer startet inne i SMARTi. Direkte
+        oppdateringer og automatisk oppdatering i Home Assistant styres fortsatt
+        der. SMARTi-appen og enhetenes fastvare følger sine egne
+        oppdateringsløp. En tilbaketrukket godkjenning stopper nye
+        installasjoner, men ruller ikke tilbake installert programvare.
+      </p>
+    </main>
+    <script src="/assets/admin-updates.js"></script>
+    <script src="/assets/brand.js?v=10"></script>
+  </body>
+</html>
