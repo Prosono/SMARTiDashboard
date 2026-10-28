@@ -11,6 +11,8 @@ test("operator approves and withdraws a version on desktop and mobile", async ({
       return r.fulfill({ path: "backend/app/cloud_web/admin-updates.html" });
     if (u.pathname === "/api/session")
       return r.fulfill({ json: { csrf: "test-csrf", portal_admin: true } });
+    if (u.pathname === "/api/admin/hub-versions")
+      return r.fulfill({json: [{id: "test-hub", name: "Testhjem", versions: {core: {version: "2026.10.1", reported: 1793000000}}}]});
     if (u.pathname === "/api/admin/releases") {
       if (r.request().method() === "POST") {
         expect(r.request().headers()["x-csrf-token"]).toBe("test-csrf");
@@ -43,6 +45,9 @@ test("operator approves and withdraws a version on desktop and mobile", async ({
   await expect(
     page.getByText("Venter på godkjenning", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByText("Testhjem", {exact: true})).toBeVisible();
+  await expect(page.getByText("2026.10.1", {exact: true})).toBeVisible();
+  await expect(page.getByText("Ikke rapportert", {exact: true})).toHaveCount(3);
   page.on("dialog", (d) => d.accept());
   await page
     .getByRole("button", { name: "Godkjenn for kunder", exact: true })

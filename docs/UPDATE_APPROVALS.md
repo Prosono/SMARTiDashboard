@@ -21,3 +21,7 @@ Implementert for hubpakke 1.36.39 og tilhørende skyendring. Må publiseres på 
 - Publiser skyendringen først, test/registrer/godkjenn ønskede versjoner, og distribuer deretter hubpakken. Ingen versjoner blir automatisk godkjent ved migrering.
 
 Identifikasjon bygger på hassio-registerets stabile `unique_id` og integrasjonens systemtittel som reserve. Se Home Assistants kildekode: `homeassistant/components/hassio/entity.py` og `update.py`.
+
+## Installerte versjoner (1.36.40)
+
+Admin → Oppdateringer viser installerte versjoner per hjem/hub, med rapporteringstid. Huben sender et øyeblikksbilde fra HAs update-entiteter hvert minutt, også når ingen oppdatering er tilgjengelig. Komponenter uten rapportert installert versjon vises som «Ikke rapportert», og rapporter eldre enn fem minutter merkes. SMARTi-appversjon rapporteres når HA eksponerer appens update-entitet med tittelen SMARTi. Opplysningene er kun tilgjengelige for portaladministratorer. Krever ny skyversjon og hubpakke 1.36.40.

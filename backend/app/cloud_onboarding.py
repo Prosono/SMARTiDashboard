@@ -251,6 +251,7 @@ def install_onboarding(
                 "hub_resets",
                 "production_grants",
                 "push_limits",
+                "hub_system_versions",
                 "energy_history",
                 "energy_agreements",
                 "factory_hubs",

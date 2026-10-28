@@ -3,11 +3,12 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
-from app.config import Settings
-from app.update_approval import UpdateApproval, component
 from fastapi.testclient import TestClient
 from test_cloud import ORIGIN, provision
 from test_cloud_admin import setup
+
+from app.config import Settings
+from app.update_approval import UpdateApproval, component
 
 
 def test_cloud_release_approval_auth_and_version_scope(tmp_path):
@@ -88,3 +89,62 @@ def test_renamed_system_entities_and_unrelated_firmware():
     assert component(ha, "update.os", {"title": "Home Assistant Operating System"}) == "os"
     assert component(ha, "update.app", {"title": "SMARTi"}) is None
     assert component(ha, "update.bulb", {"title": "Bulb firmware"}) is None
+
+
+def test_installed_versions_are_private_scoped_and_replaceable(tmp_path):
+    app, path, staff, customer = setup(tmp_path)
+    client, home = provision(app, "First")
+    _, other = provision(app, "Second")
+    route = f"/api/hubs/{home['installation_id']}/update-candidates"
+    headers = {"Authorization": "Bearer " + home["credential"]}
+    body = {"releases": [], "installed": [{"component": "core", "version": "2026.10.1"}]}
+    assert client.post(route, json=body, headers=headers).status_code == 200
+    assert customer.get("/api/admin/hub-versions").status_code == 403
+    assert TestClient(app, base_url=ORIGIN).get("/api/admin/hub-versions").status_code == 401
+    rows = {r["id"]: r for r in staff.get("/api/admin/hub-versions").json()}
+    assert rows[home["installation_id"]]["versions"]["core"]["version"] == "2026.10.1"
+    assert rows[other["installation_id"]]["versions"] == {}
+    assert (
+        client.post(
+            f"/api/hubs/{other['installation_id']}/update-candidates", json=body, headers=headers
+        ).status_code
+        == 403
+    )
+    # Older clients do not erase reports; explicit empty snapshots clear missing entities.
+    assert client.post(route, json={"releases": []}, headers=headers).status_code == 200
+    assert staff.get("/api/admin/hub-versions").json()[0]["versions"]
+    assert client.post(route, json={"releases": [], "installed": []}, headers=headers).status_code == 200
+    assert all(not r["versions"] for r in staff.get("/api/admin/hub-versions").json())
+
+
+@pytest.mark.asyncio
+async def test_reports_installed_versions_even_without_available_updates(tmp_path, monkeypatch):
+    import json
+
+    import app.update_approval as module
+
+    monkeypatch.setattr(module, "read_identity", lambda _: ("home-one", "credential"))
+    settings = Settings(data_dir=tmp_path, remote_identity_file=tmp_path / "identity.json")
+    ha = SimpleNamespace(
+        entities={},
+        states={
+            "update.core": {
+                "state": "off",
+                "attributes": {"title": "Home Assistant Core", "installed_version": "2026.10.1"},
+            },
+            "update.os": {
+                "state": "unavailable",
+                "attributes": {"title": "Home Assistant OS", "installed_version": "unknown"},
+            },
+        },
+    )
+    reports = []
+
+    def handler(request):
+        if request.method == "POST":
+            reports.append(json.loads(request.content))
+            return httpx.Response(200, json={"accepted": 0})
+        return httpx.Response(200, json={"releases": []})
+
+    await UpdateApproval(settings, ha, httpx.MockTransport(handler)).refresh()
+    assert reports == [{"releases": [], "installed": [{"component": "core", "version": "2026.10.1"}]}]

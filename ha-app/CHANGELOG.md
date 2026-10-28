@@ -1,3 +1,7 @@
+## 1.36.40
+- Rapporterer installerte Core-, OS-, Supervisor- og SMARTi-appversjoner fra HA til adminpanelet, også uten tilgjengelige oppdateringer.
+- Admin viser versjoner per hub, siste rapportering og manglende eller eldre opplysninger.
+
 ## 1.36.39
 - HA-baserte systemoppdateringer (Core, OS og Supervisor) krever sentral godkjenning per versjon før de vises og kan installeres i SMARTi.
 - Tilgjengelige systemversjoner rapporteres til adminpanelet; godkjenning kontrolleres på nytt før installasjon.
