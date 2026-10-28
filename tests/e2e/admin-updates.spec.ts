@@ -45,9 +45,7 @@ test("operator approves and withdraws a version on desktop and mobile", async ({
   await expect(
     page.getByText("Venter på godkjenning", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Testhjem", {exact: true})).toBeVisible();
-  await expect(page.getByText("2026.10.1", {exact: true})).toBeVisible();
-  await expect(page.getByText("Ikke rapportert", {exact: true})).toHaveCount(3);
+  await expect(page.getByRole("link", {name: "huboversikten", exact: true})).toBeVisible();
   page.on("dialog", (d) => d.accept());
   await page
     .getByRole("button", { name: "Godkjenn for kunder", exact: true })

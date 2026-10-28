@@ -65,8 +65,3 @@
     display: grid;
   }
 }
-
-.installed-versions { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
-.installed-versions dd { margin: 6px 0; font-size: 1.2rem; font-weight: 600; }
-.installed-versions small { opacity: .7; }
-#hub-versions article > small { overflow-wrap: anywhere; }

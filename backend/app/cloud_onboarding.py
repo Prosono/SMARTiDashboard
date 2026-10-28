@@ -265,8 +265,14 @@ def install_onboarding(
     def inventory(s=Depends(admin)):
         with db() as c:
             result = []
+            versions = {}
+            for version in c.execute("SELECT home,component,version,reported FROM hub_system_versions"):
+                versions.setdefault(version["home"], {})[version["component"]] = {
+                    "version": version["version"], "reported": version["reported"]
+                }
             for row in c.execute("SELECT * FROM factory_hubs ORDER BY created DESC"):
                 item = view(row)
+                item["versions"] = versions.get(row["home"], {})
                 owner = c.execute("SELECT owner FROM homes WHERE id=?", (row["home"],)).fetchone()[0]
                 item["linked"] = owner is not None
                 item["can_delete"] = deletion_block(c, row["home"], owner) is None

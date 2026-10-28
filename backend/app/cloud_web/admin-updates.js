@@ -46,29 +46,7 @@ async function load() {
   releases = await api("admin/releases");
   document.documentElement.dataset.portalSession = "authenticated";
   render();
-  const hubs = await api("admin/hub-versions");
-  const root = $("hub-versions");
-  root.replaceChildren();
-  if (!hubs.length) root.append(el("p", "Ingen huber registrert ennå."));
-  for (const hub of hubs) {
-    const card = el("article");
-    card.className = "release-card";
-    card.append(el("h3", hub.name), el("small", hub.id));
-    const list = el("dl");
-    list.className = "installed-versions";
-    for (const [key, title] of Object.entries({...names, smarti: "SMARTi-app"})) {
-      const item = hub.versions[key];
-      const group = el("div");
-      group.append(el("dt", title), el("dd", item ? item.version : "Ikke rapportert"));
-      if (item) {
-        const stale = Date.now() / 1000 - item.reported > 300;
-        group.append(el("small", (stale ? "Eldre rapport · " : "Rapportert · ") + new Date(item.reported * 1000).toLocaleString("nb-NO")));
-      }
-      list.append(group);
-    }
-    card.append(list);
-    root.append(card);
-  }
+
 }
 function render() {
   const root = $("releases");

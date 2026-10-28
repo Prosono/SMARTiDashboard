@@ -47,6 +47,18 @@ window.fleet = (() => {
    L.circleMarker([h.location.latitude,h.location.longitude],{radius:9,weight:3,color:'#fff',fillColor:category(h)==='ready'?'#ff7900':h.online?'#119b66':'#686868',fillOpacity:1}).bindPopup(popup).addTo(markers);
   }
  }
+ function versions(h){
+  const section=node('section',undefined,'hub-versions');
+  section.setAttribute('aria-label','Installerte versjoner');
+  const list=node('dl');
+  for(const [key,title] of [['os','OS'],['core','Core'],['supervisor','Supervisor'],['smarti','SMARTi-app']]){
+   const item=h.versions?.[key],group=node('div');
+   group.append(node('dt',title),node('dd',item?.version||'Ikke rapportert'));
+   if(item){const stale=Date.now()/1000-item.reported>300;group.append(node('small',(stale?'Eldre rapport · ':'Rapportert · ')+new Date(item.reported*1000).toLocaleString('nb-NO')));}
+   list.append(group);
+  }
+  section.append(list);return section;
+ }
  function openDetails(id){
   const h=hubs.find(h=>h.id===id);if(!h)return;
   document.getElementById('hub-detail')?.remove();
@@ -66,7 +78,7 @@ window.fleet = (() => {
   const fields=[['Modell',h.model||'Ikke registrert'],['Maskinvare',h.hardware||'Ikke registrert'],['Status',h.online?'På nett':'Ingen ferske livstegn'],['Registrert',date(h.created)],['Siste livstegn',date(h.seen)],['Klargjøring',state[h.phase]||h.phase||'Ikke registrert'],['SMARTi-versjon',h.health?.version||'Ikke rapportert'],['Home Assistant',yes(h.health?.ha_connected)],['Lokale brukere',h.health?.users??'Ikke rapportert'],['Plassering',validLocation(h)?[h.location.name,h.location.latitude+', '+h.location.longitude].filter(Boolean).join(' · '):'Ikke registrert']];
   if(h.setup_status)fields.push(['Oppsett',({completed:'Fullført',pending:'Venter',running:'Pågår',failed:'Trenger hjelp'})[h.setup_status]||h.setup_status]);
   if(h.reset&&h.reset.phase!=='completed')fields.push(['Tilbakestilling',h.reset.qr_required?(h.reset.qr_verified?'QR-koden er bekreftet':'Venter på ny QR-skanning'):'Tilbakestilling pågår']);
-  for(const [key,value]of fields){dl.append(node('dt',key),node('dd',String(value)));}info.append(dl);
+  for(const [key,value]of fields){dl.append(node('dt',key),node('dd',String(value)));}info.append(dl,node('h3','Installerte versjoner'),versions(h));
   const traffic=node('section',undefined,'hub-detail-traffic');traffic.append(node('h3','Fjerntrafikk · siste '+$('traffic-period').value+' dager'));
   const r=report?.hubs?.[h.id];if(report?.available){traffic.append(node('strong',bytes(r?total(r):0)),node('p','Til hub: '+bytes(r?.to_hub||0)+' · Fra hub: '+bytes(r?.from_hub||0)));if(r?.daily?.length)traffic.append(chart(r.daily),dailyHistory(r.daily));traffic.append(node('small',(report.stale?'Målingen er forsinket. ':'')+'Gjelder trafikk gjennom SMARTis relé, ikke all trafikk på hjemmenettverket.'));}else traffic.append(node('p','Trafikkmålingen er ikke tilgjengelig ennå.'));
   info.append(traffic);
@@ -94,7 +106,7 @@ window.fleet = (() => {
   $('traffic-note').textContent=measured?`${report.stale?'Målingen er forsinket. ':''}Målt fra ${new Date(report.started*1000).toLocaleDateString('nb-NO')}. Oppdatert ${new Date(report.updated*1000).toLocaleTimeString('nb-NO')}. Dager følger UTC.`:'Ingen estimerte tall vises.';
   for(const b of document.querySelectorAll('[data-fleet-filter]')){const key=b.dataset.fleetFilter;b.setAttribute('aria-pressed',String(key===filter));b.querySelector('span').textContent=key==='all'?hubs.length:hubs.filter(h=>category(h)===key).length;}
  }
- return {bytes,chart,openDetails,
+ return {bytes,chart,openDetails,versions,
   mapItems(items){mapItems=items;drawMap();},
   async load(api,items){apiRequest=api;hubs=items;try{report=await api('admin/traffic?days='+$('traffic-period').value);}catch{report=null;}updateSummary();},
   select(items){return items.filter(h=>(filter==='all'||category(h)===filter)&&[h.serial,h.model,h.hardware].join(' ').toLocaleLowerCase('nb').includes(query)).sort((a,b)=>order==='serial'?a.serial.localeCompare(b.serial,'nb',{numeric:true}):(order==='oldest'?1:-1)*((a.created||0)-(b.created||0)));},

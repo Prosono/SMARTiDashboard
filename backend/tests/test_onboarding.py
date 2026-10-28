@@ -460,3 +460,17 @@ def test_home_photo_is_private_owner_managed_and_removed_with_hub(tmp_path):
     assert staff.delete("/api/admin/hubs/" + home).status_code == 200
     with sqlite3.connect(path) as c:
         assert not c.execute("SELECT 1 FROM home_photos WHERE home=?", (home,)).fetchone()
+
+
+def test_inventory_includes_installed_versions_per_hub(tmp_path):
+    _, _, staff, owner, _, hub, home, _, _ = factory(tmp_path)
+    assert staff.get('/api/admin/hubs').json()[0]['versions'] == {}
+    response = hub.post(f'/api/hubs/{home}/update-candidates', json={
+        'releases': [], 'installed': [{'component': 'os', 'version': '17.0'}]
+    })
+    assert response.status_code == 200
+    item = staff.get('/api/admin/hubs').json()[0]
+    assert item['id'] == home
+    assert item['versions']['os']['version'] == '17.0'
+    assert item['versions']['os']['reported'] > 0
+    assert owner.get('/api/admin/hubs').status_code == 403

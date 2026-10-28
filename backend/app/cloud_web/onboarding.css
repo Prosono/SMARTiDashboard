@@ -23,3 +23,9 @@
  body.onboarding-flow .discovery-step .eyebrow{font-size:12px;margin:0}
  body.onboarding-flow .discovery-step #discover-native{font-size:16px;padding:16px 12px}
 }
+
+.hub-versions dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.hub-versions dl>div{min-width:0;padding:10px;border:1px solid var(--line,#ddd);border-radius:10px}
+.hub-versions dt{font-size:.8rem;opacity:.7}
+.hub-versions dd{margin:4px 0;font-weight:600;overflow-wrap:anywhere}
+.hub-versions small{display:block;font-size:.7rem;opacity:.7;overflow-wrap:anywhere}
