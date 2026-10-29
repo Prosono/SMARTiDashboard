@@ -6,7 +6,11 @@
 .light-appearance-form fieldset{border:0;padding:0;margin:0;min-width:0}
 .light-appearance-form legend{margin-bottom:12px}
 .light-icon-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.light-icon-options button{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px;min-height:80px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;font-size:12px}
+.light-icon-options button{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 6px;min-height:118px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;font-size:13px}
 .light-icon-options button[aria-pressed=true]{border-color:var(--orange);background:var(--tint);color:var(--orange)}
 .light-appearance-form footer{display:flex;justify-content:space-between;gap:12px}
 .light-appearance-form footer button{min-height:44px;padding:10px 16px}
+
+.light-icon-options button:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+.light-icon-options button svg{flex-shrink:0}
+@media(max-width:380px){.light-icon-options{gap:6px}.light-icon-options button{font-size:11px;min-height:102px;padding:12px 4px}.light-icon-options button svg{width:40px;height:40px}}

@@ -59,6 +59,8 @@ test("room lighting overview filters and controls lights", async ({ page }) => {
   await lights.getByRole("button", {name:"Åpne Pendellampe",exact:true}).click();
   await page.getByRole("button", {name:"Tilpass lys",exact:true}).click();
   const appearance = page.getByRole("dialog", {name:"Tilpass lys",exact:true});
+  await expect(appearance.locator(".light-icon-options button")).toHaveCount(9);
+  await appearance.screenshot({path:`/tmp/light-icons-${test.info().project.name}.png`});
   await appearance.getByLabel("Navn",{exact:true}).fill("Spisebord test");
   await appearance.getByRole("button", {name:"Gulvlampe",exact:true}).click();
   await appearance.getByRole("button", {name:"Lagre",exact:true}).click();

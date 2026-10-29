@@ -1,3 +1,7 @@
+## 1.36.43
+- Nye, tydelige vektorikoner for lys: pendel, gulvlampe, bordlampe, taklys, LED-list, spotlys og vegg-/utelys.
+- Større ikoner i velgeren med oransje markering. Samme symboler brukes i romoversikten og lysdetaljene.
+
 ## 1.36.42
 - Administrator kan endre lysnavn og ikon fra «Tilpass lys» i detaljvisningen.
 - Ni ikonalternativer og tilbakestilling til standard. Tilpasninger lagres på huben og vises for alle i hjemmet.
