@@ -359,3 +359,35 @@ def test_light_appearance_is_persisted_and_admin_only(client, app):
     r = client.post("/api/login", json={"name": "resident", "password": "another strong password"})
     client.headers["x-csrf-token"] = r.json()["csrf"]
     assert client.put(route, json={"name": "No", "icon": "bulb"}).status_code == 403
+
+
+def test_visibility_filters_every_control_domain_and_restores(client):
+    login(client)
+    original = client.get("/api/home").json()["controls"]
+    for c in original:
+        route = "/api/controls/" + c["entity_id"] + "/visibility"
+        assert client.put(route, json={"hidden": True}).status_code == 200
+    hidden_home = client.get("/api/home").json()
+    assert hidden_home["controls"] == []
+    assert hidden_home["devices"] == []
+    inventory = client.get("/api/control-visibility").json()
+    assert len(inventory) == len(original)
+    assert all(c["attributes"]["smarti_hidden"] for c in inventory)
+    for c in original:
+        assert (
+            client.put("/api/controls/" + c["entity_id"] + "/visibility", json={"hidden": False}).status_code
+            == 200
+        )
+    assert len(client.get("/api/home").json()["controls"]) == len(original)
+    client.post(
+        "/api/users", json={"name": "resident", "password": "another strong password", "role": "user"}
+    )
+    r = client.post("/api/login", json={"name": "resident", "password": "another strong password"})
+    client.headers["x-csrf-token"] = r.json()["csrf"]
+    assert client.get("/api/control-visibility").status_code == 403
+    assert (
+        client.put(
+            "/api/controls/" + original[0]["entity_id"] + "/visibility", json={"hidden": True}
+        ).status_code
+        == 403
+    )

@@ -1,3 +1,8 @@
+## 1.36.44
+- Administrator kan skjule enheter fra SMARTi og hente dem tilbake under Enheter → Skjulte enheter. Gjelder alle enhetstyper.
+- Skjulte enheter utelates fra enhetstellere og oversikter. Rom uten synlige lys fjernes fra lysoversikten.
+- Synlighet lagres på huben og gjelder alle i hjemmet. Automasjoner fortsetter å kjøre.
+
 ## 1.36.43
 - Nye, tydelige vektorikoner for lys: pendel, gulvlampe, bordlampe, taklys, LED-list, spotlys og vegg-/utelys.
 - Større ikoner i velgeren med oransje markering. Samme symboler brukes i romoversikten og lysdetaljene.

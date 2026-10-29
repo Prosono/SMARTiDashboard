@@ -57,6 +57,11 @@ class Setup(Credentials):
     timezone: str = "Europe/Oslo"
 
 
+class ControlVisibility(BaseModel):
+    model_config = {"extra": "forbid"}
+    hidden: bool
+
+
 class ControlAppearance(BaseModel):
     model_config = {"extra": "forbid"}
     name: str = Field(default="", max_length=80)
@@ -494,7 +499,7 @@ def create_app(
             raise HTTPException(409, "user_exists")
         return {"status": "created"}
 
-    def snapshot(current):
+    def snapshot(current, include_hidden=False):
         current = current | policy(store, current)
         controls = [c for c in ha.controls() if visible(current, c)]
         with store.connect() as db:
@@ -502,12 +507,21 @@ def create_app(
                 r["key"]: json.loads(r["value"])
                 for r in db.execute("SELECT key,value FROM settings WHERE key LIKE 'control_appearance:%'")
             }
+            hidden = {
+                r["key"].removeprefix("hidden_control:")
+                for r in db.execute(
+                    "SELECT key FROM settings WHERE key LIKE 'hidden_control:%' AND value='true'"
+                )
+            }
+        if not include_hidden:
+            controls = [c for c in controls if c.id not in hidden]
         controls = [
             c.model_copy(
                 update={
                     "name": appearances.get("control_appearance:" + c.id, {}).get("name") or c.name,
                     "attributes": {
                         **c.attributes,
+                        "smarti_hidden": c.id in hidden,
                         "smarti_original_name": c.name,
                         "smarti_icon": appearances.get("control_appearance:" + c.id, {}).get("icon", "auto"),
                     },
@@ -583,6 +597,18 @@ def create_app(
     @app.get("/api/home")
     async def home(current=Depends(user)):
         return snapshot(current)
+
+    @app.get("/api/control-visibility")
+    async def control_visibility_list(current=Depends(admin)):
+        return snapshot(current, include_hidden=True)["controls"]
+
+    @app.put("/api/controls/{entity_id}/visibility")
+    async def control_visibility(entity_id: str, body: ControlVisibility, current=Depends(admin)):
+        control = next((c for c in ha.controls() if c.entity_id == entity_id), None)
+        if not control:
+            raise HTTPException(404, "entity_not_found")
+        store.set("hidden_control:" + control.id, "true" if body.hidden else "false")
+        return {"saved": True}
 
     @app.put("/api/controls/{entity_id}/appearance")
     async def control_appearance(entity_id: str, body: ControlAppearance, current=Depends(admin)):

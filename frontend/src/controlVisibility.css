@@ -1,0 +1,72 @@
+.hidden-controls-open,
+.control-visibility-action button,
+.visibility-manager button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.hidden-controls-open {
+  margin: 0 0 16px;
+}
+.control-visibility-action {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.control-visibility-action small,
+.visibility-manager p,
+.visibility-manager small {
+  color: var(--muted);
+}
+.visibility-manager {
+  display: grid;
+  gap: 16px;
+}
+.visibility-manager > input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.visibility-manager label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.visibility-manager label input {
+  width: auto;
+}
+.visibility-manager ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.visibility-manager li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.visibility-manager li > span {
+  min-width: 0;
+}
+.visibility-manager small {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.visibility-manager li button {
+  flex-shrink: 0;
+}
+.visibility-manager strong {
+  overflow-wrap: anywhere;
+}

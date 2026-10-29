@@ -1,3 +1,4 @@
+import { HideControl, HiddenControls } from "./ControlVisibility";
 import { LightAppearance, lightIcon } from "./LightAppearance";
 import "./manage/settingsOverview.css";
 import { Database, Network, Server, Code, Palette } from "lucide-react";
@@ -1060,6 +1061,7 @@ function Dashboard({
             {page === "devices" && session.role === "admin" && (
               <DiscoveredDevices lang={lang} />
             )}
+            {page === "devices" && session.role === "admin" && <HiddenControls lang={lang} />}
             {page === "devices" && (
               <div
                 className="tabs protocol-navigation"
@@ -1627,6 +1629,7 @@ function Device({
           )}
         </h3>
       </div>
+      {inDialog && admin && <HideControl c={c} lang={t === en ? "en" : "nb"} disabled={offline} />}
       {inDialog && admin && c.domain === "light" && <LightAppearance c={c} lang={t === en ? "en" : "nb"} disabled={offline} />}
       {inDialog && (
         <div className="control-detail-meta">
