@@ -1,3 +1,8 @@
+## 1.36.49
+- Ny enkel visning med oversiktlige kort for vær, kalender, lys, klima, multimedia og robotstøvsuger, tilpasset enhetene i hjemmet.
+- Favoritter prioriteres, med direkte temperaturstyring og enkel tilgang til lysstyring.
+- Rom og øvrige enheter er samlet under «Rom og alle enheter». Tilpasset mobil, desktop og valgt SMARTi-tema.
+
 ## 1.36.48
 - Ny lyspopup med tydelig av/på, samlet lysstyring og dimmehurtigvalg på 25, 50, 75 og 100 prosent.
 - Egne valg for farge, historikk og tilpasning. Skjuling og tekniske detaljer er samlet nederst.

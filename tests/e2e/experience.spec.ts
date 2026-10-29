@@ -10,6 +10,45 @@ test("personal experience modes simplify navigation and survive reload", async (
         ...data,
         controls: [
           ...data.controls,
+          ...[
+            {
+              domain: "weather",
+              name: "Været hjemme",
+              state: "partlycloudy",
+              attributes: {
+                temperature: 10,
+                temperature_unit: "°C",
+                humidity: 78,
+                wind_speed: 3,
+                wind_speed_unit: "m/s",
+              },
+            },
+            {
+              domain: "media_player",
+              name: "Høyttaler",
+              state: "paused",
+              attributes: {
+                media_title: "Testspor",
+                media_artist: "Testartist",
+                volume_level: 0.3,
+              },
+            },
+            {
+              domain: "vacuum",
+              name: "Robotstøvsuger",
+              state: "docked",
+              attributes: { battery_level: 100 },
+            },
+          ].map((c) => ({
+            ...c,
+            id: c.domain + ".preview",
+            entity_id: c.domain + ".preview",
+            area_id: "living",
+            device_id: null,
+            availability: "available",
+            capabilities: [],
+            diagnostic: false,
+          })),
           {
             id: "smoke-test",
             entity_id: "binary_sensor.smoke_test",
@@ -76,6 +115,27 @@ test("personal experience modes simplify navigation and survive reload", async (
   expect(
     await page.locator(".simple-home .device").count(),
   ).toBeLessThanOrEqual(8);
+  await expect(page.locator(".simple-dashboard-grid")).toBeVisible();
+  await page.locator(".simple-dashboard-lights").click();
+  const lights = page.getByRole("dialog", {
+    name: "Lys i hjemmet",
+    exact: true,
+  });
+  await expect(lights).toBeVisible();
+  await lights.getByRole("button", { name: /Pendellampe/ }).click();
+  const light = page.getByRole("dialog", { name: "Pendellampe", exact: true });
+  await expect(light.getByRole("switch")).toBeVisible();
+  await light
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  await lights
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  const plus = page
+    .locator(".simple-dashboard-climate")
+    .getByRole("button", { name: /Ønsket temperatur.*\+/ });
+  await expect(plus).toBeEnabled();
+  await page.getByText("Rom og alle enheter", { exact: true }).click();
   await page.getByLabel("Finn en enhet").fill("finnesikkexyz");
   await expect(
     page.getByText("Ingen enheter her.", { exact: false }),
@@ -86,7 +146,7 @@ test("personal experience modes simplify navigation and survive reload", async (
     "simple",
   );
   await page.screenshot({
-    path: `../artifacts/experience-simple-${test.info().project.name}.png`,
+    path: `/tmp/experience-simple-${test.info().project.name}.png`,
     fullPage: true,
   });
   await settings().click();
