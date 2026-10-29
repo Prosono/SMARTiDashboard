@@ -1,3 +1,4 @@
+import { LightAppearance, lightIcon } from "./LightAppearance";
 import "./manage/settingsOverview.css";
 import { Database, Network, Server, Code, Palette } from "lucide-react";
 import { PhoneSettings } from "./PhoneSettings";
@@ -1495,7 +1496,7 @@ function Device({
             : c.attributes.device_class === "smoke"
               ? Flame
               : c.domain === "light"
-                ? Lightbulb
+                ? lightIcon(c)
                 : c.domain === "switch"
                   ? Plug
                   : c.domain === "climate" ||
@@ -1626,6 +1627,7 @@ function Device({
           )}
         </h3>
       </div>
+      {inDialog && admin && c.domain === "light" && <LightAppearance c={c} lang={t === en ? "en" : "nb"} disabled={offline} />}
       {inDialog && (
         <div className="control-detail-meta">
           <span>

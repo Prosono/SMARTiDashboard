@@ -57,6 +57,12 @@ class Setup(Credentials):
     timezone: str = "Europe/Oslo"
 
 
+class ControlAppearance(BaseModel):
+    model_config = {"extra": "forbid"}
+    name: str = Field(default="", max_length=80)
+    icon: Literal["auto", "bulb", "pendant", "floor", "desk", "ceiling", "strip", "sun", "outdoor"] = "auto"
+
+
 class NewUser(Credentials):
     role: Literal["admin", "user"] = "user"
 
@@ -491,6 +497,24 @@ def create_app(
     def snapshot(current):
         current = current | policy(store, current)
         controls = [c for c in ha.controls() if visible(current, c)]
+        with store.connect() as db:
+            appearances = {
+                r["key"]: json.loads(r["value"])
+                for r in db.execute("SELECT key,value FROM settings WHERE key LIKE 'control_appearance:%'")
+            }
+        controls = [
+            c.model_copy(
+                update={
+                    "name": appearances.get("control_appearance:" + c.id, {}).get("name") or c.name,
+                    "attributes": {
+                        **c.attributes,
+                        "smarti_original_name": c.name,
+                        "smarti_icon": appearances.get("control_appearance:" + c.id, {}).get("icon", "auto"),
+                    },
+                }
+            )
+            for c in controls
+        ]
         physical = []
         for did, device in ha.devices.items():
             if not any(c.device_id == did for c in controls):
@@ -560,6 +584,16 @@ def create_app(
     async def home(current=Depends(user)):
         return snapshot(current)
 
+    @app.put("/api/controls/{entity_id}/appearance")
+    async def control_appearance(entity_id: str, body: ControlAppearance, current=Depends(admin)):
+        control = next((c for c in ha.controls() if c.entity_id == entity_id), None)
+        if not control or control.domain != "light":
+            raise HTTPException(404, "light_not_found")
+        store.set(
+            "control_appearance:" + control.id, json.dumps({"name": body.name.strip(), "icon": body.icon})
+        )
+        return {"saved": True}
+
     @app.put("/api/favorites/{entity_id}")
     async def favorite(entity_id: str, current=Depends(user)):
         control = next((c for c in ha.controls() if c.entity_id == entity_id), None)
@@ -612,9 +646,11 @@ def create_app(
             raise HTTPException(422, "unexpected_hvac_mode")
         command_value = body.value
         if body.action == "set_hvac_mode":
-            if (body.value is not None or body.hvac_mode not in {
-                "off", "heat", "cool", "heat_cool", "auto", "dry", "fan_only"
-            } or body.hvac_mode not in control.attributes.get("hvac_modes", [])):
+            if (
+                body.value is not None
+                or body.hvac_mode not in {"off", "heat", "cool", "heat_cool", "auto", "dry", "fan_only"}
+                or body.hvac_mode not in control.attributes.get("hvac_modes", [])
+            ):
                 raise HTTPException(422, "invalid_hvac_mode")
             command_value = body.hvac_mode
         elif body.action == "set_fan_speed":

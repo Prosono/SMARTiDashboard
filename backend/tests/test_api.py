@@ -295,7 +295,9 @@ def test_climate_mode_only_accepts_supported_modes(client):
     login(client)
     path = "/api/controls/climate.living/commands"
     assert client.post(path, json={"action": "set_hvac_mode", "hvac_mode": "auto"}).status_code == 200
-    control = next(c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == "climate.living")
+    control = next(
+        c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == "climate.living"
+    )
     assert control["state"] == "auto"
     for body in [
         {"action": "set_hvac_mode", "hvac_mode": "cool"},
@@ -304,22 +306,56 @@ def test_climate_mode_only_accepts_supported_modes(client):
         {"action": "set_temperature", "hvac_mode": "off", "value": 22},
     ]:
         assert client.post(path, json=body).status_code == 422
-    assert client.post("/api/controls/switch.kitchen/commands", json={
-        "action": "set_hvac_mode", "hvac_mode": "off"
-    }).status_code == 422
+    assert (
+        client.post(
+            "/api/controls/switch.kitchen/commands", json={"action": "set_hvac_mode", "hvac_mode": "off"}
+        ).status_code
+        == 422
+    )
 
 
 @pytest.mark.asyncio
 async def test_climate_mode_ha_service_payload():
     from app.ha import HomeAssistant
+
     ha = HomeAssistant("http://example.invalid", "unused")
     ha.connected = True
+
     async def request(kind, **kwargs):
         assert kind == "call_service"
-        assert kwargs == {"domain": "climate", "service": "set_hvac_mode",
-                          "target": {"entity_id": "climate.stue"},
-                          "service_data": {"hvac_mode": "cool"}}
+        assert kwargs == {
+            "domain": "climate",
+            "service": "set_hvac_mode",
+            "target": {"entity_id": "climate.stue"},
+            "service_data": {"hvac_mode": "cool"},
+        }
         ha.states["climate.stue"] = {"context": {"id": "test"}}
         return {"context": {"id": "test"}}
+
     ha.request = request
     assert (await ha.command("climate.stue", "set_hvac_mode", "cool"))["status"] == "state_updated"
+
+
+def test_light_appearance_is_persisted_and_admin_only(client, app):
+    login(client)
+    original = next(c for c in client.get("/api/home").json()["controls"] if c["domain"] == "light")
+    route = "/api/controls/" + original["entity_id"] + "/appearance"
+    assert client.put(route, json={"name": "Spisebord", "icon": "pendant"}).status_code == 200
+    changed = next(
+        c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == original["entity_id"]
+    )
+    assert changed["name"] == "Spisebord"
+    assert changed["attributes"]["smarti_icon"] == "pendant"
+    assert changed["id"] == original["id"]
+    assert client.put(route, json={"name": "Bad", "icon": "<svg>"}).status_code == 422
+    assert client.put(route, json={"name": "", "icon": "auto"}).status_code == 200
+    restored = next(
+        c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == original["entity_id"]
+    )
+    assert restored["name"] == original["name"]
+    client.post(
+        "/api/users", json={"name": "resident", "password": "another strong password", "role": "user"}
+    )
+    r = client.post("/api/login", json={"name": "resident", "password": "another strong password"})
+    client.headers["x-csrf-token"] = r.json()["csrf"]
+    assert client.put(route, json={"name": "No", "icon": "bulb"}).status_code == 403

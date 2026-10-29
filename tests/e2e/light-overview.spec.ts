@@ -56,6 +56,25 @@ test("room lighting overview filters and controls lights", async ({ page }) => {
   expect(
     await lights.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
   ).toBeTruthy();
+  await lights.getByRole("button", {name:"Åpne Pendellampe",exact:true}).click();
+  await page.getByRole("button", {name:"Tilpass lys",exact:true}).click();
+  const appearance = page.getByRole("dialog", {name:"Tilpass lys",exact:true});
+  await appearance.getByLabel("Navn",{exact:true}).fill("Spisebord test");
+  await appearance.getByRole("button", {name:"Gulvlampe",exact:true}).click();
+  await appearance.getByRole("button", {name:"Lagre",exact:true}).click();
+  await expect(appearance).toHaveCount(0);
+  await page.getByRole("button", {name:"Lukk innstillinger",exact:true}).click();
+  await expect(lights.getByRole("button", {name:"Åpne Spisebord test",exact:true})).toBeVisible();
+  await page.reload();
+  await page.getByRole("navigation").getByRole("button", {name:"Enheter",exact:true}).click();
+  await page.locator(".device-toolbar select").selectOption("light");
+  await expect(lights.getByRole("button", {name:"Åpne Spisebord test",exact:true})).toBeVisible();
+  await lights.getByRole("button", {name:"Åpne Spisebord test",exact:true}).click();
+  await page.getByRole("button", {name:"Tilpass lys",exact:true}).click();
+  await page.getByRole("dialog", {name:"Tilpass lys",exact:true}).getByRole("button", {name:"Bruk standard",exact:true}).click();
+  await expect(page.getByRole("dialog", {name:"Tilpass lys",exact:true})).toHaveCount(0);
+  await page.getByRole("button", {name:"Lukk innstillinger",exact:true}).click();
+  await expect(lights.getByRole("button", {name:"Åpne Pendellampe",exact:true})).toBeVisible();
   await page.screenshot({
     path: `/tmp/lights-${test.info().project.name}.png`,
     fullPage: true,

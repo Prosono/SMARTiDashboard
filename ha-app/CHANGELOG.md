@@ -1,3 +1,8 @@
+## 1.36.42
+- Administrator kan endre lysnavn og ikon fra «Tilpass lys» i detaljvisningen.
+- Ni ikonalternativer og tilbakestilling til standard. Tilpasninger lagres på huben og vises for alle i hjemmet.
+- Enhets-ID og automasjoner beholdes uendret.
+
 ## 1.36.41
 - Ny romoversikt for lys med større rombilder og samlet av/på-bryter for hvert rom.
 - Kompakte lysrader med dimming, fargevalg og «Vis alle» for rom med mange lys.

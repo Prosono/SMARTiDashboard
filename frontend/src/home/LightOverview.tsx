@@ -1,3 +1,4 @@
+import { lightIcon } from "../LightAppearance";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { SettingsDialog } from "./SettingsDialog";
 import { RoomArtwork } from "../rooms/RoomArtwork";
@@ -394,10 +395,11 @@ function LightTile({
       : 0;
   const [draft, setDraft] = useState<number | null>(null);
   const value = draft ?? measured;
+  const Icon = lightIcon(c);
   return (
     <div className="lighting-tile" data-on={on} aria-busy={busy}>
       <div className="lighting-tile-top">
-        <Lightbulb size={18} />
+        <Icon size={22} />
         <strong>
           {onOpen ? (
             <button
