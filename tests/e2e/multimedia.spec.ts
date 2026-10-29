@@ -3,6 +3,7 @@ test("multimedia filters players and sends supported playback commands", async (
   page,
 }) => {
   let state = "playing";
+  let appearance = { name: "Stuehøyttaler", icon: "auto" };
   const commands: any[] = [];
   const player = (
     id: string,
@@ -13,7 +14,7 @@ test("multimedia filters players and sends supported playback commands", async (
   ) => ({
     id,
     entity_id: `media_player.${id}`,
-    name,
+    name: id === "speaker" ? appearance.name : name,
     domain: "media_player",
     device_id: id,
     area_id: area,
@@ -21,6 +22,7 @@ test("multimedia filters players and sends supported playback commands", async (
     availability: unavailable ? "unavailable" : "available",
     attributes: {
       device_class: kind,
+      smarti_icon: id === "speaker" ? appearance.icon : "auto",
       media_title: "Evening sessions",
       media_artist: "Living room collection",
       volume_level: 0.35,
@@ -59,6 +61,13 @@ test("multimedia filters players and sends supported playback commands", async (
     if (body.action === "media_pause") state = "paused";
     await r.fulfill({ json: { status: "state_updated" } });
   });
+  await page.route(
+    "**/api/controls/media_player.speaker/appearance",
+    async (r) => {
+      appearance = r.request().postDataJSON();
+      await r.fulfill({ json: { saved: true } });
+    },
+  );
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
   await page
@@ -83,6 +92,53 @@ test("multimedia filters players and sends supported playback commands", async (
     page.locator(".media-state").filter({ hasText: "På pause" }),
   ).toBeVisible();
   expect(commands[0]).toEqual({ action: "media_pause" });
+  await page
+    .getByRole("button", { name: "Åpne Stuehøyttaler", exact: true })
+    .click();
+  const detail = page.getByRole("dialog", {
+    name: "Stuehøyttaler",
+    exact: true,
+  });
+  await expect(
+    detail.getByRole("button", {
+      name: "Stuehøyttaler: Spill av",
+      exact: true,
+    }),
+  ).toBeEnabled();
+  await expect(
+    detail.getByRole("button", { name: "Skjul enhet", exact: true }),
+  ).toBeVisible();
+  await detail
+    .getByRole("button", { name: "Tilpass mediaspiller", exact: true })
+    .click();
+  const settings = page.getByRole("dialog", {
+    name: "Tilpass mediaspiller",
+    exact: true,
+  });
+  await expect(settings.locator(".light-icon-options button")).toHaveCount(8);
+  await settings
+    .getByRole("button", { name: "Apple HomePod", exact: true })
+    .click();
+  await settings.screenshot({
+    path: `/tmp/media-icons-${test.info().project.name}.png`,
+  });
+  await settings.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(settings).toHaveCount(0);
+  expect(appearance.icon).toBe("homepod");
+  await detail
+    .getByRole("button", { name: "Tilpass mediaspiller", exact: true })
+    .click();
+  await expect(
+    settings.getByRole("button", { name: "Apple HomePod", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await settings
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  await detail
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+
+  await page.getByRole("button", { name: "Vis søk og filtre", exact: true }).click();
   await page.getByLabel("Søk i multimedia").fill("finnesikke");
   await expect(page.locator(".media-player-card")).toHaveCount(0);
   await page.getByLabel("Søk i multimedia").fill("");
@@ -100,9 +156,9 @@ test("multimedia filters players and sends supported playback commands", async (
   await page.getByRole("tab", { name: "Multimedia", exact: true }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(
-    page.getByRole("tab", { name: "Oversikt", exact: true }),
+    page.getByRole("tab", { name: "Diverse", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
-  await page.keyboard.press("End");
+  await page.keyboard.press("ArrowLeft");
   await expect(
     page.getByRole("tab", { name: "Multimedia", exact: true }),
   ).toHaveAttribute("aria-selected", "true");

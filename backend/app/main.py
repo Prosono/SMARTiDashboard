@@ -65,7 +65,24 @@ class ControlVisibility(BaseModel):
 class ControlAppearance(BaseModel):
     model_config = {"extra": "forbid"}
     name: str = Field(default="", max_length=80)
-    icon: Literal["auto", "bulb", "pendant", "floor", "desk", "ceiling", "strip", "sun", "outdoor"] = "auto"
+    icon: Literal[
+        "auto",
+        "bulb",
+        "pendant",
+        "floor",
+        "desk",
+        "ceiling",
+        "strip",
+        "sun",
+        "outdoor",
+        "tv",
+        "speaker",
+        "homepod",
+        "homepod_mini",
+        "soundbar",
+        "radio",
+        "projector",
+    ] = "auto"
 
 
 class NewUser(Credentials):
@@ -613,8 +630,15 @@ def create_app(
     @app.put("/api/controls/{entity_id}/appearance")
     async def control_appearance(entity_id: str, body: ControlAppearance, current=Depends(admin)):
         control = next((c for c in ha.controls() if c.entity_id == entity_id), None)
-        if not control or control.domain != "light":
-            raise HTTPException(404, "light_not_found")
+        if not control or control.domain not in {"light", "media_player"}:
+            raise HTTPException(404, "entity_not_found")
+        icons = (
+            {"auto", "bulb", "pendant", "floor", "desk", "ceiling", "strip", "sun", "outdoor"}
+            if control.domain == "light"
+            else {"auto", "tv", "speaker", "homepod", "homepod_mini", "soundbar", "radio", "projector"}
+        )
+        if body.icon not in icons:
+            raise HTTPException(422, "invalid_icon_for_domain")
         store.set(
             "control_appearance:" + control.id, json.dumps({"name": body.name.strip(), "icon": body.icon})
         )

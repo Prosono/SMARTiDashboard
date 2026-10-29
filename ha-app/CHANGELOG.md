@@ -1,3 +1,8 @@
+## 1.36.50
+- Mediaspillere kan åpnes fra navnet på kortet for styring og innstillinger.
+- Administrator kan endre navn og velge ikon for TV, høyttaler, Apple HomePod, HomePod mini, lydplanke, radio og projektor.
+- Tilpasninger lagres på huben og vises for alle i hjemmet, også i enhetsoversikten. Testet på mobil og desktop.
+
 ## 1.36.49
 - Ny enkel visning med oversiktlige kort for vær, kalender, lys, klima, multimedia og robotstøvsuger, tilpasset enhetene i hjemmet.
 - Favoritter prioriteres, med direkte temperaturstyring og enkel tilgang til lysstyring.

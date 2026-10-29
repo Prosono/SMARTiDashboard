@@ -4,6 +4,7 @@ import { MediaCard } from "./home/Multimedia";
 import { useAvailabilityGrace } from "./useAvailabilityGrace";
 import { HideControl, HiddenControls } from "./ControlVisibility";
 import { LightAppearance, lightIcon } from "./LightAppearance";
+import { mediaIcon } from "./MediaIcons";
 import "./manage/settingsOverview.css";
 import { Database, Network, Server, Code, Palette } from "lucide-react";
 import { PhoneSettings } from "./PhoneSettings";
@@ -876,6 +877,9 @@ function Dashboard({
             {session.role === "admin" && (
               <HideControl c={c} lang={lang} disabled={offline} />
             )}
+            {session.role === "admin" && c.domain === "media_player" && (
+              <LightAppearance c={c} lang={lang} disabled={offline} />
+            )}
           </>
         ) : (
           <Device
@@ -1542,6 +1546,8 @@ function Device({
               ? Flame
               : c.domain === "light"
                 ? lightIcon(c)
+                : c.domain === "media_player"
+                  ? mediaIcon(c)
                 : c.domain === "switch"
                   ? Plug
                   : c.domain === "climate" ||
@@ -1623,7 +1629,48 @@ function Device({
       setMessage(t.loadError);
     }
   }
-  if (inDialog && c.domain === "light") return <LightDetail c={c} home={h} lang={t === en ? "en" : "nb"} room={roomName} offline={offline} admin={admin} busy={busy} message={message} failed={failed} command={command} favorite={favorite}/>;
+  if (inDialog && c.domain === "media_player")
+    return (
+      <>
+        <MediaCard
+          c={c}
+          home={h}
+          lang={t === en ? "en" : "nb"}
+          offline={offline}
+          photo={homeAsset("home-multimedia")}
+        />
+        {admin && (
+          <>
+            <LightAppearance
+              c={c}
+              lang={t === en ? "en" : "nb"}
+              disabled={offline}
+            />
+            <HideControl
+              c={c}
+              lang={t === en ? "en" : "nb"}
+              disabled={offline}
+            />
+          </>
+        )}
+      </>
+    );
+  if (inDialog && c.domain === "light")
+    return (
+      <LightDetail
+        c={c}
+        home={h}
+        lang={t === en ? "en" : "nb"}
+        room={roomName}
+        offline={offline}
+        admin={admin}
+        busy={busy}
+        message={message}
+        failed={failed}
+        command={command}
+        favorite={favorite}
+      />
+    );
   const state = controlState(
     c,
     c.availability === "available" ? c.state : c.availability,

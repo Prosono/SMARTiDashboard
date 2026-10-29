@@ -461,3 +461,30 @@
   background: var(--accent);
   cursor: pointer;
 }
+
+.media-open-device {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  padding: 4px 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+.media-open-device svg {
+  flex-shrink: 0;
+}
+.media-open-device:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.media-open-device:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}

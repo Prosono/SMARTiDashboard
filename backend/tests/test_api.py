@@ -391,3 +391,31 @@ def test_visibility_filters_every_control_domain_and_restores(client):
         ).status_code
         == 403
     )
+
+
+def test_media_appearance_is_saved_with_domain_specific_icons(client, app):
+    login(client)
+    ha = app.state.ha
+    ha.states["media_player.speaker"] = {
+        "entity_id": "media_player.speaker",
+        "state": "idle",
+        "attributes": {"friendly_name": "Høyttaler", "device_class": "speaker"},
+    }
+    route = "/api/controls/media_player.speaker/appearance"
+    for icon in ["tv", "speaker", "homepod", "homepod_mini", "soundbar", "radio", "projector"]:
+        assert client.put(route, json={"name": "Stue", "icon": icon}).status_code == 200
+        c = next(
+            c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == "media_player.speaker"
+        )
+        assert c["name"] == "Stue"
+        assert c["attributes"]["smarti_icon"] == icon
+    assert client.put(route, json={"name": "", "icon": "bulb"}).status_code == 422
+    assert (
+        client.put("/api/controls/light.living_pendant/appearance", json={"icon": "homepod"}).status_code
+        == 422
+    )
+    assert client.put(route, json={"name": "", "icon": "auto"}).status_code == 200
+    c = next(
+        c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == "media_player.speaker"
+    )
+    assert c["name"] == "Høyttaler"

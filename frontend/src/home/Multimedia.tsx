@@ -1,9 +1,10 @@
-import { MetricDetails } from "./MetricDetails";
+import { mediaIcon } from "../MediaIcons";
+import { MetricDetails, MetricDeviceRenderer } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { allViews } from "../access";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   House,
@@ -33,7 +34,7 @@ import "./climateOverview.css";
 import "./multimedia.css";
 import { homeAsset, roomMood, type HomePreferences } from "./HomeOverview";
 import { Scenes } from "./Scenes";
-import { SettingsDialog } from "./SettingsDialog";
+import { SettingsDialog, InSettingsDialog } from "./SettingsDialog";
 
 export function MediaCard({
   c,
@@ -63,8 +64,10 @@ export function MediaCard({
   const supports = (action: string) => actions.includes(action);
   const unavailable = offline || c.availability !== "available";
   const blocked = unavailable || busy;
-  const tv = ["tv", "projector"].includes(String(c.attributes.device_class));
-  const Icon = tv ? Tv : Speaker;
+  const Icon = mediaIcon(c);
+  const renderDevice = useContext(MetricDeviceRenderer);
+  const inDialog = useContext(InSettingsDialog);
+  const [opened, setOpened] = useState(false);
   const playing = c.state === "playing" && !unavailable;
   const states: Record<string, string> = {
     playing: t("Spiller", "Playing"),
@@ -124,7 +127,19 @@ export function MediaCard({
       <div className="media-art">
         <RoomArtwork src={photo} alt="" loading="lazy" />
         <div>
-          <strong>{c.name}</strong>
+          {!inDialog && renderDevice ? (
+            <button
+              className="media-open-device"
+              aria-label={`${t("Åpne", "Open")} ${c.name}`}
+              aria-haspopup="dialog"
+              onClick={() => setOpened(true)}
+            >
+              {c.name}
+              <Icon size={20} />
+            </button>
+          ) : (
+            <strong>{c.name}</strong>
+          )}
           <span>
             {home.areas.find((a) => a.area_id === c.area_id)?.name ||
               t("Uten rom", "Unassigned")}
@@ -279,6 +294,15 @@ export function MediaCard({
           </p>
         )}
       </div>
+      {opened && renderDevice && (
+        <SettingsDialog
+          title={c.name}
+          lang={lang}
+          onClose={() => setOpened(false)}
+        >
+          {renderDevice(c)}
+        </SettingsDialog>
+      )}
     </article>
   );
 }
