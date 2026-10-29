@@ -1,3 +1,8 @@
+## 1.36.48
+- Ny lyspopup med tydelig av/på, samlet lysstyring og dimmehurtigvalg på 25, 50, 75 og 100 prosent.
+- Egne valg for farge, historikk og tilpasning. Skjuling og tekniske detaljer er samlet nederst.
+- Følger valgt SMARTi-tema og viser kontroller ut fra lysets faktiske egenskaper. Tilpasset mobil og desktop.
+
 ## 1.36.47
 - Enheter i oppsummeringspopupene kan åpnes for styring, sensorhistorikk og innstillinger.
 - Lys, termostater, mediespillere og robotstøvsugere bruker eksisterende enhetsstyring. Sensorer åpner historikken direkte.

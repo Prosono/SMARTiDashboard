@@ -1,3 +1,4 @@
+import { LightDetail } from "./LightDetail";
 import { MetricDeviceRenderer } from "./home/MetricDetails";
 import { MediaCard } from "./home/Multimedia";
 import { useAvailabilityGrace } from "./useAvailabilityGrace";
@@ -1622,6 +1623,7 @@ function Device({
       setMessage(t.loadError);
     }
   }
+  if (inDialog && c.domain === "light") return <LightDetail c={c} home={h} lang={t === en ? "en" : "nb"} room={roomName} offline={offline} admin={admin} busy={busy} message={message} failed={failed} command={command} favorite={favorite}/>;
   const state = controlState(
     c,
     c.availability === "available" ? c.state : c.availability,

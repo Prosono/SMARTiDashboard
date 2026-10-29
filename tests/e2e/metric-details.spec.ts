@@ -46,6 +46,12 @@ test("category counters open the matching devices", async ({ page }) => {
       await expect(detail).toBeVisible();
       await toggle.click();
       await expect(toggle).toHaveAttribute("aria-checked", "true");
+      await detail.getByRole("button", { name: "25%", exact: true }).click();
+      await expect(detail.getByRole("slider")).toHaveValue("25");
+      await expect(detail.getByRole("switch")).toBeEnabled();
+      await detail.getByRole("button", { name: "100%", exact: true }).click();
+      await expect(detail.getByRole("slider")).toHaveValue("100");
+      await expect(detail.getByRole("switch")).toBeEnabled();
       await detail.screenshot({
         path: `/tmp/metric-device-${test.info().project.name}.png`,
       });

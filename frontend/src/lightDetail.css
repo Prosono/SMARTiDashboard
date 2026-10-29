@@ -1,0 +1,317 @@
+.dashboard-settings-dialog.light-detail-dialog {
+  width: min(650px, calc(100vw - 24px));
+}
+.dashboard-settings-dialog.light-detail-dialog > .dashboard-settings-heading {
+  border-bottom: 0;
+  padding-bottom: 10px;
+}
+.dashboard-settings-dialog.light-detail-dialog
+  > .dashboard-settings-heading
+  h2 {
+  display: none;
+}
+.light-detail {
+  display: grid;
+  gap: 14px;
+  color: var(--text);
+}
+.light-detail-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  padding: 0 0 8px;
+}
+.light-detail-icon {
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  flex: 0 0 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.light-detail-identity > div {
+  min-width: 0;
+  flex: 1;
+}
+.light-detail-identity h3 {
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.15;
+  margin: 0 0 7px;
+  overflow-wrap: anywhere;
+}
+.light-detail-identity p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.light-detail-connection {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+.light-detail-connection i,
+.light-detail-power i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.light-detail-connection[data-connected="true"] i {
+  background: #169b61;
+}
+.light-detail-favorite {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--text);
+}
+.light-detail-favorite[aria-pressed="true"] {
+  color: var(--accent);
+}
+.light-detail-favorite[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+.light-detail-primary {
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  border-radius: 18px;
+  padding: 20px;
+}
+.light-detail-power {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.light-detail-power strong {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+}
+.light-detail-power i[data-on="true"] {
+  background: var(--accent);
+}
+.light-detail-switch {
+  width: 62px;
+  height: 36px;
+  padding: 4px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--line);
+  flex-shrink: 0;
+}
+.light-detail-switch span {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px #0002;
+  transition: transform 0.15s;
+}
+.light-detail-switch[aria-checked="true"] {
+  background: var(--accent);
+}
+.light-detail-switch[aria-checked="true"] span {
+  transform: translateX(26px);
+}
+.light-detail-dimmer {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.light-detail-dimmer label {
+  color: var(--muted);
+  font-size: 15px;
+}
+.light-detail-dimmer output {
+  display: block;
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 5px 0 12px;
+  font-variant-numeric: tabular-nums;
+}
+.light-detail-dimmer input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 12px;
+  border: 0;
+  border-radius: 20px;
+  padding: 0;
+  margin: 16px 0 24px;
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--level),
+    var(--line) var(--level)
+  );
+}
+.light-detail-dimmer input::-webkit-slider-thumb {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border: 4px solid var(--accent);
+  background: var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 2px 5px #0002;
+}
+.light-detail-dimmer input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 4px solid var(--accent);
+  background: var(--surface);
+  border-radius: 50%;
+}
+.light-detail-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.light-detail-presets button {
+  padding: 10px 4px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+}
+.light-detail-presets button[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+.light-detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.light-detail-actions > button,
+.light-detail-secondary > button,
+.light-detail-color .light-color-control > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 14px;
+  font: inherit;
+  text-align: left;
+  margin: 0;
+}
+.light-detail-actions > button svg:last-child:not(:first-child),
+.light-detail-secondary > button svg:last-child {
+  margin-left: auto;
+}
+.light-detail-color .light-color-control > button {
+  min-height: 64px;
+}
+.light-detail-secondary {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 0 14px;
+}
+.light-detail-secondary > button {
+  border: 0;
+  padding: 14px 0;
+}
+.light-detail-secondary .control-visibility-action {
+  margin: 0;
+  padding: 14px 0;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.light-detail-secondary .control-visibility-action button {
+  justify-content: flex-start;
+  border: 0;
+  padding: 0;
+  min-height: 32px;
+  gap: 12px;
+  background: transparent;
+}
+.light-detail-secondary .control-visibility-action small {
+  margin-left: 30px;
+  font-size: 12px;
+}
+.light-detail-secondary dl {
+  margin: 0 0 16px;
+  font-size: 13px;
+}
+.light-detail-secondary dd {
+  margin: 4px 0 12px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+.light-detail-updated,
+.light-detail-feedback {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+.light-detail button {
+  cursor: pointer;
+}
+.light-detail button:disabled,
+.light-detail input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.light-detail button:focus-visible,
+.light-detail input:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (max-width: 420px) {
+  .light-detail-identity {
+    gap: 10px;
+  }
+  .light-detail-icon {
+    flex-basis: 54px;
+    height: 54px;
+    border-radius: 14px;
+  }
+  .light-detail-icon svg {
+    width: 34px;
+  }
+  .light-detail-primary {
+    padding: 16px;
+  }
+  .light-detail-actions > button {
+    padding: 12px;
+    gap: 8px;
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .light-detail-switch span {
+    transition: none;
+  }
+}
+
+.light-detail-dialog .controls-grid {
+  display: block;
+}
+
+.light-detail-dimmer input[type="range"] {
+  height: 44px;
+  min-height: 44px;
+  background-size: 100% 10px;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin: 4px 0 12px;
+}
