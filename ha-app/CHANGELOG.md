@@ -1,3 +1,8 @@
+## 1.36.46
+- Trykkbare oppsummeringsfelt på lys, sikkerhet, klima, multimedia og diverse åpner en popup med enhetene bak tallet.
+- Enhetene grupperes etter rom med navn og status. Klimafeltene viser målerne som inngår i gjennomsnittet.
+- Tilpasset mobil, desktop og tastaturnavigasjon.
+
 ## 1.36.45
 - Beholder siste kjente visning i minst 30 sekunder ved korte tilkoblingsbrudd før enheter blir grå og utilgjengelige.
 - Samme frist gjelder enkelt-enheter som midlertidig rapporterer ukjent eller utilgjengelig status. Fristen nullstilles når kontakten kommer tilbake.

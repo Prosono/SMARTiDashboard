@@ -1,3 +1,4 @@
+import { MetricDetails } from "./MetricDetails";
 import { lightIcon } from "../LightAppearance";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { SettingsDialog } from "./SettingsDialog";
@@ -121,11 +122,16 @@ export function LightOverview({
       );
   }
   async function toggleRoom(items: Control[]) {
-    const action = items.some(c => usable(c) && c.state === "on") ? "turn_off" : "turn_on";
-    const targets = items.filter(c => usable(c) && c.capabilities.some(cap => cap.actions.includes(action)));
+    const action = items.some((c) => usable(c) && c.state === "on")
+      ? "turn_off"
+      : "turn_on";
+    const targets = items.filter(
+      (c) =>
+        usable(c) && c.capabilities.some((cap) => cap.actions.includes(action)),
+    );
     setMessage("");
     for (let i = 0; i < targets.length; i += 4)
-      await Promise.all(targets.slice(i, i + 4).map(c => send(c, action)));
+      await Promise.all(targets.slice(i, i + 4).map((c) => send(c, action)));
   }
   const visible = rooms
     .filter((a) => room === null || a.area_id === room)
@@ -251,6 +257,7 @@ export function LightOverview({
             Icon: Sun,
             value: offline ? "—" : `${on} / ${lights.length}`,
             label: t("Lys på", "Lights on"),
+            controls: lights.filter((c) => usable(c) && c.state === "on"),
           },
           {
             Icon: House,
@@ -258,20 +265,30 @@ export function LightOverview({
               lights.some((c) => c.area_id === a.area_id),
             ).length,
             label: t("Rom med lys", "Rooms with lights"),
+            controls: lights.filter((c) =>
+              home.areas.some((a) => a.area_id === c.area_id),
+            ),
           },
           {
             Icon: Power,
             value: offline ? "—" : lights.filter((c) => !usable(c)).length,
             label: t("Utilgjengelige", "Unavailable"),
+            controls: lights.filter((c) => !usable(c)),
           },
-        ].map(({ Icon, value, label }) => (
-          <div key={label}>
+        ].map(({ Icon, value, label, controls }) => (
+          <MetricDetails
+            key={label}
+            label={label}
+            controls={controls}
+            home={home}
+            lang={lang}
+          >
             <Icon size={24} />
             <span>
               <strong>{value}</strong>
               <small>{label}</small>
             </span>
-          </div>
+          </MetricDetails>
         ))}
       </CategorySummary>
       <div className="lighting-section-heading">
@@ -288,8 +305,8 @@ export function LightOverview({
       <div className="lighting-grid">
         {visible.map((a) => {
           const mood = roomMood(a.name);
-          const allItems = rooms.find(r => r.area_id === a.area_id)!.items;
-          const roomOn = allItems.some(c => usable(c) && c.state === "on");
+          const allItems = rooms.find((r) => r.area_id === a.area_id)!.items;
+          const roomOn = allItems.some((c) => usable(c) && c.state === "on");
           const roomAction = roomOn ? "turn_off" : "turn_on";
           const expanded = expandedRooms.includes(a.area_id);
           const displayed = expanded ? a.items : a.items.slice(0, 3);
@@ -309,10 +326,27 @@ export function LightOverview({
                     {a.items.length} {t("lys", "lights")}
                   </small>
                 </div>
-                <button className="lighting-switch lighting-room-switch" role="switch"
-                  aria-checked={roomOn} aria-label={`${t("Alle lys i", "All lights in")} ${a.name}`}
-                  disabled={offline || !home.connected || allItems.some(c => pending.includes(c.entity_id)) || !allItems.some(c => usable(c) && c.capabilities.some(cap => cap.actions.includes(roomAction)))}
-                  onClick={() => void toggleRoom(allItems)}><span /></button>
+                <button
+                  className="lighting-switch lighting-room-switch"
+                  role="switch"
+                  aria-checked={roomOn}
+                  aria-label={`${t("Alle lys i", "All lights in")} ${a.name}`}
+                  disabled={
+                    offline ||
+                    !home.connected ||
+                    allItems.some((c) => pending.includes(c.entity_id)) ||
+                    !allItems.some(
+                      (c) =>
+                        usable(c) &&
+                        c.capabilities.some((cap) =>
+                          cap.actions.includes(roomAction),
+                        ),
+                    )
+                  }
+                  onClick={() => void toggleRoom(allItems)}
+                >
+                  <span />
+                </button>
               </header>
               <div className="lighting-devices">
                 {displayed.map((c) => (
@@ -335,9 +369,28 @@ export function LightOverview({
                 ))}
               </div>
               <footer className="lighting-room-footer">
-                {a.items.length > 3 ? <button aria-expanded={expanded} onClick={() => setExpandedRooms(current => expanded ? current.filter(id => id !== a.area_id) : [...current, a.area_id])}>
-                  {expanded ? t("Vis færre lys", "Show fewer lights") : `${t("Vis alle", "Show all")} ${a.items.length} ${t("lys", "lights")}`}<ChevronRight size={17} />
-                </button> : openRoom && a.area_id ? <button onClick={() => openRoom(a.area_id)}>{t("Åpne rom", "Open room")}<ChevronRight size={17} /></button> : null}
+                {a.items.length > 3 ? (
+                  <button
+                    aria-expanded={expanded}
+                    onClick={() =>
+                      setExpandedRooms((current) =>
+                        expanded
+                          ? current.filter((id) => id !== a.area_id)
+                          : [...current, a.area_id],
+                      )
+                    }
+                  >
+                    {expanded
+                      ? t("Vis færre lys", "Show fewer lights")
+                      : `${t("Vis alle", "Show all")} ${a.items.length} ${t("lys", "lights")}`}
+                    <ChevronRight size={17} />
+                  </button>
+                ) : openRoom && a.area_id ? (
+                  <button onClick={() => openRoom(a.area_id)}>
+                    {t("Åpne rom", "Open room")}
+                    <ChevronRight size={17} />
+                  </button>
+                ) : null}
               </footer>
             </article>
           );
@@ -459,7 +512,15 @@ function LightTile({
               }
             }}
           />
-          <output>{!usable(c) ? "—" : on || draft !== null ? `${value}%` : lang === "en" ? "Off" : "Av"}</output>
+          <output>
+            {!usable(c)
+              ? "—"
+              : on || draft !== null
+                ? `${value}%`
+                : lang === "en"
+                  ? "Off"
+                  : "Av"}
+          </output>
         </div>
       )}
       <LightColor

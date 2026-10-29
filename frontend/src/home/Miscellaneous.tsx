@@ -1,3 +1,4 @@
+import { MetricDetails } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RobotVacuumIcon } from "./RobotVacuumIcon";
 import { MiscDeviceCard } from "./MiscDeviceCard";
@@ -169,13 +170,19 @@ export function Miscellaneous({
         ].map(({ Icon, kind, label }) => {
           const count = groups.find((g) => g.id === kind)?.controls.length || 0;
           return (
-            <div key={kind}>
+            <MetricDetails
+              key={kind}
+              label={label}
+              controls={groups.find((g) => g.id === kind)?.controls || []}
+              home={home}
+              lang={lang}
+            >
               <Icon size={23} />
               <span>
                 <strong>{count}</strong>
                 <small>{label}</small>
               </span>
-            </div>
+            </MetricDetails>
           );
         })}
       </CategorySummary>

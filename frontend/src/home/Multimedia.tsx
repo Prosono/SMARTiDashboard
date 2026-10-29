@@ -1,3 +1,4 @@
+import { MetricDetails } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
@@ -473,11 +474,13 @@ export function Multimedia({
             Icon: Music2,
             value: offline ? "—" : playing.length,
             label: t("Spiller nå", "Playing now"),
+            controls: playing,
           },
           {
             Icon: Speaker,
             value: players.length,
             label: t("Spillere", "Players"),
+            controls: players,
           },
           {
             Icon: Tv,
@@ -492,6 +495,14 @@ export function Multimedia({
                     !["off", "standby"].includes(c.state),
                 ).length,
             label: t("TV på", "TVs on"),
+            controls: players.filter(
+              (c) =>
+                available(c) &&
+                ["tv", "projector"].includes(
+                  String(c.attributes.device_class),
+                ) &&
+                !["off", "standby"].includes(c.state),
+            ),
           },
           {
             Icon: Volume2,
@@ -501,15 +512,24 @@ export function Multimedia({
                   (c) => available(c) && c.attributes.is_volume_muted === true,
                 ).length,
             label: t("Dempet", "Muted"),
+            controls: players.filter(
+              (c) => available(c) && c.attributes.is_volume_muted === true,
+            ),
           },
-        ].map(({ Icon, value, label }) => (
-          <div key={label}>
+        ].map(({ Icon, value, label, controls }) => (
+          <MetricDetails
+            key={label}
+            label={label}
+            controls={controls}
+            home={home}
+            lang={lang}
+          >
             <Icon size={24} />
             <span>
               <strong>{value}</strong>
               <small>{label}</small>
             </span>
-          </div>
+          </MetricDetails>
         ))}
       </CategorySummary>
       <div

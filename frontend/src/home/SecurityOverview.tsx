@@ -1,3 +1,4 @@
+import { MetricDetails } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { useState, type ReactNode } from "react";
@@ -330,30 +331,42 @@ export function SecurityOverview({
               ? "—"
               : `${model.cameras.filter(usable).length} / ${model.cameras.length}`,
             label: t("Kameraer tilgjengelige", "Cameras available"),
+            controls: model.cameras.filter(usable),
           },
           {
             Icon: LockKeyhole,
             value: offline ? "—" : `${locked} / ${totalLocks.length}`,
             label: t("Dører låst", "Doors locked"),
+            controls: totalLocks.filter(
+              (c) => usable(c) && c.state === "locked",
+            ),
           },
           {
             Icon: Shield,
             value: offline ? "—" : String(alerts.length),
             label: t("Aktive varsler", "Active alerts"),
+            controls: alerts,
           },
           {
             Icon: Radio,
             value: offline ? "—" : String(unknown),
             label: t("Utilgjengelige", "Unavailable"),
+            controls: [...devices, ...model.cameras].filter((c) => !usable(c)),
           },
-        ].map(({ Icon, value, label }) => (
-          <div key={label}>
+        ].map(({ Icon, value, label, controls }) => (
+          <MetricDetails
+            key={label}
+            label={label}
+            controls={controls}
+            home={home}
+            lang={lang}
+          >
             <Icon size={24} />
             <span>
               <strong>{value}</strong>
               <small>{label}</small>
             </span>
-          </div>
+          </MetricDetails>
         ))}
       </CategorySummary>
       <div className="security-layout" data-tab={tab}>

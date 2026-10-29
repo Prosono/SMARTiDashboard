@@ -84,7 +84,7 @@
 .category-metrics:has(> :nth-child(3):last-child) {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-.category-metrics > div {
+.category-metrics > .category-metric-button {
   display: flex;
   align-items: flex-start;
   gap: 9px;
@@ -124,7 +124,7 @@
     grid-template-rows: 1fr auto;
     min-height: 300px;
   }
-  .category-metrics > div {
+  .category-metrics > .category-metric-button {
     min-height: 76px;
   }
 }
@@ -178,4 +178,42 @@
 }
 .lighting-section-heading button {
   padding: 10px 14px;
+}
+
+.category-metric-button {
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+}
+.category-metric-button:hover {
+  background: var(--surface);
+  box-shadow: 0 3px 12px #0002;
+}
+.category-metric-button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.metric-details ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.metric-details li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.metric-details strong {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.metric-details li span {
+  color: var(--muted);
+  text-align: right;
 }

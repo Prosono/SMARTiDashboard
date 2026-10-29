@@ -1,3 +1,4 @@
+import { MetricDetails } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
@@ -228,27 +229,56 @@ export function ClimateOverview({
               )
         }
       >
-        <div>
+        <MetricDetails
+          label={t("Snittemperatur", "Average temperature")}
+          controls={rooms.flatMap((a) =>
+            a.thermostat && temperature(a.thermostat) !== null
+              ? [a.thermostat]
+              : a.items.filter(
+                  (c) =>
+                    category(c) === "temperature" && temperature(c) !== null,
+                ),
+          )}
+          home={home}
+          lang={lang}
+        >
           <Thermometer />
           <span>
             <strong>{fmt(mean(rooms.map((a) => a.temp)), " °C")}</strong>
             <small>{t("Snittemperatur", "Average temperature")}</small>
           </span>
-        </div>
-        <div>
+        </MetricDetails>
+        <MetricDetails
+          label={t("Snittfuktighet", "Average humidity")}
+          controls={controls.filter(
+            (c) =>
+              category(c) === "humidity" &&
+              c.attributes.unit_of_measurement === "%" &&
+              numeric(c) !== null &&
+              numeric(c)! >= 0 &&
+              numeric(c)! <= 100,
+          )}
+          home={home}
+          lang={lang}
+        >
           <Droplets />
           <span>
             <strong>{fmt(mean(rooms.map((a) => a.humidity)), " %")}</strong>
             <small>{t("Snittfuktighet", "Average humidity")}</small>
           </span>
-        </div>
-        <div>
+        </MetricDetails>
+        <MetricDetails
+          label={t("CO₂ · gjennomsnitt", "CO₂ · average")}
+          controls={co2.filter((c) => numeric(c) !== null)}
+          home={home}
+          lang={lang}
+        >
           <Leaf />
           <span>
             <strong>{fmt(mean(co2.map(numeric)), " ppm")}</strong>
             <small>{t("CO₂ · gjennomsnitt", "CO₂ · average")}</small>
           </span>
-        </div>
+        </MetricDetails>
       </CategorySummary>
       <div className="climate-room-heading">
         <h2>
