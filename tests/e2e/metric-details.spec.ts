@@ -28,8 +28,32 @@ test("category counters open the matching devices", async ({ page }) => {
       await expect(dialog.locator(".metric-details section")).toHaveCount(
         count,
       );
-    if (i === 0 && count > 0)
-      await expect(dialog.locator("li span").first()).toHaveText("På");
+    if (i === 0 && count > 0) {
+      const row = dialog.locator(".metric-device-open").first();
+      const name = await row.locator("strong").innerText();
+      await row.click();
+      const detail = page.getByRole("dialog", { name, exact: true });
+      await expect(
+        detail.getByRole("button", { name: "Skjul enhet", exact: true }),
+      ).toBeVisible();
+      await expect(
+        detail.getByRole("button", { name: "Tilpass lys", exact: true }),
+      ).toBeVisible();
+      const toggle = detail.getByRole("switch");
+      await expect(toggle).toHaveAttribute("aria-checked", "true");
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-checked", "false");
+      await expect(detail).toBeVisible();
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-checked", "true");
+      await detail.screenshot({
+        path: `/tmp/metric-device-${test.info().project.name}.png`,
+      });
+      await detail
+        .getByRole("button", { name: "Lukk innstillinger", exact: true })
+        .click();
+      await expect(detail).toHaveCount(0);
+    }
     if (i === 2)
       await dialog.screenshot({
         path: `/tmp/metric-details-${test.info().project.name}.png`,
@@ -49,6 +73,27 @@ test("category counters open the matching devices", async ({ page }) => {
   await expect(climate).toBeVisible();
   expect(await climate.locator("li").count()).toBeGreaterThan(0);
   await climate
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  await metrics.first().click();
+  const humidity = page.getByRole("dialog", {
+    name: "Snittemperatur",
+    exact: true,
+  });
+  await humidity
+    .getByRole("button", { name: "Åpne Temperatur", exact: true })
+    .click();
+  const sensor = page
+    .getByRole("dialog")
+    .filter({ has: page.locator(".metric-device-detail") })
+    .last();
+  await expect(
+    page.getByRole("region", { name: "Enhetshistorikk", exact: true }),
+  ).toBeVisible();
+  await sensor
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  await humidity
     .getByRole("button", { name: "Lukk innstillinger", exact: true })
     .click();
   await page

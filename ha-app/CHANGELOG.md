@@ -1,3 +1,8 @@
+## 1.36.47
+- Enheter i oppsummeringspopupene kan åpnes for styring, sensorhistorikk og innstillinger.
+- Lys, termostater, mediespillere og robotstøvsugere bruker eksisterende enhetsstyring. Sensorer åpner historikken direkte.
+- Administrator kan skjule enheter og tilpasse lys fra detaljvisningen. Styring og historikk vises før innstillingene.
+
 ## 1.36.46
 - Trykkbare oppsummeringsfelt på lys, sikkerhet, klima, multimedia og diverse åpner en popup med enhetene bak tallet.
 - Enhetene grupperes etter rom med navn og status. Klimafeltene viser målerne som inngår i gjennomsnittet.

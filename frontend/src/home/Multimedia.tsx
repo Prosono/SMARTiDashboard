@@ -35,7 +35,7 @@ import { homeAsset, roomMood, type HomePreferences } from "./HomeOverview";
 import { Scenes } from "./Scenes";
 import { SettingsDialog } from "./SettingsDialog";
 
-function MediaCard({
+export function MediaCard({
   c,
   home,
   lang,

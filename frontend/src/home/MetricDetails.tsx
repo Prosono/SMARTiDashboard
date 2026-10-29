@@ -1,8 +1,12 @@
 import { createPortal } from "react-dom";
-import { useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { SettingsDialog } from "./SettingsDialog";
 import { reading } from "./homeModel";
 import type { Control, Home } from "../types";
+
+export const MetricDeviceRenderer = createContext<
+  ((c: Control) => ReactNode) | null
+>(null);
 
 function status(c: Control, lang: string) {
   const en = lang === "en";
@@ -53,6 +57,9 @@ export function MetricDetails({
 }) {
   const [open, setOpen] = useState(false);
   const en = lang === "en";
+  const renderDevice = useContext(MetricDeviceRenderer);
+  const [selectedId, select] = useState<string | null>(null);
+  const selected = home.controls.find((c) => c.id === selectedId);
   const groups = [
     ...home.areas,
     { area_id: "", name: en ? "No room" : "Uten rom" },
@@ -82,7 +89,10 @@ export function MetricDetails({
           <SettingsDialog
             title={label}
             lang={lang}
-            onClose={() => setOpen(false)}
+            onClose={() => {
+              select(null);
+              setOpen(false);
+            }}
           >
             <div className="metric-details">
               <p>
@@ -110,14 +120,46 @@ export function MetricDetails({
                   <ul>
                     {a.controls.map((c) => (
                       <li key={c.id}>
-                        <strong>{c.name}</strong>
-                        <span>{status(c, lang)}</span>
+                        <button
+                          type="button"
+                          className="metric-device-open"
+                          aria-label={`${en ? "Open" : "Åpne"} ${c.name}`}
+                          aria-haspopup="dialog"
+                          onClick={() => select(c.id)}
+                        >
+                          <span>
+                            <strong>{c.name}</strong>
+                            <small>
+                              {en
+                                ? ["sensor", "binary_sensor"].includes(c.domain)
+                                  ? "History and settings"
+                                  : "Controls and settings"
+                                : ["sensor", "binary_sensor"].includes(c.domain)
+                                  ? "Historikk og innstillinger"
+                                  : "Styring og innstillinger"}
+                            </small>
+                          </span>
+                          <span>
+                            {status(c, lang)} <span aria-hidden="true">›</span>
+                          </span>
+                        </button>
                       </li>
                     ))}
                   </ul>
                 </section>
               ))}
             </div>
+            {selected && renderDevice && (
+              <SettingsDialog
+                title={selected.name}
+                lang={lang}
+                onClose={() => select(null)}
+              >
+                <div className="metric-device-detail">
+                  {renderDevice(selected)}
+                </div>
+              </SettingsDialog>
+            )}
           </SettingsDialog>,
           document.body,
         )}

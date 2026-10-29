@@ -217,3 +217,42 @@
   color: var(--muted);
   text-align: right;
 }
+
+.metric-details .metric-device-open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.metric-details .metric-device-open > span:first-child {
+  text-align: left;
+}
+.metric-device-open strong,
+.metric-device-open small {
+  display: block;
+}
+.metric-device-open small {
+  color: var(--muted);
+  margin-top: 4px;
+  font-size: 12px;
+}
+.metric-device-open:hover {
+  border-color: var(--accent);
+}
+.metric-device-open:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.metric-device-detail .control {
+  width: 100%;
+  box-sizing: border-box;
+}

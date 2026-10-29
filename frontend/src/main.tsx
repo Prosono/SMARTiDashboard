@@ -1,3 +1,5 @@
+import { MetricDeviceRenderer } from "./home/MetricDetails";
+import { MediaCard } from "./home/Multimedia";
 import { useAvailabilityGrace } from "./useAvailabilityGrace";
 import { HideControl, HiddenControls } from "./ControlVisibility";
 import { LightAppearance, lightIcon } from "./LightAppearance";
@@ -100,7 +102,7 @@ import { Integrations, Updates } from "./manage/System";
 import { PalettePicker, palettes } from "./PalettePicker";
 import { RoomView } from "./rooms/RoomView";
 import "./palettes.css";
-import { HomeOverview } from "./home/HomeOverview";
+import { HomeOverview, homeAsset } from "./home/HomeOverview";
 import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
@@ -855,7 +857,41 @@ function Dashboard({
           : c.domain === filter)),
   );
   return (
-    <>
+    <MetricDeviceRenderer.Provider
+      value={(c) =>
+        c.domain === "vacuum" || c.domain === "media_player" ? (
+          <>
+            {c.domain === "vacuum" ? (
+              <VacuumCard c={c} home={h} lang={lang} offline={offline} />
+            ) : (
+              <MediaCard
+                c={c}
+                home={h}
+                lang={lang}
+                offline={offline}
+                photo={homeAsset("home-multimedia")}
+              />
+            )}
+            {session.role === "admin" && (
+              <HideControl c={c} lang={lang} disabled={offline} />
+            )}
+          </>
+        ) : (
+          <Device
+            key={c.id}
+            c={c}
+            t={t}
+            h={h}
+            offline={offline}
+            roomName={roomName(c.area_id)}
+            admin={session.role === "admin"}
+            initialHistory={
+              c.domain === "sensor" || c.domain === "binary_sensor"
+            }
+          />
+        )
+      }
+    >
       <header className="topbar">
         <div className="breadcrumb">
           <img
@@ -1063,7 +1099,9 @@ function Dashboard({
             {page === "devices" && session.role === "admin" && (
               <DiscoveredDevices lang={lang} />
             )}
-            {page === "devices" && session.role === "admin" && <HiddenControls lang={lang} />}
+            {page === "devices" && session.role === "admin" && (
+              <HiddenControls lang={lang} />
+            )}
             {page === "devices" && (
               <div
                 className="tabs protocol-navigation"
@@ -1422,7 +1460,7 @@ function Dashboard({
         SMARTi <span>SMART LIVING, SIMPLIFIED.</span>
         <span>{h.mode === "demo" ? t.demo : t.live}</span>
       </footer>
-    </>
+    </MetricDeviceRenderer.Provider>
   );
 }
 function Empty({ t, add }: { t: Text; add: () => void }) {
@@ -1445,6 +1483,7 @@ function Device({
   offline,
   roomName,
   admin,
+  initialHistory = false,
 }: {
   c: Control;
   t: Text;
@@ -1452,10 +1491,11 @@ function Device({
   offline: boolean;
   roomName: string;
   admin: boolean;
+  initialHistory?: boolean;
 }) {
   const mode = useExperience();
   const inDialog = useContext(InSettingsDialog);
-  const [history, showHistory] = useState(false);
+  const [history, showHistory] = useState(initialHistory);
   const [expanded, expand] = useState(false);
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
@@ -1631,8 +1671,6 @@ function Device({
           )}
         </h3>
       </div>
-      {inDialog && admin && <HideControl c={c} lang={t === en ? "en" : "nb"} disabled={offline} />}
-      {inDialog && admin && c.domain === "light" && <LightAppearance c={c} lang={t === en ? "en" : "nb"} disabled={offline} />}
       {inDialog && (
         <div className="control-detail-meta">
           <span>
@@ -1844,6 +1882,16 @@ function Device({
             />
           )}
         </>
+      )}
+      {inDialog && admin && (
+        <HideControl c={c} lang={t === en ? "en" : "nb"} disabled={offline} />
+      )}
+      {inDialog && admin && c.domain === "light" && (
+        <LightAppearance
+          c={c}
+          lang={t === en ? "en" : "nb"}
+          disabled={offline}
+        />
       )}
       {mode !== "simple" && (
         <button
