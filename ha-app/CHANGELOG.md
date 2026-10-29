@@ -1,3 +1,7 @@
+## 1.36.45
+- Beholder siste kjente visning i minst 30 sekunder ved korte tilkoblingsbrudd før enheter blir grå og utilgjengelige.
+- Samme frist gjelder enkelt-enheter som midlertidig rapporterer ukjent eller utilgjengelig status. Fristen nullstilles når kontakten kommer tilbake.
+
 ## 1.36.44
 - Administrator kan skjule enheter fra SMARTi og hente dem tilbake under Enheter → Skjulte enheter. Gjelder alle enhetstyper.
 - Skjulte enheter utelates fra enhetstellere og oversikter. Rom uten synlige lys fjernes fra lysoversikten.

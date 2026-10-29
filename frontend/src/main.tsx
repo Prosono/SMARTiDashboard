@@ -1,3 +1,4 @@
+import { useAvailabilityGrace } from "./useAvailabilityGrace";
 import { HideControl, HiddenControls } from "./ControlVisibility";
 import { LightAppearance, lightIcon } from "./LightAppearance";
 import "./manage/settingsOverview.css";
@@ -774,16 +775,17 @@ function Dashboard({
     setAdding(false);
     setRoomEditing(false);
   }, [page]);
-  const offline =
+  const disconnected =
     home.data?.connected === false || !streamConnected || home.isError;
+  const display = useAvailabilityGrace(home.data, disconnected);
+  const offline = display.offline;
   const [connectionWarning, setConnectionWarning] = useState(false);
   useEffect(() => {
     if (!offline) {
       setConnectionWarning(false);
       return;
     }
-    // Brief reconnects should not flash a page-wide alert. Controls still use
-    // the immediate offline state so stale data cannot enable commands.
+    // Keep the page-wide alert quiet during reconnects.
     const timer = window.setTimeout(() => setConnectionWarning(true), 120_000);
     return () => window.clearTimeout(timer);
   }, [offline]);
@@ -802,7 +804,7 @@ function Dashboard({
         <button onClick={() => home.refetch()}>{t.retry}</button>
       </div>
     );
-  const h = home.data;
+  const h = display.home!;
   const regular = h.controls.filter(
     (c) => !c.diagnostic && c.domain !== "automation",
   );
