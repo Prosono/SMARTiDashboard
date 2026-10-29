@@ -9,7 +9,9 @@ export function LightColor({
   lang,
   disabled,
   change,
+  compact = false,
 }: {
+  compact?: boolean;
   c: Control;
   lang: string;
   disabled: boolean;
@@ -39,6 +41,8 @@ export function LightColor({
     <div className="light-color-control">
       <button
         type="button"
+        aria-label={`${c.name}: ${t("Farge og hvitt lys", "Color & white light")}`}
+        title={t("Farge og hvitt lys", "Color & white light")}
         disabled={disabled}
         onClick={() => {
           setHex(color);
@@ -48,7 +52,7 @@ export function LightColor({
           setOpen(true);
         }}
       >
-        <span
+        {!compact && <span
           className="light-color-swatch"
           style={{
             background:
@@ -56,9 +60,9 @@ export function LightColor({
                 ? "linear-gradient(120deg,#ffd197,#fffef9)"
                 : color,
           }}
-        />
+        />}
         <Palette size={16} />
-        {t("Farge og hvitt lys", "Color & white light")}
+        {!compact && t("Farge og hvitt lys", "Color & white light")}
       </button>
       {open && (
         <SettingsDialog

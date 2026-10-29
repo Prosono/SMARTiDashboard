@@ -1,3 +1,8 @@
+## 1.36.41
+- Ny romoversikt for lys med større rombilder og samlet av/på-bryter for hvert rom.
+- Kompakte lysrader med dimming, fargevalg og «Vis alle» for rom med mange lys.
+- Tilpasset mobil, desktop og eksisterende SMARTi-temaer.
+
 ## 1.36.40
 - Rapporterer installerte Core-, OS-, Supervisor- og SMARTi-appversjoner fra HA til adminpanelet, også uten tilgjengelige oppdateringer.
 - Admin viser versjoner per hub, siste rapportering og manglende eller eldre opplysninger.

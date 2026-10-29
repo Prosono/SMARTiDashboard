@@ -738,3 +738,33 @@
     grid-row: 4;
   }
 }
+
+/* Room-first lighting: a photograph and three quick controls per room. */
+.light-overview .lighting-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:16px; columns:auto; align-items:stretch; }
+.light-overview .lighting-room { display:flex; flex-direction:column; margin:0; padding:9px; border-radius:15px; box-sizing:border-box; background:var(--surface); }
+.light-overview .lighting-room > header { min-height:112px; padding:18px 20px; color:#fff; border-radius:9px; }
+.light-overview .lighting-room > header:after { background:linear-gradient(90deg,rgba(20,16,12,.64),rgba(20,16,12,.16)); }
+.light-overview .lighting-room > header h2 { font-size:21px; line-height:1.25; }
+.light-overview .lighting-room > header small { color:#fff; font-size:13px; }
+.light-overview .lighting-room > header > div { min-width:0; }
+.light-overview .lighting-room-switch { flex-shrink:0; margin-left:auto; }
+.light-overview .lighting-devices { display:flex; flex-direction:column; gap:0; margin:8px 8px 0; }
+.light-overview .lighting-tile { display:grid; grid-template-columns:24px minmax(80px,1fr) 44px minmax(110px,1.1fr) 40px; gap:10px; align-items:center; padding:13px 0; border-radius:0; background:transparent; border-bottom:1px solid var(--line); }
+.light-overview .lighting-tile:last-child { border-bottom:0; }
+.light-overview .lighting-tile-top { display:contents; }
+.light-overview .lighting-tile strong { min-width:0; font-size:13px; }
+.light-overview .lighting-tile .device-open-detail { justify-content:flex-start; text-align:left; padding:0; border:0; background:none; width:100%; }
+.light-overview .lighting-tile .device-open-detail svg { display:none; }
+.light-overview .lighting-dimmer { margin:0; min-width:0; grid-column:4; }
+.light-overview .lighting-tile .light-color-control { grid-column:5; margin:0; }
+.light-overview .lighting-tile .light-color-control > button { margin:0; min-height:40px; width:40px; padding:0; }
+.light-overview .lighting-tile > small { grid-column:2 / -1; }
+.light-overview .lighting-room-footer { margin-top:auto; padding:4px 8px 0; }
+.light-overview .lighting-room-footer:empty { display:none; }
+.light-overview .lighting-room-footer button { width:100%; justify-content:space-between; border:0; border-top:1px solid var(--line); border-radius:0; background:transparent; padding:12px 0 6px; color:var(--muted); }
+@media(max-width:480px) {
+ .light-overview .lighting-tile { grid-template-columns:22px minmax(0,1fr) 44px 40px; gap:8px; padding:12px 0; }
+ .light-overview .lighting-dimmer { grid-column:2 / 4; grid-row:2; }
+ .light-overview .lighting-tile .light-color-control { grid-column:4; grid-row:1; }
+ .light-overview .lighting-room > header { padding:16px; }
+}

@@ -44,6 +44,7 @@ export function LightOverview({
     queryKey: ["home-preferences"],
     queryFn: () => api<HomePreferences>("home/preferences"),
   });
+  const [expandedRooms, setExpandedRooms] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [room, setRoom] = useState<string | null>(null);
@@ -117,6 +118,13 @@ export function LightOverview({
       await Promise.all(
         targets.slice(i, i + 4).map((c) => send(c, "turn_off")),
       );
+  }
+  async function toggleRoom(items: Control[]) {
+    const action = items.some(c => usable(c) && c.state === "on") ? "turn_off" : "turn_on";
+    const targets = items.filter(c => usable(c) && c.capabilities.some(cap => cap.actions.includes(action)));
+    setMessage("");
+    for (let i = 0; i < targets.length; i += 4)
+      await Promise.all(targets.slice(i, i + 4).map(c => send(c, action)));
   }
   const visible = rooms
     .filter((a) => room === null || a.area_id === room)
@@ -278,8 +286,12 @@ export function LightOverview({
       {message && <p role="status">{message}</p>}
       <div className="lighting-grid">
         {visible.map((a) => {
-          const mood = roomMood(a.name),
-            Icon = mood.Icon;
+          const mood = roomMood(a.name);
+          const allItems = rooms.find(r => r.area_id === a.area_id)!.items;
+          const roomOn = allItems.some(c => usable(c) && c.state === "on");
+          const roomAction = roomOn ? "turn_off" : "turn_on";
+          const expanded = expandedRooms.includes(a.area_id);
+          const displayed = expanded ? a.items : a.items.slice(0, 3);
           const photo = prefs.data?.images[a.area_id]
             ? new URL(
                 `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
@@ -290,24 +302,19 @@ export function LightOverview({
             <article className="lighting-room" key={a.area_id}>
               <header>
                 <RoomArtwork src={photo} alt="" loading="lazy" />
-                <Icon size={24} />
                 <div>
                   <h2>{a.name}</h2>
                   <small>
                     {a.items.length} {t("lys", "lights")}
                   </small>
                 </div>
-                {openRoom && a.area_id && (
-                  <button
-                    aria-label={`${t("Åpne rom", "Open room")} ${a.name}`}
-                    onClick={() => openRoom(a.area_id)}
-                  >
-                    <ChevronRight />
-                  </button>
-                )}
+                <button className="lighting-switch lighting-room-switch" role="switch"
+                  aria-checked={roomOn} aria-label={`${t("Alle lys i", "All lights in")} ${a.name}`}
+                  disabled={offline || !home.connected || allItems.some(c => pending.includes(c.entity_id)) || !allItems.some(c => usable(c) && c.capabilities.some(cap => cap.actions.includes(roomAction)))}
+                  onClick={() => void toggleRoom(allItems)}><span /></button>
               </header>
               <div className="lighting-devices">
-                {a.items.map((c) => (
+                {displayed.map((c) => (
                   <LightTile
                     key={c.entity_id}
                     c={c}
@@ -326,6 +333,11 @@ export function LightOverview({
                   />
                 ))}
               </div>
+              <footer className="lighting-room-footer">
+                {a.items.length > 3 ? <button aria-expanded={expanded} onClick={() => setExpandedRooms(current => expanded ? current.filter(id => id !== a.area_id) : [...current, a.area_id])}>
+                  {expanded ? t("Vis færre lys", "Show fewer lights") : `${t("Vis alle", "Show all")} ${a.items.length} ${t("lys", "lights")}`}<ChevronRight size={17} />
+                </button> : openRoom && a.area_id ? <button onClick={() => openRoom(a.area_id)}>{t("Åpne rom", "Open room")}<ChevronRight size={17} /></button> : null}
+              </footer>
             </article>
           );
         })}
@@ -445,10 +457,11 @@ function LightTile({
               }
             }}
           />
-          <output>{value}%</output>
+          <output>{!usable(c) ? "—" : on || draft !== null ? `${value}%` : lang === "en" ? "Off" : "Av"}</output>
         </div>
       )}
       <LightColor
+        compact
         c={c}
         lang={lang}
         disabled={blocked}

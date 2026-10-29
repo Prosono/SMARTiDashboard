@@ -19,6 +19,8 @@ test("room lighting overview filters and controls lights", async ({ page }) => {
   await expect(
     lights.locator(".lighting-room > header img").first(),
   ).toHaveJSProperty("naturalWidth", 1600);
+  const disclosure = lights.getByRole("button", {name: /Vis søk og filtre/});
+  if (await disclosure.count()) await disclosure.click();
   await lights.getByLabel("Søk etter rom eller lys").fill("finnesikke");
   await expect(lights.locator(".lighting-room")).toHaveCount(0);
   await lights.getByLabel("Søk etter rom eller lys").fill("");
@@ -37,8 +39,12 @@ test("room lighting overview filters and controls lights", async ({ page }) => {
     "aria-checked",
     old === "true" ? "false" : "true",
   );
+  const roomToggle = lights.getByRole("switch", {name: "Alle lys i Stue", exact: true});
+  const roomWasOn = await roomToggle.getAttribute("aria-checked");
+  await roomToggle.click();
+  await expect(roomToggle).toHaveAttribute("aria-checked", roomWasOn === "true" ? "false" : "true");
   await lights
-    .getByRole("button", { name: "Farge og hvitt lys", exact: true })
+    .getByRole("button", { name: /Farge og hvitt lys/ })
     .first()
     .click();
   await expect(
@@ -51,7 +57,7 @@ test("room lighting overview filters and controls lights", async ({ page }) => {
     await lights.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
   ).toBeTruthy();
   await page.screenshot({
-    path: `../artifacts/lights-${test.info().project.name}.png`,
+    path: `/tmp/lights-${test.info().project.name}.png`,
     fullPage: true,
   });
 });
