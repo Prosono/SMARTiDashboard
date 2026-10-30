@@ -1,3 +1,8 @@
+## 1.36.53
+- Multimediaoversikten viser realistiske illustrasjoner for TV, Chromecast og høyttalere, automatisk valgt etter tilgjengelig enhetsinformasjon.
+- Valgt enhetsikon prioriteres, og innholdets omslag vises når det er tilgjengelig. Ukjente typer bruker sitt vanlige ikon.
+- Mer kompakte kort og tre kolonner på desktop; følger valgt SMARTi-tema.
+
 ## 1.36.52
 - Ny, kompakt multimedia-side med tydelige spillerkort, omslag eller enhetsikon og samlet styring nederst.
 - Statistikk er flyttet til en kompakt topp. Seks spillere vises først med «Vis alle» for resten.

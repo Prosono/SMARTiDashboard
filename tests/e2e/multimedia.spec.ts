@@ -54,7 +54,18 @@ test("multimedia filters players and sends supported playback commands", async (
           player("speaker", "Stuehøyttaler", "speaker", "living"),
           player("tv", "TV på soverommet", "tv", "bedroom", true),
           ...Array.from({ length: extraPlayers }, (_, i) =>
-            player(`extra${i}`, `Høyttaler ${i + 1}`, "speaker", "living"),
+            player(
+              `extra${i}`,
+              [
+                "Chromecast Stue",
+                "HomePod mini",
+                "Sonos kjøkken",
+                "TV kjøkken",
+                "Høyttaler 5",
+              ][i],
+              "speaker",
+              "living",
+            ),
           ),
         ],
       },
@@ -96,11 +107,15 @@ test("multimedia filters players and sends supported playback commands", async (
     page.getByRole("heading", { name: "Multimedia", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".media-player-card")).toHaveCount(2);
-  await expect(page.locator(".media-device-visual img")).toBeVisible();
-  await expect(page.locator(".media-device-visual img")).toHaveJSProperty(
-    "naturalWidth",
-    1,
-  );
+  await expect(
+    page.locator(".media-device-visual img:not(.media-product-image)"),
+  ).toBeVisible();
+  await expect(
+    page.locator(".media-device-visual img:not(.media-product-image)"),
+  ).toHaveJSProperty("naturalWidth", 1);
+  const tvImage = page.locator(".media-product-image");
+  await expect(tvImage).toHaveAttribute("src", /media-devices\/tv\.webp$/);
+  await expect(tvImage).toHaveJSProperty("naturalWidth", 600);
   await page.screenshot({
     path: `/tmp/media-redesign-${test.info().project.name}.png`,
     fullPage: true,
@@ -194,6 +209,15 @@ test("multimedia filters players and sends supported playback commands", async (
   await page.reload();
   await page.getByRole("tab", { name: "Multimedia", exact: true }).click();
   await expect(page.locator(".media-player-card")).toHaveCount(6);
+  for (const type of ["streamer", "mini", "speaker", "tv"]) {
+    await expect(
+      page.locator(`.media-product-image[src$="/${type}.webp"]`).first(),
+    ).toHaveJSProperty("naturalWidth", 600);
+  }
+  await page.screenshot({
+    path: `/tmp/media-products-${test.info().project.name}.png`,
+    fullPage: true,
+  });
   await page
     .getByRole("button", { name: "Vis alle 7 spillere", exact: true })
     .click();

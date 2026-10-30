@@ -256,6 +256,15 @@ def normalize(states, entities, devices, temperature_unit=None):
                     **{k: v for k, v in a.items() if k not in {"access_token", "entity_picture"}},
                     **(
                         {
+                            f"smarti_device_{key}": device[key]
+                            for key in ("manufacturer", "model")
+                            if isinstance(device.get(key), str) and device[key]
+                        }
+                        if domain == "media_player"
+                        else {}
+                    ),
+                    **(
+                        {
                             "smarti_artwork": hashlib.sha256(
                                 str(
                                     (a.get("entity_picture"), a.get("media_content_id"), a.get("media_title"))

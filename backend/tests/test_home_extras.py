@@ -247,3 +247,13 @@ def test_entity_history_keeps_lock_states_without_device_registry(tmp_path):
         points = response.json()["points"]
         assert [p["state"] for p in points] == ["locked", "unavailable", "unlocked"]
         assert all(p["value"] is None for p in points)
+
+
+def test_media_registry_details_are_available_for_picture_selection():
+    states = {"media_player.kitchen": {"state": "idle", "attributes": {"friendly_name": "Kitchen"}}}
+    entities = {"media_player.kitchen": {"device_id": "one", "platform": "sonos"}}
+    devices = {"one": {"manufacturer": "Sonos", "model": "One", "serial_number": "private"}}
+    control = normalize(states, entities, devices)[0]
+    assert control.attributes["smarti_device_manufacturer"] == "Sonos"
+    assert control.attributes["smarti_device_model"] == "One"
+    assert "serial_number" not in control.attributes

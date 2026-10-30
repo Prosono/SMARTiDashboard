@@ -1,4 +1,5 @@
 import { mediaIcon } from "../MediaIcons";
+import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { MetricDetails, MetricDeviceRenderer } from "./MetricDetails";
 import { CategoryHeading } from "./CategoryIntro";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
@@ -74,7 +75,11 @@ export function MediaCard({
         ).href
       : "";
   const [failedArtwork, setFailedArtwork] = useState("");
-  const showArtwork = Boolean(artwork && failedArtwork !== artwork);
+  const [failedDeviceArtwork, setFailedDeviceArtwork] = useState("");
+  const showArtwork = Boolean(
+    !unavailable && artwork && failedArtwork !== artwork,
+  );
+  const deviceArtwork = mediaDeviceArtwork(c);
   const playing = c.state === "playing" && !unavailable;
   const states: Record<string, string> = {
     playing: t("Spiller", "Playing"),
@@ -162,6 +167,14 @@ export function MediaCard({
             src={artwork || undefined}
             alt=""
             onError={() => setFailedArtwork(String(artwork))}
+          />
+        ) : deviceArtwork && failedDeviceArtwork !== deviceArtwork ? (
+          <img
+            className="media-product-image"
+            src={deviceArtwork}
+            alt=""
+            loading="lazy"
+            onError={() => setFailedDeviceArtwork(deviceArtwork)}
           />
         ) : (
           <Icon size={124} />

@@ -725,3 +725,56 @@
     border-radius: 22px;
   }
 }
+
+/* Product portraits stay transparent so they work in every SMARTi theme. */
+.media-device-visual > .media-product-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  object-fit: contain;
+  filter: drop-shadow(
+    0 12px 12px color-mix(in srgb, var(--text) 15%, transparent)
+  );
+}
+.media-player-card[data-unavailable="true"] .media-state i {
+  background: #e84e67;
+}
+.media-player-card[data-unavailable="true"] .media-device-visual {
+  opacity: 0.65;
+}
+@media (min-width: 1150px) {
+  .multimedia-view {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  }
+  .multimedia-view > .category-heading {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .media-summary-metrics {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .media-summary-metrics > button {
+    padding: 14px;
+  }
+}
+.multimedia-view .toolbar-heading .toolbar-toggle {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.media-device-visual {
+  top: 96px;
+  height: 112px;
+}
+@media (min-width: 1200px) {
+  .multimedia-view .media-player-grid:not(.is-list) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .media-player-grid .media-controls-row {
+    gap: 7px;
+  }
+  .media-player-grid .media-volume {
+    min-width: 120px;
+  }
+}
