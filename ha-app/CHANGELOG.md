@@ -1,3 +1,7 @@
+## 1.36.62
+- Mer kompakt Hjem-oversikt på telefon med to kort i bredden og header over hele bredden.
+- Vær, kalender, media, klima, støvsuger og målegrafene er tilpasset smale skjermer.
+
 ## 1.36.61
 - Varsler i normal og avansert visning er samlet bak et utropstegn, og værkortet ligger i headeren.
 - Nye kort for energi, temperatur og luftfuktighet med fargerike grafer for tilgjengelig historikk. Manglende målinger vises som hull.

@@ -783,3 +783,162 @@ button.simple-dashboard-tile {
 .simple-dashboard-media .media-player-card .media-hero {
   justify-content: flex-start;
 }
+
+/* Phone overview: two compact columns, with full-size touch targets. */
+@media (max-width: 600px) {
+  .simple-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .simple-dashboard-grid > * {
+    border-radius: 18px;
+  }
+  .simple-dashboard-tile,
+  .simple-weather {
+    min-height: 205px;
+    padding: 14px;
+  }
+  .simple-dashboard-card-heading {
+    gap: 6px;
+    font-size: 13px;
+  }
+  .simple-dashboard-card-heading > svg:first-child {
+    width: 18px;
+    height: 18px;
+  }
+  .simple-dashboard-card-heading > svg:last-child {
+    width: 15px;
+  }
+  .simple-date-content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .simple-date-day strong {
+    font-size: 42px;
+  }
+  .simple-date-day span {
+    margin-top: 3px;
+  }
+  .simple-agenda {
+    gap: 6px;
+  }
+  .simple-agenda strong,
+  .simple-agenda small,
+  .simple-agenda-empty {
+    font-size: 11px;
+  }
+  .simple-dashboard-date > small {
+    margin-top: auto;
+    font-size: 11px;
+  }
+  .simple-dashboard-lights > strong {
+    font-size: 46px;
+  }
+  .simple-dashboard-lights > strong small {
+    font-size: 16px;
+  }
+  .simple-dashboard-lights > small {
+    font-size: 11px;
+  }
+  .simple-weather-heading strong {
+    font-size: 14px;
+  }
+  .simple-weather-heading span {
+    font-size: 12px;
+  }
+  .simple-weather-current {
+    min-height: 72px;
+  }
+  .simple-weather-current > strong {
+    font-size: 36px;
+  }
+  .simple-weather-current > img {
+    height: 64px;
+  }
+  .simple-weather-current > svg {
+    width: 55px;
+    height: 55px;
+  }
+  .simple-weather-details {
+    gap: 6px 10px;
+    font-size: 10px;
+    padding-top: 10px;
+  }
+  .simple-dashboard-climate .thermostat {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .simple-dashboard-climate .thermostat-mode {
+    padding: 6px;
+  }
+  .simple-dashboard-climate .thermostat-target strong {
+    font-size: 35px;
+  }
+  .simple-dashboard-climate .thermostat-adjust {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+  .simple-dashboard-climate .thermostat-adjust > span {
+    min-width: 0;
+    font-size: 9px;
+  }
+  .simple-dashboard-climate .thermostat-adjust strong {
+    font-size: 12px;
+  }
+  .simple-dashboard-media .media-player-card .media-hero {
+    padding: 14px;
+    min-height: 170px;
+  }
+  .simple-dashboard-media .media-player-card .media-player-content {
+    padding: 12px 14px 14px;
+  }
+  .simple-dashboard-media .media-player-card .media-open-device {
+    font-size: 14px;
+  }
+  .simple-dashboard-media .media-player-card .media-info-region {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .simple-dashboard-media .media-player-card .media-device-visual {
+    height: 66px;
+  }
+  .simple-dashboard-media .media-volume {
+    min-width: 0;
+    width: 100%;
+  }
+  .simple-dashboard-vacuum .vacuum-card {
+    padding: 14px;
+  }
+  .simple-dashboard-vacuum .vacuum-card h3 {
+    font-size: 14px;
+  }
+  .simple-dashboard-vacuum .vacuum-card .vacuum-illustration,
+  .simple-dashboard-vacuum .vacuum-illustration img {
+    height: 85px;
+  }
+  .simple-dashboard-vacuum .vacuum-status {
+    font-size: 12px;
+  }
+  .simple-dashboard-vacuum .vacuum-actions button {
+    width: 100%;
+  }
+}
+@media (max-width: 600px) {
+  .simple-dashboard-climate .thermostat-mode {
+    order: 0;
+  }
+  .simple-dashboard-climate .thermostat-dial {
+    order: 1;
+  }
+  .simple-dashboard-climate .thermostat-adjust {
+    order: 2;
+  }
+  .simple-dashboard-climate .thermostat-mode-select {
+    order: 3;
+  }
+  .simple-dashboard-climate .thermostat-readonly {
+    order: 4;
+  }
+}

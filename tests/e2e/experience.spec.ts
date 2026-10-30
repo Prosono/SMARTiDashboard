@@ -220,6 +220,36 @@ test("personal experience modes simplify navigation and survive reload", async (
     await page.locator(".simple-home .device").count(),
   ).toBeLessThanOrEqual(8);
   await expect(page.locator(".simple-dashboard-grid")).toBeVisible();
+  if ((page.viewportSize()?.width || 0) <= 600) {
+    const grid = page.locator(".simple-dashboard-grid");
+    const cells = grid.locator(":scope > *");
+    const first = await cells.nth(0).boundingBox();
+    const second = await cells.nth(1).boundingBox();
+    const header = await page.locator(".simple-welcome").boundingBox();
+    expect(first && second && header).toBeTruthy();
+    if (first && second && header) {
+      expect(Math.abs(first.y - second.y)).toBeLessThan(2);
+      expect(second.x).toBeGreaterThan(first.x + first.width);
+      expect(header.width).toBeGreaterThan(first.width + second.width);
+    }
+    const originalViewport = page.viewportSize()!;
+    await page.setViewportSize({ width: 320, height: originalViewport.height });
+    const smallA = await cells.nth(0).boundingBox();
+    const smallB = await cells.nth(1).boundingBox();
+    expect(smallA && smallB && Math.abs(smallA.y - smallB.y) < 2).toBeTruthy();
+    expect(
+      await page
+        .locator("body")
+        .evaluate((e) => e.scrollWidth <= e.clientWidth),
+    ).toBe(true);
+    await page.setViewportSize(originalViewport);
+    expect(
+      await page
+        .locator("body")
+        .evaluate((e) => e.scrollWidth <= e.clientWidth),
+    ).toBe(true);
+  }
+
   await expect(page.locator(".simple-weather")).toContainText("10°C");
   await expect(page.locator(".simple-weather")).toContainText("78 %");
   await expect(page.locator(".simple-weather img")).toHaveJSProperty(
@@ -302,6 +332,14 @@ test("personal experience modes simplify navigation and survive reload", async (
   ).toContainText("Røyk i kjøkken");
   await page.keyboard.press("Escape");
   await expect(page.locator(".home-metric-card")).toHaveCount(3);
+  if ((page.viewportSize()?.width || 0) <= 600) {
+    const a = await page.locator(".home-metric-card").nth(0).boundingBox();
+    const b = await page.locator(".home-metric-card").nth(1).boundingBox();
+    expect(
+      a && b && Math.abs(a.y - b.y) < 2 && b.x > a.x + a.width,
+    ).toBeTruthy();
+  }
+
   await expect(page.locator(".home-metric-graph")).toHaveCount(3);
   const graphPath = await page
     .locator(".home-metric-graph path[stroke]")
