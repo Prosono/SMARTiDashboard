@@ -108,13 +108,12 @@ test("multimedia filters players and sends supported playback commands", async (
     page.getByRole("heading", { name: "Multimedia", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".media-player-card")).toHaveCount(2);
-  await expect(
-    page.locator(".media-device-visual img:not(.media-product-image)"),
-  ).toBeVisible();
-  await expect(
-    page.locator(".media-device-visual img:not(.media-product-image)"),
-  ).toHaveJSProperty("naturalWidth", 1);
-  const tvImage = page.locator(".media-product-image");
+  await expect(page.locator(".media-artwork-background")).toBeVisible();
+  await expect(page.locator(".media-artwork-background")).toHaveJSProperty(
+    "naturalWidth",
+    1,
+  );
+  const tvImage = page.locator('.media-product-image[src$="/tv.webp"]');
   await expect(tvImage).toHaveAttribute("src", /media-devices\/tv\.webp$/);
   await expect(tvImage).toHaveJSProperty("naturalWidth", 600);
   await page.screenshot({
@@ -162,7 +161,7 @@ test("multimedia filters players and sends supported playback commands", async (
     .getByRole("button", { name: "Apple HomePod", exact: true })
     .click();
   const pictures = settings.getByRole("group", { name: "Velg bilde" });
-  await expect(pictures.locator("img")).toHaveCount(10);
+  await expect(pictures.locator("img")).toHaveCount(13);
   await pictures.getByRole("button", { name: "Telefon", exact: true }).click();
   await settings.screenshot({
     path: `/tmp/media-icons-${test.info().project.name}.png`,
@@ -171,6 +170,7 @@ test("multimedia filters players and sends supported playback commands", async (
   await expect(settings).toHaveCount(0);
   expect(appearance.icon).toBe("homepod");
   expect(appearance.image).toBe("phone");
+  await expect(detail.locator(".media-artwork-background")).toBeVisible();
   await expect(detail.locator(".media-product-image")).toHaveAttribute(
     "src",
     /phone\.webp$/,
@@ -223,7 +223,7 @@ test("multimedia filters players and sends supported playback commands", async (
   await page.reload();
   await page.getByRole("tab", { name: "Multimedia", exact: true }).click();
   await expect(page.locator(".media-player-card")).toHaveCount(6);
-  for (const type of ["streamer", "mini", "speaker", "tv"]) {
+  for (const type of ["streamer", "mini", "sonos", "tv"]) {
     await expect(
       page.locator(`.media-product-image[src$="/${type}.webp"]`).first(),
     ).toHaveJSProperty("naturalWidth", 600);

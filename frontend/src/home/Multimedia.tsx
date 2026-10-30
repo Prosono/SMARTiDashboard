@@ -76,11 +76,8 @@ export function MediaCard({
       : "";
   const [failedArtwork, setFailedArtwork] = useState("");
   const [failedDeviceArtwork, setFailedDeviceArtwork] = useState("");
-  const explicitImage =
-    typeof c.attributes.smarti_media_image === "string" &&
-    c.attributes.smarti_media_image !== "auto";
   const showArtwork = Boolean(
-    !explicitImage && !unavailable && artwork && failedArtwork !== artwork,
+    !unavailable && artwork && failedArtwork !== artwork,
   );
   const deviceArtwork = mediaDeviceArtwork(c);
   const playing = c.state === "playing" && !unavailable;
@@ -143,28 +140,36 @@ export function MediaCard({
       data-playing={playing}
       data-unavailable={unavailable}
     >
-      <div className="media-art">
-        <div>
-          {!inDialog && renderDevice ? (
-            <button
-              className="media-open-device"
-              aria-label={`${t("Åpne", "Open")} ${c.name}`}
-              aria-haspopup="dialog"
-              onClick={() => setOpened(true)}
-            >
-              {c.name}
-              <Icon size={20} />
-            </button>
-          ) : (
-            <strong>{c.name}</strong>
-          )}
-          <span>
-            {home.areas.find((a) => a.area_id === c.area_id)?.name ||
-              t("Uten rom", "Unassigned")}
-          </span>
+      <div className="media-hero" data-has-artwork={showArtwork}>
+        {showArtwork && (
+          <img
+            className="media-artwork-background"
+            src={artwork || undefined}
+            alt=""
+            onError={() => setFailedArtwork(String(artwork))}
+          />
+        )}
+        <div className="media-art">
+          <div>
+            {!inDialog && renderDevice ? (
+              <button
+                className="media-open-device"
+                aria-label={`${t("Åpne", "Open")} ${c.name}`}
+                aria-haspopup="dialog"
+                onClick={() => setOpened(true)}
+              >
+                {c.name}
+                <Icon size={20} />
+              </button>
+            ) : (
+              <strong>{c.name}</strong>
+            )}
+            <span>
+              {home.areas.find((a) => a.area_id === c.area_id)?.name ||
+                t("Uten rom", "Unassigned")}
+            </span>
+          </div>
         </div>
-      </div>
-      <div className="media-player-content">
         <div className="media-info-region">
           <div className="media-info-copy">
             <span className="media-state">
@@ -203,13 +208,7 @@ export function MediaCard({
             </div>
           </div>
           <div className="media-device-visual" aria-hidden="true">
-            {showArtwork ? (
-              <img
-                src={artwork || undefined}
-                alt=""
-                onError={() => setFailedArtwork(String(artwork))}
-              />
-            ) : deviceArtwork && failedDeviceArtwork !== deviceArtwork ? (
+            {deviceArtwork && failedDeviceArtwork !== deviceArtwork ? (
               <img
                 className="media-product-image"
                 src={deviceArtwork}
@@ -222,6 +221,8 @@ export function MediaCard({
             )}
           </div>
         </div>
+      </div>
+      <div className="media-player-content">
         {typeof c.attributes.media_duration === "number" &&
           c.attributes.media_duration > 0 &&
           typeof c.attributes.media_position === "number" &&

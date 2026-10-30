@@ -1,3 +1,7 @@
+## 1.36.56
+- Mediekort viser omslaget stort i øvre del med et mindre enhetsbilde. Fremdrift og kontroller ligger på en egen tematilpasset flate.
+- Nye bildevalg for nettbrett, Sonos-høyttaler og hjemmekino, med automatisk gjenkjenning der enhetsinformasjonen gir grunnlag for det.
+
 ## 1.36.55
 - Ny bildevelger med forhåndsvisninger under «Tilpass mediaspiller».
 - Valgt bilde lagres for hjemmet og vises også når spilleren har et omslag. Automatisk valg bruker omslag når det er tilgjengelig.

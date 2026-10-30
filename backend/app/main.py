@@ -78,6 +78,9 @@ class ControlAppearance(BaseModel):
             "speaker-white",
             "box",
             "headphones",
+            "tablet",
+            "sonos",
+            "home-cinema",
         ]
         | None
     ) = None

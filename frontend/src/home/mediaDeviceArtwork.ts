@@ -10,7 +10,10 @@ export type MediaArtworkKind =
   | "projector"
   | "speaker-white"
   | "box"
-  | "headphones";
+  | "headphones"
+  | "tablet"
+  | "sonos"
+  | "home-cinema";
 
 // Only use the hints available to SMARTi; a manually chosen type takes precedence.
 export function mediaArtworkKind(control: Control): MediaArtworkKind | null {
@@ -44,6 +47,9 @@ export function mediaArtworkKind(control: Control): MediaArtworkKind | null {
     .join(" ")
     .toLowerCase()
     .replace(/[_-]/g, " ");
+  if (/\b(ipad|tablet|nettbrett)\b/.test(info)) return "tablet";
+  if (/home cinema|home theatre|home theater|hjemmekino|av receiver/.test(info))
+    return "home-cinema";
   if (/headphones|headset|hodetelefon|airpods/.test(info)) return "headphones";
   if (/iphone|smartphone|mobiltelefon|telefon|\bphone\b/.test(info))
     return "phone";
@@ -62,7 +68,8 @@ export function mediaArtworkKind(control: Control): MediaArtworkKind | null {
     )
   )
     return "speaker-white";
-  if (/home\s*pod|sonos|speaker|høyttaler|hoyttaler|airplay/.test(info))
+  if (/sonos/.test(info)) return "sonos";
+  if (/home\s*pod|speaker|høyttaler|hoyttaler|airplay/.test(info))
     return "speaker";
   return null;
 }

@@ -44,6 +44,9 @@ const mediaPictures = [
   { id: "phone", nb: "Telefon", en: "Phone" },
   { id: "projector", nb: "Projektor", en: "Projector" },
   { id: "headphones", nb: "Hodetelefoner", en: "Headphones" },
+  { id: "tablet", nb: "Nettbrett", en: "Tablet" },
+  { id: "sonos", nb: "Sonos-høyttaler", en: "Sonos speaker" },
+  { id: "home-cinema", nb: "Hjemmekino", en: "Home cinema" },
 ];
 export function lightIcon(c: Control) {
   return (
@@ -154,8 +157,8 @@ export function LightAppearance({
                 <legend>{t("Velg bilde", "Choose picture")}</legend>
                 <p>
                   {t(
-                    "Automatisk viser omslag når det finnes. Velg et bilde for å alltid vise det på enheten.",
-                    "Automatic shows artwork when available. Choose a picture to always show it for this device.",
+                    "Velg enhetsbilde. Omslag fra musikk og annet innhold vises i bakgrunnen når det finnes.",
+                    "Choose a device picture. Music and other artwork appears in the background when available.",
                   )}
                 </p>
                 <div className="media-picture-options">

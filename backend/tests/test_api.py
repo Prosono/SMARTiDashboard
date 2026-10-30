@@ -432,6 +432,8 @@ def test_media_appearance_is_saved_with_domain_specific_icons(client, app):
         c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == "media_player.speaker"
     )
     assert player["attributes"]["smarti_media_image"] == "phone"
+    for image in ["tablet", "sonos", "home-cinema"]:
+        assert client.put(route, json={"name": "Stue", "icon": "tv", "image": image}).status_code == 200
     assert client.put(route, json={"name": "Stue", "icon": "tv", "image": "../../secret"}).status_code == 422
     assert client.put(route, json={"name": "", "icon": "bulb"}).status_code == 422
     assert (

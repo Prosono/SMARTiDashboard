@@ -27,10 +27,12 @@ describe("media device pictures", () => {
     ).toBe("streamer");
     expect(
       mediaArtworkKind(player("Bad", { smarti_device_manufacturer: "Sonos" })),
-    ).toBe("speaker");
+    ).toBe("sonos");
     expect(mediaArtworkKind(player("HomePod mini"))).toBe("mini");
     expect(mediaArtworkKind(player("SMARTi Voice Stue"))).toBe("mini");
     expect(mediaArtworkKind(player("Min iPhone"))).toBe("phone");
+    expect(mediaArtworkKind(player("iPad"))).toBe("tablet");
+    expect(mediaArtworkKind(player("Hjemmekino"))).toBe("home-cinema");
     expect(mediaArtworkKind(player("Sonos Beam"))).toBe("soundbar");
     expect(mediaArtworkKind(player("Apple TV"))).toBe("box");
     expect(mediaArtworkKind(player("Projektor"))).toBe("projector");
