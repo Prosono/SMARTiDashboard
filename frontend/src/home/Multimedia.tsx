@@ -1,7 +1,6 @@
 import { mediaIcon } from "../MediaIcons";
 import { MetricDetails, MetricDeviceRenderer } from "./MetricDetails";
-import { CategoryHeading, CategorySummary } from "./CategoryIntro";
-import { RoomArtwork } from "../rooms/RoomArtwork";
+import { CategoryHeading } from "./CategoryIntro";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { allViews } from "../access";
 import { useContext, useEffect, useState } from "react";
@@ -24,7 +23,6 @@ import {
   LayoutGrid,
   List,
   Layers,
-  Radio,
   Sparkles,
 } from "lucide-react";
 import { api } from "../api";
@@ -41,7 +39,6 @@ export function MediaCard({
   home,
   lang,
   offline,
-  photo,
 }: {
   c: Control;
   home: Home;
@@ -133,18 +130,12 @@ export function MediaCard({
       </button>
     );
   return (
-    <article className="media-player-card" data-playing={playing}>
+    <article
+      className="media-player-card"
+      data-playing={playing}
+      data-unavailable={unavailable}
+    >
       <div className="media-art">
-        {showArtwork ? (
-          <img
-            src={artwork || undefined}
-            alt=""
-            loading="lazy"
-            onError={() => setFailedArtwork(String(artwork))}
-          />
-        ) : (
-          <RoomArtwork src={photo} alt="" loading="lazy" />
-        )}
         <div>
           {!inDialog && renderDevice ? (
             <button
@@ -164,7 +155,17 @@ export function MediaCard({
               t("Uten rom", "Unassigned")}
           </span>
         </div>
-        <Icon size={24} />
+      </div>
+      <div className="media-device-visual" aria-hidden="true">
+        {showArtwork ? (
+          <img
+            src={artwork || undefined}
+            alt=""
+            onError={() => setFailedArtwork(String(artwork))}
+          />
+        ) : (
+          <Icon size={124} />
+        )}
       </div>
       <div className="media-player-content">
         <span className="media-state">
@@ -174,18 +175,6 @@ export function MediaCard({
             : states[c.state] || c.state}
         </span>
         <div className="media-track">
-          <span className="media-track-symbol">
-            {showArtwork ? (
-              <img
-                className="media-cover"
-                src={artwork || undefined}
-                alt={t("Omslag", "Artwork")}
-                onError={() => setFailedArtwork(String(artwork))}
-              />
-            ) : (
-              <Music2 size={26} />
-            )}
-          </span>
           <div>
             <h3>
               {unavailable
@@ -194,10 +183,7 @@ export function MediaCard({
                     c.attributes.media_title ||
                       (playing
                         ? t("Avspilling pågår", "Playback in progress")
-                        : t(
-                            "Tid for noe du liker.",
-                            "Time for something you love.",
-                          )),
+                        : t("Ingen avspilling", "Nothing playing")),
                   )}
             </h3>
             <p>
@@ -238,76 +224,81 @@ export function MediaCard({
               <span>{clock(c.attributes.media_duration)}</span>
             </div>
           )}
-        <div className="media-transport">
-          {button("media_previous_track", t("Forrige", "Previous"), SkipBack)}
-          {playing
-            ? button("media_pause", t("Pause", "Pause"), Pause)
-            : button("media_play", t("Spill av", "Play"), Play)}
-          {button("media_next_track", t("Neste", "Next"), SkipForward)}
-          {button("media_stop", t("Stopp", "Stop"), Square)}
-          <span />
-          {button(
-            c.state === "off" ? "turn_on" : "turn_off",
-            c.state === "off"
-              ? t("Slå på", "Turn on")
-              : t("Slå av", "Turn off"),
-            Power,
+        <div className="media-controls-row">
+          <div className="media-transport">
+            {button("media_previous_track", t("Forrige", "Previous"), SkipBack)}
+            {playing
+              ? button("media_pause", t("Pause", "Pause"), Pause)
+              : button("media_play", t("Spill av", "Play"), Play)}
+            {button("media_next_track", t("Neste", "Next"), SkipForward)}
+            {button("media_stop", t("Stopp", "Stop"), Square)}
+            <span />
+            {button(
+              c.state === "off" ? "turn_on" : "turn_off",
+              c.state === "off"
+                ? t("Slå på", "Turn on")
+                : t("Slå av", "Turn off"),
+              Power,
+            )}
+          </div>
+          {(supports("set_volume") || supports("set_mute")) && (
+            <div className="media-volume">
+              {supports("set_mute") &&
+              typeof c.attributes.is_volume_muted === "boolean" ? (
+                <button
+                  aria-label={`${c.name}: ${c.attributes.is_volume_muted ? t("Slå på lyd", "Unmute") : t("Demp lyd", "Mute")}`}
+                  aria-pressed={c.attributes.is_volume_muted}
+                  disabled={blocked || c.state === "off"}
+                  onClick={() =>
+                    void command(
+                      "set_mute",
+                      c.attributes.is_volume_muted ? 0 : 1,
+                    )
+                  }
+                >
+                  {c.attributes.is_volume_muted ? (
+                    <VolumeX size={18} />
+                  ) : (
+                    <Volume2 size={18} />
+                  )}
+                </button>
+              ) : (
+                <Volume2 size={18} />
+              )}
+              {supports("set_volume") && (
+                <input
+                  aria-label={`${c.name}: ${t("Volum", "Volume")}`}
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={volume}
+                  disabled={blocked || c.state === "off" || measured === null}
+                  onChange={(e) => setVolume(Number(e.target.value))}
+                  onPointerUp={(e) =>
+                    void command("set_volume", Number(e.currentTarget.value))
+                  }
+                  onKeyUp={(e) => {
+                    if (
+                      [
+                        "ArrowLeft",
+                        "ArrowRight",
+                        "ArrowUp",
+                        "ArrowDown",
+                        "Home",
+                        "End",
+                      ].includes(e.key)
+                    )
+                      void command("set_volume", Number(e.currentTarget.value));
+                  }}
+                />
+              )}
+              <output>
+                {unavailable || measured === null ? "—" : `${volume}%`}
+              </output>
+            </div>
           )}
         </div>
-        {(supports("set_volume") || supports("set_mute")) && (
-          <div className="media-volume">
-            {supports("set_mute") &&
-            typeof c.attributes.is_volume_muted === "boolean" ? (
-              <button
-                aria-label={`${c.name}: ${c.attributes.is_volume_muted ? t("Slå på lyd", "Unmute") : t("Demp lyd", "Mute")}`}
-                aria-pressed={c.attributes.is_volume_muted}
-                disabled={blocked || c.state === "off"}
-                onClick={() =>
-                  void command("set_mute", c.attributes.is_volume_muted ? 0 : 1)
-                }
-              >
-                {c.attributes.is_volume_muted ? (
-                  <VolumeX size={18} />
-                ) : (
-                  <Volume2 size={18} />
-                )}
-              </button>
-            ) : (
-              <Volume2 size={18} />
-            )}
-            {supports("set_volume") && (
-              <input
-                aria-label={`${c.name}: ${t("Volum", "Volume")}`}
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                value={volume}
-                disabled={blocked || c.state === "off" || measured === null}
-                onChange={(e) => setVolume(Number(e.target.value))}
-                onPointerUp={(e) =>
-                  void command("set_volume", Number(e.currentTarget.value))
-                }
-                onKeyUp={(e) => {
-                  if (
-                    [
-                      "ArrowLeft",
-                      "ArrowRight",
-                      "ArrowUp",
-                      "ArrowDown",
-                      "Home",
-                      "End",
-                    ].includes(e.key)
-                  )
-                    void command("set_volume", Number(e.currentTarget.value));
-                }}
-              />
-            )}
-            <output>
-              {unavailable || measured === null ? "—" : `${volume}%`}
-            </output>
-          </div>
-        )}
         {!actions.length && (
           <p className="muted">
             {t(
@@ -356,6 +347,8 @@ export function Multimedia({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [layout, setLayout] = useState("cards");
+  const [showAll, setShowAll] = useState(false);
+  useEffect(() => setShowAll(false), [room, search, filter]);
   const [scenes, showScenes] = useState(false);
   const prefs = useQuery({
     queryKey: ["home-preferences"],
@@ -392,9 +385,6 @@ export function Multimedia({
           roomMood(home.areas.find((a) => a.area_id === c.area_id)?.name || "")
             .photo || "home-living",
         );
-  const sources = shown.filter(
-    (c) => available(c) && (c.attributes.source || c.attributes.app_name),
-  );
   return (
     <section className="multimedia-view">
       <CategoryHeading
@@ -509,18 +499,7 @@ export function Multimedia({
           </button>
         </div>
       </div>
-      <CategorySummary
-        image={homeAsset("home-multimedia")}
-        eyebrow={t("LYD OG BILDE", "SOUND & VISION")}
-        title={t(
-          "Nyt underholdning i hele hjemmet",
-          "Enjoy entertainment throughout your home",
-        )}
-        description={t(
-          "Dine rom. Din musikk. Alt innen rekkevidde.",
-          "Your rooms. Your music. Everything within reach.",
-        )}
-      >
+      <div className="media-summary-metrics">
         {[
           {
             Icon: Music2,
@@ -583,11 +562,11 @@ export function Multimedia({
             </span>
           </MetricDetails>
         ))}
-      </CategorySummary>
+      </div>
       <div
         className={`media-player-grid ${layout === "list" ? "is-list" : ""}`}
       >
-        {shown.map((c) => (
+        {(showAll || layout === "list" ? shown : shown.slice(0, 6)).map((c) => (
           <MediaCard
             key={c.id}
             c={c}
@@ -619,71 +598,20 @@ export function Multimedia({
           </p>
         </div>
       )}
-      {!!players.length && (
-        <div className="media-bottom-panels">
-          <section>
-            <h2>
-              <Radio size={21} />
-              {t("Aktive kilder", "Active sources")}
-            </h2>
-            {sources.length ? (
-              sources.map((c) => (
-                <div className="media-source-row" key={c.id}>
-                  <Music2 size={19} />
-                  <span>
-                    <strong>
-                      {String(c.attributes.source || c.attributes.app_name)}
-                    </strong>
-                    <small>{c.name}</small>
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p>
-                {t(
-                  "Spillerne rapporterer ingen aktiv kilde i dette utvalget.",
-                  "No active source reported by these players.",
-                )}
-              </p>
-            )}
-          </section>
-          <section>
-            <h2>
-              <Layers size={21} />
-              {t("Lyd i flere rom", "Multi-room audio")}
-            </h2>
-            <p>
-              {t(
-                "Spillere som allerede er gruppert, finner du samlet med filteret Grupperte spillere.",
-                "Find players already grouped together using the Grouped players filter.",
+      {shown.length > 6 && layout !== "list" && (
+        <button
+          className="media-show-all"
+          aria-expanded={showAll}
+          onClick={() => setShowAll(!showAll)}
+        >
+          <List size={20} />
+          {showAll
+            ? t("Vis færre", "Show fewer")
+            : t(
+                `Vis alle ${shown.length} spillere`,
+                `Show all ${shown.length} players`,
               )}
-            </p>
-            <button
-              onClick={() => {
-                setFilter("groups");
-                setRoom("all");
-                setSearch("");
-              }}
-            >
-              {t("Vis grupperte spillere", "Show grouped players")}
-            </button>
-          </section>
-          <section>
-            <h2>
-              <Sparkles size={21} />
-              {t("Sett stemningen", "Set the mood")}
-            </h2>
-            <p>
-              {t(
-                "Samle hjemmets innstillinger i scener for filmkvelden eller en rolig morgen.",
-                "Bring your home settings together in scenes for movie night or a quiet morning.",
-              )}
-            </p>
-            <button disabled={!allViews(home)} onClick={() => showScenes(true)}>
-              {t("Åpne scener", "Open scenes")}
-            </button>
-          </section>
-        </div>
+        </button>
       )}
       {scenes && (
         <SettingsDialog

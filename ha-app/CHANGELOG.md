@@ -1,3 +1,8 @@
+## 1.36.52
+- Ny, kompakt multimedia-side med tydelige spillerkort, omslag eller enhetsikon og samlet styring nederst.
+- Statistikk er flyttet til en kompakt topp. Seks spillere vises først med «Vis alle» for resten.
+- Søk, romfilter, listevisning og scener er fortsatt tilgjengelige. Tilpasset mobil og SMARTi-temaene.
+
 ## 1.36.51
 - Mediaspillere viser omslagsbilde fra innholdet som spilles, både i kort, enkel visning og popup.
 - Omslaget følger innholdsendringer. Rombildet beholdes når omslag mangler eller ikke kan hentes.

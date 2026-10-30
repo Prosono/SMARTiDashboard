@@ -3,6 +3,7 @@ test("multimedia filters players and sends supported playback commands", async (
   page,
 }) => {
   let state = "playing";
+  let extraPlayers = 0;
   let appearance = { name: "Stuehøyttaler", icon: "auto" };
   const commands: any[] = [];
   const player = (
@@ -52,6 +53,9 @@ test("multimedia filters players and sends supported playback commands", async (
           ...data.controls,
           player("speaker", "Stuehøyttaler", "speaker", "living"),
           player("tv", "TV på soverommet", "tv", "bedroom", true),
+          ...Array.from({ length: extraPlayers }, (_, i) =>
+            player(`extra${i}`, `Høyttaler ${i + 1}`, "speaker", "living"),
+          ),
         ],
       },
     });
@@ -69,9 +73,18 @@ test("multimedia filters players and sends supported playback commands", async (
       await r.fulfill({ json: { saved: true } });
     },
   );
-  await page.route("**/api/controls/media_player.speaker/artwork?*", async (r) => {
-    await r.fulfill({contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=", "base64")});
-  });
+  await page.route(
+    "**/api/controls/media_player.speaker/artwork?*",
+    async (r) => {
+      await r.fulfill({
+        contentType: "image/png",
+        body: Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=",
+          "base64",
+        ),
+      });
+    },
+  );
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
   await page
@@ -83,8 +96,15 @@ test("multimedia filters players and sends supported playback commands", async (
     page.getByRole("heading", { name: "Multimedia", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".media-player-card")).toHaveCount(2);
-  await expect(page.locator(".media-cover")).toBeVisible();
-  await expect(page.locator(".media-cover")).toHaveJSProperty("naturalWidth", 1);
+  await expect(page.locator(".media-device-visual img")).toBeVisible();
+  await expect(page.locator(".media-device-visual img")).toHaveJSProperty(
+    "naturalWidth",
+    1,
+  );
+  await page.screenshot({
+    path: `/tmp/media-redesign-${test.info().project.name}.png`,
+    fullPage: true,
+  });
   await expect(
     page.getByRole("button", {
       name: "TV på soverommet: Spill av",
@@ -144,7 +164,9 @@ test("multimedia filters players and sends supported playback commands", async (
     .getByRole("button", { name: "Lukk innstillinger", exact: true })
     .click();
 
-  await page.getByRole("button", { name: "Vis søk og filtre", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Vis søk og filtre", exact: true })
+    .click();
   await page.getByLabel("Søk i multimedia").fill("finnesikke");
   await expect(page.locator(".media-player-card")).toHaveCount(0);
   await page.getByLabel("Søk i multimedia").fill("");
@@ -168,6 +190,16 @@ test("multimedia filters players and sends supported playback commands", async (
   await expect(
     page.getByRole("tab", { name: "Multimedia", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
+  extraPlayers = 5;
+  await page.reload();
+  await page.getByRole("tab", { name: "Multimedia", exact: true }).click();
+  await expect(page.locator(".media-player-card")).toHaveCount(6);
+  await page
+    .getByRole("button", { name: "Vis alle 7 spillere", exact: true })
+    .click();
+  await expect(page.locator(".media-player-card")).toHaveCount(7);
+  await page.getByRole("button", { name: "Vis færre", exact: true }).click();
+  await expect(page.locator(".media-player-card")).toHaveCount(6);
   expect(
     await page.locator("body").evaluate((e) => e.scrollWidth <= e.clientWidth),
   ).toBe(true);
