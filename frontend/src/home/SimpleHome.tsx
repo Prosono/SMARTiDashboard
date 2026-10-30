@@ -3,6 +3,7 @@ import { Presence } from "./People";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
 import { SettingsDialog } from "./SettingsDialog";
+import { LivingFavorites } from "./LivingFavorites";
 import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
 import { SecurityOverview } from "./SecurityOverview";
@@ -15,8 +16,10 @@ export function SimpleHome({
   offline,
   renderControls,
   admin = false,
+  homeStyle = "classic",
 }: {
   admin?: boolean;
+  homeStyle?: string;
   home: Home;
   lang: string;
   offline: boolean;
@@ -167,6 +170,22 @@ export function SimpleHome({
           )}
         </SettingsDialog>
       )}
+      {homeStyle === "living" &&
+        controls.some((c) => home.favorites.includes(c.entity_id)) && (
+          <section className="living-simple-favorites">
+            <header className="living-section-heading">
+              <h2>{en ? "Favorites" : "Favoritter"}</h2>
+            </header>
+            <LivingFavorites
+              controls={controls
+                .filter((c) => home.favorites.includes(c.entity_id))
+                .slice(0, 12)}
+              home={home}
+              lang={lang}
+              offline={offline}
+            />
+          </section>
+        )}
       <SimpleDashboard home={home} lang={lang} offline={offline} />
       <details className="simple-dashboard-browse">
         <summary>

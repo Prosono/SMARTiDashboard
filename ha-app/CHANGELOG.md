@@ -1,3 +1,8 @@
+## 1.36.64
+- SMARTi Living er bygget om med en åpen hjemmetopp, vær, hjemmemoduser og tydeligere plass til målinger.
+- Nye kompakte favorittfliser gir direkte styring av lys og brytere og åpner full enhetsstyring. Kort, rom og mobiloppsett er tilpasset den nye stilen også i enkel visning.
+- Klassisk stil, eksisterende enheter og personlige valg beholdes.
+
 ## 1.36.63
 - Ny valgfri Hjem-stil, SMARTi Living, under Innstillinger → Tema og utseende.
 - En roligere, mer kompakt oversikt med målinger først, tydelige snarveier og tilpassede kort for telefon, nettbrett og desktop. Stilen følger valgt lys/mørk-modus og fargepalett.

@@ -56,6 +56,7 @@ import { Calendar } from "./Calendar";
 import { Vehicle } from "./Vehicle";
 import { SimpleDashboard } from "./SimpleDashboard";
 import { HomeMetrics } from "./HomeMetrics";
+import { LivingFavorites } from "./LivingFavorites";
 import { Weather } from "./Weather";
 import { HighlightWeather } from "./HighlightWeather";
 import "./homeHighlights.css";
@@ -307,6 +308,53 @@ export function HomeOverview({
       setBusy(false);
     }
   }
+  function favoriteSection() {
+    return (
+      <section className="home-favorites">
+        <header className="home-section-heading">
+          <h2>
+            {homeStyle === "living"
+              ? t("Favoritter", "Favorites")
+              : t("Nærmest deg", "At your fingertips")}
+          </h2>
+          <button onClick={() => configure(true)}>
+            <Star size={16} />
+            {t("Velg favoritter", "Choose favorites")}
+          </button>
+        </header>
+        {favorites.length ? (
+          homeStyle === "living" ? (
+            <LivingFavorites
+              controls={favorites.slice(0, 12)}
+              home={h}
+              lang={lang}
+              offline={offline}
+            />
+          ) : (
+            renderControls(favorites.slice(0, 12))
+          )
+        ) : (
+          <div className="home-favorite-hint">
+            <Star />
+            <p>
+              {t(
+                "Velg lys, temperatur og handlinger du bruker ofte.",
+                "Choose lights, temperature and actions you use often.",
+              )}
+            </p>
+            <button onClick={() => configure(true)}>
+              {t("Velg favoritter", "Choose favorites")}
+            </button>
+          </div>
+        )}
+        {favorites.length > 12 && (
+          <button onClick={openDevices}>
+            {t("Vis flere enheter", "View more devices")}
+          </button>
+        )}
+      </section>
+    );
+  }
   return (
     <div className="home-overview" data-overview-detail={mode === "advanced"}>
       <div className="home-toolbar">
@@ -354,17 +402,21 @@ export function HomeOverview({
             >
               <Settings size={20} />
             </button>
-            <img
-              className="home-hero-photo"
-              src={homeAsset("home-living")}
-              alt=""
-              fetchPriority="high"
-            />
+            {homeStyle !== "living" && (
+              <img
+                className="home-hero-photo"
+                src={homeAsset("home-living")}
+                alt=""
+                fetchPriority="high"
+              />
+            )}
             <div className="home-welcome-content">
-              <span className="home-hero-eyebrow">
-                <span />
-                {t("Ditt hjem. Din hverdag.", "Your home. Your everyday.")}
-              </span>
+              {homeStyle !== "living" && (
+                <span className="home-hero-eyebrow">
+                  <span />
+                  {t("Ditt hjem. Din hverdag.", "Your home. Your everyday.")}
+                </span>
+              )}
               <h1>
                 {greeting}
                 {residentName ? `, ${residentName}` : ""}.
@@ -375,15 +427,20 @@ export function HomeOverview({
                       "Vi venter på ferske data fra hjemmet.",
                       "Waiting for fresh data from your home.",
                     )
-                  : model.open.length
-                    ? t(
-                        "Se over åpninger og aktivitet nedenfor.",
-                        "Review openings and activity below.",
+                  : homeStyle === "living"
+                    ? clock.toLocaleDateString(
+                        lang === "en" ? "en-GB" : "nb-NO",
+                        { weekday: "long", day: "numeric", month: "long" },
                       )
-                    : t(
-                        "Hjemmet ditt, samlet på ett sted.",
-                        "Your home, all in one place.",
-                      )}
+                    : model.open.length
+                      ? t(
+                          "Se over åpninger og aktivitet nedenfor.",
+                          "Review openings and activity below.",
+                        )
+                      : t(
+                          "Hjemmet ditt, samlet på ett sted.",
+                          "Your home, all in one place.",
+                        )}
               </p>
             </div>
             {h.controls.some(
@@ -473,9 +530,11 @@ export function HomeOverview({
                 />
               )}
             </div>
-            <span className="home-hero-caption">
-              {t("Stemningsbilde", "Decorative image")}
-            </span>
+            {homeStyle !== "living" && (
+              <span className="home-hero-caption">
+                {t("Stemningsbilde", "Decorative image")}
+              </span>
+            )}
           </header>
         )}
         {showAlerts && tab === "overview" && (
@@ -779,9 +838,21 @@ export function HomeOverview({
         )}
         {tab === "overview" && (
           <>
+            {homeStyle === "living" && metrics}
+            {homeStyle === "living" && favoriteSection()}
             <div className="home-dashboard-top">
-              {homeStyle === "living" && metrics}
               <div className="home-dashboard-widgets">
+                {homeStyle === "living" && (
+                  <header className="living-section-heading">
+                    <h2>{t("Hverdagen", "Everyday")}</h2>
+                    <p>
+                      {t(
+                        "Det viktigste, samlet på ett sted",
+                        "The essentials, together in one place",
+                      )}
+                    </p>
+                  </header>
+                )}
                 <SimpleDashboard
                   home={h}
                   lang={lang}
@@ -1066,36 +1137,7 @@ export function HomeOverview({
                 </div>
               </section>
             )}
-            <section className="home-favorites">
-              <header className="home-section-heading">
-                <h2>{t("Nærmest deg", "At your fingertips")}</h2>
-                <button onClick={() => configure(true)}>
-                  <Star size={16} />
-                  {t("Velg favoritter", "Choose favorites")}
-                </button>
-              </header>
-              {favorites.length ? (
-                renderControls(favorites.slice(0, 12))
-              ) : (
-                <div className="home-favorite-hint">
-                  <Star />
-                  <p>
-                    {t(
-                      "Velg lys, temperatur og handlinger du bruker ofte.",
-                      "Choose lights, temperature and actions you use often.",
-                    )}
-                  </p>
-                  <button onClick={() => configure(true)}>
-                    {t("Velg favoritter", "Choose favorites")}
-                  </button>
-                </div>
-              )}
-              {favorites.length > 12 && (
-                <button onClick={openDevices}>
-                  {t("Vis flere enheter", "View more devices")}
-                </button>
-              )}
-            </section>
+            {homeStyle !== "living" && favoriteSection()}
             {model.weather && !offline && (
               <details className="home-dashboard-calendar home-dashboard-forecast">
                 <summary>

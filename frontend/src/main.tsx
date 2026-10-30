@@ -1000,6 +1000,7 @@ function Dashboard({
         )}
         {mode === "simple" && ["home", "rooms"].includes(page) ? (
           <SimpleHome
+            homeStyle={homeStyle}
             admin={session.role === "admin"}
             home={h}
             lang={lang}
