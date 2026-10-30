@@ -1,16 +1,143 @@
-.light-appearance-open{display:inline-flex;align-items:center;gap:8px;margin:12px 0;padding:10px 14px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text)}
-.light-appearance-form{display:grid;gap:20px;color:var(--text)}
-.light-appearance-form p{color:var(--muted);margin:0;line-height:1.5}
-.light-appearance-form label{display:grid;gap:8px}
-.light-appearance-form input{width:100%;box-sizing:border-box}
-.light-appearance-form fieldset{border:0;padding:0;margin:0;min-width:0}
-.light-appearance-form legend{margin-bottom:12px}
-.light-icon-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.light-icon-options button{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 6px;min-height:118px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;font-size:13px}
-.light-icon-options button[aria-pressed=true]{border-color:var(--orange);background:var(--tint);color:var(--orange)}
-.light-appearance-form footer{display:flex;justify-content:space-between;gap:12px}
-.light-appearance-form footer button{min-height:44px;padding:10px 16px}
+.light-appearance-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 10px 14px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+.light-appearance-form {
+  display: grid;
+  gap: 20px;
+  color: var(--text);
+}
+.light-appearance-form p {
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+.light-appearance-form label {
+  display: grid;
+  gap: 8px;
+}
+.light-appearance-form input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.light-appearance-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.light-appearance-form legend {
+  margin-bottom: 12px;
+}
+.light-icon-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.light-icon-options button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 6px;
+  min-height: 118px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.light-icon-options button[aria-pressed="true"] {
+  border-color: var(--orange);
+  background: var(--tint);
+  color: var(--orange);
+}
+.light-appearance-form footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.light-appearance-form footer button {
+  min-height: 44px;
+  padding: 10px 16px;
+}
 
-.light-icon-options button:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
-.light-icon-options button svg{flex-shrink:0}
-@media(max-width:380px){.light-icon-options{gap:6px}.light-icon-options button{font-size:11px;min-height:102px;padding:12px 4px}.light-icon-options button svg{width:40px;height:40px}}
+.light-icon-options button:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
+}
+.light-icon-options button svg {
+  flex-shrink: 0;
+}
+@media (max-width: 380px) {
+  .light-icon-options {
+    gap: 6px;
+  }
+  .light-icon-options button {
+    font-size: 11px;
+    min-height: 102px;
+    padding: 12px 4px;
+  }
+  .light-icon-options button svg {
+    width: 40px;
+    height: 40px;
+  }
+}
+.media-picture-picker > p {
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+.media-picture-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.media-picture-options button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 120px;
+  padding: 10px 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.media-picture-options button[aria-pressed="true"] {
+  border-color: var(--orange);
+  background: var(--tint);
+  color: var(--orange);
+}
+.media-picture-options button:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
+}
+.media-picture-options img,
+.media-picture-auto {
+  width: 100%;
+  height: 68px;
+  object-fit: contain;
+}
+.media-picture-auto {
+  display: grid;
+  place-items: center;
+}
+@media (max-width: 380px) {
+  .media-picture-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

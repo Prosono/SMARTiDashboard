@@ -68,7 +68,11 @@ export function mediaArtworkKind(control: Control): MediaArtworkKind | null {
 }
 
 export function mediaDeviceArtwork(control: Control): string | null {
-  const kind = mediaArtworkKind(control);
+  const selected = control.attributes.smarti_media_image;
+  const kind =
+    typeof selected === "string" && selected !== "auto"
+      ? selected
+      : mediaArtworkKind(control);
   return kind
     ? new URL(`home/media-devices/${kind}.webp`, document.baseURI).href
     : null;

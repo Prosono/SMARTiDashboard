@@ -76,8 +76,11 @@ export function MediaCard({
       : "";
   const [failedArtwork, setFailedArtwork] = useState("");
   const [failedDeviceArtwork, setFailedDeviceArtwork] = useState("");
+  const explicitImage =
+    typeof c.attributes.smarti_media_image === "string" &&
+    c.attributes.smarti_media_image !== "auto";
   const showArtwork = Boolean(
-    !unavailable && artwork && failedArtwork !== artwork,
+    !explicitImage && !unavailable && artwork && failedArtwork !== artwork,
   );
   const deviceArtwork = mediaDeviceArtwork(c);
   const playing = c.state === "playing" && !unavailable;

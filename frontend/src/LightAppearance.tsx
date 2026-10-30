@@ -33,6 +33,18 @@ const icons = [
     Icon: LightOutdoor,
   },
 ];
+const mediaPictures = [
+  { id: "tv", nb: "TV", en: "TV" },
+  { id: "streamer", nb: "Strømmeenhet", en: "Streaming stick" },
+  { id: "box", nb: "Medieboks", en: "Streaming box" },
+  { id: "speaker", nb: "Høyttaler", en: "Speaker" },
+  { id: "speaker-white", nb: "Hvit høyttaler", en: "White speaker" },
+  { id: "mini", nb: "Liten høyttaler", en: "Small speaker" },
+  { id: "soundbar", nb: "Lydplanke", en: "Soundbar" },
+  { id: "phone", nb: "Telefon", en: "Phone" },
+  { id: "projector", nb: "Projektor", en: "Projector" },
+  { id: "headphones", nb: "Hodetelefoner", en: "Headphones" },
+];
 export function lightIcon(c: Control) {
   return (
     icons.find((i) => i.id === c.attributes.smarti_icon)?.Icon || LightDefault
@@ -52,6 +64,9 @@ export function LightAppearance({
   const [open, setOpen] = useState(false),
     [name, setName] = useState(c.name),
     [icon, setIcon] = useState(String(c.attributes.smarti_icon || "auto"));
+  const [picture, setPicture] = useState(
+    String(c.attributes.smarti_media_image || "auto"),
+  );
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const qc = useQueryClient();
@@ -63,7 +78,11 @@ export function LightAppearance({
       await api(
         `controls/${encodeURIComponent(c.entity_id)}/appearance`,
         "PUT",
-        { name: reset ? "" : name.trim(), icon: reset ? "auto" : icon },
+        {
+          name: reset ? "" : name.trim(),
+          icon: reset ? "auto" : icon,
+          ...(media ? { image: reset ? "auto" : picture } : {}),
+        },
       );
       await qc.invalidateQueries({ queryKey: ["home"] });
       setOpen(false);
@@ -83,6 +102,7 @@ export function LightAppearance({
         onClick={() => {
           setName(c.name);
           setIcon(String(c.attributes.smarti_icon || "auto"));
+          setPicture(String(c.attributes.smarti_media_image || "auto"));
           setError("");
           setOpen(true);
         }}
@@ -129,6 +149,49 @@ export function LightAppearance({
                 onChange={(e) => setName(e.target.value)}
               />
             </label>
+            {media && (
+              <fieldset disabled={busy} className="media-picture-picker">
+                <legend>{t("Velg bilde", "Choose picture")}</legend>
+                <p>
+                  {t(
+                    "Automatisk viser omslag når det finnes. Velg et bilde for å alltid vise det på enheten.",
+                    "Automatic shows artwork when available. Choose a picture to always show it for this device.",
+                  )}
+                </p>
+                <div className="media-picture-options">
+                  <button
+                    type="button"
+                    aria-pressed={picture === "auto"}
+                    onClick={() => setPicture("auto")}
+                  >
+                    <span className="media-picture-auto">
+                      <Settings2 size={30} />
+                    </span>
+                    <span>{t("Automatisk", "Automatic")}</span>
+                  </button>
+                  {mediaPictures.map((item) => (
+                    <button
+                      type="button"
+                      key={item.id}
+                      aria-pressed={picture === item.id}
+                      onClick={() => setPicture(item.id)}
+                    >
+                      <img
+                        src={
+                          new URL(
+                            `home/media-devices/${item.id}.webp`,
+                            document.baseURI,
+                          ).href
+                        }
+                        alt=""
+                        loading="lazy"
+                      />
+                      <span>{t(item.nb, item.en)}</span>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            )}
             <fieldset disabled={busy}>
               <legend>{t("Velg ikon", "Choose icon")}</legend>
               <div className="light-icon-options">

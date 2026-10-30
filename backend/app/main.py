@@ -65,6 +65,22 @@ class ControlVisibility(BaseModel):
 class ControlAppearance(BaseModel):
     model_config = {"extra": "forbid"}
     name: str = Field(default="", max_length=80)
+    image: (
+        Literal[
+            "auto",
+            "tv",
+            "streamer",
+            "speaker",
+            "mini",
+            "phone",
+            "soundbar",
+            "projector",
+            "speaker-white",
+            "box",
+            "headphones",
+        ]
+        | None
+    ) = None
     icon: Literal[
         "auto",
         "bulb",
@@ -546,6 +562,9 @@ def create_app(
                         "smarti_hidden": c.id in hidden,
                         "smarti_original_name": c.name,
                         "smarti_icon": appearances.get("control_appearance:" + c.id, {}).get("icon", "auto"),
+                        "smarti_media_image": appearances.get("control_appearance:" + c.id, {}).get(
+                            "image", "auto"
+                        ),
                     },
                 }
             )
@@ -658,8 +677,19 @@ def create_app(
         )
         if body.icon not in icons:
             raise HTTPException(422, "invalid_icon_for_domain")
+        if control.domain != "media_player" and body.image not in (None, "auto"):
+            raise HTTPException(422, "invalid_image_for_domain")
+        key = "control_appearance:" + control.id
+        previous = json.loads(store.get(key, "{}"))
         store.set(
-            "control_appearance:" + control.id, json.dumps({"name": body.name.strip(), "icon": body.icon})
+            key,
+            json.dumps(
+                {
+                    "name": body.name.strip(),
+                    "icon": body.icon,
+                    "image": body.image if body.image is not None else previous.get("image", "auto"),
+                }
+            ),
         )
         return {"saved": True}
 

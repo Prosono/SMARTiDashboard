@@ -1,3 +1,7 @@
+## 1.36.55
+- Ny bildevelger med forhåndsvisninger under «Tilpass mediaspiller».
+- Valgt bilde lagres for hjemmet og vises også når spilleren har et omslag. Automatisk valg bruker omslag når det er tilgjengelig.
+
 ## 1.36.54
 - Mediebilder, fremdriftslinje og avspillingskontroller har egne områder, slik at de ikke overlapper.
 - Nye enhetsbilder for telefon, hodetelefoner, lydplanke, projektor, medieboks og hvit høyttaler.

@@ -422,6 +422,17 @@ def test_media_appearance_is_saved_with_domain_specific_icons(client, app):
         )
         assert c["name"] == "Stue"
         assert c["attributes"]["smarti_icon"] == icon
+    assert client.put(route, json={"name": "Stue", "icon": "speaker", "image": "phone"}).status_code == 200
+    player = next(
+        c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == "media_player.speaker"
+    )
+    assert player["attributes"]["smarti_media_image"] == "phone"
+    assert client.put(route, json={"name": "Stue", "icon": "tv"}).status_code == 200
+    player = next(
+        c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == "media_player.speaker"
+    )
+    assert player["attributes"]["smarti_media_image"] == "phone"
+    assert client.put(route, json={"name": "Stue", "icon": "tv", "image": "../../secret"}).status_code == 422
     assert client.put(route, json={"name": "", "icon": "bulb"}).status_code == 422
     assert (
         client.put("/api/controls/light.living_pendant/appearance", json={"icon": "homepod"}).status_code

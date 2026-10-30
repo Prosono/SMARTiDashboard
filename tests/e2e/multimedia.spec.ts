@@ -4,7 +4,7 @@ test("multimedia filters players and sends supported playback commands", async (
 }) => {
   let state = "playing";
   let extraPlayers = 0;
-  let appearance = { name: "Stuehøyttaler", icon: "auto" };
+  let appearance = { name: "Stuehøyttaler", icon: "auto", image: "auto" };
   const commands: any[] = [];
   const player = (
     id: string,
@@ -24,6 +24,7 @@ test("multimedia filters players and sends supported playback commands", async (
     attributes: {
       device_class: kind,
       smarti_icon: id === "speaker" ? appearance.icon : "auto",
+      smarti_media_image: id === "speaker" ? appearance.image : "auto",
       smarti_artwork: id === "speaker" ? "cover1" : undefined,
       media_title: "Evening sessions",
       media_artist: "Living room collection",
@@ -160,17 +161,30 @@ test("multimedia filters players and sends supported playback commands", async (
   await settings
     .getByRole("button", { name: "Apple HomePod", exact: true })
     .click();
+  const pictures = settings.getByRole("group", { name: "Velg bilde" });
+  await expect(pictures.locator("img")).toHaveCount(10);
+  await pictures.getByRole("button", { name: "Telefon", exact: true }).click();
   await settings.screenshot({
     path: `/tmp/media-icons-${test.info().project.name}.png`,
   });
   await settings.getByRole("button", { name: "Lagre", exact: true }).click();
   await expect(settings).toHaveCount(0);
   expect(appearance.icon).toBe("homepod");
+  expect(appearance.image).toBe("phone");
+  await expect(detail.locator(".media-product-image")).toHaveAttribute(
+    "src",
+    /phone\.webp$/,
+  );
   await detail
     .getByRole("button", { name: "Tilpass mediaspiller", exact: true })
     .click();
   await expect(
     settings.getByRole("button", { name: "Apple HomePod", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    settings
+      .getByRole("group", { name: "Velg bilde" })
+      .getByRole("button", { name: "Telefon", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await settings
     .getByRole("button", { name: "Lukk innstillinger", exact: true })
