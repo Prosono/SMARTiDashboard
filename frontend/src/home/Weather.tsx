@@ -95,6 +95,7 @@ export function Weather({
     return (
       <section
         className="simple-weather"
+        data-condition={usable ? c.state : "unavailable"}
         aria-label={t("Værmelding", "Weather forecast")}
       >
         <div className="simple-weather-heading">

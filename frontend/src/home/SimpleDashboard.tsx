@@ -140,7 +140,10 @@ export function SimpleDashboard({
       .sort(
         (a, b) =>
           Number(home.favorites.includes(b.entity_id)) -
-          Number(home.favorites.includes(a.entity_id)),
+            Number(home.favorites.includes(a.entity_id)) ||
+          Number(b.availability === "available") -
+            Number(a.availability === "available") ||
+          Number(b.state === "playing") - Number(a.state === "playing"),
       )[0];
   const climate = preferred("climate"),
     media = preferred("media_player"),

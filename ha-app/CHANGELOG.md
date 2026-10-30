@@ -1,3 +1,7 @@
+## 1.36.59
+- Finpusset enkel oversikt med jevnere kort, tydeligere temperaturstyring og mindre tomrom.
+- Tilgjengelige enheter prioriteres i oversikten når ingen favoritt er valgt.
+
 ## 1.36.58
 - Oppdatert enkel oversikt med tydeligere værkort, værillustrasjon og tilgjengelige målinger.
 - Kalenderkort viser dagens avtaler fra valgte kalendere.

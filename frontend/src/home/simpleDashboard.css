@@ -501,3 +501,285 @@ button.simple-dashboard-tile {
     font-size: 50px;
   }
 }
+
+/* Simple overview: a quieter, more consistent set of everyday controls. */
+.simple-home.simple-home-dashboard {
+  max-width: 1380px;
+}
+.simple-home-dashboard .simple-welcome {
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--text) 5%, transparent);
+  border-radius: 26px;
+  margin-bottom: 18px;
+}
+.simple-home-dashboard .simple-welcome > svg {
+  color: var(--accent);
+  padding: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--tint);
+  flex-shrink: 0;
+}
+.simple-home-dashboard .simple-welcome h1 {
+  font-size: clamp(24px, 2.5vw, 32px);
+  letter-spacing: -0.04em;
+}
+.simple-home-dashboard .simple-welcome p {
+  color: var(--muted);
+}
+.simple-dashboard-grid {
+  gap: 16px;
+}
+.simple-dashboard-grid > * {
+  border-radius: 24px;
+  border-color: color-mix(in srgb, var(--line) 72%, transparent);
+  box-shadow: 0 9px 30px color-mix(in srgb, var(--text) 6%, transparent);
+}
+.simple-dashboard-tile {
+  min-height: 270px;
+  padding: 22px;
+  gap: 10px;
+}
+.simple-dashboard-card-heading {
+  font-size: 15px;
+  line-height: 1.3;
+}
+.simple-dashboard-card-heading > svg:first-child {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.simple-dashboard-card-heading > svg:last-child {
+  color: var(--muted);
+}
+.simple-dashboard-card-heading > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.simple-weather {
+  min-height: 270px;
+  padding: 22px;
+  background: linear-gradient(
+    145deg,
+    var(--surface),
+    color-mix(in srgb, var(--accent) 8%, var(--surface))
+  );
+}
+.simple-weather-current {
+  min-height: 100px;
+}
+.simple-weather-current > strong {
+  font-size: clamp(45px, 4vw, 60px);
+  font-weight: 600;
+}
+.simple-weather-current > img {
+  width: 48%;
+  max-width: 170px;
+  height: 110px;
+}
+.simple-weather-details {
+  gap: 12px;
+}
+.simple-dashboard-date {
+  background: var(--surface);
+}
+.simple-date-content {
+  grid-template-columns: minmax(70px, 0.6fr) minmax(0, 1.4fr);
+  gap: 12px;
+}
+.simple-date-day strong {
+  font-size: 62px;
+}
+.simple-agenda > div {
+  align-items: flex-start;
+}
+.simple-agenda strong {
+  line-height: 1.35;
+  font-weight: 600;
+}
+.simple-dashboard-lights::after {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 12%,
+    color-mix(in srgb, var(--surface) 70%, transparent) 76%
+  );
+}
+.simple-dashboard-lights > strong {
+  font-size: 62px;
+  line-height: 1;
+}
+.simple-dashboard-lights > span {
+  font-weight: 500;
+}
+.simple-dashboard-lights > small {
+  margin-top: auto;
+}
+.simple-dashboard-climate {
+  background: linear-gradient(
+    160deg,
+    var(--surface),
+    color-mix(in srgb, var(--accent) 4%, var(--surface))
+  );
+}
+.simple-dashboard-climate .thermostat {
+  margin: 14px 0 0;
+  gap: 12px;
+  padding: 0;
+}
+.simple-dashboard-climate .thermostat-mode {
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--thermo) 9%, var(--surface));
+  border-radius: 12px;
+}
+.simple-dashboard-climate .thermostat-target {
+  align-items: flex-start;
+}
+.simple-dashboard-climate .thermostat-target > span {
+  font-size: 12px;
+}
+.simple-dashboard-climate .thermostat-target strong {
+  font-size: 48px;
+  font-weight: 600;
+}
+.simple-dashboard-climate .thermostat-adjust {
+  flex-direction: row;
+  align-self: center;
+}
+.simple-dashboard-climate .thermostat-adjust > span {
+  display: block;
+  min-width: 60px;
+}
+.simple-dashboard-climate .thermostat-adjust button {
+  background: var(--surface);
+}
+.simple-dashboard-climate .thermostat-mode-select {
+  grid-row: auto;
+}
+.simple-dashboard-climate .thermostat-mode-select select {
+  border-radius: 12px;
+  background: var(--surface);
+}
+.simple-dashboard-media .media-player-card {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.simple-dashboard-media .media-player-card .media-hero {
+  margin: 0;
+  min-height: 190px;
+  padding: 22px;
+  flex: 1;
+}
+.simple-dashboard-media .media-player-card .media-player-content {
+  margin: 0;
+  padding: 14px 22px 20px;
+  flex: none;
+}
+.simple-dashboard-media .media-player-card .media-info-region {
+  gap: 8px;
+}
+.simple-dashboard-media .media-player-card .media-track {
+  padding-top: 12px;
+}
+.simple-dashboard-media .media-player-card .media-device-visual {
+  height: 84px;
+}
+.simple-dashboard-media .media-player-card .media-feedback {
+  margin: 8px 0 0;
+}
+.simple-dashboard-media .media-player-card .muted {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.simple-dashboard-vacuum .vacuum-card {
+  padding: 22px;
+}
+.simple-dashboard-vacuum .vacuum-card > header > div:nth-child(2) {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+}
+.simple-dashboard-vacuum .vacuum-card h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.3;
+}
+.simple-dashboard-vacuum .vacuum-card .vacuum-illustration {
+  height: 120px;
+  margin: 6px 0 0;
+}
+.simple-dashboard-vacuum .vacuum-illustration img {
+  height: 120px;
+}
+.simple-dashboard-vacuum .vacuum-status {
+  font-size: 14px;
+}
+.simple-dashboard-vacuum .vacuum-actions {
+  gap: 8px;
+  padding-top: 4px;
+}
+.simple-dashboard-vacuum .vacuum-actions button {
+  min-height: 44px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.simple-dashboard-vacuum .vacuum-details {
+  min-height: 40px;
+  font-size: 13px;
+  margin-top: 4px;
+}
+.simple-dashboard-grid button {
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
+}
+@media (hover: hover) {
+  button.simple-dashboard-tile:hover {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  }
+}
+@media (max-width: 600px) {
+  .simple-home-dashboard .simple-welcome {
+    border-radius: 22px;
+  }
+  .simple-dashboard-tile,
+  .simple-weather {
+    min-height: 245px;
+    padding: 20px;
+  }
+  .simple-dashboard-grid {
+    gap: 14px;
+  }
+  .simple-dashboard-media .media-player-card .media-hero {
+    padding: 20px;
+  }
+  .simple-dashboard-media .media-player-card .media-player-content {
+    padding: 14px 20px 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .simple-dashboard-grid button {
+    transition: none;
+  }
+}
+.simple-dashboard-climate .thermostat-mode {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+.simple-dashboard-climate .thermostat-dial {
+  grid-column: 1;
+  grid-row: 2;
+}
+.simple-dashboard-climate .thermostat-adjust {
+  grid-column: 2;
+  grid-row: 2;
+}
+.simple-dashboard-climate .thermostat-mode-select {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+.simple-dashboard-media .media-player-card .media-hero {
+  justify-content: flex-start;
+}
