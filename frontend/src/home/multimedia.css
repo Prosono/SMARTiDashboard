@@ -857,9 +857,24 @@
   color: #fff;
 }
 .media-player-card .media-hero[data-has-artwork="true"] .media-device-visual {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 16px;
-  padding: 8px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(255, 255, 255, 0.28) 36%,
+    transparent 72%
+  );
+  padding: 10px;
+}
+.media-player-card
+  .media-hero[data-has-artwork="true"]
+  .media-device-visual
+  > img,
+.media-player-card
+  .media-hero[data-has-artwork="true"]
+  .media-device-visual
+  > svg {
+  max-width: 80%;
+  max-height: 80%;
 }
 .media-player-card .media-info-region {
   margin: 0;

@@ -1,3 +1,6 @@
+## 1.36.57
+- Mykere gradient og mindre enhetsbilde over medieomslag, uten hard hvit ramme.
+
 ## 1.36.56
 - Mediekort viser omslaget stort i øvre del med et mindre enhetsbilde. Fremdrift og kontroller ligger på en egen tematilpasset flate.
 - Nye bildevalg for nettbrett, Sonos-høyttaler og hjemmekino, med automatisk gjenkjenning der enhetsinformasjonen gir grunnlag for det.
