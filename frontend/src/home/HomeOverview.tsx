@@ -54,7 +54,10 @@ import { ClimateOverview } from "./ClimateOverview";
 import { Presence } from "./People";
 import { Calendar } from "./Calendar";
 import { Vehicle } from "./Vehicle";
-import { HomeHighlights } from "./HomeHighlights";
+import { SimpleDashboard } from "./SimpleDashboard";
+import { HighlightWeather } from "./HighlightWeather";
+import "./homeHighlights.css";
+import "./overviewDashboard.css";
 import "./home.css";
 import "./homeTabs.css";
 export type HomePreferences = {
@@ -372,11 +375,6 @@ export function HomeOverview({
                         )}
               </p>
             </div>
-            <HomeHighlights
-              weather={model.weather}
-              offline={offline}
-              lang={lang}
-            />
             <nav
               className="home-modes"
               aria-label={t("Hjemmemoduser", "Home modes")}
@@ -715,6 +713,9 @@ export function HomeOverview({
         )}
         {tab === "overview" && (
           <>
+            <div className="home-dashboard-widgets">
+              <SimpleDashboard home={h} lang={lang} offline={offline} />
+            </div>
             <div className="home-status-grid">
               {model.security.length > 0 && (
                 <button
@@ -1020,7 +1021,26 @@ export function HomeOverview({
                 </button>
               )}
             </section>
-            {canView("calendar") && <Calendar lang={lang} offline={offline} />}
+            {model.weather && !offline && (
+              <details className="home-dashboard-calendar home-dashboard-forecast">
+                <summary>
+                  {t("Vis værprognosen", "Show weather forecast")}
+                </summary>
+                <div className="home-highlights">
+                  <div className="highlight-card highlight-weather">
+                    <HighlightWeather c={model.weather} lang={lang} />
+                  </div>
+                </div>
+              </details>
+            )}
+            {canView("calendar") && (
+              <details className="home-dashboard-calendar">
+                <summary>
+                  {t("Vis hele kalenderen", "Show full calendar")}
+                </summary>
+                <Calendar lang={lang} offline={offline} />
+              </details>
+            )}
             {canScenes && (
               <Scenes home={h} offline={offline} admin={admin} lang={lang} />
             )}

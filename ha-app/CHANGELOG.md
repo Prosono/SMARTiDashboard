@@ -1,3 +1,7 @@
+## 1.36.60
+- Hjem i normal og avansert visning har fått samme kortdesign som den enkle oversikten.
+- Hjemmemoduser, sikkerhetsstatus, rom, favoritter og scener er bevart. Full kalender og detaljert værprognose kan åpnes under kortene.
+
 ## 1.36.59
 - Finpusset enkel oversikt med jevnere kort, tydeligere temperaturstyring og mindre tomrom.
 - Tilgjengelige enheter prioriteres i oversikten når ingen favoritt er valgt.

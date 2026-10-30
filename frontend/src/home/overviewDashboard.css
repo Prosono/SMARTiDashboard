@@ -1,0 +1,115 @@
+/* The same welcoming cards as simple mode, with the extra home tools below. */
+.home-overview .home-welcome {
+  min-height: 0;
+  padding: 24px;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 25px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--text) 6%, transparent);
+}
+.home-overview .home-welcome::before,
+[data-theme="dark"] .home-overview .home-welcome::before {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 10%,
+    color-mix(in srgb, var(--surface) 90%, transparent) 55%,
+    color-mix(in srgb, var(--surface) 55%, transparent)
+  );
+}
+.home-overview .home-welcome-content {
+  padding: 0;
+}
+.home-overview .home-hero-eyebrow {
+  color: var(--muted);
+}
+.home-overview .home-hero-eyebrow > span {
+  background: var(--accent);
+}
+.home-overview .home-welcome h1 {
+  font-size: clamp(25px, 2.8vw, 34px);
+  font-weight: 600;
+  margin: 7px 0 4px;
+}
+.home-overview .home-welcome p {
+  color: var(--muted);
+  margin: 0;
+}
+.home-overview .home-hero-caption {
+  color: var(--muted);
+}
+.home-overview .home-modes {
+  grid-column: 1 / -1;
+  gap: 8px;
+}
+.home-overview .home-modes button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: none;
+  border-radius: 14px;
+}
+.home-overview .home-hero-status {
+  grid-column: 1 / -1;
+}
+.home-dashboard-widgets {
+  margin: 0 0 20px;
+}
+.home-overview .home-status-grid {
+  margin-top: 0;
+}
+.home-dashboard-calendar {
+  margin: 22px 0;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.home-dashboard-calendar > summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+}
+.home-dashboard-calendar > summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (max-width: 767px) {
+  .home-overview .home-welcome {
+    padding: 20px;
+  }
+  .home-overview .home-welcome .home-customize.home-customize-mobile {
+    color: var(--text);
+    background: var(--surface);
+    border-color: var(--line);
+  }
+  .home-overview .home-welcome-content {
+    padding-right: 52px;
+  }
+}
+.home-overview .home-hero-status {
+  border-top-color: var(--line);
+}
+.home-overview .home-hero-status .home-presence {
+  color: var(--text);
+}
+.home-overview .home-hero-status .home-presence h2,
+.home-overview .home-hero-status .home-presence strong {
+  color: var(--text);
+}
+.home-overview .home-hero-status .home-presence p,
+.home-overview .home-hero-status .home-presence small {
+  color: var(--muted);
+}
+.home-overview .home-hero-status .people-heading button {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--line);
+}
+.home-overview .home-dashboard-forecast .home-highlights {
+  display: block;
+  margin: 0 0 16px;
+}
+.home-overview .home-dashboard-forecast .highlight-weather {
+  width: 100%;
+  max-width: none;
+}

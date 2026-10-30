@@ -218,6 +218,27 @@ test("personal experience modes simplify navigation and survive reload", async (
   ).toHaveCount(0);
   await home().click();
   await expect(
+    page.locator(".home-dashboard-widgets .simple-dashboard-grid"),
+  ).toBeVisible();
+  await expect(
+    page.locator(".home-dashboard-widgets .simple-dashboard-vacuum img"),
+  ).toBeVisible();
+  await expect(page.locator(".home-modes")).toBeVisible();
+  await page.getByText("Vis værprognosen", { exact: true }).click();
+  await expect(
+    page.locator(".home-dashboard-forecast .hw-current"),
+  ).toBeVisible();
+  await page.getByText("Vis værprognosen", { exact: true }).click();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await expect(page.locator(".home-dashboard-widgets")).toHaveCount(0);
+  await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+  await expect(page.locator(".home-dashboard-widgets")).toBeVisible();
+  await expect(page.locator(".home-room-card").first()).toBeVisible();
+  await page.screenshot({
+    path: `/tmp/home-normal-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await expect(
     page.getByRole("button", { name: "Vis mer informasjon", exact: true }),
   ).toHaveCount(0);
   await settings().click();
@@ -234,6 +255,20 @@ test("personal experience modes simplify navigation and survive reload", async (
       .getByRole("navigation")
       .getByRole("button", { name: "Integrasjoner", exact: true }),
   ).toBeVisible();
+  await home().click();
+  await expect(
+    page.locator(".home-dashboard-widgets .simple-dashboard-grid"),
+  ).toBeVisible();
+  await expect(page.locator(".home-favorites")).toBeVisible();
+  await expect(
+    page.getByRole("tab", { name: "Energi", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: `/tmp/home-advanced-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await settings().click();
+
   await page
     .getByRole("button", { name: "Tema og utseende", exact: true })
     .click();

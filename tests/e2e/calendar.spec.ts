@@ -67,6 +67,7 @@ test("calendar selection, day navigation, details and failure states", async ({
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
+  await page.getByText("Vis hele kalenderen", { exact: true }).click();
   const calendar = page.getByRole("region", { name: "Kalender", exact: true });
   await expect(calendar).toContainText("Samle dagene her");
   await calendar
@@ -101,8 +102,11 @@ test("calendar selection, day navigation, details and failure states", async ({
   await calendar.getByRole("button", { name: "I dag", exact: true }).click();
   await expect(calendar).toContainText("Middag hos bestemor");
   await page.reload();
+  await page.getByText("Vis hele kalenderen", { exact: true }).click();
   await expect(calendar).toContainText("Middag hos bestemor");
-  await page.getByRole("button", { name: "Mørkt", exact: true }).click();
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "dark";
+  });
   await calendar.scrollIntoViewIfNeeded();
   await calendar.screenshot({
     path: `../artifacts/${test.info().project.name}-calendar-dark.png`,
