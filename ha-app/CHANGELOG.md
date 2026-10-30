@@ -1,3 +1,10 @@
+## 1.36.65
+- Ny valgfri stil: SMARTi Harmoni under Innstillinger → Tema og utseende. Klassisk og SMARTi Living er fortsatt tilgjengelige.
+- Helhetlig utforming av Hjem, kategorier, rom, scener, favoritter og tilhørende kontroll- og detaljdialoger, i lyst og mørkt tema og med eksisterende paletter.
+- Egne enhetskort med tydelig rom, status og separate kontroller for handling og detaljer. Dimming, termostat, solskjerming, lås, media og robotstøvsuger følger enhetens støttede funksjoner.
+- Målegrafene i Harmoni viser faktiske tids- og verdiakser, bevarer hull i historikken og forklarer manglende data. Tilpasset mobil, nettbrett og desktop.
+- Stilvalget lagres lokalt uten å endre enheter, favoritter, rombilder eller øvrige personlige valg.
+
 ## 1.36.64
 - SMARTi Living er bygget om med en åpen hjemmetopp, vær, hjemmemoduser og tydeligere plass til målinger.
 - Nye kompakte favorittfliser gir direkte styring av lys og brytere og åpner full enhetsstyring. Kort, rom og mobiloppsett er tilpasset den nye stilen også i enkel visning.

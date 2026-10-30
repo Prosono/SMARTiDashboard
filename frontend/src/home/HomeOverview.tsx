@@ -119,6 +119,7 @@ export function HomeOverview({
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const mode = useExperience();
+  const modern = homeStyle === "living" || homeStyle === "harmony";
   const qc = useQueryClient();
   const [tab, setTab] = useState<HomeTab>("overview");
   const [lightScenes, showLightScenes] = useState(false);
@@ -203,6 +204,7 @@ export function HomeOverview({
       selectedEnergy={pref?.energy || null}
       offline={offline}
       lang={lang}
+      enhanced={homeStyle === "harmony"}
       openEnergy={() => setTab("energy")}
       openClimate={() => setTab("climate")}
     />
@@ -313,7 +315,7 @@ export function HomeOverview({
       <section className="home-favorites">
         <header className="home-section-heading">
           <h2>
-            {homeStyle === "living"
+            {modern
               ? t("Favoritter", "Favorites")
               : t("Nærmest deg", "At your fingertips")}
           </h2>
@@ -402,7 +404,7 @@ export function HomeOverview({
             >
               <Settings size={20} />
             </button>
-            {homeStyle !== "living" && (
+            {!modern && (
               <img
                 className="home-hero-photo"
                 src={homeAsset("home-living")}
@@ -411,7 +413,7 @@ export function HomeOverview({
               />
             )}
             <div className="home-welcome-content">
-              {homeStyle !== "living" && (
+              {!modern && (
                 <span className="home-hero-eyebrow">
                   <span />
                   {t("Ditt hjem. Din hverdag.", "Your home. Your everyday.")}
@@ -427,7 +429,7 @@ export function HomeOverview({
                       "Vi venter på ferske data fra hjemmet.",
                       "Waiting for fresh data from your home.",
                     )
-                  : homeStyle === "living"
+                  : modern
                     ? clock.toLocaleDateString(
                         lang === "en" ? "en-GB" : "nb-NO",
                         { weekday: "long", day: "numeric", month: "long" },
@@ -530,7 +532,7 @@ export function HomeOverview({
                 />
               )}
             </div>
-            {homeStyle !== "living" && (
+            {!modern && (
               <span className="home-hero-caption">
                 {t("Stemningsbilde", "Decorative image")}
               </span>
@@ -838,11 +840,11 @@ export function HomeOverview({
         )}
         {tab === "overview" && (
           <>
-            {homeStyle === "living" && metrics}
-            {homeStyle === "living" && favoriteSection()}
+            {modern && metrics}
+            {modern && favoriteSection()}
             <div className="home-dashboard-top">
               <div className="home-dashboard-widgets">
-                {homeStyle === "living" && (
+                {modern && (
                   <header className="living-section-heading">
                     <h2>{t("Hverdagen", "Everyday")}</h2>
                     <p>
@@ -860,7 +862,7 @@ export function HomeOverview({
                   showWeather={false}
                 />
               </div>
-              {homeStyle !== "living" && metrics}
+              {!modern && metrics}
             </div>
             <div className="home-status-grid">
               {model.security.length > 0 && (
@@ -1137,7 +1139,7 @@ export function HomeOverview({
                 </div>
               </section>
             )}
-            {homeStyle !== "living" && favoriteSection()}
+            {!modern && favoriteSection()}
             {model.weather && !offline && (
               <details className="home-dashboard-calendar home-dashboard-forecast">
                 <summary>

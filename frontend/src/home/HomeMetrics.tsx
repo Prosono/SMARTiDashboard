@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { HarmonyTrend } from "./HarmonyTrend";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Droplets, Thermometer, Zap } from "lucide-react";
 import { api } from "../api";
@@ -86,12 +87,14 @@ function Chart({ points, label }: { points: Point[]; label: string }) {
 
 function Metric({
   control,
+  enhanced,
   kind,
   lang,
   offline,
   open,
 }: {
   control: Control;
+  enhanced: boolean;
   kind: "energy" | "temperature" | "humidity";
   lang: string;
   offline: boolean;
@@ -147,7 +150,7 @@ function Metric({
     );
   return (
     <button
-      className="home-metric-card"
+      className={`home-metric-card metric-${kind}`}
       onClick={open}
       aria-label={`${labels[kind]}: ${control.name}`}
     >
@@ -166,7 +169,18 @@ function Metric({
             : reading(control, lang)}
       </span>
       <span className="home-metric-source">{control.name}</span>
-      {valid ? (
+      {valid && enhanced ? (
+        <HarmonyTrend
+          points={points}
+          label={
+            en
+              ? `${labels[kind]} history, last 24 hours`
+              : `${labels[kind]} siste 24 timer`
+          }
+          unit={String(control.attributes.unit_of_measurement || "")}
+          lang={lang}
+        />
+      ) : valid ? (
         <Chart
           points={points}
           label={
@@ -208,6 +222,7 @@ function Metric({
 export function HomeMetrics({
   home,
   selectedEnergy,
+  enhanced = false,
   offline,
   lang,
   openEnergy,
@@ -215,6 +230,7 @@ export function HomeMetrics({
 }: {
   home: Home;
   selectedEnergy: string | null;
+  enhanced?: boolean;
   offline: boolean;
   lang: string;
   openEnergy: () => void;
@@ -271,6 +287,7 @@ export function HomeMetrics({
     <div className="home-metrics-grid">
       {canEnergy && energy && (
         <Metric
+          enhanced={enhanced}
           control={energy}
           kind="energy"
           lang={lang}
@@ -280,6 +297,7 @@ export function HomeMetrics({
       )}
       {canClimate && temp && (
         <Metric
+          enhanced={enhanced}
           control={temp}
           kind="temperature"
           lang={lang}
@@ -289,6 +307,7 @@ export function HomeMetrics({
       )}
       {canClimate && humidity && (
         <Metric
+          enhanced={enhanced}
           control={humidity}
           kind="humidity"
           lang={lang}

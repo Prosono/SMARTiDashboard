@@ -23,6 +23,7 @@ import {
   useExperiencePreference,
 } from "./Experience";
 import { SimpleHome } from "./home/SimpleHome";
+import { HarmonyDevices } from "./home/HarmonyDevices";
 import { liveConnection } from "./liveConnection";
 import { RoomsOverview } from "./rooms/RoomsOverview";
 import { ClimateOverview } from "./home/ClimateOverview";
@@ -104,6 +105,7 @@ import { Integrations, Updates } from "./manage/System";
 import { PalettePicker, palettes } from "./PalettePicker";
 import { RoomView } from "./rooms/RoomView";
 import "./palettes.css";
+import "./home/harmony.css";
 import { HomeOverview, homeAsset } from "./home/HomeOverview";
 import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
@@ -149,7 +151,11 @@ function App() {
     readPreference("smarti-theme", "light", ["light", "dark"]),
   );
   const [homeStyle, setHomeStyle] = useState(() =>
-    readPreference("smarti-home-style", "classic", ["classic", "living"]),
+    readPreference("smarti-home-style", "classic", [
+      "classic",
+      "living",
+      "harmony",
+    ]),
   );
   useEffect(() => {
     document.documentElement.dataset.homeStyle = homeStyle;
@@ -828,6 +834,15 @@ function Dashboard({
   const roomName = (id: string | null) =>
     h.areas.find((a) => a.area_id === id)?.name || t.unassigned;
   function cards(controls: Control[]) {
+    if (homeStyle === "harmony" && ["home", "rooms"].includes(page))
+      return (
+        <HarmonyDevices
+          controls={controls}
+          home={h}
+          lang={lang}
+          offline={offline}
+        />
+      );
     return (
       <div className="controls-grid">
         {controls.map((c) =>
@@ -1467,6 +1482,7 @@ function Dashboard({
                           {lang === "en" ? "Classic" : "Klassisk"}
                         </option>
                         <option value="living">SMARTi Living</option>
+                        <option value="harmony">SMARTi Harmoni</option>
                       </select>
                     </label>
                     <p className="note">
@@ -1474,6 +1490,42 @@ function Dashboard({
                         ? "Choose the layout for Home on this device. Works with your selected theme and colors."
                         : "Velg utseendet på Hjem på denne enheten. Stilen følger valgt tema og farger."}
                     </p>
+                    <div className="home-style-preview" data-style={homeStyle}>
+                      <div
+                        className="home-style-preview-art"
+                        aria-hidden="true"
+                      >
+                        <i />
+                        <i />
+                        <i />
+                        <i />
+                      </div>
+                      <div>
+                        <strong>
+                          {homeStyle === "harmony"
+                            ? "SMARTi Harmoni"
+                            : homeStyle === "living"
+                              ? "SMARTi Living"
+                              : lang === "en"
+                                ? "Classic"
+                                : "Klassisk"}
+                        </strong>
+                        <p>
+                          {homeStyle === "harmony"
+                            ? lang === "en"
+                              ? "A calm overview. Thoughtful controls for every device, with room for your everyday life."
+                              : "En rolig oversikt. Egne kontroller for hver enhet, med plass til hverdagen din."
+                            : lang === "en"
+                              ? "Your existing Home layout, with all your personal choices."
+                              : "Ditt kjente Hjem-oppsett, med alle dine personlige valg."}
+                        </p>
+                        <small>
+                          {lang === "en"
+                            ? "Saved on this device · Your favorites and rooms are kept"
+                            : "Lagres på denne enheten · Favoritter og rom beholdes"}
+                        </small>
+                      </div>
+                    </div>
                     <PalettePicker
                       value={palette}
                       change={setPalette}

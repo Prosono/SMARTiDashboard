@@ -16,12 +16,14 @@ export function Thermostat({
   disabled,
   change,
   changeMode,
+  compact = false,
 }: {
   c: Control;
   lang: string;
   disabled: boolean;
   change: (value: number) => void;
   changeMode: (mode: string) => void;
+  compact?: boolean;
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
@@ -101,21 +103,28 @@ export function Thermostat({
     change(Number(value.toFixed(6)));
   }
   return (
-    <div className="thermostat" data-tone={tone}>
-      <div className="thermostat-mode">
-        <Icon size={16} />
-        <span>
-          {known
-            ? modes[c.state] || c.state
-            : t("Utilgjengelig", "Unavailable")}
-        </span>
-        <small>
-          {known
-            ? actions[action] || t("Drift ukjent", "Activity unknown")
-            : ""}
-        </small>
-      </div>
-      {c.capabilities.some((v) => v.actions.includes("set_hvac_mode")) &&
+    <div
+      className="thermostat"
+      data-tone={tone}
+      data-compact={compact || undefined}
+    >
+      {!compact && (
+        <div className="thermostat-mode">
+          <Icon size={16} />
+          <span>
+            {known
+              ? modes[c.state] || c.state
+              : t("Utilgjengelig", "Unavailable")}
+          </span>
+          <small>
+            {known
+              ? actions[action] || t("Drift ukjent", "Activity unknown")
+              : ""}
+          </small>
+        </div>
+      )}
+      {!compact &&
+        c.capabilities.some((v) => v.actions.includes("set_hvac_mode")) &&
         Array.isArray(c.attributes.hvac_modes) && (
           <label className="thermostat-mode-select">
             <span>{t("Modus", "Mode")}</span>
@@ -125,37 +134,50 @@ export function Thermostat({
               disabled={!available}
               onChange={(e) => changeMode(e.target.value)}
             >
-              {!c.attributes.hvac_modes.includes(c.state) && <option value={c.state} disabled>{t("Ukjent", "Unknown")}</option>}
-              {c.attributes.hvac_modes.filter((mode): mode is string => typeof mode === "string" && mode in modes).map((mode) => (
-                <option key={mode} value={mode}>{modes[mode]}</option>
-              ))}
+              {!c.attributes.hvac_modes.includes(c.state) && (
+                <option value={c.state} disabled>
+                  {t("Ukjent", "Unknown")}
+                </option>
+              )}
+              {c.attributes.hvac_modes
+                .filter(
+                  (mode): mode is string =>
+                    typeof mode === "string" && mode in modes,
+                )
+                .map((mode) => (
+                  <option key={mode} value={mode}>
+                    {modes[mode]}
+                  </option>
+                ))}
             </select>
           </label>
         )}
       <div className="thermostat-dial">
-        <svg viewBox="0 0 240 145" aria-hidden="true">
-          <path
-            className="thermostat-track"
-            d="M22 124 A98 98 0 0 1 218 124"
-            pathLength="100"
-          />
-          {valid && known && (
+        {!compact && (
+          <svg viewBox="0 0 240 145" aria-hidden="true">
             <path
-              className="thermostat-arc"
+              className="thermostat-track"
               d="M22 124 A98 98 0 0 1 218 124"
               pathLength="100"
-              strokeDasharray={`${fraction * 100} 100`}
             />
-          )}
-          {valid && known && (
-            <circle
-              className="thermostat-knob"
-              cx={120 - 98 * Math.cos(fraction * Math.PI)}
-              cy={124 - 98 * Math.sin(fraction * Math.PI)}
-              r="6"
-            />
-          )}
-        </svg>
+            {valid && known && (
+              <path
+                className="thermostat-arc"
+                d="M22 124 A98 98 0 0 1 218 124"
+                pathLength="100"
+                strokeDasharray={`${fraction * 100} 100`}
+              />
+            )}
+            {valid && known && (
+              <circle
+                className="thermostat-knob"
+                cx={120 - 98 * Math.cos(fraction * Math.PI)}
+                cy={124 - 98 * Math.sin(fraction * Math.PI)}
+                r="6"
+              />
+            )}
+          </svg>
+        )}
         <div className="thermostat-target">
           <span>{t("Ønsket", "Target")}</span>
           <strong>

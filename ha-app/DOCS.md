@@ -96,6 +96,29 @@ HA's configured admin API credential is required for administration. Ingress sup
 API references: [HA camera streams](https://github.com/home-assistant/core/blob/dev/homeassistant/components/camera/__init__.py), [native scene configuration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/scene.py), [recorder statistics](https://github.com/home-assistant/core/blob/dev/homeassistant/components/recorder/websocket_api.py).
 
 
+## SMARTi Harmoni (1.36.65)
+
+Choose **Innstillinger → Tema og utseende → Stil for Hjem → SMARTi Harmoni**.
+Classic and SMARTi Living remain selectable. The choice uses the existing optional
+browser storage, independently of light/dark mode and the color palette. It is saved
+for this browser/device; blocked or full storage keeps the choice for the current
+session without clearing other settings. Devices, favorites, room photos, scene
+configurations and account preferences are unchanged by switching styles.
+
+Harmoni carries shared surfaces, typography and controls through Overview, Lights,
+Energy, Security, Climate, Multimedia, More, rooms and the dialogs opened from them.
+Device names and chevrons open the full existing details. Separate switches, dimmers,
+temperature buttons and transport buttons perform the supported action. Locks,
+shade movement and routines retain explicit confirmation. Unavailable, disconnected,
+read-only, pending and failed states are labelled. Unsupported commands are not added;
+for example, standalone fan speed control is not currently imported by the backend.
+
+Overview history uses recorder data with real time/value axes and separate paths
+across missing samples. No synthetic history is generated. A missing series, failed
+request or offline home gets an explanatory state. The layout adapts to phones,
+wall tablets and desktops and respects reduced motion. Full device controls and
+administration remain reachable through details.
+
 ## Home tabs (0.6.0)
 
 Home now has five fixed views: **Overview**, **Lights**, **Energy**, **Security** and **Climate**. Tap/click a tab, use arrow keys while the tabs have focus, or swipe horizontally across the content on a touch screen. Swipes starting on buttons, sliders, charts, video or dialogs do not switch views. The first and last views do not wrap when swiping. Home starts on Overview; no browser storage is required for tab navigation.

@@ -1,0 +1,548 @@
+import {
+  test,
+  expect,
+  type Page,
+} from "../../frontend/node_modules/@playwright/test";
+
+async function login(page: Page) {
+  await page.goto("/");
+  await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
+  await page
+    .getByLabel("Passord", { exact: true })
+    .fill("test-password-not-for-live");
+  await page.getByRole("button", { name: "Logg inn", exact: true }).click();
+  await expect(
+    page.getByRole("navigation", { name: "Hovedmeny" }),
+  ).toBeVisible();
+  if (
+    (await (await page.request.get("/api/home/experience")).json()).mode ===
+    "simple"
+  ) {
+    await navigate(page, "Innstillinger");
+    await page
+      .locator('.experience-picker button[data-mode="advanced"]')
+      .click();
+    await navigate(page, "Hjem");
+  }
+  await expect(page.locator(".home-welcome")).toBeVisible();
+}
+async function navigate(page: Page, name: string) {
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name, exact: true })
+    .click();
+}
+async function appearance(page: Page) {
+  await navigate(page, "Innstillinger");
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+}
+const control = (
+  domain: string,
+  name: string,
+  state: string,
+  attributes: Record<string, unknown> = {},
+  actions: string[] = [],
+) => ({
+  id: `${domain}.harmony_${domain}`,
+  entity_id: `${domain}.harmony_${domain}`,
+  name,
+  domain,
+  state,
+  attributes,
+  area_id: "living",
+  device_id: null,
+  availability: "available",
+  diagnostic: false,
+  updated_at: null,
+  integration: null,
+  capabilities: actions.length
+    ? [{ kind: domain, actions, minimum: 0, maximum: 100, step: 1, unit: "%" }]
+    : [],
+});
+async function richHome(page: Page) {
+  await page.route("**/api/home", async (route) => {
+    const response = await route.fetch(),
+      home = await response.json();
+    const extras = [
+      control("sensor", "Husets forbruk", "3100", {
+        device_class: "power",
+        unit_of_measurement: "W",
+      }),
+      {
+        ...control("sensor", "Temperatur i stuen", "21.4", {
+          device_class: "temperature",
+          unit_of_measurement: "°C",
+        }),
+        id: "sensor.harmony_temperature",
+        entity_id: "sensor.harmony_temperature",
+      },
+      {
+        ...control("sensor", "Luftfuktighet i stuen", "47", {
+          device_class: "humidity",
+          unit_of_measurement: "%",
+        }),
+        id: "sensor.harmony_humidity",
+        entity_id: "sensor.harmony_humidity",
+      },
+      control("cover", "Persienne", "open", { current_position: 65 }, [
+        "open_cover",
+        "stop_cover",
+        "close_cover",
+      ]),
+      control("lock", "Ytterdør", "locked", {}, ["lock", "unlock"]),
+      control("switch", "Gulvlampe stikkontakt", "off", {}, [
+        "turn_on",
+        "turn_off",
+      ]),
+      control("weather", "Været hjemme", "partlycloudy", {
+        temperature: 11.8,
+        temperature_unit: "°C",
+      }),
+      control(
+        "media_player",
+        "Høyttaler",
+        "paused",
+        {
+          media_title: "Morgen hjemme",
+          media_artist: "SMARTi test",
+          volume_level: 0.35,
+        },
+        ["media_play", "media_pause"],
+      ),
+    ];
+    await route.fulfill({
+      json: {
+        ...home,
+        controls: [...home.controls, ...extras],
+        favorites: [
+          ...home.favorites,
+          ...extras
+            .filter((c) => c.domain !== "weather")
+            .map((c) => c.entity_id),
+        ],
+      },
+    });
+  });
+  await page.route("**/api/home/weather/*", (route) =>
+    route.fulfill({ json: { days: {}, temperature_unit: "°C" } }),
+  );
+  await page.route("**/api/controls/sensor.harmony_*/history?*", (route) =>
+    route.fulfill({
+      json: {
+        points: [
+          { time: "2026-10-30T06:00:00Z", value: 18 },
+          { time: "2026-10-30T09:00:00Z", value: 20 },
+          { time: "2026-10-30T12:00:00Z", value: null },
+          { time: "2026-10-30T15:00:00Z", value: 21.4 },
+        ],
+      },
+    }),
+  );
+  await page.route("**/api/home/energy-flow/preferences", async (route) => {
+    const response = await route.fetch();
+    const config = await response.json();
+    await route.fulfill({
+      json: {
+        ...config,
+        home: { ...config.home, source: "sensor.harmony_sensor" },
+      },
+    });
+  });
+  await page.route("**/api/home/energy/statistics?*", (route) =>
+    route.fulfill({
+      json: {
+        series: [
+          {
+            id: "sensor.harmony_sensor",
+            current: {
+              points: [
+                { time: "2026-10-30T06:00:00Z", value: 700 },
+                { time: "2026-10-30T08:00:00Z", value: 2800 },
+                { time: "2026-10-30T10:00:00Z", value: 1400 },
+                { time: "2026-10-30T12:00:00Z", value: 3100 },
+              ],
+            },
+          },
+        ],
+      },
+    }),
+  );
+}
+
+test("Harmoni is selectable and persisted without changing home preferences; both original styles remain", async ({
+  page,
+}, info) => {
+  await richHome(page);
+  await login(page);
+  const preferences = await (
+    await page.request.get("/api/home/preferences")
+  ).json();
+  const favorites = (await (await page.request.get("/api/home")).json())
+    .favorites;
+  await appearance(page);
+  await expect(page.getByLabel("Stil for Hjem").locator("option")).toHaveText([
+    "Klassisk",
+    "SMARTi Living",
+    "SMARTi Harmoni",
+  ]);
+  await page.getByLabel("Stil for Hjem").selectOption("harmony");
+  await expect(page.locator(".home-style-preview")).toContainText(
+    "SMARTi Harmoni",
+  );
+  await navigate(page, "Hjem");
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-home-style",
+    "harmony",
+  );
+  await expect(page.locator(".harmony-device-grid").first()).toBeVisible();
+  await expect(page.locator(".home-header-weather")).toContainText("11,8");
+  await expect(page.locator(".harmony-trend").first()).toBeVisible();
+  await page.screenshot({
+    path: `/private/tmp/smarti-harmony-light-${info.project.name}.png`,
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-home-style",
+    "harmony",
+  );
+  for (const style of ["classic", "living", "harmony"]) {
+    await appearance(page);
+    await page.getByLabel("Stil for Hjem").selectOption(style);
+    await navigate(page, "Hjem");
+    await expect(page.locator("html")).toHaveAttribute(
+      "data-home-style",
+      style,
+    );
+    await expect(page.locator(".home-welcome")).toBeVisible();
+  }
+  expect(
+    await (await page.request.get("/api/home/preferences")).json(),
+  ).toEqual(preferences);
+  expect(
+    (await (await page.request.get("/api/home")).json()).favorites,
+  ).toEqual(favorites);
+  await appearance(page);
+  await page
+    .getByRole("combobox", { name: "Utseende", exact: true })
+    .selectOption("dark");
+  await navigate(page, "Hjem");
+  await page.screenshot({
+    path: `/private/tmp/smarti-harmony-viewport-${info.project.name}.png`,
+  });
+  await page.screenshot({
+    path: `/private/tmp/smarti-harmony-dark-${info.project.name}.png`,
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("direct light controls, thermostat and details keep their existing behavior", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await login(page);
+  const light = page
+    .locator('.harmony-device[data-domain="light"]')
+    .filter({ hasText: "Pendellampe" });
+  const toggle = light.getByRole("switch");
+  const before = await toggle.getAttribute("aria-checked");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute(
+    "aria-checked",
+    before === "true" ? "false" : "true",
+  );
+  await expect(light.getByRole("status")).toContainText("Oppdatert i demo");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const slider = light.getByRole("slider");
+  await slider.focus();
+  const command = page.waitForRequest(
+    (r) =>
+      r.method() === "POST" &&
+      r.url().includes("/commands") &&
+      r.postDataJSON().action === "set_brightness",
+  );
+  await page.keyboard.press("ArrowRight");
+  await command;
+  await light
+    .getByRole("button", { name: "Åpne Pendellampe", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Pendellampe", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".light-detail")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    light.getByRole("button", { name: "Åpne Pendellampe", exact: true }),
+  ).toBeFocused();
+  const thermostat = page
+    .locator('.harmony-device[data-domain="climate"]')
+    .first();
+  const temperature = page.waitForRequest(
+    (r) =>
+      r.method() === "POST" &&
+      r.url().includes("/commands") &&
+      r.postDataJSON().action === "set_temperature",
+  );
+  await thermostat
+    .getByRole("button", { name: /Ønsket temperatur \+/ })
+    .click();
+  await temperature;
+  await expect(thermostat.getByRole("status")).toContainText(
+    "Oppdatert i demo",
+  );
+});
+
+test("locks and shades confirm actions; unavailable and read-only devices cannot send commands", async ({
+  page,
+}) => {
+  await richHome(page);
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  const commands: { action: string; confirmed: boolean }[] = [];
+  await page.route("**/api/controls/*.harmony_*/commands", async (route) => {
+    commands.push(route.request().postDataJSON());
+    await route.fulfill({ json: { status: "simulated" } });
+  });
+  await login(page);
+  const lock = page.locator('.harmony-device[data-domain="lock"]');
+  await lock
+    .getByRole("button", { name: "Ytterdør: Lås opp", exact: true })
+    .click();
+  expect(commands).toHaveLength(0);
+  await page
+    .getByRole("dialog", { name: "Lås opp Ytterdør?", exact: true })
+    .getByRole("button", { name: "Avbryt" })
+    .click();
+  expect(commands).toHaveLength(0);
+  await lock
+    .getByRole("button", { name: "Ytterdør: Lås opp", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Lås opp Ytterdør?", exact: true })
+    .getByRole("button", { name: "Lås opp", exact: true })
+    .click();
+  await expect.poll(() => commands.length).toBe(1);
+  expect(commands[0]).toEqual({ action: "unlock", confirmed: true });
+  const cover = page.locator('.harmony-device[data-domain="cover"]');
+  await expect(cover).toContainText("65%");
+  await cover
+    .getByRole("button", { name: "Persienne: Lukk", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Lukk Persienne?", exact: true })
+    .getByRole("button", { name: "Lukk", exact: true })
+    .click();
+  await expect.poll(() => commands.length).toBe(2);
+  expect(commands[1]).toEqual({ action: "close_cover", confirmed: true });
+  await page.route("**/api/home", async (route) => {
+    const response = await route.fetch(),
+      home = await response.json();
+    await route.fulfill({
+      json: {
+        ...home,
+        permissions: ["lights.view", "climate.view"],
+        controls: home.controls.map((c: { domain: string }) =>
+          c.domain === "light"
+            ? { ...c, availability: "unavailable", state: "unavailable" }
+            : c,
+        ),
+      },
+    });
+  });
+  await page.reload();
+  const lights = page.locator('.harmony-device[data-domain="light"]');
+  await expect(lights.first()).toContainText("Utilgjengelig");
+  for (const item of await lights.getByRole("switch").all())
+    await expect(item).toBeDisabled();
+  await expect(
+    page.locator('.harmony-device[data-domain="climate"]').first(),
+  ).toContainText("Kun visning");
+});
+
+test("all categories, room views and dialogs adapt to phone, wall tablet and desktop", async ({
+  page,
+}, info) => {
+  await richHome(page);
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await login(page);
+  const issues: string[] = [];
+  page.on("pageerror", (error) => issues.push(error.message));
+  for (const width of [320, 834, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const name of [
+      "Oversikt",
+      "Lys",
+      "Energi",
+      "Sikkerhet",
+      "Klima",
+      "Multimedia",
+      "Diverse",
+    ]) {
+      await page.getByRole("tab", { name, exact: true }).click();
+      // The existing energy setup opens on a home that has no configured agreement.
+      if (name === "Energi") {
+        const setup = page.getByRole("dialog", {
+          name: "Energien i hjemmet ditt",
+          exact: true,
+        });
+        await expect(setup).toBeVisible();
+        await setup
+          .getByRole("button", { name: "Lukk innstillinger", exact: true })
+          .click();
+      }
+      await expect(page.getByRole("tabpanel")).toBeVisible();
+      expect(
+        await page
+          .locator("body")
+          .evaluate((el) => el.scrollWidth <= el.clientWidth),
+        `${name} at ${width}px`,
+      ).toBe(true);
+    }
+    await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+    await page.screenshot({
+      path: `/private/tmp/smarti-harmony-${width}-${info.project.name}.png`,
+      fullPage: true,
+    });
+  }
+  await navigate(page, "Rom");
+  await expect(page.locator(".room-summary-card").first()).toBeVisible();
+  await page.locator(".room-summary-card").filter({ hasText: "Stue" }).click();
+  await expect(page.locator(".room-detail")).toBeVisible();
+  await expect(page.locator(".harmony-device").first()).toBeVisible();
+  await page.locator(".harmony-device-open").first().click();
+  await expect(page.getByRole("dialog").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  for (const width of [320, 834]) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(
+      await page
+        .locator("body")
+        .evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true);
+  }
+  expect(issues).toEqual([]);
+});
+
+test("missing history, loading commands, failures and disconnection show honest states", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await richHome(page);
+  await page.route("**/api/home/energy/statistics?*", (route) =>
+    route.fulfill({ status: 503, json: { detail: "history_unavailable" } }),
+  );
+  await login(page);
+  await expect(page.locator(".metric-energy")).toContainText(
+    "Kunne ikke hente historikk",
+  );
+  await expect(page.locator(".metric-energy .harmony-trend")).toHaveCount(0);
+  const light = page
+    .locator('.harmony-device[data-domain="light"]')
+    .filter({ hasText: "Pendellampe" });
+  let release: () => void = () => {};
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(
+    "**/api/controls/light.living_pendant/commands",
+    async (route) => {
+      await waiting;
+      await route.fulfill({ status: 503, json: { detail: "connection_lost" } });
+    },
+  );
+  await light.getByRole("switch").click();
+  await expect(light).toHaveAttribute("aria-busy", "true");
+  await expect(light).toContainText("Sender…");
+  await expect(light.getByRole("switch")).toBeDisabled();
+  release();
+  await expect(light.getByRole("alert")).toContainText(
+    "Kunne ikke bekrefte handlingen",
+  );
+  await expect(light).toHaveAttribute("aria-busy", "false");
+  await page.route("**/api/home", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({
+      json: { ...(await response.json()), connected: false },
+    });
+  });
+  await page.clock.install();
+  await page.reload();
+  await expect(page.locator(".home-welcome")).toBeVisible();
+  await page.clock.fastForward(31_000);
+  await expect(page.locator(".home-welcome")).toContainText(
+    "venter på ferske data",
+  );
+  await expect(
+    page.locator('.harmony-device[data-domain="light"]').first(),
+  ).toContainText("Frakoblet");
+  await expect(
+    page
+      .locator('.harmony-device[data-domain="light"]')
+      .first()
+      .getByRole("switch"),
+  ).toBeDisabled();
+  await expect(page.locator(".harmony-trend")).toHaveCount(0);
+});
+
+test("Harmoni also follows palettes, simple mode and reduced motion", async ({
+  page,
+}, info) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("smarti-home-style", "harmony");
+    localStorage.setItem("smarti-palette", "fjord");
+    localStorage.setItem("smarti-theme", "dark");
+  });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await login(page);
+  await expect(page.locator("html")).toHaveAttribute("data-palette", "fjord");
+  await appearance(page);
+  await page.locator('.experience-picker button[data-mode="simple"]').click();
+  await navigate(page, "Hjem");
+  await expect(
+    page.locator(".living-simple-favorites .harmony-device").first(),
+  ).toBeVisible();
+  await page
+    .locator(".living-simple-favorites .harmony-device-open")
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog").first();
+  await expect(dialog).toBeVisible();
+  await page.screenshot({
+    path: `/private/tmp/smarti-harmony-dialog-${info.project.name}.png`,
+  });
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.locator(".living-simple-favorites .harmony-device").first(),
+  ).toBeVisible();
+});
+
+test.afterEach(async ({ page }) => {
+  await page.evaluate(async () => {
+    const session = await (
+      await fetch(new URL("api/session", document.baseURI))
+    ).json();
+    if (!session.csrf) return;
+    await fetch(new URL("api/home/experience", document.baseURI), {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": session.csrf,
+      },
+      body: JSON.stringify({ mode: "advanced" }),
+    });
+  });
+});
