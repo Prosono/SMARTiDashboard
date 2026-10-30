@@ -1,3 +1,8 @@
+## 1.36.58
+- Oppdatert enkel oversikt med tydeligere værkort, værillustrasjon og tilgjengelige målinger.
+- Kalenderkort viser dagens avtaler fra valgte kalendere.
+- Robotstøvsugeren vises med produktillustrasjon, status og styring tilpasset enheten.
+
 ## 1.36.57
 - Mykere gradient og mindre enhetsbilde over medieomslag, uten hard hvit ramme.
 

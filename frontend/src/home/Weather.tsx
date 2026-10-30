@@ -21,7 +21,15 @@ type Day = {
   precipitation_probability: number | null;
   wind_speed: number | null;
 };
-export function Weather({ c, lang }: { c: Control; lang: string }) {
+export function Weather({
+  c,
+  lang,
+  compact = false,
+}: {
+  c: Control;
+  lang: string;
+  compact?: boolean;
+}) {
   const en = lang === "en",
     t = (nb: string, eng: string) => (en ? eng : nb);
   const q = useQuery({
@@ -79,6 +87,78 @@ export function Weather({ c, lang }: { c: Control; lang: string }) {
     typeof v === "number"
       ? v.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })
       : "—";
+  if (compact) {
+    const usable = c.availability === "available";
+    const today = q.data?.days.today;
+    const current = usable ? now : null;
+    const cloud = usable && ["cloudy", "partlycloudy"].includes(c.state);
+    return (
+      <section
+        className="simple-weather"
+        aria-label={t("Værmelding", "Weather forecast")}
+      >
+        <div className="simple-weather-heading">
+          <strong>{c.name}</strong>
+          <span>
+            {usable ? label(c.state) : t("Utilgjengelig", "Unavailable")}
+          </span>
+        </div>
+        <div className="simple-weather-current">
+          <strong>
+            {number(current)}
+            {current !== null ? unit : ""}
+          </strong>
+          {cloud ? (
+            <img
+              src={new URL("home/simple-cloud.webp", document.baseURI).href}
+              alt=""
+            />
+          ) : (
+            <Now aria-hidden="true" size={76} />
+          )}
+        </div>
+        {usable &&
+          today &&
+          (today.temperature !== null || today.templow !== null) && (
+            <div className="simple-weather-range">
+              {today.temperature !== null && (
+                <span>
+                  ↑ {number(today.temperature)}
+                  {q.data?.temperature_unit || unit}
+                </span>
+              )}
+              {today.templow !== null && (
+                <span>
+                  ↓ {number(today.templow)}
+                  {q.data?.temperature_unit || unit}
+                </span>
+              )}
+            </div>
+          )}
+        <div className="simple-weather-details">
+          {usable && typeof c.attributes.wind_speed === "number" && (
+            <span>
+              <Wind size={16} />
+              {number(c.attributes.wind_speed)}{" "}
+              {String(c.attributes.wind_speed_unit || "")}
+            </span>
+          )}
+          {usable && typeof c.attributes.humidity === "number" && (
+            <span>
+              <Droplets size={16} />
+              {number(c.attributes.humidity)} %
+            </span>
+          )}
+          {usable && today?.precipitation != null && (
+            <span>
+              <CloudRain size={16} />
+              {number(today.precipitation)} {q.data?.precipitation_unit || "mm"}
+            </span>
+          )}
+        </div>
+      </section>
+    );
+  }
   return (
     <section
       className="home-weather weather-expanded"

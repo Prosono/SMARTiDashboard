@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarDays,
   ChevronRight,
@@ -17,6 +17,104 @@ import { SettingsDialog } from "./SettingsDialog";
 import { MetricDeviceRenderer } from "./MetricDetails";
 import { homeAsset } from "./HomeOverview";
 import "./simpleDashboard.css";
+
+function SimpleAgenda({ lang, offline }: { lang: string; offline: boolean }) {
+  const en = lang === "en";
+  const info = useQuery({
+    queryKey: ["calendar"],
+    queryFn: () =>
+      api<{ today: string; timezone: string; calendars: string[] }>(
+        "home/calendar",
+      ),
+    enabled: !offline,
+    staleTime: 60000,
+  });
+  const day = info.data?.today;
+  const agenda = useQuery({
+    queryKey: ["calendar-events", day, info.data?.calendars],
+    queryFn: () =>
+      api<{
+        days: Record<
+          string,
+          { start: string; summary: string; all_day: boolean }[]
+        >;
+        failed: string[];
+      }>(`home/calendar/events?start=${day}`),
+    enabled: !!day && !!info.data?.calendars.length && !offline,
+    retry: false,
+    staleTime: 60000,
+  });
+  const events = day ? (agenda.data?.days[day] ?? []) : [];
+  if (offline)
+    return (
+      <p className="simple-agenda-empty">
+        {en ? "Calendar unavailable" : "Kalender er utilgjengelig"}
+      </p>
+    );
+  if (!info.data && info.isPending)
+    return (
+      <p className="simple-agenda-empty">
+        {en ? "Loading calendar…" : "Henter kalender…"}
+      </p>
+    );
+  if (info.isError || agenda.isError || !!agenda.data?.failed?.length)
+    return (
+      <p className="simple-agenda-empty">
+        {en ? "Calendar could not be loaded" : "Kunne ikke hente kalenderen"}
+      </p>
+    );
+  if (!info.data?.calendars.length)
+    return (
+      <p className="simple-agenda-empty">
+        {en
+          ? "Choose calendars to see your plans"
+          : "Velg kalendere for å se planene dine"}
+      </p>
+    );
+  if (agenda.isPending)
+    return (
+      <p className="simple-agenda-empty">
+        {en ? "Loading events…" : "Henter avtaler…"}
+      </p>
+    );
+  if (!events.length)
+    return (
+      <p className="simple-agenda-empty">
+        {en ? "No events today" : "Ingen avtaler i dag"}
+      </p>
+    );
+  return (
+    <div className="simple-agenda">
+      {events.slice(0, 2).map((event, i) => (
+        <div key={`${event.start}-${i}`}>
+          <i />
+          <span>
+            <strong>{event.summary || (en ? "Event" : "Avtale")}</strong>
+            <small>
+              {event.all_day
+                ? en
+                  ? "All day"
+                  : "Hele dagen"
+                : new Date(event.start).toLocaleTimeString(
+                    en ? "en-GB" : "nb-NO",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: info.data?.timezone,
+                    },
+                  )}
+            </small>
+          </span>
+        </div>
+      ))}
+      {events.length > 2 && (
+        <small>
+          {en ? `${events.length - 2} more` : `${events.length - 2} flere`}
+        </small>
+      )}
+    </div>
+  );
+}
 
 export function SimpleDashboard({
   home,
@@ -106,6 +204,7 @@ export function SimpleDashboard({
                   : weather
               }
               lang={lang}
+              compact
             />
           </div>
         )}
@@ -120,14 +219,22 @@ export function SimpleDashboard({
               <span>{t("Kalender", "Calendar")}</span>
               <ChevronRight size={18} />
             </div>
-            <strong>{now.getDate()}</strong>
-            <span>
-              {now.toLocaleDateString(en ? "en-GB" : "nb-NO", {
-                weekday: "long",
-                month: "long",
-              })}
-            </span>
-            <small>{t("Se dagens planer", "See today's plans")}</small>
+            <div className="simple-date-content">
+              <div className="simple-date-day">
+                <strong>{now.getDate()}</strong>
+                <span>
+                  {now.toLocaleDateString(en ? "en-GB" : "nb-NO", {
+                    weekday: "long",
+                    month: "long",
+                  })}
+                </span>
+              </div>
+              <SimpleAgenda lang={lang} offline={offline} />
+            </div>
+            <small>
+              {t("Se dagens planer", "See today's plans")}{" "}
+              <ChevronRight size={16} />
+            </small>
           </button>
         )}
         {lights.length > 0 && (
@@ -189,7 +296,13 @@ export function SimpleDashboard({
         )}
         {vacuum && (
           <div className="simple-dashboard-vacuum">
-            <VacuumCard c={vacuum} home={home} lang={lang} offline={offline} />
+            <VacuumCard
+              c={vacuum}
+              home={home}
+              lang={lang}
+              offline={offline}
+              simple
+            />
           </div>
         )}
       </div>

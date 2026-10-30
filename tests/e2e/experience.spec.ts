@@ -2,6 +2,46 @@ import { test, expect } from "../../frontend/node_modules/@playwright/test";
 test("personal experience modes simplify navigation and survive reload", async ({
   page,
 }) => {
+  await page.route("**/api/home/calendar", async (route) =>
+    route.fulfill({
+      json: {
+        today: "2026-10-30",
+        timezone: "Europe/Oslo",
+        calendars: ["calendar.family"],
+        sources: [{ id: "calendar.family", name: "Familie" }],
+      },
+    }),
+  );
+  await page.route("**/api/home/calendar/events?*", async (route) =>
+    route.fulfill({
+      json: {
+        days: {
+          "2026-10-30": [
+            {
+              start: "2026-10-30T15:00:00+01:00",
+              end: "2026-10-30T16:00:00+01:00",
+              calendar: "calendar.family",
+              location: "",
+              description: "",
+              summary: "Familiebesøk",
+              all_day: false,
+            },
+          ],
+        },
+        failed: [],
+        timezone: "Europe/Oslo",
+      },
+    }),
+  );
+  await page.route("**/api/home/weather/**", async (route) =>
+    route.fulfill({
+      json: {
+        days: { today: { temperature: 13, templow: 7, precipitation: 2 } },
+        temperature_unit: "°C",
+        precipitation_unit: "mm",
+      },
+    }),
+  );
   await page.route("**/api/home", async (route) => {
     const response = await route.fetch();
     const data = await response.json();
@@ -116,6 +156,21 @@ test("personal experience modes simplify navigation and survive reload", async (
     await page.locator(".simple-home .device").count(),
   ).toBeLessThanOrEqual(8);
   await expect(page.locator(".simple-dashboard-grid")).toBeVisible();
+  await expect(page.locator(".simple-weather")).toContainText("10°C");
+  await expect(page.locator(".simple-weather")).toContainText("78 %");
+  await expect(page.locator(".simple-weather img")).toHaveJSProperty(
+    "naturalWidth",
+    720,
+  );
+  await expect(page.locator(".simple-dashboard-date")).toContainText(
+    "Familiebesøk",
+  );
+  await expect(page.locator(".simple-dashboard-vacuum img")).toHaveJSProperty(
+    "naturalWidth",
+    720,
+  );
+  await expect(page.locator(".simple-dashboard-vacuum")).toContainText("100%");
+
   await page.locator(".simple-dashboard-lights").click();
   const lights = page.getByRole("dialog", {
     name: "Lys i hjemmet",

@@ -35,11 +35,13 @@ export function VacuumCard({
   home,
   lang,
   offline,
+  simple = false,
 }: {
   c: Control;
   home: Home;
   lang: string;
   offline: boolean;
+  simple?: boolean;
 }) {
   const en = lang === "en",
     mode = useExperience(),
@@ -172,7 +174,14 @@ export function VacuumCard({
     >
       <header>
         <div className="vacuum-illustration" aria-hidden="true">
-          <RobotVacuumIcon size={50} />
+          {simple ? (
+            <img
+              src={new URL("home/simple-vacuum.webp", document.baseURI).href}
+              alt=""
+            />
+          ) : (
+            <RobotVacuumIcon size={50} />
+          )}
         </div>
         <div>
           <small>
