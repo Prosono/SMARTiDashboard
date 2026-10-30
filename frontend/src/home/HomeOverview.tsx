@@ -62,6 +62,7 @@ import "./homeHighlights.css";
 import "./overviewDashboard.css";
 import "./home.css";
 import "./homeTabs.css";
+import "./livingHome.css";
 export type HomePreferences = {
   rooms: string[];
   energy: string | null;
@@ -93,6 +94,7 @@ export function roomMood(name: string) {
   return { Icon: LayoutGrid, photo: null };
 }
 export function HomeOverview({
+  homeStyle,
   residentName,
   home: h,
   offline,
@@ -103,6 +105,7 @@ export function HomeOverview({
   openDevices,
   add,
 }: {
+  homeStyle: string;
   residentName: string;
   home: Home;
   offline: boolean;
@@ -193,6 +196,16 @@ export function HomeOverview({
     (c) => c.domain !== "scene" && h.favorites.includes(c.entity_id),
   );
   const hour = clock.getHours();
+  const metrics = (
+    <HomeMetrics
+      home={h}
+      selectedEnergy={pref?.energy || null}
+      offline={offline}
+      lang={lang}
+      openEnergy={() => setTab("energy")}
+      openClimate={() => setTab("climate")}
+    />
+  );
   const greeting =
     hour < 5
       ? t("God natt", "Good night")
@@ -766,22 +779,18 @@ export function HomeOverview({
         )}
         {tab === "overview" && (
           <>
-            <div className="home-dashboard-widgets">
-              <SimpleDashboard
-                home={h}
-                lang={lang}
-                offline={offline}
-                showWeather={false}
-              />
+            <div className="home-dashboard-top">
+              {homeStyle === "living" && metrics}
+              <div className="home-dashboard-widgets">
+                <SimpleDashboard
+                  home={h}
+                  lang={lang}
+                  offline={offline}
+                  showWeather={false}
+                />
+              </div>
+              {homeStyle !== "living" && metrics}
             </div>
-            <HomeMetrics
-              home={h}
-              selectedEnergy={pref?.energy || null}
-              offline={offline}
-              lang={lang}
-              openEnergy={() => setTab("energy")}
-              openClimate={() => setTab("climate")}
-            />
             <div className="home-status-grid">
               {model.security.length > 0 && (
                 <button

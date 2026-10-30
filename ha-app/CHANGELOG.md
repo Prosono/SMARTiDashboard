@@ -1,3 +1,8 @@
+## 1.36.63
+- Ny valgfri Hjem-stil, SMARTi Living, under Innstillinger → Tema og utseende.
+- En roligere, mer kompakt oversikt med målinger først, tydelige snarveier og tilpassede kort for telefon, nettbrett og desktop. Stilen følger valgt lys/mørk-modus og fargepalett.
+- Stilvalget lagres på den enkelte enheten. Eksisterende funksjoner, favoritter og klassisk stil beholdes.
+
 ## 1.36.62
 - Mer kompakt Hjem-oversikt på telefon med to kort i bredden og header over hele bredden.
 - Vær, kalender, media, klima, støvsuger og målegrafene er tilpasset smale skjermer.

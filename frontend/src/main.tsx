@@ -148,6 +148,13 @@ function App() {
   const [theme, setTheme] = useState(() =>
     readPreference("smarti-theme", "light", ["light", "dark"]),
   );
+  const [homeStyle, setHomeStyle] = useState(() =>
+    readPreference("smarti-home-style", "classic", ["classic", "living"]),
+  );
+  useEffect(() => {
+    document.documentElement.dataset.homeStyle = homeStyle;
+    writePreference("smarti-home-style", homeStyle);
+  }, [homeStyle]);
   const [palette, setPalette] = useState(() =>
     readPreference(
       "smarti-palette",
@@ -440,6 +447,8 @@ function App() {
             setPalette={setPalette}
             theme={theme}
             setTheme={setTheme}
+            homeStyle={homeStyle}
+            setHomeStyle={setHomeStyle}
             lang={lang}
             language={language}
             logout={logout}
@@ -685,6 +694,8 @@ function Dashboard({
   onDirty,
   theme,
   setTheme,
+  homeStyle,
+  setHomeStyle,
   lang,
   language,
   logout,
@@ -699,6 +710,8 @@ function Dashboard({
   onDirty: (value: boolean) => void;
   theme: string;
   setTheme: (s: string) => void;
+  homeStyle: string;
+  setHomeStyle: (s: string) => void;
   lang: string;
   language: (s: string) => void;
   logout: () => void;
@@ -1010,6 +1023,7 @@ function Dashboard({
           />
         ) : page === "home" ? (
           <HomeOverview
+            homeStyle={homeStyle}
             residentName={session.name}
             home={h}
             offline={offline}
@@ -1442,6 +1456,23 @@ function Dashboard({
                         <option value="dark">{t.dark}</option>
                       </select>
                     </label>
+                    <label>
+                      {lang === "en" ? "Home style" : "Stil for Hjem"}
+                      <select
+                        value={homeStyle}
+                        onChange={(e) => setHomeStyle(e.target.value)}
+                      >
+                        <option value="classic">
+                          {lang === "en" ? "Classic" : "Klassisk"}
+                        </option>
+                        <option value="living">SMARTi Living</option>
+                      </select>
+                    </label>
+                    <p className="note">
+                      {lang === "en"
+                        ? "Choose the layout for Home on this device. Works with your selected theme and colors."
+                        : "Velg utseendet på Hjem på denne enheten. Stilen følger valgt tema og farger."}
+                    </p>
                     <PalettePicker
                       value={palette}
                       change={setPalette}
@@ -1548,16 +1579,16 @@ function Device({
                 ? lightIcon(c)
                 : c.domain === "media_player"
                   ? mediaIcon(c)
-                : c.domain === "switch"
-                  ? Plug
-                  : c.domain === "climate" ||
-                      c.attributes.device_class === "temperature"
-                    ? Thermometer
-                    : c.domain === "binary_sensor"
-                      ? DoorOpen
-                      : c.domain === "automation"
-                        ? Zap
-                        : Activity;
+                  : c.domain === "switch"
+                    ? Plug
+                    : c.domain === "climate" ||
+                        c.attributes.device_class === "temperature"
+                      ? Thermometer
+                      : c.domain === "binary_sensor"
+                        ? DoorOpen
+                        : c.domain === "automation"
+                          ? Zap
+                          : Activity;
   async function command(action: string, value?: number | number[] | string) {
     const actionNames: Record<string, string> =
       document.documentElement.lang === "en"

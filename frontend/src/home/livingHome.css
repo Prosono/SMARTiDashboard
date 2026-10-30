@@ -1,0 +1,197 @@
+/* SMARTi Living: a calm, touch-first overview, independent of palette and mode. */
+html[data-home-style="living"] .home-overview,
+html[data-home-style="living"] .simple-home-dashboard {
+  --living-surface: color-mix(in srgb, var(--surface) 94%, var(--accent) 6%);
+  --living-line: color-mix(in srgb, var(--line) 70%, transparent);
+  --living-shadow: 0 12px 32px color-mix(in srgb, var(--text) 5%, transparent);
+  max-width: 1500px;
+}
+html[data-home-style="living"] .home-toolbar {
+  margin-bottom: 14px;
+}
+html[data-home-style="living"] .home-location {
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+html[data-home-style="living"] .home-tabs {
+  gap: 4px;
+  padding: 6px;
+  border-color: var(--living-line);
+  border-radius: 18px;
+  box-shadow: var(--living-shadow);
+  margin-bottom: 24px;
+}
+html[data-home-style="living"] .home-tabs [role="tab"] {
+  min-height: 48px;
+  border-radius: 13px;
+  font-weight: 600;
+}
+html[data-home-style="living"] .home-tabs [aria-selected="true"],
+html[data-home-style="living"] .home-tabs [aria-selected="true"]:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+html[data-home-style="living"] .home-overview .home-welcome {
+  padding: clamp(20px, 2.5vw, 34px);
+  margin-bottom: 24px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--living-surface);
+  box-shadow: var(--living-shadow);
+  gap: 22px;
+}
+html[data-home-style="living"] .home-overview .home-welcome::before {
+  background: linear-gradient(
+    90deg,
+    var(--living-surface) 20%,
+    color-mix(in srgb, var(--living-surface) 90%, transparent) 64%,
+    color-mix(in srgb, var(--living-surface) 64%, transparent)
+  );
+}
+html[data-home-style="living"] .home-overview .home-welcome h1 {
+  font-size: clamp(29px, 3.3vw, 43px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  margin: 12px 0 8px;
+}
+html[data-home-style="living"] .home-hero-eyebrow {
+  letter-spacing: 0.09em;
+  font-size: 11px;
+}
+html[data-home-style="living"] .home-header-weather {
+  border-color: var(--living-line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+html[data-home-style="living"] .home-overview .home-modes {
+  gap: 8px;
+}
+html[data-home-style="living"] .home-overview .home-modes button {
+  border-color: var(--living-line);
+  border-radius: 14px;
+  padding: 10px 15px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+html[data-home-style="living"] .home-hero-status {
+  border-top: 1px solid var(--living-line);
+}
+html[data-home-style="living"] .home-metrics-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+html[data-home-style="living"] .home-metric-card,
+html[data-home-style="living"] .simple-dashboard-grid > * {
+  border: 1px solid var(--living-line);
+  border-radius: 22px;
+  box-shadow: var(--living-shadow);
+}
+html[data-home-style="living"] .home-metric-card {
+  min-height: 200px;
+  padding: 20px 22px 16px;
+}
+html[data-home-style="living"] .home-metric-card:only-child {
+  grid-column: 1 / -1;
+}
+html[data-home-style="living"] .home-metric-reading {
+  font-size: clamp(30px, 3vw, 40px);
+  margin-top: 13px;
+}
+html[data-home-style="living"] .home-metric-graph {
+  height: 58px;
+}
+html[data-home-style="living"] .home-dashboard-widgets {
+  margin-bottom: 24px;
+}
+@media (min-width: 1100px) {
+  html[data-home-style="living"]
+    .home-dashboard-top:has(.home-metric-card:only-child) {
+    display: grid;
+    grid-template-columns: minmax(210px, 1fr) minmax(0, 3fr);
+    gap: 14px;
+  }
+  html[data-home-style="living"]
+    .home-dashboard-top:has(.home-metric-card:only-child)
+    .home-metrics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+html[data-home-style="living"] .simple-dashboard-grid {
+  gap: 14px;
+}
+html[data-home-style="living"] .simple-dashboard-tile {
+  min-height: 250px;
+}
+html[data-home-style="living"] .home-status-grid {
+  gap: 10px;
+  margin-bottom: 28px;
+}
+html[data-home-style="living"] .home-status {
+  border-color: var(--living-line);
+  border-radius: 18px;
+  box-shadow: none;
+  background: var(--surface);
+}
+html[data-home-style="living"] .home-section-heading {
+  margin-bottom: 14px;
+}
+html[data-home-style="living"] .home-section-heading h2,
+html[data-home-style="living"] .home-insights h2 {
+  font-size: clamp(20px, 2vw, 25px);
+  letter-spacing: -0.035em;
+}
+html[data-home-style="living"] .home-room-card {
+  border-color: var(--living-line);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--living-shadow);
+}
+html[data-home-style="living"] .home-room-art {
+  border-radius: 0;
+}
+html[data-home-style="living"] .home-favorites .device,
+html[data-home-style="living"] .home-panel,
+html[data-home-style="living"] .scene-card {
+  border-color: var(--living-line);
+  border-radius: 20px;
+  box-shadow: var(--living-shadow);
+}
+html[data-home-style="living"] .home-dashboard-calendar {
+  border: 1px solid var(--living-line);
+  border-radius: 18px;
+  padding: 12px 18px;
+  background: var(--surface);
+}
+html[data-home-style="living"] .simple-home-dashboard .simple-welcome {
+  border: 0;
+  border-radius: 26px;
+  background: var(--living-surface);
+  box-shadow: var(--living-shadow);
+}
+@media (max-width: 767px) {
+  html[data-home-style="living"] .home-overview .home-welcome {
+    padding: 20px;
+    gap: 16px;
+  }
+  html[data-home-style="living"] .home-overview .home-welcome h1 {
+    font-size: 30px;
+  }
+  html[data-home-style="living"] .home-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  html[data-home-style="living"] .home-metric-card {
+    min-height: 174px;
+    padding: 15px;
+    border-radius: 18px;
+  }
+  html[data-home-style="living"] .home-metric-reading {
+    font-size: 27px;
+  }
+  html[data-home-style="living"] .home-tabs {
+    margin-bottom: 16px;
+  }
+  html[data-home-style="living"] .simple-dashboard-tile {
+    min-height: 205px;
+  }
+}
