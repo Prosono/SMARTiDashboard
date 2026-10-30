@@ -156,7 +156,7 @@ test("multimedia filters players and sends supported playback commands", async (
     name: "Tilpass mediaspiller",
     exact: true,
   });
-  await expect(settings.locator(".light-icon-options button")).toHaveCount(8);
+  await expect(settings.locator(".light-icon-options button")).toHaveCount(13);
   await settings
     .getByRole("button", { name: "Apple HomePod", exact: true })
     .click();
@@ -222,6 +222,21 @@ test("multimedia filters players and sends supported playback commands", async (
     .getByRole("button", { name: "Vis alle 7 spillere", exact: true })
     .click();
   await expect(page.locator(".media-player-card")).toHaveCount(7);
+  for (const card of await page.locator(".media-player-card").all()) {
+    const picture = await card.locator(".media-device-visual").boundingBox();
+    const controls = await card.locator(".media-controls-row").boundingBox();
+    const progressElement = card.locator(".media-progress");
+    const progress = (await progressElement.count())
+      ? await progressElement.boundingBox()
+      : null;
+    expect(picture).not.toBeNull();
+    expect(controls).not.toBeNull();
+    if (picture && controls)
+      expect(picture.y + picture.height).toBeLessThanOrEqual(controls.y);
+    if (picture && progress)
+      expect(picture.y + picture.height).toBeLessThanOrEqual(progress.y);
+  }
+
   await page.getByRole("button", { name: "Vis færre", exact: true }).click();
   await expect(page.locator(".media-player-card")).toHaveCount(6);
   expect(

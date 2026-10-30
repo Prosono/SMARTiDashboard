@@ -5,6 +5,10 @@ import {
   Radio,
   Projector,
   RectangleEllipsis,
+  Smartphone,
+  Headphones,
+  MonitorPlay,
+  Usb,
 } from "lucide-react";
 import type { Control } from "./types";
 function HomePod({ size = 24 }: { size?: number }) {
@@ -49,6 +53,26 @@ export const mediaIcons = [
   { id: "auto", nb: "Standard", en: "Default", Icon: AudioLines },
   { id: "tv", nb: "TV", en: "TV", Icon: Tv },
   { id: "speaker", nb: "Høyttaler", en: "Speaker", Icon: Speaker },
+  {
+    id: "speaker_white",
+    nb: "Hvit høyttaler",
+    en: "White speaker",
+    Icon: Speaker,
+  },
+  { id: "phone", nb: "Telefon", en: "Phone", Icon: Smartphone },
+  { id: "headphones", nb: "Hodetelefoner", en: "Headphones", Icon: Headphones },
+  {
+    id: "streaming_box",
+    nb: "Medieboks",
+    en: "Streaming box",
+    Icon: MonitorPlay,
+  },
+  {
+    id: "streaming_stick",
+    nb: "Strømmeenhet",
+    en: "Streaming stick",
+    Icon: Usb,
+  },
   { id: "homepod", nb: "Apple HomePod", en: "Apple HomePod", Icon: HomePod },
   {
     id: "homepod_mini",

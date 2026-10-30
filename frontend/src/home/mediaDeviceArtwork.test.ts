@@ -30,12 +30,21 @@ describe("media device pictures", () => {
     ).toBe("speaker");
     expect(mediaArtworkKind(player("HomePod mini"))).toBe("mini");
     expect(mediaArtworkKind(player("SMARTi Voice Stue"))).toBe("mini");
+    expect(mediaArtworkKind(player("Min iPhone"))).toBe("phone");
+    expect(mediaArtworkKind(player("Sonos Beam"))).toBe("soundbar");
+    expect(mediaArtworkKind(player("Apple TV"))).toBe("box");
+    expect(mediaArtworkKind(player("Projektor"))).toBe("projector");
+    expect(mediaArtworkKind(player("Sonos hvit"))).toBe("speaker-white");
+    expect(mediaArtworkKind(player("AirPods"))).toBe("headphones");
     expect(mediaArtworkKind(player("Uknyttet spiller"))).toBeNull();
   });
   it("honors the user's chosen type, including types without a generated image", () => {
     expect(
       mediaArtworkKind(player("TV Stue", { smarti_icon: "homepod_mini" })),
     ).toBe("mini");
+    expect(mediaArtworkKind(player("TV Stue", { smarti_icon: "phone" }))).toBe(
+      "phone",
+    );
     expect(
       mediaArtworkKind(player("TV Stue", { smarti_icon: "radio" })),
     ).toBeNull();

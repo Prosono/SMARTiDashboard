@@ -778,3 +778,43 @@
     min-width: 120px;
   }
 }
+
+/* Keep image, track information, progress and controls in separate flow rows. */
+.media-player-card .media-info-region {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 42%);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  margin-bottom: 14px;
+}
+.media-player-card .media-info-copy {
+  min-width: 0;
+  align-self: start;
+}
+.media-player-card .media-state {
+  max-width: none;
+}
+.media-player-card .media-track {
+  width: auto;
+  min-height: 0;
+  padding: 18px 0 0;
+}
+.media-player-card .media-device-visual,
+.media-player-grid.is-list .media-player-card .media-device-visual {
+  position: static;
+  width: 100%;
+  height: 130px;
+  min-width: 0;
+}
+.media-player-card .media-device-visual > img {
+  max-height: 100%;
+}
+@container (max-width: 240px) {
+  .media-player-card .media-info-region {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .media-player-card .media-device-visual {
+    height: 110px;
+  }
+}

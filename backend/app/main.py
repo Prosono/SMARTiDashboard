@@ -82,6 +82,11 @@ class ControlAppearance(BaseModel):
         "soundbar",
         "radio",
         "projector",
+        "phone",
+        "headphones",
+        "streaming_box",
+        "streaming_stick",
+        "speaker_white",
     ] = "auto"
 
 
@@ -635,7 +640,21 @@ def create_app(
         icons = (
             {"auto", "bulb", "pendant", "floor", "desk", "ceiling", "strip", "sun", "outdoor"}
             if control.domain == "light"
-            else {"auto", "tv", "speaker", "homepod", "homepod_mini", "soundbar", "radio", "projector"}
+            else {
+                "auto",
+                "tv",
+                "speaker",
+                "homepod",
+                "homepod_mini",
+                "soundbar",
+                "radio",
+                "projector",
+                "phone",
+                "headphones",
+                "streaming_box",
+                "streaming_stick",
+                "speaker_white",
+            }
         )
         if body.icon not in icons:
             raise HTTPException(422, "invalid_icon_for_domain")

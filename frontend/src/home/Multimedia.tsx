@@ -161,58 +161,62 @@ export function MediaCard({
           </span>
         </div>
       </div>
-      <div className="media-device-visual" aria-hidden="true">
-        {showArtwork ? (
-          <img
-            src={artwork || undefined}
-            alt=""
-            onError={() => setFailedArtwork(String(artwork))}
-          />
-        ) : deviceArtwork && failedDeviceArtwork !== deviceArtwork ? (
-          <img
-            className="media-product-image"
-            src={deviceArtwork}
-            alt=""
-            loading="lazy"
-            onError={() => setFailedDeviceArtwork(deviceArtwork)}
-          />
-        ) : (
-          <Icon size={124} />
-        )}
-      </div>
       <div className="media-player-content">
-        <span className="media-state">
-          <i />
-          {unavailable
-            ? t("Utilgjengelig", "Unavailable")
-            : states[c.state] || c.state}
-        </span>
-        <div className="media-track">
-          <div>
-            <h3>
+        <div className="media-info-region">
+          <div className="media-info-copy">
+            <span className="media-state">
+              <i />
               {unavailable
-                ? t("Venter på forbindelse", "Waiting for connection")
-                : String(
-                    c.attributes.media_title ||
-                      (playing
-                        ? t("Avspilling pågår", "Playback in progress")
-                        : t("Ingen avspilling", "Nothing playing")),
-                  )}
-            </h3>
-            <p>
-              {unavailable
-                ? "—"
-                : String(
-                    c.attributes.media_artist ||
-                      c.attributes.media_series_title ||
-                      c.attributes.app_name ||
-                      c.attributes.source ||
-                      t(
-                        "Velg innhold i spillerens app",
-                        "Choose content in the player's app",
-                      ),
-                  )}
-            </p>
+                ? t("Utilgjengelig", "Unavailable")
+                : states[c.state] || c.state}
+            </span>
+            <div className="media-track">
+              <div>
+                <h3>
+                  {unavailable
+                    ? t("Venter på forbindelse", "Waiting for connection")
+                    : String(
+                        c.attributes.media_title ||
+                          (playing
+                            ? t("Avspilling pågår", "Playback in progress")
+                            : t("Ingen avspilling", "Nothing playing")),
+                      )}
+                </h3>
+                <p>
+                  {unavailable
+                    ? "—"
+                    : String(
+                        c.attributes.media_artist ||
+                          c.attributes.media_series_title ||
+                          c.attributes.app_name ||
+                          c.attributes.source ||
+                          t(
+                            "Velg innhold i spillerens app",
+                            "Choose content in the player's app",
+                          ),
+                      )}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="media-device-visual" aria-hidden="true">
+            {showArtwork ? (
+              <img
+                src={artwork || undefined}
+                alt=""
+                onError={() => setFailedArtwork(String(artwork))}
+              />
+            ) : deviceArtwork && failedDeviceArtwork !== deviceArtwork ? (
+              <img
+                className="media-product-image"
+                src={deviceArtwork}
+                alt=""
+                loading="lazy"
+                onError={() => setFailedDeviceArtwork(deviceArtwork)}
+              />
+            ) : (
+              <Icon size={124} />
+            )}
           </div>
         </div>
         {typeof c.attributes.media_duration === "number" &&

@@ -1,3 +1,8 @@
+## 1.36.54
+- Mediebilder, fremdriftslinje og avspillingskontroller har egne områder, slik at de ikke overlapper.
+- Nye enhetsbilder for telefon, hodetelefoner, lydplanke, projektor, medieboks og hvit høyttaler.
+- Flere enhetstyper gjenkjennes automatisk, og flere kan velges manuelt under «Tilpass mediaspiller».
+
 ## 1.36.53
 - Multimediaoversikten viser realistiske illustrasjoner for TV, Chromecast og høyttalere, automatisk valgt etter tilgjengelig enhetsinformasjon.
 - Valgt enhetsikon prioriteres, og innholdets omslag vises når det er tilgjengelig. Ukjente typer bruker sitt vanlige ikon.

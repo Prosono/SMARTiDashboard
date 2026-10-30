@@ -402,7 +402,20 @@ def test_media_appearance_is_saved_with_domain_specific_icons(client, app):
         "attributes": {"friendly_name": "Høyttaler", "device_class": "speaker"},
     }
     route = "/api/controls/media_player.speaker/appearance"
-    for icon in ["tv", "speaker", "homepod", "homepod_mini", "soundbar", "radio", "projector"]:
+    for icon in [
+        "tv",
+        "speaker",
+        "homepod",
+        "homepod_mini",
+        "soundbar",
+        "radio",
+        "projector",
+        "phone",
+        "headphones",
+        "streaming_box",
+        "streaming_stick",
+        "speaker_white",
+    ]:
         assert client.put(route, json={"name": "Stue", "icon": icon}).status_code == 200
         c = next(
             c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == "media_player.speaker"
