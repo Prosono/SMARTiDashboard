@@ -23,6 +23,7 @@ test("multimedia filters players and sends supported playback commands", async (
     attributes: {
       device_class: kind,
       smarti_icon: id === "speaker" ? appearance.icon : "auto",
+      smarti_artwork: id === "speaker" ? "cover1" : undefined,
       media_title: "Evening sessions",
       media_artist: "Living room collection",
       volume_level: 0.35,
@@ -68,6 +69,9 @@ test("multimedia filters players and sends supported playback commands", async (
       await r.fulfill({ json: { saved: true } });
     },
   );
+  await page.route("**/api/controls/media_player.speaker/artwork?*", async (r) => {
+    await r.fulfill({contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=", "base64")});
+  });
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
   await page
@@ -79,6 +83,8 @@ test("multimedia filters players and sends supported playback commands", async (
     page.getByRole("heading", { name: "Multimedia", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".media-player-card")).toHaveCount(2);
+  await expect(page.locator(".media-cover")).toBeVisible();
+  await expect(page.locator(".media-cover")).toHaveJSProperty("naturalWidth", 1);
   await expect(
     page.getByRole("button", {
       name: "TV på soverommet: Spill av",

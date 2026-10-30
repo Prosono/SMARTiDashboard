@@ -488,3 +488,5 @@
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+
+.media-cover { width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }

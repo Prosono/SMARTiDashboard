@@ -68,6 +68,16 @@ export function MediaCard({
   const renderDevice = useContext(MetricDeviceRenderer);
   const inDialog = useContext(InSettingsDialog);
   const [opened, setOpened] = useState(false);
+  const artworkKey = c.attributes.smarti_artwork;
+  const artwork =
+    artworkKey && !["off", "idle", "standby"].includes(c.state)
+      ? new URL(
+          `api/controls/${encodeURIComponent(c.entity_id)}/artwork?v=${encodeURIComponent(String(artworkKey))}`,
+          document.baseURI,
+        ).href
+      : "";
+  const [failedArtwork, setFailedArtwork] = useState("");
+  const showArtwork = Boolean(artwork && failedArtwork !== artwork);
   const playing = c.state === "playing" && !unavailable;
   const states: Record<string, string> = {
     playing: t("Spiller", "Playing"),
@@ -125,7 +135,16 @@ export function MediaCard({
   return (
     <article className="media-player-card" data-playing={playing}>
       <div className="media-art">
-        <RoomArtwork src={photo} alt="" loading="lazy" />
+        {showArtwork ? (
+          <img
+            src={artwork || undefined}
+            alt=""
+            loading="lazy"
+            onError={() => setFailedArtwork(String(artwork))}
+          />
+        ) : (
+          <RoomArtwork src={photo} alt="" loading="lazy" />
+        )}
         <div>
           {!inDialog && renderDevice ? (
             <button
@@ -156,7 +175,16 @@ export function MediaCard({
         </span>
         <div className="media-track">
           <span className="media-track-symbol">
-            <Music2 size={26} />
+            {showArtwork ? (
+              <img
+                className="media-cover"
+                src={artwork || undefined}
+                alt={t("Omslag", "Artwork")}
+                onError={() => setFailedArtwork(String(artwork))}
+              />
+            ) : (
+              <Music2 size={26} />
+            )}
           </span>
           <div>
             <h3>

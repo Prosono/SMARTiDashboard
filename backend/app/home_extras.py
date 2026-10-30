@@ -175,6 +175,34 @@ def extras_router(store, user, ha, settings):
             headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
         )
 
+    @router.get("/controls/{id}/artwork")
+    async def media_artwork(id: str):
+        if not any(c.entity_id == id and c.domain == "media_player" for c in ha.controls()):
+            raise HTTPException(404, "media_player_not_found")
+        if settings.mode == "demo" or not ha.connected:
+            raise HTTPException(404, "image_unavailable")
+        # HA resolves the integration's artwork; never fetch a supplied external URL.
+        url = ha.http_url.rstrip("/") + "/media_player_proxy/" + quote(id, safe="")
+        try:
+            async with httpx.AsyncClient(timeout=10, follow_redirects=False, trust_env=False) as client:
+                async with client.stream(
+                    "GET", url, headers={"Authorization": "Bearer " + ha.token}
+                ) as response:
+                    if response.status_code != 200:
+                        raise HTTPException(404, "image_unavailable")
+                    raw = b""
+                    async for part in response.aiter_bytes():
+                        raw += part
+                        if len(raw) > 5_000_000:
+                            raise HTTPException(413, "image_too_large")
+        except httpx.HTTPError:
+            raise HTTPException(503, "image_unavailable") from None
+        return Response(
+            raw,
+            media_type=image_type(raw),
+            headers={"Cache-Control": "private, max-age=60", "X-Content-Type-Options": "nosniff"},
+        )
+
     @router.get("/home/weather/{id}")
     async def weather(id: str):
         c = next((c for c in ha.controls() if c.id == id and c.domain == "weather"), None)

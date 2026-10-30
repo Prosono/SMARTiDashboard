@@ -192,6 +192,27 @@ def test_profile_proxy_keeps_supervisor_prefix_and_credentials_server_side(tmp_p
         states["person.ada"]["attributes"]["entity_picture"] = "https://untrusted.invalid/image"
         assert c.get("/api/home/people/person.ada/photo").status_code == 404
         assert len(seen) == 1
+        states["media_player.speaker"] = {
+            "state": "playing",
+            "attributes": {
+                "entity_picture": "https://untrusted.invalid/art?token=private",
+                "media_title": "Song",
+            },
+        }
+        control = next(x for x in ha.controls() if x.domain == "media_player")
+        assert "entity_picture" not in control.attributes
+        key = control.attributes["smarti_artwork"]
+        assert "private" not in key
+        states["media_player.speaker"]["attributes"]["media_title"] = "Next song"
+        assert (
+            next(x for x in ha.controls() if x.domain == "media_player").attributes["smarti_artwork"] != key
+        )
+        response = c.get("/api/controls/media_player.speaker/artwork")
+        assert response.status_code == 200
+        assert str(seen[-1].url) == "http://supervisor/core/api/media_player_proxy/media_player.speaker"
+        assert seen[-1].headers["authorization"] == "Bearer test-only-secret"
+        assert response.headers["content-type"] == "image/png"
+        assert c.get("/api/controls/person.ada/artwork").status_code == 404
 
 
 def test_entity_history_keeps_lock_states_without_device_registry(tmp_path):

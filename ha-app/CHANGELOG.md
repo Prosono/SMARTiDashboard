@@ -1,3 +1,8 @@
+## 1.36.51
+- Mediaspillere viser omslagsbilde fra innholdet som spilles, både i kort, enkel visning og popup.
+- Omslaget følger innholdsendringer. Rombildet beholdes når omslag mangler eller ikke kan hentes.
+- Bilder hentes via huben uten å eksponere Home Assistant-token.
+
 ## 1.36.50
 - Mediaspillere kan åpnes fra navnet på kortet for styring og innstillinger.
 - Administrator kan endre navn og velge ikon for TV, høyttaler, Apple HomePod, HomePod mini, lydplanke, radio og projektor.

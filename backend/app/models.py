@@ -1,3 +1,4 @@
+import hashlib
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
@@ -147,9 +148,14 @@ def normalize(states, entities, devices, temperature_unit=None):
                     unit=a.get("temperature_unit"),
                 )
             )
-        if domain == "climate" and isinstance(a.get("hvac_modes"), list) and any(
-            mode in {"off", "heat", "cool", "heat_cool", "auto", "dry", "fan_only"}
-            for mode in a["hvac_modes"] if isinstance(mode, str)
+        if (
+            domain == "climate"
+            and isinstance(a.get("hvac_modes"), list)
+            and any(
+                mode in {"off", "heat", "cool", "heat_cool", "auto", "dry", "fan_only"}
+                for mode in a["hvac_modes"]
+                if isinstance(mode, str)
+            )
         ):
             caps.append(Capability(kind="hvac_mode", actions=["set_hvac_mode"]))
         if domain in {"sensor", "binary_sensor", "lock"}:
@@ -246,7 +252,20 @@ def normalize(states, entities, devices, temperature_unit=None):
                 # Presence needs only the name and state, never location/user/tracker metadata.
                 attributes={}
                 if domain == "person"
-                else {k: v for k, v in a.items() if k not in {"access_token", "entity_picture"}},
+                else {
+                    **{k: v for k, v in a.items() if k not in {"access_token", "entity_picture"}},
+                    **(
+                        {
+                            "smarti_artwork": hashlib.sha256(
+                                str(
+                                    (a.get("entity_picture"), a.get("media_content_id"), a.get("media_title"))
+                                ).encode()
+                            ).hexdigest()[:20]
+                        }
+                        if domain == "media_player" and a.get("entity_picture")
+                        else {}
+                    ),
+                },
                 capabilities=caps,
                 availability=raw
                 if raw in {"unknown", "unavailable"} and not (domain == "scene" and raw == "unknown")
