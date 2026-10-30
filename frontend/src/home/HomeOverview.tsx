@@ -55,6 +55,8 @@ import { Presence } from "./People";
 import { Calendar } from "./Calendar";
 import { Vehicle } from "./Vehicle";
 import { SimpleDashboard } from "./SimpleDashboard";
+import { HomeMetrics } from "./HomeMetrics";
+import { Weather } from "./Weather";
 import { HighlightWeather } from "./HighlightWeather";
 import "./homeHighlights.css";
 import "./overviewDashboard.css";
@@ -116,6 +118,7 @@ export function HomeOverview({
   const qc = useQueryClient();
   const [tab, setTab] = useState<HomeTab>("overview");
   const [lightScenes, showLightScenes] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
   const canView = (feature: string) =>
     !h.permissions || h.permissions.includes(feature + ".view");
   const canScenes =
@@ -359,22 +362,59 @@ export function HomeOverview({
                       "Vi venter på ferske data fra hjemmet.",
                       "Waiting for fresh data from your home.",
                     )
-                  : model.alerts.length
+                  : model.open.length
                     ? t(
-                        "Noe trenger oppmerksomheten din.",
-                        "Something needs your attention.",
+                        "Se over åpninger og aktivitet nedenfor.",
+                        "Review openings and activity below.",
                       )
-                    : model.open.length
-                      ? t(
-                          "Se over åpninger og aktivitet nedenfor.",
-                          "Review openings and activity below.",
-                        )
-                      : t(
-                          "Hjemmet ditt, samlet på ett sted.",
-                          "Your home, all in one place.",
-                        )}
+                    : t(
+                        "Hjemmet ditt, samlet på ett sted.",
+                        "Your home, all in one place.",
+                      )}
               </p>
             </div>
+            {h.controls.some(
+              (c) => c.domain === "weather" && !c.diagnostic,
+            ) && (
+              <div className="home-header-weather">
+                <Weather
+                  c={
+                    offline
+                      ? {
+                          ...h.controls.find(
+                            (c) => c.domain === "weather" && !c.diagnostic,
+                          )!,
+                          availability: "unavailable",
+                          attributes: {
+                            ...h.controls.find(
+                              (c) => c.domain === "weather" && !c.diagnostic,
+                            )!.attributes,
+                            temperature: null,
+                          },
+                        }
+                      : h.controls.find(
+                          (c) => c.domain === "weather" && !c.diagnostic,
+                        )!
+                  }
+                  lang={lang}
+                  compact
+                />
+              </div>
+            )}
+            {!!model.alerts.length && (
+              <div className="home-alert-corner" role="alert">
+                <button
+                  className="simple-warning-button"
+                  aria-label={`${t("Trenger din oppmerksomhet", "Needs your attention")}: ${model.alerts.length}`}
+                  title={t("Vis varsler", "Show alerts")}
+                  aria-haspopup="dialog"
+                  onClick={() => setShowAlerts(true)}
+                >
+                  <TriangleAlert size={26} aria-hidden="true" />
+                  <span aria-hidden="true">{model.alerts.length}</span>
+                </button>
+              </div>
+            )}
             <nav
               className="home-modes"
               aria-label={t("Hjemmemoduser", "Home modes")}
@@ -419,42 +459,55 @@ export function HomeOverview({
                   admin={admin}
                 />
               )}
-              {!!model.alerts.length && (
-                <button
-                  className="home-alert-banner"
-                  onClick={() => setTab("security")}
-                >
-                  <TriangleAlert size={22} />
-                  <span>
-                    <strong>
-                      {offline
-                        ? t(
-                            "Sikkerhetsstatus er ukjent",
-                            "Security status is unknown",
-                          )
-                        : t(
-                            "Sikkerhet trenger oppmerksomhet",
-                            "Security needs attention",
-                          )}
-                    </strong>
-                    <small>
-                      {model.alerts
-                        .slice(0, 3)
-                        .map((c) => c.name)
-                        .join(" · ")}
-                      {model.alerts.length > 3
-                        ? ` +${model.alerts.length - 3}`
-                        : ""}
-                    </small>
-                  </span>
-                  <ChevronRight size={20} />
-                </button>
-              )}
             </div>
             <span className="home-hero-caption">
               {t("Stemningsbilde", "Decorative image")}
             </span>
           </header>
+        )}
+        {showAlerts && tab === "overview" && (
+          <SettingsDialog
+            title={t("Trenger din oppmerksomhet", "Needs your attention")}
+            lang={lang}
+            compact
+            onClose={() => setShowAlerts(false)}
+          >
+            {offline && (
+              <p>
+                {t(
+                  "Forbindelsen er brutt. Dette er sist rapporterte status.",
+                  "Connection lost. These are the last reported states.",
+                )}
+              </p>
+            )}
+            <ul className="home-alert-list">
+              {model.alerts.map((c) => (
+                <li key={c.id}>
+                  <TriangleAlert size={20} />
+                  <span>
+                    <strong>{c.name}</strong>
+                    <small>
+                      {h.areas.find((a) => a.area_id === c.area_id)?.name ||
+                        t("Uten rom", "Unassigned")}{" "}
+                      ·{" "}
+                      {offline
+                        ? t("Sist rapportert", "Last reported")
+                        : entityState(c.entity_id, c.state, h, lang)}
+                    </small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <button
+              className="home-customize"
+              onClick={() => {
+                setShowAlerts(false);
+                setTab("security");
+              }}
+            >
+              {t("Åpne sikkerhet", "Open security")} <ChevronRight size={17} />
+            </button>
+          </SettingsDialog>
         )}
         {message && (
           <p className="notice" role="status">
@@ -714,8 +767,21 @@ export function HomeOverview({
         {tab === "overview" && (
           <>
             <div className="home-dashboard-widgets">
-              <SimpleDashboard home={h} lang={lang} offline={offline} />
+              <SimpleDashboard
+                home={h}
+                lang={lang}
+                offline={offline}
+                showWeather={false}
+              />
             </div>
+            <HomeMetrics
+              home={h}
+              selectedEnergy={pref?.energy || null}
+              offline={offline}
+              lang={lang}
+              openEnergy={() => setTab("energy")}
+              openClimate={() => setTab("climate")}
+            />
             <div className="home-status-grid">
               {model.security.length > 0 && (
                 <button

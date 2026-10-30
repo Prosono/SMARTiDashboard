@@ -42,6 +42,33 @@ test("personal experience modes simplify navigation and survive reload", async (
       },
     }),
   );
+  await page.route("**/api/home/energy-flow/preferences", (route) =>
+    route.fulfill({
+      json: { home: { source: "sensor.house_power" }, grid: { source: null } },
+    }),
+  );
+  const historyPoints = [
+    { time: "2026-10-30T00:00:00Z", value: 1 },
+    { time: "2026-10-30T06:00:00Z", value: null },
+    { time: "2026-10-30T12:00:00Z", value: 3 },
+    { time: "2026-10-30T18:00:00Z", value: 2 },
+  ];
+  await page.route("**/api/home/energy/statistics?*", (route) =>
+    route.fulfill({
+      json: {
+        series: [{ id: "house-power", current: { points: historyPoints } }],
+      },
+    }),
+  );
+  await page.route("**/api/controls/*/history?*", (route) =>
+    route.fulfill({
+      json: {
+        points: historyPoints,
+        start: "2026-10-30T00:00:00Z",
+        end: "2026-10-31T00:00:00Z",
+      },
+    }),
+  );
   await page.route("**/api/home", async (route) => {
     const response = await route.fetch();
     const data = await response.json();
@@ -85,6 +112,43 @@ test("personal experience modes simplify navigation and survive reload", async (
             entity_id: c.domain + ".preview",
             area_id: "living",
             device_id: null,
+            availability: "available",
+            capabilities: [],
+            diagnostic: false,
+          })),
+          ...[
+            {
+              id: "house-power",
+              entity_id: "sensor.house_power",
+              name: "Husets effekt",
+              state: "1450",
+              attributes: { device_class: "power", unit_of_measurement: "W" },
+            },
+            {
+              id: "room-temp",
+              entity_id: "sensor.room_temp",
+              name: "Temperatur stue",
+              state: "21.5",
+              attributes: {
+                device_class: "temperature",
+                unit_of_measurement: "°C",
+              },
+            },
+            {
+              id: "room-humidity",
+              entity_id: "sensor.room_humidity",
+              name: "Fuktighet stue",
+              state: "48",
+              attributes: {
+                device_class: "humidity",
+                unit_of_measurement: "%",
+              },
+            },
+          ].map((c) => ({
+            ...c,
+            domain: "sensor",
+            device_id: null,
+            area_id: "living",
             availability: "available",
             capabilities: [],
             diagnostic: false,
@@ -224,6 +288,27 @@ test("personal experience modes simplify navigation and survive reload", async (
     page.locator(".home-dashboard-widgets .simple-dashboard-vacuum img"),
   ).toBeVisible();
   await expect(page.locator(".home-modes")).toBeVisible();
+  await expect(
+    page.locator(".home-header-weather .simple-weather"),
+  ).toBeVisible();
+  await expect(
+    page.locator(".home-dashboard-widgets .simple-dashboard-weather"),
+  ).toHaveCount(0);
+  const alert = page.locator(".home-alert-corner button");
+  await expect(alert).toBeVisible();
+  await alert.click();
+  await expect(
+    page.getByRole("dialog", { name: "Trenger din oppmerksomhet" }),
+  ).toContainText("Røyk i kjøkken");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".home-metric-card")).toHaveCount(3);
+  await expect(page.locator(".home-metric-graph")).toHaveCount(3);
+  const graphPath = await page
+    .locator(".home-metric-graph path[stroke]")
+    .first()
+    .getAttribute("d");
+  expect(graphPath?.match(/M/g)?.length).toBe(2);
+
   await page.getByText("Vis værprognosen", { exact: true }).click();
   await expect(
     page.locator(".home-dashboard-forecast .hw-current"),

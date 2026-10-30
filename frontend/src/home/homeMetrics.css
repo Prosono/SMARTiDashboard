@@ -1,0 +1,103 @@
+.home-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  margin: 0 0 20px;
+}
+.home-metrics-grid:empty {
+  display: none;
+}
+.home-metric-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  box-shadow: 0 9px 30px color-mix(in srgb, var(--text) 6%, transparent);
+  cursor: pointer;
+}
+.home-metric-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+}
+.home-metric-card:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.home-metric-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.home-metric-head > svg {
+  margin-left: auto;
+  color: var(--muted);
+}
+.home-metric-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  flex: none;
+  color: #b85316;
+  background: color-mix(in srgb, #ff9148 16%, var(--surface));
+}
+.home-metric-icon.is-temperature {
+  color: #ad4260;
+  background: color-mix(in srgb, #f37594 16%, var(--surface));
+}
+.home-metric-icon.is-humidity {
+  color: #227d98;
+  background: color-mix(in srgb, #46bbd6 16%, var(--surface));
+}
+[data-theme="dark"] .home-metric-icon {
+  color: #ffb77e;
+}
+[data-theme="dark"] .home-metric-icon.is-temperature {
+  color: #ff9ab0;
+}
+[data-theme="dark"] .home-metric-icon.is-humidity {
+  color: #84d9ef;
+}
+.home-metric-reading {
+  margin-top: 16px;
+  font-size: clamp(25px, 2.5vw, 34px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+.home-metric-source {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+.home-metric-graph {
+  width: 100%;
+  height: 64px;
+  margin-top: 16px;
+  overflow: visible;
+}
+.home-metric-guide {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.home-metric-empty {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 16px;
+}
+.home-metric-period {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 2px;
+}

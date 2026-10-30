@@ -120,10 +120,12 @@ export function SimpleDashboard({
   home,
   lang,
   offline,
+  showWeather = true,
 }: {
   home: Home;
   lang: string;
   offline: boolean;
+  showWeather?: boolean;
 }) {
   const en = lang === "en",
     t = (nb: string, eng: string) => (en ? eng : nb);
@@ -194,7 +196,7 @@ export function SimpleDashboard({
         className="simple-dashboard-grid"
         aria-label={t("Hjemmet med et blikk", "Home at a glance")}
       >
-        {weather && (
+        {showWeather && weather && (
           <div className="simple-dashboard-weather">
             <Weather
               c={

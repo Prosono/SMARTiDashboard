@@ -1,3 +1,7 @@
+## 1.36.61
+- Varsler i normal og avansert visning er samlet bak et utropstegn, og værkortet ligger i headeren.
+- Nye kort for energi, temperatur og luftfuktighet med fargerike grafer for tilgjengelig historikk. Manglende målinger vises som hull.
+
 ## 1.36.60
 - Hjem i normal og avansert visning har fått samme kortdesign som den enkle oversikten.
 - Hjemmemoduser, sikkerhetsstatus, rom, favoritter og scener er bevart. Full kalender og detaljert værprognose kan åpnes under kortene.
