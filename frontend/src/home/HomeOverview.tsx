@@ -58,6 +58,8 @@ import { SimpleDashboard } from "./SimpleDashboard";
 import { HomeMetrics } from "./HomeMetrics";
 import { LivingFavorites } from "./LivingFavorites";
 import { Weather } from "./Weather";
+import { HomeHeaderImage } from "./HomeAppearance";
+import { CategoryHeading } from "./CategoryIntro";
 import { HighlightWeather } from "./HighlightWeather";
 import "./homeHighlights.css";
 import "./overviewDashboard.css";
@@ -119,6 +121,7 @@ export function HomeOverview({
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const mode = useExperience();
+  const harmony = homeStyle === "harmony";
   const modern = homeStyle === "living" || homeStyle === "harmony";
   const qc = useQueryClient();
   const [tab, setTab] = useState<HomeTab>("overview");
@@ -357,6 +360,110 @@ export function HomeOverview({
       </section>
     );
   }
+  const welcomeStage = (
+    <>
+      {!harmony && (
+        <button
+          className="home-customize home-customize-icon home-customize-mobile"
+          aria-label={t("Tilpass Hjem", "Personalize Home")}
+          title={t("Tilpass Hjem", "Personalize Home")}
+          aria-expanded={configuring}
+          onClick={() => configure(!configuring)}
+        >
+          <Settings size={20} />
+        </button>
+      )}
+      {harmony && <HomeHeaderImage fallback={homeAsset("home-living")} />}
+      {!modern && (
+        <img
+          className="home-hero-photo"
+          src={homeAsset("home-living")}
+          alt=""
+          fetchPriority="high"
+        />
+      )}
+      <div className="home-welcome-content">
+        {!modern && (
+          <span className="home-hero-eyebrow">
+            <span />
+            {t("Ditt hjem. Din hverdag.", "Your home. Your everyday.")}
+          </span>
+        )}
+        <h1>
+          {greeting}
+          {residentName ? `, ${residentName}` : ""}.
+        </h1>
+        <p>
+          {offline
+            ? t(
+                "Vi venter på ferske data fra hjemmet.",
+                "Waiting for fresh data from your home.",
+              )
+            : harmony
+              ? t(
+                  "Hjemmet ditt, samlet på ett sted.",
+                  "Your home, all in one place.",
+                )
+              : modern
+                ? clock.toLocaleDateString(lang === "en" ? "en-GB" : "nb-NO", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })
+                : model.open.length
+                  ? t(
+                      "Se over åpninger og aktivitet nedenfor.",
+                      "Review openings and activity below.",
+                    )
+                  : t(
+                      "Hjemmet ditt, samlet på ett sted.",
+                      "Your home, all in one place.",
+                    )}
+        </p>
+      </div>
+      {h.controls.some((c) => c.domain === "weather" && !c.diagnostic) && (
+        <div className="home-header-weather">
+          <Weather
+            c={
+              offline
+                ? {
+                    ...h.controls.find(
+                      (c) => c.domain === "weather" && !c.diagnostic,
+                    )!,
+                    availability: "unavailable",
+                    attributes: {
+                      ...h.controls.find(
+                        (c) => c.domain === "weather" && !c.diagnostic,
+                      )!.attributes,
+                      temperature: null,
+                    },
+                  }
+                : h.controls.find(
+                    (c) => c.domain === "weather" && !c.diagnostic,
+                  )!
+            }
+            lang={lang}
+            compact
+            polished={harmony}
+          />
+        </div>
+      )}
+      {!!model.alerts.length && (
+        <div className="home-alert-corner" role="alert">
+          <button
+            className="simple-warning-button"
+            aria-label={`${t("Trenger din oppmerksomhet", "Needs your attention")}: ${model.alerts.length}`}
+            title={t("Vis varsler", "Show alerts")}
+            aria-haspopup="dialog"
+            onClick={() => setShowAlerts(true)}
+          >
+            <TriangleAlert size={26} aria-hidden="true" />
+            <span aria-hidden="true">{model.alerts.length}</span>
+          </button>
+        </div>
+      )}
+    </>
+  );
   return (
     <div className="home-overview" data-overview-detail={mode === "advanced"}>
       <div className="home-toolbar">
@@ -395,97 +502,10 @@ export function HomeOverview({
         )}
         {tab === "overview" && (
           <header className="home-welcome">
-            <button
-              className="home-customize home-customize-icon home-customize-mobile"
-              aria-label={t("Tilpass Hjem", "Personalize Home")}
-              title={t("Tilpass Hjem", "Personalize Home")}
-              aria-expanded={configuring}
-              onClick={() => configure(!configuring)}
-            >
-              <Settings size={20} />
-            </button>
-            {!modern && (
-              <img
-                className="home-hero-photo"
-                src={homeAsset("home-living")}
-                alt=""
-                fetchPriority="high"
-              />
-            )}
-            <div className="home-welcome-content">
-              {!modern && (
-                <span className="home-hero-eyebrow">
-                  <span />
-                  {t("Ditt hjem. Din hverdag.", "Your home. Your everyday.")}
-                </span>
-              )}
-              <h1>
-                {greeting}
-                {residentName ? `, ${residentName}` : ""}.
-              </h1>
-              <p>
-                {offline
-                  ? t(
-                      "Vi venter på ferske data fra hjemmet.",
-                      "Waiting for fresh data from your home.",
-                    )
-                  : modern
-                    ? clock.toLocaleDateString(
-                        lang === "en" ? "en-GB" : "nb-NO",
-                        { weekday: "long", day: "numeric", month: "long" },
-                      )
-                    : model.open.length
-                      ? t(
-                          "Se over åpninger og aktivitet nedenfor.",
-                          "Review openings and activity below.",
-                        )
-                      : t(
-                          "Hjemmet ditt, samlet på ett sted.",
-                          "Your home, all in one place.",
-                        )}
-              </p>
-            </div>
-            {h.controls.some(
-              (c) => c.domain === "weather" && !c.diagnostic,
-            ) && (
-              <div className="home-header-weather">
-                <Weather
-                  c={
-                    offline
-                      ? {
-                          ...h.controls.find(
-                            (c) => c.domain === "weather" && !c.diagnostic,
-                          )!,
-                          availability: "unavailable",
-                          attributes: {
-                            ...h.controls.find(
-                              (c) => c.domain === "weather" && !c.diagnostic,
-                            )!.attributes,
-                            temperature: null,
-                          },
-                        }
-                      : h.controls.find(
-                          (c) => c.domain === "weather" && !c.diagnostic,
-                        )!
-                  }
-                  lang={lang}
-                  compact
-                />
-              </div>
-            )}
-            {!!model.alerts.length && (
-              <div className="home-alert-corner" role="alert">
-                <button
-                  className="simple-warning-button"
-                  aria-label={`${t("Trenger din oppmerksomhet", "Needs your attention")}: ${model.alerts.length}`}
-                  title={t("Vis varsler", "Show alerts")}
-                  aria-haspopup="dialog"
-                  onClick={() => setShowAlerts(true)}
-                >
-                  <TriangleAlert size={26} aria-hidden="true" />
-                  <span aria-hidden="true">{model.alerts.length}</span>
-                </button>
-              </div>
+            {harmony ? (
+              <div className="home-hero-stage">{welcomeStage}</div>
+            ) : (
+              welcomeStage
             )}
             <nav
               className="home-modes"
@@ -1202,36 +1222,49 @@ export function HomeOverview({
           />
         )}
         {tab === "energy" && (
-          <EnergyPlatform
-            admin={admin}
-            lang={lang}
-            overview={(managedEquipment) => (
-              <EnergyFlow
-                home={h}
-                offline={offline}
-                lang={lang}
-                managedEquipment={managedEquipment}
+          <>
+            {harmony && (
+              <CategoryHeading
+                Icon={Zap}
+                title={t("Energi", "Energy")}
+                subtitle={t(
+                  "Forbruk og innsikt for hjemmet ditt.",
+                  "Consumption and insights for your home.",
+                )}
+                image={homeAsset("home-outdoor")}
               />
             )}
-            historyExtras={
-              <>
-                {model.meters.length > 0 && (
-                  <details id="home-energy">
-                    <summary>Detaljert målerhistorikk</summary>
-                    <Energy
-                      controls={h.controls}
-                      meters={model.meters}
-                      selected={pref?.energy || null}
-                      onSelect={(id) => savePreference({ energy: id })}
-                      offline={offline}
-                      lang={lang}
-                    />
-                  </details>
-                )}
-                <Vehicle home={h} offline={offline} lang={lang} />
-              </>
-            }
-          />
+            <EnergyPlatform
+              admin={admin}
+              lang={lang}
+              overview={(managedEquipment) => (
+                <EnergyFlow
+                  home={h}
+                  offline={offline}
+                  lang={lang}
+                  managedEquipment={managedEquipment}
+                />
+              )}
+              historyExtras={
+                <>
+                  {model.meters.length > 0 && (
+                    <details id="home-energy">
+                      <summary>Detaljert målerhistorikk</summary>
+                      <Energy
+                        controls={h.controls}
+                        meters={model.meters}
+                        selected={pref?.energy || null}
+                        onSelect={(id) => savePreference({ energy: id })}
+                        offline={offline}
+                        lang={lang}
+                      />
+                    </details>
+                  )}
+                  <Vehicle home={h} offline={offline} lang={lang} />
+                </>
+              }
+            />
+          </>
         )}
         <div className="home-insights">
           {tab === "overview" && !!activity.data?.length && (

@@ -96,6 +96,7 @@ export function Miscellaneous({
   return (
     <section className="miscellaneous-view">
       <CategoryHeading
+        image={homeAsset("home-office")}
         Icon={LayoutGrid}
         title={en ? "More" : "Diverse"}
         subtitle={

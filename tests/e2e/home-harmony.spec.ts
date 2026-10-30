@@ -546,3 +546,227 @@ test.afterEach(async ({ page }) => {
     });
   });
 });
+
+test("photo headers center the actual alert count, respect reduced motion and keep home/date above tabs", async ({
+  page,
+}, info) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await page.route("**/api/home", async (route) => {
+    const response = await route.fetch(),
+      home = await response.json();
+    const alarms = Array.from({ length: 19 }, (_, i) => ({
+      ...control("binary_sensor", `Røykvarsler ${i + 1}`, "on", {
+        device_class: "smoke",
+      }),
+      id: `binary_sensor.alert_${i}`,
+      entity_id: `binary_sensor.alert_${i}`,
+    }));
+    await route.fulfill({
+      json: {
+        ...home,
+        controls: [
+          ...home.controls,
+          ...alarms,
+          control("weather", "Været hjemme", "partlycloudy", {
+            temperature: 11.8,
+            temperature_unit: "°C",
+          }),
+        ],
+      },
+    });
+  });
+  await page.route("**/api/home/weather/*", (route) =>
+    route.fulfill({ json: { days: {}, temperature_unit: "°C" } }),
+  );
+  await login(page);
+  const header = page.locator(".home-hero-stage");
+  const alert = header.getByRole("button", {
+    name: "Trenger din oppmerksomhet: 19",
+    exact: true,
+  });
+  await expect(header.locator(".home-header-photo")).toHaveAttribute(
+    "data-ready",
+    "true",
+  );
+  await expect(
+    header.getByRole("img", { name: "11,8 °C", exact: true }),
+  ).toBeVisible();
+  const currentDate = await page.evaluate(() =>
+    new Date().toLocaleDateString("nb-NO", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }),
+  );
+  await expect(page.locator(".home-toolbar .home-date")).toHaveText(
+    currentDate,
+  );
+  for (const width of [1440, 834, 390, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const heroBox = (await header.boundingBox())!,
+      alertBox = (await alert.boundingBox())!;
+    expect(
+      Math.abs(alertBox.x + alertBox.width / 2 - heroBox.x - heroBox.width / 2),
+    ).toBeLessThan(2);
+    expect(
+      Math.abs(
+        alertBox.y + alertBox.height / 2 - heroBox.y - heroBox.height / 2,
+      ),
+    ).toBeLessThan(2);
+    if (width <= 1000) {
+      const weather = (await header
+        .locator(".home-header-weather")
+        .boundingBox())!;
+      expect(alertBox.y + alertBox.height + 8).toBeLessThanOrEqual(weather.y);
+    }
+    const meta = (await page.locator(".home-toolbar").boundingBox())!,
+      tabs = (await page
+        .getByRole("tablist", { name: "Visninger i Hjem" })
+        .boundingBox())!;
+    expect(meta.y + meta.height).toBeLessThanOrEqual(tabs.y);
+    expect(
+      await page
+        .locator("body")
+        .evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: `/private/tmp/smarti-header-${width}-${info.project.name}.png`,
+      animations: "disabled",
+    });
+  }
+  expect(
+    await alert.evaluate(
+      (el) => getComputedStyle(el, "::before").animationName,
+    ),
+  ).toBe("harmony-alert-pulse");
+  await alert.click();
+  await expect(page.locator(".home-alert-list li")).toHaveCount(19);
+  await page.keyboard.press("Escape");
+  await expect(alert).toBeFocused();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(
+    await alert.evaluate(
+      (el) => getComputedStyle(el, "::before").animationName,
+    ),
+  ).toBe("none");
+});
+
+test("header backgrounds can be chosen, uploaded, reloaded and removed without changing the home", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await login(page);
+  const original = await (
+    await page.request.get("/api/home/preferences")
+  ).json();
+  await appearance(page);
+  const settings = page.getByRole("region", {
+    name: "Bakgrunn i Hjem",
+    exact: true,
+  });
+  await settings.getByRole("radio", { name: "Utendørs", exact: true }).click();
+  await expect(settings.getByRole("status")).toHaveText(
+    "Bakgrunnen er lagret.",
+  );
+  await settings.getByRole("radio", { name: "Utendørs", exact: true }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    settings.getByRole("radio", { name: "Kjøkken", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await settings.getByRole("radio", { name: "Utendørs", exact: true }).click();
+  await expect(
+    settings.getByRole("radio", { name: "Utendørs", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await navigate(page, "Hjem");
+  await expect(
+    page.locator(".home-hero-stage .home-header-photo"),
+  ).toHaveAttribute("src", /home-outdoor.webp/);
+  await page.reload();
+  await expect(
+    page.locator(".home-hero-stage .home-header-photo"),
+  ).toHaveAttribute("src", /home-outdoor.webp/);
+  for (const name of [
+    "Lys",
+    "Energi",
+    "Sikkerhet",
+    "Klima",
+    "Multimedia",
+    "Diverse",
+  ]) {
+    await page.getByRole("tab", { name, exact: true }).click();
+    if (name === "Energi") {
+      const setup = page.getByRole("dialog", {
+        name: "Energien i hjemmet ditt",
+        exact: true,
+      });
+      await expect(setup).toBeVisible();
+      await setup
+        .getByRole("button", { name: "Lukk innstillinger", exact: true })
+        .click();
+    }
+    await expect(
+      page.locator(".category-heading .home-header-photo"),
+    ).toHaveAttribute("src", /home-outdoor.webp/);
+    await expect(
+      page.locator(".category-heading .home-header-photo"),
+    ).toHaveAttribute("data-ready", "true");
+  }
+  await appearance(page);
+  const photo = await page.screenshot({
+    clip: { x: 0, y: 0, width: 160, height: 100 },
+  });
+  await page
+    .getByLabel("Last opp bakgrunnsbilde", { exact: true })
+    .setInputFiles({
+      name: "header.png",
+      mimeType: "image/png",
+      buffer: photo,
+    });
+  await expect(
+    settings.getByRole("radio", { name: "Mitt bilde", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  const saved = await (await page.request.get("/api/home/appearance")).json();
+  expect(saved.background).toBe("custom");
+  const image = await page.request.get("/api/home/appearance/image");
+  expect(image.headers()["content-type"]).toBe("image/jpeg");
+  expect((await image.body()).length).toBeLessThanOrEqual(1_000_000);
+  await navigate(page, "Hjem");
+  await page.reload();
+  await expect(
+    page.locator(".home-hero-stage .home-header-photo"),
+  ).toHaveAttribute(
+    "src",
+    new RegExp(`/api/home/appearance/image\\?v=${saved.image_version}`),
+  );
+  await expect(
+    page.locator(".home-hero-stage .home-header-photo"),
+  ).toHaveAttribute("data-ready", "true");
+  await appearance(page);
+  await settings
+    .getByRole("radio", { name: "Uten bilde", exact: true })
+    .click();
+  await expect(
+    settings.getByRole("radio", { name: "Uten bilde", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await navigate(page, "Hjem");
+  await expect(page.locator(".home-hero-stage .home-header-photo")).toHaveCount(
+    0,
+  );
+  await appearance(page);
+  await settings
+    .getByRole("button", { name: "Fjern eget bilde", exact: true })
+    .click();
+  await expect(
+    settings.getByRole("radio", { name: "Mitt bilde", exact: true }),
+  ).toHaveCount(0);
+  expect(
+    (await (await page.request.get("/api/home/appearance")).json()).background,
+  ).toBe("auto");
+  expect(
+    await (await page.request.get("/api/home/preferences")).json(),
+  ).toEqual(original);
+});

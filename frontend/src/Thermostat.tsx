@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { Control } from "./types";
 import "./thermostat.css";
+import { TemperatureValue } from "./home/TemperatureValue";
 
 export function Thermostat({
   c,
@@ -181,14 +182,22 @@ export function Thermostat({
         <div className="thermostat-target">
           <span>{t("Ønsket", "Target")}</span>
           <strong>
-            {target !== null
-              ? format(target)
-              : known &&
-                  n(c.attributes.target_temp_low) !== null &&
-                  n(c.attributes.target_temp_high) !== null
-                ? `${format(n(c.attributes.target_temp_low))}–${format(n(c.attributes.target_temp_high))}`
-                : "—"}
-            <small>{unit}</small>
+            {compact ? (
+              <TemperatureValue
+                value={known ? target : null}
+                unit={unit}
+                lang={lang}
+              />
+            ) : target !== null ? (
+              format(target)
+            ) : known &&
+              n(c.attributes.target_temp_low) !== null &&
+              n(c.attributes.target_temp_high) !== null ? (
+              `${format(n(c.attributes.target_temp_low))}–${format(n(c.attributes.target_temp_high))}`
+            ) : (
+              "—"
+            )}
+            {!compact && <small>{unit}</small>}
           </strong>
         </div>
       </div>

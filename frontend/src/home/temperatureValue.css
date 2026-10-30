@@ -1,0 +1,37 @@
+.temperature-value {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.06em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1;
+}
+.temperature-number {
+  display: inline-block;
+  animation: temperature-arrive 340ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.temperature-unit {
+  margin-top: 0.11em;
+  font-size: 0.4em;
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+.temperature-fraction {
+  font-size: 0.78em;
+}
+@keyframes temperature-arrive {
+  from {
+    opacity: 0.35;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .temperature-number {
+    animation: none;
+  }
+}

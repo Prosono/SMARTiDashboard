@@ -5,7 +5,7 @@ html[data-home-style="harmony"] {
   --harmony-control: 12px;
   --harmony-gap: clamp(12px, 1.4vw, 20px);
   --harmony-border: color-mix(in srgb, var(--text) 9%, var(--surface));
-  --harmony-shadow: 0 4px 20px color-mix(in srgb, var(--text) 3%, transparent);
+  --harmony-shadow: 0 12px 30px #20334d13, 0 3px 8px #20334d0b;
   --harmony-light: #ad6800;
   --harmony-climate: #c54e48;
   --harmony-energy: #298252;
@@ -38,7 +38,7 @@ html[data-home-style="harmony"] {
     --harmony-media: #c1a6e8;
     --harmony-shade: #a1bed5;
     --harmony-cleaning: #edaba6;
-    --harmony-shadow: 0 5px 22px #090d141c;
+    --harmony-shadow: 0 16px 34px #070b1438, 0 3px 8px #070b142e;
   }
   &[data-theme="dark"][data-palette="smarti"] {
     --bg: #171c24;
@@ -145,7 +145,7 @@ html[data-home-style="harmony"] {
     }
   }
   .home-overview:has(#home-page-overview) > .home-toolbar {
-    display: none;
+    display: flex;
   }
   .home-overview .home-welcome .home-customize.home-customize-mobile {
     display: inline-flex;

@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { HarmonyTrend } from "./HarmonyTrend";
+import { TemperatureValue } from "./TemperatureValue";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Droplets, Thermometer, Zap } from "lucide-react";
 import { api } from "../api";
@@ -162,11 +163,29 @@ function Metric({
         <ChevronRight size={18} />
       </span>
       <span className="home-metric-reading">
-        {offline || control.availability !== "available"
-          ? "—"
-          : control.domain === "climate" && climateTemperature !== null
-            ? `${climateTemperature.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })} ${String(control.attributes.temperature_unit || control.capabilities.find((c) => c.unit)?.unit || "°C")}`
-            : reading(control, lang)}
+        {enhanced && kind === "temperature" ? (
+          <TemperatureValue
+            lang={lang}
+            unit={String(
+              control.attributes.temperature_unit ||
+                control.attributes.unit_of_measurement ||
+                "°C",
+            )}
+            value={
+              offline || control.availability !== "available"
+                ? null
+                : control.domain === "climate"
+                  ? climateTemperature
+                  : numeric(control)
+            }
+          />
+        ) : offline || control.availability !== "available" ? (
+          "—"
+        ) : control.domain === "climate" && climateTemperature !== null ? (
+          `${climateTemperature.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })} ${String(control.attributes.temperature_unit || control.capabilities.find((c) => c.unit)?.unit || "°C")}`
+        ) : (
+          reading(control, lang)
+        )}
       </span>
       <span className="home-metric-source">{control.name}</span>
       {valid && enhanced ? (

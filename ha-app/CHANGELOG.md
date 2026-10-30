@@ -1,3 +1,9 @@
+## 1.36.66
+- Harmoni har fått mer dybde med tydeligere skygger og bildeheadere på oversikt, lys, energi, klima, sikkerhet, multimedia og diverse.
+- Velg bakgrunn under Innstillinger → Tema og utseende: ulike bilder per fane, et felles motiv eller eget bilde. Bildevalget og opplastingen lagres privat på kontoen.
+- Hjemnavn og dagens dato vises over fanene. Varselikonet er sentrert i bildeheaderen og pulserer ved varsler, med støtte for redusert bevegelse.
+- Penere temperaturvisning med egne grader/enheter og en rolig overgang ved nye målinger. Mobiloppsettet holder varsler og vær fra hverandre.
+
 ## 1.36.65
 - Ny valgfri stil: SMARTi Harmoni under Innstillinger → Tema og utseende. Klassisk og SMARTi Living er fortsatt tilgjengelige.
 - Helhetlig utforming av Hjem, kategorier, rom, scener, favoritter og tilhørende kontroll- og detaljdialoger, i lyst og mørkt tema og med eksisterende paletter.

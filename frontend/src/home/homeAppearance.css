@@ -1,0 +1,124 @@
+.home-background-settings {
+  border-top: 1px solid var(--line);
+  margin-top: 26px;
+  padding-top: 25px;
+}
+.home-background-settings > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.home-background-settings > header > svg {
+  color: var(--accent);
+  flex: none;
+  margin-top: 3px;
+}
+.home-background-settings h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+.home-background-settings header p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.home-background-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+}
+.home-background-options > button {
+  min-width: 0;
+  padding: 5px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  font-size: 12px;
+  text-align: left;
+}
+.home-background-options > button[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--tint);
+}
+.home-background-options > button:hover:not(:disabled) {
+  background: var(--soft);
+}
+.home-background-options > button > span:last-child {
+  display: block;
+  padding: 7px 4px 4px;
+}
+.home-background-thumb {
+  position: relative;
+  display: block;
+  height: 70px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: var(--soft);
+}
+.home-background-thumb > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.home-background-thumb[data-kind="auto"] > img {
+  width: 68%;
+}
+.home-background-thumb[data-kind="auto"] {
+  background: linear-gradient(130deg, var(--soft), var(--tint));
+}
+.home-background-check {
+  position: absolute;
+  inset: 6px 6px auto auto;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--surface);
+  box-shadow: 0 2px 5px #13213830;
+}
+.home-background-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block: 20px 12px;
+}
+.home-background-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.home-background-settings > small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.home-background-feedback {
+  margin-top: 12px;
+  font-size: 13px;
+}
+@media (max-width: 550px) {
+  .home-background-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .home-background-thumb {
+    height: 65px;
+  }
+  .home-background-options > button {
+    font-size: 11px;
+  }
+  .home-background-actions button {
+    flex: 1 1 auto;
+  }
+}

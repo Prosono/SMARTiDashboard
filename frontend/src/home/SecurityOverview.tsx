@@ -235,6 +235,7 @@ export function SecurityOverview({
   return (
     <section className="security-overview">
       <CategoryHeading
+        image={homeAsset("home-security")}
         Icon={Shield}
         title={t("Sikkerhet", "Security")}
         subtitle={t(

@@ -1,3 +1,34 @@
+# Photo headers and backgrounds — release 1.36.66
+
+The Harmoni follow-up adds stronger shared elevation, photo headers to all Home
+categories, account-scoped background selection and bounded personal uploads.
+Home name and the live date are visible above the tabs on all screen sizes.
+Alerts use the existing real count and are centered in the welcome photo; their
+pulse and the transition between real temperature readings respect reduced motion.
+On narrow screens the alert and weather areas are kept separate.
+
+Validation on 30 October 2026:
+
+- Production build, TypeScript lint, Ruff checks/format for the changed Python
+  files and `git diff --check`: passed.
+- Frontend unit suite: **174 passed**. Temperature formatting includes localized
+  negative numbers, zero, Fahrenheit and missing/nonfinite readings.
+- Relevant backend suites: **69 passed**, including personal image isolation,
+  authentication, CSRF, raster/size limits and preservation of other settings.
+- Desktop/mobile browser suites: **20 passed** (Harmoni, Living and multimedia).
+  New coverage verifies image selection, keyboard choice, upload, reload, removal,
+  image headers on all categories, real count/centering with 19 fixture warnings,
+  no alert/weather overlap at 320/390/834/1440 px, and reduced motion.
+- Shared image selection uses the existing SQLite personal settings store. Image
+  responses are authenticated, private and not cached; metadata responses do not
+  include the image contents. Uploaded images are normalized to a bounded JPEG in
+  the browser. The maximum server-side decoded size is 1 MB.
+
+The repository-wide pre-existing limitations recorded for 1.36.65 below remain
+separate from these passing checks. No real home devices were controlled.
+
+---
+
 # SMARTi Harmoni — release 1.36.65
 
 Harmoni is an additional Home style, selectable in **Innstillinger → Tema og

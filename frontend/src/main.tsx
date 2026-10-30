@@ -24,6 +24,10 @@ import {
 } from "./Experience";
 import { SimpleHome } from "./home/SimpleHome";
 import { HarmonyDevices } from "./home/HarmonyDevices";
+import {
+  HeaderAppearance,
+  HomeBackgroundSettings,
+} from "./home/HomeAppearance";
 import { liveConnection } from "./liveConnection";
 import { RoomsOverview } from "./rooms/RoomsOverview";
 import { ClimateOverview } from "./home/ClimateOverview";
@@ -107,6 +111,7 @@ import { RoomView } from "./rooms/RoomView";
 import "./palettes.css";
 import "./home/harmony.css";
 import { HomeOverview, homeAsset } from "./home/HomeOverview";
+import "./home/harmonyHeaders.css";
 import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
@@ -442,23 +447,25 @@ function App() {
           </div>
         </aside>
         <div className="workspace">
-          <Dashboard
-            t={t}
-            session={session}
-            page={page}
-            setPage={navigate}
-            guard={guard}
-            onDirty={setDirty}
-            palette={palette}
-            setPalette={setPalette}
-            theme={theme}
-            setTheme={setTheme}
-            homeStyle={homeStyle}
-            setHomeStyle={setHomeStyle}
-            lang={lang}
-            language={language}
-            logout={logout}
-          />
+          <HeaderAppearance.Provider value={homeStyle === "harmony"}>
+            <Dashboard
+              t={t}
+              session={session}
+              page={page}
+              setPage={navigate}
+              guard={guard}
+              onDirty={setDirty}
+              palette={palette}
+              setPalette={setPalette}
+              theme={theme}
+              setTheme={setTheme}
+              homeStyle={homeStyle}
+              setHomeStyle={setHomeStyle}
+              lang={lang}
+              language={language}
+              logout={logout}
+            />
+          </HeaderAppearance.Provider>
         </div>
       </div>
     </Experience.Provider>
@@ -1526,6 +1533,7 @@ function Dashboard({
                         </small>
                       </div>
                     </div>
+                    <HomeBackgroundSettings lang={lang} />
                     <PalettePicker
                       value={palette}
                       change={setPalette}

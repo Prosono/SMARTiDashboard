@@ -12,6 +12,7 @@ import {
 import { api } from "../api";
 import type { Control } from "../types";
 import "./extras.css";
+import { TemperatureValue } from "./TemperatureValue";
 type Day = {
   date: string;
   condition: string;
@@ -25,10 +26,12 @@ export function Weather({
   c,
   lang,
   compact = false,
+  polished = false,
 }: {
   c: Control;
   lang: string;
   compact?: boolean;
+  polished?: boolean;
 }) {
   const en = lang === "en",
     t = (nb: string, eng: string) => (en ? eng : nb);
@@ -90,12 +93,13 @@ export function Weather({
   if (compact) {
     const usable = c.availability === "available";
     const today = q.data?.days.today;
-    const current = usable ? now : null;
+    const current = usable && now !== null && Number.isFinite(now) ? now : null;
     const cloud = usable && ["cloudy", "partlycloudy"].includes(c.state);
     return (
       <section
         className="simple-weather"
         data-condition={usable ? c.state : "unavailable"}
+        data-polished={polished || undefined}
         aria-label={t("Værmelding", "Weather forecast")}
       >
         <div className="simple-weather-heading">
@@ -106,8 +110,14 @@ export function Weather({
         </div>
         <div className="simple-weather-current">
           <strong>
-            {number(current)}
-            {current !== null ? unit : ""}
+            {polished ? (
+              <TemperatureValue value={current} unit={unit} lang={lang} />
+            ) : (
+              <>
+                {number(current)}
+                {current !== null ? unit : ""}
+              </>
+            )}
           </strong>
           {cloud ? (
             <img

@@ -139,6 +139,7 @@ export function ClimateOverview({
   return (
     <section className="climate-overview">
       <CategoryHeading
+        image={homeAsset("home-climate")}
         Icon={Thermometer}
         title={t("Klima", "Climate")}
         subtitle={t(

@@ -5,6 +5,7 @@ import binascii
 import json
 import math
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from typing import Literal, get_args
 from urllib.parse import quote, urlencode
 
@@ -70,6 +71,18 @@ class RoomImage(BaseModel):
     icon: RoomImageBank | None = None
 
 
+class HomeAppearance(BaseModel):
+    model_config = {"extra": "forbid"}
+    background: Literal["auto", "living", "outdoor", "kitchen", "bedroom", "office", "custom", "none"] = (
+        "auto"
+    )
+
+
+class HeaderImage(BaseModel):
+    model_config = {"extra": "forbid"}
+    data: str = Field(default="", max_length=1_400_000)
+
+
 def home_router(store, user, ha, settings):
     router = APIRouter(prefix="/api/home")
 
@@ -100,6 +113,63 @@ def home_router(store, user, ha, settings):
     async def save_experience(body: ExperiencePreference, current=Depends(user)):
         store.set(f"experience:{current['id']}", body.model_dump_json())
         return body
+
+    def appearance_value(current):
+        pref = HomeAppearance.model_validate_json(store.get(f"home_appearance:{current['id']}", "{}"))
+        data = store.get(f"home_background:{current['id']}", "")
+        return {
+            **pref.model_dump(),
+            "has_custom": bool(data),
+            "image_version": sha256(data.encode()).hexdigest()[:16] if data else None,
+        }
+
+    @router.get("/appearance")
+    async def appearance(current=Depends(user)):
+        return appearance_value(current)
+
+    @router.put("/appearance")
+    async def save_appearance(body: HomeAppearance, current=Depends(user)):
+        if body.background == "custom" and not store.get(f"home_background:{current['id']}"):
+            raise HTTPException(422, "image_not_found")
+        store.set(f"home_appearance:{current['id']}", body.model_dump_json())
+        return appearance_value(current)
+
+    @router.put("/appearance/image")
+    async def save_header_image(body: HeaderImage, current=Depends(user)):
+        if body.data:
+            try:
+                raw = base64.b64decode(body.data, validate=True)
+                if len(raw) > 1_000_000 or not (
+                    raw.startswith(b"\xff\xd8\xff") or raw.startswith(b"\x89PNG\r\n\x1a\n")
+                ):
+                    raise ValueError()
+            except (ValueError, binascii.Error):
+                raise HTTPException(422, "invalid_image") from None
+        # Personal appearance uses the same settings store as the other Home preferences.
+        # Save the image and selected background together; leave every other setting intact.
+        with store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            for key, value in (
+                (f"home_background:{current['id']}", body.data),
+                (
+                    f"home_appearance:{current['id']}",
+                    HomeAppearance(background="custom" if body.data else "auto").model_dump_json(),
+                ),
+            ):
+                db.execute("INSERT OR REPLACE INTO settings(key,value) VALUES (?,?)", (key, value))
+        return appearance_value(current)
+
+    @router.get("/appearance/image")
+    async def header_image(current=Depends(user)):
+        data = store.get(f"home_background:{current['id']}", "")
+        if not data:
+            raise HTTPException(404, "image_not_found")
+        raw = base64.b64decode(data)
+        return Response(
+            raw,
+            media_type="image/png" if raw.startswith(b"\x89PNG") else "image/jpeg",
+            headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
+        )
 
     @router.get("/preferences")
     async def preferences(current=Depends(user)):

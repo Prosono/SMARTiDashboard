@@ -96,6 +96,22 @@ HA's configured admin API credential is required for administration. Ingress sup
 API references: [HA camera streams](https://github.com/home-assistant/core/blob/dev/homeassistant/components/camera/__init__.py), [native scene configuration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/scene.py), [recorder statistics](https://github.com/home-assistant/core/blob/dev/homeassistant/components/recorder/websocket_api.py).
 
 
+## Photo headers and personal backgrounds (1.36.66)
+
+In **Innstillinger → Tema og utseende → Bakgrunn i headerne**, choose **Rom til rom**
+for a different motif in each Home category, a shared library photo, **Mitt bilde**
+after uploading your own JPG/PNG/WebP, or **Uten bilde**. The photo choice follows
+your account, independently of the browser's Home style and light/dark preference.
+These backgrounds are displayed by SMARTi Harmoni. Room photos and favorites are
+unaffected. Uploads are resized in the browser and stored privately in SMARTi;
+removing your upload restores the automatic header backgrounds.
+
+Home name and today's date appear above the category navigation on every Home tab.
+The welcome photo contains the greeting, weather when available and the centered
+alert count. The count comes from the existing Home status model; the pulse draws
+attention to available warnings without changing the underlying alert criteria.
+Reduced-motion preferences disable the pulse and temperature transitions.
+
 ## SMARTi Harmoni (1.36.65)
 
 Choose **Innstillinger → Tema og utseende → Stil for Hjem → SMARTi Harmoni**.

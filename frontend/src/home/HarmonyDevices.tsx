@@ -41,6 +41,7 @@ import { MetricDeviceRenderer } from "./MetricDetails";
 import { InSettingsDialog, SettingsDialog } from "./SettingsDialog";
 import { numeric, reading, usable } from "./homeModel";
 import { RobotVacuumIcon } from "./RobotVacuumIcon";
+import { TemperatureValue } from "./TemperatureValue";
 
 const number = (v: unknown) =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -381,11 +382,21 @@ function HarmonyDevice({
       </div>
       {c.domain === "sensor" && (
         <strong className="harmony-device-reading">
-          {available
-            ? numeric(c) === null
-              ? controlState(c, c.state, lang)
-              : reading(c, lang)
-            : "—"}
+          {["°C", "°F"].includes(String(c.attributes.unit_of_measurement)) ? (
+            <TemperatureValue
+              value={available ? numeric(c) : null}
+              unit={String(c.attributes.unit_of_measurement)}
+              lang={lang}
+            />
+          ) : available ? (
+            numeric(c) === null ? (
+              controlState(c, c.state, lang)
+            ) : (
+              reading(c, lang)
+            )
+          ) : (
+            "—"
+          )}
         </strong>
       )}
       {c.domain === "climate" && (

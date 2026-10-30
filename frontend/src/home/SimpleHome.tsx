@@ -4,6 +4,7 @@ import { RoomArtwork } from "../rooms/RoomArtwork";
 import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
 import { SettingsDialog } from "./SettingsDialog";
 import { HarmonyDevices } from "./HarmonyDevices";
+import { HomeHeaderImage } from "./HomeAppearance";
 import { LivingFavorites } from "./LivingFavorites";
 import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
@@ -96,8 +97,27 @@ export function SimpleHome({
     );
   return (
     <section className="simple-home simple-home-dashboard">
+      {homeStyle === "harmony" && (
+        <div className="home-toolbar harmony-simple-location">
+          <div className="home-location">
+            <House size={16} />
+            <span>{home.home_name}</span>
+            <span className="home-date">
+              {new Date().toLocaleDateString(en ? "en-GB" : "nb-NO", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
+            </span>
+          </div>
+        </div>
+      )}
       <header className="simple-welcome">
-        <img src={homeAsset("home-living")} alt="" />
+        {homeStyle === "harmony" ? (
+          <HomeHeaderImage fallback={homeAsset("home-living")} />
+        ) : (
+          <img src={homeAsset("home-living")} alt="" />
+        )}
         <House size={32} />
         <div>
           <h1>{home.home_name}</h1>

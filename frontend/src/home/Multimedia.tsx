@@ -409,6 +409,7 @@ export function Multimedia({
   return (
     <section className="multimedia-view">
       <CategoryHeading
+        image={homeAsset("home-multimedia")}
         Icon={AudioLines}
         title={t("Multimedia", "Multimedia")}
         subtitle={t(

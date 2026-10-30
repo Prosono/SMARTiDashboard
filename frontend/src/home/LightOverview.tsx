@@ -149,6 +149,7 @@ export function LightOverview({
   return (
     <section className="light-overview">
       <CategoryHeading
+        image={homeAsset("home-lighting")}
         Icon={Lightbulb}
         title={t("Lys", "Lights")}
         subtitle={t(
