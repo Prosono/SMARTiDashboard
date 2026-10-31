@@ -5,6 +5,7 @@ import { api } from "../api";
 import type { Home } from "../types";
 import { usable } from "./homeModel";
 import { EquipmentArtwork } from "./EquipmentArtwork";
+import { CardIcon, CardTitle } from "./CardPresentation";
 
 export function GridLightingCard({
   home,
@@ -104,11 +105,13 @@ export function GridLightingCard({
   return (
     <section className="grid-lighting-card" data-compact={compact}>
       <button className="grid-card-heading" onClick={open}>
-        <Lightbulb size={23} />
+        <CardIcon fallback={Lightbulb} size={23} />
         <strong>
-          {areaId === undefined
-            ? t("Lys i hjemmet", "Home lighting")
-            : t("Lys i rommet", "Room lighting")}
+          <CardTitle>
+            {areaId === undefined
+              ? t("Lys i hjemmet", "Home lighting")
+              : t("Lys i rommet", "Room lighting")}
+          </CardTitle>
         </strong>
         <ChevronRight size={18} />
       </button>

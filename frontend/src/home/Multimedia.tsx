@@ -1,4 +1,5 @@
 import { HomeGrid } from "./HomeGrid";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import { mediaIcon } from "../MediaIcons";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { MetricDetails, MetricDeviceRenderer } from "./MetricDetails";
@@ -160,11 +161,13 @@ export function MediaCard({
                 aria-haspopup="dialog"
                 onClick={() => setOpened(true)}
               >
-                {c.name}
-                <Icon size={20} />
+                <CardTitle>{c.name}</CardTitle>
+                <CardIcon fallback={Icon} size={20} />
               </button>
             ) : (
-              <strong>{c.name}</strong>
+              <strong>
+                <CardTitle>{c.name}</CardTitle>
+              </strong>
             )}
             <span>
               {home.areas.find((a) => a.area_id === c.area_id)?.name ||
@@ -593,9 +596,12 @@ export function Multimedia({
       {harmony ? (
         <HomeGrid
           page="media"
+          home={home}
+          offline={offline}
           lang={lang}
           cards={players.slice(0, 290).map((c) => ({
             id: `device:${c.entity_id}`,
+            entityId: c.entity_id,
             title: c.name,
             hidden: !shown.some((item) => item.id === c.id),
             content: (

@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { HeaderAppearance } from "./HomeAppearance";
 import { HomeGrid } from "./HomeGrid";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import { deviceGridCards } from "./HomeDeviceGrid";
 import { MetricDetails } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
@@ -380,10 +381,13 @@ export function SecurityOverview({
       {harmony ? (
         <HomeGrid
           page="security"
+          home={home}
+          offline={offline}
           lang={lang}
           cards={[
             ...model.cameras.slice(0, 100).map((c) => ({
               id: `camera:${c.entity_id}`,
+              entityId: c.entity_id,
               title: c.name,
               hidden: !matches(c) || !["all", "cameras"].includes(tab),
               content: <CameraCard c={c} offline={offline} lang={lang} />,
@@ -415,8 +419,12 @@ export function SecurityOverview({
               content: (
                 <section className="home-grid-events">
                   <header>
-                    <History size={21} />
-                    <h2>{t("Siste hendelser", "Recent events")}</h2>
+                    <CardIcon fallback={History} size={21} />
+                    <h2>
+                      <CardTitle>
+                        {t("Siste hendelser", "Recent events")}
+                      </CardTitle>
+                    </h2>
                   </header>
                   <p>
                     {t(

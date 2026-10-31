@@ -5,6 +5,7 @@ import {
   domainName,
 } from "../collectionIcons";
 import { allViews, allControls } from "../access";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import { LightColor } from "../LightColor";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -218,8 +219,10 @@ export function Scenes({
     <section className="home-scenes">
       <header className="home-section-heading">
         <h2>
-          <Clapperboard size={20} />
-          {t("Scener for hele hjemmet", "Scenes for your whole home")}
+          <CardIcon fallback={Clapperboard} size={20} />
+          <CardTitle>
+            {t("Scener for hele hjemmet", "Scenes for your whole home")}
+          </CardTitle>
         </h2>
         <div className="scene-header-actions">
           {rows.length > 0 && (

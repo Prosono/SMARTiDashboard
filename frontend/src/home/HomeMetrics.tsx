@@ -2,6 +2,7 @@ import { Children, Fragment, useId, type ReactNode } from "react";
 import type { HomeGridCard } from "./HomeGrid";
 import { HarmonyTrend } from "./HarmonyTrend";
 import { TemperatureValue } from "./TemperatureValue";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Droplets, Thermometer, Zap } from "lucide-react";
 import { api } from "../api";
@@ -158,9 +159,11 @@ export function HomeMetric({
     >
       <span className="home-metric-head">
         <span className={`home-metric-icon is-${kind}`}>
-          <Icon size={20} />
+          <CardIcon fallback={Icon} size={20} />
         </span>
-        <strong>{labels[kind]}</strong>
+        <strong>
+          <CardTitle>{labels[kind]}</CardTitle>
+        </strong>
         <ChevronRight size={18} />
       </span>
       <span className="home-metric-reading">

@@ -1,4 +1,5 @@
 import { RobotVacuumIcon } from "./RobotVacuumIcon";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -180,7 +181,7 @@ export function VacuumCard({
               alt=""
             />
           ) : (
-            <RobotVacuumIcon size={50} />
+            <CardIcon fallback={RobotVacuumIcon} size={50} />
           )}
         </div>
         <div>
@@ -188,7 +189,10 @@ export function VacuumCard({
             {home.areas.find((a) => a.area_id === c.area_id)?.name ||
               (en ? "Cleaning" : "Rengjøring")}
           </small>
-          <h3>{c.name}</h3>
+          <h3>
+            <CardIcon optional fallback={RobotVacuumIcon} size={22} />
+            <CardTitle>{c.name}</CardTitle>
+          </h3>
         </div>
         <button
           className="icon-button"

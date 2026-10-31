@@ -45,6 +45,7 @@ import { RobotVacuumIcon } from "./RobotVacuumIcon";
 import { TemperatureValue } from "./TemperatureValue";
 import { EquipmentArtwork } from "./EquipmentArtwork";
 import { EquipmentColorControls } from "./EquipmentColorControls";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import {
   deviceBattery,
   deviceReading,
@@ -459,7 +460,7 @@ function HarmonyDevice({
     >
       <header className="harmony-device-header">
         <span className="harmony-device-icon">
-          <Icon size={26} />
+          <CardIcon fallback={Icon} size={26} />
         </span>
         <button
           className="harmony-device-open"
@@ -468,7 +469,9 @@ function HarmonyDevice({
           aria-haspopup="dialog"
         >
           <span>
-            <strong>{c.name}</strong>
+            <strong>
+              <CardTitle>{c.name}</CardTitle>
+            </strong>
             <small>{room}</small>
           </span>
           {!topSwitch && <ChevronRight size={17} aria-hidden="true" />}

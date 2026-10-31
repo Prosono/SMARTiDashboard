@@ -38,6 +38,33 @@ async function appearance(page: Page) {
     .getByRole("button", { name: "Tema og utseende", exact: true })
     .click();
 }
+async function addFromPicker(page: Page, name: string, entityId?: string) {
+  const canvas = page.locator(".home-canvas");
+  await canvas
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Legg til kort",
+    exact: true,
+  });
+  await dialog
+    .getByRole("button", {
+      name: entityId ? "Enhet" : "Oversiktskort",
+      exact: true,
+    })
+    .click();
+  if (entityId)
+    await dialog.getByRole("textbox", { name: "Søk etter enheter" }).fill(name);
+  if (entityId)
+    await dialog
+      .locator(`.card-device-options [data-entity="${entityId}"]`)
+      .click();
+  else await dialog.getByRole("button", { name, exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+}
 const control = (
   domain: string,
   name: string,
@@ -61,11 +88,15 @@ const control = (
     ? [{ kind: domain, actions, minimum: 0, maximum: 100, step: 1, unit: "%" }]
     : [],
 });
-async function richHome(page: Page) {
+async function richHome(
+  page: Page,
+  additional: ReturnType<typeof control>[] = [],
+) {
   await page.route("**/api/home", async (route) => {
     const response = await route.fetch(),
       home = await response.json();
     const extras = [
+      ...additional,
       control("sensor", "Husets forbruk", "3100", {
         device_class: "power",
         unit_of_measurement: "W",
@@ -1144,13 +1175,13 @@ test("each category can remove and add cards, retain failed edits and protect co
       .getByRole("button", { name: `Fjern ${title}`, exact: true })
       .click();
     await expect(canvas.locator(`[data-card="${id}"]`)).toHaveCount(0);
-    await canvas
-      .getByRole("button", { name: "Legg til kort", exact: true })
-      .click();
-    await canvas
-      .locator(".home-canvas-library")
-      .getByRole("button", { name: title, exact: true })
-      .click();
+    await addFromPicker(
+      page,
+      title,
+      id.startsWith("device:") || id.startsWith("camera:")
+        ? id.slice(id.indexOf(":") + 1)
+        : undefined,
+    );
     await expect(canvas.locator(`[data-card="${id}"]`)).toBeVisible();
     await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
     await expect(canvas).toHaveAttribute("data-editing", "false");
@@ -1525,14 +1556,8 @@ test("equipment cards match their actual device type, color controls and linked 
   await canvas
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
-  await canvas
-    .getByRole("button", { name: "Legg til kort", exact: true })
-    .click();
   for (const name of ["Varsler", "Batterier", "Hub og tilkoblinger"])
-    await canvas
-      .locator(".home-canvas-library")
-      .getByRole("button", { name, exact: true })
-      .click();
+    await addFromPicker(page, name);
   await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
   await expect(canvas.locator('[data-card="summary:batteries"]')).toContainText(
     "12 %",
@@ -1735,4 +1760,338 @@ test("grid content fits without nested scrolling and editing has calm layout mot
     path: `/private/tmp/smarti-grid-motion-${info.project.name}.png`,
     fullPage: true,
   });
+});
+
+async function personalCardLayouts(page: Page) {
+  const layouts = new Map<string, { revision: number; items: any[] | null }>();
+  await page.route("**/api/home/layout/*", (route) => {
+    const key = new URL(route.request().url()).pathname;
+    const current = layouts.get(key) || { revision: 0, items: null };
+    if (route.request().method() === "GET")
+      return route.fulfill({ json: current });
+    const next = {
+      revision: current.revision + 1,
+      items: route.request().postDataJSON().items,
+    };
+    layouts.set(key, next);
+    return route.fulfill({ json: next });
+  });
+  return layouts;
+}
+
+test("visual card picker and per-card appearance support preview, cancel and duplicate device cards", async ({
+  page,
+}, info) => {
+  test.setTimeout(60000);
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  const layouts = await personalCardLayouts(page);
+  await richHome(page);
+  await login(page);
+  await page.setViewportSize({
+    width: info.project.name === "mobile" ? 390 : 1440,
+    height: 1100,
+  });
+  if (info.project.name === "mobile") {
+    await appearance(page);
+    await page
+      .getByRole("combobox", { name: "Utseende", exact: true })
+      .selectOption("dark");
+    await navigate(page, "Hjem");
+  }
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const canvas = page.locator(".home-canvas");
+  const card = canvas.locator('[data-card="device:light.living_pendant"]');
+  const commands: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.url().includes("/commands") ||
+      (request.url().includes("/appearance") && request.method() !== "GET")
+    )
+      commands.push(request.url());
+  });
+  const before = (
+    await (await page.request.get("/api/home")).json()
+  ).controls.find(
+    (c: any) => c.entity_id === "light.living_pendant",
+  ).attributes;
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await card
+    .getByRole("button", { name: "Rediger kort: Pendellampe", exact: true })
+    .click();
+  let dialog = page.getByRole("dialog", { name: "Rediger kort", exact: true });
+  await dialog
+    .getByRole("group", { name: "Korttype", exact: true })
+    .getByRole("button", { name: "Bildekort", exact: true })
+    .click();
+  await dialog
+    .getByRole("textbox", { name: "Navn på kortet", exact: true })
+    .fill("Lesekroken");
+  await dialog.locator("summary").filter({ hasText: "Ikon og bilde" }).click();
+  await dialog
+    .getByRole("group", { name: "Velg ikon", exact: true })
+    .getByRole("button", { name: "Lys", exact: true })
+    .click();
+  await dialog
+    .getByRole("group", { name: "Velg bilde", exact: true })
+    .getByRole("button", { name: "Kontor", exact: true })
+    .click();
+  await expect(
+    dialog.locator(".card-builder-preview .home-canvas-content"),
+  ).toHaveAttribute("inert", "");
+  await dialog.screenshot({
+    path: `/private/tmp/smarti-card-editor-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  await dialog
+    .getByRole("button", { name: "Bruk endringer", exact: true })
+    .click();
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await page.reload();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await expect(card.locator(".personal-status-card")).toContainText(
+    "Lesekroken",
+  );
+  await expect(card.locator(".personal-status-photo")).toHaveAttribute(
+    "src",
+    /home-office\.webp$/,
+  );
+  expect(
+    layouts
+      .get("/api/home/layout/lights")!
+      .items!.find((item) => item.id === "device:light.living_pendant").config,
+  ).toMatchObject({
+    type: "picture",
+    title: "Lesekroken",
+    icon: "light",
+    image: "office",
+    sources: ["light.living_pendant"],
+  });
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await card
+    .getByRole("button", { name: "Rediger kort: Lesekroken", exact: true })
+    .click();
+  dialog = page.getByRole("dialog", { name: "Rediger kort", exact: true });
+  await dialog
+    .getByRole("textbox", { name: "Navn på kortet", exact: true })
+    .fill("Forkastes");
+  await dialog.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(card).not.toContainText("Forkastes");
+  await canvas
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
+  dialog = page.getByRole("dialog", { name: "Legg til kort", exact: true });
+  await expect(
+    dialog.getByRole("heading", { name: "Hva vil du legge til?", exact: true }),
+  ).toBeVisible();
+  await dialog.screenshot({
+    path: `/private/tmp/smarti-card-picker-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  await dialog.getByRole("button", { name: "Enhet", exact: true }).click();
+  await dialog
+    .getByRole("textbox", { name: "Søk etter enheter", exact: true })
+    .fill("Pendellampe");
+  await dialog
+    .getByRole("button", { name: "Pendellampe", exact: true })
+    .click();
+  await dialog
+    .getByRole("group", { name: "Korttype", exact: true })
+    .getByRole("button", { name: "Kompakt", exact: true })
+    .click();
+  await dialog
+    .getByRole("textbox", { name: "Navn på kortet", exact: true })
+    .fill("Hurtiglys");
+  await dialog
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  const duplicate = canvas.locator('[data-card^="custom:"]');
+  await expect(duplicate.locator(".personal-status-card")).toContainText(
+    "Hurtiglys",
+  );
+  await expect(card.locator(".personal-status-photo")).toHaveAttribute(
+    "src",
+    /home-office\.webp$/,
+  );
+  expect(
+    (await (await page.request.get("/api/home")).json()).controls.find(
+      (c: any) => c.entity_id === "light.living_pendant",
+    ).attributes,
+  ).toEqual(before);
+  expect(commands).toEqual([]);
+  expect(
+    await page
+      .locator("body")
+      .evaluate((el) => el.scrollWidth <= el.clientWidth),
+  ).toBe(true);
+});
+
+test("graph cards add and edit several real sources with compatible units, gaps and missing-source handling", async ({
+  page,
+}, info) => {
+  test.setTimeout(60000);
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  const layouts = await personalCardLayouts(page);
+  const extra = [
+    {
+      ...control("sensor", "Temperatur Celsius", "20", {
+        device_class: "temperature",
+        unit_of_measurement: "°C",
+      }),
+      id: "sensor.builder_c",
+      entity_id: "sensor.builder_c",
+    },
+    {
+      ...control("sensor", "Temperatur Fahrenheit", "68", {
+        device_class: "temperature",
+        unit_of_measurement: "°F",
+      }),
+      id: "sensor.builder_f",
+      entity_id: "sensor.builder_f",
+    },
+  ];
+  await richHome(page, extra);
+  await page.route("**/api/controls/sensor.builder_*/history?*", (route) => {
+    const fahrenheit = route.request().url().includes("builder_f");
+    return route.fulfill({
+      json: {
+        unit: fahrenheit ? "°F" : "°C",
+        points: fahrenheit
+          ? [
+              { time: "2026-10-31T02:00:00Z", value: 68 },
+              { time: "2026-10-31T04:00:00Z", value: 86 },
+            ]
+          : [
+              { time: "2026-10-31T00:00:00Z", value: 10 },
+              { time: "2026-10-31T01:00:00Z", value: null },
+              { time: "2026-10-31T04:00:00Z", value: 30 },
+            ],
+      },
+    });
+  });
+  const histories: string[] = [];
+  page.on("request", (r) => {
+    if (r.url().includes("/history?")) histories.push(r.url());
+  });
+  await login(page);
+  await page.setViewportSize({
+    width: info.project.name === "mobile" ? 390 : 1440,
+    height: 1100,
+  });
+  const canvas = page.locator(".home-canvas");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
+  let dialog = page.getByRole("dialog", { name: "Legg til kort", exact: true });
+  await dialog.getByRole("button", { name: "Graf", exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "Temperatur Celsius", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", { name: "Husets forbruk", exact: true }),
+  ).toBeDisabled();
+  await dialog
+    .getByRole("button", { name: "Temperatur Fahrenheit", exact: true })
+    .click();
+  await dialog.screenshot({
+    path: `/private/tmp/smarti-graph-sources-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  await dialog.getByRole("button", { name: "Velg kort", exact: true }).click();
+  await dialog
+    .getByRole("textbox", { name: "Navn på kortet", exact: true })
+    .fill("Temperatur sammen");
+  await expect(
+    dialog.locator('.personal-graph g[data-source="sensor.builder_c"] path'),
+  ).toHaveCount(2);
+  await expect(dialog.locator(".personal-graph-legend")).toContainText("20 °C");
+  await dialog.screenshot({
+    path: `/private/tmp/smarti-graph-editor-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  await dialog
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  let graph = canvas.locator('[data-card^="custom:"]');
+  await expect(
+    graph.locator('.personal-graph g[data-source="sensor.builder_f"]'),
+  ).toHaveCount(1);
+  await graph
+    .locator(".personal-graph-legend")
+    .getByRole("button", { name: /Temperatur Fahrenheit/ })
+    .click();
+  await expect(graph.locator('g[data-source="sensor.builder_f"]')).toHaveCount(
+    0,
+  );
+  await graph
+    .locator(".personal-graph-legend")
+    .getByRole("button", { name: /Temperatur Fahrenheit/ })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await graph
+    .getByRole("button", {
+      name: "Rediger kort: Temperatur sammen",
+      exact: true,
+    })
+    .click();
+  dialog = page.getByRole("dialog", { name: "Rediger kort", exact: true });
+  await dialog
+    .getByRole("button", { name: "+ Legg til datakilde", exact: true })
+    .click();
+  await dialog
+    .getByRole("button", { name: "Temperatur i stuen", exact: true })
+    .click();
+  await dialog.getByRole("button", { name: "Velg kort", exact: true }).click();
+  await dialog
+    .getByRole("combobox", { name: "Tidsrom", exact: true })
+    .selectOption("6");
+  await dialog
+    .getByRole("button", { name: "Bruk endringer", exact: true })
+    .click();
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await page.reload();
+  graph = canvas.locator('[data-card^="custom:"]');
+  await expect(graph.locator(".personal-graph-legend > div")).toHaveCount(3);
+  expect(
+    layouts
+      .get("/api/home/layout/overview")!
+      .items!.find((item) => item.id.startsWith("custom:")).config,
+  ).toMatchObject({
+    type: "graph",
+    period: "6",
+    sources: [
+      "sensor.builder_c",
+      "sensor.builder_f",
+      "sensor.harmony_temperature",
+    ],
+  });
+  expect(
+    histories.some((url) => url.includes("builder_f/history?hours=6")),
+  ).toBe(true);
+  extra.splice(1, 1);
+  histories.length = 0;
+  await page.reload();
+  await expect(graph.locator(".personal-graph-legend")).toContainText(
+    "Datakilde mangler",
+  );
+  await expect(graph.locator('g[data-source="sensor.builder_c"]')).toHaveCount(
+    1,
+  );
+  expect(histories.some((url) => url.includes("builder_f/history"))).toBe(
+    false,
+  );
 });

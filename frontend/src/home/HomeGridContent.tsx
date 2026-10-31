@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Maximize2 } from "lucide-react";
 import { SettingsDialog } from "./SettingsDialog";
+import type { CardConfig } from "./homeGridModel";
+import { cardImageURL } from "./CardPresentation";
 
 /** Cards never scroll internally. Unusually dense/small cards offer the full view. */
 export function HomeGridContent({
@@ -8,11 +10,13 @@ export function HomeGridContent({
   title,
   lang,
   editing,
+  config,
 }: {
   children: ReactNode;
   title: string;
   lang: string;
   editing: boolean;
+  config?: CardConfig;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -53,7 +57,15 @@ export function HomeGridContent({
         ref={viewport}
         className="home-canvas-viewport"
         data-overflow={overflow}
+        data-card-image={config?.image}
       >
+        {config && cardImageURL(config.image) && config.type !== "picture" && (
+          <img
+            className="personal-card-backdrop"
+            src={cardImageURL(config.image)}
+            alt=""
+          />
+        )}
         <div
           ref={content}
           className="home-canvas-content"

@@ -14,6 +14,7 @@ import { finiteReading } from "./equipmentModel";
 import { numeric, overview, usable } from "./homeModel";
 import { controlState } from "../controlState";
 import { integrationName } from "../branding";
+import { CardIcon, CardTitle } from "./CardPresentation";
 
 function SummaryCard({
   kind,
@@ -78,8 +79,10 @@ function SummaryCard({
   return (
     <section className="equipment-summary-card" data-kind={kind}>
       <button className="grid-card-heading" onClick={openDevices}>
-        <Icon size={24} />
-        <strong>{labels[kind]}</strong>
+        <CardIcon fallback={Icon} size={24} />
+        <strong>
+          <CardTitle>{labels[kind]}</CardTitle>
+        </strong>
         <ChevronRight size={17} />
       </button>
       {kind === "alerts" ? (

@@ -64,6 +64,7 @@ import { CategoryHeading } from "./CategoryIntro";
 import { HomeGrid } from "./HomeGrid";
 import { equipmentSummaryCards } from "./EquipmentSummaryCards";
 import { RoomSummaryCard } from "./RoomSummaryCard";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import { HomeGridGuard } from "./HomeGridGuard";
 import { deviceGridCards } from "./HomeDeviceGrid";
 import { HighlightWeather } from "./HighlightWeather";
@@ -1034,6 +1035,8 @@ export function HomeOverview({
                   renderCards={(metricCards) => (
                     <HomeGrid
                       page="overview"
+                      home={h}
+                      offline={offline}
                       lang={lang}
                       title={t("Hjemmet med et blikk", "Home at a glance")}
                       cards={[
@@ -1046,8 +1049,12 @@ export function HomeOverview({
                           content: (
                             <section className="home-grid-routines">
                               <header>
-                                <LayoutGrid size={22} />
-                                <h2>{t("Rutiner", "Routines")}</h2>
+                                <CardIcon fallback={LayoutGrid} size={22} />
+                                <h2>
+                                  <CardTitle>
+                                    {t("Rutiner", "Routines")}
+                                  </CardTitle>
+                                </h2>
                                 <button
                                   onClick={() => configure(true)}
                                   aria-label={t(

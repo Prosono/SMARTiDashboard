@@ -1,11 +1,25 @@
+export type CardConfig = {
+  type: "auto" | "compact" | "picture" | "graph";
+  title: string;
+  icon: string;
+  image: string;
+  sources: string[];
+  period: "6" | "24" | "168";
+};
 export type GridItem = {
   id: string;
   x: number;
   y: number;
   w: number;
   h: number;
+  config?: CardConfig;
 };
-export type GridSize = { id: string; w?: number; h?: number };
+export type GridSize = {
+  id: string;
+  w?: number;
+  h?: number;
+  config?: CardConfig;
+};
 export type HomeGridPage =
   | "overview"
   | "overview_simple"
@@ -57,6 +71,7 @@ export function defaultGrid(cards: GridSize[], columns = 3): GridItem[] {
           y: 0,
           w: Math.min(columns, card.w || 1),
           h: card.h || 2,
+          ...(card.config ? { config: card.config } : {}),
         },
         result,
         columns,
@@ -100,7 +115,14 @@ export function addGridCard(items: GridItem[], card: GridSize) {
   return [
     ...items,
     vacant(
-      { id: card.id, x: 0, y: 0, w: card.w || 1, h: card.h || 2 },
+      {
+        id: card.id,
+        x: 0,
+        y: 0,
+        w: card.w || 1,
+        h: card.h || 2,
+        ...(card.config ? { config: card.config } : {}),
+      },
       items,
       3,
     ),

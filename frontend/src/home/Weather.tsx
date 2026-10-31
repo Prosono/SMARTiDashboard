@@ -13,6 +13,7 @@ import { api } from "../api";
 import type { Control } from "../types";
 import "./extras.css";
 import { TemperatureValue } from "./TemperatureValue";
+import { CardIcon, CardTitle } from "./CardPresentation";
 type Day = {
   date: string;
   condition: string;
@@ -103,7 +104,10 @@ export function Weather({
         aria-label={t("Værmelding", "Weather forecast")}
       >
         <div className="simple-weather-heading">
-          <strong>{c.name}</strong>
+          <strong>
+            <CardIcon optional fallback={Cloud} size={20} />
+            <CardTitle>{c.name}</CardTitle>
+          </strong>
           <span>
             {usable ? label(c.state) : t("Utilgjengelig", "Unavailable")}
           </span>

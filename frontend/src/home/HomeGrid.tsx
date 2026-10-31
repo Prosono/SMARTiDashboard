@@ -20,6 +20,10 @@ import {
   X,
 } from "lucide-react";
 import { api } from "../api";
+import type { Home } from "../types";
+import { CardBuilder, type CardSelection } from "./CardBuilder";
+import { ConfiguredHomeCard } from "./ConfiguredHomeCard";
+import { customCardId } from "./cardConfigModel";
 import {
   addGridCard,
   changeGrid,
@@ -51,11 +55,15 @@ export function HomeGrid({
   cards: availableCards,
   lang,
   title,
+  home,
+  offline,
 }: {
   page: HomeGridPage;
   cards: HomeGridCard[];
   lang: string;
   title?: string;
+  home: Home;
+  offline: boolean;
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
@@ -75,6 +83,7 @@ export function HomeGrid({
     [message, setMessage] = useState("");
   const [adding, setAdding] = useState(false),
     [active, setActive] = useState<string | null>(null);
+  const [editingCard, setEditingCard] = useState<string | null>(null);
   const [columns, setColumns] = useState(3);
   const surface = useRef<HTMLDivElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
@@ -94,15 +103,25 @@ export function HomeGrid({
     columns: number;
     shown: GridItem[];
   } | null>(null);
-  const catalog = useMemo(
-    () => new Map(cards.map((card) => [card.id, card])),
-    [cards],
-  );
   const defaults = useMemo(
     () => defaultGrid(cards.filter((card) => !card.defaultHidden)),
     [cards],
   );
   const layout = draft ?? saved.data?.items ?? defaults;
+  const catalog = new Map(cards.map((card) => [card.id, card]));
+  for (const item of layout) {
+    if (!catalog.has(item.id) && item.config)
+      catalog.set(item.id, {
+        id: item.id,
+        title:
+          item.config.title ||
+          home.controls.find((c) => c.entity_id === item.config?.sources[0])
+            ?.name ||
+          t("Personlig kort", "Personal card"),
+        content: null,
+        entityId: item.config.sources[0],
+      });
+  }
   const editing = draft !== null;
   const visibleLayout = layout.filter(
     (item) =>
@@ -115,9 +134,6 @@ export function HomeGrid({
           columns,
         )
       : responsiveGrid(visibleLayout, columns);
-  const missing = cards.filter(
-    (card) => !layout.some((item) => item.id === card.id),
-  );
   const layoutKey = shown
     .map(({ id, x, y, w, h }) => `${id}:${x},${y},${w},${h}`)
     .join("|");
@@ -200,6 +216,7 @@ export function HomeGrid({
     setActive(null);
     setDraft(null);
     setAdding(false);
+    setEditingCard(null);
     setMessage("");
     editButton.current?.focus();
   }
@@ -236,6 +253,42 @@ export function HomeGrid({
   }
   function update(item: GridItem) {
     setDraft((current) => current && changeGrid(current, item));
+  }
+  function applyCard(selection: CardSelection) {
+    setDraft((current) => {
+      if (!current) return current;
+      if (editingCard) {
+        const item = current.find((item) => item.id === editingCard);
+        if (!item) return current;
+        const expand =
+          selection.config.type === "graph" && item.config?.type !== "graph";
+        return changeGrid(current, {
+          ...item,
+          config: selection.config,
+          ...(expand
+            ? {
+                w: Math.max(2, item.w),
+                h: Math.max(3, item.h),
+                x: Math.min(item.x, 1),
+              }
+            : {}),
+        });
+      }
+      if (current.length >= 300) return current;
+      const id =
+        selection.base &&
+        !current.some((item) => item.id === selection.base!.id)
+          ? selection.base.id
+          : customCardId();
+      return addGridCard(current, {
+        id,
+        config: selection.config,
+        w: selection.config.type === "graph" ? 2 : selection.base?.w,
+        h: selection.config.type === "graph" ? 3 : selection.base?.h,
+      });
+    });
+    setAdding(false);
+    setEditingCard(null);
   }
   function start(
     event: PointerEvent<HTMLButtonElement>,
@@ -352,8 +405,9 @@ export function HomeGrid({
             <>
               <button
                 onClick={() => setAdding(!adding)}
-                disabled={busy}
+                disabled={busy || draft.length >= 300}
                 aria-expanded={adding}
+                aria-haspopup="dialog"
               >
                 <Plus size={17} />
                 {t("Legg til kort", "Add card")}
@@ -418,33 +472,28 @@ export function HomeGrid({
           {message}
         </p>
       )}
-      {adding && editing && (
-        <div
-          className="home-canvas-library"
-          aria-label={t("Tilgjengelige kort", "Available cards")}
-        >
-          {missing.length ? (
-            missing.map((card) => (
-              <button
-                key={card.id}
-                disabled={busy}
-                onClick={() =>
-                  setDraft((current) => current && addGridCard(current, card))
+      {(adding || editingCard) && editing && (
+        <CardBuilder
+          key={editingCard || "add"}
+          home={home}
+          offline={offline}
+          lang={lang}
+          cards={cards}
+          placed={layout}
+          initial={
+            editingCard
+              ? {
+                  item: layout.find((item) => item.id === editingCard)!,
+                  card: catalog.get(editingCard)!,
                 }
-              >
-                <Plus size={16} />
-                {card.title}
-              </button>
-            ))
-          ) : (
-            <p>
-              {t(
-                "Alle tilgjengelige kort er i oppsettet.",
-                "All available cards are in your layout.",
-              )}
-            </p>
-          )}
-        </div>
+              : undefined
+          }
+          onClose={() => {
+            setAdding(false);
+            setEditingCard(null);
+          }}
+          onApply={applyCard}
+        />
       )}
       <div
         ref={surface}
@@ -454,6 +503,7 @@ export function HomeGrid({
         {shown.map((item) => {
           const card = catalog.get(item.id)!;
           const original = layout.find((saved) => saved.id === item.id)!;
+          const cardTitle = original.config?.title || card.title;
           return (
             <div
               key={item.id}
@@ -471,7 +521,7 @@ export function HomeGrid({
                   <button
                     className="home-canvas-grip"
                     disabled={busy}
-                    aria-label={`${t("Flytt", "Move")} ${card.title}`}
+                    aria-label={`${t("Flytt", "Move")} ${cardTitle}`}
                     onPointerDown={(event) => start(event, item.id, false)}
                     onPointerMove={move}
                     onPointerUp={(event) => end(event)}
@@ -516,10 +566,17 @@ export function HomeGrid({
                     }}
                   >
                     <Grip size={18} />
-                    <span>{card.title}</span>
+                    <span>{cardTitle}</span>
                   </button>
                   <button
-                    aria-label={`${t("Fjern", "Remove")} ${card.title}`}
+                    disabled={busy}
+                    aria-label={`${t("Rediger kort", "Edit card")}: ${cardTitle}`}
+                    onClick={() => setEditingCard(item.id)}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    aria-label={`${t("Fjern", "Remove")} ${cardTitle}`}
                     disabled={busy}
                     onClick={() =>
                       setDraft((current) =>
@@ -531,15 +588,31 @@ export function HomeGrid({
                   </button>
                 </div>
               )}
-              <HomeGridContent title={card.title} lang={lang} editing={editing}>
-                {card.content}
+              <HomeGridContent
+                title={cardTitle}
+                lang={lang}
+                editing={editing}
+                config={original.config}
+              >
+                {original.config ? (
+                  <ConfiguredHomeCard
+                    config={original.config}
+                    home={home}
+                    offline={offline}
+                    lang={lang}
+                    original={card.content}
+                    originalEntity={card.entityId}
+                  />
+                ) : (
+                  card.content
+                )}
               </HomeGridContent>
               {editing && (
                 <div className="home-canvas-resize-tools">
                   <label>
                     {t("Bredde", "Width")}
                     <select
-                      aria-label={`${card.title}: ${t("bredde", "width")}`}
+                      aria-label={`${cardTitle}: ${t("bredde", "width")}`}
                       value={original.w}
                       disabled={busy}
                       onChange={(event) =>
@@ -563,7 +636,7 @@ export function HomeGrid({
                   <label>
                     {t("Høyde", "Height")}
                     <select
-                      aria-label={`${card.title}: ${t("høyde", "height")}`}
+                      aria-label={`${cardTitle}: ${t("høyde", "height")}`}
                       value={original.h}
                       disabled={busy}
                       onChange={(event) =>
@@ -578,7 +651,7 @@ export function HomeGrid({
                     </select>
                   </label>
                   <button
-                    aria-label={`${t("Endre størrelse på", "Resize")} ${card.title}`}
+                    aria-label={`${t("Endre størrelse på", "Resize")} ${cardTitle}`}
                     className="home-canvas-resize"
                     disabled={busy}
                     onPointerDown={(event) => start(event, item.id, true)}

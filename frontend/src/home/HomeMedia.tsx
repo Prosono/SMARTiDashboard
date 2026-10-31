@@ -4,6 +4,7 @@ import type Hls from "hls.js";
 import { api } from "../api";
 import type { Control } from "../types";
 import { usable } from "./homeModel";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import "./homeMedia.css";
 
 export function CameraCard({
@@ -199,7 +200,10 @@ export function CameraCard({
       </div>
       <div className="camera-caption">
         <div>
-          <strong>{c.name}</strong>
+          <strong>
+            <CardIcon optional fallback={Camera} size={20} />
+            <CardTitle>{c.name}</CardTitle>
+          </strong>
           <small>
             {t("Livevideo · noe forsinkelse", "Live video · some delay")}
           </small>

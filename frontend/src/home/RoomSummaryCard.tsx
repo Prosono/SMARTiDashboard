@@ -4,6 +4,7 @@ import { roomMood } from "./HomeOverview";
 import { temperature, usable } from "./homeModel";
 import { GridLightingCard } from "./GridLightingCard";
 import { TemperatureValue } from "./TemperatureValue";
+import { CardIcon, CardTitle, CardPresentation } from "./CardPresentation";
 
 export function RoomSummaryCard({
   home,
@@ -46,8 +47,10 @@ export function RoomSummaryCard({
         onClick={open}
         aria-label={`${lang === "en" ? "Open room" : "Åpne rom"} ${area.name}`}
       >
-        <Icon size={25} />
-        <strong>{area.name}</strong>
+        <CardIcon fallback={Icon} size={25} />
+        <strong>
+          <CardTitle>{area.name}</CardTitle>
+        </strong>
         <ChevronRight size={17} />
       </button>
       <div className="equipment-room-reading">
@@ -57,14 +60,16 @@ export function RoomSummaryCard({
         <Icon size={85} strokeWidth={0.7} aria-hidden="true" />
       </div>
       {controls.some((c) => c.domain === "light") ? (
-        <GridLightingCard
-          home={home}
-          areaId={area.area_id}
-          lang={lang}
-          offline={offline}
-          open={open}
-          compact
-        />
+        <CardPresentation.Provider value={{}}>
+          <GridLightingCard
+            home={home}
+            areaId={area.area_id}
+            lang={lang}
+            offline={offline}
+            open={open}
+            compact
+          />
+        </CardPresentation.Provider>
       ) : (
         <p>
           {controls.length}{" "}

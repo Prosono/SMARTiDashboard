@@ -1,3 +1,10 @@
+## 1.36.71
+- Ny grafisk kortvelger i Harmoni: velg først enhet, graf eller oversiktskort. Finn utstyr med søk, rom- og typefilter, og velg kort med levende forhåndsvisning.
+- Eksisterende kort kan redigeres fra blyanten i redigeringsmodus. Velg kortnavn, ikon, bilde fra bildebiblioteket og korttype: utstyrskort, kompakt status, bildekort eller graf. Samme enhet kan brukes i flere personlige kort.
+- Grafkort kan sammenligne opptil seks datakilder i samme tids- og verdiskala. Velg siste 6 timer, døgn eller 7 dager, og legg til flere kilder ved å redigere kortet. W/kW, Wh/kWh og °C/°F omregnes til felles enheter; uforenlige målinger plottes ikke sammen.
+- Grafene bevarer hull i historikken og forklarer utilgjengelige eller fjernede datakilder. Hver kurve kan vises/skjules fra tegnforklaringen.
+- Kortinnstillinger lagres per konto og fane sammen med oppsettet. «Bruk endringer» oppdaterer utkastet; «Lagre» lagrer hele oppsettet. Avbryt og vern mot samtidige endringer beholdes, og utstyrets felles innstillinger endres ikke.
+
 ## 1.36.70
 - Fjernet intern scrolling i kortene i Harmoni. Illustrasjonene tilpasser seg tilgjengelig høyde, slik at vanlige utstyrskort beholder synlige kontroller uten små rullefelt.
 - Kort som er gjort for små til å vise alt, får en kompakt forhåndsvisning og «Vis hele kortet». Fullvisningen beholder styring og detaljer, med støtte for tastatur og fokus tilbake til kortet.

@@ -1,4 +1,5 @@
-import { useId, useState, type CSSProperties } from "react";
+import { useContext, useId, useState, type CSSProperties } from "react";
+import { CardPresentation } from "./CardPresentation";
 import type { Control } from "../types";
 import {
   equipmentArt,
@@ -17,6 +18,7 @@ export function EquipmentArtwork({
   available?: boolean;
   kind?: EquipmentArt;
 }) {
+  const appearance = useContext(CardPresentation);
   const kind = override || equipmentArt(c),
     id = useId().replaceAll(":", "");
   const [failed, fail] = useState("");
@@ -30,6 +32,7 @@ export function EquipmentArtwork({
   const image = ["pendant", "plug", "lock", "contact"].includes(kind)
     ? new URL(`home/equipment/${kind}.webp`, document.baseURI).href
     : null;
+  if (appearance.image && appearance.image !== "auto") return null;
   if (image && image !== failed)
     return (
       <div

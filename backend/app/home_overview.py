@@ -6,7 +6,7 @@ import json
 import math
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
-from typing import Literal, get_args
+from typing import Annotated, Literal, get_args
 from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -86,6 +86,68 @@ class HeaderImage(BaseModel):
 LayoutPage = Literal["overview", "overview_simple", "lights", "climate", "security", "media", "misc"]
 
 
+class CardConfig(BaseModel):
+    model_config = {"extra": "forbid", "strict": True}
+    type: Literal["auto", "compact", "picture", "graph"] = "auto"
+    title: str = Field(default="", max_length=80)
+    icon: Literal[
+        "auto",
+        "light",
+        "energy",
+        "temperature",
+        "humidity",
+        "security",
+        "lock",
+        "camera",
+        "media",
+        "plug",
+        "blinds",
+        "home",
+        "room",
+        "calendar",
+        "people",
+        "routine",
+        "graph",
+        "battery",
+        "fan",
+        "sensor",
+    ] = "auto"
+    image: Literal[
+        "auto",
+        "none",
+        "living",
+        "kitchen",
+        "bedroom",
+        "outdoor",
+        "office",
+        "pendant",
+        "plug",
+        "lock",
+        "contact",
+    ] = "auto"
+    sources: list[
+        Annotated[str, Field(min_length=3, max_length=250, pattern=r"^[a-z_]+\.[a-zA-Z0-9_]+$")]
+    ] = Field(default_factory=list, max_length=6)
+    period: Literal["6", "24", "168"] = "24"
+
+    @field_validator("title")
+    @classmethod
+    def readable_title(cls, value):
+        if value and not value.isprintable():
+            raise ValueError("Card titles must be printable")
+        return value.strip()
+
+    @model_validator(mode="after")
+    def valid_sources(self):
+        if len(self.sources) != len(set(self.sources)):
+            raise ValueError("Duplicate data sources")
+        if self.type != "auto" and not self.sources:
+            raise ValueError("Choose a data source")
+        if self.type != "graph" and len(self.sources) > 1:
+            raise ValueError("Only graphs support several data sources")
+        return self
+
+
 class LayoutItem(BaseModel):
     model_config = {"extra": "forbid", "strict": True}
     id: str = Field(min_length=1, max_length=250)
@@ -93,6 +155,7 @@ class LayoutItem(BaseModel):
     y: int = Field(ge=0, le=1999)
     w: int = Field(ge=1, le=3)
     h: int = Field(ge=1, le=4)
+    config: CardConfig | None = None
 
     @field_validator("id")
     @classmethod
@@ -173,6 +236,13 @@ def home_router(store, user, ha, settings):
     @router.put("/layout/{page}")
     async def save_home_layout(page: LayoutPage, body: HomeLayout, current=Depends(user)):
         key = f"home_layout:{current['id']}:{page}"
+        entities = {c.entity_id: c for c in ha.controls()}
+        for item in body.items:
+            if item.id.startswith("custom:") and not (item.config and item.config.sources):
+                raise HTTPException(422, "card_source_required")
+            for source in item.config.sources if item.config else []:
+                if source in entities and not visible(current, entities[source]):
+                    raise HTTPException(403, "permission_denied")
         # Compare and save atomically so a second browser cannot silently replace an edit.
         with store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -180,7 +250,10 @@ def home_router(store, user, ha, settings):
             revision = json.loads(row[0])["revision"] if row else 0
             if revision != body.revision:
                 raise HTTPException(409, "layout_changed")
-            result = {"revision": revision + 1, "items": [item.model_dump() for item in body.items]}
+            result = {
+                "revision": revision + 1,
+                "items": [item.model_dump(exclude_none=True) for item in body.items],
+            }
             db.execute("INSERT OR REPLACE INTO settings(key,value) VALUES (?,?)", (key, json.dumps(result)))
         return result
 

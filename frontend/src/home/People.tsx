@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Users, Settings2 } from "lucide-react";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import { api } from "../api";
 import type { Home } from "../types";
 import { usable } from "./homeModel";
@@ -139,8 +140,10 @@ export function Presence({
       aria-label={t("Hvem er hjemme", "Who's home")}
     >
       <div className="people-heading">
-        <Users size={20} />
-        <h2>{t("Hvem er hjemme", "Who's home")}</h2>
+        <CardIcon fallback={Users} size={20} />
+        <h2>
+          <CardTitle>{t("Hvem er hjemme", "Who's home")}</CardTitle>
+        </h2>
         <button onClick={() => edit(!editing)} aria-expanded={editing}>
           <Settings2 size={16} />
           {t("Velg personer", "Choose people")}

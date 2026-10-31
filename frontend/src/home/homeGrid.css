@@ -30,8 +30,7 @@ html[data-home-style="harmony"] {
     flex-wrap: wrap;
     justify-content: flex-end;
   }
-  .home-canvas-actions button,
-  .home-canvas-library button {
+  .home-canvas-actions button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -55,18 +54,6 @@ html[data-home-style="harmony"] {
   .home-canvas-message {
     font-size: 13px;
     margin-bottom: 14px;
-  }
-  .home-canvas-library {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
-    background: var(--surface);
-    border: 1px dashed var(--line);
-    border-radius: 16px;
-    max-height: 320px;
-    overflow: auto;
   }
   .home-canvas-grid {
     display: grid;

@@ -346,6 +346,8 @@ export function SimpleHome({
             ? (cards) => (
                 <HomeGrid
                   page="overview_simple"
+                  home={home}
+                  offline={offline}
                   lang={lang}
                   cards={[
                     ...cards,

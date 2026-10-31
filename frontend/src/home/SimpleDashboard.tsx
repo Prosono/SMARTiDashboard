@@ -25,6 +25,7 @@ import { homeAsset } from "./HomeOverview";
 import type { HomeGridCard } from "./HomeGrid";
 import { HarmonyDevices } from "./HarmonyDevices";
 import { GridLightingCard } from "./GridLightingCard";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import "./simpleDashboard.css";
 
 function SimpleAgenda({ lang, offline }: { lang: string; offline: boolean }) {
@@ -228,8 +229,10 @@ export function SimpleDashboard({
           aria-haspopup="dialog"
         >
           <div className="simple-dashboard-card-heading">
-            <CalendarDays size={23} />
-            <span>{t("Kalender", "Calendar")}</span>
+            <CardIcon fallback={CalendarDays} size={23} />
+            <span>
+              <CardTitle>{t("Kalender", "Calendar")}</CardTitle>
+            </span>
             <ChevronRight size={18} />
           </div>
           <div className="simple-date-content">
@@ -266,8 +269,10 @@ export function SimpleDashboard({
           >
             <img src={homeAsset("home-lighting")} alt="" />
             <div className="simple-dashboard-card-heading">
-              <Lightbulb size={23} />
-              <span>{t("Lys i hjemmet", "Home lighting")}</span>
+              <CardIcon fallback={Lightbulb} size={23} />
+              <span>
+                <CardTitle>{t("Lys i hjemmet", "Home lighting")}</CardTitle>
+              </span>
               <ChevronRight size={18} />
             </div>
             <strong>

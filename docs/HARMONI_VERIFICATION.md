@@ -1,3 +1,58 @@
+# Visual card picker and personal card editor — release 1.36.71
+
+Harmoni's card picker starts with Device, Graph or Overview card. Residents can
+search devices by name/room, filter by room/category and select a presentation
+with an inert preview using available Home data. The editor is also reachable from
+each card's pencil in layout edit mode. Personal titles, icons, bundled gallery
+images and device/compact/picture/graph types are stored in that card's layout
+configuration. The same entity can appear in several independent personal cards.
+Shared entity names, appearance, favorites and other Home settings are untouched.
+
+Graph cards bind up to six numeric sensor sources, with 6/24/168-hour history.
+All curves use the same actual timestamp/value coordinates; W/kW, Wh/kWh and °C/°F
+are normalized to a shared unit. Incompatible quantities are not plotted together.
+Null/nonfinite samples and invalid times break curves. Missing, unavailable,
+failed and unsupported sources have explicit states; other valid sources continue
+to render. Legend controls can show/hide individual curves. Source changes and
+period selection are available when editing an existing graph.
+
+Optional, strictly bounded card configuration extends the existing versioned
+layout JSON. Geometry and configuration save atomically with the same revision
+check, authentication, CSRF and account/page isolation. Known forbidden source
+references are rejected. Missing references remain editable and never cause
+history requests for entities absent from the visible Home snapshot. Image/icon
+choices are allowlisted; no arbitrary image URLs or HTML are stored. Existing
+layouts need no migration. Moves, resizing, touch ordering and responsive reflow
+retain each card's complete configuration; layout cancel also discards card edits.
+
+Validation on 31 October 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file
+  formatting, targeted backend Ruff checks/format and `git diff --check`: passed.
+  Vite retains the existing bundle-size advisory.
+- Frontend unit suite: **187 passed**, including metadata preservation through
+  geometry operations, unit compatibility/conversion, shared time/value axes,
+  real zeroes and gaps across null, nonfinite and invalid-time readings.
+- Relevant backend suites: **100 passed**. Coverage includes private configuration
+  round trips, unchanged shared device/preferences data, missing sources, invalid
+  options and limits, forbidden bindings, strict geometry and stale revisions.
+- Final extracted archive: **36 browser scenarios passed** across Chromium desktop
+  and mobile, with no retries/skips. New flows verify the picker, search, inert
+  previews, personal icon/photo/type persistence, cancellation, duplicate device
+  cards, adding/editing multiple graph sources, unit conversion, curve gaps,
+  period changes, legend toggling and removed-source handling. Existing real layout
+  persistence and concurrency checks use the new picker too. Rich graph fixtures
+  isolate their personal layouts; backend tests separately cover SQLite round trips.
+- Screenshots were inspected in light/dark at 390/1440 px. The prior responsive,
+  header, device-command, view-only, reduced-motion and no-nested-scroll scenarios
+  still pass. Controls and previews emit no unexpected device/appearance commands.
+- All **249 runtime files** match the deterministic manifest. Browser checks use
+  the extracted backend and compiled frontend; `scripts/package.py --check` passes.
+  No real home devices were controlled. The broader repository limitations below
+  still apply.
+
+---
+
 # Card overflow and layout motion — release 1.36.70
 
 Harmoni card viewports no longer scroll internally. Equipment artwork fits the
