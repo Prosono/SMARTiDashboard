@@ -232,9 +232,84 @@ export function SecurityOverview({
       </section>
     );
   }
+  const summary = (
+    <CategorySummary
+      image={homeAsset("home-security")}
+      eyebrow={t("SIKKERHET I HJEMMET", "HOME SECURITY")}
+      title={
+        offline
+          ? t("Tilkoblingen er brutt", "Connection lost")
+          : alerts.length
+            ? t("Se aktive varsler", "Check active alerts")
+            : unknown
+              ? t("Noen enheter svarer ikke", "Some devices are unavailable")
+              : openings.length
+                ? t("Noe står åpent", "An opening needs attention")
+                : devices.length
+                  ? t("Ingen aktive varsler", "No active alerts")
+                  : t("Din sikkerhetsoversikt", "Your security overview")
+      }
+      description={
+        offline
+          ? t(
+              "Status kan være utdatert. Styring er utilgjengelig.",
+              "Status may be stale. Controls are unavailable.",
+            )
+          : t(
+              "Oversikten viser det enhetene rapporterer akkurat nå.",
+              "This overview shows what your devices report right now.",
+            )
+      }
+      alert={alerts.length > 0}
+    >
+      {[
+        {
+          Icon: Camera,
+          value: offline
+            ? "—"
+            : `${model.cameras.filter(usable).length} / ${model.cameras.length}`,
+          label: t("Kameraer tilgjengelige", "Cameras available"),
+          controls: model.cameras.filter(usable),
+        },
+        {
+          Icon: LockKeyhole,
+          value: offline ? "—" : `${locked} / ${totalLocks.length}`,
+          label: t("Dører låst", "Doors locked"),
+          controls: totalLocks.filter((c) => usable(c) && c.state === "locked"),
+        },
+        {
+          Icon: Shield,
+          value: offline ? "—" : String(alerts.length),
+          label: t("Aktive varsler", "Active alerts"),
+          controls: alerts,
+        },
+        {
+          Icon: Radio,
+          value: offline ? "—" : String(unknown),
+          label: t("Utilgjengelige", "Unavailable"),
+          controls: [...devices, ...model.cameras].filter((c) => !usable(c)),
+        },
+      ].map(({ Icon, value, label, controls }) => (
+        <MetricDetails
+          key={label}
+          label={label}
+          controls={controls}
+          home={home}
+          lang={lang}
+        >
+          <Icon size={24} />
+          <span>
+            <strong>{value}</strong>
+            <small>{label}</small>
+          </span>
+        </MetricDetails>
+      ))}
+    </CategorySummary>
+  );
   return (
     <section className="security-overview">
       <CategoryHeading
+        summary={summary}
         image={homeAsset("home-security")}
         Icon={Shield}
         title={t("Sikkerhet", "Security")}
@@ -296,80 +371,7 @@ export function SecurityOverview({
           ))}
         </nav>
       </div>
-      <CategorySummary
-        image={homeAsset("home-security")}
-        eyebrow={t("SIKKERHET I HJEMMET", "HOME SECURITY")}
-        title={
-          offline
-            ? t("Tilkoblingen er brutt", "Connection lost")
-            : alerts.length
-              ? t("Se aktive varsler", "Check active alerts")
-              : unknown
-                ? t("Noen enheter svarer ikke", "Some devices are unavailable")
-                : openings.length
-                  ? t("Noe står åpent", "An opening needs attention")
-                  : devices.length
-                    ? t("Ingen aktive varsler", "No active alerts")
-                    : t("Din sikkerhetsoversikt", "Your security overview")
-        }
-        description={
-          offline
-            ? t(
-                "Status kan være utdatert. Styring er utilgjengelig.",
-                "Status may be stale. Controls are unavailable.",
-              )
-            : t(
-                "Oversikten viser det enhetene rapporterer akkurat nå.",
-                "This overview shows what your devices report right now.",
-              )
-        }
-        alert={alerts.length > 0}
-      >
-        {[
-          {
-            Icon: Camera,
-            value: offline
-              ? "—"
-              : `${model.cameras.filter(usable).length} / ${model.cameras.length}`,
-            label: t("Kameraer tilgjengelige", "Cameras available"),
-            controls: model.cameras.filter(usable),
-          },
-          {
-            Icon: LockKeyhole,
-            value: offline ? "—" : `${locked} / ${totalLocks.length}`,
-            label: t("Dører låst", "Doors locked"),
-            controls: totalLocks.filter(
-              (c) => usable(c) && c.state === "locked",
-            ),
-          },
-          {
-            Icon: Shield,
-            value: offline ? "—" : String(alerts.length),
-            label: t("Aktive varsler", "Active alerts"),
-            controls: alerts,
-          },
-          {
-            Icon: Radio,
-            value: offline ? "—" : String(unknown),
-            label: t("Utilgjengelige", "Unavailable"),
-            controls: [...devices, ...model.cameras].filter((c) => !usable(c)),
-          },
-        ].map(({ Icon, value, label, controls }) => (
-          <MetricDetails
-            key={label}
-            label={label}
-            controls={controls}
-            home={home}
-            lang={lang}
-          >
-            <Icon size={24} />
-            <span>
-              <strong>{value}</strong>
-              <small>{label}</small>
-            </span>
-          </MetricDetails>
-        ))}
-      </CategorySummary>
+      {summary}
       <div className="security-layout" data-tab={tab}>
         <div className="security-main">
           {(tab === "all" || tab === "cameras") && (

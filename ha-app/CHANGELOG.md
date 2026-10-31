@@ -1,3 +1,7 @@
+## 1.36.67
+- Statuspillene i Harmoni er flyttet inn i selve bildeheaderen på oversikt, lys, klima, sikkerhet, multimedia og diverse.
+- Tydelig kontrast over egne bakgrunnsbilder og tilpasset oppsett på mobil og nettbrett. Pillene åpner fortsatt de samme detaljene og kategoriene.
+
 ## 1.36.66
 - Harmoni har fått mer dybde med tydeligere skygger og bildeheadere på oversikt, lys, energi, klima, sikkerhet, multimedia og diverse.
 - Velg bakgrunn under Innstillinger → Tema og utseende: ulike bilder per fane, et felles motiv eller eget bilde. Bildevalget og opplastingen lagres privat på kontoen.

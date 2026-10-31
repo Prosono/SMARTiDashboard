@@ -136,9 +136,78 @@ export function ClimateOverview({
     { id: "air", label: t("Luftkvalitet", "Air quality"), Icon: Leaf },
     { id: "ventilation", label: t("Ventilasjon", "Ventilation"), Icon: Wind },
   ];
+  const summary = (
+    <CategorySummary
+      image={homeAsset("home-climate")}
+      eyebrow={t("KLIMA I HJEMMET", "HOME CLIMATE")}
+      title={t("Inneklimaet akkurat nå", "Your indoor climate now")}
+      description={
+        offline
+          ? t(
+              "Venter på ferske målinger fra hjemmet.",
+              "Waiting for fresh readings from your home.",
+            )
+          : t(
+              `Målinger fra ${rooms.length} rom, samlet på ett sted.`,
+              `Readings from ${rooms.length} rooms, together in one place.`,
+            )
+      }
+    >
+      <MetricDetails
+        label={t("Snittemperatur", "Average temperature")}
+        controls={rooms.flatMap((a) =>
+          a.thermostat && temperature(a.thermostat) !== null
+            ? [a.thermostat]
+            : a.items.filter(
+                (c) => category(c) === "temperature" && temperature(c) !== null,
+              ),
+        )}
+        home={home}
+        lang={lang}
+      >
+        <Thermometer />
+        <span>
+          <strong>{fmt(mean(rooms.map((a) => a.temp)), " °C")}</strong>
+          <small>{t("Snittemperatur", "Average temperature")}</small>
+        </span>
+      </MetricDetails>
+      <MetricDetails
+        label={t("Snittfuktighet", "Average humidity")}
+        controls={controls.filter(
+          (c) =>
+            category(c) === "humidity" &&
+            c.attributes.unit_of_measurement === "%" &&
+            numeric(c) !== null &&
+            numeric(c)! >= 0 &&
+            numeric(c)! <= 100,
+        )}
+        home={home}
+        lang={lang}
+      >
+        <Droplets />
+        <span>
+          <strong>{fmt(mean(rooms.map((a) => a.humidity)), " %")}</strong>
+          <small>{t("Snittfuktighet", "Average humidity")}</small>
+        </span>
+      </MetricDetails>
+      <MetricDetails
+        label={t("CO₂ · gjennomsnitt", "CO₂ · average")}
+        controls={co2.filter((c) => numeric(c) !== null)}
+        home={home}
+        lang={lang}
+      >
+        <Leaf />
+        <span>
+          <strong>{fmt(mean(co2.map(numeric)), " ppm")}</strong>
+          <small>{t("CO₂ · gjennomsnitt", "CO₂ · average")}</small>
+        </span>
+      </MetricDetails>
+    </CategorySummary>
+  );
   return (
     <section className="climate-overview">
       <CategoryHeading
+        summary={summary}
         image={homeAsset("home-climate")}
         Icon={Thermometer}
         title={t("Klima", "Climate")}
@@ -214,73 +283,7 @@ export function ClimateOverview({
           ))}
         </div>
       </div>
-      <CategorySummary
-        image={homeAsset("home-climate")}
-        eyebrow={t("KLIMA I HJEMMET", "HOME CLIMATE")}
-        title={t("Inneklimaet akkurat nå", "Your indoor climate now")}
-        description={
-          offline
-            ? t(
-                "Venter på ferske målinger fra hjemmet.",
-                "Waiting for fresh readings from your home.",
-              )
-            : t(
-                `Målinger fra ${rooms.length} rom, samlet på ett sted.`,
-                `Readings from ${rooms.length} rooms, together in one place.`,
-              )
-        }
-      >
-        <MetricDetails
-          label={t("Snittemperatur", "Average temperature")}
-          controls={rooms.flatMap((a) =>
-            a.thermostat && temperature(a.thermostat) !== null
-              ? [a.thermostat]
-              : a.items.filter(
-                  (c) =>
-                    category(c) === "temperature" && temperature(c) !== null,
-                ),
-          )}
-          home={home}
-          lang={lang}
-        >
-          <Thermometer />
-          <span>
-            <strong>{fmt(mean(rooms.map((a) => a.temp)), " °C")}</strong>
-            <small>{t("Snittemperatur", "Average temperature")}</small>
-          </span>
-        </MetricDetails>
-        <MetricDetails
-          label={t("Snittfuktighet", "Average humidity")}
-          controls={controls.filter(
-            (c) =>
-              category(c) === "humidity" &&
-              c.attributes.unit_of_measurement === "%" &&
-              numeric(c) !== null &&
-              numeric(c)! >= 0 &&
-              numeric(c)! <= 100,
-          )}
-          home={home}
-          lang={lang}
-        >
-          <Droplets />
-          <span>
-            <strong>{fmt(mean(rooms.map((a) => a.humidity)), " %")}</strong>
-            <small>{t("Snittfuktighet", "Average humidity")}</small>
-          </span>
-        </MetricDetails>
-        <MetricDetails
-          label={t("CO₂ · gjennomsnitt", "CO₂ · average")}
-          controls={co2.filter((c) => numeric(c) !== null)}
-          home={home}
-          lang={lang}
-        >
-          <Leaf />
-          <span>
-            <strong>{fmt(mean(co2.map(numeric)), " ppm")}</strong>
-            <small>{t("CO₂ · gjennomsnitt", "CO₂ · average")}</small>
-          </span>
-        </MetricDetails>
-      </CategorySummary>
+      {summary}
       <div className="climate-room-heading">
         <h2>
           {room === "all"

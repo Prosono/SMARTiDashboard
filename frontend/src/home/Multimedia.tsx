@@ -2,6 +2,7 @@ import { mediaIcon } from "../MediaIcons";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { MetricDetails, MetricDeviceRenderer } from "./MetricDetails";
 import { CategoryHeading } from "./CategoryIntro";
+import { HeaderAppearance } from "./HomeAppearance";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { allViews } from "../access";
 import { useContext, useEffect, useState } from "react";
@@ -406,9 +407,75 @@ export function Multimedia({
           roomMood(home.areas.find((a) => a.area_id === c.area_id)?.name || "")
             .photo || "home-living",
         );
+  const harmony = useContext(HeaderAppearance);
+  const summary = (
+    <div className="media-summary-metrics">
+      {[
+        {
+          Icon: Music2,
+          value: offline ? "—" : playing.length,
+          label: t("Spiller nå", "Playing now"),
+          controls: playing,
+        },
+        {
+          Icon: Speaker,
+          value: players.length,
+          label: t("Spillere", "Players"),
+          controls: players,
+        },
+        {
+          Icon: Tv,
+          value: offline
+            ? "—"
+            : players.filter(
+                (c) =>
+                  available(c) &&
+                  ["tv", "projector"].includes(
+                    String(c.attributes.device_class),
+                  ) &&
+                  !["off", "standby"].includes(c.state),
+              ).length,
+          label: t("TV på", "TVs on"),
+          controls: players.filter(
+            (c) =>
+              available(c) &&
+              ["tv", "projector"].includes(String(c.attributes.device_class)) &&
+              !["off", "standby"].includes(c.state),
+          ),
+        },
+        {
+          Icon: Volume2,
+          value: offline
+            ? "—"
+            : players.filter(
+                (c) => available(c) && c.attributes.is_volume_muted === true,
+              ).length,
+          label: t("Dempet", "Muted"),
+          controls: players.filter(
+            (c) => available(c) && c.attributes.is_volume_muted === true,
+          ),
+        },
+      ].map(({ Icon, value, label, controls }) => (
+        <MetricDetails
+          key={label}
+          label={label}
+          controls={controls}
+          home={home}
+          lang={lang}
+        >
+          <Icon size={24} />
+          <span>
+            <strong>{value}</strong>
+            <small>{label}</small>
+          </span>
+        </MetricDetails>
+      ))}
+    </div>
+  );
   return (
     <section className="multimedia-view">
       <CategoryHeading
+        summary={summary}
         image={homeAsset("home-multimedia")}
         Icon={AudioLines}
         title={t("Multimedia", "Multimedia")}
@@ -521,70 +588,7 @@ export function Multimedia({
           </button>
         </div>
       </div>
-      <div className="media-summary-metrics">
-        {[
-          {
-            Icon: Music2,
-            value: offline ? "—" : playing.length,
-            label: t("Spiller nå", "Playing now"),
-            controls: playing,
-          },
-          {
-            Icon: Speaker,
-            value: players.length,
-            label: t("Spillere", "Players"),
-            controls: players,
-          },
-          {
-            Icon: Tv,
-            value: offline
-              ? "—"
-              : players.filter(
-                  (c) =>
-                    available(c) &&
-                    ["tv", "projector"].includes(
-                      String(c.attributes.device_class),
-                    ) &&
-                    !["off", "standby"].includes(c.state),
-                ).length,
-            label: t("TV på", "TVs on"),
-            controls: players.filter(
-              (c) =>
-                available(c) &&
-                ["tv", "projector"].includes(
-                  String(c.attributes.device_class),
-                ) &&
-                !["off", "standby"].includes(c.state),
-            ),
-          },
-          {
-            Icon: Volume2,
-            value: offline
-              ? "—"
-              : players.filter(
-                  (c) => available(c) && c.attributes.is_volume_muted === true,
-                ).length,
-            label: t("Dempet", "Muted"),
-            controls: players.filter(
-              (c) => available(c) && c.attributes.is_volume_muted === true,
-            ),
-          },
-        ].map(({ Icon, value, label, controls }) => (
-          <MetricDetails
-            key={label}
-            label={label}
-            controls={controls}
-            home={home}
-            lang={lang}
-          >
-            <Icon size={24} />
-            <span>
-              <strong>{value}</strong>
-              <small>{label}</small>
-            </span>
-          </MetricDetails>
-        ))}
-      </div>
+      {!harmony && summary}
       <div
         className={`media-player-grid ${layout === "list" ? "is-list" : ""}`}
       >

@@ -1,3 +1,29 @@
+# Status pills inside photo headers — release 1.36.67
+
+Harmoni's existing live summaries now render inside the photo header on Overview,
+Lights, Climate, Security, Multimedia and Miscellaneous. Each view renders one
+interactive set, retaining the existing data, detail dialogs and navigation.
+Multimedia's header spans the full content width. Classic and Living retain their
+existing summary placement.
+
+Validation on 31 October 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, formatting of the
+  changed frontend files and `git diff --check`: passed. The existing Vite
+  bundle-size advisory remains.
+- Frontend unit suite: **174 passed**.
+- Final extracted release archive: **22 browser tests passed**, no skips or retries,
+  across Chromium desktop and mobile (Harmoni, Living and multimedia suites).
+- The new coverage verifies single rendered summaries, pills within photo bounds,
+  readable foregrounds, full-width multimedia headers, working detail dialogs,
+  Escape/focus restoration and no horizontal overflow at 320, 834 and 1440 px in
+  light and dark themes. Existing photo/background and centered alert checks pass.
+- All **244 payload files** match their manifest hashes; the deterministic archive
+  passes `scripts/package.py --check`. No backend source was changed and no real
+  household devices were controlled. The limitations recorded below still apply.
+
+---
+
 # Photo headers and backgrounds — release 1.36.66
 
 The Harmoni follow-up adds stronger shared elevation, photo headers to all Home

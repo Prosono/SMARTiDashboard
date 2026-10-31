@@ -93,9 +93,61 @@ export function Miscellaneous({
       ),
     }))
     .filter((g) => g.controls.length);
+  const summary = (
+    <CategorySummary
+      image={homeAsset("home-office")}
+      eyebrow={en ? "EVERYDAY HELPERS" : "HJELPERE I HJEMMET"}
+      title={
+        en
+          ? "Small helpers. A simpler everyday life."
+          : "Små hjelpere. En enklere hverdag."
+      }
+      description={
+        en
+          ? "Cleaning, shade and power — at your fingertips."
+          : "Rengjøring, solskjerming og strøm – rett ved hånden."
+      }
+    >
+      {[
+        {
+          Icon: RobotVacuumIcon,
+          kind: "cleaning",
+          label: en ? "Robots" : "Roboter",
+        },
+        {
+          Icon: Blinds,
+          kind: "covers",
+          label: en ? "Shades" : "Solskjerming",
+        },
+        {
+          Icon: Plug,
+          kind: "switches",
+          label: en ? "Switches" : "Brytere",
+        },
+      ].map(({ Icon, kind, label }) => {
+        const count = groups.find((g) => g.id === kind)?.controls.length || 0;
+        return (
+          <MetricDetails
+            key={kind}
+            label={label}
+            controls={groups.find((g) => g.id === kind)?.controls || []}
+            home={home}
+            lang={lang}
+          >
+            <Icon size={23} />
+            <span>
+              <strong>{count}</strong>
+              <small>{label}</small>
+            </span>
+          </MetricDetails>
+        );
+      })}
+    </CategorySummary>
+  );
   return (
     <section className="miscellaneous-view">
       <CategoryHeading
+        summary={summary}
         image={homeAsset("home-office")}
         Icon={LayoutGrid}
         title={en ? "More" : "Diverse"}
@@ -138,55 +190,7 @@ export function Miscellaneous({
           <option value="none">{en ? "No room" : "Uten rom"}</option>
         </select>
       </div>
-      <CategorySummary
-        image={homeAsset("home-office")}
-        eyebrow={en ? "EVERYDAY HELPERS" : "HJELPERE I HJEMMET"}
-        title={
-          en
-            ? "Small helpers. A simpler everyday life."
-            : "Små hjelpere. En enklere hverdag."
-        }
-        description={
-          en
-            ? "Cleaning, shade and power — at your fingertips."
-            : "Rengjøring, solskjerming og strøm – rett ved hånden."
-        }
-      >
-        {[
-          {
-            Icon: RobotVacuumIcon,
-            kind: "cleaning",
-            label: en ? "Robots" : "Roboter",
-          },
-          {
-            Icon: Blinds,
-            kind: "covers",
-            label: en ? "Shades" : "Solskjerming",
-          },
-          {
-            Icon: Plug,
-            kind: "switches",
-            label: en ? "Switches" : "Brytere",
-          },
-        ].map(({ Icon, kind, label }) => {
-          const count = groups.find((g) => g.id === kind)?.controls.length || 0;
-          return (
-            <MetricDetails
-              key={kind}
-              label={label}
-              controls={groups.find((g) => g.id === kind)?.controls || []}
-              home={home}
-              lang={lang}
-            >
-              <Icon size={23} />
-              <span>
-                <strong>{count}</strong>
-                <small>{label}</small>
-              </span>
-            </MetricDetails>
-          );
-        })}
-      </CategorySummary>
+      {summary}
       {groups.map(({ id, Icon, name, controls }) => (
         <section className="miscellaneous-section" key={id} aria-label={name}>
           <header>

@@ -96,7 +96,12 @@ HA's configured admin API credential is required for administration. Ingress sup
 API references: [HA camera streams](https://github.com/home-assistant/core/blob/dev/homeassistant/components/camera/__init__.py), [native scene configuration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/scene.py), [recorder statistics](https://github.com/home-assistant/core/blob/dev/homeassistant/components/recorder/websocket_api.py).
 
 
-## Photo headers and personal backgrounds (1.36.66)
+## Photo headers and personal backgrounds (1.36.67)
+
+Harmoni's live status pills sit inside the photo on Overview, Lights, Climate,
+Security, Multimedia and Miscellaneous. Tap them to open the existing category or
+device details. Their translucent surfaces preserve contrast over personal photos
+in light and dark themes, with a two-column layout on narrow screens.
 
 In **Innstillinger → Tema og utseende → Bakgrunn i headerne**, choose **Rom til rom**
 for a different motif in each Home category, a shared library photo, **Mitt bilde**

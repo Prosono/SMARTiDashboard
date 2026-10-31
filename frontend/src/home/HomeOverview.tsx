@@ -360,6 +360,147 @@ export function HomeOverview({
       </section>
     );
   }
+  const overviewStatus = (
+    <div className="home-status-grid">
+      {model.security.length > 0 && (
+        <button
+          onClick={() => setTab("security")}
+          className={
+            "home-status " +
+            (model.alerts.length || offline
+              ? "status-warning"
+              : "status-safety")
+          }
+        >
+          <Shield />
+          <span>
+            {t("Sikkerhet", "Security")}
+            <strong>
+              {offline
+                ? t("Ukjent status", "Unknown status")
+                : model.alerts.length
+                  ? `${model.alerts.length} ${t("å sjekke", "to check")}`
+                  : model.open.length
+                    ? `${model.open.length} ${t("åpne / aktive", "open / active")}`
+                    : t("Ingen registrerte avvik", "No reported issues")}
+            </strong>
+            <small>
+              {model.security.length}{" "}
+              {t("tilkoblede målepunkter", "connected signals")}
+            </small>
+          </span>
+        </button>
+      )}
+      {model.meters.length > 0 && (
+        <button
+          onClick={() => setTab("energy")}
+          className="home-status status-energy"
+        >
+          <Zap />
+          <span>
+            {t("Energi", "Energy")}
+            <strong>
+              {offline
+                ? "—"
+                : reading(
+                    model.meters.find((c) => c.id === pref?.energy) ||
+                      model.meters[0],
+                    lang,
+                  )}
+            </strong>
+            <small>
+              {
+                (
+                  model.meters.find((c) => c.id === pref?.energy) ||
+                  model.meters[0]
+                ).name
+              }
+            </small>
+          </span>
+        </button>
+      )}
+      {model.temperature !== null && (
+        <button
+          onClick={() => setTab("climate")}
+          className="home-status status-climate"
+        >
+          <Thermometer />
+          <span>
+            {t("Innetemperatur", "Indoor temperature")}
+            <strong>
+              {offline ? "—" : `${degrees(model.temperature)} °C`}
+            </strong>
+            <small>
+              {t("Utvalgte målere i", "Selected readings in")}{" "}
+              {model.temperatureRooms} {t("rom", "rooms")}
+            </small>
+          </span>
+        </button>
+      )}
+      {model.air.length > 0 && (
+        <button
+          onClick={() => setTab("climate")}
+          className="home-status status-air"
+        >
+          <Leaf />
+          <span>
+            {t("Luft & fuktighet", "Air & humidity")}
+            <strong>{offline ? "—" : reading(model.air[0], lang)}</strong>
+            <small>{model.air[0].name}</small>
+          </span>
+        </button>
+      )}
+      {!model.meters.length &&
+        model.controls.some((c) => c.domain === "light") && (
+          <button
+            className="home-status status-energy"
+            onClick={() => setTab("lights")}
+          >
+            <Lightbulb />
+            <span>
+              {t("Lys", "Lights")}
+              <strong>
+                {offline
+                  ? "—"
+                  : model.controls.filter(
+                      (c) =>
+                        c.domain === "light" && usable(c) && c.state === "on",
+                    ).length}{" "}
+                {t("på", "on")}
+              </strong>
+              <small>{t("Styr lysene", "Control lights")}</small>
+            </span>
+          </button>
+        )}
+      {!model.air.length && model.controls.length > 0 && (
+        <button
+          className={
+            "home-status " +
+            (model.unavailable.length || offline
+              ? "status-warning"
+              : "status-connected")
+          }
+          onClick={openDevices}
+        >
+          <Radio />
+          <span>
+            {t("Tilkobling", "Connectivity")}
+            <strong>
+              {offline
+                ? t("Venter på data", "Waiting for data")
+                : model.unavailable.length
+                  ? `${model.unavailable.length} ${t("å sjekke", "to check")}`
+                  : t("Enhetene er tilgjengelige", "Devices are available")}
+            </strong>
+            <small>
+              {model.controls.length}{" "}
+              {t("enheter i hjemmet", "controls in your home")}
+            </small>
+          </span>
+        </button>
+      )}
+    </div>
+  );
   const welcomeStage = (
     <>
       {!harmony && (
@@ -373,7 +514,6 @@ export function HomeOverview({
           <Settings size={20} />
         </button>
       )}
-      {harmony && <HomeHeaderImage fallback={homeAsset("home-living")} />}
       {!modern && (
         <img
           className="home-hero-photo"
@@ -503,7 +643,11 @@ export function HomeOverview({
         {tab === "overview" && (
           <header className="home-welcome">
             {harmony ? (
-              <div className="home-hero-stage">{welcomeStage}</div>
+              <div className="home-hero-stage">
+                <HomeHeaderImage fallback={homeAsset("home-living")} />
+                <div className="home-hero-focus">{welcomeStage}</div>
+                {overviewStatus}
+              </div>
             ) : (
               welcomeStage
             )}
@@ -884,155 +1028,7 @@ export function HomeOverview({
               </div>
               {!modern && metrics}
             </div>
-            <div className="home-status-grid">
-              {model.security.length > 0 && (
-                <button
-                  onClick={() => setTab("security")}
-                  className={
-                    "home-status " +
-                    (model.alerts.length || offline
-                      ? "status-warning"
-                      : "status-safety")
-                  }
-                >
-                  <Shield />
-                  <span>
-                    {t("Sikkerhet", "Security")}
-                    <strong>
-                      {offline
-                        ? t("Ukjent status", "Unknown status")
-                        : model.alerts.length
-                          ? `${model.alerts.length} ${t("å sjekke", "to check")}`
-                          : model.open.length
-                            ? `${model.open.length} ${t("åpne / aktive", "open / active")}`
-                            : t(
-                                "Ingen registrerte avvik",
-                                "No reported issues",
-                              )}
-                    </strong>
-                    <small>
-                      {model.security.length}{" "}
-                      {t("tilkoblede målepunkter", "connected signals")}
-                    </small>
-                  </span>
-                </button>
-              )}
-              {model.meters.length > 0 && (
-                <button
-                  onClick={() => setTab("energy")}
-                  className="home-status status-energy"
-                >
-                  <Zap />
-                  <span>
-                    {t("Energi", "Energy")}
-                    <strong>
-                      {offline
-                        ? "—"
-                        : reading(
-                            model.meters.find((c) => c.id === pref?.energy) ||
-                              model.meters[0],
-                            lang,
-                          )}
-                    </strong>
-                    <small>
-                      {
-                        (
-                          model.meters.find((c) => c.id === pref?.energy) ||
-                          model.meters[0]
-                        ).name
-                      }
-                    </small>
-                  </span>
-                </button>
-              )}
-              {model.temperature !== null && (
-                <button
-                  onClick={() => setTab("climate")}
-                  className="home-status status-climate"
-                >
-                  <Thermometer />
-                  <span>
-                    {t("Innetemperatur", "Indoor temperature")}
-                    <strong>
-                      {offline ? "—" : `${degrees(model.temperature)} °C`}
-                    </strong>
-                    <small>
-                      {t("Utvalgte målere i", "Selected readings in")}{" "}
-                      {model.temperatureRooms} {t("rom", "rooms")}
-                    </small>
-                  </span>
-                </button>
-              )}
-              {model.air.length > 0 && (
-                <button
-                  onClick={() => setTab("climate")}
-                  className="home-status status-air"
-                >
-                  <Leaf />
-                  <span>
-                    {t("Luft & fuktighet", "Air & humidity")}
-                    <strong>
-                      {offline ? "—" : reading(model.air[0], lang)}
-                    </strong>
-                    <small>{model.air[0].name}</small>
-                  </span>
-                </button>
-              )}
-              {!model.meters.length &&
-                model.controls.some((c) => c.domain === "light") && (
-                  <button
-                    className="home-status status-energy"
-                    onClick={() => setTab("lights")}
-                  >
-                    <Lightbulb />
-                    <span>
-                      {t("Lys", "Lights")}
-                      <strong>
-                        {offline
-                          ? "—"
-                          : model.controls.filter(
-                              (c) =>
-                                c.domain === "light" &&
-                                usable(c) &&
-                                c.state === "on",
-                            ).length}{" "}
-                        {t("på", "on")}
-                      </strong>
-                      <small>{t("Styr lysene", "Control lights")}</small>
-                    </span>
-                  </button>
-                )}
-              {!model.air.length && model.controls.length > 0 && (
-                <button
-                  className={
-                    "home-status " +
-                    (model.unavailable.length || offline
-                      ? "status-warning"
-                      : "status-connected")
-                  }
-                  onClick={openDevices}
-                >
-                  <Radio />
-                  <span>
-                    {t("Tilkobling", "Connectivity")}
-                    <strong>
-                      {offline
-                        ? t("Venter på data", "Waiting for data")
-                        : model.unavailable.length
-                          ? `${model.unavailable.length} ${t("å sjekke", "to check")}`
-                          : t(
-                              "Enhetene er tilgjengelige",
-                              "Devices are available",
-                            )}
-                    </strong>
-                    <small>
-                      {model.controls.length}{" "}
-                      {t("enheter i hjemmet", "controls in your home")}
-                    </small>
-                  </span>
-                </button>
-              )}
-            </div>
+            {!harmony && overviewStatus}
             {!model.controls.length && (
               <section className="home-panel">
                 <House />

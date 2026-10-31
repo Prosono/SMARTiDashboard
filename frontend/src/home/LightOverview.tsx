@@ -146,9 +146,70 @@ export function LightOverview({
       ),
     }))
     .filter((a) => a.items.length);
+  const summary = (
+    <CategorySummary
+      image={homeAsset("home-lighting")}
+      eyebrow={t("LYS I HJEMMET", "HOME LIGHTING")}
+      title={t(
+        "God stemning starter med riktig lys.",
+        "A good atmosphere starts with the right light.",
+      )}
+      description={
+        offline
+          ? t(
+              "Venter på ferske data fra hjemmet.",
+              "Waiting for fresh data from your home.",
+            )
+          : t(
+              "Enklere hverdag. Et smartere hjem.",
+              "Everyday comfort. A smarter home.",
+            )
+      }
+    >
+      {[
+        {
+          Icon: Sun,
+          value: offline ? "—" : `${on} / ${lights.length}`,
+          label: t("Lys på", "Lights on"),
+          controls: lights.filter((c) => usable(c) && c.state === "on"),
+        },
+        {
+          Icon: House,
+          value: home.areas.filter((a) =>
+            lights.some((c) => c.area_id === a.area_id),
+          ).length,
+          label: t("Rom med lys", "Rooms with lights"),
+          controls: lights.filter((c) =>
+            home.areas.some((a) => a.area_id === c.area_id),
+          ),
+        },
+        {
+          Icon: Power,
+          value: offline ? "—" : lights.filter((c) => !usable(c)).length,
+          label: t("Utilgjengelige", "Unavailable"),
+          controls: lights.filter((c) => !usable(c)),
+        },
+      ].map(({ Icon, value, label, controls }) => (
+        <MetricDetails
+          key={label}
+          label={label}
+          controls={controls}
+          home={home}
+          lang={lang}
+        >
+          <Icon size={24} />
+          <span>
+            <strong>{value}</strong>
+            <small>{label}</small>
+          </span>
+        </MetricDetails>
+      ))}
+    </CategorySummary>
+  );
   return (
     <section className="light-overview">
       <CategoryHeading
+        summary={summary}
         image={homeAsset("home-lighting")}
         Icon={Lightbulb}
         title={t("Lys", "Lights")}
@@ -234,64 +295,7 @@ export function LightOverview({
           </span>
         </button>
       </div>
-      <CategorySummary
-        image={homeAsset("home-lighting")}
-        eyebrow={t("LYS I HJEMMET", "HOME LIGHTING")}
-        title={t(
-          "God stemning starter med riktig lys.",
-          "A good atmosphere starts with the right light.",
-        )}
-        description={
-          offline
-            ? t(
-                "Venter på ferske data fra hjemmet.",
-                "Waiting for fresh data from your home.",
-              )
-            : t(
-                "Enklere hverdag. Et smartere hjem.",
-                "Everyday comfort. A smarter home.",
-              )
-        }
-      >
-        {[
-          {
-            Icon: Sun,
-            value: offline ? "—" : `${on} / ${lights.length}`,
-            label: t("Lys på", "Lights on"),
-            controls: lights.filter((c) => usable(c) && c.state === "on"),
-          },
-          {
-            Icon: House,
-            value: home.areas.filter((a) =>
-              lights.some((c) => c.area_id === a.area_id),
-            ).length,
-            label: t("Rom med lys", "Rooms with lights"),
-            controls: lights.filter((c) =>
-              home.areas.some((a) => a.area_id === c.area_id),
-            ),
-          },
-          {
-            Icon: Power,
-            value: offline ? "—" : lights.filter((c) => !usable(c)).length,
-            label: t("Utilgjengelige", "Unavailable"),
-            controls: lights.filter((c) => !usable(c)),
-          },
-        ].map(({ Icon, value, label, controls }) => (
-          <MetricDetails
-            key={label}
-            label={label}
-            controls={controls}
-            home={home}
-            lang={lang}
-          >
-            <Icon size={24} />
-            <span>
-              <strong>{value}</strong>
-              <small>{label}</small>
-            </span>
-          </MetricDetails>
-        ))}
-      </CategorySummary>
+      {summary}
       <div className="lighting-section-heading">
         <h2>{t("Belysning i rommene", "Lighting by room")}</h2>
         {scenes && (

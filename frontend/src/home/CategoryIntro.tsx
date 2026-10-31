@@ -1,7 +1,9 @@
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { HomeHeaderImage } from "./HomeAppearance";
+import { HeaderAppearance, HomeHeaderImage } from "./HomeAppearance";
 import "./categoryIntro.css";
+
+const InCategoryHeader = createContext(false);
 
 /** Shared title and photo summary for the home's device categories. */
 export function CategoryHeading({
@@ -10,13 +12,26 @@ export function CategoryHeading({
   subtitle,
   children,
   image,
+  summary,
 }: {
   Icon: LucideIcon;
   title: string;
   subtitle: string;
   children?: ReactNode;
   image?: string;
+  summary?: ReactNode;
 }) {
+  const harmony = useContext(HeaderAppearance);
+  const heading = (
+    <>
+      <Icon size={36} aria-hidden="true" />
+      <div>
+        <h1>{title}</h1>
+        <p>{subtitle}</p>
+      </div>
+      {children}
+    </>
+  );
   return (
     <header className="category-heading toolbar-heading">
       <HomeHeaderImage
@@ -24,12 +39,16 @@ export function CategoryHeading({
           image || new URL("home/home-living.webp", document.baseURI).href
         }
       />
-      <Icon size={36} aria-hidden="true" />
-      <div>
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </div>
-      {children}
+      {harmony && summary ? (
+        <>
+          <div className="category-heading-main">{heading}</div>
+          <InCategoryHeader.Provider value={true}>
+            {summary}
+          </InCategoryHeader.Provider>
+        </>
+      ) : (
+        heading
+      )}
     </header>
   );
 }
@@ -48,6 +67,10 @@ export function CategorySummary({
   alert?: boolean;
   children: ReactNode;
 }) {
+  const harmony = useContext(HeaderAppearance);
+  const inHeader = useContext(InCategoryHeader);
+  // Harmoni renders the same summary in its photo header; Classic/Living retain their existing layout.
+  if (harmony && !inHeader) return null;
   return (
     <section className="category-summary" data-alert={alert}>
       <img src={image} alt="" />

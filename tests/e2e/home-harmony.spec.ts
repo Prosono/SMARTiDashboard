@@ -605,7 +605,7 @@ test("photo headers center the actual alert count, respect reduced motion and ke
   );
   for (const width of [1440, 834, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
-    const heroBox = (await header.boundingBox())!,
+    const heroBox = (await header.locator(".home-hero-focus").boundingBox())!,
       alertBox = (await alert.boundingBox())!;
     expect(
       Math.abs(alertBox.x + alertBox.width / 2 - heroBox.x - heroBox.width / 2),
@@ -769,4 +769,109 @@ test("header backgrounds can be chosen, uploaded, reloaded and removed without c
   expect(
     await (await page.request.get("/api/home/preferences")).json(),
   ).toEqual(original);
+});
+
+test("summary pills live inside the photos and still open their details at every screen size", async ({
+  page,
+}, info) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await richHome(page);
+  await login(page);
+  const categories = [
+    { name: "Lys", id: "lights", label: "Lys på", count: 3 },
+    { name: "Klima", id: "climate", label: "Snittemperatur", count: 3 },
+    { name: "Sikkerhet", id: "security", label: "Dører låst", count: 4 },
+    { name: "Multimedia", id: "media", label: "Spillere", count: 4 },
+    { name: "Diverse", id: "misc", label: "Brytere", count: 3 },
+  ];
+  for (const theme of ["light", "dark"]) {
+    await appearance(page);
+    await page
+      .getByRole("combobox", { name: "Utseende", exact: true })
+      .selectOption(theme);
+    await navigate(page, "Hjem");
+    for (const width of [320, 834, 1440]) {
+      await page.setViewportSize({ width, height: 1100 });
+      await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+      const welcome = page.locator(".home-hero-stage");
+      await expect(welcome.locator(".home-status-grid")).toHaveCount(1);
+      await expect(page.locator(".home-status-grid")).toHaveCount(1);
+      const bounds = (await welcome.boundingBox())!;
+      for (const pill of await welcome.locator(".home-status").all()) {
+        const box = (await pill.boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(bounds.x);
+        expect(box.x + box.width).toBeLessThanOrEqual(
+          bounds.x + bounds.width + 1,
+        );
+        expect(box.y + box.height).toBeLessThanOrEqual(
+          bounds.y + bounds.height + 1,
+        );
+      }
+      await welcome.locator(".home-status.status-climate").click();
+      await expect(
+        page.getByRole("tab", { name: "Klima", exact: true }),
+      ).toHaveAttribute("aria-selected", "true");
+      for (const category of categories) {
+        await page
+          .getByRole("tab", { name: category.name, exact: true })
+          .click();
+        const header = page.locator(".category-heading");
+        await expect(header.locator(".home-header-photo")).toHaveAttribute(
+          "data-ready",
+          "true",
+        );
+        await expect(header.locator(".category-metric-button")).toHaveCount(
+          category.count,
+        );
+        await expect(page.locator(".category-metric-button")).toHaveCount(
+          category.count,
+        );
+        const photo = (await header.boundingBox())!;
+        if (category.id === "media") {
+          const view = (await page.locator(".multimedia-view").boundingBox())!;
+          expect(Math.abs(photo.width - view.width)).toBeLessThan(1);
+        }
+        for (const pill of await header
+          .locator(".category-metric-button")
+          .all()) {
+          const box = (await pill.boundingBox())!;
+          expect(box.x).toBeGreaterThanOrEqual(photo.x);
+          expect(box.y).toBeGreaterThanOrEqual(photo.y);
+          expect(box.x + box.width).toBeLessThanOrEqual(
+            photo.x + photo.width + 1,
+          );
+          expect(box.y + box.height).toBeLessThanOrEqual(
+            photo.y + photo.height + 1,
+          );
+          await expect(pill).toHaveCSS("color", "rgb(255, 254, 253)");
+        }
+        const pill = header.getByRole("button", {
+          name: category.label,
+          exact: true,
+        });
+        await pill.click();
+        await expect(
+          page.getByRole("dialog", { name: category.label, exact: true }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(pill).toBeFocused();
+        expect(
+          await page
+            .locator("body")
+            .evaluate((el) => el.scrollWidth <= el.clientWidth),
+        ).toBe(true);
+        if (
+          (theme === "light" && width === 1440) ||
+          (theme === "dark" && width === 320)
+        ) {
+          await header.screenshot({
+            path: `/private/tmp/smarti-pills-${category.id}-${width}-${info.project.name}.png`,
+            animations: "disabled",
+          });
+        }
+      }
+    }
+  }
 });
