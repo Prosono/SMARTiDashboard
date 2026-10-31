@@ -1,3 +1,9 @@
+## 1.36.70
+- Fjernet intern scrolling i kortene i Harmoni. Illustrasjonene tilpasser seg tilgjengelig høyde, slik at vanlige utstyrskort beholder synlige kontroller uten små rullefelt.
+- Kort som er gjort for små til å vise alt, får en kompakt forhåndsvisning og «Vis hele kortet». Fullvisningen beholder styring og detaljer, med støtte for tastatur og fokus tilbake til kortet.
+- Mykere overganger ved flytting, endring av bredde/høyde og omplassering av nabokort i redigeringsmodus. Nye bevegelser fortsetter fra den synlige posisjonen. Korte overganger bruker transformasjoner og avbrytes ved redusert bevegelse.
+- Samme grid, lagrede oppsett, mus/berøring/tastatur, bekreftelser og rettigheter beholdes. Ingen enhetskommandoer sendes fra redigeringsmodus.
+
 ## 1.36.69
 - Redesignet utstyrskortene i Harmoni etter referansebildene: navn og rom øverst, større statusverdier, egne illustrasjoner og tydeligere kontroller i lyst og mørkt tema.
 - Lys får oransje av/på og dimming, direkte fargevalg for fargelys og egen temperaturskala for justerbart hvitt. Valgt lysikon prioriteres. Bare funksjonene som enheten støtter vises.

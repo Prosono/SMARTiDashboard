@@ -1019,6 +1019,15 @@ test("grid handles support pointer dragging, snapped resizing and touch reorderi
     if (request.method() === "POST" && request.url().includes("/commands"))
       commands.push(request.url());
   });
+  // Raw pointer coordinates must be sampled after the previous layout settles.
+  // Motion interpolation itself is checked separately below.
+  await cell.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations()
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
   const grid = (await canvas.locator(".home-canvas-grid").boundingBox())!;
   const step = (grid.width + 16) / 3;
   const grip = (await cell.locator(".home-canvas-grip").boundingBox())!;
@@ -1027,6 +1036,13 @@ test("grid handles support pointer dragging, snapped resizing and touch reorderi
   await page.mouse.move(grip.x + 30 + step, grip.y + 18, { steps: 8 });
   await page.mouse.up();
   await expect(cell).toHaveCSS("grid-column-start", "2");
+  await cell.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations()
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
   const corner = (await cell.locator(".home-canvas-resize").boundingBox())!;
   await page.mouse.move(corner.x + 16, corner.y + 16);
   await page.mouse.down();
@@ -1055,6 +1071,13 @@ test("grid handles support pointer dragging, snapped resizing and touch reorderi
   const touchFirst = canvas.locator(".home-canvas-cell").first();
   const touchId = await touchFirst.getAttribute("data-card");
   await touchFirst.scrollIntoViewIfNeeded();
+  await touchFirst.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations()
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
   const touchGrip = (await touchFirst
     .locator(".home-canvas-grip")
     .boundingBox())!;
@@ -1527,4 +1550,189 @@ test("equipment cards match their actual device type, color controls and linked 
   await expect(fallback.locator(".equipment-art svg")).toBeVisible();
   await expect(fallback.getByRole("switch")).toBeEnabled();
   await expect(fallback).toContainText("134 W");
+});
+
+test("grid content fits without nested scrolling and editing has calm layout motion", async ({
+  page,
+}, info) => {
+  test.setTimeout(60000);
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  const layouts = new Map<
+    string,
+    { revision: number; items: unknown[] | null }
+  >();
+  await page.route("**/api/home/layout/*", (route) => {
+    const key = new URL(route.request().url()).pathname;
+    const current = layouts.get(key) || { revision: 0, items: null };
+    if (route.request().method() === "GET")
+      return route.fulfill({ json: current });
+    const next = {
+      revision: current.revision + 1,
+      items: route.request().postDataJSON().items,
+    };
+    layouts.set(key, next);
+    return route.fulfill({ json: next });
+  });
+  await richHome(page);
+  await login(page);
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1100 });
+    for (const name of [
+      "Oversikt",
+      "Lys",
+      "Klima",
+      "Sikkerhet",
+      "Multimedia",
+      "Diverse",
+    ]) {
+      await page.getByRole("tab", { name, exact: true }).click();
+      await expect(page.locator(".home-canvas-grid")).toHaveCSS(
+        "--canvas-columns",
+        width === 1440 ? "3" : "1",
+      );
+      const content = page.locator(".home-canvas-content");
+      expect(
+        await content.evaluateAll((nodes) =>
+          nodes.every((node) => {
+            node.scrollTop = 50;
+            node.scrollLeft = 50;
+            return (
+              node.scrollTop === 0 &&
+              node.scrollLeft === 0 &&
+              getComputedStyle(node).overflow === "clip"
+            );
+          }),
+        ),
+      ).toBe(true);
+      const scrollable = await page
+        .locator(".home-canvas-content *")
+        .evaluateAll((nodes) =>
+          nodes
+            .filter((node) => {
+              const css = getComputedStyle(node);
+              return (
+                [css.overflowX, css.overflowY].some((value) =>
+                  ["auto", "scroll"].includes(value),
+                ) &&
+                (node.scrollHeight > node.clientHeight + 2 ||
+                  node.scrollWidth > node.clientWidth + 2)
+              );
+            })
+            .map((node) => node.className),
+        );
+      expect(scrollable).toEqual([]);
+      if (name === "Lys")
+        await expect(page.locator(".home-canvas-expand")).toHaveCount(0);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1300 });
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const canvas = page.locator(".home-canvas");
+  await expect(canvas.locator(".home-canvas-grid")).toHaveCSS(
+    "--canvas-columns",
+    "3",
+  );
+  const card = canvas.locator('[data-card="device:light.living_pendant"]');
+  const commands: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/commands")) commands.push(request.url());
+  });
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  const originalWidth = (await card.boundingBox())!.width;
+  await card.getByRole("combobox", { name: /bredde/ }).selectOption("2");
+  const animation = await card.evaluate((node) => {
+    const motion = node
+      .getAnimations()
+      .find(
+        (animation) =>
+          animation.effect instanceof KeyframeEffect &&
+          animation.effect.target === node,
+      )!;
+    if (!motion) return null;
+    const duration = Number(motion.effect!.getTiming().duration);
+    motion.pause();
+    motion.currentTime = 0;
+    const start = node.getBoundingClientRect().width;
+    motion.currentTime = duration / 2;
+    const middle = node.getBoundingClientRect().width;
+    motion.finish();
+    const end = node.getBoundingClientRect().width;
+    return {
+      duration,
+      start,
+      middle,
+      end,
+      frames: (motion.effect as KeyframeEffect).getKeyframes(),
+    };
+  });
+  expect(animation).not.toBeNull();
+  expect(animation!.start).toBeCloseTo(originalWidth, 0);
+  expect(animation!.middle).toBeGreaterThan(animation!.start);
+  expect(animation!.middle).toBeLessThan(animation!.end);
+  expect(animation!.duration).toBeLessThanOrEqual(300);
+  expect(
+    animation!.frames.every(
+      (frame) => !("width" in frame) && !("height" in frame),
+    ),
+  ).toBe(true);
+  await card.locator(".home-canvas-grip").focus();
+  await page.keyboard.press("ArrowDown");
+  const movement = await card.evaluate((node) => {
+    const motion = node
+      .getAnimations()
+      .find(
+        (animation) =>
+          animation.effect instanceof KeyframeEffect &&
+          animation.effect.target === node,
+      )!;
+    if (!motion) return null;
+    const duration = Number(motion.effect!.getTiming().duration);
+    motion.pause();
+    motion.currentTime = 0;
+    const start = node.getBoundingClientRect().y;
+    motion.currentTime = duration / 2;
+    const middle = node.getBoundingClientRect().y;
+    motion.finish();
+    return { start, middle, end: node.getBoundingClientRect().y };
+  });
+  expect(movement).not.toBeNull();
+  expect(movement!.middle).toBeGreaterThan(movement!.start);
+  expect(movement!.middle).toBeLessThan(movement!.end);
+  // A smaller cell keeps the complete card accessible, rather than scrolling it.
+  await card.getByRole("combobox", { name: /bredde/ }).selectOption("1");
+  await card.getByRole("combobox", { name: /høyde/ }).selectOption("1");
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  const show = card.getByRole("button", {
+    name: "Vis hele kortet: Pendellampe",
+    exact: true,
+  });
+  await expect(show).toBeVisible();
+  await show.click();
+  const dialog = page.getByRole("dialog", { name: "Pendellampe", exact: true });
+  await expect(dialog.locator('input[type="range"]').first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(show).toBeFocused();
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await card.getByRole("combobox", { name: /bredde/ }).selectOption("2");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await card.getByRole("combobox", { name: /bredde/ }).selectOption("3");
+  expect(
+    await canvas
+      .locator(".home-canvas-cell")
+      .evaluateAll(
+        (nodes) => nodes.flatMap((node) => node.getAnimations()).length,
+      ),
+  ).toBe(0);
+  await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
+  expect(commands).toEqual([]);
+  await page.screenshot({
+    path: `/private/tmp/smarti-grid-motion-${info.project.name}.png`,
+    fullPage: true,
+  });
 });

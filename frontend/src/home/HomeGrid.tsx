@@ -32,6 +32,8 @@ import {
 } from "./homeGridModel";
 import "./homeGrid.css";
 import { HomeGridGuard } from "./HomeGridGuard";
+import { HomeGridContent } from "./HomeGridContent";
+import { useGridMotion } from "./useGridMotion";
 
 export type HomeGridCard = {
   id: string;
@@ -116,6 +118,10 @@ export function HomeGrid({
   const missing = cards.filter(
     (card) => !layout.some((item) => item.id === card.id),
   );
+  const layoutKey = shown
+    .map(({ id, x, y, w, h }) => `${id}:${x},${y},${w},${h}`)
+    .join("|");
+  useGridMotion(surface, layoutKey, editing, active);
 
   useEffect(() => {
     if (wasEditing.current && !editing) editButton.current?.focus();
@@ -453,6 +459,7 @@ export function HomeGrid({
               key={item.id}
               className="home-canvas-cell"
               data-card={item.id}
+              data-rows={item.h}
               data-active={active === item.id}
               style={{
                 gridColumn: `${item.x + 1} / span ${item.w}`,
@@ -524,12 +531,9 @@ export function HomeGrid({
                   </button>
                 </div>
               )}
-              <div
-                className="home-canvas-content"
-                {...(editing ? { inert: true } : {})}
-              >
+              <HomeGridContent title={card.title} lang={lang} editing={editing}>
                 {card.content}
-              </div>
+              </HomeGridContent>
               {editing && (
                 <div className="home-canvas-resize-tools">
                   <label>

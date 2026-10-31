@@ -1,3 +1,44 @@
+# Card overflow and layout motion — release 1.36.70
+
+Harmoni card viewports no longer scroll internally. Equipment artwork fits the
+available body height instead of extending beyond the controls. Unusually dense
+cards and deliberately small cells offer an explicit full-card dialog. Their
+preview is inert, keeping clipped controls out of keyboard navigation; a one-row
+equipment card uses a compact summary. Full views retain existing permissions,
+command handling and confirmations, Escape handling and native focus restoration.
+
+Editing uses bounded FLIP transitions for moves, width/height changes, displaced
+neighbors, added cards and restoring/cancelling layouts. Interrupted transitions
+retarget from the currently displayed transform. Motion uses transform/opacity,
+180–280 ms easing, no new dependency and no continuous animation loop. Reduced
+motion disables the transitions and cancels running animations when the preference
+changes. Grid geometry, persisted IDs, revisions and responsive reflow are unchanged.
+No backend source or schema changed.
+
+Validation on 31 October 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file
+  formatting and `git diff --check`: passed. The existing Vite bundle advisory
+  remains.
+- Frontend unit suite: **183 passed**.
+- **32 distinct desktop/mobile browser scenarios pass against the extracted
+  archive** (Harmoni, Living and multimedia). The main run passed 30; the two raw
+  pointer scenarios initially sampled moving handles. They and their preceding
+  persistence scenarios passed after adding explicit animation-completion waits
+  before sampling pointer coordinates. No assertions were removed or disabled.
+- The new browser scenario measures actual intermediate width and position,
+  checks transform-only resizing, live reduced-motion cancellation, non-scrollable
+  cards across all six grid pages at 390/1440 px, and full-view access/focus return
+  from a one-row card. It checks that default light cards need no overflow fallback
+  and that editing sends no device commands. Existing mouse/touch, saved-layout,
+  device-control, header, color, theme and unavailable-state scenarios still pass.
+- All **249 runtime files** match the deterministic manifest; package freshness is
+  verified with `scripts/package.py --check`. The backend and compiled frontend
+  used by browser checks come from that extracted archive. No real home devices
+  were controlled. The broader repository limitations below still apply.
+
+---
+
 # Equipment card redesign — release 1.36.69
 
 Harmoni's equipment cards now follow the supplied references: a consistent
