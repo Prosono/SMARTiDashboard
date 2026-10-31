@@ -30,6 +30,7 @@ import {
   UnlockKeyhole,
   Volume2,
   WifiOff,
+  TriangleAlert,
 } from "lucide-react";
 import { api } from "../api";
 import { controlState } from "../controlState";
@@ -42,6 +43,17 @@ import { InSettingsDialog, SettingsDialog } from "./SettingsDialog";
 import { numeric, reading, usable } from "./homeModel";
 import { RobotVacuumIcon } from "./RobotVacuumIcon";
 import { TemperatureValue } from "./TemperatureValue";
+import { EquipmentArtwork } from "./EquipmentArtwork";
+import { EquipmentColorControls } from "./EquipmentColorControls";
+import {
+  deviceBattery,
+  deviceReading,
+  equipmentArt,
+  finiteReading,
+  lightColor,
+  lightPercentage,
+  securityAttention,
+} from "./equipmentModel";
 
 const number = (v: unknown) =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -66,6 +78,8 @@ function feature(c: Control) {
 }
 function deviceAppearance(c: Control) {
   const dc = c.attributes.device_class;
+  if (c.domain === "sensor" && dc === "battery")
+    return { Icon: Battery, tone: "energy" };
   if (c.domain === "light") return { Icon: lightIcon(c), tone: "light" };
   if (c.domain === "climate" || dc === "temperature")
     return { Icon: Thermometer, tone: "climate" };
@@ -243,8 +257,8 @@ function HarmonyDevice({
   const volume = c.capabilities.find((cap) =>
     cap.actions.includes("set_volume"),
   );
-  const battery = number(c.attributes.battery_level);
-  const position = number(c.attributes.current_position);
+  const battery = deviceBattery(c, home);
+  const position = finiteReading(c.attributes.current_position, 0, 100);
   const labels: Record<string, string> = {
     lock: t("Lås", "Lock"),
     unlock: t("Lås opp", "Unlock"),
@@ -262,7 +276,7 @@ function HarmonyDevice({
   };
   async function send(
     action: string,
-    value?: number | string,
+    value?: number | string | number[],
     confirmed = false,
   ) {
     if (disabled || pending.current || !actions.includes(action)) return;
@@ -338,18 +352,114 @@ function HarmonyDevice({
     );
   }
   const powerAction = c.state === "on" ? "turn_off" : "turn_on";
+  const art = equipmentArt(c);
+  const batteryPercent =
+    art === "battery" ? finiteReading(numeric(c), 0, 100) : null;
+  const rgb = actions.includes("set_rgb_color");
+  const white = c.capabilities.find((cap) =>
+    cap.actions.includes("set_color_temp"),
+  );
+  const whiteMode =
+    !!white && (c.attributes.color_mode === "color_temp" || !rgb);
+  const kelvin = finiteReading(c.attributes.color_temp_kelvin, 1000, 40000);
+  const percent = lightPercentage(c);
+  const power = deviceReading(c, home, "power"),
+    energy = deviceReading(c, home, "energy");
+  const powerControl =
+    ["light", "switch", "input_boolean", "fan", "automation"].includes(
+      c.domain,
+    ) && actions.includes(powerAction);
+  const topSwitch =
+    powerControl && (c.domain !== "light" || brightness || rgb || white);
+  const attention = available && securityAttention(c);
+  const updated =
+    c.updated_at && Number.isFinite(Date.parse(c.updated_at))
+      ? new Date(c.updated_at).toLocaleTimeString(en ? "en-GB" : "nb-NO", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
+  const primary = !available
+    ? state
+    : c.domain === "binary_sensor" && c.attributes.device_class === "occupancy"
+      ? c.state === "on"
+        ? t("Registrert", "Occupied")
+        : state
+      : c.domain === "light" &&
+          c.state === "on" &&
+          white &&
+          kelvin !== null &&
+          (c.attributes.color_mode === "color_temp" || !rgb)
+        ? `${kelvin.toLocaleString(en ? "en-GB" : "nb-NO")} K`
+        : c.domain === "light" &&
+            c.state === "on" &&
+            brightness &&
+            percent !== null
+          ? `${percent} %`
+          : c.domain === "switch" && power
+            ? reading(power, lang)
+            : c.domain === "cover" && position !== null
+              ? `${position}%`
+              : c.domain === "sensor" && art === "battery"
+                ? batteryPercent === null
+                  ? "—"
+                  : `${batteryPercent} %`
+                : c.domain === "sensor" && numeric(c) !== null
+                  ? reading(c, lang)
+                  : state;
+  const secondary =
+    c.domain === "light" && c.state === "on" && brightness
+      ? whiteMode && percent !== null
+        ? `${t("Lysstyrke", "Brightness")} ${percent} %`
+        : t("Lysstyrke", "Brightness")
+      : c.domain === "cover" && position !== null
+        ? art === "awning"
+          ? t("Utrulling", "Extension")
+          : t("Åpen", "Open")
+        : c.domain === "switch" && power
+          ? state
+          : c.domain === "sensor" && art === "battery"
+            ? t("Batterinivå", "Battery level")
+            : "";
+  const feedback = message && (
+    <p
+      className="harmony-device-feedback"
+      role={failed ? "alert" : "status"}
+      data-error={failed}
+    >
+      {message}
+    </p>
+  );
+  const toggle = () => (
+    <button
+      type="button"
+      className="harmony-power equipment-toggle"
+      role="switch"
+      aria-checked={available && c.state === "on"}
+      aria-label={`${c.name}: ${labels[powerAction]}`}
+      disabled={disabled}
+      onClick={() => request(powerAction)}
+    >
+      <span>{labels[powerAction]}</span>
+      <i aria-hidden="true" />
+    </button>
+  );
   return (
     <article
-      className="harmony-device"
+      className="harmony-device equipment-card"
       data-domain={c.domain}
+      data-art={art}
       data-tone={tone}
       data-active={on}
       data-available={available}
+      data-attention={attention}
+      data-color-light={rgb || white || undefined}
       aria-busy={busy}
+      style={{ "--equipment-color": lightColor(c) } as CSSProperties}
     >
       <header className="harmony-device-header">
         <span className="harmony-device-icon">
-          <Icon size={24} />
+          <Icon size={26} />
         </span>
         <button
           className="harmony-device-open"
@@ -358,80 +468,83 @@ function HarmonyDevice({
           aria-haspopup="dialog"
         >
           <span>
-            <small>{room}</small>
             <strong>{c.name}</strong>
+            <small>{room}</small>
           </span>
-          <ChevronRight size={18} aria-hidden="true" />
+          {!topSwitch && <ChevronRight size={17} aria-hidden="true" />}
         </button>
+        {topSwitch && toggle()}
       </header>
-      <div className="harmony-device-status" data-unavailable={!available}>
-        {busy ? (
-          <LoaderCircle size={14} className="spin" />
-        ) : !available ? (
-          <WifiOff size={14} />
-        ) : (
-          <i aria-hidden="true" />
-        )}
-        <span>{busy ? t("Sender…", "Sending…") : state}</span>
-        {available && battery !== null && (
-          <small>
-            <Battery size={15} />
-            {battery}%
-          </small>
-        )}
-      </div>
-      {c.domain === "sensor" && (
-        <strong className="harmony-device-reading">
-          {["°C", "°F"].includes(String(c.attributes.unit_of_measurement)) ? (
-            <TemperatureValue
-              value={available ? numeric(c) : null}
-              unit={String(c.attributes.unit_of_measurement)}
-              lang={lang}
-            />
-          ) : available ? (
-            numeric(c) === null ? (
-              controlState(c, c.state, lang)
-            ) : (
-              reading(c, lang)
-            )
-          ) : (
-            "—"
-          )}
-        </strong>
-      )}
-      {c.domain === "climate" && (
-        <Thermostat
-          compact
-          c={{ ...c, availability: available ? c.availability : "unavailable" }}
-          lang={lang}
-          disabled={disabled}
-          change={(v) => void send("set_temperature", v)}
-          changeMode={(v) => void send("set_hvac_mode", v)}
-        />
-      )}
-      {c.domain === "cover" && (
-        <div className="harmony-cover-reading">
-          <div
-            className="harmony-blinds"
-            aria-hidden="true"
-            style={
-              {
-                "--shade-level": `${available && position !== null ? 100 - position : c.state === "closed" ? 100 : 50}%`,
-              } as CSSProperties
-            }
-          >
-            <i />
+      {c.domain === "climate" ? (
+        <>
+          <div className="harmony-device-status">
+            <i aria-hidden="true" />
+            <span>{busy ? t("Sender…", "Sending…") : state}</span>
+            {available && battery !== null && (
+              <small>
+                <Battery size={15} />
+                {battery}%
+              </small>
+            )}
           </div>
-          <div>
-            <strong>
-              {available && position !== null
-                ? `${position}%`
-                : available && c.state === "closed"
-                  ? "0%"
-                  : "—"}
+          <Thermostat
+            compact
+            c={{
+              ...c,
+              availability: available ? c.availability : "unavailable",
+            }}
+            lang={lang}
+            disabled={disabled}
+            change={(value) => void send("set_temperature", value)}
+            changeMode={(value) => void send("set_hvac_mode", value)}
+          />
+        </>
+      ) : (
+        <div className="equipment-body">
+          <div className="equipment-reading-group">
+            <strong
+              className="harmony-device-reading"
+              data-numeric={!!secondary || c.domain === "sensor"}
+            >
+              {attention && <TriangleAlert size={25} aria-hidden="true" />}
+              {primary}
             </strong>
-            <small>{t("Åpning", "Open position")}</small>
+            {secondary && available && (
+              <small className="equipment-reading-caption">{secondary}</small>
+            )}
+            {busy && (
+              <span className="harmony-device-status">
+                <LoaderCircle size={14} className="spin" />
+                {t("Sender…", "Sending…")}
+              </span>
+            )}
+            {!available && (
+              <span className="equipment-reading-caption">
+                <WifiOff size={14} />
+                {t("Ingen fersk status", "No current status")}
+              </span>
+            )}
+            {available && battery !== null && (
+              <span className="equipment-battery">
+                <Battery size={16} />
+                {t("Batteri", "Battery")} {battery}%
+              </span>
+            )}
+            {updated &&
+              ["binary_sensor", "alarm_control_panel"].includes(c.domain) && (
+                <small className="equipment-updated">
+                  {t("Sist oppdatert", "Last updated")} {updated}
+                </small>
+              )}
+            {available && energy && c.domain === "switch" && (
+              <span className="equipment-extra-reading">
+                <small>{energy.name}</small>
+                <strong>{reading(energy, lang)}</strong>
+              </span>
+            )}
+            {feedback}
           </div>
+          <EquipmentArtwork c={c} available={available} />
         </div>
       )}
       {c.domain === "media_player" && (
@@ -449,95 +562,101 @@ function HarmonyDevice({
           )}
         </div>
       )}
-      {["light", "switch", "fan"].includes(c.domain) &&
-        actions.includes(powerAction) && (
-          <button
-            className="harmony-power"
-            role="switch"
-            aria-checked={available && c.state === "on"}
-            aria-label={`${c.name}: ${labels[powerAction]}`}
+      <div className="equipment-controls">
+        {art === "battery" && available && batteryPercent !== null && (
+          <progress
+            className="equipment-battery-progress"
+            aria-label={`${c.name}: ${t("Batterinivå", "Battery level")}`}
+            max={100}
+            value={batteryPercent}
+            data-low={batteryPercent < 20}
+          />
+        )}
+        {powerControl && !topSwitch && (
+          <div className="equipment-main-toggle">{toggle()}</div>
+        )}
+        {c.domain === "light" && (
+          <EquipmentColorControls
+            c={c}
+            lang={lang}
             disabled={disabled}
-            onClick={() => request(powerAction)}
-          >
-            <span>{labels[powerAction]}</span>
-            <i aria-hidden="true" />
-          </button>
+            change={(action, value) => void send(action, value)}
+          />
         )}
-      {brightness && (
-        <DeviceRange
-          displayLabel={t("Lysstyrke", "Brightness")}
-          label={`${c.name}: ${t("Lysstyrke", "Brightness")}`}
-          value={
-            number(c.attributes.brightness) === null
-              ? c.state === "off"
-                ? 0
-                : null
-              : (Number(c.attributes.brightness) / 255) * 100
-          }
-          capability={brightness}
-          disabled={disabled}
-          change={(v) => void send("set_brightness", v)}
-        />
-      )}
-      {volume && (
-        <DeviceRange
-          Icon={Volume2}
-          displayLabel={t("Volum", "Volume")}
-          label={`${c.name}: ${t("Volum", "Volume")}`}
-          value={
-            number(c.attributes.volume_level) === null
-              ? null
-              : Number(c.attributes.volume_level) * 100
-          }
-          capability={volume}
-          disabled={disabled}
-          change={(v) => void send("set_volume", v)}
-        />
-      )}
-      <div className="harmony-device-actions">
-        {c.domain === "lock" &&
-          actionButton(
-            c.state === "locked" ? "unlock" : "lock",
-            c.state === "locked" ? UnlockKeyhole : LockKeyhole,
-          )}
-        {c.domain === "cover" && (
-          <>
-            {actionButton("open_cover", ArrowUp)}
-            {actionButton("stop_cover", Square)}
-            {actionButton("close_cover", ArrowDown)}
-          </>
+        {brightness && !whiteMode && (
+          <DeviceRange
+            displayLabel={t("Lysstyrke", "Brightness")}
+            label={`${c.name}: ${t("Lysstyrke", "Brightness")}`}
+            value={percent}
+            capability={brightness}
+            disabled={disabled}
+            change={(value) => void send("set_brightness", value)}
+          />
         )}
-        {c.domain === "media_player" &&
-          actionButton(
-            c.state === "playing" ? "media_pause" : "media_play",
-            c.state === "playing" ? Pause : Play,
-          )}
-        {c.domain === "vacuum" && (
-          <>
-            {actionButton(
-              c.state === "cleaning" ? "pause" : "start",
-              c.state === "cleaning" ? Pause : Play,
+        {white && whiteMode && (
+          <div className="equipment-white-range">
+            <DeviceRange
+              displayLabel={t("Hvittemperatur", "White temperature")}
+              label={`${c.name}: ${t("Hvittemperatur", "White temperature")}`}
+              value={kelvin}
+              capability={white}
+              disabled={disabled}
+              change={(value) => void send("set_color_temp", value)}
+            />
+          </div>
+        )}
+        {volume && (
+          <DeviceRange
+            Icon={Volume2}
+            displayLabel={t("Volum", "Volume")}
+            label={`${c.name}: ${t("Volum", "Volume")}`}
+            value={
+              number(c.attributes.volume_level) === null
+                ? null
+                : Number(c.attributes.volume_level) * 100
+            }
+            capability={volume}
+            disabled={disabled}
+            change={(value) => void send("set_volume", value)}
+          />
+        )}
+        <div className="harmony-device-actions">
+          {c.domain === "lock" &&
+            actionButton(
+              c.state === "locked" ? "unlock" : "lock",
+              c.state === "locked" ? UnlockKeyhole : LockKeyhole,
             )}
-            {actionButton("return_to_base", House)}
-          </>
-        )}
-        {["scene", "script"].includes(c.domain) &&
-          actionButton("activate", Sparkles)}
+          {c.domain === "cover" && (
+            <>
+              {actionButton("open_cover", ArrowUp)}
+              {actionButton("stop_cover", Square)}
+              {actionButton("close_cover", ArrowDown)}
+            </>
+          )}
+          {c.domain === "media_player" &&
+            actionButton(
+              c.state === "playing" ? "media_pause" : "media_play",
+              c.state === "playing" ? Pause : Play,
+            )}
+          {c.domain === "vacuum" && (
+            <>
+              {actionButton(
+                c.state === "cleaning" ? "pause" : "start",
+                c.state === "cleaning" ? Pause : Play,
+              )}
+              {actionButton("return_to_base", House)}
+            </>
+          )}
+          {["scene", "script"].includes(c.domain) &&
+            actionButton("activate", Sparkles)}
+        </div>
       </div>
       {!canControl && (
         <small className="harmony-readonly">
           {t("Kun visning", "View only")}
         </small>
       )}
-      {message && (
-        <p
-          className="harmony-device-feedback"
-          role={failed ? "alert" : "status"}
-          data-error={failed}
-        >
-          {message}
-        </p>
-      )}
+      {c.domain === "climate" && feedback}
       {confirmation && (
         <SettingsDialog
           title={`${confirmation.label} ${c.name}?`}

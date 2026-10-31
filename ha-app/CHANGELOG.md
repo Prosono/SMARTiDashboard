@@ -1,3 +1,11 @@
+## 1.36.69
+- Redesignet utstyrskortene i Harmoni etter referansebildene: navn og rom øverst, større statusverdier, egne illustrasjoner og tydeligere kontroller i lyst og mørkt tema.
+- Lys får oransje av/på og dimming, direkte fargevalg for fargelys og egen temperaturskala for justerbart hvitt. Valgt lysikon prioriteres. Bare funksjonene som enheten støtter vises.
+- Egne kortuttrykk for stikkontakter, persienner, rullegardiner, gardiner, markiser, garasjeporter, låser og sikkerhetssensorer. Faktisk posisjon og alarmstatus vises, med eksisterende bekreftelser før låsing og bevegelse.
+- Effekt, energi og batteri vises når målingen kan knyttes entydig til enheten. Manglende eller utilgjengelige målinger erstattes ikke med eksempelverdier.
+- Romkort viser temperatur og lysstyring for rommet. Varsler, batterier og hub/tilkoblinger kan legges til fra kortbiblioteket. Oversiktskort og energisidens målekort følger samme visuelle uttrykk.
+- Lagrede oppsett, redigerbar grid og bildeheadere beholdes. Energi beholder arbeidsflaten sin. Illustrasjonene er generiske og følger med appen.
+
 ## 1.36.68
 - Alle toppbannere i Harmoni har nå samme høyde på hver skjermstørrelse, med bilde, statuspiller og sentrert varselikon.
 - Ny personlig kortflate på oversikt, lys, klima, sikkerhet, multimedia og diverse: tre kolonner på store skjermer, tilpasset nettbrett og mobil. Energisidens kortflate er foreløpig uendret.

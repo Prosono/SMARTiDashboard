@@ -1,3 +1,49 @@
+# Equipment card redesign — release 1.36.69
+
+Harmoni's equipment cards now follow the supplied references: a consistent
+name/room header, larger real readings, decorative product artwork, orange power
+and dimming controls, RGB presets and a warm/cool scale for tunable white lights.
+Manual light appearance takes precedence over automatic illustration selection.
+Sockets can show a uniquely associated physical device's power/energy sensors;
+ambiguous, unavailable and nonfinite readings are omitted. Cover illustrations
+use actual position, with distinct blinds, rollers, curtains, awnings and garages.
+Security cards distinguish contact, motion, presence, smoke and water states, and
+show existing lock controls and battery data. Alarm labels are localized.
+
+Room cards show available temperature and room-scoped lighting controls. Alerts,
+batteries and connection summaries are optional additions in the card library.
+Overview, media, cleaning and energy measurement surfaces share the new material;
+Energy retains its existing workspace. No backend source or capabilities changed.
+Existing grid IDs, saved layouts, equal-height photo headers, permissions, action
+confirmations and full device dialogs are preserved.
+
+Validation on 31 October 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, formatting of changed
+  frontend files and `git diff --check`: passed. Vite retains its existing bundle-size
+  advisory.
+- Frontend unit suite: **183 passed**. Four new cases cover manual/automatic artwork,
+  bounded real readings including zero, unambiguous physical-device associations
+  and actual safety conditions. No demonstration values enter production cards.
+- Extracted release archive: **30 browser tests passed** across Chromium desktop
+  and mobile (28 Harmoni/Living plus 2 multimedia), including the prior grid/header
+  regressions.
+  New coverage exercises RGB and white-temperature commands, dimming, device-specific
+  cover art, real power/energy/battery readings, safety states, optional summary cards
+  and working SVG fallback when a product image fails. Light/dark screenshots at
+  390/1440 px were inspected; tests also check control bounds and horizontal overflow.
+- All **249 runtime files** match the archive manifest. The deterministic bundle
+  passes `scripts/package.py --check`; browser checks load its extracted backend
+  and compiled frontend. No real household devices were controlled.
+- Four transparent, locally bundled decorative WebP illustrations total about
+  64 KiB. Tool, final prompts and asset paths are recorded in
+  [the artwork notes](../frontend/public/home/equipment/README.md). Other artwork
+  uses native SVG. Images do not identify residents' actual brands or models.
+
+The broader repository limitations recorded below still apply.
+
+---
+
 # Personal card grids and equal banner heights — release 1.36.68
 
 Harmoni now uses a shared banner height at each viewport breakpoint. Overview,

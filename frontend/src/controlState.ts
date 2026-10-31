@@ -63,6 +63,21 @@ export function controlState(
   const en = lang === "en";
   if (state == null || state === "unknown") return en ? "Unknown" : "Ukjent";
   if (state === "unavailable") return en ? "Unavailable" : "Utilgjengelig";
+  if (control?.domain === "alarm_control_panel") {
+    const alarms: Record<string, [string, string]> = {
+      disarmed: ["Av", "Disarmed"],
+      armed_home: ["Hjemmemodus", "Armed home"],
+      armed_away: ["Bortemodus", "Armed away"],
+      armed_night: ["Nattmodus", "Night mode"],
+      armed_vacation: ["Feriemodus", "Vacation mode"],
+      armed_custom_bypass: ["Tilpasset sikring", "Custom armed"],
+      arming: ["Aktiverer …", "Arming …"],
+      disarming: ["Deaktiverer …", "Disarming …"],
+      pending: ["Venter …", "Pending …"],
+      triggered: ["Alarm utløst", "Alarm triggered"],
+    };
+    if (alarms[String(state)]) return alarms[String(state)][en ? 1 : 0];
+  }
   if (control?.domain === "vacuum") {
     const vacuum: Record<string, [string, string]> = {
       cleaning: ["Rengjør", "Cleaning"],

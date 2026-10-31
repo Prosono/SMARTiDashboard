@@ -62,6 +62,8 @@ import { Weather } from "./Weather";
 import { HomeHeaderImage } from "./HomeAppearance";
 import { CategoryHeading } from "./CategoryIntro";
 import { HomeGrid } from "./HomeGrid";
+import { equipmentSummaryCards } from "./EquipmentSummaryCards";
+import { RoomSummaryCard } from "./RoomSummaryCard";
 import { HomeGridGuard } from "./HomeGridGuard";
 import { deviceGridCards } from "./HomeDeviceGrid";
 import { HighlightWeather } from "./HighlightWeather";
@@ -1116,41 +1118,18 @@ export function HomeOverview({
                               ),
                           ),
                         })),
+                        ...equipmentSummaryCards(h, lang, offline, openDevices),
                         ...roomList.map((a) => ({
                           id: `room:${a.area_id}`,
                           title: a.name,
                           content: (
-                            <button
-                              className="home-grid-room"
-                              onClick={() => openRooms(a.area_id)}
-                            >
-                              <RoomArtwork
-                                src={
-                                  pref?.images[a.area_id]
-                                    ? new URL(
-                                        `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
-                                        document.baseURI,
-                                      ).href
-                                    : homeAsset(
-                                        roomMood(a.name).photo || "home-living",
-                                      )
-                                }
-                                alt=""
-                                loading="lazy"
-                              />
-                              <span>
-                                <strong>{a.name}</strong>
-                                <small>
-                                  {
-                                    model.controls.filter(
-                                      (c) => c.area_id === a.area_id,
-                                    ).length
-                                  }{" "}
-                                  {t("enheter", "devices")}
-                                </small>
-                              </span>
-                              <ChevronRight size={20} />
-                            </button>
+                            <RoomSummaryCard
+                              home={h}
+                              area={a}
+                              lang={lang}
+                              offline={offline}
+                              open={() => openRooms(a.area_id)}
+                            />
                           ),
                         })),
                         ...(canScenes

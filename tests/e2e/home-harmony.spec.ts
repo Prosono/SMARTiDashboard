@@ -1178,3 +1178,353 @@ test("each category can remove and add cards, retain failed edits and protect co
     canvas.getByRole("button", { name: "Rediger oppsett", exact: true }),
   ).toBeFocused();
 });
+
+test("equipment cards match their actual device type, color controls and linked readings in both themes", async ({
+  page,
+}, info) => {
+  test.setTimeout(90000);
+  await page.addInitScript(() => {
+    localStorage.setItem("smarti-home-style", "harmony");
+    localStorage.setItem("smarti-palette", "smarti");
+  });
+  const layouts = new Map<
+    string,
+    { revision: number; items: unknown[] | null }
+  >();
+  await page.route("**/api/home/layout/*", async (route) => {
+    const key = new URL(route.request().url()).pathname;
+    const current = layouts.get(key) || { revision: 0, items: null };
+    if (route.request().method() === "GET")
+      return route.fulfill({ json: current });
+    const body = route.request().postDataJSON();
+    const next = { revision: current.revision + 1, items: body.items };
+    layouts.set(key, next);
+    await route.fulfill({ json: next });
+  });
+  const make = (
+    suffix: string,
+    domain: string,
+    name: string,
+    state: string,
+    attributes: Record<string, unknown> = {},
+    actions: string[] = [],
+  ) => ({
+    ...control(domain, name, state, attributes, actions),
+    id: `${domain}.equipment_${suffix}`,
+    entity_id: `${domain}.equipment_${suffix}`,
+  });
+  const rgb = {
+    ...make(
+      "rgb",
+      "light",
+      "Fargelys",
+      "on",
+      {
+        smarti_icon: "strip",
+        brightness: 153,
+        rgb_color: [151, 61, 238],
+        color_mode: "rgb",
+      },
+      ["turn_on", "turn_off"],
+    ),
+    capabilities: [
+      { kind: "power", actions: ["turn_on", "turn_off"] },
+      {
+        kind: "brightness",
+        actions: ["set_brightness"],
+        minimum: 0,
+        maximum: 100,
+        step: 1,
+        unit: "%",
+      },
+      { kind: "color", actions: ["set_rgb_color"] },
+    ],
+  };
+  const white = {
+    ...make(
+      "white",
+      "light",
+      "Justerbart hvitt",
+      "on",
+      {
+        smarti_icon: "ceiling",
+        brightness: 204,
+        color_mode: "color_temp",
+        color_temp_kelvin: 2700,
+      },
+      ["turn_on", "turn_off"],
+    ),
+    capabilities: [
+      { kind: "power", actions: ["turn_on", "turn_off"] },
+      {
+        kind: "brightness",
+        actions: ["set_brightness"],
+        minimum: 0,
+        maximum: 100,
+        step: 1,
+        unit: "%",
+      },
+      {
+        kind: "color_temperature",
+        actions: ["set_color_temp"],
+        minimum: 2000,
+        maximum: 6500,
+        step: 1,
+        unit: "K",
+      },
+    ],
+  };
+  const extras = [
+    rgb,
+    white,
+    make("plain", "light", "Taklampe", "on", { smarti_icon: "pendant" }, [
+      "turn_on",
+      "turn_off",
+    ]),
+    {
+      ...make(
+        "plug",
+        "switch",
+        "Smart stikkontakt",
+        "on",
+        { device_class: "outlet" },
+        ["turn_on", "turn_off"],
+      ),
+      device_id: "equipment-plug",
+    },
+    {
+      ...make("power", "sensor", "Stikkontakt effekt", "134", {
+        device_class: "power",
+        unit_of_measurement: "W",
+      }),
+      device_id: "equipment-plug",
+    },
+    {
+      ...make("energy", "sensor", "Registrert energi", "0.8", {
+        device_class: "energy",
+        unit_of_measurement: "kWh",
+      }),
+      device_id: "equipment-plug",
+    },
+    make("lock", "lock", "Dørlås", "locked", { battery_level: 82 }, [
+      "lock",
+      "unlock",
+    ]),
+    make("door", "binary_sensor", "Ytterdør", "off", { device_class: "door" }),
+    make("window", "binary_sensor", "Vindu kjøkken", "on", {
+      device_class: "window",
+    }),
+    make("motion", "binary_sensor", "Bevegelse gang", "off", {
+      device_class: "motion",
+    }),
+    make("presence", "binary_sensor", "Tilstedeværelse", "on", {
+      device_class: "occupancy",
+    }),
+    make("smoke", "binary_sensor", "Røykvarsler", "on", {
+      device_class: "smoke",
+      battery_level: 91,
+    }),
+    make("leak", "binary_sensor", "Vannlekkasje", "on", {
+      device_class: "moisture",
+    }),
+    make("alarm", "alarm_control_panel", "Alarm", "armed_night"),
+    make("battery", "sensor", "Batteri dørsensor", "12", {
+      device_class: "battery",
+      unit_of_measurement: "%",
+    }),
+    ...[
+      ["blind", "Persienne", 60],
+      ["shade", "Rullegardin", 40],
+      ["curtain", "Gardiner", 75],
+      ["awning", "Markise", 40],
+      ["garage", "Garasjeport", 0],
+    ].map(([device_class, name, position]) =>
+      make(
+        String(device_class),
+        "cover",
+        String(name),
+        position ? "open" : "closed",
+        { device_class, current_position: position },
+        ["open_cover", "stop_cover", "close_cover"],
+      ),
+    ),
+  ];
+  await page.route("**/api/home", async (route) => {
+    const response = await route.fetch();
+    const home = await response.json();
+    await route.fulfill({
+      json: {
+        ...home,
+        controls: [...home.controls, ...extras],
+        favorites: [...home.favorites, ...extras.map((c) => c.entity_id)],
+      },
+    });
+  });
+  const sent: { action: string; value?: number | number[] }[] = [];
+  await page.route("**/api/controls/*equipment_*/commands", async (route) => {
+    sent.push(route.request().postDataJSON());
+    await route.fulfill({ json: { status: "accepted_unconfirmed" } });
+  });
+  await login(page);
+  const reset = async (name: string) => {
+    await page.getByRole("tab", { name, exact: true }).click();
+    const canvas = page.locator(".home-canvas");
+    await canvas
+      .getByRole("button", { name: "Rediger oppsett", exact: true })
+      .click();
+    await canvas
+      .getByRole("button", { name: "Startoppsett", exact: true })
+      .click();
+    await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+    await expect(canvas).toHaveAttribute("data-editing", "false");
+  };
+  await reset("Lys");
+  const colorCard = page.locator('[data-card="device:light.equipment_rgb"]');
+  await expect(colorCard.locator(".equipment-card")).toHaveAttribute(
+    "data-art",
+    "strip",
+  );
+  await expect(
+    colorCard.getByRole("button", { name: "Fargelys: Lilla", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await colorCard
+    .getByRole("button", { name: "Fargelys: Blå", exact: true })
+    .click();
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toMatchObject({
+    action: "set_rgb_color",
+    value: [21, 162, 239],
+  });
+  await expect(colorCard.getByRole("status")).toContainText(
+    "Venter på bekreftelse",
+  );
+  await colorCard
+    .getByRole("slider", { name: "Fargelys: Lysstyrke", exact: true })
+    .focus();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => sent.length).toBe(2);
+  expect(sent[1]).toMatchObject({ action: "set_brightness", value: 61 });
+  const whiteCard = page.locator('[data-card="device:light.equipment_white"]');
+  await expect(whiteCard.locator(".harmony-device-reading")).toContainText(
+    /2.?700 K/,
+  );
+  await whiteCard
+    .getByRole("slider", {
+      name: "Justerbart hvitt: Hvittemperatur",
+      exact: true,
+    })
+    .focus();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => sent.length).toBe(3);
+  expect(sent[2]).toMatchObject({ action: "set_color_temp", value: 2701 });
+  await reset("Diverse");
+  const plug = page.locator('[data-card="device:switch.equipment_plug"]');
+  await expect(plug.locator(".harmony-device-reading")).toHaveText("134 W");
+  await expect(plug).toContainText("0,8 kWh");
+  for (const [suffix, art] of [
+    ["blind", "blind"],
+    ["shade", "roller"],
+    ["curtain", "curtain"],
+    ["awning", "awning"],
+  ])
+    await expect(
+      page.locator(
+        `[data-card="device:cover.equipment_${suffix}"] .equipment-card`,
+      ),
+    ).toHaveAttribute("data-art", art);
+  await reset("Sikkerhet");
+  await expect(
+    page.locator(
+      '[data-card="device:binary_sensor.equipment_leak"] .equipment-card',
+    ),
+  ).toHaveAttribute("data-attention", "true");
+  await expect(
+    page.locator(
+      '[data-card="device:binary_sensor.equipment_smoke"] .equipment-card',
+    ),
+  ).toHaveAttribute("data-attention", "true");
+  await expect(
+    page.locator('[data-card="device:binary_sensor.equipment_door"]'),
+  ).toContainText("Lukket");
+  await expect(
+    page.locator('[data-card="device:lock.equipment_lock"]'),
+  ).toContainText("82%");
+  for (const theme of ["light", "dark"]) {
+    await appearance(page);
+    await page
+      .getByRole("combobox", { name: "Utseende", exact: true })
+      .selectOption(theme);
+    await navigate(page, "Hjem");
+    for (const name of ["Lys", "Diverse", "Sikkerhet", "Oversikt"]) {
+      await page.getByRole("tab", { name, exact: true }).click();
+      for (const width of [1440, 390]) {
+        await page.setViewportSize({ width, height: 1100 });
+        expect(
+          await page
+            .locator("body")
+            .evaluate((el) => el.scrollWidth <= el.clientWidth),
+        ).toBe(true);
+        for (const card of await page.locator(".equipment-card").all()) {
+          const bounds = await card.boundingBox();
+          for (const control of await card
+            .locator(
+              ".equipment-controls button:visible, .equipment-controls input:visible",
+            )
+            .all()) {
+            const rect = await control.boundingBox();
+            expect(
+              rect!.y + rect!.height,
+              await card.innerText(),
+            ).toBeLessThanOrEqual(bounds!.y + bounds!.height + 1);
+          }
+        }
+        const images = page.locator(".equipment-art img");
+        await expect
+          .poll(async () =>
+            images.evaluateAll((elements) =>
+              elements.every(
+                (element) =>
+                  (element as HTMLImageElement).complete &&
+                  (element as HTMLImageElement).naturalWidth > 0,
+              ),
+            ),
+          )
+          .toBe(true);
+        await page.locator(".home-canvas").screenshot({
+          path: `/private/tmp/smarti-equipment-${name}-${theme}-${width}-${info.project.name}.png`,
+          animations: "disabled",
+        });
+      }
+    }
+  }
+  await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+  const canvas = page.locator(".home-canvas");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
+  for (const name of ["Varsler", "Batterier", "Hub og tilkoblinger"])
+    await canvas
+      .locator(".home-canvas-library")
+      .getByRole("button", { name, exact: true })
+      .click();
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(canvas.locator('[data-card="summary:batteries"]')).toContainText(
+    "12 %",
+  );
+  await expect(
+    canvas.locator('[data-card="summary:connection"]'),
+  ).toContainText("Tilkoblet");
+  await expect(canvas.locator('[data-card="summary:alerts"]')).toContainText(
+    "Røykvarsler",
+  );
+  await page.route("**/home/equipment/plug.webp", (route) => route.abort());
+  await page.reload();
+  await page.getByRole("tab", { name: "Diverse", exact: true }).click();
+  const fallback = page.locator('[data-card="device:switch.equipment_plug"]');
+  await expect(fallback.locator(".equipment-art svg")).toBeVisible();
+  await expect(fallback.getByRole("switch")).toBeEnabled();
+  await expect(fallback).toContainText("134 W");
+});

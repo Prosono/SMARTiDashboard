@@ -4,24 +4,32 @@ import { ChevronRight, Lightbulb, LoaderCircle, Sun } from "lucide-react";
 import { api } from "../api";
 import type { Home } from "../types";
 import { usable } from "./homeModel";
+import { EquipmentArtwork } from "./EquipmentArtwork";
 
 export function GridLightingCard({
   home,
   lang,
   offline,
   open,
+  areaId,
+  compact = false,
 }: {
   home: Home;
   lang: string;
   offline: boolean;
   open: () => void;
+  areaId?: string;
+  compact?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   const lights = home.controls.filter(
-    (c) => c.domain === "light" && !c.diagnostic,
+    (c) =>
+      c.domain === "light" &&
+      !c.diagnostic &&
+      (areaId === undefined || c.area_id === areaId),
   );
   const on = lights.filter((c) => usable(c) && c.state === "on");
   const levels = on.flatMap((c) =>
@@ -94,28 +102,46 @@ export function GridLightingCard({
     }
   }
   return (
-    <section className="grid-lighting-card">
-      <img
-        src={new URL("home/home-lighting.webp", document.baseURI).href}
-        alt=""
-      />
+    <section className="grid-lighting-card" data-compact={compact}>
       <button className="grid-card-heading" onClick={open}>
         <Lightbulb size={23} />
-        <strong>{t("Lys i hjemmet", "Home lighting")}</strong>
+        <strong>
+          {areaId === undefined
+            ? t("Lys i hjemmet", "Home lighting")
+            : t("Lys i rommet", "Room lighting")}
+        </strong>
         <ChevronRight size={18} />
       </button>
+      {!compact && (
+        <div className="equipment-group-art" aria-hidden="true">
+          {lights.slice(0, 3).map((c) => (
+            <EquipmentArtwork
+              key={c.id}
+              c={c}
+              available={!offline && home.connected && usable(c)}
+              kind="pendant"
+            />
+          ))}
+        </div>
+      )}
       <div className="grid-lighting-reading">
         <div>
           <strong>{offline ? "—" : on.length}</strong>
-          <span>
-            {t("av", "of")} {lights.length}
-          </span>
+          {!compact && (
+            <span>
+              {t("av", "of")} {lights.length}
+            </span>
+          )}
           <small>{t("lys på", "lights on")}</small>
         </div>
         <button
           className="harmony-power"
           role="switch"
-          aria-label={t("Alle lys i hjemmet", "All home lights")}
+          aria-label={
+            areaId === undefined
+              ? t("Alle lys i hjemmet", "All home lights")
+              : `${t("Alle lys i", "All lights in")} ${home.areas.find((a) => a.area_id === areaId)?.name || areaId}`
+          }
           aria-checked={!offline && on.length > 0}
           disabled={blocked || !supports(power).length}
           onClick={() => void command(power)}
