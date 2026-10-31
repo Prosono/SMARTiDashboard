@@ -96,6 +96,29 @@ HA's configured admin API credential is required for administration. Ingress sup
 API references: [HA camera streams](https://github.com/home-assistant/core/blob/dev/homeassistant/components/camera/__init__.py), [native scene configuration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/config/scene.py), [recorder statistics](https://github.com/home-assistant/core/blob/dev/homeassistant/components/recorder/websocket_api.py).
 
 
+## Personal card layouts (1.36.68)
+
+In SMARTi Harmoni, every Home banner has the same height at a given screen size.
+Overview, Lights, Climate, Security, Multimedia and Miscellaneous have a personal
+card grid below the banner. Energy keeps its existing workspace for now.
+
+Choose **Rediger oppsett** on the page you want to customize. Drag a card by its
+handle and resize from the bottom corner, or focus the handle and use arrow keys.
+The width and height selectors provide another way to resize. Cards snap to the
+grid and cannot overlap. Use **Legg til kort**, the remove button or **Startoppsett**
+to choose the contents, then **Lagre**. **Avbryt** restores the saved arrangement.
+Device controls are inactive while editing.
+
+Wide layouts have three columns; tablets and phones reflow to two or one according
+to the space available. This does not change the saved desktop arrangement or card
+widths. Layouts are personal to the signed-in account and each page, including a
+separate simple overview. Existing favorites, room photos and Home preferences are
+preserved. New devices are available in the card library after a layout is saved.
+Each page supports up to 300 cards, widths of one to three columns and heights of
+one to four grid units. Connection/permission checks and confirmations for device
+commands remain in force. Failed saves retain the draft; concurrent changes in
+another window require reloading before saving over the newer arrangement.
+
 ## Photo headers and personal backgrounds (1.36.67)
 
 Harmoni's live status pills sit inside the photo on Overview, Lights, Climate,
@@ -112,8 +135,9 @@ unaffected. Uploads are resized in the browser and stored privately in SMARTi;
 removing your upload restores the automatic header backgrounds.
 
 Home name and today's date appear above the category navigation on every Home tab.
-The welcome photo contains the greeting, weather when available and the centered
-alert count. The count comes from the existing Home status model; the pulse draws
+The welcome photo contains the greeting, live status pills and the centered alert
+count. Weather is a separate card below the banner. The count comes from the
+existing Home status model; the pulse draws
 attention to available warnings without changing the underlying alert criteria.
 Reduced-motion preferences disable the pulse and temperature transitions.
 

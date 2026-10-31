@@ -1,3 +1,42 @@
+# Personal card grids and equal banner heights — release 1.36.68
+
+Harmoni now uses a shared banner height at each viewport breakpoint. Overview,
+Lights, Climate, Security, Multimedia and Miscellaneous have a personal card grid
+with three columns when space permits. Energy retains its existing workspace.
+Simple mode has its own overview arrangement. Classic and Living keep their layouts.
+
+Residents can enter edit mode, move cards with a mouse, touch or arrow keys, resize
+in whole grid units, remove/re-add cards, restore defaults, save or cancel. The
+desktop arrangement survives responsive reflow. Device controls are inert while
+editing. Layouts are stored separately from favorites and other Home preferences,
+scoped to the authenticated account and page. Atomic revisions reject stale saves.
+Invalid rectangles, duplicates, overlaps and oversized payloads are rejected.
+
+Validation on 31 October 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, formatting for the
+  changed frontend files, targeted Python Ruff checks/format and `git diff --check`:
+  passed. Vite retains its existing bundle-size advisory.
+- Frontend unit suite: **179 passed**, including grid collision handling, resizing,
+  responsive reflow without mutation, touch ordering and maximum catalog capacity.
+- Relevant backend suites: **80 passed**, including authenticated/CSRF-protected
+  layout persistence, account/page isolation, read-only residents, strict geometry
+  validation and concurrent-save protection.
+- Extracted release archive browser suites: **28 passed** across Chromium desktop
+  and mobile (Harmoni, Living and multimedia). Coverage includes the same banner
+  heights across all seven tabs; 320/390/834/1440 px; light/dark themes; saved layouts
+  after reload; cancellation; actual mouse dragging, snapped resizing and Chromium
+  touch input; adding/removing cards on all six pages; failed/stale saves; leaving an
+  unsaved edit; and no device commands during grid editing.
+- The final mobile check verifies that the full-width greeting does not overlap the
+  centered warning button. Existing device commands, dialogs, theme/background
+  selection, reduced motion, missing history and disconnected states still pass.
+- The **244 runtime files** match the deterministic archive's manifest. Browser
+  checks run against the extracted backend and compiled frontend. No real home
+  devices were controlled. The broader repository limitations below still apply.
+
+---
+
 # Status pills inside photo headers — release 1.36.67
 
 Harmoni's existing live summaries now render inside the photo header on Overview,

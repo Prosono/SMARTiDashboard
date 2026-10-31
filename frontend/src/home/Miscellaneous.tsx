@@ -1,3 +1,6 @@
+import { useContext } from "react";
+import { HeaderAppearance } from "./HomeAppearance";
+import { HomeDeviceGrid } from "./HomeDeviceGrid";
 import { MetricDetails } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RobotVacuumIcon } from "./RobotVacuumIcon";
@@ -49,6 +52,7 @@ export function Miscellaneous({
 }) {
   const en = lang === "en";
   const toolbar = useToolbarDisclosure();
+  const harmony = useContext(HeaderAppearance);
   const [search, setSearch] = useState("");
   const [room, setRoom] = useState("all");
   const groups = [
@@ -191,46 +195,65 @@ export function Miscellaneous({
         </select>
       </div>
       {summary}
-      {groups.map(({ id, Icon, name, controls }) => (
-        <section className="miscellaneous-section" key={id} aria-label={name}>
-          <header>
-            <Icon size={23} />
-            <h2>{name}</h2>
-            <span>{controls.length}</span>
-          </header>
-          {id === "cleaning" ? (
-            <div className="cleaning-grid">
-              {controls.map((c) => (
-                <VacuumCard
-                  key={c.id}
-                  c={c}
-                  home={home}
-                  lang={lang}
-                  offline={offline}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="misc-device-grid">
-              {controls.map((c) => (
-                <MiscDeviceCard
-                  key={c.id}
-                  c={c}
-                  home={home}
-                  lang={lang}
-                  offline={offline}
-                />
-              ))}
-            </div>
+      {harmony ? (
+        <HomeDeviceGrid
+          page="misc"
+          controls={home.controls.filter((c) => !!miscellaneousKind(c))}
+          home={home}
+          offline={offline}
+          lang={lang}
+          visible={
+            new Set(groups.flatMap((g) => g.controls.map((c) => c.entity_id)))
+          }
+        />
+      ) : (
+        <>
+          {groups.map(({ id, Icon, name, controls }) => (
+            <section
+              className="miscellaneous-section"
+              key={id}
+              aria-label={name}
+            >
+              <header>
+                <Icon size={23} />
+                <h2>{name}</h2>
+                <span>{controls.length}</span>
+              </header>
+              {id === "cleaning" ? (
+                <div className="cleaning-grid">
+                  {controls.map((c) => (
+                    <VacuumCard
+                      key={c.id}
+                      c={c}
+                      home={home}
+                      lang={lang}
+                      offline={offline}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="misc-device-grid">
+                  {controls.map((c) => (
+                    <MiscDeviceCard
+                      key={c.id}
+                      c={c}
+                      home={home}
+                      lang={lang}
+                      offline={offline}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
+          {!groups.length && (
+            <p role="status">
+              {en
+                ? "No devices match your choices."
+                : "Ingen enheter passer med valgene dine."}
+            </p>
           )}
-        </section>
-      ))}
-      {!groups.length && (
-        <p role="status">
-          {en
-            ? "No devices match your choices."
-            : "Ingen enheter passer med valgene dine."}
-        </p>
+        </>
       )}
     </section>
   );

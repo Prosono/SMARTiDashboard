@@ -1,4 +1,5 @@
-import { useId } from "react";
+import { Children, Fragment, useId, type ReactNode } from "react";
+import type { HomeGridCard } from "./HomeGrid";
 import { HarmonyTrend } from "./HarmonyTrend";
 import { TemperatureValue } from "./TemperatureValue";
 import { useQuery } from "@tanstack/react-query";
@@ -86,7 +87,7 @@ function Chart({ points, label }: { points: Point[]; label: string }) {
   );
 }
 
-function Metric({
+export function HomeMetric({
   control,
   enhanced,
   kind,
@@ -246,6 +247,7 @@ export function HomeMetrics({
   lang,
   openEnergy,
   openClimate,
+  renderCards,
 }: {
   home: Home;
   selectedEnergy: string | null;
@@ -254,6 +256,7 @@ export function HomeMetrics({
   lang: string;
   openEnergy: () => void;
   openClimate: () => void;
+  renderCards?: (cards: HomeGridCard[]) => ReactNode;
 }) {
   const canEnergy =
     !home.permissions || home.permissions.includes("energy.view");
@@ -302,10 +305,10 @@ export function HomeMetrics({
       c.attributes.unit_of_measurement === "%" &&
       numeric(c) !== null,
   );
-  return (
-    <div className="home-metrics-grid">
+  const tiles = (
+    <>
       {canEnergy && energy && (
-        <Metric
+        <HomeMetric
           enhanced={enhanced}
           control={energy}
           kind="energy"
@@ -315,7 +318,7 @@ export function HomeMetrics({
         />
       )}
       {canClimate && temp && (
-        <Metric
+        <HomeMetric
           enhanced={enhanced}
           control={temp}
           kind="temperature"
@@ -325,7 +328,7 @@ export function HomeMetrics({
         />
       )}
       {canClimate && humidity && (
-        <Metric
+        <HomeMetric
           enhanced={enhanced}
           control={humidity}
           kind="humidity"
@@ -334,6 +337,34 @@ export function HomeMetrics({
           open={openClimate}
         />
       )}
+    </>
+  );
+  const kinds = ["energy", "temperature", "humidity"];
+  const titles = [
+    lang === "en" ? "Energy" : "Energi",
+    lang === "en" ? "Temperature" : "Temperatur",
+    lang === "en" ? "Humidity" : "Luftfuktighet",
+  ];
+  const indices = [
+    canEnergy && energy,
+    canClimate && temp,
+    canClimate && humidity,
+  ].flatMap((value, index) => (value ? [index] : []));
+  const cards = Children.toArray(tiles.props.children).map(
+    (content, index) => ({
+      id: `metric:${kinds[indices[index]]}`,
+      entityId: [energy, temp, humidity][indices[index]]?.entity_id,
+      title: titles[indices[index]],
+      content,
+    }),
+  );
+  return renderCards ? (
+    renderCards(cards)
+  ) : (
+    <div className="home-metrics-grid">
+      {cards.map((card) => (
+        <Fragment key={card.id}>{card.content}</Fragment>
+      ))}
     </div>
   );
 }

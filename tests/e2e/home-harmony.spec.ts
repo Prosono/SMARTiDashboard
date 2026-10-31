@@ -197,7 +197,9 @@ test("Harmoni is selectable and persisted without changing home preferences; bot
     "harmony",
   );
   await expect(page.locator(".harmony-device-grid").first()).toBeVisible();
-  await expect(page.locator(".home-header-weather")).toContainText("11,8");
+  await expect(
+    page.locator('.home-canvas [data-card="weather"]'),
+  ).toContainText("11,8");
   await expect(page.locator(".harmony-trend").first()).toBeVisible();
   await page.screenshot({
     path: `/private/tmp/smarti-harmony-light-${info.project.name}.png`,
@@ -444,9 +446,9 @@ test("missing history, loading commands, failures and disconnection show honest 
     route.fulfill({ status: 503, json: { detail: "history_unavailable" } }),
   );
   await login(page);
-  await expect(page.locator(".metric-energy")).toContainText(
-    "Kunne ikke hente historikk",
-  );
+  await expect(
+    page.locator('[data-card="metric:energy"] .metric-energy'),
+  ).toContainText("Kunne ikke hente historikk");
   await expect(page.locator(".metric-energy .harmony-trend")).toHaveCount(0);
   const light = page
     .locator('.harmony-device[data-domain="light"]')
@@ -511,12 +513,9 @@ test("Harmoni also follows palettes, simple mode and reduced motion", async ({
   await page.locator('.experience-picker button[data-mode="simple"]').click();
   await navigate(page, "Hjem");
   await expect(
-    page.locator(".living-simple-favorites .harmony-device").first(),
+    page.locator(".home-canvas .harmony-device").first(),
   ).toBeVisible();
-  await page
-    .locator(".living-simple-favorites .harmony-device-open")
-    .first()
-    .click();
+  await page.locator(".home-canvas .harmony-device-open").first().click();
   const dialog = page.getByRole("dialog").first();
   await expect(dialog).toBeVisible();
   await page.screenshot({
@@ -526,7 +525,7 @@ test("Harmoni also follows palettes, simple mode and reduced motion", async ({
   await expect(dialog).toHaveCount(0);
   await page.reload();
   await expect(
-    page.locator(".living-simple-favorites .harmony-device").first(),
+    page.locator(".home-canvas .harmony-device").first(),
   ).toBeVisible();
 });
 
@@ -591,7 +590,9 @@ test("photo headers center the actual alert count, respect reduced motion and ke
     "true",
   );
   await expect(
-    header.getByRole("img", { name: "11,8 °C", exact: true }),
+    page
+      .locator('.home-canvas [data-card="weather"]')
+      .getByRole("img", { name: "11,8 °C", exact: true }),
   ).toBeVisible();
   const currentDate = await page.evaluate(() =>
     new Date().toLocaleDateString("nb-NO", {
@@ -616,10 +617,18 @@ test("photo headers center the actual alert count, respect reduced motion and ke
       ),
     ).toBeLessThan(2);
     if (width <= 1000) {
-      const weather = (await header
-        .locator(".home-header-weather")
+      const weather = (await page
+        .locator('.home-canvas [data-card="weather"]')
         .boundingBox())!;
       expect(alertBox.y + alertBox.height + 8).toBeLessThanOrEqual(weather.y);
+    }
+    if (width <= 600) {
+      const greetingBox = (await header
+        .locator(".home-welcome-content")
+        .boundingBox())!;
+      expect(greetingBox.y + greetingBox.height + 8).toBeLessThanOrEqual(
+        alertBox.y,
+      );
     }
     const meta = (await page.locator(".home-toolbar").boundingBox())!,
       tabs = (await page
@@ -874,4 +883,298 @@ test("summary pills live inside the photos and still open their details at every
       }
     }
   }
+});
+
+test("photo banners share a height and the three-column canvas edits, resizes, saves and reloads", async ({
+  page,
+}, info) => {
+  test.setTimeout(90000);
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await richHome(page);
+  await login(page);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  for (const width of [1440, 834, 320]) {
+    await page.setViewportSize({ width, height: 1100 });
+    await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+    await page.screenshot({
+      path: `/private/tmp/smarti-grid-first-${width}-${info.project.name}.png`,
+      fullPage: true,
+    });
+    let expectedHeight = 0;
+    for (const name of [
+      "Oversikt",
+      "Lys",
+      "Energi",
+      "Sikkerhet",
+      "Klima",
+      "Multimedia",
+      "Diverse",
+    ]) {
+      await page.getByRole("tab", { name, exact: true }).click();
+      const header = page.locator(
+        name === "Oversikt" ? ".home-hero-stage" : ".category-heading",
+      );
+      const box = (await header.boundingBox())!;
+      if (!expectedHeight) expectedHeight = box.height;
+      expect(Math.abs(expectedHeight - box.height)).toBeLessThan(1);
+      if (name === "Energi") {
+        await expect(page.locator(".home-canvas")).toHaveCount(0);
+        const wizard = page.getByRole("dialog", {
+          name: "Energien i hjemmet ditt",
+          exact: true,
+        });
+        await expect(wizard).toBeVisible();
+        await wizard
+          .getByRole("button", { name: "Lukk innstillinger", exact: true })
+          .click();
+      } else {
+        const grid = page.locator(".home-canvas-grid");
+        await expect(grid).toBeVisible();
+        await expect(grid).toHaveCSS(
+          "--canvas-columns",
+          width === 1440 ? "3" : width === 834 ? "2" : "1",
+        );
+        expect(
+          await page
+            .locator("body")
+            .evaluate((el) => el.scrollWidth <= el.clientWidth),
+        ).toBe(true);
+      }
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const canvas = page.locator('.home-canvas[data-page="lights"]');
+  const first = canvas.locator(".home-canvas-cell").first();
+  const id = await first.getAttribute("data-card");
+  const cell = canvas.locator(`[data-card="${id}"]`);
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await expect(cell.locator(".home-canvas-content")).toHaveAttribute(
+    "inert",
+    "",
+  );
+  const handle = cell.locator(".home-canvas-grip");
+  await handle.focus();
+  await page.keyboard.press("ArrowRight");
+  await cell.getByRole("combobox", { name: /bredde/ }).selectOption("2");
+  await cell.getByRole("combobox", { name: /høyde/ }).selectOption("3");
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-editing", "false");
+  const saved = await (
+    await page.request.get("/api/home/layout/lights")
+  ).json();
+  expect(
+    saved.items.find((item: { id: string }) => item.id === id),
+  ).toMatchObject({ w: 2, h: 3 });
+  await page.reload();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const retained = canvas.locator(`[data-card="${id}"]`);
+  await expect(retained).toHaveCSS("grid-column-end", "span 2");
+  await expect(retained).toHaveCSS("grid-row-end", "span 3");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await retained.getByRole("combobox", { name: /bredde/ }).selectOption("1");
+  await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(retained).toHaveCSS("grid-column-end", "span 2");
+  await page.screenshot({
+    path: `/private/tmp/smarti-grid-lights-${info.project.name}.png`,
+    fullPage: true,
+  });
+  await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+  await page.screenshot({
+    path: `/private/tmp/smarti-grid-overview-${info.project.name}.png`,
+    fullPage: true,
+  });
+  expect(errors).toEqual([]);
+});
+
+test("grid handles support pointer dragging, snapped resizing and touch reordering without device commands", async ({
+  page,
+}, info) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await richHome(page);
+  await login(page);
+  await page.setViewportSize({ width: 1440, height: 1600 });
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const canvas = page.locator('.home-canvas[data-page="lights"]');
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Startoppsett", exact: true })
+    .click();
+  const first = canvas.locator(".home-canvas-cell").first(),
+    id = (await first.getAttribute("data-card"))!;
+  const cell = canvas.locator(`[data-card="${id}"]`);
+  const commands: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().includes("/commands"))
+      commands.push(request.url());
+  });
+  const grid = (await canvas.locator(".home-canvas-grid").boundingBox())!;
+  const step = (grid.width + 16) / 3;
+  const grip = (await cell.locator(".home-canvas-grip").boundingBox())!;
+  await page.mouse.move(grip.x + 30, grip.y + 18);
+  await page.mouse.down();
+  await page.mouse.move(grip.x + 30 + step, grip.y + 18, { steps: 8 });
+  await page.mouse.up();
+  await expect(cell).toHaveCSS("grid-column-start", "2");
+  const corner = (await cell.locator(".home-canvas-resize").boundingBox())!;
+  await page.mouse.move(corner.x + 16, corner.y + 16);
+  await page.mouse.down();
+  await page.mouse.move(corner.x + 16 + step, corner.y + 16 + 144, {
+    steps: 8,
+  });
+  await page.mouse.up();
+  await expect(cell).toHaveCSS("grid-column-end", "span 2");
+  await expect(cell).toHaveCSS("grid-row-end", "span 3");
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-editing", "false");
+  const desktop = await (
+    await page.request.get("/api/home/layout/lights")
+  ).json();
+  await page.setViewportSize({ width: 390, height: 1300 });
+  await expect(canvas.locator(".home-canvas-grid")).toHaveCSS(
+    "--canvas-columns",
+    "1",
+  );
+  expect(
+    await (await page.request.get("/api/home/layout/lights")).json(),
+  ).toEqual(desktop);
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  const touchFirst = canvas.locator(".home-canvas-cell").first();
+  const touchId = await touchFirst.getAttribute("data-card");
+  await touchFirst.scrollIntoViewIfNeeded();
+  const touchGrip = (await touchFirst
+    .locator(".home-canvas-grip")
+    .boundingBox())!;
+  const next = (await canvas
+    .locator(".home-canvas-cell")
+    .nth(1)
+    .boundingBox())!;
+  const session = await page.context().newCDPSession(page);
+  const point = { x: touchGrip.x + 35, y: touchGrip.y + 17 };
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [point],
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: point.x, y: next.y + 18 }],
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await expect(canvas.locator(".home-canvas-cell").first()).not.toHaveAttribute(
+    "data-card",
+    touchId!,
+  );
+  await session.detach();
+  await page.screenshot({
+    path: `/private/tmp/smarti-grid-edit-touch-${info.project.name}.png`,
+    fullPage: true,
+  });
+  await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
+  expect(
+    await (await page.request.get("/api/home/layout/lights")).json(),
+  ).toEqual(desktop);
+  expect(commands).toEqual([]);
+});
+
+test("each category can remove and add cards, retain failed edits and protect concurrent changes", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await richHome(page);
+  await login(page);
+  for (const [name, key] of [
+    ["Oversikt", "overview"],
+    ["Lys", "lights"],
+    ["Klima", "climate"],
+    ["Sikkerhet", "security"],
+    ["Multimedia", "media"],
+    ["Diverse", "misc"],
+  ]) {
+    await page.getByRole("tab", { name, exact: true }).click();
+    const canvas = page.locator(`.home-canvas[data-page="${key}"]`);
+    await canvas
+      .getByRole("button", { name: "Rediger oppsett", exact: true })
+      .click();
+    const cell = canvas.locator(".home-canvas-cell").first();
+    const id = (await cell.getAttribute("data-card"))!;
+    const title = (await cell.locator(".home-canvas-grip span").textContent())!;
+    await cell
+      .getByRole("button", { name: `Fjern ${title}`, exact: true })
+      .click();
+    await expect(canvas.locator(`[data-card="${id}"]`)).toHaveCount(0);
+    await canvas
+      .getByRole("button", { name: "Legg til kort", exact: true })
+      .click();
+    await canvas
+      .locator(".home-canvas-library")
+      .getByRole("button", { name: title, exact: true })
+      .click();
+    await expect(canvas.locator(`[data-card="${id}"]`)).toBeVisible();
+    await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+    await expect(canvas).toHaveAttribute("data-editing", "false");
+    const saved = await (
+      await page.request.get(`/api/home/layout/${key}`)
+    ).json();
+    expect(saved.items.some((item: { id: string }) => item.id === id)).toBe(
+      true,
+    );
+  }
+  const canvas = page.locator('.home-canvas[data-page="misc"]');
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await page.route("**/api/home/layout/misc", async (route) =>
+    route.request().method() === "PUT"
+      ? route.fulfill({ status: 503, json: { detail: "unavailable" } })
+      : route.continue(),
+  );
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-editing", "true");
+  await expect(canvas.getByRole("status")).toContainText(
+    "Endringene dine er fortsatt her",
+  );
+  await page.unroute("**/api/home/layout/misc");
+  await page.evaluate(async () => {
+    const session = await (await fetch("/api/session")).json();
+    const saved = await (await fetch("/api/home/layout/misc")).json();
+    await fetch("/api/home/layout/misc", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": session.csrf,
+      },
+      body: JSON.stringify(saved),
+    });
+  });
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(canvas.getByRole("status")).toContainText("annet vindu");
+  await expect(canvas).toHaveAttribute("data-editing", "true");
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await expect(
+    page.getByRole("tab", { name: "Diverse", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(
+    canvas.getByRole("button", { name: "Rediger oppsett", exact: true }),
+  ).toBeFocused();
 });

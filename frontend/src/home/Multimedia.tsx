@@ -1,3 +1,4 @@
+import { HomeGrid } from "./HomeGrid";
 import { mediaIcon } from "../MediaIcons";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { MetricDetails, MetricDeviceRenderer } from "./MetricDetails";
@@ -589,55 +590,80 @@ export function Multimedia({
         </div>
       </div>
       {!harmony && summary}
-      <div
-        className={`media-player-grid ${layout === "list" ? "is-list" : ""}`}
-      >
-        {(showAll || layout === "list" ? shown : shown.slice(0, 6)).map((c) => (
-          <MediaCard
-            key={c.id}
-            c={c}
-            home={home}
-            lang={lang}
-            offline={offline}
-            photo={photo(c)}
-          />
-        ))}
-      </div>
-      {!shown.length && (
-        <div className="media-empty">
-          <AudioLines size={40} />
-          <h2>
-            {players.length
-              ? t("Ingen spillere i dette utvalget", "No matching players")
-              : t("Gi hjemmet en lydside.", "Give your home a soundtrack.")}
-          </h2>
-          <p>
-            {players.length
-              ? t(
-                  "Prøv et annet rom eller filter.",
-                  "Try a different room or filter.",
-                )
-              : t(
-                  "Legg til høyttalere og TV-er under Integrasjoner. De vises automatisk her.",
-                  "Add speakers and TVs under Integrations. They appear here automatically.",
-                )}
-          </p>
-        </div>
-      )}
-      {shown.length > 6 && layout !== "list" && (
-        <button
-          className="media-show-all"
-          aria-expanded={showAll}
-          onClick={() => setShowAll(!showAll)}
-        >
-          <List size={20} />
-          {showAll
-            ? t("Vis færre", "Show fewer")
-            : t(
-                `Vis alle ${shown.length} spillere`,
-                `Show all ${shown.length} players`,
-              )}
-        </button>
+      {harmony ? (
+        <HomeGrid
+          page="media"
+          lang={lang}
+          cards={players.slice(0, 290).map((c) => ({
+            id: `device:${c.entity_id}`,
+            title: c.name,
+            hidden: !shown.some((item) => item.id === c.id),
+            content: (
+              <MediaCard
+                c={c}
+                home={home}
+                lang={lang}
+                offline={offline}
+                photo={photo(c)}
+              />
+            ),
+          }))}
+        />
+      ) : (
+        <>
+          <div
+            className={`media-player-grid ${layout === "list" ? "is-list" : ""}`}
+          >
+            {(showAll || layout === "list" ? shown : shown.slice(0, 6)).map(
+              (c) => (
+                <MediaCard
+                  key={c.id}
+                  c={c}
+                  home={home}
+                  lang={lang}
+                  offline={offline}
+                  photo={photo(c)}
+                />
+              ),
+            )}
+          </div>
+          {!shown.length && (
+            <div className="media-empty">
+              <AudioLines size={40} />
+              <h2>
+                {players.length
+                  ? t("Ingen spillere i dette utvalget", "No matching players")
+                  : t("Gi hjemmet en lydside.", "Give your home a soundtrack.")}
+              </h2>
+              <p>
+                {players.length
+                  ? t(
+                      "Prøv et annet rom eller filter.",
+                      "Try a different room or filter.",
+                    )
+                  : t(
+                      "Legg til høyttalere og TV-er under Integrasjoner. De vises automatisk her.",
+                      "Add speakers and TVs under Integrations. They appear here automatically.",
+                    )}
+              </p>
+            </div>
+          )}
+          {shown.length > 6 && layout !== "list" && (
+            <button
+              className="media-show-all"
+              aria-expanded={showAll}
+              onClick={() => setShowAll(!showAll)}
+            >
+              <List size={20} />
+              {showAll
+                ? t("Vis færre", "Show fewer")
+                : t(
+                    `Vis alle ${shown.length} spillere`,
+                    `Show all ${shown.length} players`,
+                  )}
+            </button>
+          )}
+        </>
       )}
       {scenes && (
         <SettingsDialog

@@ -169,7 +169,7 @@ def route_access(request, current, ha):
         return
     if path in {"home/experience", "home/language"}:
         return
-    if path.startswith(("home/preferences", "home/room-view/", "home/room-image/")):
+    if path.startswith(("home/preferences", "home/room-view/", "home/room-image/", "home/layout/")):
         return
     if path.startswith("manage/device/"):
         controls = [c for c in ha.controls() if c.device_id == request.path_params.get("id")]

@@ -1,9 +1,10 @@
+import { HomeGrid } from "./HomeGrid";
+import { deviceGridCards } from "./HomeDeviceGrid";
 import { SimpleDashboard } from "./SimpleDashboard";
 import { Presence } from "./People";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
 import { SettingsDialog } from "./SettingsDialog";
-import { HarmonyDevices } from "./HarmonyDevices";
 import { HomeHeaderImage } from "./HomeAppearance";
 import { LivingFavorites } from "./LivingFavorites";
 import { homeAsset, roomMood } from "./HomeOverview";
@@ -73,7 +74,7 @@ export function SimpleHome({
   if (view !== "devices")
     return (
       <section className="simple-home simple-home-dashboard">
-        <button onClick={() => setView("devices")}>
+        <button data-home-grid-leave onClick={() => setView("devices")}>
           {en ? "← Back to my home" : "← Tilbake til hjemmet"}
         </button>
         {view === "misc" ? (
@@ -95,6 +96,134 @@ export function SimpleHome({
         )}
       </section>
     );
+  const browse = (
+    <details className="simple-dashboard-browse" open={homeStyle === "harmony"}>
+      <summary>{en ? "Rooms and all devices" : "Rom og alle enheter"}</summary>
+      {room === "welcome" && !search && (
+        <section className="simple-room-section">
+          <h2>
+            {en ? "Where would you like to start?" : "Hvor vil du begynne?"}
+          </h2>
+          <div className="simple-room-tiles">
+            {home.areas.slice(0, 6).map((a) => {
+              const { Icon, photo } = roomMood(a.name);
+              return (
+                <button
+                  key={a.area_id}
+                  onClick={() => {
+                    setRoom(a.area_id);
+                    setLimit(4);
+                  }}
+                >
+                  <RoomArtwork
+                    roomId={a.area_id}
+                    src={homeAsset(photo || "home-living")}
+                    alt=""
+                  />
+                  <span>
+                    <Icon size={20} />
+                    {a.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+      <div className="simple-shortcuts">
+        {hasMiscellaneous(home) && (
+          <button onClick={() => setView("misc")}>
+            {en ? "More" : "Diverse"}
+          </button>
+        )}
+        {home.controls.some((c) => c.domain === "media_player") && (
+          <button onClick={() => setView("media")}>
+            {en ? "Music and TV" : "Musikk og TV"}
+          </button>
+        )}
+        {home.controls.some((c) =>
+          ["camera", "alarm_control_panel"].includes(c.domain),
+        ) && (
+          <button onClick={() => setView("security")}>
+            {en ? "Cameras and security" : "Kameraer og trygghet"}
+          </button>
+        )}
+      </div>
+      <div className="simple-filters">
+        <label>
+          {en ? "Choose room" : "Velg rom"}
+          <select
+            value={room}
+            onChange={(e) => {
+              setRoom(e.target.value);
+              setLimit(8);
+            }}
+          >
+            <option value="welcome">{en ? "My home" : "Mitt hjem"}</option>
+            <option value="all">{en ? "All rooms" : "Alle rom"}</option>
+            <option value="favorites">
+              {en ? "My favorites" : "Mine favoritter"}
+            </option>
+            {home.areas.map((a) => (
+              <option key={a.area_id} value={a.area_id}>
+                {a.name}
+              </option>
+            ))}
+            <option value="none">{en ? "Without a room" : "Uten rom"}</option>
+          </select>
+        </label>
+        <label>
+          <Search size={19} />
+          {en ? "Find a device" : "Finn en enhet"}
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setLimit(8);
+            }}
+            placeholder={
+              en ? "For example: kitchen light" : "For eksempel: kjøkkenlys"
+            }
+          />
+        </label>
+      </div>
+      <h2>
+        {["welcome", "favorites"].includes(room) && !search
+          ? en
+            ? "Your favorites"
+            : "Dine favoritter"
+          : en
+            ? "Your devices"
+            : "Dine enheter"}
+      </h2>
+      <p className="simple-help">
+        <Star size={18} />
+        {en
+          ? "Use the star on a device to find it in My favorites."
+          : "Trykk på stjernen ved en enhet for å finne den igjen i Mine favoritter."}
+      </p>
+      <p aria-live="polite">
+        {en
+          ? `Showing ${Math.min(limit, shown.length)} of ${shown.length} devices`
+          : `Viser ${Math.min(limit, shown.length)} av ${shown.length} enheter`}
+      </p>
+      {renderControls(shown.slice(0, limit))}
+      {!shown.length && (
+        <p>
+          {en
+            ? "No devices here. Choose another room or change your search."
+            : room === "welcome" && !search
+              ? "Velg et rom over for å finne enhetene dine. Stjernemerk dem du bruker ofte, så vises de her."
+              : "Ingen enheter her. Velg et annet rom eller endre søket."}
+        </p>
+      )}
+      {shown.length > limit && (
+        <button className="secondary" onClick={() => setLimit((v) => v + 8)}>
+          {en ? "Show more devices" : "Vis flere enheter"}
+        </button>
+      )}
+    </details>
+  );
   return (
     <section className="simple-home simple-home-dashboard">
       {homeStyle === "harmony" && (
@@ -141,7 +270,8 @@ export function SimpleHome({
             </button>
           </div>
         )}
-        {home.controls.some((c) => c.domain === "person") &&
+        {homeStyle !== "harmony" &&
+          home.controls.some((c) => c.domain === "person") &&
           (!home.permissions || home.permissions.includes("people.view")) && (
             <Presence home={home} offline={offline} lang={lang} admin={admin} />
           )}
@@ -191,162 +321,88 @@ export function SimpleHome({
           )}
         </SettingsDialog>
       )}
-      {["living", "harmony"].includes(homeStyle) &&
+      {homeStyle === "living" &&
         controls.some((c) => home.favorites.includes(c.entity_id)) && (
           <section className="living-simple-favorites">
             <header className="living-section-heading">
               <h2>{en ? "Favorites" : "Favoritter"}</h2>
             </header>
-            {homeStyle === "harmony" ? (
-              <HarmonyDevices
-                controls={controls
-                  .filter((c) => home.favorites.includes(c.entity_id))
-                  .slice(0, 12)}
-                home={home}
-                lang={lang}
-                offline={offline}
-              />
-            ) : (
-              <LivingFavorites
-                controls={controls
-                  .filter((c) => home.favorites.includes(c.entity_id))
-                  .slice(0, 12)}
-                home={home}
-                lang={lang}
-                offline={offline}
-              />
-            )}
-          </section>
-        )}
-      <SimpleDashboard home={home} lang={lang} offline={offline} />
-      <details className="simple-dashboard-browse">
-        <summary>
-          {en ? "Rooms and all devices" : "Rom og alle enheter"}
-        </summary>
-        {room === "welcome" && !search && (
-          <section className="simple-room-section">
-            <h2>
-              {en ? "Where would you like to start?" : "Hvor vil du begynne?"}
-            </h2>
-            <div className="simple-room-tiles">
-              {home.areas.slice(0, 6).map((a) => {
-                const { Icon, photo } = roomMood(a.name);
-                return (
-                  <button
-                    key={a.area_id}
-                    onClick={() => {
-                      setRoom(a.area_id);
-                      setLimit(4);
-                    }}
-                  >
-                    <RoomArtwork
-                      roomId={a.area_id}
-                      src={homeAsset(photo || "home-living")}
-                      alt=""
-                    />
-                    <span>
-                      <Icon size={20} />
-                      {a.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
-        <div className="simple-shortcuts">
-          {hasMiscellaneous(home) && (
-            <button onClick={() => setView("misc")}>
-              {en ? "More" : "Diverse"}
-            </button>
-          )}
-          {home.controls.some((c) => c.domain === "media_player") && (
-            <button onClick={() => setView("media")}>
-              {en ? "Music and TV" : "Musikk og TV"}
-            </button>
-          )}
-          {home.controls.some((c) =>
-            ["camera", "alarm_control_panel"].includes(c.domain),
-          ) && (
-            <button onClick={() => setView("security")}>
-              {en ? "Cameras and security" : "Kameraer og trygghet"}
-            </button>
-          )}
-        </div>
-        <div className="simple-filters">
-          <label>
-            {en ? "Choose room" : "Velg rom"}
-            <select
-              value={room}
-              onChange={(e) => {
-                setRoom(e.target.value);
-                setLimit(8);
-              }}
-            >
-              <option value="welcome">{en ? "My home" : "Mitt hjem"}</option>
-              <option value="all">{en ? "All rooms" : "Alle rom"}</option>
-              <option value="favorites">
-                {en ? "My favorites" : "Mine favoritter"}
-              </option>
-              {home.areas.map((a) => (
-                <option key={a.area_id} value={a.area_id}>
-                  {a.name}
-                </option>
-              ))}
-              <option value="none">{en ? "Without a room" : "Uten rom"}</option>
-            </select>
-          </label>
-          <label>
-            <Search size={19} />
-            {en ? "Find a device" : "Finn en enhet"}
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setLimit(8);
-              }}
-              placeholder={
-                en ? "For example: kitchen light" : "For eksempel: kjøkkenlys"
-              }
+            <LivingFavorites
+              controls={controls
+                .filter((c) => home.favorites.includes(c.entity_id))
+                .slice(0, 12)}
+              home={home}
+              lang={lang}
+              offline={offline}
             />
-          </label>
-        </div>
-        <h2>
-          {["welcome", "favorites"].includes(room) && !search
-            ? en
-              ? "Your favorites"
-              : "Dine favoritter"
-            : en
-              ? "Your devices"
-              : "Dine enheter"}
-        </h2>
-        <p className="simple-help">
-          <Star size={18} />
-          {en
-            ? "Use the star on a device to find it in My favorites."
-            : "Trykk på stjernen ved en enhet for å finne den igjen i Mine favoritter."}
-        </p>
-        <p aria-live="polite">
-          {en
-            ? `Showing ${Math.min(limit, shown.length)} of ${shown.length} devices`
-            : `Viser ${Math.min(limit, shown.length)} av ${shown.length} enheter`}
-        </p>
-        {renderControls(shown.slice(0, limit))}
-        {!shown.length && (
-          <p>
-            {en
-              ? "No devices here. Choose another room or change your search."
-              : room === "welcome" && !search
-                ? "Velg et rom over for å finne enhetene dine. Stjernemerk dem du bruker ofte, så vises de her."
-                : "Ingen enheter her. Velg et annet rom eller endre søket."}
-          </p>
+          </section>
         )}
-        {shown.length > limit && (
-          <button className="secondary" onClick={() => setLimit((v) => v + 8)}>
-            {en ? "Show more devices" : "Vis flere enheter"}
-          </button>
-        )}
-      </details>
+      <SimpleDashboard
+        home={home}
+        lang={lang}
+        offline={offline}
+        renderCards={
+          homeStyle === "harmony"
+            ? (cards) => (
+                <HomeGrid
+                  page="overview_simple"
+                  lang={lang}
+                  cards={[
+                    ...cards,
+                    ...(!home.permissions ||
+                    home.permissions.includes("people.view")
+                      ? [
+                          {
+                            id: "people",
+                            title: en ? "Who's home" : "Hvem er hjemme",
+                            content: (
+                              <Presence
+                                home={home}
+                                lang={lang}
+                                offline={offline}
+                                admin={admin}
+                              />
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...deviceGridCards({
+                      controls: controls.filter((c) =>
+                        [
+                          "light",
+                          "switch",
+                          "input_boolean",
+                          "fan",
+                          "cover",
+                          "lock",
+                        ].includes(c.domain),
+                      ),
+                      home,
+                      offline,
+                      lang,
+                    }).map((card) => ({
+                      ...card,
+                      defaultHidden: !home.favorites.some(
+                        (id) => `device:${id}` === card.id,
+                      ),
+                    })),
+                    {
+                      id: "browse",
+                      title: en
+                        ? "Rooms and all devices"
+                        : "Rom og alle enheter",
+                      content: browse,
+                      w: 3,
+                      h: 3,
+                    },
+                  ]}
+                />
+              )
+            : undefined
+        }
+      />
+
+      {homeStyle !== "harmony" && browse}
     </section>
   );
 }

@@ -1,3 +1,6 @@
+import { useContext } from "react";
+import { HeaderAppearance } from "./HomeAppearance";
+import { HomeDeviceGrid } from "./HomeDeviceGrid";
 import { MetricDetails } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RoomArtwork } from "../rooms/RoomArtwork";
@@ -63,6 +66,7 @@ export function ClimateOverview({
   renderControls: (c: Control[]) => ReactNode;
 }) {
   const toolbar = useToolbarDisclosure();
+  const harmony = useContext(HeaderAppearance);
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const prefs = useQuery({
     queryKey: ["home-preferences"],
@@ -284,192 +288,214 @@ export function ClimateOverview({
         </div>
       </div>
       {summary}
-      <div className="climate-room-heading">
-        <h2>
-          {room === "all"
-            ? t("Hjemmets rom", "Rooms in your home")
-            : rooms.find((a) => `room:${a.area_id}` === room)?.name}
-        </h2>
-        <span>
-          {shown.length} {t("rom", "rooms")}
-        </span>
-      </div>
-      <div
-        className={`climate-room-grid ${layout === "list" ? "is-list" : ""}`}
-      >
-        {shown.map((a) => {
-          const mood = roomMood(a.name),
-            Icon = mood.Icon;
-          const photo = prefs.data?.images[a.area_id]
-            ? new URL(
-                `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
-                document.baseURI,
-              ).href
-            : homeAsset(mood.photo || "home-living");
-          const hvac = offline
-            ? ""
-            : String(a.thermostat?.attributes.hvac_action || "");
-          const heating = hvac === "heating",
-            cooling = hvac === "cooling";
-          const target = a.thermostat?.attributes.temperature;
-          const unit = a.thermostat?.attributes.temperature_unit;
-          const desired =
-            typeof target === "number" && (unit === "°C" || unit === "°F")
-              ? unit === "°F"
-                ? ((target - 32) * 5) / 9
-                : target
-              : null;
-          const air = a.air.find((c) => usable(c)) || a.air[0];
-          const primary =
-            kind === "humidity"
-              ? fmt(a.humidity, " %")
-              : kind === "air"
-                ? air && !offline
-                  ? reading(air, lang)
-                  : "—"
-                : kind === "ventilation"
-                  ? `${a.fans.length} ${t("enheter", "devices")}`
-                  : fmt(a.temp, " °C");
-          const dialLevel = offline
-            ? 0
-            : kind === "humidity"
-              ? (a.humidity ?? 0)
-              : ["air", "ventilation"].includes(kind)
+      {harmony ? (
+        <HomeDeviceGrid
+          page="climate"
+          controls={controls}
+          home={home}
+          offline={offline}
+          lang={lang}
+          visible={
+            new Set(
+              shown.flatMap((a) =>
+                a.items
+                  .filter((c) => kind === "all" || category(c) === kind)
+                  .map((c) => c.entity_id),
+              ),
+            )
+          }
+        />
+      ) : (
+        <>
+          <div className="climate-room-heading">
+            <h2>
+              {room === "all"
+                ? t("Hjemmets rom", "Rooms in your home")
+                : rooms.find((a) => `room:${a.area_id}` === room)?.name}
+            </h2>
+            <span>
+              {shown.length} {t("rom", "rooms")}
+            </span>
+          </div>
+          <div
+            className={`climate-room-grid ${layout === "list" ? "is-list" : ""}`}
+          >
+            {shown.map((a) => {
+              const mood = roomMood(a.name),
+                Icon = mood.Icon;
+              const photo = prefs.data?.images[a.area_id]
+                ? new URL(
+                    `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
+                    document.baseURI,
+                  ).href
+                : homeAsset(mood.photo || "home-living");
+              const hvac = offline
+                ? ""
+                : String(a.thermostat?.attributes.hvac_action || "");
+              const heating = hvac === "heating",
+                cooling = hvac === "cooling";
+              const target = a.thermostat?.attributes.temperature;
+              const unit = a.thermostat?.attributes.temperature_unit;
+              const desired =
+                typeof target === "number" && (unit === "°C" || unit === "°F")
+                  ? unit === "°F"
+                    ? ((target - 32) * 5) / 9
+                    : target
+                  : null;
+              const air = a.air.find((c) => usable(c)) || a.air[0];
+              const primary =
+                kind === "humidity"
+                  ? fmt(a.humidity, " %")
+                  : kind === "air"
+                    ? air && !offline
+                      ? reading(air, lang)
+                      : "—"
+                    : kind === "ventilation"
+                      ? `${a.fans.length} ${t("enheter", "devices")}`
+                      : fmt(a.temp, " °C");
+              const dialLevel = offline
                 ? 0
-                : a.temp === null
-                  ? 0
-                  : Math.min(100, Math.max(0, ((a.temp - 5) / 30) * 100));
-          return (
-            <article
-              className="climate-room-card"
-              data-mode={heating ? "heating" : cooling ? "cooling" : "idle"}
-              key={a.area_id}
-            >
-              <button
-                type="button"
-                className="climate-room-banner"
-                onClick={() => setOpened(a.area_id)}
-                aria-label={`${t("Åpne klima for", "Open climate for")} ${a.name}`}
-              >
-                {!failedImages.includes(photo) && (
-                  <RoomArtwork
-                    src={photo}
-                    alt=""
-                    loading="lazy"
-                    onError={() =>
-                      setFailedImages((previous) => [...previous, photo])
-                    }
-                  />
-                )}
-                <span className="climate-room-icon">
-                  <Icon size={22} />
-                </span>
-                <strong>{a.name}</strong>
-                <ChevronRight size={18} />
-              </button>
-              <div className="climate-room-reading">
-                <div>
-                  <strong>{primary}</strong>
-                  <small>
-                    {kind === "all" || kind === "temperature"
-                      ? desired !== null
-                        ? `${t("Ønsket", "Target")} ${fmt(desired, " °C")}`
-                        : t("Målt temperatur", "Measured temperature")
-                      : kind === "humidity"
-                        ? t("Relativ luftfuktighet", "Relative humidity")
-                        : kind === "air"
-                          ? air?.name || t("Ingen måling", "No reading")
-                          : t("Åpne for styring", "Open controls")}
-                  </small>
-                </div>
-                <div className="climate-dial" aria-hidden="true">
-                  <svg viewBox="0 0 80 80">
-                    <circle cx="40" cy="40" r="31" />
-                    <circle
-                      cx="40"
-                      cy="40"
-                      r="31"
-                      pathLength="100"
-                      strokeDasharray={`${dialLevel} 100`}
-                    />
-                  </svg>
-                  {kind === "humidity" ? (
-                    <Droplets />
-                  ) : kind === "air" ? (
-                    <Leaf />
-                  ) : kind === "ventilation" ? (
-                    <Wind />
-                  ) : heating ? (
-                    <Flame />
-                  ) : cooling ? (
-                    <Snowflake />
-                  ) : (
-                    <Thermometer />
+                : kind === "humidity"
+                  ? (a.humidity ?? 0)
+                  : ["air", "ventilation"].includes(kind)
+                    ? 0
+                    : a.temp === null
+                      ? 0
+                      : Math.min(100, Math.max(0, ((a.temp - 5) / 30) * 100));
+              return (
+                <article
+                  className="climate-room-card"
+                  data-mode={heating ? "heating" : cooling ? "cooling" : "idle"}
+                  key={a.area_id}
+                >
+                  <button
+                    type="button"
+                    className="climate-room-banner"
+                    onClick={() => setOpened(a.area_id)}
+                    aria-label={`${t("Åpne klima for", "Open climate for")} ${a.name}`}
+                  >
+                    {!failedImages.includes(photo) && (
+                      <RoomArtwork
+                        src={photo}
+                        alt=""
+                        loading="lazy"
+                        onError={() =>
+                          setFailedImages((previous) => [...previous, photo])
+                        }
+                      />
+                    )}
+                    <span className="climate-room-icon">
+                      <Icon size={22} />
+                    </span>
+                    <strong>{a.name}</strong>
+                    <ChevronRight size={18} />
+                  </button>
+                  <div className="climate-room-reading">
+                    <div>
+                      <strong>{primary}</strong>
+                      <small>
+                        {kind === "all" || kind === "temperature"
+                          ? desired !== null
+                            ? `${t("Ønsket", "Target")} ${fmt(desired, " °C")}`
+                            : t("Målt temperatur", "Measured temperature")
+                          : kind === "humidity"
+                            ? t("Relativ luftfuktighet", "Relative humidity")
+                            : kind === "air"
+                              ? air?.name || t("Ingen måling", "No reading")
+                              : t("Åpne for styring", "Open controls")}
+                      </small>
+                    </div>
+                    <div className="climate-dial" aria-hidden="true">
+                      <svg viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r="31" />
+                        <circle
+                          cx="40"
+                          cy="40"
+                          r="31"
+                          pathLength="100"
+                          strokeDasharray={`${dialLevel} 100`}
+                        />
+                      </svg>
+                      {kind === "humidity" ? (
+                        <Droplets />
+                      ) : kind === "air" ? (
+                        <Leaf />
+                      ) : kind === "ventilation" ? (
+                        <Wind />
+                      ) : heating ? (
+                        <Flame />
+                      ) : cooling ? (
+                        <Snowflake />
+                      ) : (
+                        <Thermometer />
+                      )}
+                    </div>
+                  </div>
+                  <div className="climate-mode">
+                    {offline
+                      ? t("Frakoblet", "Disconnected")
+                      : heating
+                        ? t("Varmer", "Heating")
+                        : cooling
+                          ? t("Kjøler", "Cooling")
+                          : hvac === "idle"
+                            ? t("Hviler", "Idle")
+                            : a.thermostat?.state === "off"
+                              ? t("Av", "Off")
+                              : a.thermostat
+                                ? t("Klimastyring", "Climate control")
+                                : t("Sensorer", "Sensors")}
+                  </div>
+                  {a.items
+                    .filter(
+                      (c) =>
+                        c.domain === "climate" &&
+                        c.capabilities.some((cap) =>
+                          cap.actions.includes("set_temperature"),
+                        ),
+                    )
+                    .map((c) => (
+                      <QuickTemperature
+                        key={c.entity_id}
+                        c={c}
+                        lang={lang}
+                        offline={offline || !home.connected}
+                        showName={
+                          a.items.filter((c) => c.domain === "climate").length >
+                          1
+                        }
+                      />
+                    ))}
+                  <footer>
+                    <span>
+                      <Droplets size={16} />
+                      {fmt(a.humidity, " %")}
+                    </span>
+                    <span>
+                      <Leaf size={16} />
+                      {air && !offline
+                        ? reading(air, lang)
+                        : t("Ingen luftmåling", "No air reading")}
+                    </span>
+                  </footer>
+                </article>
+              );
+            })}
+          </div>
+          {!shown.length && (
+            <p className="climate-empty">
+              {controls.length
+                ? t(
+                    "Ingen rom passer med filtrene dine.",
+                    "No rooms match your filters.",
+                  )
+                : t(
+                    "Koble til termostater eller klimasensorer for å se målinger her.",
+                    "Connect thermostats or climate sensors to see readings here.",
                   )}
-                </div>
-              </div>
-              <div className="climate-mode">
-                {offline
-                  ? t("Frakoblet", "Disconnected")
-                  : heating
-                    ? t("Varmer", "Heating")
-                    : cooling
-                      ? t("Kjøler", "Cooling")
-                      : hvac === "idle"
-                        ? t("Hviler", "Idle")
-                        : a.thermostat?.state === "off"
-                          ? t("Av", "Off")
-                          : a.thermostat
-                            ? t("Klimastyring", "Climate control")
-                            : t("Sensorer", "Sensors")}
-              </div>
-              {a.items
-                .filter(
-                  (c) =>
-                    c.domain === "climate" &&
-                    c.capabilities.some((cap) =>
-                      cap.actions.includes("set_temperature"),
-                    ),
-                )
-                .map((c) => (
-                  <QuickTemperature
-                    key={c.entity_id}
-                    c={c}
-                    lang={lang}
-                    offline={offline || !home.connected}
-                    showName={
-                      a.items.filter((c) => c.domain === "climate").length > 1
-                    }
-                  />
-                ))}
-              <footer>
-                <span>
-                  <Droplets size={16} />
-                  {fmt(a.humidity, " %")}
-                </span>
-                <span>
-                  <Leaf size={16} />
-                  {air && !offline
-                    ? reading(air, lang)
-                    : t("Ingen luftmåling", "No air reading")}
-                </span>
-              </footer>
-            </article>
-          );
-        })}
-      </div>
-      {!shown.length && (
-        <p className="climate-empty">
-          {controls.length
-            ? t(
-                "Ingen rom passer med filtrene dine.",
-                "No rooms match your filters.",
-              )
-            : t(
-                "Koble til termostater eller klimasensorer for å se målinger her.",
-                "Connect thermostats or climate sensors to see readings here.",
-              )}
-        </p>
+            </p>
+          )}
+        </>
       )}
       {active && (
         <SettingsDialog

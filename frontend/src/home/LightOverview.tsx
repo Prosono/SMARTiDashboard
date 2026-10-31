@@ -1,3 +1,6 @@
+import { useContext } from "react";
+import { HeaderAppearance } from "./HomeAppearance";
+import { HomeDeviceGrid } from "./HomeDeviceGrid";
 import { MetricDetails } from "./MetricDetails";
 import { lightIcon } from "../LightAppearance";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
@@ -40,6 +43,7 @@ export function LightOverview({
   const [opened, open] = useState<string | null>(null);
   const selected = home.controls.find((c) => c.entity_id === opened);
   const toolbar = useToolbarDisclosure();
+  const harmony = useContext(HeaderAppearance);
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
   const prefs = useQuery({
@@ -296,123 +300,142 @@ export function LightOverview({
         </button>
       </div>
       {summary}
-      <div className="lighting-section-heading">
-        <h2>{t("Belysning i rommene", "Lighting by room")}</h2>
-        {scenes && (
-          <button onClick={scenes}>
-            <Sparkles size={18} />
-            {t("Stemningsmodus", "Scenes")}
-            <ChevronRight size={18} />
-          </button>
-        )}
-      </div>
-      {message && <p role="status">{message}</p>}
-      <div className="lighting-grid">
-        {visible.map((a) => {
-          const mood = roomMood(a.name);
-          const allItems = rooms.find((r) => r.area_id === a.area_id)!.items;
-          const roomOn = allItems.some((c) => usable(c) && c.state === "on");
-          const roomAction = roomOn ? "turn_off" : "turn_on";
-          const expanded = expandedRooms.includes(a.area_id);
-          const displayed = expanded ? a.items : a.items.slice(0, 3);
-          const photo = prefs.data?.images[a.area_id]
-            ? new URL(
-                `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
-                document.baseURI,
-              ).href
-            : homeAsset(mood.photo || "home-living");
-          return (
-            <article className="lighting-room" key={a.area_id}>
-              <header>
-                <RoomArtwork src={photo} alt="" loading="lazy" />
-                <div>
-                  <h2>{a.name}</h2>
-                  <small>
-                    {a.items.length} {t("lys", "lights")}
-                  </small>
-                </div>
-                <button
-                  className="lighting-switch lighting-room-switch"
-                  role="switch"
-                  aria-checked={roomOn}
-                  aria-label={`${t("Alle lys i", "All lights in")} ${a.name}`}
-                  disabled={
-                    offline ||
-                    !home.connected ||
-                    allItems.some((c) => pending.includes(c.entity_id)) ||
-                    !allItems.some(
-                      (c) =>
-                        usable(c) &&
-                        c.capabilities.some((cap) =>
-                          cap.actions.includes(roomAction),
-                        ),
-                    )
-                  }
-                  onClick={() => void toggleRoom(allItems)}
-                >
-                  <span />
-                </button>
-              </header>
-              <div className="lighting-devices">
-                {displayed.map((c) => (
-                  <LightTile
-                    key={c.entity_id}
-                    c={c}
-                    lang={lang}
-                    blocked={
-                      offline ||
-                      !home.connected ||
-                      !usable(c) ||
-                      pending.includes(c.entity_id)
-                    }
-                    busy={pending.includes(c.entity_id)}
-                    send={send}
-                    onOpen={
-                      renderControls ? () => open(c.entity_id) : undefined
-                    }
-                  />
-                ))}
-              </div>
-              <footer className="lighting-room-footer">
-                {a.items.length > 3 ? (
-                  <button
-                    aria-expanded={expanded}
-                    onClick={() =>
-                      setExpandedRooms((current) =>
-                        expanded
-                          ? current.filter((id) => id !== a.area_id)
-                          : [...current, a.area_id],
-                      )
-                    }
-                  >
-                    {expanded
-                      ? t("Vis færre lys", "Show fewer lights")
-                      : `${t("Vis alle", "Show all")} ${a.items.length} ${t("lys", "lights")}`}
-                    <ChevronRight size={17} />
-                  </button>
-                ) : openRoom && a.area_id ? (
-                  <button onClick={() => openRoom(a.area_id)}>
-                    {t("Åpne rom", "Open room")}
-                    <ChevronRight size={17} />
-                  </button>
-                ) : null}
-              </footer>
-            </article>
-          );
-        })}
-      </div>
-      {!visible.length && (
-        <p className="lighting-empty">
-          {lights.length
-            ? t(
-                "Ingen lys passer med valgene dine.",
-                "No lights match your filters.",
-              )
-            : t(
-                "Legg til lys og knytt dem til et rom for å komme i gang.",
-                "Add lights and assign them to a room to get started.",
-              )}
-        </p>
+      {harmony ? (
+        <HomeDeviceGrid
+          page="lights"
+          controls={lights}
+          home={home}
+          offline={offline}
+          lang={lang}
+          visible={
+            new Set(visible.flatMap((a) => a.items.map((c) => c.entity_id)))
+          }
+        />
+      ) : (
+        <>
+          <div className="lighting-section-heading">
+            <h2>{t("Belysning i rommene", "Lighting by room")}</h2>
+            {scenes && (
+              <button onClick={scenes}>
+                <Sparkles size={18} />
+                {t("Stemningsmodus", "Scenes")}
+                <ChevronRight size={18} />
+              </button>
+            )}
+          </div>
+          {message && <p role="status">{message}</p>}
+          <div className="lighting-grid">
+            {visible.map((a) => {
+              const mood = roomMood(a.name);
+              const allItems = rooms.find(
+                (r) => r.area_id === a.area_id,
+              )!.items;
+              const roomOn = allItems.some(
+                (c) => usable(c) && c.state === "on",
+              );
+              const roomAction = roomOn ? "turn_off" : "turn_on";
+              const expanded = expandedRooms.includes(a.area_id);
+              const displayed = expanded ? a.items : a.items.slice(0, 3);
+              const photo = prefs.data?.images[a.area_id]
+                ? new URL(
+                    `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
+                    document.baseURI,
+                  ).href
+                : homeAsset(mood.photo || "home-living");
+              return (
+                <article className="lighting-room" key={a.area_id}>
+                  <header>
+                    <RoomArtwork src={photo} alt="" loading="lazy" />
+                    <div>
+                      <h2>{a.name}</h2>
+                      <small>
+                        {a.items.length} {t("lys", "lights")}
+                      </small>
+                    </div>
+                    <button
+                      className="lighting-switch lighting-room-switch"
+                      role="switch"
+                      aria-checked={roomOn}
+                      aria-label={`${t("Alle lys i", "All lights in")} ${a.name}`}
+                      disabled={
+                        offline ||
+                        !home.connected ||
+                        allItems.some((c) => pending.includes(c.entity_id)) ||
+                        !allItems.some(
+                          (c) =>
+                            usable(c) &&
+                            c.capabilities.some((cap) =>
+                              cap.actions.includes(roomAction),
+                            ),
+                        )
+                      }
+                      onClick={() => void toggleRoom(allItems)}
+                    >
+                      <span />
+                    </button>
+                  </header>
+                  <div className="lighting-devices">
+                    {displayed.map((c) => (
+                      <LightTile
+                        key={c.entity_id}
+                        c={c}
+                        lang={lang}
+                        blocked={
+                          offline ||
+                          !home.connected ||
+                          !usable(c) ||
+                          pending.includes(c.entity_id)
+                        }
+                        busy={pending.includes(c.entity_id)}
+                        send={send}
+                        onOpen={
+                          renderControls ? () => open(c.entity_id) : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                  <footer className="lighting-room-footer">
+                    {a.items.length > 3 ? (
+                      <button
+                        aria-expanded={expanded}
+                        onClick={() =>
+                          setExpandedRooms((current) =>
+                            expanded
+                              ? current.filter((id) => id !== a.area_id)
+                              : [...current, a.area_id],
+                          )
+                        }
+                      >
+                        {expanded
+                          ? t("Vis færre lys", "Show fewer lights")
+                          : `${t("Vis alle", "Show all")} ${a.items.length} ${t("lys", "lights")}`}
+                        <ChevronRight size={17} />
+                      </button>
+                    ) : openRoom && a.area_id ? (
+                      <button onClick={() => openRoom(a.area_id)}>
+                        {t("Åpne rom", "Open room")}
+                        <ChevronRight size={17} />
+                      </button>
+                    ) : null}
+                  </footer>
+                </article>
+              );
+            })}
+          </div>
+          {!visible.length && (
+            <p className="lighting-empty">
+              {lights.length
+                ? t(
+                    "Ingen lys passer med valgene dine.",
+                    "No lights match your filters.",
+                  )
+                : t(
+                    "Legg til lys og knytt dem til et rom for å komme i gang.",
+                    "Add lights and assign them to a room to get started.",
+                  )}
+            </p>
+          )}
+        </>
       )}
       {selected && renderControls && (
         <SettingsDialog

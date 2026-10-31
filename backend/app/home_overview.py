@@ -11,7 +11,7 @@ from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .access import all_views, visible
 from .ha import HAError
@@ -83,6 +83,44 @@ class HeaderImage(BaseModel):
     data: str = Field(default="", max_length=1_400_000)
 
 
+LayoutPage = Literal["overview", "overview_simple", "lights", "climate", "security", "media", "misc"]
+
+
+class LayoutItem(BaseModel):
+    model_config = {"extra": "forbid", "strict": True}
+    id: str = Field(min_length=1, max_length=250)
+    x: int = Field(ge=0, le=2)
+    y: int = Field(ge=0, le=1999)
+    w: int = Field(ge=1, le=3)
+    h: int = Field(ge=1, le=4)
+
+    @field_validator("id")
+    @classmethod
+    def printable_id(cls, value):
+        if not value.isprintable():
+            raise ValueError("Card identifiers must be printable")
+        return value
+
+
+class HomeLayout(BaseModel):
+    model_config = {"extra": "forbid", "strict": True}
+    revision: int = Field(ge=0)
+    items: list[LayoutItem] = Field(max_length=300)
+
+    @model_validator(mode="after")
+    def fits_grid(self):
+        ids, occupied = set(), set()
+        for item in self.items:
+            if item.id in ids or item.x + item.w > 3 or item.y + item.h > 2000:
+                raise ValueError("Duplicate card or card outside grid")
+            ids.add(item.id)
+            cells = {(x, y) for x in range(item.x, item.x + item.w) for y in range(item.y, item.y + item.h)}
+            if cells & occupied:
+                raise ValueError("Cards must not overlap")
+            occupied.update(cells)
+        return self
+
+
 def home_router(store, user, ha, settings):
     router = APIRouter(prefix="/api/home")
 
@@ -126,6 +164,25 @@ def home_router(store, user, ha, settings):
     @router.get("/appearance")
     async def appearance(current=Depends(user)):
         return appearance_value(current)
+
+    @router.get("/layout/{page}")
+    async def home_layout(page: LayoutPage, current=Depends(user)):
+        saved = store.get(f"home_layout:{current['id']}:{page}")
+        return json.loads(saved) if saved else {"revision": 0, "items": None}
+
+    @router.put("/layout/{page}")
+    async def save_home_layout(page: LayoutPage, body: HomeLayout, current=Depends(user)):
+        key = f"home_layout:{current['id']}:{page}"
+        # Compare and save atomically so a second browser cannot silently replace an edit.
+        with store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+            revision = json.loads(row[0])["revision"] if row else 0
+            if revision != body.revision:
+                raise HTTPException(409, "layout_changed")
+            result = {"revision": revision + 1, "items": [item.model_dump() for item in body.items]}
+            db.execute("INSERT OR REPLACE INTO settings(key,value) VALUES (?,?)", (key, json.dumps(result)))
+        return result
 
     @router.put("/appearance")
     async def save_appearance(body: HomeAppearance, current=Depends(user)):

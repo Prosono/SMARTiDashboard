@@ -1,4 +1,10 @@
-import { useContext, useState } from "react";
+import {
+  Children,
+  Fragment,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -16,6 +22,9 @@ import { VacuumCard } from "./Cleaning";
 import { SettingsDialog } from "./SettingsDialog";
 import { MetricDeviceRenderer } from "./MetricDetails";
 import { homeAsset } from "./HomeOverview";
+import type { HomeGridCard } from "./HomeGrid";
+import { HarmonyDevices } from "./HarmonyDevices";
+import { GridLightingCard } from "./GridLightingCard";
 import "./simpleDashboard.css";
 
 function SimpleAgenda({ lang, offline }: { lang: string; offline: boolean }) {
@@ -121,11 +130,13 @@ export function SimpleDashboard({
   lang,
   offline,
   showWeather = true,
+  renderCards,
 }: {
   home: Home;
   lang: string;
   offline: boolean;
   showWeather?: boolean;
+  renderCards?: (cards: HomeGridCard[]) => ReactNode;
 }) {
   const en = lang === "en",
     t = (nb: string, eng: string) => (en ? eng : nb);
@@ -190,59 +201,64 @@ export function SimpleDashboard({
     }
   }
   const now = new Date();
-  return (
+  const tiles = (
     <>
-      <div
-        className="simple-dashboard-grid"
-        aria-label={t("Hjemmet med et blikk", "Home at a glance")}
-      >
-        {showWeather && weather && (
-          <div className="simple-dashboard-weather">
-            <Weather
-              c={
-                offline
-                  ? {
-                      ...weather,
-                      availability: "unavailable",
-                      attributes: { ...weather.attributes, temperature: null },
-                    }
-                  : weather
-              }
-              lang={lang}
-              compact
-            />
+      {showWeather && weather && (
+        <div className="simple-dashboard-weather">
+          <Weather
+            c={
+              offline
+                ? {
+                    ...weather,
+                    availability: "unavailable",
+                    attributes: { ...weather.attributes, temperature: null },
+                  }
+                : weather
+            }
+            lang={lang}
+            compact
+            polished={!!renderCards}
+          />
+        </div>
+      )}
+      {(!home.permissions || home.permissions.includes("calendar.view")) && (
+        <button
+          className="simple-dashboard-date simple-dashboard-tile"
+          onClick={() => setPanel("calendar")}
+          aria-haspopup="dialog"
+        >
+          <div className="simple-dashboard-card-heading">
+            <CalendarDays size={23} />
+            <span>{t("Kalender", "Calendar")}</span>
+            <ChevronRight size={18} />
           </div>
-        )}
-        {(!home.permissions || home.permissions.includes("calendar.view")) && (
-          <button
-            className="simple-dashboard-date simple-dashboard-tile"
-            onClick={() => setPanel("calendar")}
-            aria-haspopup="dialog"
-          >
-            <div className="simple-dashboard-card-heading">
-              <CalendarDays size={23} />
-              <span>{t("Kalender", "Calendar")}</span>
-              <ChevronRight size={18} />
+          <div className="simple-date-content">
+            <div className="simple-date-day">
+              <strong>{now.getDate()}</strong>
+              <span>
+                {now.toLocaleDateString(en ? "en-GB" : "nb-NO", {
+                  weekday: "long",
+                  month: "long",
+                })}
+              </span>
             </div>
-            <div className="simple-date-content">
-              <div className="simple-date-day">
-                <strong>{now.getDate()}</strong>
-                <span>
-                  {now.toLocaleDateString(en ? "en-GB" : "nb-NO", {
-                    weekday: "long",
-                    month: "long",
-                  })}
-                </span>
-              </div>
-              <SimpleAgenda lang={lang} offline={offline} />
-            </div>
-            <small>
-              {t("Se dagens planer", "See today's plans")}{" "}
-              <ChevronRight size={16} />
-            </small>
-          </button>
-        )}
-        {lights.length > 0 && (
+            <SimpleAgenda lang={lang} offline={offline} />
+          </div>
+          <small>
+            {t("Se dagens planer", "See today's plans")}{" "}
+            <ChevronRight size={16} />
+          </small>
+        </button>
+      )}
+      {lights.length > 0 &&
+        (renderCards ? (
+          <GridLightingCard
+            home={home}
+            lang={lang}
+            offline={offline}
+            open={() => setPanel("lights")}
+          />
+        ) : (
           <button
             className="simple-dashboard-tile simple-dashboard-lights"
             onClick={() => setPanel("lights")}
@@ -263,19 +279,27 @@ export function SimpleDashboard({
               {t("Trykk for å styre lysene", "Tap to control your lights")}
             </small>
           </button>
-        )}
-        {media && (
-          <div className="simple-dashboard-media">
-            <MediaCard
-              c={media}
-              home={home}
-              lang={lang}
-              offline={offline}
-              photo={homeAsset("home-multimedia")}
-            />
-          </div>
-        )}
-        {climate && (
+        ))}
+      {media && (
+        <div className="simple-dashboard-media">
+          <MediaCard
+            c={media}
+            home={home}
+            lang={lang}
+            offline={offline}
+            photo={homeAsset("home-multimedia")}
+          />
+        </div>
+      )}
+      {climate &&
+        (renderCards ? (
+          <HarmonyDevices
+            controls={[climate]}
+            home={home}
+            lang={lang}
+            offline={offline}
+          />
+        ) : (
           <section className="simple-dashboard-tile simple-dashboard-climate">
             <button
               className="simple-dashboard-card-heading"
@@ -298,19 +322,62 @@ export function SimpleDashboard({
             />
             {message && <p role="status">{message}</p>}
           </section>
-        )}
-        {vacuum && (
-          <div className="simple-dashboard-vacuum">
-            <VacuumCard
-              c={vacuum}
-              home={home}
-              lang={lang}
-              offline={offline}
-              simple
-            />
-          </div>
-        )}
-      </div>
+        ))}
+      {vacuum && (
+        <div className="simple-dashboard-vacuum">
+          <VacuumCard
+            c={vacuum}
+            home={home}
+            lang={lang}
+            offline={offline}
+            simple
+          />
+        </div>
+      )}
+    </>
+  );
+  const titles = [
+    t("Været nå", "Weather now"),
+    t("Kalender", "Calendar"),
+    t("Lys i hjemmet", "Home lighting"),
+    media?.name || "",
+    climate?.name || "",
+    vacuum?.name || "",
+  ];
+  const ids = ["weather", "calendar", "lighting", "media", "climate", "vacuum"];
+  const enabled = [
+    showWeather && weather,
+    !home.permissions || home.permissions.includes("calendar.view"),
+    lights.length > 0,
+    media,
+    climate,
+    vacuum,
+  ];
+  const indices = enabled.flatMap((value, index) => (value ? [index] : []));
+  const cards = Children.toArray(tiles.props.children).map(
+    (content, index) => ({
+      id: ids[indices[index]],
+      entityId: [weather, undefined, undefined, media, climate, vacuum][
+        indices[index]
+      ]?.entity_id,
+      title: titles[indices[index]],
+      content,
+    }),
+  );
+  return (
+    <>
+      {renderCards ? (
+        renderCards(cards)
+      ) : (
+        <div
+          className="simple-dashboard-grid"
+          aria-label={t("Hjemmet med et blikk", "Home at a glance")}
+        >
+          {cards.map((card) => (
+            <Fragment key={card.id}>{card.content}</Fragment>
+          ))}
+        </div>
+      )}
       {panel && (
         <SettingsDialog
           title={

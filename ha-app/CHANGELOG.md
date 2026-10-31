@@ -1,3 +1,10 @@
+## 1.36.68
+- Alle toppbannere i Harmoni har nå samme høyde på hver skjermstørrelse, med bilde, statuspiller og sentrert varselikon.
+- Ny personlig kortflate på oversikt, lys, klima, sikkerhet, multimedia og diverse: tre kolonner på store skjermer, tilpasset nettbrett og mobil. Energisidens kortflate er foreløpig uendret.
+- Velg «Rediger oppsett» for å dra og slippe kort, endre bredde og høyde langs griden, legge til eller fjerne kort og hente tilbake startoppsettet. Støtter mus, berøring og tastatur.
+- Oppsettet lagres per bruker og fane, med eget oppsett for enkel oversikt. «Avbryt» beholder det sist lagrede oppsettet. Samtidige endringer fra andre vinduer og lagringsfeil håndteres uten å overskrive et nyere oppsett.
+- Kortene følger det nye referanseuttrykket i lyst og mørkt tema. Vær, rutiner, personer, kalender, lys, media og målinger samles i griden, med eksisterende enhetskontroller og detaljvisninger.
+
 ## 1.36.67
 - Statuspillene i Harmoni er flyttet inn i selve bildeheaderen på oversikt, lys, klima, sikkerhet, multimedia og diverse.
 - Tydelig kontrast over egne bakgrunnsbilder og tilpasset oppsett på mobil og nettbrett. Pillene åpner fortsatt de samme detaljene og kategoriene.
