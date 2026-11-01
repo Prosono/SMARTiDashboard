@@ -1,3 +1,11 @@
+## 1.36.82
+- Mykere RGB-bakgrunn med mer diffuse fargebånd og dempede kanter. Rolig animasjon, pause og redusert bevegelse beholdes.
+- Energikortet henter nå vanlig målehistorikk først og bruker strømstatistikk som reserve for effektmålere. Grafer bevarer manglende målinger og omregner W/kW riktig. Energitellere viser siste hele times forbruk fra statistikk, eller en tydelig merket totalmåler hvis bare tellerhistorikk finnes.
+- Lavt, middels og høyt forbruk får grønt, gult og rødt, sammenlignet med kildens egen historikk siste døgn. Vurderingen vekter målingene etter tid og krever minst to timer med kjente data. Manglende grunnlag får grått; negativ effekt vises som levering, og akkumulert energitotal brukes ikke som forbruksnivå.
+- Temperaturkort bruker blått under 18 °C, grønt fra 18 til 24 °C, gult over 24 og under 27 °C og rødt fra 27 °C. Fahrenheit omregnes for fargeskalaen. Fuktighetskort glir fra nesten hvitt til dyp blått fra 0 til 100 %, med tilpasset tekstkontrast. Nivåene er også merket med tekst.
+- Temperaturhistorikk fra termostater leser nå faktisk målt romtemperatur fra opptakeren. Ugyldige og utilgjengelige målinger bevares som hull.
+- Headerpillene har fått fargede ikonflater, mer dybde, tydeligere verdier og bedre samspill ved peker og tastatur. De beholder detaljvisning, navigasjon og samme bannerhøyder.
+
 ## 1.36.81
 - RGB-bakgrunnen er redesignet etter referansebildet: flytende, transparente fargebånd med smale, lysende kanter og rolig bevegelse. Gjelder hele appen, med støtte for stillestående bakgrunn, redusert bevegelse og lyst/mørkt tema.
 - Lyskort følger lysets faktiske, rapporterte RGB-farge når lyset er på. Hvitt lys, manglende fargedata, avslåtte og utilgjengelige lys får en varm gul grunntone. En lysgruppe følger felles farge når alle påslåtte lys har samme farge; grupper med ulike farger får gul grunntone.

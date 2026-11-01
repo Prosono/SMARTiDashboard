@@ -1,0 +1,13 @@
+html[data-home-style="harmony"] {
+  :is(
+    .home-canvas-surface,
+    .home-canvas-expanded,
+    .home-canvas-cell[data-preview]
+  ):has(.home-metric-card[data-metric-level]) {
+    border-color: transparent;
+    background: transparent;
+  }
+  .home-metric-card[data-metric-level] .home-metric-icon {
+    color: var(--text);
+  }
+}

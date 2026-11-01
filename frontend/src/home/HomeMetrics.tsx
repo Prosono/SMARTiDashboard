@@ -7,17 +7,19 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Droplets, Thermometer, Zap } from "lucide-react";
 import { api } from "../api";
 import type { Control, Home } from "../types";
-import type { HistoryData } from "../ControlHistory";
-import { numeric, reading } from "./homeModel";
+import {
+  loadMetricHistory,
+  hasMetricPoints,
+  metricUnit,
+  type MetricKind,
+} from "./metricHistory";
+import { metricAssessment } from "./metricAssessment";
+import { numeric, reading, usable } from "./homeModel";
 import "./homeMetrics.css";
 
 type FlowConfig = {
   home?: { source?: string | null };
   grid?: { source?: string | null };
-};
-type EnergySeries = {
-  id: string;
-  current: { points: { time: string; value: number | null }[] };
 };
 type Point = { time: string; value: number | null };
 
@@ -98,7 +100,7 @@ export function HomeMetric({
 }: {
   control: Control;
   enhanced: boolean;
-  kind: "energy" | "temperature" | "humidity";
+  kind: MetricKind;
   lang: string;
   offline: boolean;
   open: () => void;
@@ -111,53 +113,53 @@ export function HomeMetric({
     };
   const Icon =
     kind === "energy" ? Zap : kind === "temperature" ? Thermometer : Droplets;
-  const historySupported = control.domain === "sensor";
+  const historySupported = ["sensor", "climate"].includes(control.domain);
+  const history = useQuery({
+    queryKey: [
+      "home-metric-history",
+      control.entity_id,
+      kind,
+      metricUnit(control),
+    ],
+    queryFn: () => loadMetricHistory(control, kind),
+    enabled: historySupported && !offline && usable(control),
+    retry: false,
+    staleTime: 60000,
+    refetchInterval: 300000,
+  });
+  const points = history.data?.points || [];
+  const available = !offline && usable(control);
+  const valid = available && hasMetricPoints(history.data);
+  const assessment = metricAssessment(
+    control,
+    kind,
+    history.data,
+    !available,
+    lang,
+  );
+  const hourly = kind === "energy" && history.data?.basis === "hourly";
+  const counter = kind === "energy" && history.data?.basis === "counter";
   const currentTemperature = control.attributes.current_temperature;
   const climateTemperature =
     typeof currentTemperature === "number" &&
     Number.isFinite(currentTemperature)
       ? currentTemperature
       : null;
-  const history = useQuery({
-    queryKey:
-      kind === "energy"
-        ? ["highlight-energy", control.id]
-        : ["control-history", control.entity_id, "24"],
-    queryFn: async () =>
-      kind === "energy"
-        ? api<{ series: EnergySeries[] }>(
-            `home/energy/statistics?${new URLSearchParams({ period: "24h", ids: control.id })}`,
-          )
-        : api<HistoryData>(
-            `controls/${encodeURIComponent(control.entity_id)}/history?hours=24`,
-          ),
-    enabled:
-      historySupported && !offline && control.availability === "available",
-    retry: false,
-    staleTime: 60000,
-    refetchInterval: 300000,
-  });
-  const points = history.data
-    ? ("series" in history.data
-        ? history.data.series.find((s) => s.id === control.id)?.current.points
-        : history.data.points) || []
-    : [];
-  const valid =
-    !offline &&
-    control.availability === "available" &&
-    points.some(
-      (p) =>
-        p.value !== null &&
-        Number.isFinite(p.value) &&
-        Number.isFinite(Date.parse(p.time)),
-    );
-  const Root = enhanced ? "article" : "button";
-  const Heading = enhanced ? "button" : "span";
+  const latest = hourly ? points.at(-1)?.value : null;
+  const Root = enhanced ? "article" : "button",
+    Heading = enhanced ? "button" : "span";
+  const start = Date.parse(history.data?.start || ""),
+    end = Date.parse(history.data?.end || "");
+  const label = en
+    ? `${labels[kind]} history, last 24 hours`
+    : `${labels[kind]} siste 24 timer`;
   return (
     <Root
       className={`home-metric-card metric-${kind}`}
       onClick={enhanced ? undefined : open}
       aria-label={`${labels[kind]}: ${control.name}`}
+      data-metric-level={enhanced ? assessment.level : undefined}
+      style={enhanced ? assessment.style : undefined}
     >
       <Heading
         className="home-metric-head"
@@ -172,55 +174,71 @@ export function HomeMetric({
         </strong>
         <ChevronRight size={18} />
       </Heading>
-      <span className="home-metric-reading">
-        {enhanced && kind === "temperature" ? (
-          <TemperatureValue
-            lang={lang}
-            unit={String(
-              control.attributes.temperature_unit ||
-                control.attributes.unit_of_measurement ||
-                "°C",
-            )}
-            value={
-              offline || control.availability !== "available"
-                ? null
-                : control.domain === "climate"
+      <div className="home-metric-value-row">
+        <span className="home-metric-reading">
+          {!available ? (
+            "—"
+          ) : hourly ? (
+            latest !== null && latest !== undefined ? (
+              `${latest.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 2 })} kWh`
+            ) : (
+              "—"
+            )
+          ) : enhanced && kind === "temperature" ? (
+            <TemperatureValue
+              lang={lang}
+              unit={metricUnit(control) || "°C"}
+              value={
+                control.domain === "climate"
                   ? climateTemperature
                   : numeric(control)
-            }
-          />
-        ) : offline || control.availability !== "available" ? (
-          "—"
-        ) : control.domain === "climate" && climateTemperature !== null ? (
-          `${climateTemperature.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })} ${String(control.attributes.temperature_unit || control.capabilities.find((c) => c.unit)?.unit || "°C")}`
-        ) : (
-          reading(control, lang)
+              }
+            />
+          ) : control.domain === "climate" && climateTemperature !== null ? (
+            `${climateTemperature.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })} ${metricUnit(control) || "°C"}`
+          ) : (
+            reading(control, lang)
+          )}
+        </span>
+        {enhanced && (
+          <span
+            className="home-metric-level"
+            title={assessment.detail}
+            aria-label={`${assessment.label}. ${assessment.detail}`}
+          >
+            {assessment.label}
+          </span>
         )}
+      </div>
+      <span className="home-metric-source">
+        {hourly
+          ? en
+            ? "Last completed hour · "
+            : "Siste hele time · "
+          : counter
+            ? en
+              ? "Meter total · "
+              : "Totalmåler · "
+            : ""}
+        {control.name}
       </span>
-      <span className="home-metric-source">{control.name}</span>
       {valid && enhanced ? (
         <HarmonyTrend
           points={points}
-          label={
-            en
-              ? `${labels[kind]} history, last 24 hours`
-              : `${labels[kind]} siste 24 timer`
-          }
-          unit={String(control.attributes.unit_of_measurement || "")}
+          label={label}
+          unit={history.data?.unit || metricUnit(control)}
           lang={lang}
+          domain={
+            Number.isFinite(start) && Number.isFinite(end)
+              ? { start, end }
+              : undefined
+          }
         />
       ) : valid ? (
-        <Chart
-          points={points}
-          label={
-            en
-              ? `${labels[kind]} history, last 24 hours`
-              : `${labels[kind]} siste 24 timer`
-          }
-        />
+        <Chart points={points} label={label} />
       ) : (
         <span className="home-metric-empty">
-          {offline || control.availability !== "available"
+          {!available
             ? en
               ? "Waiting for connection"
               : "Venter på forbindelse"
@@ -243,6 +261,11 @@ export function HomeMetric({
       )}
       <span className="home-metric-period">
         {en ? "Last 24 hours" : "Siste 24 timer"}
+        {enhanced && kind === "energy" && !counter
+          ? en
+            ? " · own history"
+            : " · egen historikk"
+          : ""}
       </span>
     </Root>
   );
@@ -322,7 +345,7 @@ export function HomeMetrics({
           control={energy}
           kind="energy"
           lang={lang}
-          offline={offline}
+          offline={offline || !home.connected}
           open={openEnergy}
         />
       )}
@@ -332,7 +355,7 @@ export function HomeMetrics({
           control={temp}
           kind="temperature"
           lang={lang}
-          offline={offline}
+          offline={offline || !home.connected}
           open={openClimate}
         />
       )}
@@ -342,7 +365,7 @@ export function HomeMetrics({
           control={humidity}
           kind="humidity"
           lang={lang}
-          offline={offline}
+          offline={offline || !home.connected}
           open={openClimate}
         />
       )}

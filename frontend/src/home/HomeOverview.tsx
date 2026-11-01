@@ -378,7 +378,7 @@ export function HomeOverview({
         <button
           onClick={() => changeTab("security")}
           className={
-            "home-status " +
+            "home-status status-security " +
             (model.alerts.length || offline
               ? "status-warning"
               : "status-safety")
@@ -394,7 +394,7 @@ export function HomeOverview({
                   ? `${model.alerts.length} ${t("å sjekke", "to check")}`
                   : model.open.length
                     ? `${model.open.length} ${t("åpne / aktive", "open / active")}`
-                    : t("Ingen registrerte avvik", "No reported issues")}
+                    : t("Ingen varsler", "No alerts")}
             </strong>
             <small>
               {model.security.length}{" "}
@@ -502,7 +502,7 @@ export function HomeOverview({
                 ? t("Venter på data", "Waiting for data")
                 : model.unavailable.length
                   ? `${model.unavailable.length} ${t("å sjekke", "to check")}`
-                  : t("Enhetene er tilgjengelige", "Devices are available")}
+                  : t("Tilgjengelige", "Available")}
             </strong>
             <small>
               {model.controls.length}{" "}

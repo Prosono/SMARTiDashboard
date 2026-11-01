@@ -289,6 +289,7 @@ def extras_router(store, user, ha, settings):
 
     async def read_history(c, hours):
         entity_id = c.entity_id
+        climate = c.domain == "climate"
         if settings.mode != "demo" and not ha.connected:
             raise HTTPException(503, "history_unavailable")
         start = datetime.now(UTC) - timedelta(hours=int(hours))
@@ -301,21 +302,37 @@ def extras_router(store, user, ha, settings):
                     "history/period/"
                     + quote(start.isoformat(), safe="")
                     + "?"
-                    + urlencode({"filter_entity_id": entity_id, "no_attributes": "", "minimal_response": ""}),
+                    + urlencode(
+                        {"filter_entity_id": entity_id, "significant_changes_only": "0"}
+                        if climate else
+                        {"filter_entity_id": entity_id, "no_attributes": "", "minimal_response": ""}
+                    ),
                 )
                 rows = data[0] if data else []
             except (HAError, TimeoutError):
                 raise HTTPException(503, "history_unavailable") from None
         points = []
         for row in rows:
-            stamp = row.get("last_changed") or row.get("last_updated")
+            if not isinstance(row, dict):
+                continue
+            stamp = (
+                row.get("last_updated") or row.get("last_changed")
+                if climate else row.get("last_changed") or row.get("last_updated")
+            )
             try:
                 datetime.fromisoformat(stamp)
             except (TypeError, ValueError):
                 continue
             try:
-                v = float(row.get("state"))
+                attributes = row.get("attributes")
+                attributes = attributes if isinstance(attributes, dict) else {}
+                value = attributes.get("current_temperature") if climate else row.get("state")
+                if isinstance(value, bool):
+                    raise ValueError("non_numeric_history_value")
+                v = float(value)
                 v = v if math.isfinite(v) else None
+                if climate and row.get("state") in {"unknown", "unavailable"}:
+                    v = None
             except (ValueError, TypeError):
                 v = None
             points.append({"time": stamp, "value": v, "state": str(row.get("state", "unknown"))[:80]})
@@ -326,7 +343,7 @@ def extras_router(store, user, ha, settings):
             bucket = points[i : i + stride]
             sampled.append(next((p for p in bucket if p["value"] is None), bucket[-1]))
         return {
-            "unit": c.attributes.get("unit_of_measurement"),
+            "unit": c.attributes.get("temperature_unit") if climate else c.attributes.get("unit_of_measurement"),
             "points": sampled,
             "minimum": min(values) if values else None,
             "maximum": max(values) if values else None,

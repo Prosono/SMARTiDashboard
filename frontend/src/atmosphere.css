@@ -17,10 +17,10 @@
   pointer-events: none;
   user-select: none;
   contain: strict;
-  opacity: 0.68;
+  opacity: 0.62;
 }
 html[data-theme="dark"] .atmosphere {
-  opacity: 0.88;
+  opacity: 0.78;
 }
 .atmosphere-wave {
   position: absolute;

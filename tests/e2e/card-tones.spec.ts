@@ -263,11 +263,14 @@ test("card types have visibly distinct color families with readable text across 
           ".home-canvas-surface[data-card-tone]",
         )) {
           const tone = surface.dataset.cardTone!,
-            style = getComputedStyle(surface),
+            metric = surface.querySelector(
+              ".home-metric-card[data-metric-level]",
+            ),
+            style = getComputedStyle(metric || surface),
             background = style.backgroundColor,
             stops = [background, style.getPropertyValue("--card-color")];
           if (surface.querySelector(".simple-weather")) continue;
-          colors.set(tone, background);
+          if (!metric) colors.set(tone, background);
           for (const text of surface.querySelectorAll(
             ".home-grid-routines h2, .people-heading h2, .home-metric-head strong, .home-metric-source, .home-metric-period, .ambient-heading strong, .ambient-source-note, .ambient-clock-date, .personal-graph-legend span, .personal-graph-legend strong",
           )) {

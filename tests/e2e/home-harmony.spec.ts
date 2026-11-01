@@ -476,6 +476,9 @@ test("missing history, loading commands, failures and disconnection show honest 
   await page.route("**/api/home/energy/statistics?*", (route) =>
     route.fulfill({ status: 503, json: { detail: "history_unavailable" } }),
   );
+  await page.route("**/api/controls/sensor.harmony_*/history?*", (route) =>
+    route.fulfill({ status: 503, json: { detail: "history_unavailable" } }),
+  );
   await login(page);
   await expect(
     page.locator('[data-card="metric:energy"] .metric-energy'),

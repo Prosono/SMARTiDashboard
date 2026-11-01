@@ -35,7 +35,7 @@ function SensorCard({
         control={c}
         kind={kind}
         enhanced
-        offline={offline}
+        offline={offline || !home.connected}
         lang={lang}
         open={() => open(true)}
       />
@@ -59,20 +59,28 @@ export function HomeDeviceCard({
   lang: string;
 }) {
   if (c.domain === "camera")
-    return <CameraCard c={c} lang={lang} offline={offline} />;
+    return (
+      <CameraCard c={c} lang={lang} offline={offline || !home.connected} />
+    );
   if (c.domain === "media_player")
     return (
       <MediaCard
         c={c}
         home={home}
         lang={lang}
-        offline={offline}
+        offline={offline || !home.connected}
         photo={new URL("home/home-multimedia.webp", document.baseURI).href}
       />
     );
   if (c.domain === "vacuum")
     return (
-      <VacuumCard c={c} home={home} lang={lang} offline={offline} simple />
+      <VacuumCard
+        c={c}
+        home={home}
+        lang={lang}
+        offline={offline || !home.connected}
+        simple
+      />
     );
   if (
     c.domain === "sensor" &&
@@ -83,8 +91,20 @@ export function HomeDeviceCard({
       String(c.attributes.device_class),
     )
   )
-    return <SensorCard c={c} home={home} lang={lang} offline={offline} />;
+    return (
+      <SensorCard
+        c={c}
+        home={home}
+        lang={lang}
+        offline={offline || !home.connected}
+      />
+    );
   return (
-    <HarmonyDevices controls={[c]} home={home} lang={lang} offline={offline} />
+    <HarmonyDevices
+      controls={[c]}
+      home={home}
+      lang={lang}
+      offline={offline || !home.connected}
+    />
   );
 }

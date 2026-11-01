@@ -7,11 +7,13 @@ export function HarmonyTrend({
   label,
   unit,
   lang,
+  domain,
 }: {
   points: TrendPoint[];
   label: string;
   unit: string;
   lang: string;
+  domain?: { start: number; end: number };
 }) {
   return (
     <MeasuredChart
@@ -20,6 +22,7 @@ export function HarmonyTrend({
       unit={unit}
       lang={lang}
       className="harmony-trend"
+      domain={domain}
     />
   );
 }

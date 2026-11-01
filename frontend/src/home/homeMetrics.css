@@ -128,3 +128,21 @@
     min-height: 48px;
   }
 }
+
+.home-metric-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.home-metric-level {
+  flex: none;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, currentColor 26%, transparent);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-top: 8px;
+}

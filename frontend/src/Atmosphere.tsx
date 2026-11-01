@@ -85,14 +85,24 @@ export function Atmosphere({ embedded = false }: { embedded?: boolean }) {
                 height="140%"
                 colorInterpolationFilters="sRGB"
               >
-                <feGaussianBlur stdDeviation="6" />
+                <feGaussianBlur stdDeviation="11" />
+              </filter>
+              <filter
+                id={`${id}-${color}-soft`}
+                x="-8%"
+                y="-20%"
+                width="116%"
+                height="140%"
+                colorInterpolationFilters="sRGB"
+              >
+                <feGaussianBlur stdDeviation="2.6" />
               </filter>
             </defs>
             <g
               fill="none"
               stroke={`url(#${id}-${color}-spectrum)`}
-              strokeWidth="10"
-              opacity=".24"
+              strokeWidth="14"
+              opacity=".22"
               filter={`url(#${id}-${color}-glow)`}
             >
               {ribbons.map((d, index) => (
@@ -101,9 +111,11 @@ export function Atmosphere({ embedded = false }: { embedded?: boolean }) {
             </g>
             <g
               fill={`url(#${id}-${color}-spectrum)`}
-              fillOpacity=".18"
+              fillOpacity=".2"
               stroke={`url(#${id}-${color}-spectrum)`}
-              strokeWidth="1.4"
+              strokeWidth="1.2"
+              strokeOpacity=".58"
+              filter={`url(#${id}-${color}-soft)`}
             >
               {ribbons.map((d, index) => (
                 <path key={index} d={d} />

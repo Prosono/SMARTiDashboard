@@ -1,3 +1,73 @@
+# Metric history, value-aware surfaces and photo-header pills — release 1.36.82
+
+RGB ribbons retain their geometry and slow transform-only motion, with softer
+edges, a wider diffused glow and lower opacity. Photo-header pills have colored
+icon plates, inset highlights, deeper shadows, clearer readings and hover/focus
+feedback. Short neutral status copy avoids unnecessarily tall summaries. Existing
+actions, alert counts, keyboard focus, reduced motion and shared banner heights
+remain. No additional source or device commands are introduced by the design.
+
+Power metric cards now prefer recorder state history and fall back to hourly
+statistics only when recorder readings are empty/unavailable. Values and graph
+units are normalized, including W/kW and Celsius/Fahrenheit. Initial known state
+is anchored at the requested window boundary; invalid points remain gaps.
+Energy counters prefer recorded hourly changes in kWh, with an explicit latest
+completed-hour reading. A raw-counter fallback is labelled Meter total and stays
+unclassified rather than comparing an accumulated total as consumption.
+
+The user selected comparison with the home's own history. Consumption colors use
+time-weighted 25th/75th percentiles from this source's last recorded day, requiring
+at least two hours of known, nonnegative intervals. Low is green, middle yellow,
+high red, and missing basis grey. Zero remains a valid reading. Negative power
+is labelled export; negative counter changes are not classified as power export.
+Null/negative intervals are excluded from consumption coverage. Color is also
+expressed by a text badge and explanatory description. Temperature uses blue below
+18°C, green through 24°C, yellow above 24°C and below 27°C, and red from 27°C;
+Fahrenheit is converted for classification. Relative humidity varies continuously
+from nearly white at 0% to deep blue at 100%. Foreground is chosen for contrast.
+Measurement cards, editor previews and expanded views use the same component.
+Classic/Living keep their existing material, while sharing the corrected history.
+
+Thermostat recorder requests retain full attributes and all updates, read actual
+current_temperature and use last_updated before last_changed. This preserves
+temperature changes while HVAC mode is unchanged. Invalid, boolean/nonfinite and
+unavailable readings remain null. The response only exposes measured value/state/
+time and the configured temperature unit, not the recorder attributes. Existing
+read authentication, entity lookup, allowed periods and offline errors remain.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file Prettier,
+  targeted Ruff check and `git diff --check`: passed. Existing Vite size advisory
+  remains. **238 frontend unit cases passed**, including recorder/statistics
+  fallbacks, unit conversion, source identity, counter totals, weighted durations,
+  gaps/coverage, export/reset handling, temperature bands, valid zero humidity and
+  contrast throughout all 101 integer humidity levels.
+- **16 related backend cases passed**. The two new thermostat scenarios cover C/F,
+  full-attribute query parameters, measured attributes, unchanged-mode timestamps,
+  missing/invalid/zero values, gaps, authentication, lookup and disconnection. They
+  also pass with the module imported directly from the final extracted archive.
+- **68 distinct desktop/mobile scenarios verified across the broad run and focused
+  rerun**. The broad run passed 65; three fixtures were adjusted for both history
+  sources and the existing 30-second availability grace period. All 10 repeated
+  history/metric scenarios then passed against the final archive. Its compiled
+  frontend is byte-identical to the broad-run bundle; only the backend thermostat
+  timestamp correction differs and has extracted-module verification above.
+  Coverage includes real recorder curves/gaps, fallback units, counters versus
+  hourly consumption, level changes, humidity progression, header navigation/fit,
+  disconnection, existing grids/room grouping, graph inspection, RGB light colors,
+  clock/sky cards, palettes, reduced motion and Classic/Living/media/energy charts.
+- A 2.2-second Chromium probe observed 133 intervals per viewport: desktop
+  1440×1050 median/95th percentile 16.7 ms, script 1.84 ms, layout 0.019 ms;
+  mobile 390×844 DPR 3 median 16.7 ms, 95th percentile 16.8 ms, script 2.24 ms,
+  layout 0.021 ms. This is test-environment evidence, not physical panel validation.
+- Desktop/mobile pills, metric cards and softened ribbons were visually inspected.
+  Packaging check passes and all **250 runtime files** match the final archive.
+  Tests use isolated demo/recorder fixtures; no real home equipment was controlled.
+  Existing broader repository limitations below continue to apply.
+
+---
+
 # Flowing spectrum ribbons and source-aware card colors — release 1.36.81
 
 The user supplied a new reference of translucent rainbow ribbons on a dark field.
