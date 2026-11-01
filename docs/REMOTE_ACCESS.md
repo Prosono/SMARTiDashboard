@@ -522,9 +522,17 @@ certificate, binds only to loopback and removes its temporary state on shutdown.
 The browser script accepts only a numeric local test port and never targets the
 public portal.
 
-Deployment status: prepared and verified in the repository; live cloud deployment
-is pending authenticated SSH access to the existing portal server. The documented
-control socket was absent and a BatchMode SSH attempt was rejected. A local HA app
-update alone does not update the central portal. Back up the cloud database before
-deploying the new cloud image; the relay and existing hub identities do not require
-changes for this feature.
+Deployed on 2026-11-01 as `smartihome:serial-1.36.78-20261101`, built from
+`37c2cd307d506d3765059827a2ee79045bbb357f` in
+`/home/omni/smartihome/releases/serial-1.36.78-37c2cd3`. A private SQLite online
+backup and the prior Compose file are in
+`/home/omni/smartihome/backups/serial-1.36.78-37c2cd3` (directory 0700, files 0600).
+The new image started and migrated an isolated copy with unchanged account/home/
+hub counts before activation. Production SQLite integrity and the additive schema
+were then checked; public HTTPS health passes, the served onboarding script is
+byte-identical to the tested source, and unauthenticated generation returns 401.
+The portal runs with zero restarts. Relay and edge images were preserved and were
+not restarted. No live serial was issued or hub created during verification.
+Rollback: restore `compose.yaml` from this backup as `compose.smartihome.yaml` and
+run Compose `up -d --no-deps smartihome`; previous image is
+`smartihome:fleet-versions-20261028`. The additive counter table may remain.

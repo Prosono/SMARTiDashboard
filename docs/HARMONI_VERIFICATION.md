@@ -1,3 +1,49 @@
+# Recognizable card type surfaces — release 1.36.79
+
+Harmoni's personal cards use four restrained color families: warm sand for lights,
+heating/daylight/calendar; sage for air, presence/rooms and cleaning; blue-grey for
+energy, security/system and clocks/horizon; plum for media, routines/scenes and the
+Moon. Unknown sources and mixed-category graphs remain neutral. Classification uses
+actual control domains, device classes and units, configured ambient type and stable
+built-in widget IDs. Translated or personal titles, live state and availability do
+not decide the color. Multiple comparable sources retain their shared type color.
+
+A shared presentation helper supplies `data-card-tone` to the card surface, builder
+preview and expanded view. Scoped OKLab material tokens mix each family with the
+selected palette and light/dark surface. Secondary text contrast, quiet inset
+controls and borders adapt with it. Existing weather artwork, gallery backgrounds,
+media imagery, shadows, focus/status colors and controls remain. Geometry and saved
+configuration are unchanged; no schema, API, device command or animation was added.
+Classic/Living and Energy's separate workspace retain their existing surfaces.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file Prettier
+  and `git diff --check`: passed. Vite retains its existing bundle-size advisory.
+- Frontend unit suite: **215 passed**. Five new cases cover stable widget IDs,
+  actual domain/class/unit metadata, all clock/sky designs, edited sources,
+  comparable/mixed/missing graph sources, unchanged state/availability behavior and
+  immutable configuration.
+- Extracted archive: **58 desktop/mobile browser scenarios passed**. Four new
+  scenarios check all four families on overview cards, all nine palettes in both
+  themes, sampled title/secondary text contrast of at least 4.5:1, no horizontal
+  overflow or saved-layout changes, type changes in editing and live preview,
+  gallery picture preservation, reload and the expanded graph view. Existing
+  grouping, grids, headers, controls, graphs, clock/sky cards, RGB atmosphere,
+  reduced motion, Classic/Living and multimedia/energy chart regressions pass.
+- Light/dark desktop/mobile color compositions were visually inspected. All
+  **250 runtime files** match the manifest; `scripts/package.py --check` passes.
+  Browser checks use the extracted backend/frontend and isolated demo fixtures;
+  no real home devices were controlled. Existing broader repository limitations
+  below still apply.
+
+The preceding 1.36.78 factory serial feature was also deployed to the live central
+portal after the user restored SSH access. Its private backup, isolated database
+migration check, image revision, public HTTPS/code/authorization checks and rollback
+are recorded in REMOTE_ACCESS.md. No live hub or serial was created for that check.
+
+---
+
 # Shared animated RGB atmosphere — release 1.36.77
 
 A shared fixed background adds three broad, softly diffused RGB wave envelopes to

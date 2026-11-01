@@ -1,0 +1,52 @@
+/* Stable type colors, independent of live state and personal grid positions. */
+html[data-home-style="harmony"] {
+  [data-card-tone] {
+    --card-identity: #8292a5;
+    --card-weight: 23%;
+    --card-color: color-mix(in oklab, var(--card-identity) 82%, var(--orange));
+    --card-material: color-mix(
+      in oklab,
+      var(--card-color) var(--card-weight),
+      var(--surface)
+    );
+    --equipment-surface: var(--card-material);
+    --equipment-muted-surface: color-mix(
+      in oklab,
+      var(--card-material) 48%,
+      var(--surface)
+    );
+    --equipment-line: color-mix(in oklab, var(--card-color) 23%, var(--line));
+    --harmony-border: var(--equipment-line);
+    --muted: color-mix(in oklab, var(--text) 78%, var(--card-material));
+  }
+  &[data-theme="dark"] [data-card-tone] {
+    --card-weight: 24%;
+  }
+  [data-card-tone="warm"] {
+    --card-identity: #dba157;
+  }
+  [data-card-tone="fresh"] {
+    --card-identity: #6eaa94;
+  }
+  [data-card-tone="cool"] {
+    --card-identity: #6698bb;
+  }
+  [data-card-tone="plum"] {
+    --card-identity: #a58bb7;
+  }
+  [data-card-tone="neutral"] {
+    --card-weight: 4%;
+  }
+
+  .home-canvas-surface[data-card-tone],
+  .home-canvas-cell[data-preview][data-card-tone],
+  .home-canvas-expanded[data-card-tone] {
+    background: var(--card-material);
+    border-color: var(--equipment-line);
+  }
+  [data-card-tone] .home-canvas-content > .simple-dashboard-tile,
+  .home-canvas-expanded[data-card-tone]
+    > :is(.media-player-card, .vacuum-card, .simple-dashboard-tile) {
+    background: var(--equipment-surface);
+  }
+}

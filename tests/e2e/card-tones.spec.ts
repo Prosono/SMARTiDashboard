@@ -1,0 +1,308 @@
+import {
+  test,
+  expect,
+  type Page,
+} from "../../frontend/node_modules/@playwright/test";
+
+const extra = (
+  domain: string,
+  key: string,
+  attributes = {},
+  actions: string[] = [],
+) => ({
+  id: `${domain}.tone_${key}`,
+  entity_id: `${domain}.tone_${key}`,
+  domain,
+  attributes,
+  name: key,
+  state:
+    domain === "weather"
+      ? "partlycloudy"
+      : domain === "vacuum"
+        ? "docked"
+        : "21",
+  device_id: null,
+  area_id: "living",
+  updated_at: null,
+  integration: null,
+  availability: "available",
+  diagnostic: false,
+  capabilities: actions.length ? [{ kind: domain, actions }] : [],
+});
+const config = (type: string, title: string, sources: string[] = []) => ({
+  type,
+  title,
+  sources,
+  icon: "auto",
+  image: "auto",
+  period: "24",
+});
+async function navigate(page: Page, name: string) {
+  await page
+    .getByRole("navigation", { name: "Hovedmeny" })
+    .getByRole("button", { name, exact: true })
+    .click();
+}
+async function appearance(page: Page) {
+  await navigate(page, "Innstillinger");
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+}
+async function setup(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem("smarti-home-style", "harmony");
+    localStorage.setItem("smarti-theme", "light");
+    localStorage.setItem("smarti-palette", "smarti");
+  });
+  const controls = [
+    extra("weather", "weather", { temperature: 12, temperature_unit: "°C" }),
+    extra("sensor", "power", {
+      device_class: "power",
+      unit_of_measurement: "W",
+    }),
+    extra("sensor", "temperature", {
+      device_class: "temperature",
+      unit_of_measurement: "°C",
+    }),
+    extra("sensor", "humidity", {
+      device_class: "humidity",
+      unit_of_measurement: "%",
+    }),
+    extra("media_player", "media", { volume_level: 0.3 }, [
+      "media_play",
+      "media_pause",
+    ]),
+    extra("vacuum", "vacuum", { battery_level: 88 }, [
+      "start",
+      "return_to_base",
+    ]),
+  ];
+  await page.route("**/api/home", async (route) => {
+    const response = await route.fetch(),
+      home = await response.json();
+    await route.fulfill({
+      json: { ...home, controls: [...home.controls, ...controls] },
+    });
+  });
+  await page.route("**/api/controls/sensor.tone_*/history**", (route) =>
+    route.fulfill({ json: { points: [], unit: "°C" } }),
+  );
+  const definitions: [string, string, any?][] = [
+    ["weather", "cool"],
+    ["routines", "plum"],
+    ["people", "fresh"],
+    ["calendar", "warm"],
+    ["lighting", "warm"],
+    ["climate", "warm"],
+    ["metric:energy", "cool"],
+    ["metric:temperature", "warm"],
+    ["metric:humidity", "fresh"],
+    ["device:media_player.tone_media", "plum"],
+    ["device:vacuum.tone_vacuum", "fresh"],
+    ["custom:tone_clock", "cool", config("clock", "Klokke hjemme")],
+    ["custom:tone_moon", "plum", config("moon", "Månen")],
+    ["summary:connection", "cool"],
+  ];
+  let saved = {
+    revision: 0,
+    items: definitions
+      .map(([id, , settings], i) => ({
+        id,
+        x: i % 3,
+        y: Math.floor(i / 3) * 2,
+        w: 1,
+        h: 2,
+        ...(settings ? { config: settings } : {}),
+      }))
+      .concat([
+        {
+          id: "custom:tone_graph",
+          x: 0,
+          y: 10,
+          w: 2,
+          h: 3,
+          config: config("graph", "Temperaturgraf", [
+            "sensor.tone_temperature",
+          ]),
+        },
+      ]),
+  };
+  await page.route("**/api/home/layout/overview", (route) => {
+    if (route.request().method() !== "GET")
+      saved = {
+        ...route.request().postDataJSON(),
+        revision: saved.revision + 1,
+      };
+    return route.fulfill({ json: saved });
+  });
+  await page.goto("/");
+  await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
+  await page
+    .getByLabel("Passord", { exact: true })
+    .fill("test-password-not-for-live");
+  await page.getByRole("button", { name: "Logg inn", exact: true }).click();
+  await expect(
+    page.getByRole("navigation", { name: "Hovedmeny" }),
+  ).toBeVisible();
+  if (
+    (await (await page.request.get("/api/home/experience")).json()).mode !==
+    "advanced"
+  ) {
+    await navigate(page, "Innstillinger");
+    await page
+      .locator('.experience-picker button[data-mode="advanced"]')
+      .click();
+    await navigate(page, "Hjem");
+  }
+  return { definitions, saved: () => saved };
+}
+
+test("card types have four distinct quiet surfaces with readable text across all palettes and themes", async ({
+  page,
+}, info) => {
+  test.setTimeout(90000);
+  const state = await setup(page),
+    original = structuredClone(state.saved());
+  const canvas = page.locator(".home-canvas");
+  await expect(canvas.locator(".home-canvas-cell")).toHaveCount(15);
+  for (const [id, tone] of state.definitions)
+    await expect(
+      canvas.locator(`[data-card="${id}"] > .home-canvas-surface`),
+    ).toHaveAttribute("data-card-tone", tone);
+  for (const theme of ["light", "dark"]) {
+    await appearance(page);
+    await page
+      .getByRole("combobox", { name: "Utseende", exact: true })
+      .selectOption(theme);
+    for (const palette of [
+      "SMARTi",
+      "SMARTi Sort",
+      "Midnatt",
+      "Kobber",
+      "Grafitt",
+      "Fjord",
+      "Skog",
+      "Sand",
+      "Plomme",
+    ]) {
+      await page
+        .getByRole("button", { name: `Palett: ${palette}`, exact: true })
+        .click();
+      await navigate(page, "Hjem");
+      const result = await canvas.evaluate((node) => {
+        const colors = new Map<string, string>();
+        const ctx = document.createElement("canvas").getContext("2d")!;
+        const luminance = (color: string) => {
+          ctx.clearRect(0, 0, 1, 1);
+          ctx.fillStyle = color;
+          ctx.fillRect(0, 0, 1, 1);
+          const rgb = [...ctx.getImageData(0, 0, 1, 1).data]
+            .slice(0, 3)
+            .map((n) => n / 255)
+            .map((n) =>
+              n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4,
+            );
+          return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+        };
+        const ratios: number[] = [];
+        for (const surface of node.querySelectorAll<HTMLElement>(
+          ".home-canvas-surface[data-card-tone]",
+        )) {
+          const tone = surface.dataset.cardTone!,
+            background = getComputedStyle(surface).backgroundColor;
+          if (surface.querySelector(".simple-weather")) continue;
+          colors.set(tone, background);
+          for (const text of surface.querySelectorAll(
+            ".home-grid-routines h2, .people-heading h2, .home-metric-head strong, .home-metric-source, .home-metric-period, .ambient-heading strong, .ambient-source-note, .ambient-clock-date",
+          )) {
+            const a = luminance(background),
+              b = luminance(getComputedStyle(text).color);
+            ratios.push((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05));
+          }
+        }
+        return { colors: [...colors.values()], ratios };
+      });
+      expect(new Set(result.colors).size).toBe(4);
+      expect(result.ratios.length).toBeGreaterThan(10);
+      expect(Math.min(...result.ratios)).toBeGreaterThanOrEqual(4.5);
+      if (palette === "SMARTi")
+        await canvas.screenshot({
+          path: `/private/tmp/smarti-card-tones-${theme}-${info.project.name}.png`,
+          animations: "disabled",
+        });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 1,
+        ),
+      ).toBe(true);
+      await appearance(page);
+    }
+  }
+  expect(state.saved()).toEqual(original);
+});
+
+test("type color follows editing, previews and the full-card view while custom pictures remain visible", async ({
+  page,
+}) => {
+  await setup(page);
+  const canvas = page.locator(".home-canvas");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Rediger kort: Klokke hjemme", exact: true })
+    .click();
+  const editor = page.getByRole("dialog", {
+    name: "Rediger kort",
+    exact: true,
+  });
+  await expect(
+    editor.locator(".card-builder-preview [data-card-tone]"),
+  ).toHaveAttribute("data-card-tone", "cool");
+  await editor.getByRole("button", { name: "Dagslys", exact: true }).click();
+  await expect(
+    editor.locator(".card-builder-preview [data-card-tone]"),
+  ).toHaveAttribute("data-card-tone", "warm");
+  await editor.locator(".card-appearance-options > summary").click();
+  await editor
+    .locator(".card-image-options")
+    .getByRole("button", { name: "Utendørs", exact: true })
+    .click();
+  await expect(editor.locator(".personal-card-backdrop")).toBeVisible();
+  await editor
+    .getByRole("button", { name: "Bruk endringer", exact: true })
+    .click();
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-editing", "false");
+  await expect(
+    canvas.locator('[data-card="custom:tone_clock"] .home-canvas-surface'),
+  ).toHaveAttribute("data-card-tone", "warm");
+  await expect(
+    canvas.locator('[data-card="custom:tone_clock"] .personal-card-backdrop'),
+  ).toBeVisible();
+  await page.reload();
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  const graph = canvas.locator('[data-card="custom:tone_graph"]');
+  await graph
+    .getByRole("combobox", { name: "Temperaturgraf: høyde", exact: true })
+    .selectOption("1");
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-editing", "false");
+  await graph
+    .getByRole("button", {
+      name: "Vis hele kortet: Temperaturgraf",
+      exact: true,
+    })
+    .click();
+  await expect(page.locator(".home-canvas-expanded")).toHaveAttribute(
+    "data-card-tone",
+    "warm",
+  );
+  await page
+    .getByRole("dialog", { name: "Temperaturgraf", exact: true })
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+});

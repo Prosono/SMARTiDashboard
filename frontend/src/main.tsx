@@ -115,6 +115,7 @@ import "./home/harmonyHeaders.css";
 import "./home/equipmentCards.css";
 import "./home/equipmentWidgets.css";
 import "./home/elegantCharts.css";
+import "./home/cardTones.css";
 import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";

@@ -3,6 +3,7 @@ import { Maximize2 } from "lucide-react";
 import { SettingsDialog } from "./SettingsDialog";
 import type { CardConfig } from "./homeGridModel";
 import { cardImageURL } from "./CardPresentation";
+import type { CardTone } from "./cardToneModel";
 
 /** Cards never scroll internally. Unusually dense/small cards offer the full view. */
 export function HomeGridContent({
@@ -11,12 +12,14 @@ export function HomeGridContent({
   lang,
   editing,
   config,
+  tone,
 }: {
   children: ReactNode;
   title: string;
   lang: string;
   editing: boolean;
   config?: CardConfig;
+  tone: CardTone;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -88,7 +91,9 @@ export function HomeGridContent({
       </div>
       {expanded && (
         <SettingsDialog title={title} lang={lang} onClose={() => expand(false)}>
-          <div className="home-canvas-expanded">{children}</div>
+          <div className="home-canvas-expanded" data-card-tone={tone}>
+            {children}
+          </div>
         </SettingsDialog>
       )}
     </>

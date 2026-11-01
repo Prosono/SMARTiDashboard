@@ -53,6 +53,7 @@ import { HomeGridGuard } from "./HomeGridGuard";
 import { HomeGridContent } from "./HomeGridContent";
 import { useGridMotion } from "./useGridMotion";
 import { useGridWiggle } from "./useGridWiggle";
+import { cardTone } from "./cardToneModel";
 
 export type HomeGridCard = {
   id: string;
@@ -644,6 +645,7 @@ export function HomeGrid({
           );
           const original = layout.find((saved) => saved.id === item.id)!;
           const cardTitle = original.config?.title || card.title;
+          const tone = cardTone(card, original.config, home.controls);
           const phase = Array.from(item.id).reduce(
             (sum, c) => sum + c.charCodeAt(0),
             0,
@@ -765,6 +767,7 @@ export function HomeGrid({
               )}
               <div
                 className="home-canvas-surface"
+                data-card-tone={tone}
                 style={
                   {
                     "--wiggle-angle": `${0.22 / Math.max(item.w, item.h / 2)}deg`,
@@ -778,6 +781,7 @@ export function HomeGrid({
                   lang={lang}
                   editing={editing}
                   config={original.config}
+                  tone={tone}
                 >
                   {original.config ? (
                     <ConfiguredHomeCard

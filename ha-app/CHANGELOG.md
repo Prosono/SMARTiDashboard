@@ -1,3 +1,8 @@
+## 1.36.79
+- Kortene i Harmoni har fått dempede bakgrunnsfarger etter type: varm sand for lys, varme og kalender; salvie for luft, personer og rengjøring; blågrått for energi, sikkerhet og klokker; plomme for media, måne og rutiner.
+- Fargetonene følger valgt palett og lyst/mørkt tema. Mindre tekst har fått tilpasset kontrast, mens statusfarger, bilder og kortenes skygger beholdes.
+- Fargen følger faktisk korttype og datakilde ved flytting, redigering og ny lasting. Forhåndsvisning og fullvisning bruker samme farge. Grafer med ulike fagområder og ukjente kort beholder en nøytral bakgrunn.
+
 ## 1.36.78
 - Sentral administrasjon → Huber har fått en «Generer»-knapp ved serienummerfeltet. Nummeret får formen `SMARTi-2026-000001`, med inneværende år og en løpende teller. Du kan fortsatt skrive inn et eget serienummer.
 - Telleren lagres i skyportalens database og fordeler ulike numre også ved samtidige forespørsler. Generatoren gjenbruker ikke tidligere utstedte numre når et skjema avbrytes eller en hub slettes. Eksisterende numre hoppes over.
