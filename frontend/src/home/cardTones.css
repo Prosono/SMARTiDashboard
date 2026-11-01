@@ -56,8 +56,8 @@ html[data-home-style="harmony"] {
     --card-strength: 88%;
   }
   [data-card-tone="lighting"] {
-    --card-identity: #b8205a;
-    --card-base: #6f1898;
+    --card-identity: #e8bf58;
+    --card-base: #e8bf58;
   }
   [data-card-tone="warm"] {
     --card-identity: #b44300;
@@ -74,6 +74,14 @@ html[data-home-style="harmony"] {
   [data-card-tone="plum"] {
     --card-identity: #7638a6;
     --card-base: #27244f;
+  }
+  [data-card-tone="media"] {
+    --card-identity: #913446;
+    --card-base: #421d35;
+  }
+  [data-card-tone="misc"] {
+    --card-identity: #70604c;
+    --card-base: #3a3632;
   }
 
   .home-canvas-surface[data-card-tone]:not([data-card-tone="neutral"]),

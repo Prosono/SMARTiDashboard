@@ -77,6 +77,25 @@ async function setup(page: Page) {
       "start",
       "return_to_base",
     ]),
+    extra("switch", "plug", {}, ["turn_on", "turn_off"]),
+    extra("lock", "door", {}, ["lock", "unlock"]),
+    {
+      ...extra("light", "rgb", { rgb_color: [255, 0, 0], color_mode: "rgb" }, [
+        "turn_on",
+        "turn_off",
+        "set_rgb_color",
+      ]),
+      state: "on",
+    },
+    {
+      ...extra(
+        "light",
+        "white",
+        { rgb_color: [255, 0, 0], color_mode: "color_temp" },
+        ["turn_on", "turn_off"],
+      ),
+      state: "on",
+    },
   ];
   await page.route("**/api/home", async (route) => {
     const response = await route.fetch(),
@@ -108,11 +127,13 @@ async function setup(page: Page) {
     ["metric:energy", "cool"],
     ["metric:temperature", "warm"],
     ["metric:humidity", "fresh"],
-    ["device:media_player.tone_media", "plum"],
+    ["device:media_player.tone_media", "media"],
     ["device:vacuum.tone_vacuum", "fresh"],
     ["custom:tone_clock", "cool", config("clock", "Klokke hjemme")],
     ["custom:tone_moon", "plum", config("moon", "Månen")],
-    ["summary:connection", "cool"],
+    ["summary:connection", "misc"],
+    ["device:switch.tone_plug", "misc"],
+    ["device:lock.tone_door", "cool"],
   ];
   let saved = {
     revision: 0,
@@ -129,7 +150,7 @@ async function setup(page: Page) {
         {
           id: "custom:tone_graph",
           x: 0,
-          y: 10,
+          y: 12,
           w: 2,
           h: 3,
           config: config("graph", "Temperaturgraf", [
@@ -165,7 +186,7 @@ async function setup(page: Page) {
       .click();
     await navigate(page, "Hjem");
   }
-  return { definitions, saved: () => saved };
+  return { definitions, controls, saved: () => saved };
 }
 
 test("card types have visibly distinct color families with readable text across all palettes and themes", async ({
@@ -175,7 +196,7 @@ test("card types have visibly distinct color families with readable text across 
   const state = await setup(page),
     original = structuredClone(state.saved());
   const canvas = page.locator(".home-canvas");
-  await expect(canvas.locator(".home-canvas-cell")).toHaveCount(15);
+  await expect(canvas.locator(".home-canvas-cell")).toHaveCount(17);
   for (const [id, tone] of state.definitions)
     await expect(
       canvas.locator(`[data-card="${id}"] > .home-canvas-surface`),
@@ -288,7 +309,7 @@ test("card types have visibly distinct color families with readable text across 
           weakest,
         };
       });
-      expect(new Set(result.colors).size).toBe(5);
+      expect(new Set(result.colors).size).toBe(7);
       // Perceptual distance catches a return to almost indistinguishable tints.
       expect(
         Math.min(...result.separation),
@@ -383,4 +404,105 @@ test("type color follows editing, previews and the full-card view while custom p
     .getByRole("dialog", { name: "Temperaturgraf", exact: true })
     .getByRole("button", { name: "Lukk innstillinger", exact: true })
     .click();
+});
+
+test("light surfaces follow confirmed RGB changes, keep white lights yellow and retain their color in preview and full view", async ({
+  page,
+}) => {
+  test.setTimeout(45000);
+  const state = await setup(page),
+    rgb = state.controls.find((c) => c.entity_id === "light.tone_rgb")!,
+    attrs = rgb.attributes as Record<string, unknown>;
+  const item = {
+    id: "custom:live_rgb",
+    x: 0,
+    y: 16,
+    w: 1,
+    h: 3,
+    config: config("auto", "Fargelyset", [rgb.entity_id]),
+  };
+  state.saved().items.push(item, {
+    id: "custom:white_light",
+    x: 1,
+    y: 16,
+    w: 1,
+    h: 3,
+    config: config("auto", "Hvitt lys", ["light.tone_white"]),
+  });
+  let sent = 0;
+  await page.route("**/api/controls/light.tone_rgb/commands", (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.action).toBe("set_rgb_color");
+    attrs.rgb_color = body.value;
+    attrs.color_mode = "rgb";
+    sent++;
+    return route.fulfill({ json: { status: "confirmed" } });
+  });
+  await page.reload();
+  const card = page.locator('[data-card="custom:live_rgb"]'),
+    surface = card.locator(".home-canvas-surface");
+  await expect(surface).toHaveCSS("background-color", "rgb(255, 0, 0)");
+  await expect(
+    page.locator('[data-card="custom:white_light"] .home-canvas-surface'),
+  ).toHaveCSS("background-color", "rgb(243, 205, 102)");
+  await card.getByRole("button", { name: "rgb: Grønn", exact: true }).click();
+  await expect(surface).toHaveCSS("background-color", "rgb(46, 215, 105)");
+  expect(sent).toBe(1);
+  for (const theme of ["light", "dark"])
+    for (const color of [
+      [255, 0, 0],
+      [0, 0, 255],
+      [255, 255, 0],
+      [33, 171, 211],
+    ]) {
+      attrs.rgb_color = color;
+      await page.reload();
+      await page.evaluate(
+        ({ theme }) => {
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.dataset.palette = "skog";
+        },
+        { theme },
+      );
+      await expect(surface).toHaveCSS(
+        "background-color",
+        `rgb(${color.join(", ")})`,
+      );
+    }
+  rgb.state = "off";
+  await page.reload();
+  await expect(surface).toHaveCSS("background-color", "rgb(243, 205, 102)");
+  rgb.state = "on";
+  attrs.rgb_color = [0, 0, 255];
+  await page.reload();
+  const canvas = page.locator(".home-canvas");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await card
+    .getByRole("combobox", { name: "Fargelyset: høyde", exact: true })
+    .selectOption("1");
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-editing", "false");
+  await card
+    .getByRole("button", { name: "Vis hele kortet: Fargelyset", exact: true })
+    .click();
+  await expect(page.locator(".home-canvas-expanded")).toHaveCSS(
+    "background-color",
+    "rgb(0, 0, 255)",
+  );
+  await page
+    .getByRole("dialog", { name: "Fargelyset", exact: true })
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  await page
+    .locator(".home-canvas")
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Rediger kort: Fargelyset", exact: true })
+    .click();
+  await expect(
+    page.locator(".card-builder-preview [data-card-tone]"),
+  ).toHaveCSS("background-color", "rgb(0, 0, 255)");
 });

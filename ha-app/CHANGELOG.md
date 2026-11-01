@@ -1,3 +1,9 @@
+## 1.36.81
+- RGB-bakgrunnen er redesignet etter referansebildet: flytende, transparente fargebånd med smale, lysende kanter og rolig bevegelse. Gjelder hele appen, med støtte for stillestående bakgrunn, redusert bevegelse og lyst/mørkt tema.
+- Lyskort følger lysets faktiske, rapporterte RGB-farge når lyset er på. Hvitt lys, manglende fargedata, avslåtte og utilgjengelige lys får en varm gul grunntone. En lysgruppe følger felles farge når alle påslåtte lys har samme farge; grupper med ulike farger får gul grunntone.
+- Tekst og innfelte kontroller tilpasser seg bakgrunnsfargens lyshet for god lesbarhet. Samme farge brukes i redigering, forhåndsvisning og fullvisning, og oppdateres etter bekreftede fargeendringer.
+- Multimedia har fått en egen dyp vinrød tone. Vanlige brytere, stikkontakter, solskjerming og systemkort har fått varm bronse/grafitt. Sikkerhet, inkludert garasjeporter, beholder blått.
+
 ## 1.36.80
 - Kortene i Harmoni har fått mettede fargeflater og myke gradienter inspirert av Homey: rosa/lilla for lys, varm oransje for varme og kalender, grønt for luft og personer, blått for energi og sikkerhet, og dyp plomme for media og rutiner.
 - Lys tekst, innfelte kontroller og lysere grafkurver er tilpasset de fargede kortene i både lyst og mørkt tema. Bilder, statusvarsler og personlige oppsett beholdes, og forhåndsvisning og fullvisning bruker samme uttrykk.

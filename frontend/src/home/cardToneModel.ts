@@ -2,15 +2,27 @@ import type { Control } from "../types";
 import type { CardConfig } from "./homeGridModel";
 
 export type CardTone =
-  "lighting" | "warm" | "fresh" | "cool" | "plum" | "neutral";
+  | "lighting"
+  | "warm"
+  | "fresh"
+  | "cool"
+  | "media"
+  | "misc"
+  | "plum"
+  | "neutral";
 
 function controlTone(control: Control): CardTone {
   const { domain, attributes } = control;
   const kind = String(attributes.device_class || ""),
     unit = String(attributes.unit_of_measurement || "");
-  if (["media_player", "scene", "script", "automation"].includes(domain))
-    return "plum";
+  if (domain === "media_player") return "media";
+  if (["scene", "script", "automation"].includes(domain)) return "plum";
   if (domain === "light") return "lighting";
+  if (
+    ["switch", "input_boolean"].includes(domain) ||
+    (domain === "cover" && !["garage", "gate", "door"].includes(kind))
+  )
+    return "misc";
   if (
     ["lock", "alarm_control_panel", "binary_sensor", "cover"].includes(domain)
   )
@@ -35,7 +47,7 @@ function controlTone(control: Control): CardTone {
   )
     return "fresh";
   if (
-    ["weather", "switch", "input_boolean"].includes(domain) ||
+    domain === "weather" ||
     ["power", "energy", "battery", "voltage", "current"].includes(kind) ||
     ["W", "kW", "Wh", "kWh"].includes(unit)
   )
@@ -51,14 +63,14 @@ const widgetTones: Record<string, CardTone> = {
   calendar: "warm",
   lighting: "lighting",
   climate: "warm",
-  media: "plum",
+  media: "media",
   vacuum: "fresh",
   "metric:energy": "cool",
   "metric:temperature": "warm",
   "metric:humidity": "fresh",
   "summary:alerts": "cool",
-  "summary:batteries": "cool",
-  "summary:connection": "cool",
+  "summary:batteries": "misc",
+  "summary:connection": "misc",
 };
 
 /** Presentation follows actual sources/type, never a translated or user-written title. */

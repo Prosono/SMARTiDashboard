@@ -53,6 +53,7 @@ import {
 import { ambientGlyph, ClockFace, useSky } from "./AmbientCard";
 import { useWallTime } from "./useWallTime";
 import { cardTone } from "./cardToneModel";
+import { lightCardStyle } from "./lightCardModel";
 
 export type CardSelection = { base?: HomeGridCard; config: CardConfig };
 type Stage = "start" | "devices" | "widgets" | "ambient" | "configure";
@@ -1074,6 +1075,16 @@ export function CardBuilder({
                   className="home-canvas-cell"
                   data-preview
                   data-card-tone={cardTone(base, previewConfig, home.controls)}
+                  style={
+                    cardTone(base, previewConfig, home.controls) === "lighting"
+                      ? lightCardStyle(
+                          base,
+                          previewConfig,
+                          home.controls,
+                          home.connected && !offline,
+                        )
+                      : undefined
+                  }
                 >
                   <div
                     className="home-canvas-viewport"

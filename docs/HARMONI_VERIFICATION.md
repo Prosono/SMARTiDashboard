@@ -1,3 +1,61 @@
+# Flowing spectrum ribbons and source-aware card colors — release 1.36.81
+
+The user supplied a new reference of translucent rainbow ribbons on a dark field.
+The shared background now uses tapered native SVG ribbons, spectrum gradients,
+transparent folds, fine colored edges and a small soft glow. The broad DNA helix
+and crosslinks are replaced. Three existing transform layers retain their slow
+46/57/63-second cycles. Light mode uses the same ribbons on its light base; dark
+mode has stronger ribbon opacity. No per-frame JavaScript, audio input, external
+asset/service or new dependency is used. Login remains a single embedded
+composition. Pause, hidden-document pause, reduced motion, forced colors, print,
+inert decoration and click-through navigation retain their existing behavior.
+
+Security retains its blue surface. Media players and the media widget have a
+separate deep wine surface. Ordinary switches, sockets, shades and system summary
+cards use warm bronze/graphite; garage/gate/door covers retain security blue.
+Scenes/routines, clocks/sky, heating and air/cleaning keep their respective colors.
+Classification uses actual domains/classes and stable widget IDs, not titles.
+
+Lighting defaults to warm yellow. Available, on lights in color modes use their
+exact valid reported RGB, without accent mixing or dark-theme dimming. HA-derived
+RGB for HS/XY color modes is accepted. Explicit white/color-temperature modes
+ignore retained RGB values. Invalid/achromatic, off, unavailable or disconnected
+sources use yellow. A group follows a common real color only when all available
+on lights agree; mixed colors or whites use yellow rather than a fabricated RGB
+average. Foreground and inset surfaces adapt to RGB luminance. This read-only
+presentation is shared by grid cards, editing previews and expanded cards and
+reacts to confirmed source changes. No user layout or device API is changed.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file Prettier
+  and `git diff --check`: passed. The existing Vite chunk-size advisory remains.
+  Frontend unit suite: **221 passed**. Six added light-surface cases cover exact
+  RGB, derived color modes, stale white-mode RGB, invalid values, connectivity,
+  grouping, edited sources and immutable inputs; text contrast is sampled at 729
+  RGB combinations including the black/white crossover. Type tests distinguish
+  media, ordinary switches/shades and security garage/gate/door covers.
+- Final extracted archive: **60 desktop/mobile browser scenarios passed**. Seven
+  category surfaces remain perceptually distinct across all nine palettes and
+  both themes, with sampled text contrast of 4.5:1 and graph strokes of 3:1.
+  Added RGB scenarios verify confirmed live color changes, exact red/blue/yellow/
+  turquoise across themes, white-mode stale RGB and off-state yellow, palette
+  independence, actual UI resize/save, expanded color and editor preview. Existing
+  photo headers, room grouping, controls, grid motion, graphs, clock/sky, global
+  background navigation/pause/reduced motion and Classic/Living/media/energy
+  regressions pass. Full-view testing resizes via the real UI and waits for save.
+- A 2.2-second headless Chromium probe without concurrent browser tests observed
+  133 intervals on each viewport: desktop 1440×1050 median 16.7 ms, 95th percentile
+  16.8 ms, script 1.62 ms, layout 0.016 ms; mobile 390×844 DPR 3 median/95th
+  percentile 16.7 ms, script 1.04 ms, layout 0.018 ms. These are test-environment
+  observations, not physical wall-panel performance guarantees.
+- Light/dark desktop/mobile ribbon and card compositions were visually inspected.
+  All **250 runtime files** match the extracted manifest; packaging check passes.
+  Browser checks use isolated demo sources, including intercepted color commands;
+  no real home devices were controlled. Broader existing limitations below apply.
+
+---
+
 # Stronger card colors and diffuse RGB helix — release 1.36.80
 
 Harmoni's cards have saturated type surfaces with soft gradients and light text,

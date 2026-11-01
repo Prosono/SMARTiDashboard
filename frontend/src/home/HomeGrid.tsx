@@ -54,6 +54,7 @@ import { HomeGridContent } from "./HomeGridContent";
 import { useGridMotion } from "./useGridMotion";
 import { useGridWiggle } from "./useGridWiggle";
 import { cardTone } from "./cardToneModel";
+import { lightCardStyle } from "./lightCardModel";
 
 export type HomeGridCard = {
   id: string;
@@ -646,6 +647,15 @@ export function HomeGrid({
           const original = layout.find((saved) => saved.id === item.id)!;
           const cardTitle = original.config?.title || card.title;
           const tone = cardTone(card, original.config, home.controls);
+          const lightStyle =
+            tone === "lighting"
+              ? lightCardStyle(
+                  card,
+                  original.config,
+                  home.controls,
+                  home.connected && !offline,
+                )
+              : undefined;
           const phase = Array.from(item.id).reduce(
             (sum, c) => sum + c.charCodeAt(0),
             0,
@@ -770,6 +780,7 @@ export function HomeGrid({
                 data-card-tone={tone}
                 style={
                   {
+                    ...lightStyle,
                     "--wiggle-angle": `${0.22 / Math.max(item.w, item.h / 2)}deg`,
                     "--wiggle-duration": `${560 + (phase % 5) * 37}ms`,
                     "--wiggle-delay": `${-(phase % 900)}ms`,
@@ -782,6 +793,7 @@ export function HomeGrid({
                   editing={editing}
                   config={original.config}
                   tone={tone}
+                  lightStyle={lightStyle}
                 >
                   {original.config ? (
                     <ConfiguredHomeCard

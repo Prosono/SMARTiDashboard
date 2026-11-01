@@ -35,18 +35,12 @@ export function AtmosphereProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Two opposing waves with soft crosslinks form one continuous double helix.
-// Geometry is created once. Only the three containing color layers move.
-const strands = [
-  "M-400 300 C-266.667 100 -133.333 100 0 300 S266.667 500 400 300 S666.667 100 800 300 S1066.667 500 1200 300 S1466.667 100 1600 300 S1866.667 500 2000 300",
-  "M-400 300 C-266.667 500 -133.333 500 0 300 S266.667 100 400 300 S666.667 500 800 300 S1066.667 100 1200 300 S1466.667 500 1600 300 S1866.667 100 2000 300",
+// Tapered, translucent ribbons with iridescent edges, like the supplied reference.
+// Their geometry stays static; only three containing layers animate.
+const ribbons = [
+  "M-160 170 C90 180 225 440 450 395 C610 360 650 65 780 185 C1010 390 1270 435 1760 260 L1760 267 C1280 475 1030 440 775 230 C665 125 625 410 455 425 C225 475 85 200 -160 170 Z",
+  "M-160 365 C135 300 295 310 480 270 C655 230 650 130 800 220 C1005 340 1280 300 1760 330 L1760 334 C1260 325 1000 395 795 260 C670 170 655 275 485 295 C280 330 110 325 -160 365 Z",
 ];
-const crosslinks = Array.from({ length: 30 }, (_, index) => {
-  const x = -360 + index * 80,
-    phase = (((x % 400) + 400) % 400) / 400,
-    height = 600 * phase * (1 - phase);
-  return { x, y1: 300 - height, y2: 300 + height };
-});
 
 export function Atmosphere({ embedded = false }: { embedded?: boolean }) {
   const id = useId().replaceAll(":", ""),
@@ -63,65 +57,57 @@ export function Atmosphere({ embedded = false }: { embedded?: boolean }) {
           <svg viewBox="0 0 1600 600" preserveAspectRatio="none">
             <defs>
               <linearGradient
-                id={`${id}-${color}-fade`}
+                id={`${id}-${color}-spectrum`}
                 gradientUnits="userSpaceOnUse"
-                x1="-200"
-                x2="1800"
+                x1="-160"
+                x2="1760"
               >
-                <stop stopColor="currentColor" stopOpacity="0" />
-                <stop offset=".22" stopColor="currentColor" />
-                <stop offset=".78" stopColor="currentColor" />
-                <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+                <stop stopColor="var(--atmosphere-blue)" stopOpacity="0" />
+                <stop offset=".13" stopColor="var(--atmosphere-blue)" />
+                <stop offset=".25" stopColor="var(--atmosphere-red)" />
+                <stop offset=".39" stopColor="var(--atmosphere-red)" />
+                <stop offset=".46" stopColor="var(--atmosphere-amber)" />
+                <stop offset=".51" stopColor="var(--atmosphere-green)" />
+                <stop offset=".59" stopColor="var(--atmosphere-cyan)" />
+                <stop offset=".72" stopColor="var(--atmosphere-blue)" />
+                <stop offset=".87" stopColor="var(--atmosphere-violet)" />
+                <stop
+                  offset="1"
+                  stopColor="var(--atmosphere-red)"
+                  stopOpacity="0"
+                />
               </linearGradient>
               <filter
-                id={`${id}-${color}-soft`}
-                x="-10%"
-                y="-50%"
-                width="120%"
-                height="200%"
+                id={`${id}-${color}-glow`}
+                x="-8%"
+                y="-20%"
+                width="116%"
+                height="140%"
                 colorInterpolationFilters="sRGB"
               >
-                <feGaussianBlur stdDeviation="26" />
-              </filter>
-              <filter
-                id={`${id}-${color}-thread`}
-                x="-5%"
-                y="-15%"
-                width="110%"
-                height="130%"
-                colorInterpolationFilters="sRGB"
-              >
-                <feGaussianBlur stdDeviation="3.5" />
+                <feGaussianBlur stdDeviation="6" />
               </filter>
             </defs>
             <g
-              className="atmosphere-helix-glow"
               fill="none"
-              stroke={`url(#${id}-${color}-fade)`}
-              strokeWidth="76"
-              opacity=".8"
-              filter={`url(#${id}-${color}-soft)`}
+              stroke={`url(#${id}-${color}-spectrum)`}
+              strokeWidth="10"
+              opacity=".24"
+              filter={`url(#${id}-${color}-glow)`}
             >
-              {strands.map((d, index) => (
+              {ribbons.map((d, index) => (
                 <path key={index} d={d} />
               ))}
             </g>
             <g
-              className="atmosphere-helix-thread"
-              fill="none"
-              stroke={`url(#${id}-${color}-fade)`}
-              strokeWidth="7"
-              opacity=".7"
-              filter={`url(#${id}-${color}-thread)`}
+              fill={`url(#${id}-${color}-spectrum)`}
+              fillOpacity=".18"
+              stroke={`url(#${id}-${color}-spectrum)`}
+              strokeWidth="1.4"
             >
-              {strands.map((d, index) => (
+              {ribbons.map((d, index) => (
                 <path key={index} d={d} />
               ))}
-              <g strokeWidth="4" strokeLinecap="round" opacity=".52">
-                {crosslinks.map(({ x, y1, y2 }) => (
-                  <line key={x} x1={x} x2={x} y1={y1} y2={y2} />
-                ))}
-              </g>
             </g>
           </svg>
         </div>
@@ -149,8 +135,8 @@ export function BackgroundMotionSetting({ lang }: { lang: string }) {
       </label>
       <p className="note">
         {en
-          ? "Soft, intertwined RGB waves follow your theme throughout the app. Your device’s reduced motion setting is respected."
-          : "Myke RGB-bølger slynger seg rundt hverandre og følger temaet ditt i hele appen. Enhetens valg for redusert bevegelse respekteres."}
+          ? "Flowing RGB ribbons follow your theme throughout the app. Your device’s reduced motion setting is respected."
+          : "Flytende RGB-fargebånd følger temaet ditt i hele appen. Enhetens valg for redusert bevegelse respekteres."}
       </p>
     </>
   );

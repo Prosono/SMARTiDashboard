@@ -1,12 +1,15 @@
-/* A diffused RGB double helix behind the UI; surfaces remain opaque and readable. */
+/* Iridescent ribbons behind the UI, with transparent folds and fine colored edges. */
 #root {
   isolation: isolate;
   min-height: 100svh;
 }
 .atmosphere {
-  --atmosphere-red: color-mix(in oklab, #d16e7a 84%, var(--orange));
-  --atmosphere-green: color-mix(in oklab, #4fa482 86%, var(--orange));
-  --atmosphere-blue: color-mix(in oklab, #638acb 86%, var(--orange));
+  --atmosphere-red: color-mix(in oklab, #f52b8e 94%, var(--orange));
+  --atmosphere-green: color-mix(in oklab, #a9ec42 94%, var(--orange));
+  --atmosphere-blue: color-mix(in oklab, #327df5 94%, var(--orange));
+  --atmosphere-amber: color-mix(in oklab, #ffe84a 96%, var(--orange));
+  --atmosphere-cyan: color-mix(in oklab, #26dfde 96%, var(--orange));
+  --atmosphere-violet: color-mix(in oklab, #b843ed 94%, var(--orange));
   position: fixed;
   inset: 0;
   z-index: -1;
@@ -14,17 +17,17 @@
   pointer-events: none;
   user-select: none;
   contain: strict;
-  opacity: 0.48;
+  opacity: 0.68;
 }
 html[data-theme="dark"] .atmosphere {
-  opacity: 0.36;
+  opacity: 0.88;
 }
 .atmosphere-wave {
   position: absolute;
-  width: 150%;
-  height: 100%;
-  left: -25%;
-  top: 0;
+  width: 130%;
+  height: 65%;
+  left: -15%;
+  top: 17%;
   transform-origin: center;
   animation: atmosphere-flow 46s cubic-bezier(0.45, 0, 0.55, 1) infinite
     alternate;
@@ -40,14 +43,14 @@ html[data-theme="dark"] .atmosphere {
 }
 .atmosphere-green {
   color: var(--atmosphere-green);
-  top: 4%;
+  top: 22%;
   animation-duration: 57s;
   animation-delay: -43s;
   animation-direction: alternate-reverse;
 }
 .atmosphere-blue {
   color: var(--atmosphere-blue);
-  top: -5%;
+  top: 12%;
   animation-duration: 63s;
   animation-delay: -8s;
 }
@@ -69,22 +72,22 @@ html[data-theme="dark"] .atmosphere {
 #root:has(.login) > .atmosphere {
   display: none;
 }
-.login > .atmosphere-embedded {
+html .login > .atmosphere-embedded {
   position: absolute;
-  opacity: 0.32;
+  opacity: 0.4;
 }
 @media (max-width: 700px) {
   .atmosphere-wave {
-    width: 240%;
-    left: -70%;
-    height: 90%;
-    top: 10%;
+    width: 210%;
+    left: -55%;
+    height: 58%;
+    top: 24%;
   }
   .atmosphere-green {
-    top: 17%;
+    top: 29%;
   }
   .atmosphere-blue {
-    top: 8%;
+    top: 19%;
   }
 }
 @media (prefers-reduced-motion: reduce) {

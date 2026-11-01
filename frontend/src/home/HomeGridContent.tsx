@@ -1,4 +1,10 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 import { Maximize2 } from "lucide-react";
 import { SettingsDialog } from "./SettingsDialog";
 import type { CardConfig } from "./homeGridModel";
@@ -13,6 +19,7 @@ export function HomeGridContent({
   editing,
   config,
   tone,
+  lightStyle,
 }: {
   children: ReactNode;
   title: string;
@@ -20,6 +27,7 @@ export function HomeGridContent({
   editing: boolean;
   config?: CardConfig;
   tone: CardTone;
+  lightStyle?: CSSProperties;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -91,7 +99,11 @@ export function HomeGridContent({
       </div>
       {expanded && (
         <SettingsDialog title={title} lang={lang} onClose={() => expand(false)}>
-          <div className="home-canvas-expanded" data-card-tone={tone}>
+          <div
+            className="home-canvas-expanded"
+            data-card-tone={tone}
+            style={lightStyle}
+          >
             {children}
           </div>
         </SettingsDialog>
