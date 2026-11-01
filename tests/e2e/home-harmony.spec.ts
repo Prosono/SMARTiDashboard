@@ -577,7 +577,7 @@ test.afterEach(async ({ page }) => {
   });
 });
 
-test("photo headers center the actual alert count, respect reduced motion and keep home/date above tabs", async ({
+test("photo headers use the standard red alert at top left, respect reduced motion and keep home/date above tabs", async ({
   page,
 }, info) => {
   await page.addInitScript(() =>
@@ -611,6 +611,34 @@ test("photo headers center the actual alert count, respect reduced motion and ke
     route.fulfill({ json: { days: {}, temperature_unit: "°C" } }),
   );
   await login(page);
+  const warningOffset = (el: Element) => {
+    const header = el
+        .closest(".home-hero-focus, .simple-welcome")!
+        .getBoundingClientRect(),
+      button = el.getBoundingClientRect();
+    return { x: button.x - header.x, y: button.y - header.y };
+  };
+  const warningStyle = (el: Element) => {
+    const button = getComputedStyle(el),
+      badge = getComputedStyle(el.querySelector("span")!);
+    return {
+      color: button.color,
+      border: button.border,
+      radius: button.borderRadius,
+      width: button.width,
+      badge: badge.backgroundColor,
+      badgeColor: badge.color,
+    };
+  };
+  await appearance(page);
+  await page.getByLabel("Stil for Hjem").selectOption("classic");
+  await navigate(page, "Hjem");
+  const standardWarning = await page
+    .locator(".home-alert-corner .simple-warning-button")
+    .evaluate(warningStyle);
+  await appearance(page);
+  await page.getByLabel("Stil for Hjem").selectOption("harmony");
+  await navigate(page, "Hjem");
   const header = page.locator(".home-hero-stage");
   const alert = header.getByRole("button", {
     name: "Trenger din oppmerksomhet: 19",
@@ -637,30 +665,27 @@ test("photo headers center the actual alert count, respect reduced motion and ke
   );
   for (const width of [1440, 834, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
-    const heroBox = (await header.locator(".home-hero-focus").boundingBox())!,
-      alertBox = (await alert.boundingBox())!;
-    expect(
-      Math.abs(alertBox.x + alertBox.width / 2 - heroBox.x - heroBox.width / 2),
-    ).toBeLessThan(2);
-    expect(
-      Math.abs(
-        alertBox.y + alertBox.height / 2 - heroBox.y - heroBox.height / 2,
-      ),
-    ).toBeLessThan(2);
+    await expect
+      .poll(async () => {
+        const offset = await alert.evaluate(warningOffset);
+        return Math.max(
+          Math.abs(offset.x - (width <= 600 ? 22 : 32)),
+          Math.abs(offset.y - (width <= 600 ? 22 : 24)),
+        );
+      })
+      .toBeLessThan(0.5);
+    const alertBox = (await alert.boundingBox())!;
+    expect(await alert.evaluate(warningStyle)).toEqual(standardWarning);
     if (width <= 1000) {
       const weather = (await page
         .locator('.home-canvas [data-card="weather"]')
         .boundingBox())!;
       expect(alertBox.y + alertBox.height + 8).toBeLessThanOrEqual(weather.y);
     }
-    if (width <= 600) {
-      const greetingBox = (await header
-        .locator(".home-welcome-content")
-        .boundingBox())!;
-      expect(greetingBox.y + greetingBox.height + 8).toBeLessThanOrEqual(
-        alertBox.y,
-      );
-    }
+    const greetingBox = (await header
+      .locator(".home-welcome-content")
+      .boundingBox())!;
+    expect(alertBox.y + alertBox.height + 8).toBeLessThanOrEqual(greetingBox.y);
     const meta = (await page.locator(".home-toolbar").boundingBox())!,
       tabs = (await page
         .getByRole("tablist", { name: "Visninger i Hjem" })
@@ -671,7 +696,7 @@ test("photo headers center the actual alert count, respect reduced motion and ke
         .locator("body")
         .evaluate((el) => el.scrollWidth <= el.clientWidth),
     ).toBe(true);
-    await page.screenshot({
+    await header.screenshot({
       path: `/private/tmp/smarti-header-${width}-${info.project.name}.png`,
       animations: "disabled",
     });
@@ -685,12 +710,46 @@ test("photo headers center the actual alert count, respect reduced motion and ke
   await expect(page.locator(".home-alert-list li")).toHaveCount(19);
   await page.keyboard.press("Escape");
   await expect(alert).toBeFocused();
+  await appearance(page);
+  await page
+    .getByRole("combobox", { name: "Utseende", exact: true })
+    .selectOption("dark");
+  await navigate(page, "Hjem");
+  expect(await alert.evaluate(warningStyle)).toEqual(standardWarning);
   await page.emulateMedia({ reducedMotion: "reduce" });
   expect(
     await alert.evaluate(
       (el) => getComputedStyle(el, "::before").animationName,
     ),
   ).toBe("none");
+  await appearance(page);
+  await page.locator('.experience-picker button[data-mode="simple"]').click();
+  await navigate(page, "Hjem");
+  const simpleHeader = page.locator(".simple-welcome"),
+    simpleAlert = simpleHeader.getByRole("button", {
+      name: "Trenger din oppmerksomhet: 19",
+      exact: true,
+    });
+  expect(await simpleAlert.evaluate(warningStyle)).toEqual(standardWarning);
+  await expect
+    .poll(async () => {
+      const offset = await simpleAlert.evaluate(warningOffset);
+      return Math.max(Math.abs(offset.x - 22), Math.abs(offset.y - 22));
+    })
+    .toBeLessThan(0.5);
+  const alertBounds = (await simpleAlert.boundingBox())!,
+    titleBounds = (await simpleHeader.getByRole("heading").boundingBox())!;
+  expect(alertBounds.y + alertBounds.height + 8).toBeLessThanOrEqual(
+    titleBounds.y,
+  );
+  await simpleHeader.screenshot({
+    path: `/private/tmp/smarti-red-alert-simple-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  await simpleAlert.click();
+  await expect(page.locator(".simple-warning-list li")).toHaveCount(19);
+  await page.keyboard.press("Escape");
+  await expect(simpleAlert).toBeFocused();
 });
 
 test("header backgrounds can be chosen, uploaded, reloaded and removed without changing the home", async ({

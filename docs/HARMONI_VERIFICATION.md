@@ -1,3 +1,28 @@
+# Standard red alert in Home's upper-left corner — release 1.36.73
+
+Harmoni's overview and simple Home headers use the existing standard-theme
+warning button, including its round 52 px shape, red outline/icon and red count
+badge. The alert sits in the upper-left corner of the photo. Conditional heading
+spacing prevents overlap while preserving equal banner heights. The existing
+actual alert count, dialog, focus restoration and reduced-motion pulse remain.
+This is a CSS-only production change; no alert logic, backend or schema changed.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file
+  formatting and `git diff --check`: passed. Vite retains its bundle-size advisory.
+- **10 desktop/mobile browser scenarios passed against the extracted release
+  archive**: standard-theme warning style parity, upper-left positioning at
+  320/390/834/1440 px, no overlap with the greeting, actual count/dialog and focus,
+  dark theme, simple mode, reduced motion, status pills inside headers, equal
+  banner heights, and the existing Living style.
+- Header screenshots were inspected on desktop and mobile. All **249 runtime
+  files** match the manifest; `scripts/package.py --check` passes. No home devices
+  were controlled. The prior 194 unit tests are unchanged; the broader repository
+  limitations below still apply.
+
+---
+
 # Card depth, edit wiggle and refined charts — release 1.36.72
 
 Harmoni's cards use layered light/dark shadows and a subtle top highlight. In edit

@@ -1,3 +1,7 @@
+## 1.36.73
+- Varselet i Hjem-headeren ligger nå øverst til venstre i Harmoni og bruker samme røde, runde knapp og teller som SMARTis standardtema. Gjelder både vanlig og enkel Hjem-visning.
+- Hilsenen får plass under varselet på alle skjermstørrelser. Pulsering, faktiske varseltall, varseloversikten og redusert bevegelse beholdes.
+
 ## 1.36.72
 - Kortene i Harmoni vugger forsiktig i redigeringsmodus. Håndtakene er stabile, og bevegelsen stopper når du peker på et kort, bruker tastaturet, drar eller åpner kortinnstillinger. Kort utenfor synsfeltet og skjulte faner animeres ikke. Redusert bevegelse respekteres.
 - Mer dybde med lagdelte skygger og diskrete lyskanter bak kortene, tilpasset lyst og mørkt tema.
