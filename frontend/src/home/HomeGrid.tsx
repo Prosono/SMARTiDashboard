@@ -29,6 +29,7 @@ import {
   changeGrid,
   defaultGrid,
   responsiveGrid,
+  removeGridCard,
   reorderGrid,
   type GridItem,
   type HomeGridPage,
@@ -587,8 +588,9 @@ export function HomeGrid({
                     aria-label={`${t("Fjern", "Remove")} ${cardTitle}`}
                     disabled={busy}
                     onClick={() =>
-                      setDraft((current) =>
-                        current!.filter((item) => item.id !== card.id),
+                      setDraft(
+                        (current) =>
+                          current && removeGridCard(current, card.id),
                       )
                     }
                   >

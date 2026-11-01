@@ -1,3 +1,34 @@
+# Close dashboard gaps after deletion — release 1.36.74
+
+Removing a card now repacks the remaining rectangles in visual reading order,
+using the existing first-fit grid placement. Sizes and complete personal card
+configuration are preserved; no input or saved layout is mutated. The shared
+HomeGrid handler covers all personal dashboard pages, including simple Home.
+Existing FLIP transitions animate the new positions. Save persists the compacted
+layout atomically with deletion; cancel restores the previous layout. Energy's
+separate workspace and the backend/schema are unchanged.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file
+  formatting and `git diff --check`: passed. Vite retains its bundle-size advisory.
+- Frontend unit suite: **197 passed**. Added cases cover deleting first/middle/last
+  cards, gaps across columns/rows, mixed rectangle sizes, visual order, complete
+  configuration preservation, immutable inputs, responsive reflow, final-card
+  removal and unknown-card no-ops.
+- **16 desktop/mobile browser scenarios passed against the extracted archive**.
+  All six category pages verify compaction after removal. A mixed-size fixture
+  verifies actual intermediate movement, cancellation, retained dimensions and
+  configuration, saving/reloading and no device commands. Existing dragging,
+  resizing, card editing, simple mode, wiggle pauses, reduced motion, no nested
+  scrolling and equal header heights remain covered.
+- All **249 runtime files** match the manifest; `scripts/package.py --check` passes.
+  Browser checks use the extracted backend and compiled frontend with isolated
+  demo data. No real home devices were controlled. The broader repository
+  limitations below still apply.
+
+---
+
 # Standard red alert in Home's upper-left corner — release 1.36.73
 
 Harmoni's overview and simple Home headers use the existing standard-theme

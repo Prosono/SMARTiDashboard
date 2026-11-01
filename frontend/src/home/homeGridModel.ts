@@ -129,6 +129,16 @@ export function addGridCard(items: GridItem[], card: GridSize) {
   ];
 }
 
+/** Close deleted-card gaps in reading order, preserving each remaining card's size/config. */
+export function removeGridCard(items: GridItem[], id: string): GridItem[] {
+  if (!items.some((item) => item.id === id)) return items;
+  return defaultGrid(
+    items
+      .filter((item) => item.id !== id)
+      .sort((a, b) => a.y - b.y || a.x - b.x),
+  );
+}
+
 /** Touch layouts reorder whole cards; widths remain expressed in the desktop grid. */
 export function reorderGrid(items: GridItem[], id: string, targetId: string) {
   const ordered = [...items].sort((a, b) => a.y - b.y || a.x - b.x);

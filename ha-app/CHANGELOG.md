@@ -1,3 +1,8 @@
+## 1.36.74
+- Når et kort fjernes fra dashbordet, pakkes de gjenværende kortene automatisk sammen og fyller ledig plass i griden. Gjelder alle personlige kortflater, inkludert enkel Hjem-visning.
+- Omplasseringen tar utgangspunkt i den synlige rekkefølgen og beholder kortenes bredde, høyde og innstillinger. Eksisterende myke overganger og redusert bevegelse beholdes.
+- «Lagre» lagrer de nye plasseringene sammen med slettingen. «Avbryt» gjenoppretter kortet og det tidligere oppsettet.
+
 ## 1.36.73
 - Varselet i Hjem-headeren ligger nå øverst til venstre i Harmoni og bruker samme røde, runde knapp og teller som SMARTis standardtema. Gjelder både vanlig og enkel Hjem-visning.
 - Hilsenen får plass under varselet på alle skjermstørrelser. Pulsering, faktiske varseltall, varseloversikten og redusert bevegelse beholdes.

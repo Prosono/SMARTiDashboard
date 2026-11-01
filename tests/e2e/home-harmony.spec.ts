@@ -1234,6 +1234,20 @@ test("each category can remove and add cards, retain failed edits and protect co
       .getByRole("button", { name: `Fjern ${title}`, exact: true })
       .click();
     await expect(canvas.locator(`[data-card="${id}"]`)).toHaveCount(0);
+    await expect
+      .poll(() =>
+        canvas.locator(".home-canvas-cell").evaluateAll(
+          (nodes) =>
+            !nodes.length ||
+            nodes.some((node) => {
+              const style = getComputedStyle(node);
+              return (
+                style.gridColumnStart === "1" && style.gridRowStart === "1"
+              );
+            }),
+        ),
+      )
+      .toBe(true);
     await addFromPicker(
       page,
       title,
@@ -1837,6 +1851,123 @@ async function personalCardLayouts(page: Page) {
   });
   return layouts;
 }
+
+test("deleting a card compacts mixed sizes with motion, supports cancel and saves the new positions", async ({
+  page,
+}, info) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  const layouts = await personalCardLayouts(page);
+  const configuration = (title: string, type = "auto") => ({
+    type,
+    title,
+    icon: "light",
+    image: "office",
+    sources: ["light.living_pendant"],
+    period: "24",
+  });
+  const original = [
+    {
+      id: "custom:delete",
+      x: 0,
+      y: 0,
+      w: 3,
+      h: 2,
+      config: configuration("Fjern dette kortet"),
+    },
+    {
+      id: "custom:wide",
+      x: 0,
+      y: 2,
+      w: 2,
+      h: 3,
+      config: configuration("Stort lyskort"),
+    },
+    {
+      id: "custom:small",
+      x: 2,
+      y: 2,
+      w: 1,
+      h: 1,
+      config: configuration("Liten status", "compact"),
+    },
+    {
+      id: "custom:tall",
+      x: 2,
+      y: 3,
+      w: 1,
+      h: 2,
+      config: configuration("Høyt lyskort"),
+    },
+  ];
+  layouts.set("/api/home/layout/lights", { revision: 0, items: original });
+  await richHome(page);
+  const commands: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/commands")) commands.push(request.url());
+  });
+  await login(page);
+  await page.setViewportSize({
+    width: info.project.name === "mobile" ? 390 : 1440,
+    height: 1100,
+  });
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const canvas = page.locator('.home-canvas[data-page="lights"]'),
+    wide = canvas.locator('[data-card="custom:wide"]');
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Fjern Fjern dette kortet", exact: true })
+    .click();
+  await expect(wide).toHaveCSS("grid-row-start", "1");
+  const motion = await wide.evaluate((node) => {
+    const animation = node
+      .getAnimations()
+      .find((a) => a.effect?.getTiming().iterations !== Infinity);
+    if (!animation) return null;
+    animation.pause();
+    const duration = Number(animation.effect!.getTiming().duration);
+    animation.currentTime = 0;
+    const start = node.getBoundingClientRect().y;
+    animation.currentTime = duration / 2;
+    const middle = node.getBoundingClientRect().y;
+    animation.finish();
+    return { start, middle, end: node.getBoundingClientRect().y };
+  });
+  expect(motion).not.toBeNull();
+  expect(motion!.middle).toBeLessThan(motion!.start);
+  expect(motion!.middle).toBeGreaterThan(motion!.end);
+  await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(canvas.locator('[data-card="custom:delete"]')).toHaveCount(1);
+  expect(layouts.get("/api/home/layout/lights")!.items).toEqual(original);
+  await expect(wide).toHaveCSS("grid-row-start", "3");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Fjern Fjern dette kortet", exact: true })
+    .click();
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  const packed = [
+    { ...original[1], x: 0, y: 0 },
+    { ...original[2], x: 2, y: 0 },
+    { ...original[3], x: 2, y: 1 },
+  ];
+  expect(layouts.get("/api/home/layout/lights")!.items).toEqual(packed);
+  await page.reload();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await expect(canvas.locator('[data-card="custom:delete"]')).toHaveCount(0);
+  await expect(wide).toHaveCSS("grid-row-start", "1");
+  await expect(wide).toHaveCSS(
+    "grid-column-end",
+    info.project.name === "mobile" ? "span 1" : "span 2",
+  );
+  await expect(wide).toHaveCSS("grid-row-end", "span 3");
+  expect(layouts.get("/api/home/layout/lights")!.items).toEqual(packed);
+  expect(commands).toEqual([]);
+});
 
 test("visual card picker and per-card appearance support preview, cancel and duplicate device cards", async ({
   page,

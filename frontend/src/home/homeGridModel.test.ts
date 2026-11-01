@@ -5,6 +5,7 @@ import {
   defaultGrid,
   responsiveGrid,
   reorderGrid,
+  removeGridCard,
   type GridItem,
 } from "./homeGridModel";
 
@@ -25,6 +26,70 @@ function valid(items: GridItem[], columns = 3) {
 }
 
 describe("personal home grid", () => {
+  it("closes first and middle deletion gaps across columns and rows without changing the saved input", () => {
+    const original = defaultGrid(
+      Array.from({ length: 9 }, (_, id) => ({ id: String(id) })),
+    );
+    const before = structuredClone(original);
+    for (const id of ["0", "4", "8"]) {
+      const remaining = removeGridCard(original, id);
+      expect(remaining.map((item) => item.id)).toEqual(
+        original.filter((item) => item.id !== id).map((item) => item.id),
+      );
+      expect(remaining.map(({ x, y }) => [x, y])).toEqual([
+        [0, 0],
+        [1, 0],
+        [2, 0],
+        [0, 2],
+        [1, 2],
+        [2, 2],
+        [0, 4],
+        [1, 4],
+      ]);
+      valid(remaining);
+    }
+    expect(original).toEqual(before);
+  });
+  it("compacts mixed rectangles in visual order and preserves custom card configuration", () => {
+    const config = {
+      type: "graph",
+      title: "My graph",
+      icon: "chart",
+      image: "",
+      sources: ["sensor.a", "sensor.b"],
+      period: "168",
+    } as const;
+    const original: GridItem[] = [
+      { id: "small", x: 2, y: 2, w: 1, h: 1 },
+      { id: "deleted", x: 0, y: 0, w: 3, h: 2 },
+      { id: "tall", x: 2, y: 3, w: 1, h: 2 },
+      {
+        id: "wide",
+        x: 0,
+        y: 2,
+        w: 2,
+        h: 3,
+        config: { ...config, sources: [...config.sources] },
+      },
+    ];
+    const before = structuredClone(original);
+    const remaining = removeGridCard(original, "deleted");
+    expect(remaining).toEqual([
+      { ...original[3], x: 0, y: 0 },
+      { ...original[0], x: 2, y: 0 },
+      { ...original[2], x: 2, y: 1 },
+    ]);
+    for (const columns of [1, 2, 3])
+      valid(responsiveGrid(remaining, columns), columns);
+    expect(original).toEqual(before);
+    valid(remaining);
+  });
+  it("handles removing the final card and leaves unknown removals untouched", () => {
+    const original = [{ id: "last", x: 2, y: 8, w: 1, h: 4 }];
+    expect(removeGridCard(original, "last")).toEqual([]);
+    expect(removeGridCard(original, "missing")).toBe(original);
+    expect(removeGridCard([], "missing")).toEqual([]);
+  });
   it("reorders touch cards while retaining their desktop sizes", () => {
     const original = defaultGrid([
       { id: "a", w: 2, h: 3 },
