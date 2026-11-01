@@ -18,16 +18,24 @@ export function EnergyBars({
     en = lang === "en",
     locale = en ? "en-GB" : "nb-NO";
   const values = bars.flatMap((b) => (b.value === null ? [] : [b.value])),
-    min = Math.min(0, ...values),
-    max = Math.max(0, ...values) || (min === 0 ? 1 : 0),
+    scale =
+      history.unit === "W" && Math.max(...values.map(Math.abs)) >= 1000
+        ? 1000
+        : 1,
+    extent = Math.max(0, ...values.map(Math.abs)) / scale,
+    step = extent > 0 ? 10 ** (Math.floor(Math.log10(extent)) - 1) * scale : 1,
+    min = Math.floor(Math.min(0, ...values) / step) * step,
+    max =
+      Math.ceil(Math.max(0, ...values) / step) * step || (min === 0 ? 1 : 0),
     span = max - min || 1,
     zero = (max / span) * 100,
     active =
       selected === null ? null : bars[Math.min(selected, bars.length - 1)],
     peak = values.length ? Math.max(...values) : null,
+    unit = scale === 1000 ? "kW" : history.unit,
     format = (n: number) =>
-      n.toLocaleString(locale, {
-        maximumFractionDigits: Math.abs(n) >= 100 ? 0 : 2,
+      (n / scale).toLocaleString(locale, {
+        maximumFractionDigits: Math.abs(n / scale) >= 100 ? 0 : 2,
       }),
     time = (n: number) =>
       new Date(n).toLocaleTimeString(locale, {
@@ -58,7 +66,7 @@ export function EnergyBars({
     <div className="energy-bars" data-basis={history.basis}>
       <div className="energy-bars-caption">
         <span>{summary}</span>
-        <span>{history.unit}</span>
+        <span>{unit}</span>
       </div>
       <div
         className="energy-bars-chart"
@@ -99,6 +107,11 @@ export function EnergyBars({
             );
         }}
       >
+        <div className="energy-bars-y" aria-hidden="true">
+          <span>{format(max)}</span>
+          <span>{format((max + min) / 2)}</span>
+          <span>{format(min)}</span>
+        </div>
         <div className="energy-bars-grid" aria-hidden="true">
           <i />
           <i />
@@ -169,7 +182,7 @@ export function EnergyBars({
                 ? en
                   ? "No reading"
                   : "Ingen måling"
-                : `${format(active.value)} ${history.unit}`}
+                : `${format(active.value)} ${unit}`}
               {active.value !== null &&
               (active.ongoing || active.coverage < active.end - active.time)
                 ? ` · ${active.ongoing ? (en ? "ongoing" : "pågår") : en ? "partial" : "delvis"}`

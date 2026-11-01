@@ -1,3 +1,6 @@
+.thermostat-room-reading {
+  display: none;
+}
 .thermostat {
   --thermo: #b95b18;
   width: 100%;
@@ -158,5 +161,14 @@
   }
 }
 
-.thermostat-mode-select { display: grid; gap: 6px; width: 100%; text-align: left; }
-.thermostat-mode-select select { width: 100%; min-height: 44px; font: inherit; }
+.thermostat-mode-select {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+}
+.thermostat-mode-select select {
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+}

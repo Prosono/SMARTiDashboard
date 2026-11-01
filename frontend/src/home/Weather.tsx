@@ -4,7 +4,8 @@ import { api } from "../api";
 import type { Control } from "../types";
 import "./extras.css";
 import { TemperatureValue } from "./TemperatureValue";
-import { CardIcon, CardTitle } from "./CardPresentation";
+import { CardIcon, CardTitle, CardPresentation } from "./CardPresentation";
+import { useContext, useState } from "react";
 import { WeatherArtwork, useWeatherNight } from "./WeatherArtwork";
 type Day = {
   date: string;
@@ -29,6 +30,8 @@ export function Weather({
   const en = lang === "en",
     t = (nb: string, eng: string) => (en ? eng : nb);
   const night = useWeatherNight(c);
+  const appearance = useContext(CardPresentation);
+  const [failedScene, setFailedScene] = useState("");
   const q = useQuery({
     queryKey: ["weather-forecast", c.id],
     queryFn: () =>
@@ -74,20 +77,64 @@ export function Weather({
     const usable = c.availability === "available";
     const today = q.data?.days.today;
     const current = usable && now !== null && Number.isFinite(now) ? now : null;
+    const known = [
+      "sunny",
+      "clear-night",
+      "cloudy",
+      "partlycloudy",
+      "rainy",
+      "pouring",
+      "snowy",
+      "snowy-rainy",
+      "hail",
+      "fog",
+      "windy",
+      "windy-variant",
+      "lightning",
+      "lightning-rainy",
+    ].includes(c.state);
+    const scene =
+      !usable || !known
+        ? null
+        : c.state === "clear-night" ||
+            (c.state === "partlycloudy" && night === true)
+          ? "night"
+          : c.state === "sunny"
+            ? "sunny"
+            : "cloudy";
+    const hasScene =
+      polished &&
+      scene !== null &&
+      scene !== failedScene &&
+      (!appearance.image || appearance.image === "auto");
     return (
       <section
         className="simple-weather"
         data-condition={usable ? c.state : "unavailable"}
         data-polished={polished || undefined}
+        data-scene={hasScene ? scene : undefined}
         aria-label={t("Værmelding", "Weather forecast")}
       >
+        {hasScene && (
+          <img
+            className="weather-scene"
+            src={new URL(`home/weather/${scene}.webp`, document.baseURI).href}
+            alt=""
+            loading="lazy"
+            onError={() => setFailedScene(scene!)}
+          />
+        )}
         <div className="simple-weather-heading">
           <strong>
-            <CardIcon optional fallback={Cloud} size={20} />
-            <CardTitle>{c.name}</CardTitle>
+            <CardIcon fallback={Cloud} size={25} />
+            <CardTitle>{polished ? t("Været", "Weather") : c.name}</CardTitle>
           </strong>
           <span>
-            {usable ? label(c.state) : t("Utilgjengelig", "Unavailable")}
+            {polished
+              ? c.name
+              : usable
+                ? label(c.state)
+                : t("Utilgjengelig", "Unavailable")}
           </span>
         </div>
         <div className="simple-weather-current">
@@ -101,6 +148,11 @@ export function Weather({
               </>
             )}
           </strong>
+          {polished && (
+            <span className="simple-weather-condition">
+              {usable ? label(c.state) : t("Utilgjengelig", "Unavailable")}
+            </span>
+          )}
           <WeatherArtwork
             condition={usable ? c.state : "unavailable"}
             night={night}

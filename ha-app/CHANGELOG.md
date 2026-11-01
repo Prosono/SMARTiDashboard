@@ -1,3 +1,11 @@
+## 1.36.86
+- Kortene i Harmoni er redesignet etter den nye bildereferansen: dyp plomme for rutiner, terrakotta for kalender, vinrødt for multimedia, mintgrønt for personer og robot, varm beige for vanlige lys og koksgrå klokker og energi. Temperatur har en mørk blå flate og luftfuktighet en egen fiolett flate.
+- Tettere proporsjoner på Oversikt, jevnere ikon- og tittelplassering, roligere skygger og mer presise temperatur- og kontrollfelt. De lagrede plasseringene og størrelsene beholdes; redigering, romgruppering og fullvisning fungerer fortsatt.
+- Værkortet får lokale fotobakgrunner for natt, sol og skyet vær. Bakgrunnen følger rapportert værtilstand, og ukjent/utilgjengelig vær vises uten oppdiktede data. Ved bildefeil brukes den lokale værillustrasjonen. Egne bildevalg og «Uten bilde» beholdes.
+- Termostaten viser romtemperatur og ønsket temperatur side om side, med tydelige pluss/minus-knapper og bekreftet driftsstatus. Konfigurerte rutiner har egne grønne kjøreknapper; rutineaktivering krever fortsatt bekreftelse.
+- Multimedia og robot har fått større, tydeligere produktillustrasjoner og mer samlede kontroller. Ikke-støttede handlinger skjules fortsatt, og utilgjengelige enheter kan ikke styres.
+- Grafer ligger på kortflatene. Energi får fargede søyler, skala og tydelige enheter; store effektverdier vises i kW. Temperatur- og fuktighetskurvene bruker blått og lilla. Sammenligning med egen historikk, målegap, tellerverdier og nivåmerking beholdes; kortflaten følger nå typen i den nye referansen.
+
 ## 1.36.85
 - Lettere RGB-bakgrunn: seks bevegelseslag med SVG-filtre er erstattet av tre mindre bølgeflater med ferdig myknet form. Temafargene beholdes, og nettleseren slipper å bruke blur-filtre i animasjonen.
 - Bakgrunnen oppdaterer bølgebevegelsen med 24 steg i sekundet, uten JavaScript-timer. Dette reduserer tegnearbeidet; resten av grensesnittets oppdateringsfrekvens endres ikke.

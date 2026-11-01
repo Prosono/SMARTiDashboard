@@ -23,6 +23,7 @@ import {
   Volume2,
   VolumeX,
   Music2,
+  CirclePlay,
   Search,
   LayoutGrid,
   List,
@@ -43,12 +44,14 @@ export function MediaCard({
   home,
   lang,
   offline,
+  overview = false,
 }: {
   c: Control;
   home: Home;
   lang: string;
   offline: boolean;
   photo: string;
+  overview?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
@@ -141,7 +144,9 @@ export function MediaCard({
     <article
       className="media-player-card"
       data-playing={playing}
+      data-state={c.state}
       data-unavailable={unavailable}
+      data-overview={overview || undefined}
     >
       <div className="media-hero" data-has-artwork={showArtwork}>
         {showArtwork && (
@@ -161,12 +166,16 @@ export function MediaCard({
                 aria-haspopup="dialog"
                 onClick={() => setOpened(true)}
               >
-                <CardTitle>{c.name}</CardTitle>
-                <CardIcon fallback={Icon} size={20} />
+                <CardTitle>
+                  {overview ? t("Multimedia", "Media") : c.name}
+                </CardTitle>
+                <CardIcon fallback={overview ? CirclePlay : Icon} size={20} />
               </button>
             ) : (
               <strong>
-                <CardTitle>{c.name}</CardTitle>
+                <CardTitle>
+                  {overview ? t("Multimedia", "Media") : c.name}
+                </CardTitle>
               </strong>
             )}
             <span>

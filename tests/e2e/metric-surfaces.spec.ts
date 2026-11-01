@@ -188,10 +188,13 @@ test("power cards use recorder history, compare their own day, retain gaps and d
     await energy.locator('.energy-bar[data-value="missing"]').count(),
   ).toBeGreaterThan(0);
   const plot = energy.locator(".energy-bars-chart");
+  await expect(
+    page.locator('[data-card="metric:energy"] .home-canvas-viewport'),
+  ).toHaveAttribute("data-overflow", "false");
   await plot.focus();
   await expect(plot).toBeFocused();
   await page.keyboard.press("End");
-  await expect(energy.locator(".energy-bars-detail")).toContainText(/7.?000 W/);
+  await expect(energy.locator(".energy-bars-detail")).toContainText(/7 kW/);
   await page.keyboard.press("Escape");
   await expect(energy.locator(".energy-bars-legend")).toBeVisible();
   const contained = await energy.locator(".energy-bars").evaluate((node) => {
@@ -225,7 +228,9 @@ test("power cards use recorder history, compare their own day, retain gaps and d
           .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
           .reduce((n, v, i) => n + v * [0.2126, 0.7152, 0.0722][i], 0);
       };
-      const bg = lum(getComputedStyle(node).backgroundColor);
+      const bg = lum(
+        getComputedStyle(node.closest(".home-metric-card")!).backgroundColor,
+      );
       return [
         ...node.querySelectorAll('.energy-bar:not([data-value="missing"])'),
       ].map((bar) => {
@@ -255,7 +260,7 @@ test("power cards use recorder history, compare their own day, retain gaps and d
   power.state = "7500";
   await page.reload();
   await expect(energy).toHaveAttribute("data-metric-level", "unknown");
-  await expect(energy.locator(".home-metric-reading")).toContainText("500");
+  await expect(energy.locator(".home-metric-reading")).toContainText("7,5 kW");
   await expect(energy.locator(".home-metric-empty")).toContainText("Historikk");
   state.raw = "ok";
   await page.reload();
@@ -274,9 +279,12 @@ test("energy history fallback keeps W/kW units and cumulative counters separate 
   await page.reload();
   await expect(energy.locator(".energy-bar")).toHaveCount(24);
   const plot = energy.locator(".energy-bars-chart");
+  await expect(
+    page.locator('[data-card="metric:energy"] .home-canvas-viewport'),
+  ).toHaveAttribute("data-overflow", "false");
   await plot.focus();
   await page.keyboard.press("Home");
-  await expect(energy.locator(".energy-bars-detail")).toContainText(/1.?000 W/);
+  await expect(energy.locator(".energy-bars-detail")).toContainText(/1 kW/);
   expect(state.statsCalls).toBeGreaterThan(0);
 });
 test("energy counters show a completed hour or an explicit neutral meter total", async ({
@@ -322,7 +330,11 @@ test("temperature normalizes Fahrenheit, humidity runs white to blue, and header
     humidity.state = String(value);
     await page.reload();
     await expect(air).toHaveAttribute("data-metric-level", "humidity");
-    colors.add(await air.evaluate((n) => getComputedStyle(n).backgroundColor));
+    colors.add(
+      await air
+        .locator(".home-metric-level")
+        .evaluate((n) => getComputedStyle(n).backgroundColor),
+    );
     if (value === 0)
       await expect(air.locator(".home-metric-reading")).toHaveText("0 %");
   }

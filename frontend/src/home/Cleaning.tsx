@@ -177,7 +177,10 @@ export function VacuumCard({
         <div className="vacuum-illustration" aria-hidden="true">
           {simple ? (
             <img
-              src={new URL("home/simple-vacuum.webp", document.baseURI).href}
+              src={
+                new URL("home/equipment/vacuum-dock.webp", document.baseURI)
+                  .href
+              }
               alt=""
             />
           ) : (
@@ -190,7 +193,7 @@ export function VacuumCard({
               (en ? "Cleaning" : "Rengjøring")}
           </small>
           <h3>
-            <CardIcon optional fallback={RobotVacuumIcon} size={22} />
+            <CardIcon fallback={RobotVacuumIcon} size={22} />
             <CardTitle>{c.name}</CardTitle>
           </h3>
         </div>

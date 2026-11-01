@@ -240,7 +240,7 @@ export function SimpleDashboard({
               <strong>{now.getDate()}</strong>
               <span>
                 {now.toLocaleDateString(en ? "en-GB" : "nb-NO", {
-                  weekday: "long",
+                  ...(renderCards ? {} : { weekday: "long" as const }),
                   month: "long",
                 })}
               </span>
@@ -293,6 +293,7 @@ export function SimpleDashboard({
             lang={lang}
             offline={offline}
             photo={homeAsset("home-multimedia")}
+            overview={!!renderCards}
           />
         </div>
       )}

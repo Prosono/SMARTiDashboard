@@ -482,7 +482,15 @@ function HarmonyDevice({
         <>
           <div className="harmony-device-status">
             <i aria-hidden="true" />
-            <span>{busy ? t("Sender…", "Sending…") : state}</span>
+            <span>
+              {busy
+                ? t("Sender…", "Sending…")
+                : available && c.attributes.hvac_action === "heating"
+                  ? t("Varmer", "Heating")
+                  : available && c.attributes.hvac_action === "cooling"
+                    ? t("Kjøler", "Cooling")
+                    : state}
+            </span>
             {available && battery !== null && (
               <small>
                 <Battery size={15} />

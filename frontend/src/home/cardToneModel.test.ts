@@ -28,11 +28,11 @@ describe("card type surface colors", () => {
     for (const [id, expected] of Object.entries({
       routines: "plum",
       people: "fresh",
-      calendar: "warm",
+      calendar: "calendar",
       lighting: "lighting",
-      "metric:energy": "cool",
-      "metric:temperature": "warm",
-      "metric:humidity": "fresh",
+      "metric:energy": "energy",
+      "metric:temperature": "temperature",
+      "metric:humidity": "humidity",
       "room:renamed": "fresh",
       "summary:alerts": "cool",
       unknown: "neutral",
@@ -43,19 +43,19 @@ describe("card type surface colors", () => {
     const cases: [Control, string][] = [
       [control("light"), "lighting"],
       [control("climate"), "warm"],
-      [control("sensor", { unit_of_measurement: "°F" }), "warm"],
+      [control("sensor", { unit_of_measurement: "°F" }), "temperature"],
       [
         control("sensor", {
           device_class: "humidity",
           unit_of_measurement: "%",
         }),
-        "fresh",
+        "humidity",
       ],
       [control("fan"), "fresh"],
       [control("vacuum"), "fresh"],
       [control("media_player"), "media"],
       [control("automation"), "plum"],
-      [control("sensor", { unit_of_measurement: "kW" }), "cool"],
+      [control("sensor", { unit_of_measurement: "kW" }), "energy"],
       [control("switch"), "misc"],
       [control("input_boolean"), "misc"],
       [control("cover"), "misc"],
@@ -75,13 +75,15 @@ describe("card type surface colors", () => {
   it("colors all clock and sky designs from their configured type", () => {
     for (const choice of ambientChoices) {
       expect(cardTone(undefined, ambientConfig(choice.id), [])).toBe(
-        ["date", "daylight"].includes(choice.type)
-          ? "warm"
-          : choice.type === "moon"
-            ? "plum"
-            : choice.type === "clock"
-              ? "clock"
-              : "cool",
+        choice.type === "date"
+          ? "calendar"
+          : choice.type === "daylight"
+            ? "warm"
+            : choice.type === "moon"
+              ? "plum"
+              : choice.type === "clock"
+                ? "clock"
+                : "cool",
       );
     }
   });
@@ -103,17 +105,17 @@ describe("card type surface colors", () => {
         title: "Energy",
         icon: "sun",
       };
-    expect(cardTone(undefined, config, controls)).toBe("warm");
+    expect(cardTone(undefined, config, controls)).toBe("temperature");
     expect(
       cardTone(undefined, { ...config, sources: [cool.entity_id] }, controls),
-    ).toBe("cool");
+    ).toBe("energy");
     expect(
       cardTone(
         undefined,
         { ...config, sources: [warm.entity_id, secondWarm.entity_id] },
         controls,
       ),
-    ).toBe("warm");
+    ).toBe("temperature");
     expect(
       cardTone(
         undefined,

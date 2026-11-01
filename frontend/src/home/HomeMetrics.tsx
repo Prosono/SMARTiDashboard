@@ -1,4 +1,10 @@
-import { Children, Fragment, useId, type ReactNode } from "react";
+import {
+  Children,
+  Fragment,
+  useId,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 import type { HomeGridCard } from "./HomeGrid";
 import { HarmonyTrend } from "./HarmonyTrend";
 import { TemperatureValue } from "./TemperatureValue";
@@ -160,7 +166,16 @@ export function HomeMetric({
       onClick={enhanced ? undefined : open}
       aria-label={`${labels[kind]}: ${control.name}`}
       data-metric-level={enhanced ? assessment.level : undefined}
-      style={enhanced ? assessment.style : undefined}
+      style={
+        enhanced
+          ? ({
+              "--metric-status": (assessment.style as Record<string, string>)[
+                "--card-color"
+              ],
+              "--metric-status-ink": assessment.style.color,
+            } as CSSProperties)
+          : undefined
+      }
     >
       <Heading
         className="home-metric-head"
@@ -197,6 +212,12 @@ export function HomeMetric({
             />
           ) : control.domain === "climate" && climateTemperature !== null ? (
             `${climateTemperature.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })} ${metricUnit(control) || "°C"}`
+          ) : enhanced &&
+            kind === "energy" &&
+            metricUnit(control) === "W" &&
+            numeric(control) !== null &&
+            Math.abs(numeric(control)!) >= 1000 ? (
+            `${(numeric(control)! / 1000).toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })} kW`
           ) : (
             reading(control, lang)
           )}

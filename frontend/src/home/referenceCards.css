@@ -1,0 +1,1475 @@
+/* Shared card materials and proportions from the supplied November reference. */
+html[data-home-style="harmony"] {
+  --home-card-shadow: 0 5px 17px #07100d20, inset 0 1px 0 #ffffff08;
+  --home-card-lift: 0 8px 24px #07100d30, inset 0 1px 0 #ffffff10;
+
+  [data-card-tone]:where(:not([data-card-tone="neutral"])) {
+    --card-strength: 100%;
+    --equipment-surface: var(--card-skin) var(--card-material);
+    --equipment-line: color-mix(in srgb, var(--text) 12%, transparent);
+    --equipment-muted-surface: color-mix(
+      in srgb,
+      var(--card-color) 78%,
+      var(--text)
+    );
+    --card-skin:
+      radial-gradient(ellipse at 10% 0%, #ffffff07, transparent 68%),
+      linear-gradient(125deg, var(--card-color), var(--card-depth));
+    --muted: color-mix(in srgb, var(--text) 91%, var(--card-depth));
+  }
+  [data-card-tone="clock"] {
+    --card-color: #343b3d;
+    --card-depth: #22282a;
+  }
+  [data-card-tone="calendar"] {
+    --card-identity: #963e24;
+    --card-base: #622a20;
+  }
+  [data-card-tone="warm"] {
+    --card-identity: #b14e1b;
+    --card-base: #773217;
+  }
+  [data-card-tone="fresh"] {
+    --card-identity: #65b69f;
+    --card-base: #479580;
+    --text: #071e19;
+    --equipment-orange: #123b30;
+  }
+  [data-card-tone="plum"] {
+    --card-identity: #472b51;
+    --card-base: #241f2e;
+  }
+  [data-card-tone="media"] {
+    --card-identity: #692b39;
+    --card-base: #371c27;
+  }
+  [data-card-tone="energy"] {
+    --card-identity: #2e3538;
+    --card-base: #202527;
+    --card-series-1: #8dcb50;
+  }
+  [data-card-tone="temperature"] {
+    --card-identity: #183c50;
+    --card-base: #102735;
+    --card-series-1: #45b6ff;
+  }
+  [data-card-tone="humidity"] {
+    --card-identity: #303044;
+    --card-base: #20212d;
+    --card-series-1: #c78af3;
+  }
+  [data-card-tone="calendar"],
+  [data-card-tone="energy"],
+  [data-card-tone="temperature"],
+  [data-card-tone="humidity"] {
+    --text: #f9faf8;
+    --accent: #f5f6f3;
+    --on-accent: #23292c;
+  }
+
+  .home-canvas-grid {
+    gap: 14px;
+  }
+  .home-canvas[data-page="overview"] .home-canvas-grid {
+    grid-auto-rows: 108px;
+  }
+  .home-canvas-cell,
+  .home-canvas-surface {
+    border-radius: 19px;
+  }
+  .home-canvas-surface {
+    border: 1px solid #ffffff0b;
+  }
+  .home-canvas-content {
+    border-radius: inherit;
+  }
+  .home-canvas-content :is(h2, h3, strong) {
+    letter-spacing: -0.02em;
+  }
+  .home-canvas-content
+    :is(
+      .grid-card-heading,
+      .people-heading,
+      .home-grid-routines header,
+      .simple-dashboard-card-heading,
+      .ambient-heading
+    ) {
+    min-height: 28px;
+    font-size: 15px;
+    gap: 12px;
+  }
+  .home-canvas-content
+    :is(
+      .grid-card-heading,
+      .people-heading,
+      .home-grid-routines header,
+      .simple-dashboard-card-heading,
+      .ambient-heading
+    )
+    > svg:first-child {
+    width: 25px;
+    height: 25px;
+    flex: none;
+    stroke-width: 1.7;
+  }
+  .home-canvas-content
+    :is(.people-heading h2, .home-grid-routines h2, .ambient-heading strong) {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .home-canvas-toolbar {
+    margin-bottom: 12px;
+  }
+  .home-canvas-toolbar > div:first-child {
+    gap: 2px;
+  }
+  .home-canvas-toolbar > div:first-child > strong {
+    font-size: 15px;
+  }
+  .home-canvas-toolbar > div:first-child > span {
+    font-size: 11px;
+  }
+
+  /* A photographic weather surface with truthful readings over a quiet overlay. */
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-canvas-content
+    .simple-weather {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: 17px 21px;
+    gap: 0;
+    overflow: hidden;
+    background: #102a40;
+    color: #fff;
+    border-radius: inherit;
+  }
+  .simple-weather .weather-scene {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 38%;
+  }
+  .simple-weather[data-scene]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(90deg, #020d1b54, transparent 85%),
+      linear-gradient(0deg, #010a1699, transparent 65%);
+  }
+  .simple-weather .simple-weather-heading {
+    display: grid;
+    gap: 2px;
+  }
+  .simple-weather-heading > strong {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .simple-weather-heading > span {
+    padding-left: 41px;
+    font-size: 12px;
+    color: #f0f5fa;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-weather
+    .simple-weather-current {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    min-height: 0;
+    flex: 1;
+    align-content: center;
+    gap: 0 8px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-weather-current
+    > strong {
+    font-size: clamp(43px, 13cqi, 61px);
+    font-weight: 600;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .simple-weather-condition {
+    font-size: 13px;
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .simple-weather .simple-weather-current .weather-art {
+    grid-column: 2;
+    grid-row: 1/3;
+    width: 100px;
+    height: 85px;
+  }
+  .simple-weather[data-scene] .simple-weather-current .weather-art {
+    display: none;
+  }
+  .simple-weather .simple-weather-range {
+    font-size: 11px;
+    margin: 0 0 4px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-weather
+    .simple-weather-details {
+    padding-top: 10px;
+    margin-top: auto;
+    gap: 13px;
+    border-color: #ffffff29;
+    font-size: 12px;
+    color: #fff;
+  }
+  .simple-weather-details svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Purple routine tiles and deliberate green run controls. */
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines {
+    padding: 17px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    header {
+    margin: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    .home-modes {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin: 0;
+    align-content: center;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    .home-modes
+    button {
+    flex-direction: row;
+    height: auto;
+    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    min-height: 54px;
+    gap: 12px;
+    padding: 9px 10px;
+    border: 1px solid #ffffff0d;
+    border-radius: 14px;
+    background: #ffffff10;
+    color: #fbf8fc;
+    box-shadow: inset 0 1px 0 #ffffff05;
+  }
+  .home-grid-routines .home-modes button > svg {
+    width: 24px;
+    height: 24px;
+    color: #f6edf8;
+  }
+  .home-grid-routines .home-modes button > span:not(.mode-run) {
+    min-width: 0;
+    font-size: 12px;
+    text-align: left;
+  }
+  .home-grid-routines .home-modes .mode-configured small {
+    display: none;
+  }
+  .home-grid-routines .home-modes small {
+    font-size: 9px;
+    color: #e9d9ed;
+  }
+  .home-grid-routines .home-modes .mode-run {
+    margin-left: auto;
+    width: 41px;
+    height: 41px;
+    border-radius: 50%;
+    background: #079b53;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    flex: none;
+  }
+  .home-grid-routines .mode-run svg {
+    margin-left: 2px;
+    width: 20px;
+    height: 20px;
+  }
+  .home-grid-routines .home-modes .mode-configured::after {
+    display: none;
+  }
+
+  /* Presence rows use a lighter translucent inset, with precise avatar sizing. */
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-presence {
+    padding: 17px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .people-heading {
+    margin: 0;
+    color: #071e19;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .people-heading
+    button {
+    color: #071e19;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-presence
+    ul {
+    display: grid;
+    gap: 7px;
+    margin: auto 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-presence
+    li {
+    min-height: 53px;
+    padding: 7px 11px;
+    border: 1px solid #ffffff16;
+    border-radius: 13px;
+    background: #d3f2df57;
+    color: #092b22;
+    gap: 10px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .person-avatar {
+    width: 39px;
+    height: 39px;
+    min-width: 39px;
+    font-size: 17px;
+    background: #1d6d595e;
+    border: 1px solid #f3fff566;
+    color: #071e19;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-presence
+    li
+    strong {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-presence
+    li
+    small {
+    font-size: 12px;
+    color: #173c32;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded) .person-dot {
+    width: 7px;
+    height: 7px;
+    background: #243b33;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .person-home
+    .person-dot {
+    background: #41df86;
+  }
+
+  /* Calendar: one large date, with the agenda balanced by a fine separator. */
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-dashboard-date {
+    padding: 17px 21px;
+    gap: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-date-content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 40% 1fr;
+    align-items: center;
+    gap: 20px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-date-day {
+    border-right: 1px solid #ffffff24;
+    padding-right: 18px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-date-day
+    > strong {
+    font-size: 67px;
+    line-height: 1;
+    font-weight: 500;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-date-day
+    > span {
+    font-size: 14px;
+    color: #fff8f1;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-dashboard-date
+    .simple-agenda-empty {
+    font-size: 12px;
+    color: #fff7ee;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-dashboard-date
+    > small {
+    border: 0;
+    min-height: 15px;
+    font-size: 10px;
+    color: #f4e4d9;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Pendant silhouettes start at the top edge, above the warm beige light pool. */
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-card {
+    padding: 17px 21px;
+    gap: 8px;
+    overflow: hidden;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-card
+    .grid-card-heading {
+    position: relative;
+    z-index: 2;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-card
+    .equipment-group-art {
+    top: -5px;
+    right: 20px;
+    width: 49%;
+    height: 147px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-card
+    .equipment-art {
+    height: 142px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-card
+    .equipment-art
+    + .equipment-art {
+    margin-left: -5px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-card
+    .grid-lighting-reading {
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-card
+    .grid-lighting-reading
+    strong {
+    font-size: 43px;
+    font-weight: 600;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-reading
+    .harmony-power {
+    top: -41px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-range {
+    margin-top: auto;
+    gap: 15px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-range
+    input {
+    accent-color: #454954;
+    height: 5px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .grid-lighting-range
+    > span {
+    font-size: 12px;
+  }
+
+  /* Target and measured room temperature are adjacent, as in the reference. */
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat) {
+    padding: 17px 20px;
+    gap: 8px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat) {
+    position: relative;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat)
+    .harmony-device-header {
+    min-height: 28px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat)
+    .harmony-device-header
+    small {
+    font-size: 10px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat)
+    .harmony-device-status {
+    position: absolute;
+    top: 17px;
+    right: 17px;
+    width: auto;
+    min-height: 26px;
+    font-size: 10px;
+    border: 1px solid #ffd2a33d;
+    border-radius: 99px;
+    padding: 3px 9px;
+    background: #f5ac6315;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat)
+    .harmony-device-status
+    i {
+    display: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat)
+    .harmony-device-open {
+    padding-right: 70px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact] {
+    display: grid;
+    grid-template-columns: 31% 1fr;
+    grid-template-rows: 1fr;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto;
+    margin-bottom: auto;
+    padding: 0;
+    min-height: 100px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-room-reading {
+    grid-column: 1;
+    grid-row: 1;
+    display: grid;
+    gap: 6px;
+    align-content: center;
+    align-self: stretch;
+    border-right: 1px solid #ffdec13d;
+    padding-right: 10px;
+  }
+  .thermostat-room-reading > span {
+    font-size: 11px;
+    color: #fff4e9;
+  }
+  .thermostat-room-reading strong {
+    font-size: clamp(22px, 7cqi, 30px);
+    line-height: 1.15;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-dial {
+    grid-column: 2;
+    grid-row: 1;
+    background: #f9ac6724;
+    border: 1px solid #ffd2ac24;
+    border-radius: 15px;
+    min-height: 102px;
+    padding: 12px 0 7px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-target {
+    position: static;
+    transform: none;
+    text-align: center;
+    width: 100%;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-target
+    > span {
+    display: block;
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-target
+    strong {
+    font-size: 39px;
+    line-height: 1.1;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-adjust {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    margin-bottom: 14px;
+    padding: 0 7px;
+    pointer-events: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-adjust
+    > span {
+    display: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-adjust
+    button {
+    width: 39px;
+    height: 39px;
+    min-height: 39px;
+    border: 1px solid #ffdab54d;
+    background: #ffdab9;
+    color: #733216;
+    pointer-events: auto;
+    box-shadow: 0 2px 5px #42160414;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-adjust
+    button:disabled {
+    opacity: 0.5;
+  }
+
+  /* Playback remains capability-driven; controls share a single quiet baseline. */
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: 0;
+    height: 100%;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-hero {
+    flex: 1;
+    min-height: 120px;
+    padding: 17px 20px 0;
+    background: transparent;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-art {
+    padding: 0;
+    position: relative;
+    z-index: 2;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-art
+    > div {
+    width: 100%;
+    gap: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-open-device {
+    min-height: 26px;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: flex-start;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-open-device
+    > svg {
+    order: -1;
+    margin: 0;
+    width: 24px;
+    height: 24px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-art
+    > div
+    > span {
+    font-size: 12px;
+    margin-top: 7px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-info-region {
+    padding: 4px 0 0;
+    display: grid;
+    grid-template-columns: 1fr 40%;
+    align-items: center;
+    min-height: 55px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-device-visual {
+    position: absolute;
+    right: 20px;
+    top: 47px;
+    width: 36%;
+    height: 85px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-device-visual
+    img {
+    max-height: 88px;
+    width: 100%;
+    object-fit: contain;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-track
+    h3 {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-track
+    p {
+    font-size: 11px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-state {
+    font-size: 10px;
+    margin: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-player-content {
+    padding: 0 20px 16px;
+    background: transparent;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-controls-row {
+    display: flex;
+    gap: 9px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-transport {
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-transport
+    button {
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    width: 31px;
+    height: 38px;
+    min-height: 38px;
+    color: #fff4f4;
+    box-shadow: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-transport
+    button:is([data-action="media_play"], [data-action="media_pause"]) {
+    background: linear-gradient(130deg, #b46c36, #8d4327);
+    width: 43px;
+    height: 43px;
+    color: #fff7ef;
+    order: -1;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-transport
+    > span {
+    display: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-volume {
+    flex: 1;
+    min-width: 70px;
+    background: #ffffff0e;
+    border-radius: 99px;
+    padding: 3px 7px;
+    gap: 5px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-volume
+    button {
+    min-height: 30px;
+    min-width: 25px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-volume
+    input {
+    min-width: 25px;
+    width: 100%;
+    accent-color: #fff8f7;
+    height: 4px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-volume
+    > span {
+    font-size: 10px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-progress {
+    margin: 0 0 4px;
+    font-size: 9px;
+  }
+
+  /* Mint cleaning card: product to the right, state and battery to the left. */
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded) .vacuum-card {
+    padding: 17px 20px;
+    position: relative;
+    height: 100%;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    header {
+    min-height: 30px;
+    gap: 9px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    header
+    > div:nth-child(2)
+    > small {
+    display: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    h3 {
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 8px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    h3
+    > svg {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    color: #f2fff8;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-illustration {
+    position: absolute;
+    right: 14px;
+    top: 49px;
+    width: 45%;
+    height: 113px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    pointer-events: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-illustration
+    img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-status {
+    display: grid;
+    gap: 7px;
+    padding: 15px 45% 0 0;
+    justify-content: start;
+    min-height: 64px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-status
+    strong {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-status
+    span {
+    font-size: 12px;
+    color: #082a20;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin: auto 0 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-actions
+    button {
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 11px;
+    border-radius: 12px;
+    gap: 6px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-actions
+    button:first-child {
+    background: #102f28;
+    color: #f8fff9;
+    border-color: #ffffff15;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-actions
+    button:not(:first-child) {
+    background: #ffffff0e;
+    border-color: #103c2929;
+    color: #123c30;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-details {
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    min-height: 32px;
+    min-width: 32px;
+    padding: 4px;
+    font-size: 0;
+    color: #143e31;
+    margin: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    header
+    > button {
+    opacity: 0.7;
+    margin-right: 30px;
+  }
+
+  /* Numeric cards retain their own material; state is conveyed by badge/series. */
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-canvas-content
+    .home-metric-card {
+    padding: 16px 20px;
+    background: var(--equipment-surface);
+    color: var(--text);
+    gap: 0;
+  }
+  .home-metric-card .home-metric-icon {
+    color: var(--card-series-1, var(--text));
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .home-metric-head {
+    margin-bottom: 2px;
+    min-height: 26px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .home-metric-reading {
+    font-size: 37px;
+    margin-top: 3px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-source {
+    font-size: 10px;
+    margin: 1px 0 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-level {
+    background: var(--metric-status);
+    color: var(--metric-status-ink);
+    font-size: 9px;
+    padding: 3px 6px;
+    margin-top: 3px;
+    border: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .home-metric-period {
+    font-size: 10px;
+    margin: 3px 0 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .measured-chart {
+    --metric-color: var(--card-series-1);
+    min-height: 66px;
+    margin-top: 4px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 3px 7px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .measured-chart-scale,
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .measured-chart-axis {
+    font-size: 9px;
+    color: #edf2f5;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .measured-chart-line {
+    stroke-width: 2;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .measured-chart-guide {
+    stroke: #ffffff12;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .energy-bars {
+    --bar-low: #89c44b;
+    --bar-medium: #edc54b;
+    --bar-high: #fa6655;
+    --bar-export: #6bcbff;
+    --bar-unknown: #acb6c0;
+    --bar-ink: #f5f7f5;
+    background: transparent;
+    padding: 0 0 0 23px;
+    border-radius: 0;
+    min-height: 91px;
+    gap: 3px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .energy-bars-caption {
+    font-size: 8px;
+    line-height: 10px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .energy-bars-chart {
+    min-height: 40px;
+    height: auto;
+    padding-top: 14px;
+    gap: 5px;
+  }
+  .energy-bars-y {
+    position: absolute;
+    inset: 14px auto 0 -22px;
+    width: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 8px;
+    text-align: right;
+    color: var(--bar-ink);
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded) .energy-bar {
+    border-radius: 4px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .energy-bars-peak {
+    display: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .energy-bars-detail {
+    min-height: 15px;
+    font-size: 8px;
+    line-height: 1.25;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .energy-bars-legend {
+    gap: 10px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .energy-bars-axis {
+    font-size: 8px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .energy-bars-grid
+    i {
+    border-color: #ffffff0d;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .energy-bars-zero {
+    border-color: #ffffff26;
+  }
+
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-card {
+    padding: 17px 20px;
+    gap: 5px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-clock-main {
+    min-height: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-dial-edge {
+    fill: #212729;
+    stroke: #e0e7e510;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-clock-date {
+    font-size: 11px;
+    color: #edf0ed;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-card
+    .ambient-heading
+    > small {
+    font-size: 9px;
+    color: #d8deda;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-hand-second {
+    stroke: #f1e7d7;
+  }
+
+  .home-hero-stage > .home-status-grid > .home-status {
+    min-height: 56px;
+    padding: 10px 17px;
+    gap: 12px;
+    border-radius: 14px;
+    background: linear-gradient(120deg, #212624ed, #282522e8);
+    border-color: #ffffff0c;
+    box-shadow: inset 0 1px 0 #ffffff06;
+  }
+  .home-hero-stage > .home-status-grid > .home-status > svg {
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    color: var(--pill-color);
+    padding: 0;
+    width: 28px;
+    height: 28px;
+  }
+  .home-hero-stage > .home-status-grid > .home-status > span {
+    font-size: 0;
+  }
+  .home-hero-stage > .home-status-grid > .home-status strong {
+    font-size: 15px;
+    margin: 0;
+  }
+  .home-hero-stage > .home-status-grid > .home-status small {
+    display: none;
+  }
+
+  @media (max-width: 650px) {
+    .home-canvas[data-page="overview"] .home-canvas-grid {
+      /* Keep touch controls in ordinary device cards directly accessible too. */
+      grid-auto-rows: 128px;
+    }
+    :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+      .media-controls-row {
+      flex-wrap: wrap;
+    }
+    :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+      .media-transport {
+      flex: 1;
+    }
+    :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+      .media-volume {
+      flex: 1;
+    }
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    .home-modes
+    button {
+    flex-direction: row;
+    height: auto;
+    justify-content: flex-start;
+    gap: 7px;
+    padding: 8px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    .home-modes
+    button
+    > svg {
+    width: 21px;
+    height: 21px;
+    flex: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    .home-modes
+    button
+    > span.mode-run {
+    width: clamp(30px, 11cqi, 46px);
+    height: clamp(30px, 11cqi, 46px);
+    margin-left: auto;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    .home-modes
+    button
+    > span:not(.mode-run) {
+    flex: 1;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat)
+    .thermostat-target {
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat)
+    .thermostat-target
+    strong {
+    text-align: center;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat)
+    .thermostat-adjust {
+    display: flex;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-clock-analog
+    .ambient-clock-main {
+    position: absolute;
+    inset: 28px 0 26px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-clock-analog
+    .ambient-dial {
+    height: 100%;
+    max-height: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-clock-analog {
+    position: relative;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .ambient-clock-analog
+    .ambient-clock-date {
+    margin-top: auto;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    .home-modes {
+    flex: 0 0 auto;
+    grid-auto-rows: 64px;
+    align-content: start;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    .home-modes
+    button
+    > span:not(.mode-run) {
+    color: #fbf5fe;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-presence
+    ul
+    li {
+    background: #c3ead594;
+    border-color: #e7fff32b;
+    min-height: 55px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-presence
+    ul
+    li
+    strong {
+    font-size: 14px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-presence
+    ul
+    li
+    small {
+    font-size: 13px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-date-day
+    > strong {
+    font-size: clamp(64px, 19cqi, 82px);
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-date-day
+    > span {
+    font-size: 16px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-weather-current
+    > strong {
+    font-size: clamp(43px, 14cqi, 64px);
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .equipment-card:has(.thermostat)
+    .thermostat-target
+    strong {
+    font-size: 44px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card
+    .media-art
+    > div
+    > span {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .media-player-card[data-state="idle"]
+    .media-state {
+    display: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-actions
+    button:first-child {
+    background: #102f28;
+    color: #f8fff9;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .vacuum-card
+    .vacuum-illustration {
+    width: 49%;
+    height: 125px;
+    top: 42px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card {
+    position: relative;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .home-metric-source {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .home-metric-level {
+    position: absolute;
+    top: 17px;
+    right: 44px;
+    margin: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .home-metric-period {
+    position: absolute;
+    top: 62px;
+    right: 20px;
+    font-size: 10px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .measured-chart {
+    min-height: 90px;
+    margin-top: 8px;
+    max-height: 124px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .energy-bars {
+    min-height: 102px;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .energy-bars-caption {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card.metric-energy
+    .home-metric-period {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-adjust {
+    position: relative;
+    z-index: 2;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .thermostat[data-compact]
+    .thermostat-dial {
+    pointer-events: none;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-grid-routines
+    .home-modes
+    button
+    > span:not(.mode-run) {
+    font-size: clamp(12px, 3.4cqi, 14px);
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .simple-weather-heading:not(:has(> strong > svg))
+    > span {
+    padding-left: 0;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .energy-bars {
+    position: relative;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .energy-bars-caption {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: auto;
+    height: auto;
+    clip-path: none;
+    overflow: visible;
+  }
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+    .home-metric-card
+    .energy-bars-caption
+    > span:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+
+html[data-home-style="harmony"][data-theme="dark"] [data-card-tone] {
+  --card-strength: 100%;
+}
+
+/* Match the dark equipment rule's specificity in both themes and all previews. */
+html[data-home-style="harmony"][data-theme]
+  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
+  .home-canvas-content
+  .vacuum-card
+  .vacuum-actions
+  button:first-child {
+  background: #102f28;
+  color: #f8fff9;
+}

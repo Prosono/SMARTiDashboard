@@ -1,3 +1,55 @@
+# Reference-matched card materials and controls — release 1.36.86
+
+The November reference now guides all twelve overview card families: photographic
+weather, charcoal clocks, deep-plum routines with green run controls, terracotta
+calendar, mint presence and robots, beige white-light cards, wine-red media, warm
+orange thermostats, charcoal energy, blue temperature and violet humidity.
+Existing RGB lights still follow the confirmed light color. The materials use
+static gradients and local WebP assets; the optimized background from 1.36.85 is
+unchanged. [Generated asset paths and exact prompts](REFERENCE_CARD_ASSETS.md) are
+recorded separately. Weather photographs are decorative, not live camera feeds.
+
+Overview desktop rows are more compact (108px, with two-row default cards), with
+14px gaps and consistent heading/inset proportions. Mobile retains 128px rows so
+ordinary device cards keep their touch controls directly accessible. Saved card
+positions/sizes, room grouping, editing, drag/resize, previews and full views are
+preserved. Inset presence rows use dark text on mint to retain readable contrast.
+
+Compact thermostats show measured and target temperatures side by side. Actual
+HVAC action distinguishes heating/cooling from the configured mode; unavailable
+states stay neutral. Buttons retain capability/step bounds. Media and robot
+controls remain capability-driven, and routines still require confirmation.
+Energy uses rounded bars, a readable numeric scale and explicit units, converting
+large W readings to kW for display. Raw history and comparisons remain intact.
+Metric cards now retain their type material, as in the latest reference; badges
+and chart series retain the earlier history-relative consumption, temperature
+assessment and humidity indication. Gaps and cumulative counters stay distinct.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, TypeScript lint, changed-file Prettier and
+  git diff --check passed. The existing Vite chunk-size advisory remains.
+- **244 frontend unit cases passed.**
+- **76 selected desktop/mobile browser scenarios passed against the final
+  extracted archive.** These include six new reference-card cases covering all
+  twelve cards without overflow, light/dark screenshots, thermometer steps,
+  playback, robot actions, routine confirmation, unavailable states and weather
+  image-failure fallback. All actions use isolated demo fixtures.
+- Regression coverage includes all Home tabs/styles, nine palettes, responsive
+  layouts at 320/390/834/1440px (and 1555px for the reference composition), actual
+  RGB/white lighting, room grouping, saved layout editing, conflicts, picture/icon
+  customization, multi-source graphs, recorder history, counters, Fahrenheit,
+  keyboard/touch chart inspection, motion preferences and the unchanged ribbons.
+  Text/chart contrast checks retain their 4.5:1/3:1 thresholds. Related dark
+  material separation is measured from the primary material color.
+- Desktop and mobile compositions were visually inspected in both themes. These
+  are Chromium test-environment results, not physical wall-panel validation.
+- Deterministic packaging check passes. All **257 runtime files** match the final
+  extracted archive used by the browser tests. No backend code changed; prior
+  repository-wide limitations recorded below remain applicable.
+
+---
+
 # Bounded, pre-softened ribbons with independent sizing — release 1.36.85
 
 The animated background uses three bounded HTML surfaces with pre-rendered alpha

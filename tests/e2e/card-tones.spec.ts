@@ -121,12 +121,12 @@ async function setup(page: Page) {
     ["weather", "cool"],
     ["routines", "plum"],
     ["people", "fresh"],
-    ["calendar", "warm"],
+    ["calendar", "calendar"],
     ["lighting", "lighting"],
     ["climate", "warm"],
-    ["metric:energy", "cool"],
-    ["metric:temperature", "warm"],
-    ["metric:humidity", "fresh"],
+    ["metric:energy", "energy"],
+    ["metric:temperature", "temperature"],
+    ["metric:humidity", "humidity"],
     ["device:media_player.tone_media", "media"],
     ["device:vacuum.tone_vacuum", "fresh"],
     ["custom:tone_clock", "clock", config("clock", "Klokke hjemme")],
@@ -333,7 +333,7 @@ test("card types have visibly distinct color families with readable text across 
             background = style.backgroundColor,
             stops = [background, style.getPropertyValue("--card-color")];
           if (surface.querySelector(".simple-weather")) continue;
-          if (!metric) colors.set(tone, background);
+          if (!metric) colors.set(tone, style.getPropertyValue("--card-color"));
           for (const text of surface.querySelectorAll(
             ".home-grid-routines h2, .people-heading h2, .home-metric-head strong, .home-metric-source, .home-metric-period, .ambient-heading strong, .ambient-source-note, .ambient-clock-date, .personal-graph-legend span, .personal-graph-legend strong",
           )) {
@@ -375,12 +375,13 @@ test("card types have visibly distinct color families with readable text across 
           weakest,
         };
       });
-      expect(new Set(result.colors).size).toBe(8);
-      // Perceptual distance catches a return to almost indistinguishable tints.
+      expect(new Set(result.colors).size).toBe(10);
+      // The new reference uses related dark materials; compare their primary
+      // tones while allowing its deliberately restrained charcoal/blue palette.
       expect(
         Math.min(...result.separation),
         `${theme}, ${palette}`,
-      ).toBeGreaterThanOrEqual(0.05);
+      ).toBeGreaterThanOrEqual(0.03);
       expect(result.ratios.length).toBeGreaterThan(10);
       expect(result.chartRatios.length).toBeGreaterThan(0);
       expect(
@@ -464,7 +465,7 @@ test("type color follows editing, previews and the full-card view while custom p
     .click();
   await expect(page.locator(".home-canvas-expanded")).toHaveAttribute(
     "data-card-tone",
-    "warm",
+    "temperature",
   );
   await page
     .getByRole("dialog", { name: "Temperaturgraf", exact: true })

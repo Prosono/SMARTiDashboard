@@ -41,6 +41,7 @@ import {
   MapPin,
   Radio,
   AlertCircle,
+  Play,
 } from "lucide-react";
 import { api } from "../api";
 import type { Home, Control } from "../types";
@@ -536,6 +537,11 @@ export function HomeOverview({
                   : t("Velg rutine", "Choose routine")}
               </small>
             </span>
+            {target && (
+              <span className="mode-run" aria-hidden="true">
+                <Play size={21} fill="currentColor" />
+              </span>
+            )}
           </button>
         );
       })}

@@ -4,6 +4,10 @@ import type { CardConfig } from "./homeGridModel";
 export type CardTone =
   | "lighting"
   | "clock"
+  | "calendar"
+  | "energy"
+  | "temperature"
+  | "humidity"
   | "warm"
   | "fresh"
   | "cool"
@@ -28,12 +32,15 @@ function controlTone(control: Control): CardTone {
     ["lock", "alarm_control_panel", "binary_sensor", "cover"].includes(domain)
   )
     return "cool";
+  if (domain === "climate") return "warm";
+  if (kind === "temperature" || ["°C", "°F"].includes(unit))
+    return "temperature";
+  if (["humidity", "moisture"].includes(kind)) return "humidity";
   if (
-    domain === "climate" ||
-    kind === "temperature" ||
-    ["°C", "°F"].includes(unit)
+    ["power", "energy"].includes(kind) ||
+    ["W", "kW", "Wh", "kWh"].includes(unit)
   )
-    return "warm";
+    return "energy";
   if (
     ["fan", "vacuum", "person"].includes(domain) ||
     [
@@ -61,14 +68,14 @@ const widgetTones: Record<string, CardTone> = {
   routines: "plum",
   scenes: "plum",
   people: "fresh",
-  calendar: "warm",
+  calendar: "calendar",
   lighting: "lighting",
   climate: "warm",
   media: "media",
   vacuum: "fresh",
-  "metric:energy": "cool",
-  "metric:temperature": "warm",
-  "metric:humidity": "fresh",
+  "metric:energy": "energy",
+  "metric:temperature": "temperature",
+  "metric:humidity": "humidity",
   "summary:alerts": "cool",
   "summary:batteries": "misc",
   "summary:connection": "misc",
@@ -83,7 +90,8 @@ export function cardTone(
   if (config?.type === "clock") return "clock";
   if (config?.type === "horizon") return "cool";
   if (config?.type === "moon") return "plum";
-  if (config?.type === "date" || config?.type === "daylight") return "warm";
+  if (config?.type === "date") return "calendar";
+  if (config?.type === "daylight") return "warm";
   const sources = config?.sources.length
     ? config.sources
     : card?.entityId
