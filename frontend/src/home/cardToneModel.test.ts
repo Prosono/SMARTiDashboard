@@ -24,12 +24,12 @@ const control = (
 });
 
 describe("card type surface colors", () => {
-  it("gives overview widgets stable, restrained type colors without relying on titles", () => {
+  it("gives overview widgets stable type colors without relying on titles", () => {
     for (const [id, expected] of Object.entries({
       routines: "plum",
       people: "fresh",
       calendar: "warm",
-      lighting: "warm",
+      lighting: "lighting",
       "metric:energy": "cool",
       "metric:temperature": "warm",
       "metric:humidity": "fresh",
@@ -41,7 +41,7 @@ describe("card type surface colors", () => {
   });
   it("uses actual equipment domains, device classes and units", () => {
     const cases: [Control, string][] = [
-      [control("light"), "warm"],
+      [control("light"), "lighting"],
       [control("climate"), "warm"],
       [control("sensor", { unit_of_measurement: "°F" }), "warm"],
       [

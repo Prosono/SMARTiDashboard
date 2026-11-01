@@ -1,3 +1,9 @@
+## 1.36.80
+- Kortene i Harmoni har fått mettede fargeflater og myke gradienter inspirert av Homey: rosa/lilla for lys, varm oransje for varme og kalender, grønt for luft og personer, blått for energi og sikkerhet, og dyp plomme for media og rutiner.
+- Lys tekst, innfelte kontroller og lysere grafkurver er tilpasset de fargede kortene i både lyst og mørkt tema. Bilder, statusvarsler og personlige oppsett beholdes, og forhåndsvisning og fullvisning bruker samme uttrykk.
+- RGB-bakgrunnen har fått et mer synlig, diffust DNA-mønster: to sammenflettede sinusbølger med myke forbindelser mellom seg. Rødt, grønt og blått driver langsomt i ulikt tempo og følger valgt palett i hele appen.
+- Valget «Stillestående», pause i skjulte vinduer og redusert bevegelse beholdes. Bakgrunnen ligger bak innholdet og påvirker ikke betjening av kortene.
+
 ## 1.36.79
 - Kortene i Harmoni har fått dempede bakgrunnsfarger etter type: varm sand for lys, varme og kalender; salvie for luft, personer og rengjøring; blågrått for energi, sikkerhet og klokker; plomme for media, måne og rutiner.
 - Fargetonene følger valgt palett og lyst/mørkt tema. Mindre tekst har fått tilpasset kontrast, mens statusfarger, bilder og kortenes skygger beholdes.

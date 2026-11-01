@@ -35,10 +35,18 @@ export function AtmosphereProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Broad, continuous wave envelopes. Only their containing layers move;
-// the SVG geometry/gradients stay still, with no per-frame JS or audio input.
-const wave =
-  "M-200 330 C0 330 70 130 300 130 S600 450 850 340 S1160 100 1380 220 S1650 420 1800 260";
+// Two opposing waves with soft crosslinks form one continuous double helix.
+// Geometry is created once. Only the three containing color layers move.
+const strands = [
+  "M-400 300 C-266.667 100 -133.333 100 0 300 S266.667 500 400 300 S666.667 100 800 300 S1066.667 500 1200 300 S1466.667 100 1600 300 S1866.667 500 2000 300",
+  "M-400 300 C-266.667 500 -133.333 500 0 300 S266.667 100 400 300 S666.667 500 800 300 S1066.667 100 1200 300 S1466.667 500 1600 300 S1866.667 100 2000 300",
+];
+const crosslinks = Array.from({ length: 30 }, (_, index) => {
+  const x = -360 + index * 80,
+    phase = (((x % 400) + 400) % 400) / 400,
+    height = 600 * phase * (1 - phase);
+  return { x, y1: 300 - height, y2: 300 + height };
+});
 
 export function Atmosphere({ embedded = false }: { embedded?: boolean }) {
   const id = useId().replaceAll(":", ""),
@@ -54,7 +62,12 @@ export function Atmosphere({ embedded = false }: { embedded?: boolean }) {
         <div className={`atmosphere-wave atmosphere-${color}`} key={color}>
           <svg viewBox="0 0 1600 600" preserveAspectRatio="none">
             <defs>
-              <linearGradient id={`${id}-${color}-fade`}>
+              <linearGradient
+                id={`${id}-${color}-fade`}
+                gradientUnits="userSpaceOnUse"
+                x1="-200"
+                x2="1800"
+              >
                 <stop stopColor="currentColor" stopOpacity="0" />
                 <stop offset=".22" stopColor="currentColor" />
                 <stop offset=".78" stopColor="currentColor" />
@@ -62,29 +75,54 @@ export function Atmosphere({ embedded = false }: { embedded?: boolean }) {
               </linearGradient>
               <filter
                 id={`${id}-${color}-soft`}
-                x="-15%"
-                y="-70%"
-                width="130%"
-                height="240%"
+                x="-10%"
+                y="-50%"
+                width="120%"
+                height="200%"
                 colorInterpolationFilters="sRGB"
               >
-                <feGaussianBlur stdDeviation="32" />
+                <feGaussianBlur stdDeviation="26" />
+              </filter>
+              <filter
+                id={`${id}-${color}-thread`}
+                x="-5%"
+                y="-15%"
+                width="110%"
+                height="130%"
+                colorInterpolationFilters="sRGB"
+              >
+                <feGaussianBlur stdDeviation="3.5" />
               </filter>
             </defs>
-            <path
-              d={wave}
+            <g
+              className="atmosphere-helix-glow"
               fill="none"
               stroke={`url(#${id}-${color}-fade)`}
-              strokeWidth="115"
+              strokeWidth="76"
+              opacity=".8"
               filter={`url(#${id}-${color}-soft)`}
-            />
-            <path
-              d={wave}
+            >
+              {strands.map((d, index) => (
+                <path key={index} d={d} />
+              ))}
+            </g>
+            <g
+              className="atmosphere-helix-thread"
               fill="none"
               stroke={`url(#${id}-${color}-fade)`}
-              strokeWidth="1.2"
-              opacity=".18"
-            />
+              strokeWidth="7"
+              opacity=".7"
+              filter={`url(#${id}-${color}-thread)`}
+            >
+              {strands.map((d, index) => (
+                <path key={index} d={d} />
+              ))}
+              <g strokeWidth="4" strokeLinecap="round" opacity=".52">
+                {crosslinks.map(({ x, y1, y2 }) => (
+                  <line key={x} x1={x} x2={x} y1={y1} y2={y2} />
+                ))}
+              </g>
+            </g>
           </svg>
         </div>
       ))}
@@ -111,8 +149,8 @@ export function BackgroundMotionSetting({ lang }: { lang: string }) {
       </label>
       <p className="note">
         {en
-          ? "Soft color waves follow your theme throughout the app. Your device’s reduced motion setting is respected."
-          : "Myke fargebølger følger temaet ditt i hele appen. Enhetens valg for redusert bevegelse respekteres."}
+          ? "Soft, intertwined RGB waves follow your theme throughout the app. Your device’s reduced motion setting is respected."
+          : "Myke RGB-bølger slynger seg rundt hverandre og følger temaet ditt i hele appen. Enhetens valg for redusert bevegelse respekteres."}
       </p>
     </>
   );

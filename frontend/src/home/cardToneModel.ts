@@ -1,7 +1,8 @@
 import type { Control } from "../types";
 import type { CardConfig } from "./homeGridModel";
 
-export type CardTone = "warm" | "fresh" | "cool" | "plum" | "neutral";
+export type CardTone =
+  "lighting" | "warm" | "fresh" | "cool" | "plum" | "neutral";
 
 function controlTone(control: Control): CardTone {
   const { domain, attributes } = control;
@@ -9,12 +10,12 @@ function controlTone(control: Control): CardTone {
     unit = String(attributes.unit_of_measurement || "");
   if (["media_player", "scene", "script", "automation"].includes(domain))
     return "plum";
+  if (domain === "light") return "lighting";
   if (
     ["lock", "alarm_control_panel", "binary_sensor", "cover"].includes(domain)
   )
     return "cool";
   if (
-    domain === "light" ||
     domain === "climate" ||
     kind === "temperature" ||
     ["°C", "°F"].includes(unit)
@@ -48,7 +49,7 @@ const widgetTones: Record<string, CardTone> = {
   scenes: "plum",
   people: "fresh",
   calendar: "warm",
-  lighting: "warm",
+  lighting: "lighting",
   climate: "warm",
   media: "plum",
   vacuum: "fresh",

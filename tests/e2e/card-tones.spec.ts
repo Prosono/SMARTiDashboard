@@ -85,15 +85,25 @@ async function setup(page: Page) {
       json: { ...home, controls: [...home.controls, ...controls] },
     });
   });
-  await page.route("**/api/controls/sensor.tone_*/history**", (route) =>
-    route.fulfill({ json: { points: [], unit: "°C" } }),
-  );
+  await page.route("**/api/controls/sensor.tone_*/history**", (route) => {
+    const humidity = route.request().url().includes("humidity"),
+      now = Date.now();
+    return route.fulfill({
+      json: {
+        points: [0, 1, 2].map((index) => ({
+          time: new Date(now - (2 - index) * 3600000).toISOString(),
+          value: (humidity ? 45 : 20) + index,
+        })),
+        unit: humidity ? "%" : "°C",
+      },
+    });
+  });
   const definitions: [string, string, any?][] = [
     ["weather", "cool"],
     ["routines", "plum"],
     ["people", "fresh"],
     ["calendar", "warm"],
-    ["lighting", "warm"],
+    ["lighting", "lighting"],
     ["climate", "warm"],
     ["metric:energy", "cool"],
     ["metric:temperature", "warm"],
@@ -158,7 +168,7 @@ async function setup(page: Page) {
   return { definitions, saved: () => saved };
 }
 
-test("card types have four distinct quiet surfaces with readable text across all palettes and themes", async ({
+test("card types have visibly distinct color families with readable text across all palettes and themes", async ({
   page,
 }, info) => {
   test.setTimeout(90000);
@@ -193,39 +203,107 @@ test("card types have four distinct quiet surfaces with readable text across all
       const result = await canvas.evaluate((node) => {
         const colors = new Map<string, string>();
         const ctx = document.createElement("canvas").getContext("2d")!;
-        const luminance = (color: string) => {
+        const linearRGB = (color: string) => {
           ctx.clearRect(0, 0, 1, 1);
           ctx.fillStyle = color;
           ctx.fillRect(0, 0, 1, 1);
-          const rgb = [...ctx.getImageData(0, 0, 1, 1).data]
+          return [...ctx.getImageData(0, 0, 1, 1).data]
             .slice(0, 3)
             .map((n) => n / 255)
             .map((n) =>
               n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4,
             );
+        };
+        const luminance = (color: string) => {
+          const rgb = linearRGB(color);
           return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
         };
-        const ratios: number[] = [];
+        const oklab = (color: string) => {
+          const [r, g, b] = linearRGB(color),
+            l = Math.cbrt(
+              0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b,
+            ),
+            m = Math.cbrt(
+              0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b,
+            ),
+            s = Math.cbrt(
+              0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b,
+            );
+          return [
+            0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+            1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+            0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+          ];
+        };
+        const ratios: number[] = [],
+          chartRatios: number[] = [];
+        let weakest = { ratio: Infinity, text: "", color: "", background: "" };
         for (const surface of node.querySelectorAll<HTMLElement>(
           ".home-canvas-surface[data-card-tone]",
         )) {
           const tone = surface.dataset.cardTone!,
-            background = getComputedStyle(surface).backgroundColor;
+            style = getComputedStyle(surface),
+            background = style.backgroundColor,
+            stops = [background, style.getPropertyValue("--card-color")];
           if (surface.querySelector(".simple-weather")) continue;
           colors.set(tone, background);
           for (const text of surface.querySelectorAll(
-            ".home-grid-routines h2, .people-heading h2, .home-metric-head strong, .home-metric-source, .home-metric-period, .ambient-heading strong, .ambient-source-note, .ambient-clock-date",
+            ".home-grid-routines h2, .people-heading h2, .home-metric-head strong, .home-metric-source, .home-metric-period, .ambient-heading strong, .ambient-source-note, .ambient-clock-date, .personal-graph-legend span, .personal-graph-legend strong",
           )) {
-            const a = luminance(background),
-              b = luminance(getComputedStyle(text).color);
-            ratios.push((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05));
+            for (const stop of stops) {
+              const color = getComputedStyle(text).color,
+                a = luminance(stop),
+                b = luminance(color),
+                ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+              ratios.push(ratio);
+              if (ratio < weakest.ratio)
+                weakest = {
+                  ratio,
+                  text: text.textContent || "",
+                  color,
+                  background: stop,
+                };
+            }
           }
+          for (const line of surface.querySelectorAll(".measured-chart-line"))
+            for (const stop of stops) {
+              const a = luminance(stop),
+                b = luminance(getComputedStyle(line).stroke);
+              chartRatios.push(
+                (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+              );
+            }
         }
-        return { colors: [...colors.values()], ratios };
+        const families = [...colors.values()].map(oklab),
+          separation = families.flatMap((a, i) =>
+            families
+              .slice(i + 1)
+              .map((b) => Math.hypot(...a.map((n, j) => n - b[j]))),
+          );
+        return {
+          colors: [...colors.values()],
+          ratios,
+          chartRatios,
+          separation,
+          weakest,
+        };
       });
-      expect(new Set(result.colors).size).toBe(4);
+      expect(new Set(result.colors).size).toBe(5);
+      // Perceptual distance catches a return to almost indistinguishable tints.
+      expect(
+        Math.min(...result.separation),
+        `${theme}, ${palette}`,
+      ).toBeGreaterThanOrEqual(0.05);
       expect(result.ratios.length).toBeGreaterThan(10);
-      expect(Math.min(...result.ratios)).toBeGreaterThanOrEqual(4.5);
+      expect(result.chartRatios.length).toBeGreaterThan(0);
+      expect(
+        Math.min(...result.chartRatios),
+        `${theme}, ${palette}: chart strokes`,
+      ).toBeGreaterThanOrEqual(3);
+      expect(
+        Math.min(...result.ratios),
+        `${theme}, ${palette}: ${JSON.stringify(result.weakest)}`,
+      ).toBeGreaterThanOrEqual(4.5);
       if (palette === "SMARTi")
         await canvas.screenshot({
           path: `/private/tmp/smarti-card-tones-${theme}-${info.project.name}.png`,

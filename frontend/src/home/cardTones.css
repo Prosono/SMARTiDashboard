@@ -1,52 +1,101 @@
-/* Stable type colors, independent of live state and personal grid positions. */
+/* Saturated type surfaces, shared by saved cards, previews and expanded views. */
 html[data-home-style="harmony"] {
-  [data-card-tone] {
-    --card-identity: #8292a5;
-    --card-weight: 23%;
-    --card-color: color-mix(in oklab, var(--card-identity) 82%, var(--orange));
-    --card-material: color-mix(
+  [data-card-tone]:not([data-card-tone="neutral"]) {
+    --card-strength: 100%;
+    --card-color: color-mix(
       in oklab,
-      var(--card-color) var(--card-weight),
-      var(--surface)
+      color-mix(in oklab, var(--card-identity) 96%, var(--orange))
+        var(--card-strength),
+      #101620
     );
-    --equipment-surface: var(--card-material);
+    --card-depth: color-mix(
+      in oklab,
+      color-mix(in oklab, var(--card-base) 96%, var(--orange))
+        var(--card-strength),
+      #101620
+    );
+    --card-skin: linear-gradient(135deg, var(--card-color), var(--card-depth));
+    --card-material: var(--card-depth);
+    --text: #fffaf6;
+    --muted: color-mix(in oklab, var(--text) 95%, var(--card-depth));
+    --surface: var(--card-depth);
+    --equipment-surface: var(--card-material) var(--card-skin);
     --equipment-muted-surface: color-mix(
       in oklab,
-      var(--card-material) 48%,
-      var(--surface)
+      var(--card-depth) 88%,
+      var(--text)
     );
-    --equipment-line: color-mix(in oklab, var(--card-color) 23%, var(--line));
+    --equipment-line: color-mix(in oklab, var(--text) 22%, var(--card-depth));
+    --equipment-reading: var(--text);
+    --equipment-orange: #ffe2b0;
+    --soft: var(--equipment-muted-surface);
+    --line: var(--equipment-line);
     --harmony-border: var(--equipment-line);
-    --muted: color-mix(in oklab, var(--text) 78%, var(--card-material));
+    --accent: #fff0d9;
+    --on-accent: #302035;
+    --tint: var(--equipment-muted-surface);
+    --harmony-light: #ffe6bb;
+    --harmony-climate: #ffdbb4;
+    --harmony-energy: #bce7ff;
+    --harmony-air: #b9f5e7;
+    --harmony-security: #c8f8de;
+    --harmony-media: #e4d1ff;
+    --harmony-shade: #d2e6ff;
+    --harmony-cleaning: #ccf7e7;
+    --harmony-neutral: var(--muted);
+    --card-series-1: #fff3c2;
+    --card-series-2: #9de4ff;
+    --card-series-3: #a7f3ca;
+    --card-series-4: #ffd0e6;
+    --card-series-5: #f8d599;
+    --card-series-6: #dcd0ff;
+    color: var(--text);
+    color-scheme: dark;
   }
   &[data-theme="dark"] [data-card-tone] {
-    --card-weight: 24%;
+    --card-strength: 88%;
+  }
+  [data-card-tone="lighting"] {
+    --card-identity: #b8205a;
+    --card-base: #6f1898;
   }
   [data-card-tone="warm"] {
-    --card-identity: #dba157;
+    --card-identity: #b44300;
+    --card-base: #7c2f08;
   }
   [data-card-tone="fresh"] {
-    --card-identity: #6eaa94;
+    --card-identity: #087653;
+    --card-base: #064649;
   }
   [data-card-tone="cool"] {
-    --card-identity: #6698bb;
+    --card-identity: #0967b2;
+    --card-base: #173767;
   }
   [data-card-tone="plum"] {
-    --card-identity: #a58bb7;
-  }
-  [data-card-tone="neutral"] {
-    --card-weight: 4%;
+    --card-identity: #7638a6;
+    --card-base: #27244f;
   }
 
-  .home-canvas-surface[data-card-tone],
-  .home-canvas-cell[data-preview][data-card-tone],
-  .home-canvas-expanded[data-card-tone] {
-    background: var(--card-material);
+  .home-canvas-surface[data-card-tone]:not([data-card-tone="neutral"]),
+  .home-canvas-cell[data-preview][data-card-tone]:not(
+      [data-card-tone="neutral"]
+    ),
+  .home-canvas-expanded[data-card-tone]:not([data-card-tone="neutral"]) {
+    background: var(--equipment-surface);
     border-color: var(--equipment-line);
   }
   [data-card-tone] .home-canvas-content > .simple-dashboard-tile,
   .home-canvas-expanded[data-card-tone]
     > :is(.media-player-card, .vacuum-card, .simple-dashboard-tile) {
     background: var(--equipment-surface);
+  }
+  [data-card-tone]:not([data-card-tone="neutral"]) .home-metric-card {
+    --harmony-energy: #bce7ff;
+    --metric-color: var(--text);
+  }
+  [data-card-tone]:not([data-card-tone="neutral"])
+    .home-metric-card
+    .home-metric-icon {
+    color: var(--text);
   }
 }

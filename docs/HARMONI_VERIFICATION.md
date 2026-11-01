@@ -1,3 +1,53 @@
+# Stronger card colors and diffuse RGB helix — release 1.36.80
+
+Harmoni's cards have saturated type surfaces with soft gradients and light text,
+following the user's Homey references. Lighting has its own rose-to-violet family;
+heating/calendar/daylight use orange, air/presence/cleaning green-to-teal, energy/
+security/clocks blue, and media/routines/Moon deep plum. Unknown sources and mixed
+graphs remain neutral. A small accent mix follows the selected palette, and dark
+mode deepens the same colors. Borders, inset controls, focus, readings and secondary
+text adapt locally to the colored surface, including native controls. Saved
+layouts, pictures and real state warnings remain intact. Editing previews and
+expanded cards use the same material. Measured graph series use lighter local
+colors, with their original colors as fallbacks outside these cards; values,
+curve geometry, gaps, units and source visibility are unchanged.
+
+The shared RGB atmosphere now uses opposing continuous waves with soft crosslinks,
+forming a diffuse DNA-like double helix. More visible color envelopes and softly
+defined strands move in three independently phased layers. SVG geometry and
+gradients remain static: the existing 46/57/63-second transform cycles animate the
+containing layers. User-space gradients also render the vertical crosslinks.
+There is no per-frame production JavaScript, new dependency or backend change.
+The global background remains inert and behind the UI, with one embedded login
+composition. Still, document-visibility pause, reduced motion, forced colors and
+print behavior are preserved.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file
+  Prettier and `git diff --check`: passed. The existing Vite chunk-size advisory
+  remains. Frontend unit suite: **215 passed**.
+- Final extracted archive: **58 desktop/mobile browser scenarios passed**. All
+  five families have at least 0.05 sampled OKLab separation across all nine
+  palettes and both themes. Sampled primary/secondary/legend text meets 4.5:1
+  against both gradient ends; measured graph strokes meet 3:1. Editing, previews,
+  picture preservation, reload, expanded cards and unchanged saved layouts pass.
+  Existing room grouping, drag/resize/compaction, controls, graph sources/gaps/
+  inspection, clock/sky cards, headers, global RGB navigation, pause/reduced motion,
+  Classic/Living and multimedia/energy chart checks pass.
+- A 2.2-second headless Chromium probe without concurrent browser tests observed
+  desktop 1440×1050: 133 intervals, median 16.7 ms, 95th percentile 16.8 ms,
+  script 1.93 ms, layout 0 ms. Mobile 390×844 at DPR 3: 133 intervals,
+  median 16.7 ms, 95th percentile 16.8 ms, script 1.19 ms, layout 0.017 ms. These
+  are test environment observations, not physical wall-panel performance guarantees.
+- Light/dark card compositions and the isolated helix were visually inspected
+  at desktop and mobile sizes. All **250 runtime files** match the extracted
+  archive manifest; `scripts/package.py --check` passes. Checks use isolated demo
+  data; no real home devices were controlled. Existing broader limitations below
+  still apply.
+
+---
+
 # Recognizable card type surfaces — release 1.36.79
 
 Harmoni's personal cards use four restrained color families: warm sand for lights,

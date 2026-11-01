@@ -1,12 +1,12 @@
-/* A single quiet stage behind the UI. Cards and photos keep their own surfaces. */
+/* A diffused RGB double helix behind the UI; surfaces remain opaque and readable. */
 #root {
   isolation: isolate;
   min-height: 100svh;
 }
 .atmosphere {
-  --atmosphere-red: color-mix(in oklab, #ce8277 72%, var(--orange));
-  --atmosphere-green: color-mix(in oklab, #7ca88f 76%, var(--orange));
-  --atmosphere-blue: color-mix(in oklab, #7c9fc4 76%, var(--orange));
+  --atmosphere-red: color-mix(in oklab, #d16e7a 84%, var(--orange));
+  --atmosphere-green: color-mix(in oklab, #4fa482 86%, var(--orange));
+  --atmosphere-blue: color-mix(in oklab, #638acb 86%, var(--orange));
   position: fixed;
   inset: 0;
   z-index: -1;
@@ -14,10 +14,10 @@
   pointer-events: none;
   user-select: none;
   contain: strict;
-  opacity: 0.26;
+  opacity: 0.48;
 }
 html[data-theme="dark"] .atmosphere {
-  opacity: 0.19;
+  opacity: 0.36;
 }
 .atmosphere-wave {
   position: absolute;
@@ -40,14 +40,14 @@ html[data-theme="dark"] .atmosphere {
 }
 .atmosphere-green {
   color: var(--atmosphere-green);
-  top: 12%;
+  top: 4%;
   animation-duration: 57s;
   animation-delay: -43s;
   animation-direction: alternate-reverse;
 }
 .atmosphere-blue {
   color: var(--atmosphere-blue);
-  top: -16%;
+  top: -5%;
   animation-duration: 63s;
   animation-delay: -8s;
 }
@@ -71,7 +71,7 @@ html[data-theme="dark"] .atmosphere {
 }
 .login > .atmosphere-embedded {
   position: absolute;
-  opacity: 0.23;
+  opacity: 0.32;
 }
 @media (max-width: 700px) {
   .atmosphere-wave {
@@ -81,10 +81,10 @@ html[data-theme="dark"] .atmosphere {
     top: 10%;
   }
   .atmosphere-green {
-    top: 25%;
+    top: 17%;
   }
   .atmosphere-blue {
-    top: -6%;
+    top: 8%;
   }
 }
 @media (prefers-reduced-motion: reduce) {

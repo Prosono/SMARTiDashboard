@@ -8,7 +8,14 @@ export type MeasuredSeries = {
 };
 export type ChartSample = { time: number; value: number | null };
 export const chartColor = (index: number) =>
-  ["#e88d35", "#398fc5", "#399b80", "#b56999", "#95843c", "#8271be"][index % 6];
+  [
+    "var(--card-series-1,#e88d35)",
+    "var(--card-series-2,#398fc5)",
+    "var(--card-series-3,#399b80)",
+    "var(--card-series-4,#b56999)",
+    "var(--card-series-5,#95843c)",
+    "var(--card-series-6,#8271be)",
+  ][index % 6];
 
 export function chartSegments(points: TrendPoint[]): ChartSample[][] {
   const result: ChartSample[][] = [];
