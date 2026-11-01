@@ -1,3 +1,41 @@
+# Independent ribbon currents — release 1.36.84
+
+The spectrum background now combines two independent CSS motion layers per color.
+The outer layers drift and breathe over 34/43/51 seconds. Inner currents vary
+shear, scale, position and opacity over 19/23/29 seconds, with different initial
+phases and directions. This changes the visible rise/fall and crossing of the
+ribbons rather than moving every fold together. Existing vector paths, diffuse
+edges, theme colors and overall background opacity remain unchanged. Only
+transform and opacity animate; there is no application requestAnimationFrame loop.
+
+Both layers pause with the existing Still preference and document visibility.
+Reduced motion removes all six animations and keeps a static composition. Login
+uses the same embedded behavior, and the background remains inert and behind the
+interactive interface. No card layout or device behavior changed.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, TypeScript lint, changed-file Prettier and
+  git diff --check passed. Existing Vite chunk-size advisory remains.
+- **244 frontend unit cases passed.**
+- **4 desktop/mobile background scenarios passed against the final extracted
+  archive.** Coverage includes all main destinations and Home tabs, all three Home
+  styles, all nine palettes/both themes, 320/390/834/1440 widths, existing controls,
+  saved Still preference, hidden-tab pause, reduced motion, forced colors and print.
+  The tests also sample a full active animation iteration and verify independent
+  swell, shear, opacity, amplitude variation and pause of all inner currents.
+- Desktop/mobile compositions at 0/6/12 seconds and both themes were visually
+  inspected. A separate 2.2-second Chromium probe recorded 132/133 intervals on
+  desktop/mobile: median and 95th percentile 16.7 ms on both. Script time was
+  2.22/1.80 ms and layout time 0.021/0 ms. This is test-environment evidence,
+  not physical wall-panel validation. The compiled bundle is identical in the
+  preview and final extracted archive.
+- Deterministic packaging check passed; all **250 runtime files** match the
+  extracted archive. Demo tests did not control real equipment. Prior repository
+  limitations documented below remain applicable.
+
+---
+
 # Breathing waves, softer category surfaces and hourly energy bars — release 1.36.83
 
 The existing three CSS-only spectrum layers now change width and height at

@@ -1,3 +1,8 @@
+## 1.36.84
+- RGB-bakgrunnen er mer levende: hvert fargebånd har nå en egen bevegelse som bøyer, sveller og varierer gjennomsiktigheten, samtidig som båndene driver rolig over skjermen.
+- Ulike rytmer og faseforskyvninger gjør at bølgene glir forbi hverandre og får mer naturlig samspill. Diffuse kanter, temafarger og rolig uttrykk beholdes.
+- Begge bevegelseslagene følger «Stillestående», pause i skjulte vinduer og redusert bevegelse. Animasjonen bruker bare CSS-transformasjoner og gjennomsiktighet.
+
 ## 1.36.83
 - RGB-bølgene varierer nå rolig i både høyde og bredde, i tillegg til å flytte seg. Stillestående bakgrunn, pause i skjulte vinduer og redusert bevegelse beholdes.
 - Personer, robotstøvsugere og øvrige grønne kategorikort har fått lysere mintgrønne gradienter med mørk tekst. Vanlige lyskort får en lys beige gradient; påslåtte fargelys følger fortsatt faktisk rapportert RGB-farge. Klokkekort har fått en egen grå gradient.

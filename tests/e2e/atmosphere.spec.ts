@@ -68,17 +68,20 @@ test("gentle RGB waves persist behind every destination, home style and palette 
     await backdrop.evaluate((node) =>
       node
         .getAnimations({ subtree: true })
-        .map((animation) => animation.effect!.getTiming().duration),
+        .map((animation) => animation.effect!.getTiming().duration)
+        .sort((a, b) => Number(a) - Number(b)),
     ),
-  ).toEqual([46000, 57000, 63000]);
-  const sizes = await wave.evaluate((node) => {
+  ).toEqual([19000, 23000, 29000, 34000, 43000, 51000]);
+  const sizes = await wave.evaluate(async (node) => {
     const animation = node.getAnimations()[0],
       original = animation.currentTime;
     animation.pause();
+    await animation.ready;
     const duration = Number(animation.effect!.getTiming().duration);
     const delay = Number(animation.effect!.getTiming().delay);
     const samples = [0, 0.25, 0.5, 0.75, 0.99].map((fraction) => {
-      animation.currentTime = duration * fraction + delay;
+      // Sample a full active iteration; negative currentTime has no fill.
+      animation.currentTime = duration * (1 + fraction) + delay;
       const m = new DOMMatrix(getComputedStyle(node).transform);
       return { x: Math.hypot(m.a, m.b), y: Math.hypot(m.c, m.d) };
     });
@@ -92,6 +95,41 @@ test("gentle RGB waves persist behind every destination, home style and palette 
   expect(
     Math.max(...sizes.map((s) => s.x)) / Math.min(...sizes.map((s) => s.x)),
   ).toBeGreaterThan(1.08);
+  const swell = await wave
+    .locator(".atmosphere-current")
+    .evaluate(async (node) => {
+      const animation = node.getAnimations()[0],
+        original = animation.currentTime;
+      animation.pause();
+      await animation.ready;
+      const timing = animation.effect!.getTiming();
+      const samples = [0, 0.25, 0.5, 0.75, 1].map((fraction) => {
+        animation.currentTime =
+          Number(timing.delay) + Number(timing.duration) * (1 + fraction);
+        const style = getComputedStyle(node),
+          m = new DOMMatrix(style.transform);
+        return {
+          shear: m.b,
+          opacity: Number(style.opacity),
+          height: Math.hypot(m.c, m.d),
+        };
+      });
+      animation.currentTime = original;
+      animation.play();
+      return samples;
+    });
+  expect(
+    Math.max(...swell.map((s) => s.shear)) -
+      Math.min(...swell.map((s) => s.shear)),
+  ).toBeGreaterThan(0.08);
+  expect(
+    Math.max(...swell.map((s) => s.opacity)) -
+      Math.min(...swell.map((s) => s.opacity)),
+  ).toBeGreaterThan(0.2);
+  expect(
+    Math.max(...swell.map((s) => s.height)) /
+      Math.min(...swell.map((s) => s.height)),
+  ).toBeGreaterThan(1.5);
   for (const name of [
     "Hjem",
     "Rom",
@@ -218,6 +256,14 @@ test("background motion can be paused, persists, stops while hidden and respects
     waves = backdrop.locator(".atmosphere-wave");
   await expect(backdrop).toHaveAttribute("data-paused", "true");
   await expect(waves.first()).toHaveCSS("animation-play-state", "paused");
+  const currents = backdrop.locator(".atmosphere-current");
+  expect(
+    await currents.evaluateAll((nodes) =>
+      nodes.every(
+        (node) => getComputedStyle(node).animationPlayState === "paused",
+      ),
+    ),
+  ).toBe(true);
   await appearance(page);
   const motion = page.getByRole("combobox", {
     name: "Bakgrunnsbevegelse",
@@ -227,6 +273,13 @@ test("background motion can be paused, persists, stops while hidden and respects
   await motion.selectOption("flow");
   await expect(backdrop).toHaveAttribute("data-paused", "false");
   await expect(waves.first()).toHaveCSS("animation-play-state", "running");
+  expect(
+    await currents.evaluateAll((nodes) =>
+      nodes.every(
+        (node) => getComputedStyle(node).animationPlayState === "running",
+      ),
+    ),
+  ).toBe(true);
   await page.reload();
   await appearance(page);
   await expect(motion).toHaveValue("flow");
@@ -239,6 +292,13 @@ test("background motion can be paused, persists, stops while hidden and respects
   });
   await expect(backdrop).toHaveAttribute("data-paused", "true");
   await expect(waves.first()).toHaveCSS("animation-play-state", "paused");
+  expect(
+    await currents.evaluateAll((nodes) =>
+      nodes.every(
+        (node) => getComputedStyle(node).animationPlayState === "paused",
+      ),
+    ),
+  ).toBe(true);
   await page.evaluate(() => {
     delete (document as unknown as { hidden?: boolean }).hidden;
     document.dispatchEvent(new Event("visibilitychange"));
