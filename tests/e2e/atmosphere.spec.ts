@@ -64,72 +64,83 @@ test("gentle RGB waves persist behind every destination, home style and palette 
   await expect
     .poll(() => wave.evaluate((node) => getComputedStyle(node).transform))
     .not.toBe(first);
+  const waves = backdrop.locator(".atmosphere-wave");
+  await expect(waves).toHaveCount(3);
+  await expect(backdrop.locator("svg, canvas")).toHaveCount(0);
   expect(
     await backdrop.evaluate((node) =>
       node
         .getAnimations({ subtree: true })
-        .map((animation) => animation.effect!.getTiming().duration)
+        .map((a) => a.effect!.getTiming().duration)
         .sort((a, b) => Number(a) - Number(b)),
     ),
-  ).toEqual([19000, 23000, 29000, 34000, 43000, 51000]);
-  const sizes = await wave.evaluate(async (node) => {
-    const animation = node.getAnimations()[0],
-      original = animation.currentTime;
-    animation.pause();
-    await animation.ready;
-    const duration = Number(animation.effect!.getTiming().duration);
-    const delay = Number(animation.effect!.getTiming().delay);
-    const samples = [0, 0.25, 0.5, 0.75, 0.99].map((fraction) => {
-      // Sample a full active iteration; negative currentTime has no fill.
-      animation.currentTime = duration * (1 + fraction) + delay;
-      const m = new DOMMatrix(getComputedStyle(node).transform);
-      return { x: Math.hypot(m.a, m.b), y: Math.hypot(m.c, m.d) };
-    });
-    animation.currentTime = original;
-    animation.play();
-    return samples;
-  });
-  expect(
-    Math.max(...sizes.map((s) => s.y)) / Math.min(...sizes.map((s) => s.y)),
-  ).toBeGreaterThan(1.6);
-  expect(
-    Math.max(...sizes.map((s) => s.x)) / Math.min(...sizes.map((s) => s.x)),
-  ).toBeGreaterThan(1.08);
-  const swell = await wave
-    .locator(".atmosphere-current")
-    .evaluate(async (node) => {
+  ).toEqual([19000, 29000, 37000]);
+  for (const layer of await waves.all()) {
+    expect(
+      await layer.evaluate((node) => node.clientHeight),
+    ).toBeLessThanOrEqual(360);
+    const mask = await layer.evaluate(
+      (node) => getComputedStyle(node).maskImage,
+    );
+    expect(mask).toContain("atmosphere/ribbon-");
+    const asset = mask.match(/url\(["']?(.+?)["']?\)/)![1];
+    expect((await page.request.get(asset)).ok()).toBe(true);
+    await expect(layer).toHaveCSS("filter", "none");
+    const { sizes, cadence } = await layer.evaluate(async (node) => {
       const animation = node.getAnimations()[0],
         original = animation.currentTime;
       animation.pause();
       await animation.ready;
-      const timing = animation.effect!.getTiming();
-      const samples = [0, 0.25, 0.5, 0.75, 1].map((fraction) => {
+      const { duration, delay } = animation.effect!.getTiming();
+      const samples = [0, 0.25, 0.5, 0.75, 0.99].map((fraction) => {
         animation.currentTime =
-          Number(timing.delay) + Number(timing.duration) * (1 + fraction);
-        const style = getComputedStyle(node),
-          m = new DOMMatrix(style.transform);
+          Number(delay) + Number(duration) * (2 + fraction);
+        const matrix = new DOMMatrix(getComputedStyle(node).transform);
         return {
-          shear: m.b,
-          opacity: Number(style.opacity),
-          height: Math.hypot(m.c, m.d),
+          x: Math.hypot(matrix.a, matrix.b),
+          y: Math.hypot(matrix.c, matrix.d),
         };
+      });
+      const cadence = [60010, 60020, 60060].map((time) => {
+        animation.currentTime = time;
+        return getComputedStyle(node).transform;
       });
       animation.currentTime = original;
       animation.play();
-      return samples;
+      return { sizes: samples, cadence };
     });
-  expect(
-    Math.max(...swell.map((s) => s.shear)) -
-      Math.min(...swell.map((s) => s.shear)),
-  ).toBeGreaterThan(0.08);
-  expect(
-    Math.max(...swell.map((s) => s.opacity)) -
-      Math.min(...swell.map((s) => s.opacity)),
-  ).toBeGreaterThan(0.2);
-  expect(
-    Math.max(...swell.map((s) => s.height)) /
-      Math.min(...swell.map((s) => s.height)),
-  ).toBeGreaterThan(1.5);
+    expect(
+      Math.max(...sizes.map((s) => s.y)) / Math.min(...sizes.map((s) => s.y)),
+    ).toBeGreaterThan(2);
+    expect(
+      Math.max(...sizes.map((s) => s.x)) / Math.min(...sizes.map((s) => s.x)),
+    ).toBeGreaterThan(1.1);
+    expect(cadence[0]).toBe(cadence[1]);
+    expect(cadence[2]).not.toBe(cadence[0]);
+  }
+  const independent = await waves.evaluateAll(async (nodes) => {
+    const animations = nodes.map((n) => n.getAnimations()[0]),
+      originals = animations.map((a) => a.currentTime);
+    animations.forEach((a) => a.pause());
+    await Promise.all(animations.map((a) => a.ready));
+    const sizes = Array.from({ length: 21 }, (_, i) => {
+      animations.forEach((a) => {
+        a.currentTime = 60000 + i * 2000;
+      });
+      return nodes.map((n) => new DOMMatrix(getComputedStyle(n).transform).d);
+    });
+    animations.forEach((a, i) => {
+      a.currentTime = originals[i];
+      a.play();
+    });
+    return sizes.some(
+      (row, i) =>
+        i > 0 &&
+        row.some((y, j) => y - sizes[i - 1][j] > 0.03) &&
+        row.some((y, j) => y - sizes[i - 1][j] < -0.03),
+    );
+  });
+  expect(independent).toBe(true);
   for (const name of [
     "Hjem",
     "Rom",
@@ -256,14 +267,6 @@ test("background motion can be paused, persists, stops while hidden and respects
     waves = backdrop.locator(".atmosphere-wave");
   await expect(backdrop).toHaveAttribute("data-paused", "true");
   await expect(waves.first()).toHaveCSS("animation-play-state", "paused");
-  const currents = backdrop.locator(".atmosphere-current");
-  expect(
-    await currents.evaluateAll((nodes) =>
-      nodes.every(
-        (node) => getComputedStyle(node).animationPlayState === "paused",
-      ),
-    ),
-  ).toBe(true);
   await appearance(page);
   const motion = page.getByRole("combobox", {
     name: "Bakgrunnsbevegelse",
@@ -274,7 +277,7 @@ test("background motion can be paused, persists, stops while hidden and respects
   await expect(backdrop).toHaveAttribute("data-paused", "false");
   await expect(waves.first()).toHaveCSS("animation-play-state", "running");
   expect(
-    await currents.evaluateAll((nodes) =>
+    await waves.evaluateAll((nodes) =>
       nodes.every(
         (node) => getComputedStyle(node).animationPlayState === "running",
       ),
@@ -293,7 +296,7 @@ test("background motion can be paused, persists, stops while hidden and respects
   await expect(backdrop).toHaveAttribute("data-paused", "true");
   await expect(waves.first()).toHaveCSS("animation-play-state", "paused");
   expect(
-    await currents.evaluateAll((nodes) =>
+    await waves.evaluateAll((nodes) =>
       nodes.every(
         (node) => getComputedStyle(node).animationPlayState === "paused",
       ),
@@ -316,7 +319,10 @@ test("background motion can be paused, persists, stops while hidden and respects
     ),
   ).toBe(0);
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  await expect(waves.first()).toHaveCSS("animation-name", "atmosphere-flow");
+  await expect(waves.first()).toHaveCSS(
+    "animation-name",
+    "atmosphere-ribbon-a",
+  );
   await motion.selectOption("still");
   await page.reload();
   await expect(backdrop).toHaveAttribute("data-paused", "true");

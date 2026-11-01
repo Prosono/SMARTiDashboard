@@ -1,3 +1,64 @@
+# Bounded, pre-softened ribbons with independent sizing — release 1.36.85
+
+The animated background uses three bounded HTML surfaces with pre-rendered alpha
+masks, replacing three large SVGs, six SVG blur filters and nested motion wrappers.
+Each 960×216 lossless WebP mask contains one distinct soft ribbon (43,964 bytes in
+total). The live CSS gradient supplies the palette colors, so masks do not freeze
+the theme. scripts/render_atmosphere.py reproduces them with Pillow; Pillow is a
+developer-only tool and is not added to the application runtime.
+
+There is one transform animation per ribbon, with independent geometry, size
+keyframes, phase and 19/29/37-second duration. Height changes by more than 2:1 per
+ribbon, with independent width variation. Different ribbons can grow and shrink
+at the same time. Quarter-cycle steps (114/174/222) give all three animations an
+aligned 24 Hz change cadence without a JavaScript timer or animation loop. Other
+UI rendering is not capped. Opacity and color gradients do not animate.
+
+Layer heights are capped at 360 CSS pixels (250 on mobile), and offscreen width
+is reduced. The old full-screen group opacity is replaced with fixed per-ribbon
+opacity, avoiding an extra overlapping group surface. Promotion is limited to
+these three known animation layers while moving. Existing Still preference,
+hidden-tab pause, reduced motion, inert background, theme palettes, login and
+forced-colors/print behavior remain. Mask URLs resolve under document.baseURI for
+ingress, like the existing local image assets.
+
+Before/after Chromium evidence on 1 November 2026:
+
+| Isolated background, 4-second trace, 4× CPU throttling | 1.36.84 | 1.36.85 |
+| --- | ---: | ---: |
+| Desktop background layer area, CSS pixels | 3,835,728 | 1,820,700 |
+| Mobile background layer area, CSS pixels | 1,203,930 | 483,000 |
+| Desktop DrawLayers.FrameViewerTracing operations | 242 | 97 |
+| Mobile DrawLayers.FrameViewerTracing operations | 241 | 97 |
+
+This is about 53%/60% less layer area and 60% fewer background draw operations.
+The same RAF measurement probe ran in both captures, so overall callback/frame
+frequency staying near 60 Hz does not imply the background still draws at 60 Hz.
+The isolated trace removes other interface animations to measure the backdrop;
+these numbers do not represent a 60% reduction in whole-browser CPU or VRAM.
+The mask candidate was also compared with continuous motion before choosing the
+24 Hz cadence. A separate normal full-UI probe retained approximately 16.7 ms
+median/95th-percentile frame intervals on desktop/mobile. These are controlled
+Chromium measurements, not a physical low-end panel or every browser.
+
+Validation:
+
+- Production TypeScript/Vite build, TypeScript lint, changed-file Prettier, targeted
+  Ruff check/format and git diff --check passed; existing Vite size advisory remains.
+- **244 frontend unit cases passed.** Mask regeneration is byte-identical.
+- **4 desktop/mobile background scenarios passed against the final extracted
+  archive**, covering all main destinations/Home tabs, three Home styles, nine
+  palettes, light/dark, 320/390/834/1440 widths, login, mask asset responses,
+  no SVG/canvas/runtime filters, three animation layers, >2:1 independent height
+  envelopes, independent growth/contraction, bounded dimensions, 24 Hz change
+  cadence, pause/persistence/hidden-tab behavior, reduced motion and forced colors.
+- Light/dark desktop/mobile compositions at multiple phases were visually checked.
+  Packaging check passes and all **253 runtime files** match the extracted archive.
+  No backend code or real device actions changed. Prior repository limitations
+  below remain applicable.
+
+---
+
 # Independent ribbon currents — release 1.36.84
 
 The spectrum background now combines two independent CSS motion layers per color.

@@ -17,139 +17,143 @@
   pointer-events: none;
   user-select: none;
   contain: strict;
-  opacity: 0.62;
+  --wave-opacity: 0.62;
 }
 html[data-theme="dark"] .atmosphere {
-  opacity: 0.78;
+  --wave-opacity: 0.78;
 }
+/* No live blur, SVG filters, animated gradients or nested motion surfaces.
+   The small alpha mask and spectrum are painted once into each bounded layer. */
 .atmosphere-wave {
   position: absolute;
-  width: 130%;
-  height: 65%;
-  left: -15%;
-  top: 17%;
-  transform-origin: center;
-  animation: atmosphere-flow 34s cubic-bezier(0.45, 0, 0.55, 1) infinite
-    alternate;
-}
-.atmosphere-current {
-  width: 100%;
-  height: 100%;
-  transform-origin: center;
-  animation: atmosphere-swell 19s cubic-bezier(0.45, 0, 0.55, 1) infinite
-    alternate;
-  animation-delay: -11s;
-}
-.atmosphere-current > svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.atmosphere-red {
+  width: 118%;
+  height: clamp(180px, 34vh, 360px);
+  left: -9%;
+  top: 28%;
+  opacity: var(--wave-opacity);
   color: var(--atmosphere-red);
-  animation-delay: -19s;
-}
-.atmosphere-green {
-  color: var(--atmosphere-green);
-  top: 22%;
-  animation-duration: 43s;
-  animation-delay: -43s;
-  animation-direction: alternate-reverse;
-}
-.atmosphere-blue {
-  color: var(--atmosphere-blue);
-  top: 12%;
-  animation-duration: 51s;
-  animation-delay: -8s;
-}
-.atmosphere-green .atmosphere-current {
-  animation-duration: 23s;
-  animation-delay: -19s;
-  animation-direction: alternate-reverse;
-}
-.atmosphere-blue .atmosphere-current {
-  animation-duration: 29s;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--atmosphere-blue) 12%,
+    var(--atmosphere-red) 25%,
+    var(--atmosphere-red) 39%,
+    var(--atmosphere-amber) 46%,
+    var(--atmosphere-green) 51%,
+    var(--atmosphere-cyan) 59%,
+    var(--atmosphere-blue) 72%,
+    var(--atmosphere-violet) 87%,
+    transparent
+  );
+  mask: var(--ribbon-mask) center / 100% 100% no-repeat;
+  transform-origin: center;
+  /* Quarter-cycle steps = duration * 24 / 4. All three layers share a 24 Hz
+     update cadence without a JS timer; duration/phase/size remain independent. */
+  animation: atmosphere-ribbon-a 19s steps(114, end) infinite;
   animation-delay: -5s;
 }
-/* Local shear changes the rise and fall of the curves while the outer layers
-   drift. Different periods keep the folds from expanding in lockstep. */
-@keyframes atmosphere-swell {
-  0% {
-    transform: translate3d(-3%, 2%, 0) skew(-8deg, -3deg) scale(1.02, 0.78);
-    opacity: 0.76;
+.atmosphere[data-paused="false"] .atmosphere-wave {
+  will-change: transform;
+}
+.atmosphere-b {
+  top: 34%;
+  animation-name: atmosphere-ribbon-b;
+  animation-duration: 29s;
+  animation-timing-function: steps(174, end);
+  animation-delay: -17s;
+}
+.atmosphere-c {
+  top: 24%;
+  animation-name: atmosphere-ribbon-c;
+  animation-duration: 37s;
+  animation-timing-function: steps(222, end);
+  animation-delay: -28s;
+}
+/* Each ribbon has its own size envelope and phase. Growth in one layer can
+   coincide with contraction in another; only compositor transforms change. */
+@keyframes atmosphere-ribbon-a {
+  0%,
+  100% {
+    transform: translate3d(-4%, 2%, 0) skewY(-2deg) scale(0.94, 0.8);
   }
   25% {
-    transform: translate3d(1%, -3%, 0) skew(2deg, 1deg) scale(0.98, 1.08);
-    opacity: 0.94;
+    transform: translate3d(2%, -7%, 0) skewY(2deg) scale(1.08, 1.5);
   }
   50% {
-    transform: translate3d(4%, 4%, 0) skew(9deg, 3deg) scale(1.04, 0.94);
-    opacity: 0.82;
+    transform: translate3d(5%, 4%, 0) skewY(0deg) scale(1.02, 1.05);
   }
   75% {
-    transform: translate3d(-1%, 1%, 0) skew(1deg, -2deg) scale(1, 1.22);
-    opacity: 1;
-  }
-  100% {
-    transform: translate3d(-4%, -2%, 0) skew(-7deg, 2deg) scale(1.03, 0.88);
-    opacity: 0.8;
+    transform: translate3d(-1%, 8%, 0) skewY(-3deg) scale(0.9, 0.62);
   }
 }
-@keyframes atmosphere-flow {
-  0% {
-    transform: translate3d(-7%, -6%, 0) scale(0.94, 0.7) rotate(-4deg);
+@keyframes atmosphere-ribbon-b {
+  0%,
+  100% {
+    transform: translate3d(4%, -3%, 0) skewY(2deg) scale(1.06, 1.4);
   }
   25% {
-    transform: translate3d(-3%, -2%, 0) scale(1.04, 1.18) rotate(-2deg);
+    transform: translate3d(-3%, 6%, 0) skewY(-2deg) scale(0.94, 0.76);
   }
   50% {
-    transform: translate3d(0, 3%, 0) scale(0.98, 0.83) rotate(0deg);
+    transform: translate3d(-5%, -4%, 0) skewY(3deg) scale(1.12, 0.58);
   }
   75% {
-    transform: translate3d(4%, 1%, 0) scale(1.09, 1.28) rotate(2deg);
-  }
-  100% {
-    transform: translate3d(7%, -1%, 0) scale(1.02, 0.68) rotate(4deg);
+    transform: translate3d(1%, -8%, 0) skewY(0deg) scale(1, 1.08);
   }
 }
-.atmosphere[data-paused="true"] :is(.atmosphere-wave, .atmosphere-current) {
+@keyframes atmosphere-ribbon-c {
+  0%,
+  100% {
+    transform: translate3d(-2%, 6%, 0) skewY(0deg) scale(1, 0.66);
+  }
+  25% {
+    transform: translate3d(5%, 1%, 0) skewY(3deg) scale(0.92, 1.05);
+  }
+  50% {
+    transform: translate3d(1%, -8%, 0) skewY(-2deg) scale(1.1, 1.58);
+  }
+  75% {
+    transform: translate3d(-5%, -2%, 0) skewY(1deg) scale(1.04, 1.16);
+  }
+}
+.atmosphere[data-paused="true"] .atmosphere-wave {
   animation-play-state: paused;
 }
-/* Login keeps its photograph; its waves sit above the photo, below all text. */
+/* Login keeps its photograph; its waves sit above the photo, below the text. */
 #root:has(.login) > .atmosphere {
   display: none;
 }
 html .login > .atmosphere-embedded {
   position: absolute;
-  opacity: 0.4;
+  --wave-opacity: 0.4;
 }
 @media (max-width: 700px) {
   .atmosphere-wave {
-    width: 210%;
-    left: -55%;
-    height: 58%;
-    top: 24%;
+    width: 165%;
+    left: -32.5%;
+    height: clamp(150px, 30vh, 250px);
+    top: 31%;
   }
-  .atmosphere-green {
-    top: 29%;
+  .atmosphere-b {
+    top: 37%;
   }
-  .atmosphere-blue {
-    top: 19%;
+  .atmosphere-c {
+    top: 27%;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .atmosphere :is(.atmosphere-wave, .atmosphere-current) {
+  .atmosphere .atmosphere-wave {
     animation: none;
+    will-change: auto;
   }
-  .atmosphere-current {
-    transform: none;
-    opacity: 1;
+  .atmosphere-a {
+    transform: scale(1, 1.1) rotate(-2deg);
   }
-  .atmosphere-red {
-    transform: translate3d(-4%, -2%, 0) rotate(-3deg);
+  .atmosphere-b {
+    transform: scale(1, 0.8) rotate(2deg);
   }
-  .atmosphere-green {
-    transform: translate3d(4%, 3%, 0) rotate(3deg);
+  .atmosphere-c {
+    transform: scale(1, 1.25);
   }
 }
 @media (forced-colors: active), print {

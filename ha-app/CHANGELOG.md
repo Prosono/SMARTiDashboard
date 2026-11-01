@@ -1,3 +1,9 @@
+## 1.36.85
+- Lettere RGB-bakgrunn: seks bevegelseslag med SVG-filtre er erstattet av tre mindre bølgeflater med ferdig myknet form. Temafargene beholdes, og nettleseren slipper å bruke blur-filtre i animasjonen.
+- Bakgrunnen oppdaterer bølgebevegelsen med 24 steg i sekundet, uten JavaScript-timer. Dette reduserer tegnearbeidet; resten av grensesnittets oppdateringsfrekvens endres ikke.
+- Hver bølge har egen form, rytme, startfase og størrelsesforløp. De vokser og krymper tydeligere uavhengig av hverandre, slik at én kan vokse mens en annen krymper.
+- Stillestående bakgrunn, pause i skjulte vinduer, redusert bevegelse og alle paletter beholdes. Grafikkflatene er mindre, særlig på mobil.
+
 ## 1.36.84
 - RGB-bakgrunnen er mer levende: hvert fargebånd har nå en egen bevegelse som bøyer, sveller og varierer gjennomsiktigheten, samtidig som båndene driver rolig over skjermen.
 - Ulike rytmer og faseforskyvninger gjør at bølgene glir forbi hverandre og får mer naturlig samspill. Diffuse kanter, temafarger og rolig uttrykk beholdes.
