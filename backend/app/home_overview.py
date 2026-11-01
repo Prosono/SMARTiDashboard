@@ -88,7 +88,9 @@ LayoutPage = Literal["overview", "overview_simple", "lights", "climate", "securi
 
 class CardConfig(BaseModel):
     model_config = {"extra": "forbid", "strict": True}
-    type: Literal["auto", "compact", "picture", "graph"] = "auto"
+    type: Literal["auto", "compact", "picture", "graph", "clock", "horizon", "daylight", "moon", "date"] = (
+        "auto"
+    )
     title: str = Field(default="", max_length=80)
     icon: Literal[
         "auto",
@@ -111,6 +113,9 @@ class CardConfig(BaseModel):
         "battery",
         "fan",
         "sensor",
+        "clock",
+        "sun",
+        "moon",
     ] = "auto"
     image: Literal[
         "auto",
@@ -129,6 +134,9 @@ class CardConfig(BaseModel):
         Annotated[str, Field(min_length=3, max_length=250, pattern=r"^[a-z_]+\.[a-zA-Z0-9_]+$")]
     ] = Field(default_factory=list, max_length=6)
     period: Literal["6", "24", "168"] = "24"
+    clock_style: Literal["digital", "analog", "orbital"] | None = None
+    show_seconds: bool | None = None
+    time_format: Literal["24h", "12h"] | None = None
 
     @field_validator("title")
     @classmethod
@@ -139,10 +147,17 @@ class CardConfig(BaseModel):
 
     @model_validator(mode="after")
     def valid_sources(self):
+        if self.type in {"clock", "horizon", "daylight", "moon", "date"}:
+            if self.sources:
+                raise ValueError("Time and sky cards do not bind device sources")
+        elif self.type != "auto" and not self.sources:
+            raise ValueError("Choose a data source")
+        if self.type != "clock" and any(
+            value is not None for value in [self.clock_style, self.show_seconds, self.time_format]
+        ):
+            raise ValueError("Clock options require a clock card")
         if len(self.sources) != len(set(self.sources)):
             raise ValueError("Duplicate data sources")
-        if self.type != "auto" and not self.sources:
-            raise ValueError("Choose a data source")
         if self.type != "graph" and len(self.sources) > 1:
             raise ValueError("Only graphs support several data sources")
         return self
@@ -241,7 +256,13 @@ def home_router(store, user, ha, settings):
         key = f"home_layout:{current['id']}:{page}"
         entities = {c.entity_id: c for c in ha.controls()}
         for item in body.items:
-            if item.id.startswith("custom:") and not (item.config and item.config.sources):
+            if item.id.startswith("custom:") and not (
+                item.config
+                and (
+                    item.config.sources
+                    or item.config.type in {"clock", "horizon", "daylight", "moon", "date"}
+                )
+            ):
                 raise HTTPException(422, "card_source_required")
             for source in item.config.sources if item.config else []:
                 if source in entities and not visible(current, entities[source]):

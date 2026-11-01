@@ -24,6 +24,9 @@ import {
   Users,
   Zap,
   Droplets,
+  Clock3,
+  Sun,
+  Moon,
 } from "lucide-react";
 import type { CardConfig } from "./homeGridModel";
 
@@ -49,6 +52,9 @@ export const cardIcons = [
   { id: "battery", Icon: Battery, nb: "Batteri", en: "Battery" },
   { id: "fan", Icon: Fan, nb: "Vifte", en: "Fan" },
   { id: "sensor", Icon: Activity, nb: "Sensor", en: "Sensor" },
+  { id: "clock", Icon: Clock3, nb: "Klokke", en: "Clock" },
+  { id: "sun", Icon: Sun, nb: "Sol", en: "Sun" },
+  { id: "moon", Icon: Moon, nb: "Måne", en: "Moon" },
 ];
 export const cardImages = [
   { id: "auto", nb: "Automatisk", en: "Automatic", path: null },

@@ -1,3 +1,64 @@
+# Clock, horizon and sky cards — release 1.36.76
+
+The card builder has a new Clock and sky category with seven graphical choices:
+digital, analog and orbital clocks; a wide horizon; daylight; moon phase; and
+date/week. Clock style, 12/24-hour format and seconds are editable alongside the
+existing title, icon and gallery image. The existing account/page layout saves
+source-less card configuration with the same strict validation, revisions and
+permissions. Ambient cards belong to Shared across the home on grouped pages.
+They do not issue device commands. Existing defaults are unchanged.
+
+Clock and calendar values use the home's IANA timezone. A shared aligned timer
+updates visible clocks and stops when the document is hidden. Without home
+metadata, the actual panel time is explicitly labelled. Native SVG clock faces
+and horizon diagrams adapt to the measured card area without internal scrolling.
+The wide horizon defaults to two columns; the existing grid still controls all
+saved dimensions. Light/dark themes, palettes and reduced motion remain supported.
+
+The authenticated read-only `/api/home/sky` endpoint calculates Sun/Moon altitude,
+azimuth, daily paths and rise/set events locally with pinned Astral 3.2. Raw home
+coordinates/configuration stay on the server. HA configuration is read through
+`get_config`, cached and refreshed on connection epoch changes. Positions refresh
+once per minute; daily paths sample the actual local day, including 23/25-hour DST
+days. Missing placement, failed loads, cached placement and stale calculations
+are distinguished. Moon illumination is approximate and labelled accordingly.
+Polar days/nights have explicit states, with no invented rise/set times. Daylight
+shows the actual light window(s), including midnight crossings, and a current-time
+marker. Demo calculations are explicitly labelled Oslo. No geolocation service,
+browser location permission or third-party astronomy API is used.
+
+Astronomy implementation reference: [Astral API documentation](https://sffjunkie.github.io/astral/package.html).
+The cards label calculated positions and approximate illumination explicitly.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file
+  Prettier, targeted backend Ruff checks/format and `git diff --check`: passed.
+  Vite retains its existing bundle-size advisory.
+- Frontend unit suite: **210 passed**. New coverage includes home-zone year/date
+  boundaries, ISO weeks, leap years, repeated DST hours, noon/midnight in 12-hour
+  format, all seven choices, measured horizon projection, north-wrap path breaks,
+  moon-disc illumination and actual daylight windows across DST/polar days.
+- Relevant backend layout/card/sky suites: **71 passed**. New coverage includes
+  finite equatorial positions, UTC events, local DST-day sampling, polar events,
+  strict location/timezone input, source-less configuration round-trips, invalid
+  clock options, authentication, restricted resident access, cached configuration,
+  failed-read cooldown and absence of raw coordinates/config/secrets in responses.
+- Extracted release archive: **50 desktop/mobile browser scenarios passed**.
+  New scenarios add all seven designs from graphical previews, check home time
+  against a different panel timezone, live seconds, clock style/format editing,
+  save/reload, light/dark appearance, missing location, retry, polar night, stale
+  positions, no nested scrolling, no clipping fallback at default sizes, reduced
+  motion and no commands. Existing Harmoni, Living, multimedia and energy chart
+  regressions remain covered. Browser astronomy fixtures are explicitly synthetic;
+  real calculation behavior is checked separately by the backend tests.
+- Light/dark cards and the picker were visually inspected on mobile and desktop.
+  All **250 runtime files** match the manifest; `scripts/package.py --check` passes.
+  Browser checks use extracted backend/frontend and isolated demo data. No real
+  home devices were controlled. Broader repository limitations below still apply.
+
+---
+
 # Default room sections and optional free/empty layouts — release 1.36.75
 
 Lights, Miscellaneous, Climate, Security and Multimedia default to room sections.

@@ -22,6 +22,8 @@ import {
   Network,
   TriangleAlert,
   Sofa,
+  Clock3,
+  SunMoon,
 } from "lucide-react";
 import type { Control, Home } from "../types";
 import type { HomeGridCard } from "./HomeGrid";
@@ -40,9 +42,76 @@ import { InSettingsDialog, SettingsDialog } from "./SettingsDialog";
 import { controlState } from "../controlState";
 import { numeric, reading, usable } from "./homeModel";
 import "./cardBuilder.css";
+import {
+  ambientChoices,
+  ambientConfig,
+  ambientTitle,
+  clockDetails,
+  clockZone,
+  isAmbientType,
+} from "./ambientModel";
+import { ambientGlyph, ClockFace, useSky } from "./AmbientCard";
+import { useWallTime } from "./useWallTime";
 
 export type CardSelection = { base?: HomeGridCard; config: CardConfig };
-type Stage = "start" | "devices" | "widgets" | "configure";
+type Stage = "start" | "devices" | "widgets" | "ambient" | "configure";
+function AmbientPicker({
+  lang,
+  choose,
+}: {
+  lang: string;
+  choose: (id: string) => void;
+}) {
+  const now = useWallTime(),
+    sky = useSky();
+  const clock = clockDetails(now, clockZone(sky.data?.timezone).zone, lang);
+  return (
+    <>
+      {[true, false].map((clocks) => (
+        <section className="card-ambient-group" key={String(clocks)}>
+          <h4>
+            {clocks
+              ? lang === "en"
+                ? "Clocks"
+                : "Klokker"
+              : lang === "en"
+                ? "Sky and day"
+                : "Himmel og dag"}
+          </h4>
+          <div className="card-ambient-options" data-clocks={clocks}>
+            {ambientChoices
+              .filter((choice) => (choice.type === "clock") === clocks)
+              .map((choice) => {
+                const Icon = ambientGlyph(choice.type);
+                return (
+                  <button
+                    key={choice.id}
+                    aria-label={lang === "en" ? choice.en : choice.nb}
+                    onClick={() => choose(choice.id)}
+                  >
+                    <div className="card-ambient-thumbnail" aria-hidden="true">
+                      {choice.type === "clock" ? (
+                        <ClockFace
+                          clock={clock}
+                          style={choice.style}
+                          seconds={false}
+                          mini
+                        />
+                      ) : (
+                        <Icon size={68} strokeWidth={1} />
+                      )}
+                    </div>
+                    <strong>{lang === "en" ? choice.en : choice.nb}</strong>
+                    <small>{choice.description[lang === "en" ? 1 : 0]}</small>
+                  </button>
+                );
+              })}
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
 function CardSourceGlyph({ c }: { c: Control }) {
   const family = unitInfo(controlUnit(c)).family;
   const Icon =
@@ -129,8 +198,14 @@ export function CardBuilder({
     const scroll = root.current?.closest(".dashboard-settings-content");
     if (scroll) scroll.scrollTop = 0;
   }, [stage]);
-  const [intent, setIntent] = useState<"device" | "graph" | "widget">(
-    initial?.item.config?.type === "graph" ? "graph" : "device",
+  const [intent, setIntent] = useState<
+    "device" | "graph" | "widget" | "ambient"
+  >(
+    isAmbientType(initial?.item.config?.type || "")
+      ? "ambient"
+      : initial?.item.config?.type === "graph"
+        ? "graph"
+        : "device",
   );
   const [base, setBase] = useState<HomeGridCard | undefined>(initial?.card);
   const [config, setConfig] = useState<CardConfig>(() =>
@@ -150,7 +225,7 @@ export function CardBuilder({
     config.sources.includes(c.entity_id),
   );
   const sourcesValid =
-    config.type === "auto"
+    isAmbientType(config.type) || config.type === "auto"
       ? true
       : config.type === "graph"
         ? config.sources.length > 0 &&
@@ -199,7 +274,13 @@ export function CardBuilder({
     setConfig(defaultCardConfig());
     setBase(undefined);
     if (kind === "graph") setConfig({ ...defaultCardConfig(), type: "graph" });
-    setStage(kind === "widget" ? "widgets" : "devices");
+    setStage(
+      kind === "ambient"
+        ? "ambient"
+        : kind === "widget"
+          ? "widgets"
+          : "devices",
+    );
   };
   function choose(c: Control) {
     if (intent === "graph") {
@@ -229,6 +310,23 @@ export function CardBuilder({
     if (graph) update({ type: "graph" });
   };
   function type(value: CardConfig["type"]) {
+    if (isAmbientType(value)) {
+      setConfig((previous) => {
+        const next = { ...previous, type: value, sources: [] };
+        delete next.clock_style;
+        delete next.show_seconds;
+        delete next.time_format;
+        return value === "clock"
+          ? {
+              ...next,
+              clock_style: "digital",
+              show_seconds: true,
+              time_format: "24h",
+            }
+          : next;
+      });
+      return;
+    }
     const sources =
       value === "auto" && base && !base.entityId
         ? []
@@ -244,7 +342,7 @@ export function CardBuilder({
       editSources(true);
     }
   }
-  const types = [
+  const deviceTypes = [
     {
       id: "auto" as const,
       name: t("Utstyrskort", "Device card"),
@@ -284,6 +382,24 @@ export function CardBuilder({
   ].filter(
     (choice) => choice.id === "auto" || choice.id === "graph" || !!source,
   );
+  const types = isAmbientType(config.type)
+    ? ambientChoices
+        .filter((choice) => choice.type !== "clock" || choice.id === "digital")
+        .map((choice) => ({
+          id: choice.type,
+          name:
+            choice.type === "clock"
+              ? t("Klokke", "Clock")
+              : en
+                ? choice.en
+                : choice.nb,
+          description:
+            choice.type === "clock"
+              ? t("Digital, analog eller orbital", "Digital, analog or orbital")
+              : choice.description[en ? 1 : 0],
+          Icon: ambientGlyph(choice.type),
+        }))
+    : deviceTypes;
   const title = initial
     ? t("Rediger kort", "Edit card")
     : t("Legg til kort", "Add card");
@@ -307,16 +423,22 @@ export function CardBuilder({
           </span>
           <ChevronRight size={14} />
           <span
-            data-current={stage === "devices" || stage === "widgets"}
+            data-current={
+              stage === "devices" || stage === "widgets" || stage === "ambient"
+            }
             aria-current={
-              stage === "devices" || stage === "widgets" ? "step" : undefined
+              stage === "devices" || stage === "widgets" || stage === "ambient"
+                ? "step"
+                : undefined
             }
           >
             2{" "}
             <span>
-              {intent === "widget"
-                ? t("Oversikt", "Overview")
-                : t("Datakilde", "Data source")}
+              {intent === "ambient"
+                ? t("Tid og himmel", "Time and sky")
+                : intent === "widget"
+                  ? t("Oversikt", "Overview")
+                  : t("Datakilde", "Data source")}
             </span>
           </span>
           <ChevronRight size={14} />
@@ -341,6 +463,26 @@ export function CardBuilder({
               </p>
             </div>
             <div className="card-builder-intents">
+              <button
+                aria-label={t("Klokke og himmel", "Clock and sky")}
+                onClick={() => start("ambient")}
+              >
+                <div className="card-intent-art card-intent-time">
+                  <Clock3 size={75} strokeWidth={1} />
+                  <SunMoon size={35} strokeWidth={1.2} />
+                </div>
+                <span>
+                  <Clock3 size={22} />
+                  <strong>{t("Klokke og himmel", "Clock and sky")}</strong>
+                  <small>
+                    {t(
+                      "Klokker, horisont, dagslys og månefase",
+                      "Clocks, horizon, daylight and moon phase",
+                    )}
+                  </small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
               <button
                 aria-label={t("Enhet", "Device")}
                 onClick={() => start("device")}
@@ -412,6 +554,39 @@ export function CardBuilder({
                 <ArrowRight size={20} />
               </button>
             </div>
+          </>
+        )}
+        {stage === "ambient" && (
+          <>
+            <button
+              className="card-builder-back"
+              onClick={() => setStage("start")}
+            >
+              <ArrowLeft size={17} />
+              {t("Tilbake", "Back")}
+            </button>
+            <div className="card-builder-intro">
+              <h3>
+                {t(
+                  "Velg et klokke- eller himmelkort",
+                  "Choose a clock or sky card",
+                )}
+              </h3>
+              <p>
+                {t(
+                  "Klokker følger hjemmets tidssone. Sol og måne beregnes fra hjemmeplasseringen.",
+                  "Clocks follow your home's timezone. Sun and moon use your home location.",
+                )}
+              </p>
+            </div>
+            <AmbientPicker
+              lang={lang}
+              choose={(id) => {
+                setConfig(ambientConfig(id));
+                setBase(undefined);
+                setStage("configure");
+              }}
+            />
           </>
         )}
         {stage === "devices" && (
@@ -676,6 +851,11 @@ export function CardBuilder({
               <button
                 className="card-builder-back"
                 onClick={() => {
+                  if (isAmbientType(config.type)) {
+                    setIntent("ambient");
+                    setStage("ambient");
+                    return;
+                  }
                   setIntent(
                     config.type === "graph"
                       ? "graph"
@@ -699,7 +879,8 @@ export function CardBuilder({
                 <div className="card-builder-intro">
                   <h3>{t("Slik vil du se det", "Make it yours")}</h3>
                   <p>
-                    {source?.name ||
+                    {ambientTitle(config, lang) ||
+                      source?.name ||
                       base?.title ||
                       t("Dine målinger", "Your readings")}
                   </p>
@@ -738,6 +919,7 @@ export function CardBuilder({
                     maxLength={80}
                     value={config.title}
                     placeholder={
+                      ambientTitle(config, lang) ||
                       source?.name ||
                       base?.title ||
                       t("Valgfritt navn", "Optional title")
@@ -745,6 +927,52 @@ export function CardBuilder({
                     onChange={(e) => update({ title: e.target.value })}
                   />
                 </label>
+                {config.type === "clock" && (
+                  <fieldset className="card-clock-settings">
+                    <legend>{t("Klokkestil", "Clock style")}</legend>
+                    <div className="card-clock-styles">
+                      {ambientChoices
+                        .filter((choice) => choice.type === "clock")
+                        .map((choice) => (
+                          <button
+                            key={choice.id}
+                            aria-pressed={
+                              (config.clock_style || "digital") === choice.style
+                            }
+                            onClick={() =>
+                              update({ clock_style: choice.style })
+                            }
+                          >
+                            {en ? choice.en : choice.nb}
+                          </button>
+                        ))}
+                    </div>
+                    <label>
+                      {t("Tidsformat", "Time format")}
+                      <select
+                        value={config.time_format || "24h"}
+                        onChange={(event) =>
+                          update({
+                            time_format: event.target.value as "24h" | "12h",
+                          })
+                        }
+                      >
+                        <option value="24h">{t("24 timer", "24 hour")}</option>
+                        <option value="12h">{t("12 timer", "12 hour")}</option>
+                      </select>
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={config.show_seconds !== false}
+                        onChange={(event) =>
+                          update({ show_seconds: event.target.checked })
+                        }
+                      />
+                      {t("Vis sekunder", "Show seconds")}
+                    </label>
+                  </fieldset>
+                )}
                 {(config.sources.length > 0 || config.type === "graph") && (
                   <section className="card-builder-source-summary">
                     <div>

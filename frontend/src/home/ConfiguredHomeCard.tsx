@@ -16,6 +16,8 @@ import { EquipmentArtwork } from "./EquipmentArtwork";
 import { numeric, reading, usable, temperature } from "./homeModel";
 import { CameraCard } from "./HomeMedia";
 import { controlState } from "../controlState";
+import { isAmbientType } from "./ambientModel";
+import { AmbientCard } from "./AmbientCard";
 
 function StatusCard({
   config,
@@ -118,7 +120,9 @@ export function ConfiguredHomeCard({
 }) {
   const source = home.controls.find((c) => c.entity_id === config.sources[0]);
   let content: ReactNode;
-  if (config.type === "graph")
+  if (isAmbientType(config.type))
+    content = <AmbientCard config={config} home={home} lang={lang} />;
+  else if (config.type === "graph")
     content = (
       <MultiSourceCard
         config={config}

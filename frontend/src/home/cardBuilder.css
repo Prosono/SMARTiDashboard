@@ -947,3 +947,149 @@ html[data-home-style="harmony"] {
     }
   }
 }
+html[data-home-style="harmony"] {
+  .card-builder-intents {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .card-intent-time {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--accent);
+  }
+  .card-intent-time > svg:last-child {
+    align-self: flex-end;
+    margin-bottom: 25px;
+    color: var(--muted);
+  }
+  .card-ambient-group {
+    margin-top: 22px;
+  }
+  .card-ambient-group > h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 10px;
+    color: var(--text);
+  }
+  .card-ambient-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .card-ambient-options[data-clocks="true"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .card-ambient-options > button {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    text-align: left;
+    padding: 15px;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    color: var(--text);
+    background: var(--surface);
+    container-type: inline-size;
+  }
+  .card-ambient-options > button:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  }
+  .card-ambient-options > button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .card-ambient-thumbnail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 105px;
+    height: 105px;
+    padding: 5px;
+    margin-bottom: 7px;
+    color: var(--accent);
+  }
+  .card-ambient-thumbnail .ambient-digital-face > time {
+    font-size: clamp(24px, 24cqi, 54px);
+    color: var(--text);
+  }
+  .card-ambient-thumbnail .ambient-dial {
+    height: 100%;
+    max-width: 100%;
+  }
+  .card-ambient-thumbnail .ambient-orbital-face {
+    height: 105px;
+    color: var(--text);
+  }
+  .card-ambient-thumbnail .ambient-orbital-face time {
+    font-size: 22px;
+  }
+  .card-ambient-options > button > strong {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .card-ambient-options > button > small {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .card-clock-settings {
+    display: grid;
+    gap: 13px;
+  }
+  .card-clock-styles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .card-clock-styles > button {
+    min-height: 40px;
+    padding: 8px 11px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 12px;
+    background: var(--surface);
+    color: var(--text);
+  }
+  .card-clock-styles > button[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  }
+  .card-clock-settings > label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    min-height: 38px;
+  }
+  .card-clock-settings > label > select {
+    margin-left: auto;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 8px;
+    background: var(--surface);
+    color: var(--text);
+  }
+  .card-clock-settings input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+  }
+  @media (max-width: 650px) {
+    .card-builder-intents {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .card-ambient-options[data-clocks="true"] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .card-ambient-options > button {
+      padding: 14px;
+    }
+    .card-ambient-options:not([data-clocks="true"]) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

@@ -26,6 +26,7 @@ import type { Home } from "../types";
 import { CardBuilder, type CardSelection } from "./CardBuilder";
 import { ConfiguredHomeCard } from "./ConfiguredHomeCard";
 import { customCardId } from "./cardConfigModel";
+import { ambientSize, ambientTitle, isAmbientType } from "./ambientModel";
 import {
   addGridCard,
   changeGrid,
@@ -138,6 +139,7 @@ export function HomeGrid({
         id: item.id,
         title:
           item.config.title ||
+          ambientTitle(item.config, lang) ||
           home.controls.find((c) => c.entity_id === item.config?.sources[0])
             ?.name ||
           t("Personlig kort", "Personal card"),
@@ -146,13 +148,15 @@ export function HomeGrid({
       });
   }
   const roomOf = (item: GridItem) =>
-    resolveRoom(
-      item.config?.sources.length
-        ? item.config.sources
-        : catalog.get(item.id)?.entityId
-          ? [catalog.get(item.id)!.entityId!]
-          : [],
-    );
+    isAmbientType(item.config?.type || "")
+      ? "shared"
+      : resolveRoom(
+          item.config?.sources.length
+            ? item.config.sources
+            : catalog.get(item.id)?.entityId
+              ? [catalog.get(item.id)!.entityId!]
+              : [],
+        );
   const layout = grouped
     ? normalizeRoomGrid(
         rawLayout,
@@ -331,7 +335,8 @@ export function HomeGrid({
         const item = current.find((item) => item.id === editingCard);
         if (!item) return current;
         const expand =
-          selection.config.type === "graph" && item.config?.type !== "graph";
+          ["graph", "horizon"].includes(selection.config.type) &&
+          item.config?.type !== selection.config.type;
         return changePlacement(current, {
           ...item,
           config: selection.config,
@@ -353,8 +358,16 @@ export function HomeGrid({
       const card = {
         id,
         config: selection.config,
-        w: selection.config.type === "graph" ? 2 : selection.base?.w,
-        h: selection.config.type === "graph" ? 3 : selection.base?.h,
+        w: isAmbientType(selection.config.type)
+          ? ambientSize(selection.config).w
+          : selection.config.type === "graph"
+            ? 2
+            : selection.base?.w,
+        h: isAmbientType(selection.config.type)
+          ? ambientSize(selection.config).h
+          : selection.config.type === "graph"
+            ? 3
+            : selection.base?.h,
       };
       return grouped
         ? addRoomCard(current, card, roomOf)

@@ -6,6 +6,42 @@ from test_home_layout import card
 from test_management import client  # noqa: F401
 
 
+@pytest.mark.parametrize("kind", ["clock", "horizon", "daylight", "moon", "date"])
+def test_time_and_sky_cards_need_no_device_binding_and_preserve_private_options(client, kind):  # noqa: F811
+    before = client.get("/api/home/preferences").json()
+    config = {"type": kind, "title": "Klokke og himmel", "sources": []}
+    if kind == "clock":
+        config.update(clock_style="orbital", show_seconds=False, time_format="12h")
+    item = card("custom:ambient", config=config)
+    response = client.put("/api/home/layout/overview", json={"revision": 0, "items": [item]})
+    assert response.status_code == 200
+    assert response.json()["items"][0]["config"] | config == response.json()["items"][0]["config"]
+    assert client.get("/api/home/layout/overview").json() == response.json()
+    assert client.get("/api/home/preferences").json() == before
+    assert client.get("/api/home/layout/lights").json()["items"] is None
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"type": "clock", "sources": ["light.living_pendant"]},
+        {"type": "clock", "clock_style": "invalid"},
+        {"type": "clock", "show_seconds": 1},
+        {"type": "clock", "time_format": "25h"},
+        {"type": "moon", "clock_style": "analog"},
+        {"type": "horizon", "sources": ["sensor.test"]},
+    ],
+)
+def test_ambient_options_are_bounded_and_cannot_bind_devices(client, config):  # noqa: F811
+    assert (
+        client.put(
+            "/api/home/layout/overview",
+            json={"revision": 0, "items": [card("custom:bad-clock", config=config)]},
+        ).status_code
+        == 422
+    )
+
+
 def test_card_options_round_trip_without_changing_device_appearance(client):  # noqa: F811
     home = client.get("/api/home").json()
     before = client.get("/api/home/preferences").json()

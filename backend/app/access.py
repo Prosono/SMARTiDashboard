@@ -167,7 +167,7 @@ def route_access(request, current, ha):
         return
     if path == "home/activity":
         return
-    if path in {"home/experience", "home/language"}:
+    if path in {"home/experience", "home/language"} or (read and path == "home/sky"):
         return
     if path.startswith(("home/preferences", "home/room-view/", "home/room-image/", "home/layout/")):
         return

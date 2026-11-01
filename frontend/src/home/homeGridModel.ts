@@ -1,10 +1,22 @@
 export type CardConfig = {
-  type: "auto" | "compact" | "picture" | "graph";
+  type:
+    | "auto"
+    | "compact"
+    | "picture"
+    | "graph"
+    | "clock"
+    | "horizon"
+    | "daylight"
+    | "moon"
+    | "date";
   title: string;
   icon: string;
   image: string;
   sources: string[];
   period: "6" | "24" | "168";
+  clock_style?: "digital" | "analog" | "orbital";
+  show_seconds?: boolean;
+  time_format?: "24h" | "12h";
 };
 export type GridItem = {
   id: string;

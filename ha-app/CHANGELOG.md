@@ -1,3 +1,10 @@
+## 1.36.76
+- Ny kategori «Klokke og himmel» i kortvelgeren: digital klokke, ren analog klokke og futuristisk orbital klokke med tidsringer. Velg 12/24-timers format, vis eller skjul sekunder, og tilpass navn, ikon og bilde.
+- Nytt horisontkort i bredt format viser beregnet sol- og måneplassering, himmelretning, høyde over/under horisonten og dagens baner. Diagrammet tilpasser seg kortets størrelse, også på mobil.
+- Nye kort for dagslys, månefase og dato/uke. Dagslys viser dagens lysperiode med markør for tiden nå, soloppgang og solnedgang. Månekortet viser fase, omtrentlig belyst andel og dagens opp/ned-tider.
+- Klokkene følger hjemmets tidssone. Sol og måne beregnes lokalt fra hjemmets konfigurerte plassering, med støtte for sommertid, mørketid og midnattssol. Manglende plassering og eldre beregninger forklares i kortet; ingen ekstra posisjonstjeneste kreves.
+- Alle kortene kan flyttes, endres i størrelse og lagres i de eksisterende personlige kortflatene. På romgrupperte sider legges de i «Felles for hjemmet». Uttrykket følger Harmoni i lyst og mørkt tema.
+
 ## 1.36.75
 - Lys, Diverse, Klima, Sikkerhet og Multimedia grupperer nå kortene etter rom som standard, med tydelige romoverskrifter og antall kort. Kort uten rom og kort som dekker flere rom har egne seksjoner.
 - Velg «Rediger oppsett» og slå av «Grupper etter rom» for fri plassering. Valget lagres separat per konto og fane. Kortstørrelser, innstillinger, drag-og-slipp og berøring beholdes; med gruppering på flyttes kortene innenfor sitt rom.

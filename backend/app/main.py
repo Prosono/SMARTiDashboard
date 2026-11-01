@@ -38,6 +38,7 @@ from .origins import OriginPolicy
 from .remote_access import remote_router
 from .scenes import scenes_router
 from .setup import DeviceSetup
+from .sky import sky_router
 from .storage import Store
 from .system_operations import system_operations_router
 from .system_settings import system_settings_router
@@ -410,6 +411,7 @@ def create_app(
     app.include_router(accounts_router(management, admin, user))
     app.include_router(integration_setup_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
+    app.include_router(sky_router(store, user, ha, settings))
     app.include_router(extras_router(store, user, ha, settings))
     app.include_router(history_router(ha, user, settings))
     app.include_router(calendar_router(store, user, ha, settings))
