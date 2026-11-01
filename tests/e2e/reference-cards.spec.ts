@@ -126,6 +126,7 @@ async function setup(page: Page) {
       ["turn_on", "turn_off", "set_brightness"],
     ),
   );
+  const areas = [{ area_id: "living", name: "Stue" }];
   await page.route("**/api/home", async (route) => {
     const response = await route.fetch(),
       home = await response.json();
@@ -146,7 +147,7 @@ async function setup(page: Page) {
           ...lights,
         ],
         favorites: [],
-        areas: [{ area_id: "living", name: "Stue" }],
+        areas,
         connected: true,
       },
     });
@@ -322,6 +323,7 @@ async function setup(page: Page) {
     vacuum,
     calls,
     modeCalls,
+    areas,
     saved: () => saved,
   };
 }
@@ -627,4 +629,160 @@ test("weather photos follow rain, thunder, fog, snow and wind; uncertain and cus
       ).toBeVisible();
   }
   expect(state.calls).toHaveLength(0);
+});
+
+test("thermostat reference scales its header, separator, framed target and round controls without overlaps", async ({
+  page,
+}, info) => {
+  test.setTimeout(60000);
+  const state = await setup(page);
+  state.climate.name = "Termostat Vaskerom";
+  state.climate.attributes.current_temperature = 16.5;
+  state.areas[0].name = "Laundry Room";
+  state.saved().items = [{ id: "climate", x: 0, y: 0, w: 1, h: 4 }];
+  await page.reload();
+  const cell = page.locator('[data-card="climate"]');
+  let sizing: Awaited<ReturnType<Page["addStyleTag"]>> | undefined;
+  const sizes =
+    info.project.name === "desktop"
+      ? [
+          [778, 490],
+          [400, 230],
+          [778, 230],
+          [400, 490],
+        ]
+      : [
+          [282, 270],
+          [348, 270],
+        ];
+  for (const [width, height] of sizes) {
+    await page.setViewportSize({
+      width: info.project.name === "desktop" ? 1500 : width + 42,
+      height: 1000,
+    });
+    if (sizing)
+      await sizing.evaluate((node) => {
+        node.parentNode?.removeChild(node);
+      });
+    sizing = await page.addStyleTag({
+      content: `.home-canvas {width:${width}px;max-width:none}.home-canvas-grid {width:${width}px;grid-template-columns:minmax(0,1fr)!important;grid-auto-rows:${(height - 42) / 4}px!important}`,
+    });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(cell.locator(".home-canvas-viewport")).toHaveAttribute(
+      "data-overflow",
+      "false",
+    );
+    await expect
+      .poll(async () => {
+        const r = await cell.locator(".equipment-card").boundingBox();
+        return (
+          !!r &&
+          Math.abs(r.width - width) < 3 &&
+          Math.abs(r.height - height) < 3
+        );
+      })
+      .toBe(true);
+    const geometry = await cell.evaluate((node) => {
+      const card = node.querySelector<HTMLElement>(".equipment-card")!,
+        panel = node.querySelector<HTMLElement>(".thermostat-setting")!,
+        room = node.querySelector<HTMLElement>(".thermostat-room-reading")!,
+        target = node.querySelector<HTMLElement>(".thermostat-target strong")!,
+        title = node.querySelector<HTMLElement>(".harmony-device-open")!,
+        badge = node.querySelector<HTMLElement>(".harmony-device-status")!;
+      const rect = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return {
+          left: r.left,
+          top: r.top,
+          right: r.right,
+          bottom: r.bottom,
+          width: r.width,
+          height: r.height,
+        };
+      };
+      return {
+        card: rect(card),
+        panel: rect(panel),
+        room: rect(room),
+        target: rect(target),
+        title: rect(title),
+        badge: rect(badge),
+        font: parseFloat(getComputedStyle(target).fontSize),
+        buttons: Array.from(
+          node.querySelectorAll<HTMLElement>(".thermostat-adjust button"),
+        ).map(rect),
+      };
+    });
+    expect(Math.abs(geometry.card.width - width)).toBeLessThan(3);
+    expect(Math.abs(geometry.card.height - height)).toBeLessThan(3);
+    expect(geometry.panel.left).toBeGreaterThan(geometry.room.right);
+    expect(geometry.title.right).toBeLessThanOrEqual(geometry.badge.left + 1);
+    for (const button of geometry.buttons) {
+      expect(button.width).toBeCloseTo(button.height, 2);
+      expect(button.width).toBeGreaterThanOrEqual(43.99);
+      expect(button.left).toBeGreaterThanOrEqual(geometry.panel.left);
+      expect(button.right).toBeLessThanOrEqual(geometry.panel.right + 1);
+      expect(button.bottom).toBeLessThan(geometry.card.bottom);
+    }
+    if (width === 778 && height === 490) {
+      expect(geometry.font).toBeGreaterThanOrEqual(78);
+      expect(geometry.buttons[0].width).toBeCloseTo(80, 0);
+      expect(geometry.panel.height / height).toBeCloseTo(0.38, 1);
+      for (const theme of ["dark", "light"]) {
+        await page.evaluate(
+          (theme) => (document.documentElement.dataset.theme = theme),
+          theme,
+        );
+        await cell.screenshot({
+          path: `/private/tmp/smarti-88-thermostat-reference-${theme}.png`,
+        });
+      }
+    }
+    const nextTemperature = Number(state.climate.attributes.temperature) + 0.5;
+    await cell
+      .getByRole("button", {
+        name: "Termostat Vaskerom: Ønsket temperatur +",
+        exact: true,
+      })
+      .click();
+    await expect
+      .poll(() => state.climate.attributes.temperature)
+      .toBe(nextTemperature);
+    await expect(cell.locator(".thermostat-target strong")).toContainText(
+      String(nextTemperature).replace(".", ","),
+    );
+    await cell.screenshot({
+      path: `/private/tmp/smarti-88-thermostat-${width}x${height}.png`,
+    });
+  }
+  if (sizing)
+    await sizing.evaluate((node) => {
+      node.parentNode?.removeChild(node);
+    });
+  const compactSizing = await page.addStyleTag({
+    content:
+      ".home-canvas {width:348px;max-width:none}.home-canvas-grid {width:348px;grid-template-columns:minmax(0,1fr)!important;grid-auto-rows:16.5px!important}",
+  });
+  await expect(cell.locator(".home-canvas-viewport")).toHaveAttribute(
+    "data-overflow",
+    "true",
+  );
+  await cell.getByRole("button", { name: /Vis hele kortet/ }).click();
+  const expanded = page.locator(".home-canvas-expanded");
+  await expect(expanded).toBeVisible();
+  const expandedTarget = Number(state.climate.attributes.temperature) + 0.5;
+  await expanded
+    .getByRole("button", {
+      name: "Termostat Vaskerom: Ønsket temperatur +",
+      exact: true,
+    })
+    .click();
+  await expect
+    .poll(() => state.climate.attributes.temperature)
+    .toBe(expandedTarget);
+  await page.keyboard.press("Escape");
+  await expect(expanded).toHaveCount(0);
+  await compactSizing.evaluate((node) => {
+    node.parentNode?.removeChild(node);
+  });
 });

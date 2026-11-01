@@ -1,3 +1,44 @@
+# Thermostat reference layout at every card size — release 1.36.88
+
+The thermostat card now follows the supplied close-up: the device/room header and
+mode badge share a real header row; current temperature sits left of a fine
+separator; the target label, large temperature and circular controls share one
+framed setting panel. Typography, spacing and 44–80px buttons scale with both
+card dimensions. Large cards no longer retain the old 460px internal width cap.
+The reference proportions are reproduced at 778×490 without hardcoding its
+example name, room or temperatures into the application.
+
+The card uses a bounded CSS size container, with the former nested compact
+inline-size container removed from this presentation so widths are measured from
+the whole card. The setting wrapper is display:contents in other presentations.
+Superseded thermostat rules were removed from referenceCards.css and consolidated
+in thermostatCard.css. Mode materials, capability limits, permissions, command
+handling and existing saved layout dimensions remain intact. Very small saved
+cards still offer the full view. No animation or runtime sizing loop was added.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, reference-test
+  TypeScript, changed-file Prettier and git diff --check passed. Existing Vite
+  chunk-size advisory remains.
+- **244 frontend unit cases passed.**
+- **28 selected desktop/mobile browser scenarios passed against the final
+  extracted archive.** New reference coverage verifies 778×490, 400×230,
+  778×230, 400×490, 282×270 and 348×270 cards; header/badge separation; framed
+  target proportions; circular controls; temperature steps after resizing; and
+  working full-view controls for a deliberately undersized card.
+- Existing coverage checks cooling/idle/modes, unknown/offline readings,
+  disabled controls, actual demo commands, previews, custom pictures, Home styles,
+  responsive categories, small-card overflow handling and card editing. Browser
+  commands use isolated demo fixtures and do not operate real equipment.
+- Reference-size light/dark cards and phone variants were visually inspected.
+  These are Chromium test results, not physical wall-panel validation.
+- Packaging check passed; all **263 runtime files** match the extracted archive
+  used by browser tests. No backend code changed. Prior repository-wide
+  limitations documented below remain applicable.
+
+---
+
 # Simple volume, climate mode materials and weather scenes — release 1.36.87
 
 Harmoni media cards now use an unboxed speaker icon and a 3px range track with a

@@ -1,3 +1,8 @@
+## 1.36.88
+- Termostatkortet i Harmoni er utformet etter den nye bildereferansen: tydelig tittel og rom, modusmerke i topprekken, romtemperatur til venstre, skillelinje og et samlet temperaturfelt med store, runde knapper til høyre.
+- Tekst, felt og kontroller skaleres etter både kortets bredde og høyde. Den tidligere grensen på 460 px innvendig bredde er fjernet fra termostatkort i dashbordet og fullvisningen, slik at også store kort bruker hele flaten. Knappene skaleres fra 44 til 80 px.
+- Temperaturfelt og knapper har fått en felles struktur. Oppsettet tilpasses mobil, brede og høye kort samt fullvisning når kortet er gjort svært lite. Varme-, kjøle- og av-modus, temperaturtrinn og grenser, rettigheter og håndtering av utilgjengelige enheter beholdes.
+
 ## 1.36.87
 - Enklere volumkontroll i Harmoni: bare lydikon, en tynn linje og en liten rund kule. Den store bakgrunnspillen og synlig prosent er fjernet for styrbare spillere. Tastatur, demping og skjermleserens volumangivelse beholdes, og ukjent volum vises ikke som en bekreftet nullverdi.
 - Termostatkort blir blå i kjølemodus og ved rapportert kjøling i automatisk modus. Varme beholder den varme flaten, mens avslåtte og utilgjengelige termostater får en nøytral flate. Modusmerket har ikon for varme, kjøling, auto, kombinert varme/kjøling, avfukting, vifte og av. Faktisk oppvarming/kjøling vises fortsatt fra enhetens status.

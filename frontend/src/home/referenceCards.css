@@ -517,164 +517,6 @@ html[data-home-style="harmony"] {
     font-size: 12px;
   }
 
-  /* Target and measured room temperature are adjacent, as in the reference. */
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat) {
-    padding: 17px 20px;
-    gap: 8px;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat) {
-    position: relative;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat)
-    .harmony-device-header {
-    min-height: 28px;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat)
-    .harmony-device-header
-    small {
-    font-size: 10px;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat)
-    .harmony-device-status {
-    position: absolute;
-    top: 17px;
-    right: 17px;
-    width: auto;
-    min-height: 26px;
-    font-size: 10px;
-    border: 1px solid var(--thermostat-line);
-    border-radius: 99px;
-    padding: 3px 9px;
-    background: var(--thermostat-wash);
-    gap: 5px;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat)
-    .harmony-device-status
-    i {
-    display: none;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat)
-    .harmony-device-open {
-    padding-right: 70px;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact] {
-    display: grid;
-    grid-template-columns: 31% 1fr;
-    grid-template-rows: 1fr;
-    align-items: center;
-    gap: 12px;
-    margin-top: auto;
-    margin-bottom: auto;
-    padding: 0;
-    min-height: 100px;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-room-reading {
-    grid-column: 1;
-    grid-row: 1;
-    display: grid;
-    gap: 6px;
-    align-content: center;
-    align-self: stretch;
-    border-right: 1px solid var(--thermostat-line);
-    padding-right: 10px;
-  }
-  .thermostat-room-reading > span {
-    font-size: 11px;
-    color: #fff4e9;
-  }
-  .thermostat-room-reading strong {
-    font-size: clamp(22px, 7cqi, 30px);
-    line-height: 1.15;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-dial {
-    grid-column: 2;
-    grid-row: 1;
-    background: var(--thermostat-wash);
-    border: 1px solid var(--thermostat-line);
-    border-radius: 15px;
-    min-height: 102px;
-    padding: 12px 0 7px;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-target {
-    position: static;
-    transform: none;
-    text-align: center;
-    width: 100%;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-target
-    > span {
-    display: block;
-    font-size: 11px;
-    margin-bottom: 10px;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-target
-    strong {
-    font-size: 39px;
-    line-height: 1.1;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-adjust {
-    grid-column: 2;
-    grid-row: 1;
-    align-self: end;
-    margin-bottom: 14px;
-    padding: 0 7px;
-    pointer-events: none;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-adjust
-    > span {
-    display: none;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-adjust
-    button {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-    max-width: 44px;
-    max-height: 44px;
-    flex: 0 0 44px;
-    padding: 0;
-    box-sizing: border-box;
-    border-radius: 50%;
-    border: 1px solid var(--thermostat-line);
-    background: var(--thermostat-button);
-    color: var(--thermostat-ink);
-    pointer-events: auto;
-    box-shadow: 0 2px 5px #42160414;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-adjust
-    button:disabled {
-    opacity: 0.5;
-  }
-
   /* Playback remains capability-driven; controls share a single quiet baseline. */
   :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
     .media-player-card {
@@ -1306,24 +1148,6 @@ html[data-home-style="harmony"] {
     flex: 1;
   }
   :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat)
-    .thermostat-target {
-    display: grid;
-    place-items: center;
-    text-align: center;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat)
-    .thermostat-target
-    strong {
-    text-align: center;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat)
-    .thermostat-adjust {
-    display: flex;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
     .ambient-clock-analog
     .ambient-clock-main {
     position: absolute;
@@ -1394,12 +1218,6 @@ html[data-home-style="harmony"] {
     .simple-weather-current
     > strong {
     font-size: clamp(43px, 14cqi, 64px);
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .equipment-card:has(.thermostat)
-    .thermostat-target
-    strong {
-    font-size: 44px;
   }
   :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
     .media-player-card
@@ -1489,17 +1307,6 @@ html[data-home-style="harmony"] {
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-adjust {
-    position: relative;
-    z-index: 2;
-  }
-  :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
-    .thermostat[data-compact]
-    .thermostat-dial {
-    pointer-events: none;
   }
   :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
     .home-grid-routines

@@ -1,0 +1,278 @@
+/* The supplied thermostat reference, scaled to the actual card rather than viewport. */
+html[data-home-style="harmony"] {
+  .home-canvas-content > .harmony-device-grid:has(.thermostat[data-compact]),
+  .home-canvas-expanded > .harmony-device-grid:has(.thermostat[data-compact]) {
+    height: 100%;
+    max-width: none;
+  }
+  .home-canvas-surface:has(.thermostat[data-compact]) {
+    border-radius: clamp(19px, 4.4cqi, 34px);
+  }
+
+  .equipment-card[data-domain="climate"]:has(.thermostat[data-compact]) {
+    container: thermostat-card / size;
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 22% 64% 14%;
+    height: 100%;
+    min-height: 250px;
+    padding: 0;
+    gap: 0;
+    border-radius: inherit;
+
+    > .harmony-device-header {
+      grid-area: 1 / 1;
+      display: flex;
+      align-items: flex-start;
+      gap: clamp(8px, 1.4cqi, 12px);
+      min-height: 0;
+      padding: clamp(16px, 6.5cqb, 33px) 4cqi 0 5cqi;
+      box-sizing: border-box;
+    }
+    .harmony-device-icon {
+      display: grid;
+      place-items: start center;
+      width: clamp(26px, 7.4cqi, 58px);
+      height: auto;
+      padding-top: 1px;
+      color: var(--thermostat-button);
+    }
+    .harmony-device-icon > svg {
+      width: clamp(26px, min(5.7cqi, 9cqb), 44px);
+      height: clamp(26px, min(5.7cqi, 9cqb), 44px);
+      stroke-width: 1.7;
+    }
+    .harmony-device-open {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      gap: clamp(4px, 1cqi, 8px);
+      align-items: flex-start;
+    }
+    .harmony-device-open > span {
+      flex: 1;
+      min-width: 0;
+      gap: clamp(3px, 0.7cqi, 6px);
+    }
+    .harmony-device-open strong {
+      display: block;
+      font-size: clamp(14px, min(3.6cqi, 6cqb), 28px);
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      overflow-wrap: normal;
+      text-overflow: ellipsis;
+    }
+    .harmony-device-open small {
+      display: block;
+      font-size: clamp(10px, min(2.3cqi, 3.9cqb), 18px);
+      line-height: 1.35;
+      color: #fff1e7;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .harmony-device-open > svg {
+      flex: none;
+      width: clamp(17px, 3.1cqi, 24px);
+      height: clamp(17px, 3.1cqi, 24px);
+      margin: clamp(2px, 0.8cqi, 6px) 0 0;
+      opacity: 0.85;
+    }
+    .harmony-device-status {
+      position: static;
+      display: flex;
+      align-items: center;
+      flex: none;
+      gap: clamp(5px, 1cqi, 8px);
+      width: auto;
+      max-width: 38%;
+      min-height: clamp(27px, min(6cqi, 10cqb), 47px);
+      margin: 0;
+      padding: 3px clamp(8px, 2.3cqi, 18px);
+      border: 1px solid var(--thermostat-line);
+      border-radius: 99px;
+      background: var(--thermostat-wash);
+      color: #fff7ef;
+      font-size: clamp(10px, min(2.3cqi, 3.9cqb), 18px);
+      box-sizing: border-box;
+    }
+    .harmony-device-status > svg {
+      flex: none;
+      width: clamp(15px, 3.3cqi, 26px);
+      height: clamp(15px, 3.3cqi, 26px);
+    }
+    .harmony-device-status > span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .harmony-device-status small {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.8em;
+    }
+    > .equipment-controls {
+      display: none;
+    }
+    > :is(.harmony-device-feedback, .harmony-readonly) {
+      grid-area: 3 / 1;
+      margin: 0 5cqi;
+      padding: 0;
+      align-self: start;
+      font-size: clamp(10px, 1.8cqi, 14px);
+      line-height: 1.3;
+    }
+
+    .thermostat[data-compact] {
+      --thermostat-knob: clamp(44px, min(10.3cqi, 16.5cqb), 80px);
+      container-type: normal;
+      grid-area: 2 / 1;
+      position: relative;
+      display: grid;
+      grid-template-columns: 31% minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+      align-items: center;
+      gap: clamp(10px, 2.9cqi, 23px);
+      width: auto;
+      min-height: 0;
+      margin: 0 5cqi;
+      padding: 0;
+      text-align: left;
+    }
+    .thermostat-room-reading {
+      display: grid;
+      align-content: center;
+      gap: clamp(8px, 3.2cqb, 16px);
+      height: max(112px, 47cqb);
+      padding-right: clamp(6px, 1.4cqi, 11px);
+      border-right: 1px solid var(--thermostat-line);
+      box-sizing: border-box;
+    }
+    .thermostat-room-reading > span {
+      color: #fff5ed;
+      font-size: clamp(11px, min(2.6cqi, 4.3cqb), 20px);
+      line-height: 1.3;
+    }
+    .thermostat-room-reading > strong {
+      color: #fffaf6;
+      font-size: clamp(23px, min(6.4cqi, 10.2cqb), 50px);
+      font-weight: 600;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+    .thermostat-setting {
+      display: block;
+      position: relative;
+      height: max(102px, 38cqb);
+      min-width: 0;
+      margin-bottom: 3.2cqb;
+      border: 1px solid var(--thermostat-line);
+      border-radius: clamp(15px, 3.3cqi, 26px);
+      background: var(--thermostat-wash);
+      box-sizing: border-box;
+    }
+    .thermostat-dial {
+      position: static;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      max-width: none;
+      margin: 0;
+      padding: clamp(11px, 5cqb, 25px) 0 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+    .thermostat-target {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      position: static;
+      width: 100%;
+      transform: none;
+      text-align: center;
+    }
+    .thermostat-target > span {
+      margin-bottom: clamp(7px, 5cqb, 25px);
+      color: #fff1e7;
+      font-size: clamp(11px, min(2.6cqi, 4.3cqb), 20px);
+      line-height: 1.3;
+    }
+    .thermostat-target > strong {
+      color: #fffaf6;
+      font-size: clamp(34px, min(10.3cqi, 16.5cqb), 80px);
+      font-weight: 500;
+      line-height: 1;
+      text-align: center;
+    }
+    .thermostat-adjust {
+      position: absolute;
+      inset: auto 0 -0.6cqb;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0;
+      padding: 0 clamp(5px, 1.55cqi, 12px);
+      pointer-events: none;
+    }
+    .thermostat-adjust > span {
+      display: none;
+    }
+    .thermostat-adjust > button {
+      width: var(--thermostat-knob);
+      height: var(--thermostat-knob);
+      min-width: var(--thermostat-knob);
+      min-height: var(--thermostat-knob);
+      max-width: none;
+      max-height: none;
+      flex: 0 0 var(--thermostat-knob);
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      box-sizing: border-box;
+      background: var(--thermostat-button);
+      color: var(--thermostat-ink);
+      box-shadow: none;
+      pointer-events: auto;
+    }
+    .thermostat-adjust > button > svg {
+      width: 46%;
+      height: 46%;
+      stroke-width: 1.8;
+    }
+    .thermostat-adjust > button:disabled {
+      opacity: 0.5;
+    }
+    .thermostat-readonly {
+      position: absolute;
+      top: calc(100% + 4px);
+      inset-inline: 0;
+      margin: 0;
+      font-size: 10px;
+      line-height: 1.3;
+    }
+  }
+
+  .home-canvas-content
+    .equipment-card[data-domain="climate"]:has(.thermostat[data-compact]) {
+    min-height: max(200px, 100%);
+  }
+  .home-canvas-expanded
+    .equipment-card[data-domain="climate"]:has(.thermostat[data-compact]) {
+    min-height: clamp(290px, 60vw, 490px);
+    border-radius: 24px;
+  }
+  @container thermostat-card (max-width: 340px) {
+    .thermostat[data-compact] .thermostat-setting {
+      height: max(114px, 38cqb);
+    }
+  }
+}

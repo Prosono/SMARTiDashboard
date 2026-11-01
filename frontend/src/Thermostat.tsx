@@ -180,79 +180,81 @@ export function Thermostat({
           </strong>
         </div>
       )}
-      <div className="thermostat-dial">
-        {!compact && (
-          <svg viewBox="0 0 240 145" aria-hidden="true">
-            <path
-              className="thermostat-track"
-              d="M22 124 A98 98 0 0 1 218 124"
-              pathLength="100"
-            />
-            {valid && known && (
+      <div className="thermostat-setting">
+        <div className="thermostat-dial">
+          {!compact && (
+            <svg viewBox="0 0 240 145" aria-hidden="true">
               <path
-                className="thermostat-arc"
+                className="thermostat-track"
                 d="M22 124 A98 98 0 0 1 218 124"
                 pathLength="100"
-                strokeDasharray={`${fraction * 100} 100`}
               />
-            )}
-            {valid && known && (
-              <circle
-                className="thermostat-knob"
-                cx={120 - 98 * Math.cos(fraction * Math.PI)}
-                cy={124 - 98 * Math.sin(fraction * Math.PI)}
-                r="6"
-              />
-            )}
-          </svg>
-        )}
-        <div className="thermostat-target">
-          <span>
-            {compact
-              ? t("Still inn temperatur", "Set temperature")
-              : t("Ønsket", "Target")}
-          </span>
-          <strong>
-            {compact ? (
-              <TemperatureValue
-                value={known ? target : null}
-                unit={unit}
-                lang={lang}
-              />
-            ) : target !== null ? (
-              format(target)
-            ) : known &&
-              n(c.attributes.target_temp_low) !== null &&
-              n(c.attributes.target_temp_high) !== null ? (
-              `${format(n(c.attributes.target_temp_low))}–${format(n(c.attributes.target_temp_high))}`
-            ) : (
-              "—"
-            )}
-            {!compact && <small>{unit}</small>}
-          </strong>
+              {valid && known && (
+                <path
+                  className="thermostat-arc"
+                  d="M22 124 A98 98 0 0 1 218 124"
+                  pathLength="100"
+                  strokeDasharray={`${fraction * 100} 100`}
+                />
+              )}
+              {valid && known && (
+                <circle
+                  className="thermostat-knob"
+                  cx={120 - 98 * Math.cos(fraction * Math.PI)}
+                  cy={124 - 98 * Math.sin(fraction * Math.PI)}
+                  r="6"
+                />
+              )}
+            </svg>
+          )}
+          <div className="thermostat-target">
+            <span>
+              {compact
+                ? t("Still inn temperatur", "Set temperature")
+                : t("Ønsket", "Target")}
+            </span>
+            <strong>
+              {compact ? (
+                <TemperatureValue
+                  value={known ? target : null}
+                  unit={unit}
+                  lang={lang}
+                />
+              ) : target !== null ? (
+                format(target)
+              ) : known &&
+                n(c.attributes.target_temp_low) !== null &&
+                n(c.attributes.target_temp_high) !== null ? (
+                `${format(n(c.attributes.target_temp_low))}–${format(n(c.attributes.target_temp_high))}`
+              ) : (
+                "—"
+              )}
+              {!compact && <small>{unit}</small>}
+            </strong>
+          </div>
         </div>
-      </div>
-      <div className="thermostat-adjust">
-        <button
-          aria-label={`${c.name}: ${t("Ønsket temperatur", "Target temperature")} −`}
-          disabled={!available || !valid || target! <= min!}
-          onClick={() => adjust(-1)}
-        >
-          <Minus size={22} />
-        </button>
-        <span>
-          {t("I rommet", "In the room")}
-          <strong>
-            {format(current)} {unit}
-          </strong>
-        </span>
-        <button
-          aria-label={`${c.name}: ${t("Ønsket temperatur", "Target temperature")} +`}
-          disabled={!available || !valid || target! >= max!}
-          onClick={() => adjust(1)}
-        >
-          <Plus size={22} />
-        </button>
+        <div className="thermostat-adjust">
+          <button
+            aria-label={`${c.name}: ${t("Ønsket temperatur", "Target temperature")} −`}
+            disabled={!available || !valid || target! <= min!}
+            onClick={() => adjust(-1)}
+          >
+            <Minus size={22} />
+          </button>
+          <span>
+            {t("I rommet", "In the room")}
+            <strong>
+              {format(current)} {unit}
+            </strong>
+          </span>
+          <button
+            aria-label={`${c.name}: ${t("Ønsket temperatur", "Target temperature")} +`}
+            disabled={!available || !valid || target! >= max!}
+            onClick={() => adjust(1)}
+          >
+            <Plus size={22} />
+          </button>
+        </div>
       </div>
       {!cap && (
         <small className="thermostat-readonly">

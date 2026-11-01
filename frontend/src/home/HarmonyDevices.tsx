@@ -476,10 +476,7 @@ function HarmonyDevice({
           </span>
           {!topSwitch && <ChevronRight size={17} aria-hidden="true" />}
         </button>
-        {topSwitch && toggle()}
-      </header>
-      {c.domain === "climate" ? (
-        <>
+        {c.domain === "climate" && (
           <div className="harmony-device-status">
             <ThermostatModeIcon
               c={{
@@ -504,6 +501,11 @@ function HarmonyDevice({
               </small>
             )}
           </div>
+        )}
+        {topSwitch && toggle()}
+      </header>
+      {c.domain === "climate" ? (
+        <>
           <Thermostat
             compact
             c={{

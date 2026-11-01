@@ -119,6 +119,7 @@ import "./home/cardTones.css";
 import "./home/metricStates.css";
 import "./home/headerPills.css";
 import "./home/referenceCards.css";
+import "./home/thermostatCard.css";
 import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";

@@ -1,6 +1,9 @@
 .thermostat-room-reading {
   display: none;
 }
+.thermostat-setting {
+  display: contents;
+}
 .thermostat {
   --thermo: #b95b18;
   width: 100%;
