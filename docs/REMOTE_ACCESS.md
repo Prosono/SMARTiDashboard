@@ -475,3 +475,56 @@ Publisert som `smartihome:admin-account-20261024`. Syv backendtester og to nettl
 ## Administrasjonsmeny på desktop — 24. oktober 2026
 
 Alle administrasjonsfaner ligger i et fast sidepanel ved skjermbredde fra 1000 px. Mobil beholder toppnavigasjonen. Publisert som `smartihome:admin-sidebar-20261024`; fire nettlesertester for Konto og Arkitektur på desktop/mobil bestod. Serverens helsesjekk og publiserte CSS/JavaScript ble verifisert. Forrige compose er bevart som `compose.before-admin-sidebar-20261024.yaml`.
+
+
+### Factory serial generation — 1.36.78, 2026-11-01
+
+Central administration → Hubs → Register new hub now has a Generate button beside
+Serial number. Portal administrators can allocate `SMARTi-YYYY-NNNNNN` numbers;
+YYYY is the current UTC year and the sequence starts at one each year. The field
+remains editable for existing manufacturer or manually assigned serials. Issuing
+a number does not create a home, provision credentials or produce a QR label.
+Register hub keeps the existing explicit registration and one-time kit flow, and
+the chosen serial appears in inventory and on the printed label.
+
+`POST /api/admin/hubs/serial` uses the existing current portal-admin check, exact
+Origin and session CSRF validation. An additive `factory_serial_sequence` table
+and a `BEGIN IMMEDIATE` transaction allocate numbers across workers; allocation
+and its administrator audit record commit together. The counter survives service
+restarts, abandoned forms and hub deletion. Gaps are expected if a number is issued
+again or a form is abandoned. Existing serials are skipped case-insensitively via
+a non-unique lookup index; existing data is not rewritten. New registrations also
+check case-insensitive duplicates under the write lock before creating a home.
+Serial metadata does not change hardware fingerprints or activation secrets.
+
+Validation: **90 backend tests passed** (factory serial/onboarding/enrollment/admin
+35; cloud/accounts/full reset/production mode 55), including eight new allocation
+cases for permissions, concurrency, restart/deletion, year rollover, manual
+collisions, six-digit overflow and audit rollback. The real isolated HTTPS portal
+browser flow passes at 390/1440 px in both themes against the extracted release
+archive: empty-form allocation, regeneration, busy/error preservation, explicit
+registration, persistence, QR label, duplicates, manual serials and resident
+restrictions. The existing fleet browser regression also passes. Changed Python
+Ruff checks/format, JavaScript syntax, new test formatting, payload verification
+and all **250 runtime hashes** pass. No live customer data or physical hub was used.
+
+The broader `scripts/test_portal_design.cjs` currently stops on its existing
+`.masthead>a` strict selector, which matches both the brand and the added About
+link. The same failure is reproduced against the unchanged 1.36.77 assets.
+
+Reproduce the real HTTPS flow in two local terminals:
+
+    SMARTI_TEST_CLOUD_PORT=8770 .venv/bin/python scripts/test_cloud_server.py
+    SMARTI_TEST_CLOUD_PORT=8770 node scripts/test_factory_serials.cjs
+
+The helper creates a temporary database, test-only accounts and a local TLS
+certificate, binds only to loopback and removes its temporary state on shutdown.
+The browser script accepts only a numeric local test port and never targets the
+public portal.
+
+Deployment status: prepared and verified in the repository; live cloud deployment
+is pending authenticated SSH access to the existing portal server. The documented
+control socket was absent and a BatchMode SSH attempt was rejected. A local HA app
+update alone does not update the central portal. Back up the cloud database before
+deploying the new cloud image; the relay and existing hub identities do not require
+changes for this feature.

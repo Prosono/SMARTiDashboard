@@ -8,6 +8,7 @@ import secrets
 import sqlite3
 import time
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -120,6 +121,9 @@ def install_onboarding(
           home TEXT PRIMARY KEY REFERENCES homes(id), serial TEXT UNIQUE NOT NULL, model TEXT NOT NULL,
           hardware TEXT NOT NULL, label_nonce TEXT NOT NULL, pin TEXT NOT NULL, phase TEXT NOT NULL,
           fingerprint TEXT, heartbeat TEXT, seen REAL, inspection TEXT, created REAL NOT NULL);
+        CREATE INDEX IF NOT EXISTS factory_hubs_serial_fold ON factory_hubs(serial COLLATE NOCASE);
+        CREATE TABLE IF NOT EXISTS factory_serial_sequence(
+          year INTEGER PRIMARY KEY, next_number INTEGER NOT NULL CHECK(next_number > 0));
         CREATE TABLE IF NOT EXISTS onboarding_plans(
           home TEXT PRIMARY KEY REFERENCES homes(id), id TEXT UNIQUE NOT NULL, owner TEXT NOT NULL,
           payload TEXT NOT NULL, status TEXT NOT NULL, step TEXT NOT NULL, error TEXT NOT NULL DEFAULT '',
@@ -268,7 +272,8 @@ def install_onboarding(
             versions = {}
             for version in c.execute("SELECT home,component,version,reported FROM hub_system_versions"):
                 versions.setdefault(version["home"], {})[version["component"]] = {
-                    "version": version["version"], "reported": version["reported"]
+                    "version": version["version"],
+                    "reported": version["reported"],
                 }
             for row in c.execute("SELECT * FROM factory_hubs ORDER BY created DESC"):
                 item = view(row)
@@ -306,6 +311,28 @@ def install_onboarding(
                 result.append(item)
             return result
 
+    @app.post("/api/admin/hubs/serial")
+    def generate_serial(s=Depends(admin)):
+        year = datetime.now(UTC).year
+        with db() as c:
+            # A durable yearly counter allocates distinct numbers across workers,
+            # abandoned forms and deleted hubs. Issuing a number creates no hub.
+            c.execute("BEGIN IMMEDIATE")
+            c.execute("INSERT OR IGNORE INTO factory_serial_sequence VALUES(?,1)", (year,))
+            number = c.execute(
+                "SELECT next_number FROM factory_serial_sequence WHERE year=?", (year,)
+            ).fetchone()[0]
+            while True:
+                serial = f"SMARTi-{year}-{number:06d}"
+                if not c.execute(
+                    "SELECT 1 FROM factory_hubs WHERE serial=? COLLATE NOCASE", (serial,)
+                ).fetchone():
+                    break
+                number += 1
+            c.execute("UPDATE factory_serial_sequence SET next_number=? WHERE year=?", (number + 1, year))
+            audit(c, s["account"], "factory_serial_generated", serial)
+        return {"serial": serial}
+
     @app.post("/api/admin/hubs")
     def create(body: FactoryHub, s=Depends(admin)):
         home, credential, pin = (
@@ -314,6 +341,11 @@ def install_onboarding(
             f"{secrets.randbelow(100000000):08d}",
         )
         with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            if c.execute(
+                "SELECT 1 FROM factory_hubs WHERE serial=? COLLATE NOCASE", (body.serial,)
+            ).fetchone():
+                raise HTTPException(409, "serial_already_registered")
             try:
                 c.execute(
                     "INSERT INTO homes(id,name,credential,owner) VALUES(?,?,?,NULL)",

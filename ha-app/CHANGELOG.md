@@ -1,3 +1,9 @@
+## 1.36.78
+- Sentral administrasjon → Huber har fått en «Generer»-knapp ved serienummerfeltet. Nummeret får formen `SMARTi-2026-000001`, med inneværende år og en løpende teller. Du kan fortsatt skrive inn et eget serienummer.
+- Telleren lagres i skyportalens database og fordeler ulike numre også ved samtidige forespørsler. Generatoren gjenbruker ikke tidligere utstedte numre når et skjema avbrytes eller en hub slettes. Eksisterende numre hoppes over.
+- Bare portaladministratorer kan generere numre. Huben opprettes først når «Registrer hub» velges, og serienummeret vises i hublisten og på etiketten. Duplikater avvises også når bare store/små bokstaver er ulike.
+- Dette krever oppdatering av den sentrale skyportalen; oppdatering av en lokal hub alene aktiverer ikke portalens nye knapp.
+
 ## 1.36.77
 - Ny rolig RGB-bakgrunn i hele appen: brede, myke bølger i rødt, grønt og blått beveger seg langsomt i ulikt tempo. Fargene blandes med valgt palett og dempes i mørkt tema.
 - Gjelder alle sider og alle Hjem-stiler, også innloggingen. Bakgrunnen ligger bak innholdet; bilder, kort, varsler og kontroller beholder sitt uttrykk og sin lesbarhet.
