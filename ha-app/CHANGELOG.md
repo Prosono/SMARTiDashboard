@@ -1,3 +1,9 @@
+## 1.36.77
+- Ny rolig RGB-bakgrunn i hele appen: brede, myke bølger i rødt, grønt og blått beveger seg langsomt i ulikt tempo. Fargene blandes med valgt palett og dempes i mørkt tema.
+- Gjelder alle sider og alle Hjem-stiler, også innloggingen. Bakgrunnen ligger bak innholdet; bilder, kort, varsler og kontroller beholder sitt uttrykk og sin lesbarhet.
+- Velg «Rolige RGB-bølger» eller «Stillestående» under Innstillinger → Tema og utseende → Bakgrunnsbevegelse. Valget lagres på denne enheten. Redusert bevegelse gir et stillestående uttrykk, og skjulte appvinduer pauser bølgene.
+- Bevegelsen bruker tre lette animasjonslag uten lydtilgang, eksterne tjenester eller løpende JavaScript-beregninger. Bakgrunnen skjules ved utskrift og tvungne kontrastfarger.
+
 ## 1.36.76
 - Ny kategori «Klokke og himmel» i kortvelgeren: digital klokke, ren analog klokke og futuristisk orbital klokke med tidsringer. Velg 12/24-timers format, vis eller skjul sekunder, og tilpass navn, ikon og bilde.
 - Nytt horisontkort i bredt format viser beregnet sol- og måneplassering, himmelretning, høyde over/under horisonten og dagens baner. Diagrammet tilpasser seg kortets størrelse, også på mobil.

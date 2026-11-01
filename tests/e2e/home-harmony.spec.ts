@@ -2449,11 +2449,15 @@ test("graph cards add and edit several real sources with compatible units, gaps 
     .click();
   await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
   let graph = canvas.locator('[data-card^="custom:"]');
+  // The existing chart is also rendered inert in the draft. Wait for the saved
+  // canvas before testing keyboard focus rather than racing the async save.
+  await expect(canvas).toHaveAttribute("data-editing", "false");
   await expect(
     graph.locator('.personal-graph g[data-source="sensor.builder_f"]'),
   ).toHaveCount(1);
   const plot = graph.locator(".measured-chart svg");
   await plot.focus();
+  await expect(plot).toBeFocused();
   await page.keyboard.press("Home");
   await expect(graph.locator(".measured-chart-tooltip")).toContainText("10 °C");
   await page.keyboard.press("ArrowRight");

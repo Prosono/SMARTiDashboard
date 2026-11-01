@@ -1,3 +1,52 @@
+# Shared animated RGB atmosphere — release 1.36.77
+
+A shared fixed background adds three broad, softly diffused RGB wave envelopes to
+all application destinations, including login, across Classic, Living and Harmoni.
+Muted red/green/blue colors mix with the selected palette's accent; dark mode has
+lower opacity. Layers drift at different phases over 46/57/63-second alternating
+cycles. Only transform is animated. Native SVG paths, gradients and softening stay
+static; no per-frame JavaScript, audio input, new dependency or external service.
+The application root isolates stacking so the background stays behind content.
+Login uses an embedded layer above its photograph and below text, while the global
+layer is hidden there. Cards, header photographs, warnings and dialogs retain
+their existing surfaces and controls. Clipped, fixed layers add no scrollable area.
+
+Theme and appearance includes Background motion: Gentle RGB waves (default) or
+Still. The existing safe browser preference helpers persist this device choice.
+Still pauses the current composition rather than clearing it. Document visibility
+pauses hidden pages and resumes the same motion phase. The OS reduced-motion query
+disables all background animation and retains a static composition. Forced colors
+and print hide the decoration. All layers are inert, aria-hidden and ignore pointer
+events. No account, layout, device, backend or schema changes.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file Prettier
+  and `git diff --check`: passed. Vite retains its existing bundle-size advisory.
+- Frontend unit suite: **210 passed**. No backend code changed in this release.
+- Extracted release archive: **54 desktop/mobile browser scenarios passed**.
+  Four new scenarios verify login, all 11 main destinations and seven Home tabs,
+  one persistent background across navigation, actual motion, all nine palettes,
+  all three Home styles, both themes, viewport coverage without horizontal overflow
+  at 320/390/834/1440 px, click-through navigation and no commands. They also check
+  the motion setting, persistence after reload, visibility pause/resume, live
+  reduced-motion changes, forced colors and print. Existing clock/sky cards,
+  headers, editable grids, room grouping, card editing, graphs, device controls,
+  Living and multimedia/energy chart regressions remain covered.
+  Navigation fixtures explicitly select Advanced for administrative destinations;
+  graph keyboard checks wait for save to leave the inert editing state.
+- A 2.2-second headless Chromium probe at 1440×1000 observed 133 frame intervals:
+  median 16.7 ms, 95th percentile 16.8 ms; 2.5 ms script and 0.38 ms layout time
+  during the probe. This checks this desktop test environment, not physical wall
+  tablet hardware. Production animation uses no JavaScript frame loop.
+- Light/dark desktop/mobile appearances and the isolated wave composition were
+  visually inspected. All **250 runtime files** match the manifest;
+  `scripts/package.py --check` passes. Browser checks use the extracted backend
+  and compiled frontend with isolated demo data. No real home devices were
+  controlled. Broader repository limitations below still apply.
+
+---
+
 # Clock, horizon and sky cards — release 1.36.76
 
 The card builder has a new Clock and sky category with seven graphical choices:

@@ -1,0 +1,105 @@
+/* A single quiet stage behind the UI. Cards and photos keep their own surfaces. */
+#root {
+  isolation: isolate;
+  min-height: 100svh;
+}
+.atmosphere {
+  --atmosphere-red: color-mix(in oklab, #ce8277 72%, var(--orange));
+  --atmosphere-green: color-mix(in oklab, #7ca88f 76%, var(--orange));
+  --atmosphere-blue: color-mix(in oklab, #7c9fc4 76%, var(--orange));
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+  pointer-events: none;
+  user-select: none;
+  contain: strict;
+  opacity: 0.26;
+}
+html[data-theme="dark"] .atmosphere {
+  opacity: 0.19;
+}
+.atmosphere-wave {
+  position: absolute;
+  width: 150%;
+  height: 100%;
+  left: -25%;
+  top: 0;
+  transform-origin: center;
+  animation: atmosphere-flow 46s cubic-bezier(0.45, 0, 0.55, 1) infinite
+    alternate;
+}
+.atmosphere-wave > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.atmosphere-red {
+  color: var(--atmosphere-red);
+  animation-delay: -19s;
+}
+.atmosphere-green {
+  color: var(--atmosphere-green);
+  top: 12%;
+  animation-duration: 57s;
+  animation-delay: -43s;
+  animation-direction: alternate-reverse;
+}
+.atmosphere-blue {
+  color: var(--atmosphere-blue);
+  top: -16%;
+  animation-duration: 63s;
+  animation-delay: -8s;
+}
+@keyframes atmosphere-flow {
+  0% {
+    transform: translate3d(-7%, -6%, 0) scaleY(0.87) rotate(-4deg);
+  }
+  50% {
+    transform: translate3d(0, 3%, 0) scaleY(1.03) rotate(0deg);
+  }
+  100% {
+    transform: translate3d(7%, -1%, 0) scaleY(0.94) rotate(4deg);
+  }
+}
+.atmosphere[data-paused="true"] > .atmosphere-wave {
+  animation-play-state: paused;
+}
+/* Login keeps its photograph; its waves sit above the photo, below all text. */
+#root:has(.login) > .atmosphere {
+  display: none;
+}
+.login > .atmosphere-embedded {
+  position: absolute;
+  opacity: 0.23;
+}
+@media (max-width: 700px) {
+  .atmosphere-wave {
+    width: 240%;
+    left: -70%;
+    height: 90%;
+    top: 10%;
+  }
+  .atmosphere-green {
+    top: 25%;
+  }
+  .atmosphere-blue {
+    top: -6%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atmosphere > .atmosphere-wave {
+    animation: none;
+  }
+  .atmosphere-red {
+    transform: translate3d(-4%, -2%, 0) rotate(-3deg);
+  }
+  .atmosphere-green {
+    transform: translate3d(4%, 3%, 0) rotate(3deg);
+  }
+}
+@media (forced-colors: active), print {
+  .atmosphere {
+    display: none;
+  }
+}

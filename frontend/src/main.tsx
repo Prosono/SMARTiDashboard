@@ -124,6 +124,11 @@ import { HistoryExplorer } from "./HistoryExplorer";
 import { ProtocolDevices } from "./ProtocolDevices";
 import { DeviceSetup } from "./DeviceSetup";
 import { readPreference, writePreference } from "./preferences";
+import {
+  Atmosphere,
+  AtmosphereProvider,
+  BackgroundMotionSetting,
+} from "./Atmosphere";
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } },
 });
@@ -534,6 +539,7 @@ function Login({
   }
   return (
     <div className="login">
+      <Atmosphere embedded />
       <img
         className="login-background"
         src="./home/home-living.webp"
@@ -1537,6 +1543,7 @@ function Dashboard({
                       </div>
                     </div>
                     <HomeBackgroundSettings lang={lang} />
+                    <BackgroundMotionSetting lang={lang} />
                     <PalettePicker
                       value={palette}
                       change={setPalette}
@@ -2113,7 +2120,10 @@ function Device({
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={client}>
-      <App />
+      <AtmosphereProvider>
+        <Atmosphere />
+        <App />
+      </AtmosphereProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 );
