@@ -1,6 +1,7 @@
 /* The same material, header rhythm and controls through the dashboard's specialist cards. */
 html[data-home-style="harmony"] {
-  .home-canvas-cell {
+  .home-canvas-surface,
+  .home-canvas-cell[data-preview] {
     border-color: var(--equipment-line);
     border-radius: 17px;
     background: var(--equipment-surface);

@@ -72,8 +72,8 @@ export function EnergyHistoryChart({
       >
         <defs>
           <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-            <stop stopColor="var(--accent)" stopOpacity=".9" />
-            <stop offset="1" stopColor="var(--accent)" stopOpacity=".35" />
+            <stop stopColor="var(--accent)" stopOpacity=".95" />
+            <stop offset="1" stopColor="var(--accent)" stopOpacity=".55" />
           </linearGradient>
         </defs>
         <text x={left} y="15">
@@ -121,7 +121,7 @@ export function EnergyHistoryChart({
                 y={top + height - Math.max(1, (p.kwh / ceiling) * height)}
                 width={step * 0.64}
                 height={Math.max(1, (p.kwh / ceiling) * height)}
-                rx="3"
+                rx="4"
                 fill={`url(#${id})`}
               />
             ) : (
@@ -151,7 +151,31 @@ export function EnergyHistoryChart({
           stroke="var(--text)"
           strokeWidth="2.5"
           strokeLinejoin="round"
+          strokeLinecap="round"
         />
+        {selected !== null && points[selected] && (
+          <g aria-hidden="true">
+            <line
+              x1={x(selected)}
+              x2={x(selected)}
+              y1={top}
+              y2={top + height}
+              stroke="var(--muted)"
+              strokeOpacity=".4"
+              strokeDasharray="3 4"
+            />
+            {values[selected] !== null && (
+              <circle
+                cx={x(selected)}
+                cy={y(values[selected]!)}
+                r="4"
+                fill="var(--text)"
+                stroke="var(--surface)"
+                strokeWidth="2"
+              />
+            )}
+          </g>
+        )}
         {points.map((p, i) => (
           <rect
             key={p.start}
@@ -168,6 +192,7 @@ export function EnergyHistoryChart({
             aria-pressed={selected === i}
             onClick={() => onSelect(i)}
             onFocus={() => onSelect(i)}
+            onPointerEnter={() => onSelect(i)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();

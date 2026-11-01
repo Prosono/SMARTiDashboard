@@ -38,6 +38,7 @@ import "./homeGrid.css";
 import { HomeGridGuard } from "./HomeGridGuard";
 import { HomeGridContent } from "./HomeGridContent";
 import { useGridMotion } from "./useGridMotion";
+import { useGridWiggle } from "./useGridWiggle";
 
 export type HomeGridCard = {
   id: string;
@@ -138,6 +139,7 @@ export function HomeGrid({
     .map(({ id, x, y, w, h }) => `${id}:${x},${y},${w},${h}`)
     .join("|");
   useGridMotion(surface, layoutKey, editing, active);
+  useGridWiggle(surface, editing);
 
   useEffect(() => {
     if (wasEditing.current && !editing) editButton.current?.focus();
@@ -383,6 +385,8 @@ export function HomeGrid({
       className="home-canvas"
       data-page={page}
       data-editing={editing}
+      data-dragging={!!active}
+      data-card-dialog={adding || !!editingCard}
       aria-label={title || t("Kort i hjemmet", "Home cards")}
     >
       <div className="home-canvas-toolbar">
@@ -504,6 +508,10 @@ export function HomeGrid({
           const card = catalog.get(item.id)!;
           const original = layout.find((saved) => saved.id === item.id)!;
           const cardTitle = original.config?.title || card.title;
+          const phase = Array.from(item.id).reduce(
+            (sum, c) => sum + c.charCodeAt(0),
+            0,
+          );
           return (
             <div
               key={item.id}
@@ -588,25 +596,36 @@ export function HomeGrid({
                   </button>
                 </div>
               )}
-              <HomeGridContent
-                title={cardTitle}
-                lang={lang}
-                editing={editing}
-                config={original.config}
+              <div
+                className="home-canvas-surface"
+                style={
+                  {
+                    "--wiggle-angle": `${0.22 / Math.max(item.w, item.h / 2)}deg`,
+                    "--wiggle-duration": `${560 + (phase % 5) * 37}ms`,
+                    "--wiggle-delay": `${-(phase % 900)}ms`,
+                  } as CSSProperties
+                }
               >
-                {original.config ? (
-                  <ConfiguredHomeCard
-                    config={original.config}
-                    home={home}
-                    offline={offline}
-                    lang={lang}
-                    original={card.content}
-                    originalEntity={card.entityId}
-                  />
-                ) : (
-                  card.content
-                )}
-              </HomeGridContent>
+                <HomeGridContent
+                  title={cardTitle}
+                  lang={lang}
+                  editing={editing}
+                  config={original.config}
+                >
+                  {original.config ? (
+                    <ConfiguredHomeCard
+                      config={original.config}
+                      home={home}
+                      offline={offline}
+                      lang={lang}
+                      original={card.content}
+                      originalEntity={card.entityId}
+                    />
+                  ) : (
+                    card.content
+                  )}
+                </HomeGridContent>
+              </div>
               {editing && (
                 <div className="home-canvas-resize-tools">
                   <label>

@@ -1,3 +1,10 @@
+## 1.36.72
+- Kortene i Harmoni vugger forsiktig i redigeringsmodus. Håndtakene er stabile, og bevegelsen stopper når du peker på et kort, bruker tastaturet, drar eller åpner kortinnstillinger. Kort utenfor synsfeltet og skjulte faner animeres ikke. Redusert bevegelse respekteres.
+- Mer dybde med lagdelte skygger og diskrete lyskanter bak kortene, tilpasset lyst og mørkt tema.
+- Redesignet måle- og sammenligningsgrafer med rene akser, rolige hjelpelinjer, mykere kurver, dempet fyll og tydelige markører. Kurvene bevarer målepunktene og overskrider ikke verdiene mellom dem.
+- Pek, trykk eller bruk piltastene for å undersøke lagrede målinger og tidspunkt. Flere kilder har felles skala og fargekodet avlesning; manglende målinger vises som hull. Numerisk enhetshistorikk bruker samme grafuttrykk.
+- Energigrafene har fått renere hjelpelinjer, mykere søyler og tydeligere markering av valgt tidspunkt. Summer per tidsrom, strømpriser, lagrede oppsett og enhetsstyring beholdes.
+
 ## 1.36.71
 - Ny grafisk kortvelger i Harmoni: velg først enhet, graf eller oversiktskort. Finn utstyr med søk, rom- og typefilter, og velg kort med levende forhåndsvisning.
 - Eksisterende kort kan redigeres fra blyanten i redigeringsmodus. Velg kortnavn, ikon, bilde fra bildebiblioteket og korttype: utstyrskort, kompakt status, bildekort eller graf. Samme enhet kan brukes i flere personlige kort.

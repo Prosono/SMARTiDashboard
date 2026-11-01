@@ -34,7 +34,7 @@ it("renders a single reading honestly and refuses nonfinite or dateless values",
     />,
   );
   expect(single).toContain("Recorded range: 0–0 W");
-  expect(single).toContain("<circle");
+  expect(single).toContain('class="measured-chart-dot"');
   expect(single).not.toContain("NaN");
   const empty = renderToStaticMarkup(
     <HarmonyTrend

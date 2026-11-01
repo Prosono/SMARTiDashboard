@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { MeasuredChart } from "./home/MeasuredChart";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import { controlState } from "./controlState";
@@ -100,7 +101,107 @@ export function ControlHistory({
     </section>
   );
 }
-export function HistoryChart({
+export function HistoryChart(props: {
+  data: HistoryData;
+  control: Control;
+  lang: string;
+}) {
+  return ["sensor", "number", "input_number", "counter"].includes(
+    props.control.domain,
+  ) &&
+    props.data.points.some(
+      (p) =>
+        Number.isFinite(Date.parse(p.time)) &&
+        p.value !== null &&
+        Number.isFinite(p.value),
+    ) ? (
+    <NumericHistoryChart {...props} />
+  ) : (
+    <StateHistoryChart {...props} />
+  );
+}
+
+function NumericHistoryChart({
+  data,
+  control,
+  lang,
+}: {
+  data: HistoryData;
+  control: Control;
+  lang: string;
+}) {
+  const [stamp, choose] = useState<number | null>(null);
+  const series = useMemo(
+    () => [
+      {
+        id: control.entity_id,
+        name: control.name,
+        points: data.points,
+        color: "var(--accent)",
+      },
+    ],
+    [control.entity_id, control.name, data.points],
+  );
+  const points = data.points.filter((p) => Number.isFinite(Date.parse(p.time)));
+  const chosen =
+    points.find((p) => Date.parse(p.time) === stamp) || points.at(-1);
+  const en = lang === "en",
+    locale = en ? "en-GB" : "nb-NO";
+  if (
+    !chosen ||
+    !points.some((p) => p.value !== null && Number.isFinite(p.value))
+  )
+    return (
+      <p className="control-history-empty">
+        {en
+          ? "No numeric readings in this period."
+          : "Ingen numeriske målinger i dette tidsrommet."}
+      </p>
+    );
+  return (
+    <div className="control-history-chart control-history-numeric">
+      <div className="control-history-reading" aria-live="polite">
+        <strong>
+          {chosen.value !== null && Number.isFinite(chosen.value)
+            ? `${chosen.value.toLocaleString(locale, { maximumFractionDigits: 2 })} ${data.unit || ""}`
+            : en
+              ? "Reading missing"
+              : "Måling mangler"}
+        </strong>
+        <time>
+          {new Date(chosen.time).toLocaleString(locale, {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </time>
+      </div>
+      <MeasuredChart
+        series={series}
+        unit={data.unit || ""}
+        lang={lang}
+        label={control.name}
+        domain={{ start: Date.parse(data.start), end: Date.parse(data.end) }}
+        onInspect={choose}
+      />
+      <small>
+        {en
+          ? "Point, tap or use arrow keys to inspect recorded values."
+          : "Pek, trykk eller bruk piltastene for å lese lagrede verdier."}
+      </small>
+      {data.samples > data.points.length && (
+        <small>
+          {en
+            ? "Aggregated view; some brief changes may be omitted."
+            : "Forenklet visning; enkelte korte endringer kan være utelatt."}
+        </small>
+      )}
+    </div>
+  );
+}
+
+function StateHistoryChart({
   data,
   control,
   lang,
@@ -114,7 +215,8 @@ export function HistoryChart({
   const points = data.points.filter((p) => Number.isFinite(Date.parse(p.time)));
   if (!points.length) return null;
   const numeric =
-    ["sensor", "number", "input_number", "counter"].includes(control.domain) && points.some((p) => p.value !== null);
+    ["sensor", "number", "input_number", "counter"].includes(control.domain) &&
+    points.some((p) => p.value !== null);
   const start = Date.parse(data.start),
     end = Date.parse(data.end);
   const x = (time: string) =>

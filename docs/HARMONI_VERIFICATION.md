@@ -1,3 +1,48 @@
+# Card depth, edit wiggle and refined charts — release 1.36.72
+
+Harmoni's cards use layered light/dark shadows and a subtle top highlight. In edit
+mode, idle card surfaces rotate gently with a deterministic phase and an amplitude
+scaled to card size. Layout cells and handles stay still. Hover, focus, dragging,
+card dialogs, hidden documents and reduced motion stop the animation. Only cards
+near the viewport animate. Existing FLIP moves/resizes, overflow fallback and
+account-scoped saved geometry/configuration remain intact.
+
+A shared measured-chart renderer now serves Harmoni's measurement cards,
+multi-source graphs and numeric device/history explorer curves. Shape-preserving
+cubic curves pass through measured vertices without overshooting; missing,
+nonfinite and invalid-time samples still break the line. Readable shared axes,
+subtle guides/fill and fixed-size markers adapt to the available space. Pointer,
+touch and keyboard inspection reports actual stored values and their timestamps,
+never interpolated readings or extrapolated source values. Source toggles,
+conversion, units, permissions and empty/error states are preserved. The metric
+heading remains a separate accessible details button so the graph can be inspected
+without opening another view. State timelines keep their existing behavior.
+Energy's bucket charts retain their calculations and bar semantics, with refined
+guides, corners, selection and aligned price markers. No backend or schema changed.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, formatting of changed
+  frontend/test files and `git diff --check`: passed. Vite retains the existing
+  bundle-size advisory.
+- Frontend unit suite: **194 passed**. New coverage checks missing/invalid values,
+  real zeroes, shared axes, nearest recorded samples without extrapolation and
+  sampled curve bounds through peaks and flat segments. Text sensors and binary
+  states retain their inspectable state timelines.
+- Final extracted archive: **40 browser scenarios passed** across Chromium desktop
+  and mobile (Harmoni, Living and multimedia). Two additional desktop/mobile energy
+  chart checks passed. Coverage includes actual idle surface rotation, stable
+  handles, focus/dialog pauses, live reduced-motion changes, dark/light shadows,
+  mouse/touch/keyboard graph inspection, gaps and numeric history. Existing drag,
+  resize, persistence, no-nested-scroll, card editing, headers and commands pass.
+- Light/dark screenshots at 390/1440 px and single/multi-source graph screenshots
+  were inspected. All **249 runtime files** match the deterministic manifest;
+  `scripts/package.py --check` passes. Browser checks load the extracted backend
+  and compiled frontend. No real home devices were controlled. The broader
+  repository limitations recorded below still apply.
+
+---
+
 # Visual card picker and personal card editor — release 1.36.71
 
 Harmoni's card picker starts with Device, Graph or Overview card. Residents can

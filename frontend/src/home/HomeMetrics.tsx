@@ -151,13 +151,19 @@ export function HomeMetric({
         Number.isFinite(p.value) &&
         Number.isFinite(Date.parse(p.time)),
     );
+  const Root = enhanced ? "article" : "button";
+  const Heading = enhanced ? "button" : "span";
   return (
-    <button
+    <Root
       className={`home-metric-card metric-${kind}`}
-      onClick={open}
+      onClick={enhanced ? undefined : open}
       aria-label={`${labels[kind]}: ${control.name}`}
     >
-      <span className="home-metric-head">
+      <Heading
+        className="home-metric-head"
+        onClick={enhanced ? open : undefined}
+        aria-label={enhanced ? `${labels[kind]}: ${control.name}` : undefined}
+      >
         <span className={`home-metric-icon is-${kind}`}>
           <CardIcon fallback={Icon} size={20} />
         </span>
@@ -165,7 +171,7 @@ export function HomeMetric({
           <CardTitle>{labels[kind]}</CardTitle>
         </strong>
         <ChevronRight size={18} />
-      </span>
+      </Heading>
       <span className="home-metric-reading">
         {enhanced && kind === "temperature" ? (
           <TemperatureValue
@@ -238,7 +244,7 @@ export function HomeMetric({
       <span className="home-metric-period">
         {en ? "Last 24 hours" : "Siste 24 timer"}
       </span>
-    </button>
+    </Root>
   );
 }
 

@@ -9,21 +9,14 @@ import { CardIcon, CardTitle } from "./CardPresentation";
 import {
   compatibleSources,
   controlUnit,
-  graphGeometry,
   graphPoints,
   isGraphSource,
   unitInfo,
 } from "./cardConfigModel";
 import { numeric, usable } from "./homeModel";
+import { MeasuredChart } from "./MeasuredChart";
+import { chartColor } from "./chartModel";
 
-const colors = [
-  "#ed9336",
-  "#3a9bd8",
-  "#4aa58c",
-  "#c077b4",
-  "#9c9245",
-  "#9a85d0",
-];
 export function MultiSourceCard({
   config,
   home,
@@ -78,19 +71,27 @@ export function MultiSourceCard({
       compatible,
       points,
       query,
-      color: colors[index],
+      color: chartColor(index),
     };
   });
-  const geometry = graphGeometry(series.filter((s) => !hidden.includes(s.id)));
+  const shown = series
+    .filter((s) => !hidden.includes(s.id) && s.compatible)
+    .map((s) => ({
+      id: s.id,
+      name: s.c!.name,
+      color: s.color,
+      points: s.points,
+    }));
+  const hasData = shown.some((s) =>
+    s.points.some(
+      (p) =>
+        p.value !== null &&
+        Number.isFinite(p.value) &&
+        Number.isFinite(Date.parse(p.time)),
+    ),
+  );
   const format = (n: number) =>
     n.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 });
-  const time = (n: number) =>
-    new Date(n).toLocaleString(
-      en ? "en-GB" : "nb-NO",
-      config.period === "168"
-        ? { day: "2-digit", month: "short", hour: "2-digit" }
-        : { hour: "2-digit", minute: "2-digit" },
-    );
   return (
     <section
       className="personal-graph"
@@ -109,66 +110,14 @@ export function MultiSourceCard({
             : `${config.period} ${t("timer", "hours")}`}
         </small>
       </header>
-      {geometry ? (
-        <div
+      {hasData ? (
+        <MeasuredChart
+          series={shown}
+          unit={unit}
+          lang={lang}
+          label={config.title || t("Sammenligning", "Comparison")}
           className="personal-graph-plot"
-          role="img"
-          aria-label={`${t("Målt historikk", "Recorded history")}, ${unit}, ${time(geometry.start)}–${time(geometry.end)}`}
-        >
-          <div className="personal-graph-scale" aria-hidden="true">
-            <span>
-              {format(geometry.max)} {unit}
-            </span>
-            <span>{format((geometry.min + geometry.max) / 2)}</span>
-            <span>{format(geometry.min)}</span>
-          </div>
-          <svg
-            viewBox="0 0 480 122"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <path
-              className="harmony-trend-guide"
-              d="M8 9H472 M8 60H472 M8 111H472"
-            />
-            {series
-              .filter((s) => !hidden.includes(s.id))
-              .map((s) => (
-                <g key={s.id} data-source={s.id}>
-                  {geometry.segments(s.points).map((segment, i) => (
-                    <g key={i}>
-                      <path
-                        d={segment
-                          .map(
-                            (p, j) =>
-                              `${j ? "L" : "M"}${geometry.x(p).toFixed(2)},${geometry.y(p).toFixed(2)}`,
-                          )
-                          .join(" ")}
-                        fill="none"
-                        stroke={s.color}
-                        strokeWidth="2.5"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                        vectorEffect="non-scaling-stroke"
-                      />
-                      {segment.length === 1 && (
-                        <circle
-                          cx={geometry.x(segment[0])}
-                          cy={geometry.y(segment[0])}
-                          r="3"
-                          fill={s.color}
-                        />
-                      )}
-                    </g>
-                  ))}
-                </g>
-              ))}
-          </svg>
-          <div className="personal-graph-times" aria-hidden="true">
-            <span>{time(geometry.start)}</span>
-            <span>{time(geometry.end)}</span>
-          </div>
-        </div>
+        />
       ) : (
         <p className="personal-graph-empty" role="status">
           {series.some((s) => s.points.length > 0) &&

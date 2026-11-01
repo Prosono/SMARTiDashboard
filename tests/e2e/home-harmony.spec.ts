@@ -2028,6 +2028,35 @@ test("graph cards add and edit several real sources with compatible units, gaps 
   await expect(
     graph.locator('.personal-graph g[data-source="sensor.builder_f"]'),
   ).toHaveCount(1);
+  const plot = graph.locator(".measured-chart svg");
+  await plot.focus();
+  await page.keyboard.press("Home");
+  await expect(graph.locator(".measured-chart-tooltip")).toContainText("10 °C");
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    graph.locator(".measured-chart-tooltip-row").first(),
+  ).toContainText("—");
+  await page.keyboard.press("End");
+  await expect(graph.locator(".measured-chart-tooltip")).toContainText("30 °C");
+  await graph.screenshot({
+    path: `/private/tmp/smarti-refined-graph-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  await page.keyboard.press("Escape");
+  await plot.scrollIntoViewIfNeeded();
+  const plotBounds = (await plot.boundingBox())!;
+  if (info.project.name === "mobile")
+    await page.touchscreen.tap(
+      plotBounds.x + plotBounds.width / 2,
+      plotBounds.y + plotBounds.height / 2,
+    );
+  else
+    await page.mouse.move(
+      plotBounds.x + plotBounds.width / 2,
+      plotBounds.y + plotBounds.height / 2,
+    );
+  await expect(graph.locator(".measured-chart-tooltip")).toContainText("20 °C");
+  await page.mouse.move(0, 0);
   await graph
     .locator(".personal-graph-legend")
     .getByRole("button", { name: /Temperatur Fahrenheit/ })
@@ -2094,4 +2123,206 @@ test("graph cards add and edit several real sources with compatible units, gaps 
   expect(histories.some((url) => url.includes("builder_f/history"))).toBe(
     false,
   );
+});
+
+test("editing wiggles only visible idle surfaces, keeps handles stable and respects reduced motion", async ({
+  page,
+}, info) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await personalCardLayouts(page);
+  await richHome(page);
+  await login(page);
+  await page.setViewportSize({
+    width: info.project.name === "mobile" ? 390 : 1440,
+    height: 1100,
+  });
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const canvas = page.locator(".home-canvas");
+  const cell = canvas.locator(".home-canvas-cell").first(),
+    surface = cell.locator(".home-canvas-surface");
+  const lightShadow = await surface.evaluate(
+    (el) => getComputedStyle(el).boxShadow,
+  );
+  expect(lightShadow).not.toBe("none");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await cell.scrollIntoViewIfNeeded();
+  await page.mouse.move(0, 0);
+  await expect(cell).toHaveAttribute("data-wiggle-visible", "true");
+  await expect(surface).toHaveCSS("animation-name", "home-card-wiggle");
+  const angles = await surface.evaluate((el) => {
+    const animation = el
+      .getAnimations()
+      .find(
+        (a) =>
+          a instanceof CSSAnimation && a.animationName === "home-card-wiggle",
+      )!;
+    animation.pause();
+    animation.currentTime = 0;
+    const start = new DOMMatrixReadOnly(getComputedStyle(el).transform).b;
+    animation.currentTime = Number(animation.effect!.getTiming().duration);
+    const end = new DOMMatrixReadOnly(getComputedStyle(el).transform).b;
+    animation.play();
+    return { start, end };
+  });
+  expect(angles.start * angles.end).toBeLessThan(0);
+  expect(Math.abs(angles.start)).toBeLessThan(0.01);
+  expect(
+    await cell.evaluate((el) =>
+      el
+        .getAnimations()
+        .some((a) => a.effect?.getTiming().iterations === Infinity),
+    ),
+  ).toBe(false);
+  await cell.locator(".home-canvas-grip").focus();
+  await expect(surface).toHaveCSS("animation-name", "none");
+  await canvas
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
+  expect(
+    await canvas
+      .locator(".home-canvas-grid .home-canvas-surface")
+      .evaluateAll((nodes) =>
+        nodes.every((el) => getComputedStyle(el).animationName === "none"),
+      ),
+  ).toBe(true);
+  await page
+    .getByRole("dialog", { name: "Legg til kort", exact: true })
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(
+    await canvas
+      .locator(".home-canvas-surface")
+      .evaluateAll((nodes) =>
+        nodes.every((el) => getComputedStyle(el).animationName === "none"),
+      ),
+  ).toBe(true);
+  await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await expect(surface).toHaveCSS("animation-name", "none");
+  await appearance(page);
+  await page
+    .getByRole("combobox", { name: "Utseende", exact: true })
+    .selectOption("dark");
+  await navigate(page, "Hjem");
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  expect(
+    await surface.evaluate((el) => getComputedStyle(el).boxShadow),
+  ).not.toEqual(lightShadow);
+  await page.screenshot({
+    path: `/private/tmp/smarti-depth-${info.project.name}.png`,
+    fullPage: true,
+  });
+});
+
+test("numeric history keeps real gaps and supports keyboard and pointer or touch inspection", async ({
+  page,
+}, info) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await richHome(page);
+  await page.route("**/api/history/entities", (route) =>
+    route.fulfill({
+      json: [
+        {
+          ...control("sensor", "Temperatur i stuen", "22", {
+            device_class: "temperature",
+            unit_of_measurement: "°C",
+          }),
+          id: "sensor.harmony_temperature",
+          entity_id: "sensor.harmony_temperature",
+        },
+      ],
+    }),
+  );
+  await page.route("**/api/history/states?*", (route) => {
+    const query = new URL(route.request().url()).searchParams;
+    const start = Date.parse(query.get("start")!),
+      end = Date.parse(query.get("end")!);
+    return route.fulfill({
+      json: {
+        series: [
+          {
+            entity_id: "sensor.harmony_temperature",
+            start: query.get("start"),
+            end: query.get("end"),
+            unit: "°C",
+            minimum: 18,
+            maximum: 22,
+            samples: 7,
+            truncated: false,
+            points: [18, 18.6, 20.2, 19.4, null, 21.4, 22].map((value, i) => ({
+              time: new Date(start + ((end - start) * i) / 6).toISOString(),
+              state: value === null ? "unavailable" : String(value),
+              value,
+            })),
+          },
+        ],
+      },
+    });
+  });
+  await login(page);
+  if (info.project.name === "mobile") {
+    await appearance(page);
+    await page
+      .getByRole("combobox", { name: "Utseende", exact: true })
+      .selectOption("dark");
+  }
+  await page.getByRole("button", { name: "Historikk", exact: true }).click();
+  if (!(await page.locator("#history-sources").isVisible()))
+    await page.getByRole("button", { name: "Velg kilder" }).click();
+  await page.getByRole("checkbox", { name: /Temperatur i stuen/ }).check();
+  if (info.project.name === "mobile")
+    await page
+      .getByRole("button", { name: "Vis resultat", exact: true })
+      .click();
+  const series = page.locator(".history-series"),
+    plot = series.locator(".measured-chart svg");
+  await expect(plot).toBeVisible();
+  await expect(series.locator(".measured-chart-line")).toHaveCount(2);
+  await plot.focus();
+  await page.keyboard.press("Home");
+  await expect(series.locator(".control-history-reading strong")).toHaveText(
+    "18 °C",
+  );
+  for (let i = 0; i < 4; i++) await page.keyboard.press("ArrowRight");
+  await expect(series.locator(".control-history-reading strong")).toHaveText(
+    "Måling mangler",
+  );
+  await page.keyboard.press("End");
+  await expect(series.locator(".control-history-reading strong")).toHaveText(
+    "22 °C",
+  );
+  await page.keyboard.press("Escape");
+  await plot.scrollIntoViewIfNeeded();
+  const box = (await plot.boundingBox())!;
+  const x = box.x + (box.width * (8 + (464 * 4) / 6)) / 480;
+  if (info.project.name === "mobile")
+    await page.touchscreen.tap(x, box.y + box.height / 2);
+  else await page.mouse.move(x, box.y + box.height / 2);
+  await expect(series.locator(".control-history-reading strong")).toHaveText(
+    "Måling mangler",
+  );
+  await expect(series.locator(".measured-chart-tooltip-row strong")).toHaveText(
+    "—",
+  );
+  await page.mouse.move(0, 0);
+  await plot.focus();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Escape");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    )
+    .toBe(true);
+  await series.screenshot({
+    path: `/private/tmp/smarti-elegant-history-${info.project.name}.png`,
+  });
 });
