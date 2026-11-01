@@ -56,13 +56,19 @@ html[data-theme="dark"] .atmosphere {
 }
 @keyframes atmosphere-flow {
   0% {
-    transform: translate3d(-7%, -6%, 0) scaleY(0.87) rotate(-4deg);
+    transform: translate3d(-7%, -6%, 0) scale(0.94, 0.7) rotate(-4deg);
+  }
+  25% {
+    transform: translate3d(-3%, -2%, 0) scale(1.04, 1.18) rotate(-2deg);
   }
   50% {
-    transform: translate3d(0, 3%, 0) scaleY(1.03) rotate(0deg);
+    transform: translate3d(0, 3%, 0) scale(0.98, 0.83) rotate(0deg);
+  }
+  75% {
+    transform: translate3d(4%, 1%, 0) scale(1.09, 1.28) rotate(2deg);
   }
   100% {
-    transform: translate3d(7%, -1%, 0) scaleY(0.94) rotate(4deg);
+    transform: translate3d(7%, -1%, 0) scale(1.02, 0.68) rotate(4deg);
   }
 }
 .atmosphere[data-paused="true"] > .atmosphere-wave {

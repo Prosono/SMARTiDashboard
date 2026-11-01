@@ -129,7 +129,7 @@ async function setup(page: Page) {
     ["metric:humidity", "fresh"],
     ["device:media_player.tone_media", "media"],
     ["device:vacuum.tone_vacuum", "fresh"],
-    ["custom:tone_clock", "cool", config("clock", "Klokke hjemme")],
+    ["custom:tone_clock", "clock", config("clock", "Klokke hjemme")],
     ["custom:tone_moon", "plum", config("moon", "Månen")],
     ["summary:connection", "misc"],
     ["device:switch.tone_plug", "misc"],
@@ -188,6 +188,69 @@ async function setup(page: Page) {
   }
   return { definitions, controls, saved: () => saved };
 }
+
+test("weather illustrations follow actual conditions, day/night and availability without sending commands", async ({
+  page,
+}, info) => {
+  test.setTimeout(60000);
+  const { controls } = await setup(page),
+    weather = controls.find((c) => c.domain === "weather")!;
+  const commands: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/commands")) commands.push(request.url());
+  });
+  const card = page.locator('[data-card="weather"]');
+  for (const condition of [
+    "sunny",
+    "clear-night",
+    "cloudy",
+    "partlycloudy",
+    "rainy",
+    "pouring",
+    "snowy",
+    "snowy-rainy",
+    "hail",
+    "fog",
+    "windy",
+    "windy-variant",
+    "lightning",
+    "lightning-rainy",
+    "exceptional",
+    "unknown",
+  ]) {
+    weather.state = condition;
+    await page.reload();
+    await expect(card.locator(".weather-art")).toHaveAttribute(
+      "data-weather-art",
+      condition,
+    );
+    if (["sunny", "clear-night", "rainy", "snowy"].includes(condition))
+      await card.screenshot({
+        path: `/private/tmp/smarti-83-weather-${condition}-${info.project.name}.png`,
+        animations: "disabled",
+      });
+  }
+  weather.state = "partlycloudy";
+  for (const daytime of [true, false]) {
+    Object.assign(weather.attributes, { is_daytime: daytime });
+    await page.reload();
+    await expect(card.locator(".weather-art")).toHaveAttribute(
+      "data-night",
+      String(!daytime),
+    );
+    await expect(card.locator(".weather-art image")).toHaveCount(1);
+  }
+  weather.availability = "unavailable";
+  await page.reload();
+  await expect(card.locator(".weather-art")).toHaveAttribute(
+    "data-weather-art",
+    "unknown",
+  );
+  await expect(card.locator(".simple-weather-current > strong")).toHaveText(
+    "—",
+  );
+  expect(commands).toEqual([]);
+});
 
 test("card types have visibly distinct color families with readable text across all palettes and themes", async ({
   page,
@@ -312,7 +375,7 @@ test("card types have visibly distinct color families with readable text across 
           weakest,
         };
       });
-      expect(new Set(result.colors).size).toBe(7);
+      expect(new Set(result.colors).size).toBe(8);
       // Perceptual distance catches a return to almost indistinguishable tints.
       expect(
         Math.min(...result.separation),
@@ -361,7 +424,7 @@ test("type color follows editing, previews and the full-card view while custom p
   });
   await expect(
     editor.locator(".card-builder-preview [data-card-tone]"),
-  ).toHaveAttribute("data-card-tone", "cool");
+  ).toHaveAttribute("data-card-tone", "clock");
   await editor.getByRole("button", { name: "Dagslys", exact: true }).click();
   await expect(
     editor.locator(".card-builder-preview [data-card-tone]"),
@@ -409,7 +472,7 @@ test("type color follows editing, previews and the full-card view while custom p
     .click();
 });
 
-test("light surfaces follow confirmed RGB changes, keep white lights yellow and retain their color in preview and full view", async ({
+test("light surfaces follow confirmed RGB changes, keep white lights beige and retain their color in preview and full view", async ({
   page,
 }) => {
   test.setTimeout(45000);
@@ -447,7 +510,7 @@ test("light surfaces follow confirmed RGB changes, keep white lights yellow and 
   await expect(surface).toHaveCSS("background-color", "rgb(255, 0, 0)");
   await expect(
     page.locator('[data-card="custom:white_light"] .home-canvas-surface'),
-  ).toHaveCSS("background-color", "rgb(243, 205, 102)");
+  ).toHaveCSS("background-color", "rgb(237, 217, 184)");
   await card.getByRole("button", { name: "rgb: Grønn", exact: true }).click();
   await expect(surface).toHaveCSS("background-color", "rgb(46, 215, 105)");
   expect(sent).toBe(1);
@@ -474,7 +537,7 @@ test("light surfaces follow confirmed RGB changes, keep white lights yellow and 
     }
   rgb.state = "off";
   await page.reload();
-  await expect(surface).toHaveCSS("background-color", "rgb(243, 205, 102)");
+  await expect(surface).toHaveCSS("background-color", "rgb(237, 217, 184)");
   rgb.state = "on";
   attrs.rgb_color = [0, 0, 255];
   await page.reload();

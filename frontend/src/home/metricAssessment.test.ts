@@ -33,7 +33,9 @@ describe("measurement level surfaces", () => {
     for (const [value, level] of [
       [0, "low"],
       [500, "low"],
+      [1000, "low"],
       [2500, "medium"],
+      [3000, "medium"],
       [7500, "high"],
     ] as const)
       expect(
@@ -53,6 +55,19 @@ describe("measurement level surfaces", () => {
       ],
     };
     expect(consumptionRange(burst)).toEqual([1000, 1000]);
+  });
+  it("does not extend completed-hour consumption through missing hours", () => {
+    expect(
+      consumptionRange({
+        ...history,
+        basis: "hourly",
+        end: "2026-11-01T07:00:00Z",
+        points: [
+          { time: history.start!, value: 1 },
+          { time: "2026-11-01T06:00:00Z", value: 100 },
+        ],
+      }),
+    ).toEqual([1, 100]);
   });
   it("keeps missing intervals, insufficient coverage, counters and offline readings unclassified", () => {
     expect(

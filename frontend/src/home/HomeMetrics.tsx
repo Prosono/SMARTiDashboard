@@ -14,6 +14,7 @@ import {
   type MetricKind,
 } from "./metricHistory";
 import { metricAssessment } from "./metricAssessment";
+import { EnergyBars } from "./EnergyBars";
 import { numeric, reading, usable } from "./homeModel";
 import "./homeMetrics.css";
 
@@ -222,7 +223,15 @@ export function HomeMetric({
             : ""}
         {control.name}
       </span>
-      {valid && enhanced ? (
+      {valid &&
+      enhanced &&
+      kind === "energy" &&
+      !counter &&
+      Number.isFinite(start) &&
+      Number.isFinite(end) &&
+      history.data ? (
+        <EnergyBars history={history.data} label={label} lang={lang} />
+      ) : valid && enhanced ? (
         <HarmonyTrend
           points={points}
           label={label}

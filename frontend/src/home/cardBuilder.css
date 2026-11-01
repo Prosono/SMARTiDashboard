@@ -605,7 +605,8 @@ html[data-home-style="harmony"] {
       .media-device-visual,
       .media-artwork-background,
       .vacuum-illustration,
-      .simple-weather-current img
+      .simple-weather-current img,
+      .simple-weather-current .weather-art
     ) {
     display: none;
   }

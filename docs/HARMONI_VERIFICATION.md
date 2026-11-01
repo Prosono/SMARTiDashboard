@@ -1,3 +1,79 @@
+# Breathing waves, softer category surfaces and hourly energy bars — release 1.36.83
+
+The existing three CSS-only spectrum layers now change width and height at
+several phases of their slow 46/57/63-second cycles. Their tapered SVG ribbons,
+soft edges, palette colors, single persistent background, pause setting,
+visibility pause, reduced-motion and forced-colors behavior remain.
+
+Presence, vacuum and other fresh-family cards use a lighter mint gradient with
+dark foreground and darker series colors. Ordinary white/off/unknown lights use
+pale beige with a slightly warmer gradient endpoint; active RGB lights retain the
+exact confirmed reported RGB. Clock designs have a separate grey material in both
+themes. Saved cards, builders and expanded views share these tokens. Existing
+security blue, media wine and miscellaneous bronze remain distinct.
+
+A shared decorative weather illustration combines the bundled realistic cloud
+cutout with shaded native SVG sun/moon, precipitation, fog, wind and storm details.
+All 15 supported weather states are represented; unknown/unavailable states use
+an unknown symbol. Partly cloudy current weather uses explicit is_daytime when
+provided, otherwise cached home-sky solar altitude when available. Missing solar
+data does not invent a sun or moon. Daily forecast illustrations represent the
+daytime forecast. No remote image provider or new image-generation dependency is
+required. Existing numeric weather readings and forecasts remain their own data.
+
+Harmoni energy metric cards now show rounded hourly columns on a neutral plotting
+surface. Instantaneous power is averaged by known recorder duration; a null state
+ends the preceding known interval. Completed-hour energy changes remain totals,
+not averages or cumulative readings. Up to 24 clock-hour columns are shown, with
+a partial ongoing hour explicitly identified; a partial starting hour outside
+those 24 slots is omitted. Counter-only fallback and histories without window
+metadata retain their existing curve. Null columns stay empty, known zero is
+shown at the baseline, negative power uses a blue export column, and negative
+counter changes remain unclassified. The current card reading stays separate
+from the historical hourly values. Pointer, touch and keyboard inspection report
+actual interval, value, unit and incomplete coverage. The measured peak is labeled.
+
+Columns and current-card status share the source's time-weighted consumption
+quartiles. The lower quartile belongs to low when the range is varied; a flat
+baseline stays medium (apart from zero). Missing completed-hour records are not
+extended across gaps when calculating the baseline. At least two hours of known
+nonnegative consumption are still required. Colors are also explained by labels.
+Light/dark plotting colors retain at least 3:1 bar-to-plot contrast.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, TypeScript lint, changed-file Prettier and
+  git diff --check passed; the existing Vite chunk-size advisory remains.
+- **244 frontend unit cases passed**, including time-weighted hourly averages,
+  null/partial/zero intervals, export and counter resets, completed-hour changes,
+  bounded time windows, source immutability, classification boundaries and hourly
+  coverage gaps. Existing RGB-gamut and humidity contrast tests remain green.
+- **70 desktop/mobile scenarios passed** against the extracted release archive:
+  all weather states, day/night and unavailable artwork; all nine palettes/both
+  themes with readable surfaces and distinct families; RGB changes; grey time
+  designs; background amplitude variation, route persistence, pause/reduced motion;
+  existing grids, grouping, editing/drag/resize, chart inspection and device/media
+  controls. Energy bars have at least 3:1 plotting contrast, preserve gaps and
+  unit/counter semantics, and support keyboard and touch selection.
+- Visual review then corrected a small energy-legend overhang with scoped CSS:
+  reserved tooltip height, plot minimum height and energy-card vertical padding.
+  All **8 affected metric scenarios passed again against the final extracted
+  archive**, including an explicit check that the legend/axis stay in the plot.
+  The final bundle differs from the broad-run archive only by this CSS change.
+- A separate 2.2-second Chromium probe on the final archive recorded 133 frame
+  intervals per viewport: desktop 1440×1050 median/95th percentile 16.7/16.7 ms,
+  script 2.25 ms and layout 0.021 ms; mobile 390×844 DPR 3 median/95th percentile
+  16.7/16.8 ms, script 2.17 ms and layout 0.017 ms. This is test-environment
+  evidence, not physical wall-panel validation.
+- Grey clock designs, pale beige lighting, mint presence/vacuum surfaces, realistic
+  weather variants and the energy plot were visually inspected on desktop/mobile.
+- Packaging is deterministic; all **250 runtime files** match the extracted
+  archive used for browser testing. No backend code changed. Tests use isolated
+  demo/recorder fixtures; no real home equipment was controlled. Existing broader
+  repository limitations in prior entries continue to apply.
+
+---
+
 # Metric history, value-aware surfaces and photo-header pills — release 1.36.82
 
 RGB ribbons retain their geometry and slow transform-only motion, with softer

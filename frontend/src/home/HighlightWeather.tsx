@@ -1,18 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  Cloud,
-  CloudFog,
-  CloudLightning,
-  CloudRain,
-  CloudSnow,
-  Droplets,
-  Leaf,
-  Moon,
-  Sun,
-  Wind,
-} from "lucide-react";
+import { Cloud, Droplets, Leaf, Wind } from "lucide-react";
 import { api } from "../api";
 import type { Control } from "../types";
+import { WeatherArtwork, useWeatherNight } from "./WeatherArtwork";
 
 type ForecastDay = {
   date: string;
@@ -29,45 +19,11 @@ type Forecast = {
   precipitation_unit?: string;
 };
 
-function WeatherSymbol({ condition }: { condition: string }) {
-  const cloudSun = condition === "partlycloudy";
-  const Icon =
-    condition === "sunny"
-      ? Sun
-      : condition === "clear-night"
-        ? Moon
-        : ["rainy", "pouring"].includes(condition)
-          ? CloudRain
-          : ["lightning", "lightning-rainy"].includes(condition)
-            ? CloudLightning
-            : ["snowy", "snowy-rainy", "hail"].includes(condition)
-              ? CloudSnow
-              : condition === "fog"
-                ? CloudFog
-                : condition === "windy"
-                  ? Wind
-                  : Cloud;
-  return (
-    <span
-      className={`hw-symbol${cloudSun ? " hw-symbol-partly" : ""}${condition === "sunny" ? " hw-symbol-sun" : ""}`}
-      aria-hidden="true"
-    >
-      {cloudSun ? (
-        <>
-          <Sun className="hw-symbol-rays" />
-          <Cloud className="hw-symbol-cloud" />
-        </>
-      ) : (
-        <Icon />
-      )}
-    </span>
-  );
-}
-
 const numeric = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
 export function HighlightWeather({ c, lang }: { c: Control; lang: string }) {
+  const night = useWeatherNight(c);
   const en = lang === "en",
     locale = en ? "en-GB" : "nb-NO";
   const t = (nb: string, english: string) => (en ? english : nb);
@@ -186,7 +142,11 @@ export function HighlightWeather({ c, lang }: { c: Control; lang: string }) {
     >
       <div className="hw-now">
         <div className="hw-current">
-          <WeatherSymbol condition={c.state} />
+          <WeatherArtwork
+            className="hw-symbol"
+            condition={c.availability === "available" ? c.state : "unavailable"}
+            night={night}
+          />
           <div>
             <strong className="hw-temperature">
               {number(a.temperature)}
@@ -227,7 +187,11 @@ export function HighlightWeather({ c, lang }: { c: Control; lang: string }) {
                 title={`${dayLabel(day)}: ${label(day.condition)}`}
               >
                 <span className="hw-day-name">{dayLabel(day)}</span>
-                <WeatherSymbol condition={day.condition} />
+                <WeatherArtwork
+                  className="hw-symbol"
+                  condition={day.condition}
+                  night={false}
+                />
                 <span
                   className="hw-day-range"
                   aria-label={`${t("Høyeste", "High")} ${number(day.temperature)}${unit}${numeric(day.templow) ? `, ${t("laveste", "low")} ${number(day.templow)}${unit}` : ""}`}

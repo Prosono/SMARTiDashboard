@@ -1,3 +1,10 @@
+## 1.36.83
+- RGB-bølgene varierer nå rolig i både høyde og bredde, i tillegg til å flytte seg. Stillestående bakgrunn, pause i skjulte vinduer og redusert bevegelse beholdes.
+- Personer, robotstøvsugere og øvrige grønne kategorikort har fått lysere mintgrønne gradienter med mørk tekst. Vanlige lyskort får en lys beige gradient; påslåtte fargelys følger fortsatt faktisk rapportert RGB-farge. Klokkekort har fått en egen grå gradient.
+- Værkort bruker realistiske skybilder og nye illustrasjoner av sol, måne, regn, snø, sludd, hagl, tåke, vind og torden. Delvis skyet vær følger rapportert dag/natt eller solens beregnede høyde når dette finnes. Ukjent og utilgjengelig vær vises uten oppdiktet værtilstand.
+- Energikort i Harmoni viser fargede timesøyler med toppverdi og valg av tidspunkt med peker, berøring og tastatur. Effektmålinger vektes etter faktisk kjent tid; energitellere bruker timesforbruk. Manglende målinger bevares, ufullstendige timer merkes, og totalmåler beholder kurvevisningen.
+- Energisøyler og kort bruker samme sammenligning med egen historikk: lavt grønt, middels gult og høyt rødt. Negativ effekt vises blått som levering, mens manglende sammenligningsgrunnlag får grått. Fullførte timesverdier forlenges ikke gjennom timer uten data.
+
 ## 1.36.82
 - Mykere RGB-bakgrunn med mer diffuse fargebånd og dempede kanter. Rolig animasjon, pause og redusert bevegelse beholdes.
 - Energikortet henter nå vanlig målehistorikk først og bruker strømstatistikk som reserve for effektmålere. Grafer bevarer manglende målinger og omregner W/kW riktig. Energitellere viser siste hele times forbruk fra statistikk, eller en tydelig merket totalmåler hvis bare tellerhistorikk finnes.

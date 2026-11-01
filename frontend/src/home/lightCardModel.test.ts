@@ -51,7 +51,7 @@ describe("light card surfaces", () => {
       "unknown",
     ])
       expect(paint(light("a", [255, 0, 0], mode))["--card-color"]).toBe(
-        "rgb(243 205 102)",
+        "rgb(249 235 207)",
       );
     for (const rgb of [
       null,
@@ -66,19 +66,19 @@ describe("light card surfaces", () => {
       [255, 255, 255],
       [0, 0, 0],
     ])
-      expect(paint(light("a", rgb))["--card-color"]).toBe("rgb(243 205 102)");
+      expect(paint(light("a", rgb))["--card-color"]).toBe("rgb(249 235 207)");
   });
-  it("keeps off, unavailable, unknown and disconnected lights on the yellow category surface", () => {
+  it("keeps off, unavailable, unknown and disconnected lights on the beige category surface", () => {
     for (const state of ["off", "unavailable", "unknown"])
       expect(paint({ ...light(), state })["--card-color"]).toBe(
-        "rgb(243 205 102)",
+        "rgb(249 235 207)",
       );
     expect(
       paint({ ...light(), availability: "unavailable" })["--card-color"],
-    ).toBe("rgb(243 205 102)");
-    expect(paint(light(), false)["--card-color"]).toBe("rgb(243 205 102)");
+    ).toBe("rgb(249 235 207)");
+    expect(paint(light(), false)["--card-color"]).toBe("rgb(249 235 207)");
   });
-  it("uses a group's shared color and leaves mixed colors or whites yellow", () => {
+  it("uses a group's shared color and leaves mixed colors or whites beige", () => {
     const a = light("a"),
       b = light("b"),
       group = { id: "lighting" };
@@ -94,7 +94,7 @@ describe("light card surfaces", () => {
           light("b", [0, 0, 255]),
         ]) as Record<string, string>
       )["--card-color"],
-    ).toBe("rgb(243 205 102)");
+    ).toBe("rgb(249 235 207)");
     expect(
       (
         lightCardStyle(group, undefined, [
@@ -102,7 +102,7 @@ describe("light card surfaces", () => {
           light("b", [255, 255, 255]),
         ]) as Record<string, string>
       )["--card-color"],
-    ).toBe("rgb(243 205 102)");
+    ).toBe("rgb(249 235 207)");
     expect(
       (
         lightCardStyle(group, undefined, [a, { ...b, state: "off" }]) as Record<

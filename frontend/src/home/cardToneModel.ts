@@ -3,6 +3,7 @@ import type { CardConfig } from "./homeGridModel";
 
 export type CardTone =
   | "lighting"
+  | "clock"
   | "warm"
   | "fresh"
   | "cool"
@@ -79,7 +80,8 @@ export function cardTone(
   config: CardConfig | undefined,
   controls: Control[],
 ): CardTone {
-  if (config?.type === "clock" || config?.type === "horizon") return "cool";
+  if (config?.type === "clock") return "clock";
+  if (config?.type === "horizon") return "cool";
   if (config?.type === "moon") return "plum";
   if (config?.type === "date" || config?.type === "daylight") return "warm";
   const sources = config?.sources.length

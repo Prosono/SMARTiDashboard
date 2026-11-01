@@ -1,6 +1,6 @@
 /* Saturated type surfaces, shared by saved cards, previews and expanded views. */
 html[data-home-style="harmony"] {
-  [data-card-tone]:not([data-card-tone="neutral"]) {
+  [data-card-tone]:where(:not([data-card-tone="neutral"])) {
     --card-strength: 100%;
     --card-color: color-mix(
       in oklab,
@@ -56,16 +56,37 @@ html[data-home-style="harmony"] {
     --card-strength: 88%;
   }
   [data-card-tone="lighting"] {
-    --card-identity: #e8bf58;
-    --card-base: #e8bf58;
+    --card-identity: #f9ebcf;
+    --card-base: #edd9b8;
+  }
+  [data-card-tone="clock"] {
+    --card-identity: #6a6b70;
+    --card-base: #46474b;
+    --card-color: #6a6b70;
+    --card-depth: #46474b;
   }
   [data-card-tone="warm"] {
     --card-identity: #b44300;
     --card-base: #7c2f08;
   }
   [data-card-tone="fresh"] {
-    --card-identity: #087653;
-    --card-base: #064649;
+    --card-identity: #75d8b4;
+    --card-base: #49ba9c;
+    --text: #0b241c;
+    --accent: #153e30;
+    --on-accent: #f6fff8;
+    --equipment-orange: #153e30;
+    --equipment-muted-surface: color-mix(
+      in oklab,
+      var(--card-color) 75%,
+      #fbfff8
+    );
+    --card-series-1: #174f8f;
+    --card-series-2: #873c31;
+    --card-series-3: #315c28;
+    --card-series-4: #742a69;
+    --card-series-5: #713317;
+    --card-series-6: #453d83;
   }
   [data-card-tone="cool"] {
     --card-identity: #0967b2;

@@ -105,7 +105,12 @@ export function consumptionRange(
     .flatMap((p, i) => {
       const start = Date.parse(p.time),
         stop = Date.parse(points[i + 1]?.time || history.end || p.time);
-      const duration = Math.min(stop, end) - start;
+      const duration =
+        Math.min(
+          stop,
+          end,
+          history.basis === "hourly" ? start + 3600000 : Infinity,
+        ) - start;
       return p.value !== null &&
         Number.isFinite(p.value) &&
         p.value >= 0 &&
@@ -126,6 +131,15 @@ export function consumptionRange(
     return bins.at(-1)!.value;
   };
   return [quantile(0.25), quantile(0.75)];
+}
+export function consumptionLevel(value: number, range: [number, number]) {
+  return value === 0 ||
+    value < range[0] ||
+    (range[0] < range[1] && value === range[0])
+    ? "low"
+    : value > range[1]
+      ? "high"
+      : "medium";
 }
 export function metricAssessment(
   c: Control,
@@ -200,12 +214,7 @@ export function metricAssessment(
           ? "Compared with this source's recorded last 24 hours; at least two hours of known readings required"
           : "Sammenlignet med denne kildens lagrede siste døgn; krever minst to timer med kjente målinger";
         if (range && value !== null && value >= 0) {
-          level =
-            value === 0 || value < range[0]
-              ? "low"
-              : value > range[1]
-                ? "high"
-                : "medium";
+          level = consumptionLevel(value, range);
           label =
             level === "low"
               ? en

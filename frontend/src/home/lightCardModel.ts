@@ -3,7 +3,7 @@ import type { Control } from "../types";
 import type { CardConfig } from "./homeGridModel";
 import { usable } from "./homeModel";
 
-const yellow = [243, 205, 102];
+const beige = [249, 235, 207];
 const colorModes = new Set(["rgb", "rgbw", "rgbww", "hs", "xy"]);
 function reportedColor(c: Control): number[] | null {
   const mode = c.attributes.color_mode;
@@ -54,12 +54,12 @@ export function lightCardStyle(
     : [];
   const colors = on.map(reportedColor);
   // A group follows a shared real color. Different colors or white lights get
-  // the yellow category surface rather than an invented aggregate RGB value.
+  // the beige category surface rather than an invented aggregate RGB value.
   const common = colors[0];
   const rgb =
     common && colors.every((c) => c && c.every((v, i) => v === common[i]))
       ? common
-      : yellow;
+      : beige;
   const background = `rgb(${rgb.join(" ")})`,
     l = luminance(rgb);
   const lightInk = 1.05 / (l + 0.05) >= 4.5;
@@ -72,7 +72,7 @@ export function lightCardStyle(
   const inset = `color-mix(in srgb, ${background} 86%, ${lightInk ? "#000" : "#fff"})`;
   return {
     "--card-color": background,
-    "--card-depth": background,
+    "--card-depth": rgb === beige ? "rgb(237 217 184)" : background,
     "--text": ink,
     "--muted": ink,
     "--accent": ink,

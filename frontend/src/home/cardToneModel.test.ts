@@ -79,7 +79,9 @@ describe("card type surface colors", () => {
           ? "warm"
           : choice.type === "moon"
             ? "plum"
-            : "cool",
+            : choice.type === "clock"
+              ? "clock"
+              : "cool",
       );
     }
   });

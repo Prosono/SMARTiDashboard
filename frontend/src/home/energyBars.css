@@ -1,0 +1,209 @@
+.energy-bars {
+  --bar-low: #559900;
+  --bar-medium: #c97f00;
+  --bar-high: #f12a34;
+  --bar-export: #1671bc;
+  --bar-unknown: #647284;
+  --bar-ink: #374255;
+  color: var(--bar-ink);
+  background: #f7f9fc;
+  padding: 9px 10px 5px;
+  border-radius: 12px;
+  min-height: 118px;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+html[data-home-style="harmony"]
+  .home-canvas
+  .home-canvas-content
+  .metric-energy:has(.energy-bars) {
+  padding-block: 16px;
+}
+html[data-home-style="harmony"]
+  .home-canvas
+  .home-canvas-content
+  .metric-energy:has(.energy-bars)
+  .home-metric-head {
+  margin-bottom: 6px;
+}
+html[data-home-style="harmony"]
+  .home-canvas
+  .home-canvas-content
+  .metric-energy:has(.energy-bars)
+  .home-metric-reading {
+  font-size: 38px;
+  margin-top: 5px;
+}
+.energy-bars-legend {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.energy-bars-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.energy-bars-legend i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--bar-low);
+}
+.energy-bars-legend span:nth-child(2) i {
+  background: var(--bar-medium);
+}
+.energy-bars-legend span:nth-child(3) i {
+  background: var(--bar-high);
+}
+.energy-bars-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+}
+.energy-bars-chart {
+  position: relative;
+  display: flex;
+  gap: clamp(2px, 0.45vw, 6px);
+  height: 65px;
+  min-height: 44px;
+  flex: 1;
+  padding-top: 14px;
+  isolation: isolate;
+  outline-offset: 3px;
+  border-radius: 5px;
+  touch-action: pan-y;
+}
+.energy-bars-chart:focus-visible {
+  outline: 2px solid var(--bar-ink);
+}
+.energy-bar-slot {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  height: 100%;
+}
+.energy-bar {
+  display: block;
+  position: absolute;
+  width: 100%;
+  max-width: 16px;
+  left: 50%;
+  translate: -50% 0;
+  top: var(--bar-top);
+  height: var(--bar-height);
+  background: var(--bar-unknown);
+  border-radius: 4px;
+  transition:
+    filter 150ms ease,
+    opacity 150ms ease;
+}
+.energy-bar[data-level="low"] {
+  background: var(--bar-low);
+}
+.energy-bar[data-level="medium"] {
+  background: var(--bar-medium);
+}
+.energy-bar[data-level="high"] {
+  background: var(--bar-high);
+}
+.energy-bar[data-level="export"] {
+  background: var(--bar-export);
+}
+.energy-bar[data-value="0"] {
+  height: 2px;
+  top: calc(var(--bar-top) - 2px);
+}
+.energy-bar[data-ongoing="true"] {
+  border-top: 2px dotted var(--bar-ink);
+}
+.energy-bars-chart:has([data-selected="true"])
+  .energy-bar-slot:not([data-selected="true"])
+  .energy-bar {
+  opacity: 0.55;
+}
+.energy-bar-slot[data-selected="true"] .energy-bar {
+  outline: 1px solid var(--bar-ink);
+  outline-offset: 2px;
+}
+.energy-bars-peak {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  translate: -50% -100%;
+  border-radius: 9px;
+  padding: 2px 4px;
+  font-size: 8px;
+  line-height: 1.1;
+  background: var(--bar-ink);
+  color: #fff;
+  white-space: nowrap;
+  z-index: 1;
+}
+.energy-bars-grid {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: absolute;
+  inset: 14px 0 0;
+  z-index: -1;
+}
+.energy-bars-grid i {
+  border-top: 1px solid #37425513;
+}
+.energy-bars-zero {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid #37425530;
+  z-index: -1;
+}
+.energy-bars-axis {
+  display: flex;
+  font-size: 8px;
+}
+.energy-bars-axis span {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+.energy-bars-detail {
+  min-height: 24px;
+  font-size: 9px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  line-height: 1.25;
+}
+.energy-bars-detail strong {
+  font-weight: 600;
+}
+html[data-theme="dark"] .energy-bars {
+  --bar-low: #91d947;
+  --bar-medium: #ffc35a;
+  --bar-high: #ff6d75;
+  --bar-export: #6bc5ff;
+  --bar-unknown: #aab7c8;
+  --bar-ink: #e0e9f5;
+  background: #202832;
+}
+html[data-theme="dark"] .energy-bars-grid i {
+  border-color: #ffffff13;
+}
+html[data-theme="dark"] .energy-bars-zero {
+  border-color: #ffffff30;
+}
+html[data-theme="dark"] .energy-bars-peak {
+  color: #17202c;
+}
+@media (prefers-reduced-motion: reduce) {
+  .energy-bar {
+    transition: none;
+  }
+}

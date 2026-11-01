@@ -1,19 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  CloudSun,
-  Sun,
-  Moon,
-  CloudRain,
-  CloudSnow,
-  Cloud,
-  Wind,
-  Droplets,
-} from "lucide-react";
+import { CloudRain, Cloud, Wind, Droplets } from "lucide-react";
 import { api } from "../api";
 import type { Control } from "../types";
 import "./extras.css";
 import { TemperatureValue } from "./TemperatureValue";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { WeatherArtwork, useWeatherNight } from "./WeatherArtwork";
 type Day = {
   date: string;
   condition: string;
@@ -36,6 +28,7 @@ export function Weather({
 }) {
   const en = lang === "en",
     t = (nb: string, eng: string) => (en ? eng : nb);
+  const night = useWeatherNight(c);
   const q = useQuery({
     queryKey: ["weather-forecast", c.id],
     queryFn: () =>
@@ -67,26 +60,12 @@ export function Weather({
       "windy-variant": t("Vind og skyer", "Wind and clouds"),
       exceptional: t("Ekstremvær", "Exceptional weather"),
     })[state] || t("Ukjent", "Unknown");
-  const icon = (state: string) =>
-    state === "sunny"
-      ? Sun
-      : state === "clear-night"
-        ? Moon
-        : ["rainy", "pouring", "lightning-rainy"].includes(state)
-          ? CloudRain
-          : state.includes("snowy")
-            ? CloudSnow
-            : state === "partlycloudy"
-              ? CloudSun
-              : Cloud;
   const now =
       typeof c.attributes.temperature === "number"
         ? c.attributes.temperature
         : null,
     unit = String(c.attributes.temperature_unit || "°");
-  const tomorrow = q.data?.days.tomorrow,
-    Now = icon(c.state),
-    Tomorrow = icon(tomorrow?.condition || "");
+  const tomorrow = q.data?.days.tomorrow;
   const number = (v: unknown) =>
     typeof v === "number"
       ? v.toLocaleString(en ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })
@@ -95,7 +74,6 @@ export function Weather({
     const usable = c.availability === "available";
     const today = q.data?.days.today;
     const current = usable && now !== null && Number.isFinite(now) ? now : null;
-    const cloud = usable && ["cloudy", "partlycloudy"].includes(c.state);
     return (
       <section
         className="simple-weather"
@@ -123,14 +101,10 @@ export function Weather({
               </>
             )}
           </strong>
-          {cloud ? (
-            <img
-              src={new URL("home/simple-cloud.webp", document.baseURI).href}
-              alt=""
-            />
-          ) : (
-            <Now aria-hidden="true" size={76} />
-          )}
+          <WeatherArtwork
+            condition={usable ? c.state : "unavailable"}
+            night={night}
+          />
         </div>
         {usable &&
           today &&
@@ -183,7 +157,10 @@ export function Weather({
       <div className="weather-days">
         <div>
           <span>{t("Nå", "Now")}</span>
-          <Now size={29} />
+          <WeatherArtwork
+            condition={c.availability === "available" ? c.state : "unavailable"}
+            night={night}
+          />
           <strong>
             {number(now)}
             {unit}
@@ -201,7 +178,7 @@ export function Weather({
           <span>{t("I morgen", "Tomorrow")}</span>
           {tomorrow ? (
             <>
-              <Tomorrow size={29} />
+              <WeatherArtwork condition={tomorrow.condition} night={false} />
               <strong>
                 {number(tomorrow.temperature)}
                 {q.data?.temperature_unit || unit}

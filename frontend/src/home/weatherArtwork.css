@@ -1,0 +1,38 @@
+.weather-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  flex: 0 0 auto;
+}
+.weather-art-storm {
+  filter: brightness(0.76) saturate(0.85);
+}
+.simple-weather .simple-weather-current > .weather-art {
+  width: clamp(112px, 44%, 180px);
+  height: 116px;
+  object-fit: contain;
+}
+.weather-days .weather-art {
+  width: 100px;
+  height: 76px;
+}
+.hw-symbol.weather-art {
+  overflow: visible;
+}
+html[data-home-style="harmony"]
+  :is(.home-canvas, .home-canvas-expanded)
+  .home-canvas-content
+  .simple-weather[data-condition="clear-night"] {
+  background:
+    radial-gradient(ellipse at 85% 10%, #415a82 0%, transparent 60%),
+    linear-gradient(140deg, #112846, #071427);
+}
+html[data-home-style="harmony"]
+  :is(.home-canvas, .home-canvas-expanded)
+  .home-canvas-content
+  .simple-weather[data-condition="sunny"] {
+  background:
+    radial-gradient(ellipse at 90% 5%, #73c9ef 0%, transparent 55%),
+    linear-gradient(145deg, #246caf, #164e87);
+}

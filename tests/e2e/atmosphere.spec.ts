@@ -71,6 +71,27 @@ test("gentle RGB waves persist behind every destination, home style and palette 
         .map((animation) => animation.effect!.getTiming().duration),
     ),
   ).toEqual([46000, 57000, 63000]);
+  const sizes = await wave.evaluate((node) => {
+    const animation = node.getAnimations()[0],
+      original = animation.currentTime;
+    animation.pause();
+    const duration = Number(animation.effect!.getTiming().duration);
+    const delay = Number(animation.effect!.getTiming().delay);
+    const samples = [0, 0.25, 0.5, 0.75, 0.99].map((fraction) => {
+      animation.currentTime = duration * fraction + delay;
+      const m = new DOMMatrix(getComputedStyle(node).transform);
+      return { x: Math.hypot(m.a, m.b), y: Math.hypot(m.c, m.d) };
+    });
+    animation.currentTime = original;
+    animation.play();
+    return samples;
+  });
+  expect(
+    Math.max(...sizes.map((s) => s.y)) / Math.min(...sizes.map((s) => s.y)),
+  ).toBeGreaterThan(1.6);
+  expect(
+    Math.max(...sizes.map((s) => s.x)) / Math.min(...sizes.map((s) => s.x)),
+  ).toBeGreaterThan(1.08);
   for (const name of [
     "Hjem",
     "Rom",
