@@ -1,3 +1,10 @@
+## 1.36.87
+- Enklere volumkontroll i Harmoni: bare lydikon, en tynn linje og en liten rund kule. Den store bakgrunnspillen og synlig prosent er fjernet for styrbare spillere. Tastatur, demping og skjermleserens volumangivelse beholdes, og ukjent volum vises ikke som en bekreftet nullverdi.
+- Termostatkort blir blå i kjølemodus og ved rapportert kjøling i automatisk modus. Varme beholder den varme flaten, mens avslåtte og utilgjengelige termostater får en nøytral flate. Modusmerket har ikon for varme, kjøling, auto, kombinert varme/kjøling, avfukting, vifte og av. Faktisk oppvarming/kjøling vises fortsatt fra enhetens status.
+- Pluss/minus har helt runde knapper med like stor bredde og høyde og 44 px trefflate. Temperaturgrenser og trinn, bekreftet status og håndtering av utilgjengelig utstyr beholdes.
+- Kalenderkort får en egen okergull flate som skiller det tydeligere fra de oransje varmekortene.
+- Seks nye lokale værbilder: regn, lyn/torden, tåke, snø, vind og delvis skyet dag. Sammen med sol, skyet og klar natt er det nå ni fotobakgrunner. Bildet følger rapportert værtilstand; hagl, sludd og ukjente værtilstander beholder presise illustrasjoner. Egne bildevalg, «Uten bilde» og bildefeil håndteres fortsatt.
+
 ## 1.36.86
 - Kortene i Harmoni er redesignet etter den nye bildereferansen: dyp plomme for rutiner, terrakotta for kalender, vinrødt for multimedia, mintgrønt for personer og robot, varm beige for vanlige lys og koksgrå klokker og energi. Temperatur har en mørk blå flate og luftfuktighet en egen fiolett flate.
 - Tettere proporsjoner på Oversikt, jevnere ikon- og tittelplassering, roligere skygger og mer presise temperatur- og kontrollfelt. De lagrede plasseringene og størrelsene beholdes; redigering, romgruppering og fullvisning fungerer fortsatt.

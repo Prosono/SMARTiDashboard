@@ -36,7 +36,7 @@ import { api } from "../api";
 import { controlState } from "../controlState";
 import { lightIcon } from "../LightAppearance";
 import { mediaIcon } from "../MediaIcons";
-import { Thermostat } from "../Thermostat";
+import { Thermostat, ThermostatModeIcon } from "../Thermostat";
 import type { Capability, Control, Home } from "../types";
 import { MetricDeviceRenderer } from "./MetricDetails";
 import { InSettingsDialog, SettingsDialog } from "./SettingsDialog";
@@ -481,7 +481,13 @@ function HarmonyDevice({
       {c.domain === "climate" ? (
         <>
           <div className="harmony-device-status">
-            <i aria-hidden="true" />
+            <ThermostatModeIcon
+              c={{
+                ...c,
+                availability: available ? c.availability : "unavailable",
+              }}
+              size={15}
+            />
             <span>
               {busy
                 ? t("Sender…", "Sending…")

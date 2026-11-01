@@ -1,3 +1,55 @@
+# Simple volume, climate mode materials and weather scenes — release 1.36.87
+
+Harmoni media cards now use an unboxed speaker icon and a 3px range track with a
+10px circular thumb. The input retains a 44px-high pointer/touch area. Mute and
+keyboard control remain available; the hidden percentage is exposed through
+aria-valuetext, with an explicit unknown-volume label for missing/unavailable
+readings. Players without a volume slider retain their read-only volume output.
+
+Thermostats have genuinely circular 44×44px plus/minus buttons. Cool mode and
+reported automatic cooling use a blue card material and matching pale-blue
+controls. Heat retains the warm material; off/unknown/unavailable use a neutral
+material. Shared mode icons identify heat, cool, auto, combined heat/cool, dry,
+fan and off. Selected mode and reported heating/cooling remain separate, so an
+idle thermostat in cool mode is blue without falsely claiming active cooling.
+Capability/step limits and command guards are unchanged. Calendar cards now use
+an ochre-gold material distinct from orange heating cards.
+
+Six local WebP weather scenes add rain, thunder/lightning, fog, snow, wind and
+partly cloudy daylight, for nine scene files overall. Selection follows reported
+weather; partly cloudy day/night remains state-driven. Hail, sleet and unsupported
+conditions retain the appropriate artwork, rather than showing an inaccurate
+photo. Custom images, No image, missing data and image-load fallback are preserved.
+Only the selected scene loads. No new animation or live filter is introduced.
+[Asset paths, generation tool and exact prompts](REFERENCE_CARD_ASSETS.md) are
+recorded with the assets. The photographs are decorative scenic illustrations.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file
+  Prettier, reference-test TypeScript and git diff --check passed. The existing
+  Vite chunk-size advisory remains.
+- **244 frontend unit cases passed.**
+- **80 distinct selected desktop/mobile browser scenarios passed against the
+  final extracted archive**, across the full regression and focused reference
+  runs. New coverage exercises keyboard volume/mute, unknown volume, seven mode
+  indications, cooling versus idle, circular button dimensions (allowing browser
+  subpixel rounding), new image responses, mixed/unknown weather fallbacks and
+  retained custom image choices. All commands use isolated demo fixtures.
+- Existing regression coverage includes all Home styles/categories, all nine
+  palettes in both themes, 320/390/834/1440 widths, saved layout editing and
+  drag/resize, room grouping, recorder history/graphs, actual light color,
+  unavailable states, keyboard/touch inspection, and reduced/paused motion.
+  Existing text/chart contrast thresholds remain 4.5:1 and 3:1.
+- New controls, cooling material and rain/thunder/fog card compositions were
+  visually inspected on desktop/mobile. These are Chromium results, not physical
+  wall-panel validation. The lightweight ribbon background is unchanged.
+- Packaging check passed. All **263 runtime files** match the final extracted
+  archive under test. No backend code changed; prior repository-wide limitations
+  recorded below remain applicable.
+
+---
+
 # Reference-matched card materials and controls — release 1.36.86
 
 The November reference now guides all twelve overview card families: photographic

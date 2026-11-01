@@ -77,31 +77,23 @@ export function Weather({
     const usable = c.availability === "available";
     const today = q.data?.days.today;
     const current = usable && now !== null && Number.isFinite(now) ? now : null;
-    const known = [
-      "sunny",
-      "clear-night",
-      "cloudy",
-      "partlycloudy",
-      "rainy",
-      "pouring",
-      "snowy",
-      "snowy-rainy",
-      "hail",
-      "fog",
-      "windy",
-      "windy-variant",
-      "lightning",
-      "lightning-rainy",
-    ].includes(c.state);
-    const scene =
-      !usable || !known
-        ? null
-        : c.state === "clear-night" ||
-            (c.state === "partlycloudy" && night === true)
-          ? "night"
-          : c.state === "sunny"
-            ? "sunny"
-            : "cloudy";
+    const scenes: Record<string, string> = {
+      sunny: "sunny",
+      "clear-night": "night",
+      cloudy: "cloudy",
+      partlycloudy:
+        night === true ? "night" : night === false ? "partly-cloudy" : "cloudy",
+      rainy: "rain",
+      pouring: "rain",
+      lightning: "storm",
+      "lightning-rainy": "storm",
+      fog: "fog",
+      snowy: "snow",
+      windy: "wind",
+      "windy-variant": "wind",
+    };
+    // Mixed precipitation, hail and unknown states retain their precise artwork.
+    const scene = usable ? scenes[c.state] || null : null;
     const hasScene =
       polished &&
       scene !== null &&

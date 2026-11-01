@@ -6,10 +6,35 @@ import {
   Droplets,
   Minus,
   Plus,
+  RefreshCw,
+  ArrowLeftRight,
+  CircleHelp,
 } from "lucide-react";
 import type { Control } from "./types";
 import "./thermostat.css";
 import { TemperatureValue } from "./home/TemperatureValue";
+
+/** The selected mode, rather than a guessed heating/cooling activity. */
+export function ThermostatModeIcon({
+  c,
+  size = 16,
+}: {
+  c: Control;
+  size?: number;
+}) {
+  const mode = c.availability === "available" ? c.state : "unavailable";
+  const Icon =
+    {
+      heat: Flame,
+      cool: Snowflake,
+      heat_cool: ArrowLeftRight,
+      auto: RefreshCw,
+      dry: Droplets,
+      fan_only: Fan,
+      off: Power,
+    }[mode] || CircleHelp;
+  return <Icon size={size} aria-hidden="true" data-climate-mode={mode} />;
+}
 
 export function Thermostat({
   c,
@@ -59,23 +84,13 @@ export function Thermostat({
   };
   const action = String(c.attributes.hvac_action || "");
   const tone =
-    !known || c.state === "off"
+    !known || ["off", "unknown", "unavailable"].includes(c.state)
       ? "off"
       : action === "cooling" || c.state === "cool"
         ? "cool"
         : action === "heating" || c.state === "heat"
           ? "heat"
           : "auto";
-  const Icon =
-    tone === "off"
-      ? Power
-      : tone === "cool"
-        ? Snowflake
-        : c.state === "dry"
-          ? Droplets
-          : c.state === "fan_only"
-            ? Fan
-            : Flame;
   const format = (value: number | null) =>
     value === null || !known
       ? "—"
@@ -111,7 +126,7 @@ export function Thermostat({
     >
       {!compact && (
         <div className="thermostat-mode">
-          <Icon size={16} />
+          <ThermostatModeIcon c={c} />
           <span>
             {known
               ? modes[c.state] || c.state

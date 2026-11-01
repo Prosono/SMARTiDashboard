@@ -303,6 +303,11 @@ export function MediaCard({
               {supports("set_volume") && (
                 <input
                   aria-label={`${c.name}: ${t("Volum", "Volume")}`}
+                  aria-valuetext={
+                    unavailable || measured === null
+                      ? t("Volum ukjent", "Volume unknown")
+                      : `${volume}%`
+                  }
                   type="range"
                   min="0"
                   max="100"

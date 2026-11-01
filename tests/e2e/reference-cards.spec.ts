@@ -3,6 +3,7 @@ import {
   expect,
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
+import type { GridItem } from "../../frontend/src/home/homeGridModel";
 const fixed = new Date("2026-11-01T20:36:00Z");
 async function setup(page: Page) {
   await page.addInitScript(() => {
@@ -199,9 +200,9 @@ async function setup(page: Page) {
     "metric:temperature",
     "metric:humidity",
   ];
-  let saved = {
+  let saved: { revision: number; items: GridItem[] } = {
     revision: 0,
-    items: ids.map((id, i) => ({
+    items: ids.map<GridItem>((id, i) => ({
       id,
       x: i % 3,
       y: Math.floor(i / 3) * 2,
@@ -282,6 +283,10 @@ async function setup(page: Page) {
       climate.attributes.temperature = body.value;
     if (id === media.entity_id && body.action === "media_play")
       media.state = "playing";
+    if (id === media.entity_id && body.action === "set_volume")
+      media.attributes.volume_level = body.value / 100;
+    if (id === media.entity_id && body.action === "set_mute")
+      media.attributes.is_volume_muted = body.value === 1;
     if (id === vacuum.entity_id && body.action === "start")
       vacuum.state = "cleaning";
     return route.fulfill({ json: { status: "state_updated" } });
@@ -443,4 +448,183 @@ test("weather photo failure retains weather readings and falls back to the local
     weather.locator(".simple-weather-current > strong"),
   ).toContainText("8,8");
   await expect(weather.locator(".weather-art")).toBeVisible();
+});
+
+test("simple volume keeps keyboard and mute control; climate modes keep round controls and distinct heat/cool surfaces", async ({
+  page,
+}, info) => {
+  const state = await setup(page),
+    media = page.locator('[data-card="media"]'),
+    climate = page.locator('[data-card="climate"]'),
+    slider = media.getByRole("slider", {
+      name: "Chromecast: Volum",
+      exact: true,
+    });
+  await expect(media.locator(".home-canvas-viewport")).toHaveAttribute(
+    "data-overflow",
+    "false",
+  );
+  await slider.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect
+    .poll(() => state.calls.find((c) => c.action === "set_volume")?.value)
+    .toBe(21);
+  await expect(slider).toHaveAttribute("aria-valuetext", "21%");
+  await media
+    .getByRole("button", { name: "Chromecast: Demp lyd", exact: true })
+    .click();
+  await expect(
+    media.getByRole("button", { name: "Chromecast: Slå på lyd", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(slider).toHaveValue("21");
+  expect(
+    await media
+      .locator(".media-volume")
+      .evaluate((node) => getComputedStyle(node).backgroundColor),
+  ).toBe("rgba(0, 0, 0, 0)");
+
+  const material = async () =>
+    climate.locator(".home-canvas-surface").evaluate((node) => {
+      const canvas = document.createElement("canvas"),
+        ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = getComputedStyle(node).getPropertyValue("--card-color");
+      ctx.fillRect(0, 0, 1, 1);
+      return Array.from(ctx.getImageData(0, 0, 1, 1).data);
+    });
+  const heat = await material();
+  for (const [mode, activity, text] of [
+    ["cool", "cooling", "Kjøler"],
+    ["cool", "idle", "Kjøling"],
+    ["auto", "cooling", "Kjøler"],
+    ["heat_cool", "idle", "Varme / kjøling"],
+    ["dry", "drying", "Avfukting"],
+    ["fan_only", "fan", "Vifte"],
+    ["off", "off", "Av"],
+  ]) {
+    state.climate.state = mode;
+    state.climate.attributes.hvac_action = activity;
+    await page.reload();
+    await expect(
+      climate.locator(".harmony-device-status [data-climate-mode]"),
+    ).toHaveAttribute("data-climate-mode", mode);
+    await expect(climate.locator(".harmony-device-status")).toContainText(text);
+    await expect(climate.locator(".home-canvas-viewport")).toHaveAttribute(
+      "data-overflow",
+      "false",
+    );
+    if (mode === "cool") {
+      const blue = await material();
+      expect(blue[2]).toBeGreaterThan(blue[0] + 40);
+      expect(blue).not.toEqual(heat);
+      const buttons = await climate
+        .locator(".thermostat-adjust button")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => {
+            const r = node.getBoundingClientRect(),
+              style = getComputedStyle(node);
+            return {
+              width: r.width,
+              height: r.height,
+              radius: style.borderRadius,
+            };
+          }),
+        );
+      expect(buttons).toHaveLength(2);
+      for (const button of buttons) {
+        // Browser transforms/scroll offsets can round viewport bounds by <0.01px.
+        expect(button.width).toBeCloseTo(button.height, 2);
+        expect(button.width).toBeCloseTo(44, 2);
+        expect(button.radius).toBe("50%");
+      }
+      if (activity === "cooling") {
+        await climate.scrollIntoViewIfNeeded();
+        await climate.screenshot({
+          path: `/private/tmp/smarti-87-cooling-${info.project.name}.png`,
+        });
+      }
+    }
+  }
+  state.media.attributes.volume_level = null;
+  state.climate.availability = "unavailable";
+  await page.reload();
+  await expect(slider).toBeDisabled();
+  await expect(slider).toHaveAttribute("aria-valuetext", "Volum ukjent");
+  await expect(
+    climate.locator(".thermostat-adjust button").first(),
+  ).toBeDisabled();
+  await expect(climate.locator("[data-climate-mode]")).toHaveAttribute(
+    "data-climate-mode",
+    "unavailable",
+  );
+});
+
+test("weather photos follow rain, thunder, fog, snow and wind; uncertain and custom image choices keep truthful fallbacks", async ({
+  page,
+}, info) => {
+  const state = await setup(page),
+    weather = page.locator('[data-card="weather"] .simple-weather');
+  for (const [condition, scene] of [
+    ["rainy", "rain"],
+    ["pouring", "rain"],
+    ["lightning", "storm"],
+    ["lightning-rainy", "storm"],
+    ["fog", "fog"],
+    ["snowy", "snow"],
+    ["windy", "wind"],
+    ["windy-variant", "wind"],
+  ]) {
+    state.weather.state = condition;
+    await page.reload();
+    await expect(weather).toHaveAttribute("data-scene", scene);
+    await expect
+      .poll(() =>
+        weather
+          .locator(".weather-scene")
+          .evaluate(
+            (image: HTMLImageElement) =>
+              image.complete && image.naturalWidth > 0,
+          ),
+      )
+      .toBe(true);
+    await expect(
+      weather.locator(".simple-weather-current > strong"),
+    ).toContainText("8,8");
+    if (["rainy", "lightning", "fog"].includes(condition))
+      await weather.screenshot({
+        path: `/private/tmp/smarti-87-weather-${scene}-${info.project.name}.png`,
+      });
+  }
+  state.weather.state = "partlycloudy";
+  for (const day of [true, false]) {
+    state.weather.attributes.is_daytime = day;
+    await page.reload();
+    await expect(weather).toHaveAttribute(
+      "data-scene",
+      day ? "partly-cloudy" : "night",
+    );
+  }
+  for (const condition of ["snowy-rainy", "hail", "exceptional", "unknown"]) {
+    state.weather.state = condition;
+    await page.reload();
+    await expect(weather).not.toHaveAttribute("data-scene", /./);
+    await expect(weather.locator(".weather-art")).toBeVisible();
+  }
+  state.weather.state = "rainy";
+  for (const image of ["none", "living"]) {
+    state.saved().items[0].config = {
+      type: "auto",
+      title: "Været",
+      icon: "auto",
+      image,
+      sources: [],
+      period: "24",
+    };
+    await page.reload();
+    await expect(weather).not.toHaveAttribute("data-scene", /./);
+    if (image === "living")
+      await expect(
+        page.locator('[data-card="weather"] .personal-card-backdrop'),
+      ).toBeVisible();
+  }
+  expect(state.calls).toHaveLength(0);
 });
