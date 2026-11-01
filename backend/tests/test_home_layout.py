@@ -52,7 +52,8 @@ def test_invalid_layouts_do_not_replace_saved_data(client, items):  # noqa: F811
 
 def test_layout_is_authenticated_csrf_protected_and_private_to_each_account(client):  # noqa: F811
     saved = client.put(
-        "/api/home/layout/lights", json={"revision": 0, "items": [card("device:light.living_pendant")]}
+        "/api/home/layout/lights",
+        json={"revision": 0, "items": [card("device:light.living_pendant")], "group_by_room": False},
     ).json()
     assert (
         client.put(
@@ -73,10 +74,58 @@ def test_layout_is_authenticated_csrf_protected_and_private_to_each_account(clie
     client.post("/api/logout")
     assert client.get("/api/home/layout/lights").status_code == 401
     login(client, "grid-resident", "another-long-grid-password")
-    assert client.get("/api/home/layout/lights").json()["items"] is None
+    assert client.get("/api/home/layout/lights").json() == {"revision": 0, "items": None}
     assert (
         client.put("/api/home/layout/lights", json={"revision": 0, "items": [card("own")]}).status_code == 200
     )
     client.post("/api/logout")
     login(client)
     assert client.get("/api/home/layout/lights").json() == saved
+
+
+def test_room_grouping_saves_atomically_with_clear_and_legacy_clients_preserve_it(client):  # noqa: F811
+    initial = {"revision": 0, "items": [card()], "group_by_room": False}
+    response = client.put("/api/home/layout/lights", json=initial)
+    assert response.status_code == 200
+    assert response.json() == {**initial, "revision": 1}
+    assert client.get("/api/home/layout/climate").json() == {"revision": 0, "items": None}
+    # Older clients omit this optional field; they must not reset the resident's choice.
+    legacy = client.put("/api/home/layout/lights", json={"revision": 1, "items": [card()]})
+    assert legacy.json()["group_by_room"] is False
+    cleared = client.put("/api/home/layout/lights", json={"revision": 2, "items": [], "group_by_room": True})
+    assert cleared.json() == {"revision": 3, "items": [], "group_by_room": True}
+    assert (
+        client.put(
+            "/api/home/layout/lights", json={"revision": 2, "items": [card()], "group_by_room": False}
+        ).status_code
+        == 409
+    )
+    assert client.get("/api/home/layout/lights").json() == cleared.json()
+
+
+@pytest.mark.parametrize("value", [1, 0, "true", "false", [], {}])
+def test_room_grouping_is_a_strict_boolean(client, value):  # noqa: F811
+    assert (
+        client.put(
+            "/api/home/layout/lights", json={"revision": 0, "items": [], "group_by_room": value}
+        ).status_code
+        == 422
+    )
+    assert client.get("/api/home/layout/lights").json() == {"revision": 0, "items": None}
+
+
+@pytest.mark.parametrize("page", ["lights", "misc", "climate", "security", "media"])
+def test_room_grouping_is_available_on_each_category(client, page):  # noqa: F811
+    result = client.put(f"/api/home/layout/{page}", json={"revision": 0, "items": [], "group_by_room": True})
+    assert result.status_code == 200
+    assert client.get(f"/api/home/layout/{page}").json() == result.json()
+
+
+@pytest.mark.parametrize("page", ["overview", "overview_simple"])
+def test_overview_keeps_its_free_layout(client, page):  # noqa: F811
+    assert (
+        client.put(
+            f"/api/home/layout/{page}", json={"revision": 0, "items": [], "group_by_room": True}
+        ).status_code
+        == 422
+    )

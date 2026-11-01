@@ -22,7 +22,9 @@ export function useGridWiggle(
       { rootMargin: "60px" },
     );
     const sync = () => {
-      const cells = new Set(Array.from(grid.children));
+      const cells = new Set(
+        Array.from(grid.querySelectorAll(":scope > .home-canvas-cell")),
+      );
       for (const cell of observed)
         if (!cells.has(cell)) {
           intersection.unobserve(cell);

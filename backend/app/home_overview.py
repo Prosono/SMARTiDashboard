@@ -169,6 +169,7 @@ class HomeLayout(BaseModel):
     model_config = {"extra": "forbid", "strict": True}
     revision: int = Field(ge=0)
     items: list[LayoutItem] = Field(max_length=300)
+    group_by_room: bool | None = None
 
     @model_validator(mode="after")
     def fits_grid(self):
@@ -235,6 +236,8 @@ def home_router(store, user, ha, settings):
 
     @router.put("/layout/{page}")
     async def save_home_layout(page: LayoutPage, body: HomeLayout, current=Depends(user)):
+        if body.group_by_room and page not in {"lights", "misc", "climate", "security", "media"}:
+            raise HTTPException(422, "room_grouping_not_supported")
         key = f"home_layout:{current['id']}:{page}"
         entities = {c.entity_id: c for c in ha.controls()}
         for item in body.items:
@@ -247,13 +250,18 @@ def home_router(store, user, ha, settings):
         with store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
-            revision = json.loads(row[0])["revision"] if row else 0
+            previous = json.loads(row[0]) if row else {}
+            revision = previous.get("revision", 0)
             if revision != body.revision:
                 raise HTTPException(409, "layout_changed")
             result = {
                 "revision": revision + 1,
                 "items": [item.model_dump(exclude_none=True) for item in body.items],
             }
+            if body.group_by_room is not None:
+                result["group_by_room"] = body.group_by_room
+            elif "group_by_room" in previous:
+                result["group_by_room"] = previous["group_by_room"]
             db.execute("INSERT OR REPLACE INTO settings(key,value) VALUES (?,?)", (key, json.dumps(result)))
         return result
 

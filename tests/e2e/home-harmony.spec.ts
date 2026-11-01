@@ -1241,8 +1241,13 @@ test("each category can remove and add cards, retain failed edits and protect co
             !nodes.length ||
             nodes.some((node) => {
               const style = getComputedStyle(node);
+              const firstRow =
+                node.closest(".home-canvas")?.getAttribute("data-grouped") ===
+                "true"
+                  ? "2"
+                  : "1";
               return (
-                style.gridColumnStart === "1" && style.gridRowStart === "1"
+                style.gridColumnStart === "1" && style.gridRowStart === firstRow
               );
             }),
         ),
@@ -1586,25 +1591,42 @@ test("equipment cards match their actual device type, color controls and linked 
       await page.getByRole("tab", { name, exact: true }).click();
       for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 1100 });
+        await expect(page.locator(".home-canvas-grid")).toHaveCSS(
+          "--canvas-columns",
+          width === 1440 ? "3" : "1",
+        );
         expect(
           await page
             .locator("body")
             .evaluate((el) => el.scrollWidth <= el.clientWidth),
         ).toBe(true);
-        for (const card of await page.locator(".equipment-card").all()) {
-          const bounds = await card.boundingBox();
-          for (const control of await card
-            .locator(
-              ".equipment-controls button:visible, .equipment-controls input:visible",
-            )
-            .all()) {
-            const rect = await control.boundingBox();
-            expect(
-              rect!.y + rect!.height,
-              await card.innerText(),
-            ).toBeLessThanOrEqual(bounds!.y + bounds!.height + 1);
-          }
-        }
+        // Read each card and its controls in the same frame while responsive rows settle.
+        const bounds = await page
+          .locator(".equipment-card")
+          .evaluateAll((cards) =>
+            cards.flatMap((card) => {
+              const outer = card.getBoundingClientRect();
+              return Array.from(
+                card.querySelectorAll(
+                  ".equipment-controls button, .equipment-controls input",
+                ),
+              )
+                .filter(
+                  (control) =>
+                    control.getClientRects().length &&
+                    getComputedStyle(control).visibility === "visible",
+                )
+                .map((control) => ({
+                  name: card.textContent || "",
+                  bottom: control.getBoundingClientRect().bottom,
+                  cardBottom: outer.bottom,
+                }));
+            }),
+          );
+        for (const item of bounds)
+          expect(item.bottom, item.name).toBeLessThanOrEqual(
+            item.cardBottom + 1,
+          );
         const images = page.locator(".equipment-art img");
         await expect
           .poll(async () =>
@@ -1836,15 +1858,28 @@ test("grid content fits without nested scrolling and editing has calm layout mot
 });
 
 async function personalCardLayouts(page: Page) {
-  const layouts = new Map<string, { revision: number; items: any[] | null }>();
+  const layouts = new Map<
+    string,
+    { revision: number; items: any[] | null; group_by_room?: boolean }
+  >();
   await page.route("**/api/home/layout/*", (route) => {
     const key = new URL(route.request().url()).pathname;
-    const current = layouts.get(key) || { revision: 0, items: null };
+    const current = layouts.get(key) || {
+      revision: 0,
+      items: null,
+      group_by_room: false,
+    };
     if (route.request().method() === "GET")
       return route.fulfill({ json: current });
+    const body = route.request().postDataJSON();
     const next = {
       revision: current.revision + 1,
-      items: route.request().postDataJSON().items,
+      items: body.items,
+      ...(body.group_by_room !== undefined
+        ? { group_by_room: body.group_by_room }
+        : current.group_by_room !== undefined
+          ? { group_by_room: current.group_by_room }
+          : {}),
     };
     layouts.set(key, next);
     return route.fulfill({ json: next });
@@ -1915,13 +1950,14 @@ test("deleting a card compacts mixed sizes with motion, supports cancel and save
   await page.getByRole("tab", { name: "Lys", exact: true }).click();
   const canvas = page.locator('.home-canvas[data-page="lights"]'),
     wide = canvas.locator('[data-card="custom:wide"]');
+  await expect(canvas).toHaveAttribute("data-grouped", "true");
   await canvas
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await canvas
     .getByRole("button", { name: "Fjern Fjern dette kortet", exact: true })
     .click();
-  await expect(wide).toHaveCSS("grid-row-start", "1");
+  await expect(wide).toHaveCSS("grid-row-start", "2");
   const motion = await wide.evaluate((node) => {
     const animation = node
       .getAnimations()
@@ -1942,7 +1978,7 @@ test("deleting a card compacts mixed sizes with motion, supports cancel and save
   await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
   await expect(canvas.locator('[data-card="custom:delete"]')).toHaveCount(1);
   expect(layouts.get("/api/home/layout/lights")!.items).toEqual(original);
-  await expect(wide).toHaveCSS("grid-row-start", "3");
+  await expect(wide).toHaveCSS("grid-row-start", "4");
   await canvas
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
@@ -1959,13 +1995,211 @@ test("deleting a card compacts mixed sizes with motion, supports cancel and save
   await page.reload();
   await page.getByRole("tab", { name: "Lys", exact: true }).click();
   await expect(canvas.locator('[data-card="custom:delete"]')).toHaveCount(0);
-  await expect(wide).toHaveCSS("grid-row-start", "1");
+  await expect(wide).toHaveCSS("grid-row-start", "2");
   await expect(wide).toHaveCSS(
     "grid-column-end",
     info.project.name === "mobile" ? "span 1" : "span 2",
   );
   await expect(wide).toHaveCSS("grid-row-end", "span 3");
   expect(layouts.get("/api/home/layout/lights")!.items).toEqual(packed);
+  expect(commands).toEqual([]);
+});
+
+test("categories default to rooms, preserve room-scoped editing and can save a free or empty layout", async ({
+  page,
+}, info) => {
+  test.setTimeout(90000);
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  const layouts = await personalCardLayouts(page);
+  const categories = [
+    ["Lys", "lights"],
+    ["Diverse", "misc"],
+    ["Klima", "climate"],
+    ["Sikkerhet", "security"],
+    ["Multimedia", "media"],
+  ];
+  for (const [, key] of categories)
+    layouts.set(`/api/home/layout/${key}`, { revision: 0, items: null });
+  const extra = ["light", "switch", "climate", "lock", "media_player"].flatMap(
+    (domain) =>
+      ["living", "kitchen"].map((room) => ({
+        ...control(
+          domain,
+          `${domain} ${room}`,
+          domain === "lock" ? "locked" : domain === "climate" ? "heat" : "off",
+          domain === "climate"
+            ? {
+                current_temperature: 21,
+                temperature: 22,
+                hvac_modes: ["heat", "off"],
+              }
+            : {},
+          domain === "climate"
+            ? ["set_temperature", "set_hvac_mode"]
+            : domain === "lock"
+              ? ["lock", "unlock"]
+              : ["turn_on", "turn_off"],
+        ),
+        id: `${domain}.room_${room}`,
+        entity_id: `${domain}.room_${room}`,
+        area_id: room,
+      })),
+  );
+  extra.push({
+    ...control("light", "Lys uten rom", "off", {}, ["turn_on", "turn_off"]),
+    id: "light.room_none",
+    entity_id: "light.room_none",
+    area_id: null as any,
+  });
+  await richHome(page, extra);
+  const commands: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/commands")) commands.push(request.url());
+  });
+  await login(page);
+  await page.setViewportSize({
+    width: info.project.name === "mobile" ? 390 : 1440,
+    height: 1300,
+  });
+  for (const [name, key] of categories) {
+    await page.getByRole("tab", { name, exact: true }).click();
+    const canvas = page.locator(`.home-canvas[data-page="${key}"]`);
+    await expect(canvas).toHaveAttribute("data-grouped", "true");
+    await expect(
+      canvas.locator('.home-canvas-room-heading[data-room="room:living"]'),
+    ).toContainText("Stue");
+    await expect(
+      canvas.locator('.home-canvas-room-heading[data-room="room:kitchen"]'),
+    ).toContainText("Kjøkken");
+    const domain =
+      key === "lights"
+        ? "light"
+        : key === "misc"
+          ? "switch"
+          : key === "security"
+            ? "lock"
+            : key === "media"
+              ? "media_player"
+              : "climate";
+    for (const room of ["living", "kitchen"])
+      await expect(
+        canvas.locator(`[data-card="device:${domain}.room_${room}"]`),
+      ).toHaveAttribute("data-room", `room:${room}`);
+    expect(
+      await canvas.locator(".home-canvas-grid").evaluate((node) => {
+        let room = "";
+        for (const child of Array.from(node.children) as HTMLElement[]) {
+          if (child.classList.contains("home-canvas-room-heading"))
+            room = child.dataset.room!;
+          else if (child.dataset.room !== room) return false;
+        }
+        return true;
+      }),
+    ).toBe(true);
+  }
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const canvas = page.locator('.home-canvas[data-page="lights"]');
+  await expect(
+    canvas.locator('.home-canvas-room-heading[data-room="none"]'),
+  ).toContainText("Uten rom");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  const toggle = canvas.getByRole("checkbox", {
+    name: "Grupper etter rom",
+    exact: true,
+  });
+  await expect(toggle).toBeChecked();
+  await canvas.locator(".home-canvas-toolbar").screenshot({
+    path: `/private/tmp/smarti-room-group-edit-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  const target = canvas.locator('[data-card="device:light.room_living"]');
+  await target.getByRole("combobox", { name: /bredde/ }).selectOption("2");
+  await target.getByRole("combobox", { name: /høyde/ }).selectOption("3");
+  await target.locator(".home-canvas-grip").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(target).toHaveAttribute("data-room", "room:living");
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  expect(layouts.get("/api/home/layout/lights")!.group_by_room).toBe(true);
+  expect(
+    layouts
+      .get("/api/home/layout/lights")!
+      .items!.find((item) => item.id === "device:light.room_living"),
+  ).toMatchObject({ w: 2, h: 3 });
+  await page.reload();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-grouped", "true");
+  await expect(target).toHaveCSS("grid-row-end", "span 3");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Tøm oppsett", exact: true })
+    .click();
+  await expect(canvas.locator(".home-canvas-cell")).toHaveCount(0);
+  await expect(canvas.locator(".home-canvas-room-heading")).toHaveCount(0);
+  await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(target).toHaveCount(1);
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await toggle.uncheck();
+  await expect(canvas.locator(".home-canvas-room-heading")).toHaveCount(0);
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await page.reload();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-grouped", "false");
+  expect(layouts.get("/api/home/layout/lights")!.group_by_room).toBe(false);
+  await page.getByRole("tab", { name: "Klima", exact: true }).click();
+  await expect(
+    page.locator('.home-canvas[data-page="climate"]'),
+  ).toHaveAttribute("data-grouped", "true");
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Tøm oppsett", exact: true })
+    .click();
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await page.reload();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await expect(canvas.locator(".home-canvas-cell")).toHaveCount(0);
+  await expect(canvas).toContainText("Plass til det du trenger");
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await addFromPicker(page, "Pendellampe", "light.living_pendant");
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(canvas.locator(".home-canvas-cell")).toHaveCount(1);
+  await canvas
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Startoppsett", exact: true })
+    .click();
+  await expect(toggle).toBeChecked();
+  await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
+  await expect(
+    canvas.locator('.home-canvas-room-heading[data-room="room:kitchen"]'),
+  ).toBeVisible();
+  await canvas.screenshot({
+    path: `/private/tmp/smarti-room-groups-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
   expect(commands).toEqual([]);
 });
 

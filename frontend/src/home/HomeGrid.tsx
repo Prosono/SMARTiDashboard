@@ -12,11 +12,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   Grip,
+  House,
   LoaderCircle,
   Maximize2,
   Pencil,
   Plus,
   RotateCcw,
+  Trash2,
   X,
 } from "lucide-react";
 import { api } from "../api";
@@ -35,6 +37,16 @@ import {
   type HomeGridPage,
   type SavedGrid,
 } from "./homeGridModel";
+import {
+  addRoomCard,
+  createRoomResolver,
+  changeRoomGrid,
+  normalizeRoomGrid,
+  removeRoomCard,
+  reorderRoomGrid,
+  roomGridView,
+  supportsRoomGrouping,
+} from "./roomGridModel";
 import "./homeGrid.css";
 import { HomeGridGuard } from "./HomeGridGuard";
 import { HomeGridContent } from "./HomeGridContent";
@@ -80,6 +92,7 @@ export function HomeGrid({
     retry: false,
   });
   const [draft, setDraft] = useState<GridItem[] | null>(null);
+  const [draftGrouped, setDraftGrouped] = useState(true);
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
@@ -109,9 +122,17 @@ export function HomeGrid({
     () => defaultGrid(cards.filter((card) => !card.defaultHidden)),
     [cards],
   );
-  const layout = draft ?? saved.data?.items ?? defaults;
+  const resolveRoom = useMemo(
+    () => createRoomResolver(home),
+    [home.controls, home.areas],
+  );
+  const canGroup = supportsRoomGrouping(page);
+  const grouped =
+    canGroup &&
+    (draft !== null ? draftGrouped : (saved.data?.group_by_room ?? true));
+  const rawLayout = draft ?? saved.data?.items ?? defaults;
   const catalog = new Map(cards.map((card) => [card.id, card]));
-  for (const item of layout) {
+  for (const item of rawLayout) {
     if (!catalog.has(item.id) && item.config)
       catalog.set(item.id, {
         id: item.id,
@@ -124,21 +145,45 @@ export function HomeGrid({
         entityId: item.config.sources[0],
       });
   }
+  const roomOf = (item: GridItem) =>
+    resolveRoom(
+      item.config?.sources.length
+        ? item.config.sources
+        : catalog.get(item.id)?.entityId
+          ? [catalog.get(item.id)!.entityId!]
+          : [],
+    );
+  const layout = grouped
+    ? normalizeRoomGrid(
+        rawLayout,
+        roomOf,
+        draft === null && saved.data?.group_by_room === undefined,
+      )
+    : rawLayout;
   const editing = draft !== null;
   const visibleLayout = layout.filter(
     (item) =>
       catalog.has(item.id) && (editing || !catalog.get(item.id)!.hidden),
   );
+  const roomView = grouped
+    ? roomGridView(
+        visibleLayout,
+        roomOf,
+        columns,
+        !editing && cards.some((card) => card.hidden),
+      )
+    : null;
   const shown =
-    !editing && cards.some((card) => card.hidden)
+    roomView?.items ??
+    (!editing && cards.some((card) => card.hidden)
       ? defaultGrid(
           [...visibleLayout].sort((a, b) => a.y - b.y || a.x - b.x),
           columns,
         )
-      : responsiveGrid(visibleLayout, columns);
-  const layoutKey = shown
-    .map(({ id, x, y, w, h }) => `${id}:${x},${y},${w},${h}`)
-    .join("|");
+      : responsiveGrid(visibleLayout, columns));
+  const layoutKey =
+    `${roomView?.template ?? "flat"}|` +
+    shown.map(({ id, x, y, w, h }) => `${id}:${x},${y},${w},${h}`).join("|");
   useGridMotion(surface, layoutKey, editing, active);
   useGridWiggle(surface, editing);
 
@@ -206,6 +251,7 @@ export function HomeGrid({
   }, [editing, busy, guard, lang]);
 
   function begin() {
+    setDraftGrouped(grouped);
     setDraft(
       layout
         .filter((item) => catalog.has(item.id))
@@ -231,6 +277,7 @@ export function HomeGrid({
       const result = await api<SavedGrid>(`home/layout/${page}`, "PUT", {
         revision,
         items: draft,
+        ...(canGroup ? { group_by_room: draftGrouped } : {}),
       });
       qc.setQueryData(queryKey, result);
       setDraft(null);
@@ -255,7 +302,27 @@ export function HomeGrid({
     }
   }
   function update(item: GridItem) {
-    setDraft((current) => current && changeGrid(current, item));
+    setDraft((current) => current && changePlacement(current, item));
+  }
+  function changePlacement(items: GridItem[], item: GridItem) {
+    return grouped
+      ? changeRoomGrid(items, item, roomOf)
+      : changeGrid(items, item);
+  }
+  function reorderPlacement(items: GridItem[], id: string, targetId: string) {
+    return grouped
+      ? reorderRoomGrid(items, id, targetId, roomOf)
+      : reorderGrid(items, id, targetId);
+  }
+  function toggleGrouping(enabled: boolean) {
+    setDraftGrouped(enabled);
+    setDraft(
+      (current) =>
+        current &&
+        (enabled
+          ? normalizeRoomGrid(current, roomOf, true)
+          : defaultGrid([...current].sort((a, b) => a.y - b.y || a.x - b.x))),
+    );
   }
   function applyCard(selection: CardSelection) {
     setDraft((current) => {
@@ -265,7 +332,7 @@ export function HomeGrid({
         if (!item) return current;
         const expand =
           selection.config.type === "graph" && item.config?.type !== "graph";
-        return changeGrid(current, {
+        return changePlacement(current, {
           ...item,
           config: selection.config,
           ...(expand
@@ -283,12 +350,15 @@ export function HomeGrid({
         !current.some((item) => item.id === selection.base!.id)
           ? selection.base.id
           : customCardId();
-      return addGridCard(current, {
+      const card = {
         id,
         config: selection.config,
         w: selection.config.type === "graph" ? 2 : selection.base?.w,
         h: selection.config.type === "graph" ? 3 : selection.base?.h,
-      });
+      };
+      return grouped
+        ? addRoomCard(current, card, roomOf)
+        : addGridCard(current, card);
     });
     setAdding(false);
     setEditingCard(null);
@@ -347,14 +417,16 @@ export function HomeGrid({
       const start = g.shown.find((item) => item.id === g.id)!;
       const x = Math.max(0, Math.min(g.columns - 1, start.x + dx)),
         y = Math.max(0, start.y + dy);
-      const target = [...g.shown].sort(
-        (a, b) =>
-          Math.abs(a.x - x) +
-          Math.abs(a.y - y) -
-          Math.abs(b.x - x) -
-          Math.abs(b.y - y),
-      )[0];
-      setDraft(reorderGrid(g.items, g.id, target.id));
+      const target = g.shown
+        .filter((item) => !grouped || roomOf(item) === roomOf(g.item))
+        .sort(
+          (a, b) =>
+            Math.abs(a.x - x) +
+            Math.abs(a.y - y) -
+            Math.abs(b.x - x) -
+            Math.abs(b.y - y),
+        )[0];
+      setDraft(reorderPlacement(g.items, g.id, target.id));
       return;
     }
     const width = Math.max(1, Math.min(3, g.item.w + dx));
@@ -370,7 +442,7 @@ export function HomeGrid({
           x: Math.max(0, Math.min(3 - g.item.w, g.item.x + dx)),
           y: Math.max(0, g.item.y + dy),
         };
-    setDraft(changeGrid(g.items, item));
+    setDraft(changePlacement(g.items, item));
   }
   function end(event: PointerEvent<HTMLButtonElement>, cancelled = false) {
     if (cancelled && gesture.current) setDraft(gesture.current.items);
@@ -386,6 +458,7 @@ export function HomeGrid({
       className="home-canvas"
       data-page={page}
       data-editing={editing}
+      data-grouped={grouped}
       data-dragging={!!active}
       data-card-dialog={adding || !!editingCard}
       aria-label={title || t("Kort i hjemmet", "Home cards")}
@@ -395,10 +468,15 @@ export function HomeGrid({
           <strong>{title || t("Ditt oppsett", "Your layout")}</strong>
           <span>
             {editing
-              ? t(
-                  "Dra i håndtaket. Endre størrelse fra hjørnet.",
-                  "Drag the handle. Resize from the corner.",
-                )
+              ? grouped
+                ? t(
+                    "Flytt og endre størrelse innenfor hvert rom.",
+                    "Move and resize cards within each room.",
+                  )
+                : t(
+                    "Dra i håndtaket. Endre størrelse fra hjørnet.",
+                    "Drag the handle. Resize from the corner.",
+                  )
               : t(
                   "Tilpass kortene slik du vil ha dem.",
                   "Arrange your cards your way.",
@@ -408,6 +486,18 @@ export function HomeGrid({
         <div className="home-canvas-actions">
           {editing ? (
             <>
+              {canGroup && (
+                <label className="home-canvas-group-toggle">
+                  <input
+                    type="checkbox"
+                    checked={grouped}
+                    disabled={busy || !!active}
+                    onChange={(event) => toggleGrouping(event.target.checked)}
+                  />
+                  <House size={16} />
+                  {t("Grupper etter rom", "Group by room")}
+                </label>
+              )}
               <button
                 onClick={() => setAdding(!adding)}
                 disabled={busy || draft.length >= 300}
@@ -419,7 +509,12 @@ export function HomeGrid({
               </button>
               <button
                 onClick={() => {
-                  setDraft(defaults);
+                  setDraftGrouped(canGroup);
+                  setDraft(
+                    canGroup
+                      ? normalizeRoomGrid(defaults, roomOf, true)
+                      : defaults,
+                  );
                   setMessage(
                     t(
                       "Startoppsettet er hentet. Lagre for å beholde det.",
@@ -431,6 +526,23 @@ export function HomeGrid({
               >
                 <RotateCcw size={16} />
                 {t("Startoppsett", "Default layout")}
+              </button>
+              <button
+                disabled={busy || !!active || !draft.length}
+                onClick={() => {
+                  setDraft([]);
+                  setAdding(false);
+                  setEditingCard(null);
+                  setMessage(
+                    t(
+                      "Oppsettet er tømt. Legg til kort og lagre, eller velg Avbryt for å hente alt tilbake.",
+                      "Layout cleared. Add cards and save, or cancel to restore everything.",
+                    ),
+                  );
+                }}
+              >
+                <Trash2 size={16} />
+                {t("Tøm oppsett", "Clear layout")}
               </button>
               <button onClick={cancel} disabled={busy}>
                 <X size={17} />
@@ -503,26 +615,59 @@ export function HomeGrid({
       <div
         ref={surface}
         className="home-canvas-grid"
-        style={{ "--canvas-columns": columns } as CSSProperties}
+        style={
+          {
+            "--canvas-columns": columns,
+            ...(roomView?.template
+              ? { gridTemplateRows: roomView.template }
+              : {}),
+          } as CSSProperties
+        }
       >
-        {shown.map((item) => {
+        {shown.flatMap((item) => {
           const card = catalog.get(item.id)!;
+          const group = roomView?.groups.find(
+            (group) => group.items[0]?.id === item.id,
+          );
           const original = layout.find((saved) => saved.id === item.id)!;
           const cardTitle = original.config?.title || card.title;
           const phase = Array.from(item.id).reduce(
             (sum, c) => sum + c.charCodeAt(0),
             0,
           );
-          return (
+          return [
+            group && (
+              <h2
+                className="home-canvas-room-heading"
+                key={`heading:${group.key}`}
+                data-room={group.key}
+                style={{ gridColumn: "1 / -1", gridRow: group.headingRow }}
+              >
+                <House size={18} aria-hidden="true" />
+                <span>
+                  {group.key === "shared"
+                    ? t("Felles for hjemmet", "Shared across the home")
+                    : group.key === "none"
+                      ? t("Uten rom", "No room")
+                      : home.areas.find(
+                          (area) => `room:${area.area_id}` === group.key,
+                        )?.name}
+                </span>
+                <small>
+                  {group.items.length} {t("kort", "cards")}
+                </small>
+              </h2>
+            ),
             <div
               key={item.id}
               className="home-canvas-cell"
               data-card={item.id}
+              data-room={grouped ? roomOf(item) : undefined}
               data-rows={item.h}
               data-active={active === item.id}
               style={{
                 gridColumn: `${item.x + 1} / span ${item.w}`,
-                gridRow: `${item.y + 1} / span ${item.h}`,
+                gridRow: `${roomView?.displayRows.get(item.id) ?? item.y + 1} / span ${item.h}`,
               }}
             >
               {editing && (
@@ -546,15 +691,19 @@ export function HomeGrid({
                         event.preventDefault();
                         const [x, y] = directions[event.key];
                         if (columns < 3) {
-                          const index = shown.findIndex(
+                          const siblings = shown.filter(
+                            (item) =>
+                              !grouped || roomOf(item) === roomOf(original),
+                          );
+                          const index = siblings.findIndex(
                             (item) => item.id === original.id,
                           );
                           const target =
-                            shown[
+                            siblings[
                               Math.max(
                                 0,
                                 Math.min(
-                                  shown.length - 1,
+                                  siblings.length - 1,
                                   index + (y ? y * columns : x),
                                 ),
                               )
@@ -562,7 +711,7 @@ export function HomeGrid({
                           setDraft(
                             (current) =>
                               current &&
-                              reorderGrid(current, original.id, target.id),
+                              reorderPlacement(current, original.id, target.id),
                           );
                           return;
                         }
@@ -590,7 +739,10 @@ export function HomeGrid({
                     onClick={() =>
                       setDraft(
                         (current) =>
-                          current && removeGridCard(current, card.id),
+                          current &&
+                          (grouped
+                            ? removeRoomCard(current, card.id, roomOf)
+                            : removeGridCard(current, card.id)),
                       )
                     }
                   >
@@ -684,8 +836,8 @@ export function HomeGrid({
                   </button>
                 </div>
               )}
-            </div>
-          );
+            </div>,
+          ];
         })}
       </div>
       {!shown.length && (

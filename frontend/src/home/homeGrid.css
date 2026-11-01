@@ -51,6 +51,65 @@ html[data-home-style="harmony"] {
   .home-canvas-actions button:hover {
     border-color: var(--accent);
   }
+  .home-canvas-group-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .home-canvas-group-toggle input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+  .home-canvas-group-toggle:has(input:checked) {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  }
+  .home-canvas-group-toggle:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .home-canvas-group-toggle:has(input:disabled) {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .home-canvas-room-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text);
+  }
+  .home-canvas-room-heading > svg {
+    flex: none;
+    color: var(--accent);
+  }
+  .home-canvas-room-heading > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .home-canvas-room-heading > small {
+    margin-left: auto;
+    flex: none;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+  }
   .home-canvas-message {
     font-size: 13px;
     margin-bottom: 14px;

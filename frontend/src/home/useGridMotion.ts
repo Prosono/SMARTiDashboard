@@ -33,7 +33,9 @@ export function useGridMotion(
   useLayoutEffect(() => {
     const grid = surface.current;
     if (!grid) return;
-    const cells = Array.from(grid.children) as HTMLElement[];
+    const cells = Array.from(
+      grid.querySelectorAll<HTMLElement>(":scope > .home-canvas-cell"),
+    );
     // Read interrupted animation progress before cancelling. Retarget from what
     // the resident currently sees, rather than jumping back to the last cell.
     const visual = new Map<string, Box>();

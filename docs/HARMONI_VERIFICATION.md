@@ -1,3 +1,53 @@
+# Default room sections and optional free/empty layouts — release 1.36.75
+
+Lights, Miscellaneous, Climate, Security and Multimedia default to room sections.
+Assignments use the actual source entities' area IDs. Unassigned/missing sources
+use No room; aggregate/cross-room sources use Shared across the home. Stable room
+IDs keep sections independent of renamed labels. The renderer interleaves room
+headings and cards in DOM order. Heading rows exist only in CSS presentation;
+persisted rectangles retain the validated three-column geometry. Cards retain
+their sizes and complete personal configuration.
+
+Edit mode provides Group by room and Clear layout. Grouping confines moves,
+resizes, touch/keyboard reordering and deletion compaction to each room. Source
+changes can move a personal card to its actual new room. Disabling grouping gives
+one free canvas. Clear changes only the draft; save preserves an intentionally
+empty page, cancel restores it, and Default layout restores populated room groups.
+Overview/simple overview and Energy keep their prior grouping behavior.
+
+The optional strict boolean `group_by_room` is saved with items under the existing
+account/page revision transaction. Legacy records need no migration and default
+to room presentation on these five pages. Legacy writes that omit the option
+preserve an explicitly saved choice. Authentication, CSRF, visibility checks,
+geometry limits and stale-revision protection remain in force. No database schema
+or device assignment changes.
+
+Validation on 1 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, changed-file
+  formatting, targeted backend Ruff checks/format and `git diff --check`: passed.
+  Vite retains its existing bundle-size advisory.
+- Frontend unit suite: **204 passed**. Room model cases cover actual/unknown and
+  cross-room sources, immutable metadata, mixed sizes, display-only header rows,
+  responsive reflow, room-scoped moves/reordering, source changes, deletion and
+  a 300-card catalog within geometry limits.
+- Relevant backend layout/card suites: **45 passed**. Coverage includes strict
+  grouping options, supported pages, atomic clear/save, legacy preservation,
+  stale writes, CSRF and account/page isolation.
+- Extracted release archive: **46 desktop/mobile browser scenarios passed**
+  (Harmoni, Living, multimedia and the energy chart regression). New coverage
+  verifies all five default room pages, source assignment, heading/card DOM order,
+  grouped resizing, save/reload, cancel after clear, free layout persistence,
+  independent page preferences, saved empty pages, adding back a card and default
+  restoration. Existing pointer/touch dragging, grouped deletion compaction,
+  device controls, headers, graphs, card editing, motion and reduced motion pass.
+- Light/dark room layouts and mobile/desktop editing controls were inspected.
+  All **249 runtime files** match the manifest; `scripts/package.py --check` passes.
+  Browser checks use extracted backend/frontend and isolated demo data. No real
+  home devices were controlled. Broader repository limitations below still apply.
+
+---
+
 # Close dashboard gaps after deletion — release 1.36.74
 
 Removing a card now repacks the remaining rectangles in visual reading order,

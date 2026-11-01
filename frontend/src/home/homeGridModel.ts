@@ -28,7 +28,11 @@ export type HomeGridPage =
   | "security"
   | "media"
   | "misc";
-export type SavedGrid = { revision: number; items: GridItem[] | null };
+export type SavedGrid = {
+  revision: number;
+  items: GridItem[] | null;
+  group_by_room?: boolean;
+};
 
 const overlaps = (a: GridItem, b: GridItem) =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;

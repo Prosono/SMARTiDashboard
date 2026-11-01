@@ -1,3 +1,9 @@
+## 1.36.75
+- Lys, Diverse, Klima, Sikkerhet og Multimedia grupperer nå kortene etter rom som standard, med tydelige romoverskrifter og antall kort. Kort uten rom og kort som dekker flere rom har egne seksjoner.
+- Velg «Rediger oppsett» og slå av «Grupper etter rom» for fri plassering. Valget lagres separat per konto og fane. Kortstørrelser, innstillinger, drag-og-slipp og berøring beholdes; med gruppering på flyttes kortene innenfor sitt rom.
+- Nytt valg «Tøm oppsett» lar deg fjerne alle kort fra utkastet og bygge opp siden selv. «Lagre» beholder et tomt oppsett også etter ny lasting. «Avbryt» gjenoppretter kortene, og «Startoppsett» henter tilbake romgrupperte standardkort.
+- Sletting fyller ledig plass innenfor rommet. Tomme romseksjoner forsvinner, og eksisterende myke overganger og redusert bevegelse beholdes. Oversikt og Energi beholder sine oppsett.
+
 ## 1.36.74
 - Når et kort fjernes fra dashbordet, pakkes de gjenværende kortene automatisk sammen og fyller ledig plass i griden. Gjelder alle personlige kortflater, inkludert enkel Hjem-visning.
 - Omplasseringen tar utgangspunkt i den synlige rekkefølgen og beholder kortenes bredde, høyde og innstillinger. Eksisterende myke overganger og redusert bevegelse beholdes.
