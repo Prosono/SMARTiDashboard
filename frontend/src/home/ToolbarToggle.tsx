@@ -1,16 +1,41 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useContext, useId, useState } from "react";
+import { useCallback, useContext, useEffect, useId, useState } from "react";
 import { HomeBannerless } from "./CategoryIntro";
+import { HomePageTools } from "./HomePageTools";
 import "./toolbarToggle.css";
 
 export function useToolbarDisclosure() {
-  const bannerless = useContext(HomeBannerless);
+  const tools = useContext(HomePageTools);
   const [expanded, setExpanded] = useState(false);
   const id = useId();
+  const toggle = useCallback(() => setExpanded((value) => !value), []);
+  useEffect(() => {
+    if (!tools) return;
+    tools.setSearch({ id, expanded, toggle });
+    return () => tools.setSearch(null);
+  }, [tools, id, expanded, toggle]);
+  useEffect(() => {
+    if (!tools || !expanded) return;
+    const toolbar = document.getElementById(id);
+    toolbar
+      ?.querySelector<HTMLInputElement>(
+        'input:not([type="checkbox"]):not([type="radio"])',
+      )
+      ?.focus({ preventScroll: true });
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setExpanded(false);
+      tools.searchButton.current?.focus();
+    };
+    toolbar?.addEventListener("keydown", close);
+    return () => toolbar?.removeEventListener("keydown", close);
+  }, [tools, expanded, id]);
   return {
-    expanded: bannerless || expanded,
+    expanded,
     id,
-    toggle: () => setExpanded((value) => !value),
+    toggle,
   };
 }
 

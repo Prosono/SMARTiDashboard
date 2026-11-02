@@ -1,3 +1,9 @@
+## 1.36.95
+- Innstillingsikonet øverst åpner nå redigering av kortoppsettet for den aktive fanen i Harmoni. Den separate «Rediger oppsett»-knappen og tittellinjen over kortene er fjernet. Lagre og Avbryt vises når du redigerer, og fokus går tilbake til innstillingsikonet etterpå.
+- Søk og filtre er skjult som standard og åpnes fra et rundt forstørrelsesglass ved siden av varsler og innstillinger. Søkefeltet får fokus når det åpnes; Escape lukker det og flytter fokus tilbake til ikonet. Hver underside starter med skjult søk.
+- Kortene starter nærmere navigasjonen. Sidetitlene beholdes for skjermlesere uten å ta plass på skjermen. Romgruppering og kortenes egne titler beholdes.
+- Mobilvalget Ruter/Detaljert finnes i redigeringsmodus. «Tilpass Hjem» finnes også i redigeringsmodus på Oversikt; de opprinnelige stilene beholder sine eksisterende innstillinger. Enhetsadministrasjonen beholder sin egen utforming.
+
 ## 1.36.94
 - Toppbannerne er fjernet fra alle fanene i Hjem, inkludert Oversikt. Undersidene har en kompakt sidetittel, og søk og filtre er synlige direkte. Dette gjelder Klassisk, Living og Harmoni, samt undersidene i Enkel visning.
 - Varselknappen er flyttet til toppfeltet ved siden av innstillingene og kan åpne varslene fra alle faner. Navn og dato beholdes over navigasjonen, også på mobil.

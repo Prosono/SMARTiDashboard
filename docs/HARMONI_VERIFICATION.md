@@ -1,3 +1,46 @@
+# Compact Home toolbar and hidden search — release 1.36.95
+
+The existing top-right gear starts editing the active Harmoni canvas. The inline
+Edit layout button and canvas title/description are removed. Save/Cancel and the
+other editing actions appear only while editing; the gear reflects that state.
+Successful saves and cancellation restore focus to the enabled gear. Repeated
+gear clicks during editing preserve the draft. Failed loads keep editing disabled
+and retain the existing retry action; failed saves preserve the draft.
+
+Home category titles now remain as screen-reader headings without taking visible
+space. Cards start 16px below the tabs. Existing room headings and card titles
+remain. Category search/filters start collapsed and register a round magnifier
+beside the alert and gear. Opening focuses the search field; Escape closes the
+filters and returns focus to the magnifier. Each newly mounted category starts
+collapsed. Simple-mode category destinations use the same controls.
+
+Phone Tiles/Detailed selection now lives in editing mode, retaining the existing
+browser preference independently of stored desktop layouts. Overview editing also
+provides Personalize Home for its original favorites/routines preferences.
+Classic/Living and the Energy page retain their existing gear fallback. Reusable
+Devices headings and toolbar disclosure remain independent of Home controls.
+No backend or equipment-image files changed.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, changed-test TypeScript,
+  changed-file Prettier, git diff checks and deterministic packaging checks passed.
+  The existing Vite chunk-size advisory remains. **255 unit cases passed.**
+- **52 selected production-build browser scenarios passed** across initial and
+  follow-up runs: toolbar search, all three styles, light/dark themes, mobile
+  tiles, card controls/artwork, layout save/cancel/focus, drag/resize, compaction,
+  failed saves and concurrent-edit protection.
+- **16 desktop/mobile scenarios passed against the final extracted archive**.
+  They cover collapsed search and keyboard focus, room filtering, retained alerts,
+  Simple mode, Devices independence and gear editing on all six canvas pages.
+- Overview and category screenshots were visually inspected on desktop and phone.
+  The old title/edit row is absent and the search control is a round magnifier.
+- All **276 runtime files** match their manifest hashes. Archive SHA-256:
+  `69b8168b2212d6bc8941435360905460bf63e83413d6d5bce3b253e15057305d`.
+
+Browser checks used isolated demo servers and fixture devices. No real device
+commands or Home Assistant hardware were exercised.
+
 # Banner-free Home destinations — release 1.36.94
 
 The image/greeting banner is removed from Overview and all Home categories,

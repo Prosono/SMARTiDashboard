@@ -327,16 +327,20 @@ test("detailed choice persists and editing never replaces saved desktop sizes wi
   await page.setViewportSize({ width: 390, height: 844 });
   const data = await setup(page),
     before = structuredClone(data.saved().items);
+  await page
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
   await page.getByRole("button", { name: "Detaljert", exact: true }).click();
+  await page.getByRole("button", { name: "Avbryt", exact: true }).click();
   await expect(page.locator(".mobile-card-tile")).toHaveCount(0);
   await page.reload();
+  await page
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
   await expect(
     page.getByRole("button", { name: "Detaljert", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Ruter", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Rediger oppsett", exact: true })
-    .click();
   await expect(page.locator(".mobile-card-tile")).toHaveCount(0);
   await page.getByRole("button", { name: "Lagre", exact: true }).click();
   await squares(page);
@@ -374,8 +378,11 @@ test("tiles adapt at 320–430px, retain room grouping and return to full cards 
     ).toHaveAttribute("data-mobile-layout", "compact");
     await expect(page.locator(".mobile-card-tile").first()).toBeVisible();
     await expect(page.locator(".category-heading")).toHaveCount(0);
-    await expect(page.locator(".home-category-title")).toBeVisible();
-    await expect(page.locator("[data-collapsible-toolbar]")).toBeVisible();
+    await expect(page.locator(".home-category-title")).toHaveCount(0);
+    await expect(page.locator("[data-collapsible-toolbar]")).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: "Vis søk og filtre", exact: true }),
+    ).toBeVisible();
   }
   await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
   await page.setViewportSize({ width: 834, height: 1112 });
@@ -547,7 +554,11 @@ test("glass carries through detailed cards; photo choices, image failures and tr
   await expect(
     page.locator('[data-card="lighting"] .mobile-card-product svg'),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
   await page.getByRole("button", { name: "Detaljert", exact: true }).click();
+  await page.getByRole("button", { name: "Avbryt", exact: true }).click();
   for (const width of [390, 834, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     const surface = page.locator('[data-card="lighting"] .home-canvas-surface');

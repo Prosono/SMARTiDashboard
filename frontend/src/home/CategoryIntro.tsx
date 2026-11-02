@@ -27,11 +27,10 @@ export function CategoryHeading({
   const bannerless = useContext(HomeBannerless);
   if (bannerless)
     return (
-      <header className="home-category-title">
-        <Icon size={22} aria-hidden="true" />
-        <h1>{title}</h1>
+      <>
+        <h1 className="home-page-title">{title}</h1>
         {children}
-      </header>
+      </>
     );
   const heading = (
     <>

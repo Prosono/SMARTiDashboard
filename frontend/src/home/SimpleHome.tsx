@@ -6,6 +6,11 @@ import { RoomArtwork } from "../rooms/RoomArtwork";
 import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
 import { SettingsDialog } from "./SettingsDialog";
 import { HomeBannerless } from "./CategoryIntro";
+import {
+  HomePageTools,
+  HomePageToolButtons,
+  useHomePageTools,
+} from "./HomePageTools";
 import { LivingFavorites } from "./LivingFavorites";
 import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
@@ -34,6 +39,7 @@ export function SimpleHome({
     [limit, setLimit] = useState(4);
   const [showAlerts, setShowAlerts] = useState(false);
   const [view, setView] = useState("devices");
+  const tools = useHomePageTools();
   const controls = home.controls.filter(
     (c) =>
       !c.diagnostic &&
@@ -71,40 +77,110 @@ export function SimpleHome({
         ) &&
         c.state === "on"),
   );
+  const toolbar = (
+    <div className="home-toolbar harmony-simple-location">
+      <div className="home-location">
+        <House size={16} aria-hidden="true" />
+        <span>{home.home_name}</span>
+        <span className="home-date">
+          {new Date().toLocaleDateString(en ? "en-GB" : "nb-NO", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          })}
+        </span>
+      </div>
+      <div className="home-toolbar-actions">
+        {alerts.length > 0 && (
+          <button
+            className="home-toolbar-alert"
+            aria-label={`${en ? "Needs your attention" : "Trenger din oppmerksomhet"}: ${alerts.length}`}
+            title={en ? "Show alerts" : "Vis varsler"}
+            aria-haspopup="dialog"
+            onClick={() => setShowAlerts(true)}
+          >
+            <TriangleAlert size={23} aria-hidden="true" />
+            <span aria-hidden="true">{alerts.length}</span>
+          </button>
+        )}
+        <HomePageToolButtons tools={tools} lang={lang} />
+      </div>
+    </div>
+  );
+  const alertDialog = showAlerts && (
+    <SettingsDialog
+      title={en ? "Needs your attention" : "Trenger din oppmerksomhet"}
+      lang={lang}
+      onClose={() => setShowAlerts(false)}
+      compact
+    >
+      {offline && (
+        <p>
+          {en
+            ? "Connection lost. These are the last reported alerts."
+            : "Forbindelsen er brutt. Dette er de sist rapporterte varslene."}
+        </p>
+      )}
+      {alerts.length ? (
+        <ul className="simple-warning-list">
+          {alerts.map((c) => (
+            <li key={c.id}>
+              <TriangleAlert size={22} aria-hidden="true" />
+              <div>
+                <strong>{c.name}</strong>
+                <p>{home.areas.find((a) => a.area_id === c.area_id)?.name}</p>
+                <span>{en ? "Alarm detected" : "Varsel registrert"}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>
+          {en
+            ? "No active alerts reported."
+            : "Ingen aktive varsler rapportert."}
+        </p>
+      )}
+    </SettingsDialog>
+  );
   if (view !== "devices")
     return (
-      <HomeBannerless.Provider value={true}>
-        <section
-          className="simple-home simple-home-dashboard"
-          data-home-banners="off"
-        >
-          <button data-home-grid-leave onClick={() => setView("devices")}>
-            {en ? "← Back to my home" : "← Tilbake til hjemmet"}
-          </button>
-          {view === "misc" ? (
-            <Miscellaneous
-              home={home}
-              lang={lang}
-              offline={offline}
-              renderControls={renderControls}
-            />
-          ) : view === "media" ? (
-            <Multimedia
-              home={home}
-              lang={lang}
-              offline={offline}
-              admin={false}
-            />
-          ) : (
-            <SecurityOverview
-              home={home}
-              lang={lang}
-              offline={offline}
-              renderControls={renderControls}
-            />
-          )}
-        </section>
-      </HomeBannerless.Provider>
+      <HomePageTools.Provider value={tools.context}>
+        <HomeBannerless.Provider value={true}>
+          <section
+            className="simple-home simple-home-dashboard"
+            data-home-banners="off"
+          >
+            {toolbar}
+            {alertDialog}
+            <button data-home-grid-leave onClick={() => setView("devices")}>
+              {en ? "← Back to my home" : "← Tilbake til hjemmet"}
+            </button>
+            {view === "misc" ? (
+              <Miscellaneous
+                home={home}
+                lang={lang}
+                offline={offline}
+                renderControls={renderControls}
+              />
+            ) : view === "media" ? (
+              <Multimedia
+                home={home}
+                lang={lang}
+                offline={offline}
+                admin={false}
+              />
+            ) : (
+              <SecurityOverview
+                home={home}
+                lang={lang}
+                offline={offline}
+                renderControls={renderControls}
+              />
+            )}
+          </section>
+        </HomeBannerless.Provider>
+      </HomePageTools.Provider>
     );
   const browse = (
     <details className="simple-dashboard-browse" open={homeStyle === "harmony"}>
@@ -235,172 +311,118 @@ export function SimpleHome({
     </details>
   );
   return (
-    <HomeBannerless.Provider value={true}>
-      <section
-        className="simple-home simple-home-dashboard"
-        data-home-banners="off"
-      >
-        <h1 className="home-page-title">{home.home_name}</h1>
-        <div className="home-toolbar harmony-simple-location">
-          <div className="home-location">
-            <House size={16} />
-            <span>{home.home_name}</span>
-            <span className="home-date">
-              {new Date().toLocaleDateString(en ? "en-GB" : "nb-NO", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
-            </span>
-          </div>
-          {alerts.length > 0 && (
-            <button
-              className="home-toolbar-alert"
-              aria-label={`${en ? "Needs your attention" : "Trenger din oppmerksomhet"}: ${alerts.length}`}
-              title={en ? "Show alerts" : "Vis varsler"}
-              aria-haspopup="dialog"
-              onClick={() => setShowAlerts(true)}
-            >
-              <TriangleAlert size={23} aria-hidden="true" />
-              <span aria-hidden="true">{alerts.length}</span>
-            </button>
-          )}
-        </div>
-        {homeStyle !== "harmony" &&
-          home.controls.some((c) => c.domain === "person") &&
-          (!home.permissions || home.permissions.includes("people.view")) && (
-            <Presence home={home} offline={offline} lang={lang} admin={admin} />
-          )}
-        {offline && (
-          <p role="status">
-            {en
-              ? "The home is disconnected. Values may be old; controls are paused."
-              : "Hjemmet er frakoblet. Tallene kan være gamle, og styringen er satt på pause."}
-          </p>
-        )}
-        {showAlerts && (
-          <SettingsDialog
-            title={en ? "Needs your attention" : "Trenger din oppmerksomhet"}
-            lang={lang}
-            onClose={() => setShowAlerts(false)}
-            compact
-          >
-            {offline && (
-              <p>
-                {en
-                  ? "Connection lost. These are the last reported alerts."
-                  : "Forbindelsen er brutt. Dette er de sist rapporterte varslene."}
-              </p>
-            )}
-            {alerts.length ? (
-              <ul className="simple-warning-list">
-                {alerts.map((c) => (
-                  <li key={c.id}>
-                    <TriangleAlert size={22} aria-hidden="true" />
-                    <div>
-                      <strong>{c.name}</strong>
-                      <p>
-                        {home.areas.find((a) => a.area_id === c.area_id)?.name}
-                      </p>
-                      <span>{en ? "Alarm detected" : "Varsel registrert"}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>
-                {en
-                  ? "No active alerts reported."
-                  : "Ingen aktive varsler rapportert."}
-              </p>
-            )}
-          </SettingsDialog>
-        )}
-        {homeStyle === "living" &&
-          controls.some((c) => home.favorites.includes(c.entity_id)) && (
-            <section className="living-simple-favorites">
-              <header className="living-section-heading">
-                <h2>{en ? "Favorites" : "Favoritter"}</h2>
-              </header>
-              <LivingFavorites
-                controls={controls
-                  .filter((c) => home.favorites.includes(c.entity_id))
-                  .slice(0, 12)}
+    <HomePageTools.Provider value={tools.context}>
+      <HomeBannerless.Provider value={true}>
+        <section
+          className="simple-home simple-home-dashboard"
+          data-home-banners="off"
+        >
+          <h1 className="home-page-title">{home.home_name}</h1>
+          {toolbar}
+          {homeStyle !== "harmony" &&
+            home.controls.some((c) => c.domain === "person") &&
+            (!home.permissions || home.permissions.includes("people.view")) && (
+              <Presence
                 home={home}
-                lang={lang}
                 offline={offline}
+                lang={lang}
+                admin={admin}
               />
-            </section>
+            )}
+          {offline && (
+            <p role="status">
+              {en
+                ? "The home is disconnected. Values may be old; controls are paused."
+                : "Hjemmet er frakoblet. Tallene kan være gamle, og styringen er satt på pause."}
+            </p>
           )}
-        <SimpleDashboard
-          home={home}
-          lang={lang}
-          offline={offline}
-          renderCards={
-            homeStyle === "harmony"
-              ? (cards) => (
-                  <HomeGrid
-                    page="overview_simple"
-                    home={home}
-                    offline={offline}
-                    lang={lang}
-                    cards={[
-                      ...cards,
-                      ...(!home.permissions ||
-                      home.permissions.includes("people.view")
-                        ? [
-                            {
-                              id: "people",
-                              title: en ? "Who's home" : "Hvem er hjemme",
-                              content: (
-                                <Presence
-                                  home={home}
-                                  lang={lang}
-                                  offline={offline}
-                                  admin={admin}
-                                />
-                              ),
-                            },
-                          ]
-                        : []),
-                      ...deviceGridCards({
-                        controls: controls.filter((c) =>
-                          [
-                            "light",
-                            "switch",
-                            "input_boolean",
-                            "fan",
-                            "cover",
-                            "lock",
-                          ].includes(c.domain),
-                        ),
-                        home,
-                        offline,
-                        lang,
-                      }).map((card) => ({
-                        ...card,
-                        defaultHidden: !home.favorites.some(
-                          (id) => `device:${id}` === card.id,
-                        ),
-                      })),
-                      {
-                        id: "browse",
-                        title: en
-                          ? "Rooms and all devices"
-                          : "Rom og alle enheter",
-                        content: browse,
-                        w: 3,
-                        h: 3,
-                      },
-                    ]}
-                  />
-                )
-              : undefined
-          }
-        />
+          {alertDialog}
+          {homeStyle === "living" &&
+            controls.some((c) => home.favorites.includes(c.entity_id)) && (
+              <section className="living-simple-favorites">
+                <header className="living-section-heading">
+                  <h2>{en ? "Favorites" : "Favoritter"}</h2>
+                </header>
+                <LivingFavorites
+                  controls={controls
+                    .filter((c) => home.favorites.includes(c.entity_id))
+                    .slice(0, 12)}
+                  home={home}
+                  lang={lang}
+                  offline={offline}
+                />
+              </section>
+            )}
+          <SimpleDashboard
+            home={home}
+            lang={lang}
+            offline={offline}
+            renderCards={
+              homeStyle === "harmony"
+                ? (cards) => (
+                    <HomeGrid
+                      page="overview_simple"
+                      home={home}
+                      offline={offline}
+                      lang={lang}
+                      cards={[
+                        ...cards,
+                        ...(!home.permissions ||
+                        home.permissions.includes("people.view")
+                          ? [
+                              {
+                                id: "people",
+                                title: en ? "Who's home" : "Hvem er hjemme",
+                                content: (
+                                  <Presence
+                                    home={home}
+                                    lang={lang}
+                                    offline={offline}
+                                    admin={admin}
+                                  />
+                                ),
+                              },
+                            ]
+                          : []),
+                        ...deviceGridCards({
+                          controls: controls.filter((c) =>
+                            [
+                              "light",
+                              "switch",
+                              "input_boolean",
+                              "fan",
+                              "cover",
+                              "lock",
+                            ].includes(c.domain),
+                          ),
+                          home,
+                          offline,
+                          lang,
+                        }).map((card) => ({
+                          ...card,
+                          defaultHidden: !home.favorites.some(
+                            (id) => `device:${id}` === card.id,
+                          ),
+                        })),
+                        {
+                          id: "browse",
+                          title: en
+                            ? "Rooms and all devices"
+                            : "Rom og alle enheter",
+                          content: browse,
+                          w: 3,
+                          h: 3,
+                        },
+                      ]}
+                    />
+                  )
+                : undefined
+            }
+          />
 
-        {homeStyle !== "harmony" && browse}
-      </section>
-    </HomeBannerless.Provider>
+          {homeStyle !== "harmony" && browse}
+        </section>
+      </HomeBannerless.Provider>
+    </HomePageTools.Provider>
   );
 }

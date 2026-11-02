@@ -1,6 +1,7 @@
 import {
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -58,6 +59,7 @@ import { useGridWiggle } from "./useGridWiggle";
 import { cardTone } from "./cardToneModel";
 import { lightCardStyle } from "./lightCardModel";
 import { mobileGridItems } from "./mobileCardModel";
+import { HomePageTools } from "./HomePageTools";
 
 const phoneQuery =
   "(max-width: 650px), (max-height: 500px) and (pointer: coarse)";
@@ -104,6 +106,8 @@ export function HomeGrid({
   const cards = useMemo(() => availableCards.slice(0, 300), [availableCards]);
   const qc = useQueryClient();
   const guard = useContext(HomeGridGuard);
+  const tools = useContext(HomePageTools);
+  const editorId = useId();
   const saved = useQuery({
     queryKey,
     queryFn: () => api<SavedGrid>(`home/layout/${page}`),
@@ -124,7 +128,8 @@ export function HomeGrid({
   );
   const [mobileLayout, setMobileLayout] = useState(storedMobileLayout);
   const surface = useRef<HTMLDivElement>(null);
-  const editButton = useRef<HTMLButtonElement>(null);
+  const standaloneEditButton = useRef<HTMLButtonElement>(null);
+  const editButton = tools?.editButton ?? standaloneEditButton;
   const wasEditing = useRef(false);
   const scrollFrame = useRef<number | null>(null);
   const pointer = useRef({ x: 0, y: 0 });
@@ -304,6 +309,7 @@ export function HomeGrid({
   }, [editing, busy, guard, lang]);
 
   function begin() {
+    if (editing || busy || !saved.data || saved.isError) return;
     setDraftGrouped(grouped);
     setDraft(
       layout
@@ -313,6 +319,20 @@ export function HomeGrid({
     setRevision(saved.data?.revision || 0);
     setMessage("");
   }
+  const beginEditing = useRef(begin);
+  beginEditing.current = begin;
+  const ready = !!saved.data && !saved.isError;
+  useEffect(() => {
+    if (!tools) return;
+    tools.setEditor({
+      id: editorId,
+      ready,
+      editing,
+      busy,
+      begin: () => beginEditing.current(),
+    });
+    return () => tools.setEditor(null);
+  }, [tools, editorId, ready, editing, busy]);
   function cancel() {
     gesture.current = null;
     setActive(null);
@@ -517,6 +537,7 @@ export function HomeGrid({
   }
   return (
     <section
+      id={editorId}
       className="home-canvas"
       data-page={page}
       data-editing={editing}
@@ -525,142 +546,158 @@ export function HomeGrid({
       data-grouped={grouped}
       data-dragging={!!active}
       data-card-dialog={adding || !!editingCard}
+      data-toolbar={tools ? "external" : undefined}
       aria-label={title || t("Kort i hjemmet", "Home cards")}
     >
-      <div className="home-canvas-toolbar">
-        <div>
-          <strong>{title || t("Ditt oppsett", "Your layout")}</strong>
-          <span>
-            {editing
-              ? grouped
-                ? t(
-                    "Flytt og endre størrelse innenfor hvert rom.",
-                    "Move and resize cards within each room.",
-                  )
-                : t(
-                    "Dra i håndtaket. Endre størrelse fra hjørnet.",
-                    "Drag the handle. Resize from the corner.",
-                  )
-              : compactMobile
-                ? t("Trykk på et kort for å styre.", "Tap a card for controls.")
-                : t(
-                    "Tilpass kortene slik du vil ha dem.",
-                    "Arrange your cards your way.",
-                  )}
-          </span>
-        </div>
-        <div className="home-canvas-actions">
-          {phone && !editing && (
-            <div
-              className="mobile-layout-picker"
-              role="group"
-              aria-label={t("Mobilvisning", "Mobile layout")}
-            >
-              <button
-                aria-pressed={mobileLayout === "compact"}
-                onClick={() => chooseMobileLayout("compact")}
-              >
-                <LayoutGrid size={15} />
-                {t("Ruter", "Tiles")}
-              </button>
-              <button
-                aria-pressed={mobileLayout === "detailed"}
-                onClick={() => chooseMobileLayout("detailed")}
-              >
-                <Rows3 size={15} />
-                {t("Detaljert", "Detailed")}
-              </button>
+      {(editing || !tools) && (
+        <div className="home-canvas-toolbar">
+          {!tools && (
+            <div>
+              <strong>{title || t("Ditt oppsett", "Your layout")}</strong>
+              <span>
+                {editing
+                  ? grouped
+                    ? t(
+                        "Flytt og endre størrelse innenfor hvert rom.",
+                        "Move and resize cards within each room.",
+                      )
+                    : t(
+                        "Dra i håndtaket. Endre størrelse fra hjørnet.",
+                        "Drag the handle. Resize from the corner.",
+                      )
+                  : compactMobile
+                    ? t(
+                        "Trykk på et kort for å styre.",
+                        "Tap a card for controls.",
+                      )
+                    : t(
+                        "Tilpass kortene slik du vil ha dem.",
+                        "Arrange your cards your way.",
+                      )}
+              </span>
             </div>
           )}
-          {editing ? (
-            <>
-              {canGroup && (
-                <label className="home-canvas-group-toggle">
-                  <input
-                    type="checkbox"
-                    checked={grouped}
-                    disabled={busy || !!active}
-                    onChange={(event) => toggleGrouping(event.target.checked)}
-                  />
-                  <House size={16} />
-                  {t("Grupper etter rom", "Group by room")}
-                </label>
-              )}
-              <button
-                onClick={() => setAdding(!adding)}
-                disabled={busy || draft.length >= 300}
-                aria-expanded={adding}
-                aria-haspopup="dialog"
+          <div className="home-canvas-actions">
+            {phone && (!editing || !!tools) && (
+              <div
+                className="mobile-layout-picker"
+                role="group"
+                aria-label={t("Mobilvisning", "Mobile layout")}
               >
-                <Plus size={17} />
-                {t("Legg til kort", "Add card")}
-              </button>
-              <button
-                onClick={() => {
-                  setDraftGrouped(canGroup);
-                  setDraft(
-                    canGroup
-                      ? normalizeRoomGrid(defaults, roomOf, true)
-                      : defaults,
-                  );
-                  setMessage(
-                    t(
-                      "Startoppsettet er hentet. Lagre for å beholde det.",
-                      "Default layout restored. Save to keep it.",
-                    ),
-                  );
-                }}
-                disabled={busy}
-              >
-                <RotateCcw size={16} />
-                {t("Startoppsett", "Default layout")}
-              </button>
-              <button
-                disabled={busy || !!active || !draft.length}
-                onClick={() => {
-                  setDraft([]);
-                  setAdding(false);
-                  setEditingCard(null);
-                  setMessage(
-                    t(
-                      "Oppsettet er tømt. Legg til kort og lagre, eller velg Avbryt for å hente alt tilbake.",
-                      "Layout cleared. Add cards and save, or cancel to restore everything.",
-                    ),
-                  );
-                }}
-              >
-                <Trash2 size={16} />
-                {t("Tøm oppsett", "Clear layout")}
-              </button>
-              <button onClick={cancel} disabled={busy}>
-                <X size={17} />
-                {t("Avbryt", "Cancel")}
-              </button>
-              <button
-                className="primary"
-                onClick={() => void save()}
-                disabled={busy}
-              >
-                {busy ? (
-                  <LoaderCircle size={17} className="spin" />
-                ) : (
-                  <Check size={17} />
+                <button
+                  aria-pressed={mobileLayout === "compact"}
+                  onClick={() => chooseMobileLayout("compact")}
+                >
+                  <LayoutGrid size={15} />
+                  {t("Ruter", "Tiles")}
+                </button>
+                <button
+                  aria-pressed={mobileLayout === "detailed"}
+                  onClick={() => chooseMobileLayout("detailed")}
+                >
+                  <Rows3 size={15} />
+                  {t("Detaljert", "Detailed")}
+                </button>
+              </div>
+            )}
+            {editing ? (
+              <>
+                {page === "overview" && tools?.configureHome && (
+                  <button
+                    onClick={() => tools.configureHome?.(true)}
+                    disabled={busy}
+                  >
+                    {t("Tilpass Hjem", "Personalize Home")}
+                  </button>
                 )}
-                {t("Lagre", "Save")}
+                {canGroup && (
+                  <label className="home-canvas-group-toggle">
+                    <input
+                      type="checkbox"
+                      checked={grouped}
+                      disabled={busy || !!active}
+                      onChange={(event) => toggleGrouping(event.target.checked)}
+                    />
+                    <House size={16} />
+                    {t("Grupper etter rom", "Group by room")}
+                  </label>
+                )}
+                <button
+                  onClick={() => setAdding(!adding)}
+                  disabled={busy || draft.length >= 300}
+                  aria-expanded={adding}
+                  aria-haspopup="dialog"
+                >
+                  <Plus size={17} />
+                  {t("Legg til kort", "Add card")}
+                </button>
+                <button
+                  onClick={() => {
+                    setDraftGrouped(canGroup);
+                    setDraft(
+                      canGroup
+                        ? normalizeRoomGrid(defaults, roomOf, true)
+                        : defaults,
+                    );
+                    setMessage(
+                      t(
+                        "Startoppsettet er hentet. Lagre for å beholde det.",
+                        "Default layout restored. Save to keep it.",
+                      ),
+                    );
+                  }}
+                  disabled={busy}
+                >
+                  <RotateCcw size={16} />
+                  {t("Startoppsett", "Default layout")}
+                </button>
+                <button
+                  disabled={busy || !!active || !draft.length}
+                  onClick={() => {
+                    setDraft([]);
+                    setAdding(false);
+                    setEditingCard(null);
+                    setMessage(
+                      t(
+                        "Oppsettet er tømt. Legg til kort og lagre, eller velg Avbryt for å hente alt tilbake.",
+                        "Layout cleared. Add cards and save, or cancel to restore everything.",
+                      ),
+                    );
+                  }}
+                >
+                  <Trash2 size={16} />
+                  {t("Tøm oppsett", "Clear layout")}
+                </button>
+                <button onClick={cancel} disabled={busy}>
+                  <X size={17} />
+                  {t("Avbryt", "Cancel")}
+                </button>
+                <button
+                  className="primary"
+                  onClick={() => void save()}
+                  disabled={busy}
+                >
+                  {busy ? (
+                    <LoaderCircle size={17} className="spin" />
+                  ) : (
+                    <Check size={17} />
+                  )}
+                  {t("Lagre", "Save")}
+                </button>
+              </>
+            ) : (
+              <button
+                ref={editButton}
+                onClick={begin}
+                disabled={!saved.data || saved.isError}
+              >
+                <Pencil size={17} />
+                {t("Rediger oppsett", "Edit layout")}
               </button>
-            </>
-          ) : (
-            <button
-              ref={editButton}
-              onClick={begin}
-              disabled={!saved.data || saved.isError}
-            >
-              <Pencil size={17} />
-              {t("Rediger oppsett", "Edit layout")}
-            </button>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      )}
       {saved.isError && (
         <p role="alert">
           {t(

@@ -66,7 +66,7 @@ const categories = [
   ["Diverse", "Søk i diverse"],
 ];
 for (const style of ["classic", "living", "harmony"]) {
-  test(`${style}: Home has no banners and category search remains directly available`, async ({
+  test(`${style}: Home starts with cards and reveals search from its round toolbar icon`, async ({
     page,
   }, info) => {
     await page.addInitScript(
@@ -87,19 +87,30 @@ for (const style of ["classic", "living", "harmony"]) {
       for (const [name, search] of categories) {
         await page.getByRole("tab", { name, exact: true }).click();
         await expect(home.locator(banners)).toHaveCount(0);
+        await expect(home.locator(".home-category-title")).toHaveCount(0);
         await expect(
           home.getByRole("heading", { name, exact: true, level: 1 }),
-        ).toBeVisible();
-        expect(
-          (await home.locator(".home-category-title").boundingBox())!.height,
-        ).toBeLessThanOrEqual(40);
+        ).toHaveCSS("position", "absolute");
         const input = home.getByRole("textbox", { name: search, exact: true });
-        await expect(input).toBeVisible();
-        await expect(home.locator("[data-collapsible-toolbar]")).toBeVisible();
+        const toggle = home
+          .locator(".home-toolbar")
+          .getByRole("button", { name: "Vis søk og filtre", exact: true });
+        await expect(input).toBeHidden();
+        await expect(toggle).toHaveAttribute("aria-expanded", "false");
+        await expect(toggle).toHaveCSS("border-radius", "50%");
         await expect(home.locator(".toolbar-toggle")).toHaveCount(0);
+        await toggle.click();
+        await expect(input).toBeVisible();
+        await expect(input).toBeFocused();
+        await expect(
+          home.locator("[data-collapsible-toolbar]"),
+        ).toHaveAttribute("id", (await toggle.getAttribute("aria-controls"))!);
         await input.fill("finnes-ikke-9571");
         await expect(input).toHaveValue("finnes-ikke-9571");
         await input.clear();
+        await input.press("Escape");
+        await expect(input).toBeHidden();
+        await expect(toggle).toBeFocused();
         expect(
           await page
             .locator("body")
@@ -113,7 +124,11 @@ for (const style of ["classic", "living", "harmony"]) {
       await expect(grid).toBeVisible();
       const gridBox = (await grid.boundingBox())!;
       const tabsBox = (await page.getByRole("tablist").boundingBox())!;
-      expect(gridBox.y - tabsBox.y - tabsBox.height).toBeLessThan(70);
+      expect(gridBox.y - tabsBox.y - tabsBox.height).toBeLessThan(28);
+      await expect(grid.locator(".home-canvas-toolbar")).toHaveCount(0);
+      await expect(
+        home.getByText("Hjemmet med et blikk", { exact: true }),
+      ).toHaveCount(0);
       await page.screenshot({
         path: `/private/tmp/smarti-bannerless-${info.project.name}.png`,
         fullPage: true,
@@ -122,7 +137,7 @@ for (const style of ["classic", "living", "harmony"]) {
   });
 }
 
-test("visible Home searches filter devices and room selection remains available", async ({
+test("revealed Home searches filter devices and room selection remains available", async ({
   page,
 }) => {
   await page.addInitScript(() =>
@@ -137,6 +152,9 @@ test("visible Home searches filter devices and room selection remains available"
     name: "Søk etter rom eller lys",
     exact: true,
   });
+  await page
+    .getByRole("button", { name: "Vis søk og filtre", exact: true })
+    .click();
   await search.fill("finnes-ikke-9571");
   await expect(canvas.locator(".home-canvas-cell")).toHaveCount(0);
   await search.clear();
@@ -208,6 +226,12 @@ test("simple Home omits banners but keeps search on its category destinations", 
     await expect(simple.locator(banners)).toHaveCount(0);
     await expect(
       simple.getByRole("textbox", { name: search, exact: true }),
+    ).toBeHidden();
+    await simple
+      .getByRole("button", { name: "Vis søk og filtre", exact: true })
+      .click();
+    await expect(
+      simple.getByRole("textbox", { name: search, exact: true }),
     ).toBeVisible();
     await simple
       .getByRole("button", { name: "← Tilbake til hjemmet", exact: true })
@@ -236,4 +260,84 @@ test("device management retains its own heading and collapsible toolbar", async 
       exact: true,
     }),
   ).toBeVisible();
+});
+
+test("the top settings icon edits the active canvas and returns focus after cancel or save", async ({
+  page,
+}, info) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await login(page);
+  const toolbar = page.locator(".home-toolbar");
+  for (const name of [
+    "Oversikt",
+    "Lys",
+    "Klima",
+    "Sikkerhet",
+    "Multimedia",
+    "Diverse",
+  ]) {
+    await page.getByRole("tab", { name, exact: true }).click();
+    const canvas = page.locator(".home-canvas");
+    await expect(canvas.locator(".home-canvas-toolbar")).toHaveCount(0);
+    await expect(
+      canvas.getByRole("button", { name: "Rediger oppsett", exact: true }),
+    ).toHaveCount(0);
+    const settings = toolbar.getByRole("button", {
+      name: "Rediger oppsett",
+      exact: true,
+    });
+    await expect(settings).toBeEnabled();
+    await expect(settings).toHaveCSS("border-radius", "50%");
+    await expect(settings).toHaveAttribute(
+      "aria-controls",
+      (await canvas.getAttribute("id"))!,
+    );
+    await settings.click();
+    await expect(canvas).toHaveAttribute("data-editing", "true");
+    await expect(settings).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      canvas.locator(".home-canvas-content").first(),
+    ).toHaveAttribute("inert", "");
+    await settings.click();
+    await expect(canvas).toHaveAttribute("data-editing", "true");
+    if (name === "Oversikt") {
+      await canvas
+        .getByRole("button", { name: "Tilpass Hjem", exact: true })
+        .click();
+      await expect(
+        page.getByRole("dialog", { name: "Tilpass Hjem", exact: true }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+    }
+    await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
+    await expect(canvas).toHaveAttribute("data-editing", "false");
+    await expect(settings).toBeFocused();
+    await expect(canvas.locator(".home-canvas-toolbar")).toHaveCount(0);
+  }
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const settings = toolbar.getByRole("button", {
+    name: "Rediger oppsett",
+    exact: true,
+  });
+  await settings.click();
+  await page
+    .locator(".home-canvas")
+    .getByRole("button", { name: "Lagre", exact: true })
+    .click();
+  await expect(settings).toHaveAttribute("aria-pressed", "false");
+  await expect(settings).toBeFocused();
+  await page.reload();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await expect(page.locator(".home-canvas")).toHaveAttribute(
+    "data-editing",
+    "false",
+  );
+  await expect(
+    page.getByRole("textbox", { name: "Søk etter rom eller lys", exact: true }),
+  ).toBeHidden();
+  await page.screenshot({
+    path: `/private/tmp/smarti-toolbar-lights-${info.project.name}.png`,
+  });
 });

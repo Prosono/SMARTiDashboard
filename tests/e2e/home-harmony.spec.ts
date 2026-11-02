@@ -742,7 +742,7 @@ test("bannerless pages keep the three-column canvas editable, resizable and pers
   const first = canvas.locator(".home-canvas-cell").first();
   const id = await first.getAttribute("data-card");
   const cell = canvas.locator(`[data-card="${id}"]`);
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await expect(cell.locator(".home-canvas-content")).toHaveAttribute(
@@ -767,7 +767,7 @@ test("bannerless pages keep the three-column canvas editable, resizable and pers
   const retained = canvas.locator(`[data-card="${id}"]`);
   await expect(retained).toHaveCSS("grid-column-end", "span 2");
   await expect(retained).toHaveCSS("grid-row-end", "span 3");
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await retained.getByRole("combobox", { name: /bredde/ }).selectOption("1");
@@ -796,7 +796,7 @@ test("grid handles support pointer dragging, snapped resizing and touch reorderi
   await page.setViewportSize({ width: 1440, height: 1600 });
   await page.getByRole("tab", { name: "Lys", exact: true }).click();
   const canvas = page.locator('.home-canvas[data-page="lights"]');
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await canvas
@@ -856,7 +856,7 @@ test("grid handles support pointer dragging, snapped resizing and touch reorderi
   expect(
     await (await page.request.get("/api/home/layout/lights")).json(),
   ).toEqual(desktop);
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   const touchFirst = canvas.locator(".home-canvas-cell").first();
@@ -925,7 +925,7 @@ test("each category can remove and add cards, retain failed edits and protect co
   ]) {
     await page.getByRole("tab", { name, exact: true }).click();
     const canvas = page.locator(`.home-canvas[data-page="${key}"]`);
-    await canvas
+    await page
       .getByRole("button", { name: "Rediger oppsett", exact: true })
       .click();
     const cell = canvas.locator(".home-canvas-cell").first();
@@ -972,7 +972,7 @@ test("each category can remove and add cards, retain failed edits and protect co
     );
   }
   const canvas = page.locator('.home-canvas[data-page="misc"]');
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await page.route("**/api/home/layout/misc", async (route) =>
@@ -1008,7 +1008,7 @@ test("each category can remove and add cards, retain failed edits and protect co
   ).toHaveAttribute("aria-selected", "true");
   await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
   await expect(
-    canvas.getByRole("button", { name: "Rediger oppsett", exact: true }),
+    page.getByRole("button", { name: "Rediger oppsett", exact: true }),
   ).toBeFocused();
 });
 
@@ -1202,7 +1202,7 @@ test("equipment cards match their actual device type, color controls and linked 
   const reset = async (name: string) => {
     await page.getByRole("tab", { name, exact: true }).click();
     const canvas = page.locator(".home-canvas");
-    await canvas
+    await page
       .getByRole("button", { name: "Rediger oppsett", exact: true })
       .click();
     await canvas
@@ -1349,7 +1349,7 @@ test("equipment cards match their actual device type, color controls and linked 
   }
   await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
   const canvas = page.locator(".home-canvas");
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   for (const name of ["Varsler", "Batterier", "Hub og tilkoblinger"])
@@ -1460,7 +1460,7 @@ test("grid content fits without nested scrolling and editing has calm layout mot
   page.on("request", (request) => {
     if (request.url().includes("/commands")) commands.push(request.url());
   });
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   const originalWidth = (await card.boundingBox())!.width;
@@ -1537,7 +1537,7 @@ test("grid content fits without nested scrolling and editing has calm layout mot
   await expect(dialog.locator('input[type="range"]').first()).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(show).toBeFocused();
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await card.getByRole("combobox", { name: /bredde/ }).selectOption("2");
@@ -1652,7 +1652,7 @@ test("deleting a card compacts mixed sizes with motion, supports cancel and save
   const canvas = page.locator('.home-canvas[data-page="lights"]'),
     wide = canvas.locator('[data-card="custom:wide"]');
   await expect(canvas).toHaveAttribute("data-grouped", "true");
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await canvas
@@ -1680,7 +1680,7 @@ test("deleting a card compacts mixed sizes with motion, supports cancel and save
   await expect(canvas.locator('[data-card="custom:delete"]')).toHaveCount(1);
   expect(layouts.get("/api/home/layout/lights")!.items).toEqual(original);
   await expect(wide).toHaveCSS("grid-row-start", "4");
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await canvas
@@ -1805,7 +1805,7 @@ test("categories default to rooms, preserve room-scoped editing and can save a f
   await expect(
     canvas.locator('.home-canvas-room-heading[data-room="none"]'),
   ).toContainText("Uten rom");
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   const toggle = canvas.getByRole("checkbox", {
@@ -1839,7 +1839,7 @@ test("categories default to rooms, preserve room-scoped editing and can save a f
   await page.getByRole("tab", { name: "Lys", exact: true }).click();
   await expect(canvas).toHaveAttribute("data-grouped", "true");
   await expect(target).toHaveCSS("grid-row-end", "span 3");
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await canvas
@@ -1849,7 +1849,7 @@ test("categories default to rooms, preserve room-scoped editing and can save a f
   await expect(canvas.locator(".home-canvas-room-heading")).toHaveCount(0);
   await canvas.getByRole("button", { name: "Avbryt", exact: true }).click();
   await expect(target).toHaveCount(1);
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await toggle.uncheck();
@@ -1864,7 +1864,7 @@ test("categories default to rooms, preserve room-scoped editing and can save a f
     page.locator('.home-canvas[data-page="climate"]'),
   ).toHaveAttribute("data-grouped", "true");
   await page.getByRole("tab", { name: "Lys", exact: true }).click();
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await canvas
@@ -1875,13 +1875,13 @@ test("categories default to rooms, preserve room-scoped editing and can save a f
   await page.getByRole("tab", { name: "Lys", exact: true }).click();
   await expect(canvas.locator(".home-canvas-cell")).toHaveCount(0);
   await expect(canvas).toContainText("Plass til det du trenger");
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await addFromPicker(page, "Pendellampe", "light.living_pendant");
   await canvas.getByRole("button", { name: "Lagre", exact: true }).click();
   await expect(canvas.locator(".home-canvas-cell")).toHaveCount(1);
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await canvas
@@ -1941,7 +1941,7 @@ test("visual card picker and per-card appearance support preview, cancel and dup
   ).controls.find(
     (c: any) => c.entity_id === "light.living_pendant",
   ).attributes;
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await card
@@ -1995,7 +1995,7 @@ test("visual card picker and per-card appearance support preview, cancel and dup
     image: "office",
     sources: ["light.living_pendant"],
   });
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await card
@@ -2112,7 +2112,7 @@ test("graph cards add and edit several real sources with compatible units, gaps 
     height: 1100,
   });
   const canvas = page.locator(".home-canvas");
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await canvas
@@ -2197,7 +2197,7 @@ test("graph cards add and edit several real sources with compatible units, gaps 
     .locator(".personal-graph-legend")
     .getByRole("button", { name: /Temperatur Fahrenheit/ })
     .click();
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await graph
@@ -2275,7 +2275,7 @@ test("editing wiggles only visible idle surfaces, keeps handles stable and respe
     (el) => getComputedStyle(el).boxShadow,
   );
   expect(lightShadow).not.toBe("none");
-  await canvas
+  await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   await cell.scrollIntoViewIfNeeded();
