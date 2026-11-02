@@ -76,7 +76,11 @@ async function setup(page: Page) {
       "media_player",
       "Musikk i stuen",
       "playing",
-      { volume_level: 0.2, media_title: "Elegi" },
+      {
+        volume_level: 0.2,
+        media_title: "Elegi",
+        smarti_media_image: "streamer",
+      },
       ["media_play", "media_pause", "set_volume"],
     ),
     c("vacuum", "Roborock", "docked", { battery_level: 100 }, [
@@ -408,4 +412,177 @@ test("phone landscape uses three square columns and unavailable devices keep hon
     await squares(page);
   }
   expect(data.commands).toHaveLength(0);
+});
+test("phone tiles retain the desktop product artwork on glass in both themes, without crowding readings", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const data = await setup(page);
+  for (const theme of ["dark", "light"]) {
+    await page.evaluate(
+      (theme) => (document.documentElement.dataset.theme = theme),
+      theme,
+    );
+    for (const width of [320, 390, 430]) {
+      await page.setViewportSize({ width, height: 844 });
+      await squares(page);
+      for (const [id, asset] of [
+        ["lighting", "pendant"],
+        ["media", "streamer"],
+        ["vacuum", "vacuum-dock"],
+      ]) {
+        const tile = page.locator(`[data-card="${id}"] .mobile-card-tile`);
+        const image = tile.locator(".mobile-card-product img");
+        await image.scrollIntoViewIfNeeded();
+        await expect(image).toHaveAttribute(
+          "src",
+          new RegExp(`${asset}\\.webp$`),
+        );
+        await expect
+          .poll(() =>
+            image.evaluate((img: HTMLImageElement) => img.naturalWidth),
+          )
+          .toBeGreaterThan(0);
+        const bounds = await tile.evaluate((el) => {
+          const box = (sel: string) =>
+            el.querySelector(sel)!.getBoundingClientRect();
+          const t = el.getBoundingClientRect(),
+            product = box(".mobile-card-product"),
+            title = box(".mobile-card-title"),
+            reading = box(".mobile-card-reading"),
+            detail = box(".mobile-card-detail");
+          return {
+            productBelowTitle: product.bottom > title.top + 1,
+            titleBelowReading: title.bottom > reading.top + 1,
+            readingBelowDetail: reading.bottom > detail.top + 1,
+            clipped: detail.bottom > t.bottom,
+            opacity: getComputedStyle(el).opacity,
+          };
+        });
+        expect(bounds).toEqual({
+          productBelowTitle: false,
+          titleBelowReading: false,
+          readingBelowDetail: false,
+          clipped: false,
+          opacity: "1",
+        });
+        const surface = page.locator(
+          `[data-card="${id}"] .home-canvas-surface`,
+        );
+        await expect(surface).toHaveCSS("backdrop-filter", /blur\(5px\)/);
+        await expect(surface).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      }
+    }
+    await page
+      .locator(".home-canvas")
+      .screenshot({ path: `/private/tmp/smarti-1.36.91-mobile-${theme}.png` });
+  }
+  const weather = page.locator('[data-card="weather"] .home-canvas-surface');
+  expect(
+    await weather.evaluate((e) =>
+      getComputedStyle(e).getPropertyValue("--card-glass").trim(),
+    ),
+  ).toBe("");
+  await page.getByRole("tab", { name: "Sikkerhet", exact: true }).click();
+  await expect(
+    page.locator(".mobile-card-product img").first(),
+  ).toHaveAttribute("src", /lock.webp$/);
+  await page.getByRole("tab", { name: "Diverse", exact: true }).click();
+  await expect(
+    page.locator('.mobile-card-product img[src$="plug.webp"]'),
+  ).toHaveAttribute("src", /plug.webp$/);
+  expect(data.history()).toBe(0);
+  expect(data.commands).toHaveLength(0);
+});
+test("glass carries through detailed cards; photo choices, image failures and transparency preferences are respected", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const data = await setup(page);
+  data.saved().items.find((i) => i.id === "vacuum")!.config = {
+    type: "auto",
+    title: "Robot",
+    icon: "auto",
+    image: "none",
+    sources: [],
+    period: "24",
+  };
+  data.saved().items.find((i) => i.id === "media")!.config = {
+    type: "auto",
+    title: "Musikk",
+    icon: "auto",
+    image: "living",
+    sources: [],
+    period: "24",
+  };
+  data.saved().items.find((i) => i.id === "climate")!.config = {
+    type: "auto",
+    title: "Termostat",
+    icon: "auto",
+    image: "plug",
+    sources: [],
+    period: "24",
+  };
+  await page.reload();
+  await expect(
+    page.locator('[data-card="climate"] .mobile-card-product img'),
+  ).toHaveAttribute("src", /plug.webp$/);
+  await expect(
+    page.locator('[data-card="climate"] .home-canvas-surface'),
+  ).toHaveCSS("backdrop-filter", /blur\(5px\)/);
+  await expect(
+    page.locator('[data-card="vacuum"] .mobile-card-product'),
+  ).toHaveCount(0);
+  await expect(
+    page.locator('[data-card="media"] .mobile-card-photo'),
+  ).toHaveAttribute("src", /home-living.webp$/);
+  expect(
+    await page
+      .locator('[data-card="media"] .home-canvas-surface')
+      .evaluate((e) =>
+        getComputedStyle(e).getPropertyValue("--card-glass").trim(),
+      ),
+  ).toBe("");
+  await page.route("**/home/equipment/pendant.webp", (route) => route.abort());
+  await page.reload();
+  await expect(
+    page.locator('[data-card="lighting"] .mobile-card-product svg'),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Detaljert", exact: true }).click();
+  for (const width of [390, 834, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const surface = page.locator('[data-card="lighting"] .home-canvas-surface');
+    await expect(surface).toHaveCSS(
+      "backdrop-filter",
+      new RegExp(`blur\\(${width === 390 ? 5 : 8}px\\)`),
+    );
+    await expect(surface.locator(".grid-lighting-card")).toHaveCSS(
+      "background-color",
+      "rgba(0, 0, 0, 0)",
+    );
+    await expect(
+      page.locator('[data-card="climate"] .home-canvas-surface'),
+    ).toHaveCSS(
+      "backdrop-filter",
+      new RegExp(`blur\\(${width === 390 ? 5 : 8}px\\)`),
+    );
+    await expect(
+      page.locator('[data-card="weather"] .simple-weather'),
+    ).toHaveAttribute("data-scene", "rain");
+  }
+  const client = await page.context().newCDPSession(page);
+  await client.send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-transparency", value: "reduce" }],
+  });
+  await expect(
+    page.locator('[data-card="lighting"] .home-canvas-surface'),
+  ).toHaveCSS("backdrop-filter", "none");
+  expect(
+    await page
+      .locator('[data-card="lighting"] .home-canvas-surface')
+      .evaluate((e) =>
+        getComputedStyle(e).getPropertyValue("--glass-opacity").trim(),
+      ),
+  ).toBe("100%");
+  await client.detach();
 });

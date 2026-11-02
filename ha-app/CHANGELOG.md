@@ -1,3 +1,8 @@
+## 1.36.91
+- Mobilrutene viser nå små enhetsbilder fra de samme illustrasjonene som brukes på PC og nettbrett: blant annet lamper, låser, stikkontakter, solskjerming, termostater, multimedia og robotstøvsugere. Valgt medietype, lysstatus og «Uten bilde» respekteres. Navn og nøkkelstatus beholder plassen sin også på små skjermer.
+- Kort uten heldekkende bildebakgrunn får en lett gjennomsiktig glassflate med farget gradient, myk kant og diskret bakgrunnsuskarphet. Effekten følger korttypen på mobil, nettbrett, PC og i forhåndsvisningen. Tekst, bilder og kontroller beholder full opasitet; værfoto og valgte fotobakgrunner beholdes.
+- Glassflaten bruker ett lag per kort og mindre uskarphet på mobil. Nettleserens valg om redusert gjennomsiktighet og tvungne kontrastfarger støttes. Enhetsbilder gjenbrukes lokalt og lastes etter behov; grafer og fulle kontroller åpnes fortsatt først ved behov i rutevisning.
+
 ## 1.36.90
 - Harmoni får en egen mobilvisning med to kvadratiske ruter i bredden. Kortene viser navn, ikon og faktisk nøkkelstatus; et trykk åpner kortets fulle kontroller. I liggende mobilvisning kan tre ruter vises i bredden.
 - Velg «Ruter» eller «Detaljert» på telefonen. Valget huskes i denne nettleseren. Mobilrutene endrer ikke de lagrede størrelsene eller plasseringene for større skjermer; redigeringsmodus bruker fortsatt det vanlige oppsettet. Romgrupperingen beholdes.

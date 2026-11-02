@@ -121,6 +121,7 @@ import "./home/headerPills.css";
 import "./home/referenceCards.css";
 import "./home/thermostatCard.css";
 import "./home/mobileCards.css";
+import "./home/glassCards.css";
 import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";

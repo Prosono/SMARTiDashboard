@@ -119,6 +119,45 @@ html[data-home-style="harmony"] {
     .mobile-card-top > svg:last-child {
       opacity: 0.6;
     }
+    .mobile-card-top:has(.mobile-card-product) {
+      min-height: clamp(40px, 32cqi, 58px);
+      gap: 3px;
+    }
+    .mobile-card-product {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+      width: clamp(50px, 38cqi, 74px);
+      height: clamp(40px, 32cqi, 58px);
+      flex: none;
+      pointer-events: none;
+      > img,
+      > svg,
+      .equipment-art {
+        display: block;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        object-fit: contain;
+      }
+      .equipment-art {
+        flex: 1;
+        min-width: 0;
+      }
+      &[data-group] {
+        width: clamp(60px, 43cqi, 84px);
+      }
+      &[data-group] .equipment-art + .equipment-art {
+        margin-left: -10px;
+      }
+      &[data-unavailable] {
+        opacity: 0.5;
+      }
+      .equipment-art > :is(img, svg) {
+        filter: none;
+      }
+    }
     .mobile-card-title {
       font-size: clamp(12px, 8.2cqi, 15px);
       font-weight: 600;

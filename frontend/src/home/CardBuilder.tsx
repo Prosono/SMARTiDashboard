@@ -35,7 +35,12 @@ import {
   isGraphSource,
   unitInfo,
 } from "./cardConfigModel";
-import { cardIcons, cardImages, cardImageURL } from "./CardPresentation";
+import {
+  cardIcons,
+  cardImages,
+  cardImageURL,
+  photoImages,
+} from "./CardPresentation";
 import { ConfiguredHomeCard } from "./ConfiguredHomeCard";
 import { EquipmentArtwork } from "./EquipmentArtwork";
 import { InSettingsDialog, SettingsDialog } from "./SettingsDialog";
@@ -1097,6 +1102,9 @@ export function CardBuilder({
                       )?.path && (
                         <img
                           className="personal-card-backdrop"
+                          data-photo={
+                            photoImages.has(previewConfig.image) || undefined
+                          }
                           src={
                             new URL(
                               cardImages.find(

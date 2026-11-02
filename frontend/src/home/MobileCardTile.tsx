@@ -33,7 +33,13 @@ import {
 import { api } from "../api";
 import type { Control, Home } from "../types";
 import type { CardConfig } from "./homeGridModel";
-import { CardIcon, CardPresentation, cardImageURL } from "./CardPresentation";
+import {
+  CardIcon,
+  CardPresentation,
+  cardImageURL,
+  photoImages,
+} from "./CardPresentation";
+import { MobileCardArtwork } from "./MobileCardArtwork";
 import { ClockFace, useSky } from "./AmbientCard";
 import { clockDetails, clockZone, isAmbientType } from "./ambientModel";
 import { useWallTime } from "./useWallTime";
@@ -87,6 +93,8 @@ const icons = new Map<string, ElementType>([
   ["people", Users],
 ]);
 function Tile({
+  home,
+  offline,
   card,
   config,
   lang,
@@ -111,11 +119,15 @@ function Tile({
       : icons.get(summary.icon) || Activity;
   const title = config?.title || card.title;
   const photo =
-    config?.image && !["auto", "none"].includes(config.image)
+    config?.image &&
+    (photoImages.has(config.image) ||
+      (config.type === "picture" &&
+        config.image !== "none" &&
+        config.image !== "auto"))
       ? cardImageURL(config.image)
       : config?.type === "picture" && config.image === "auto"
         ? cardImageURL("living")
-        : config?.image === "none"
+        : config?.image && config.image !== "auto"
           ? undefined
           : poster;
   const analog =
@@ -152,6 +164,13 @@ function Tile({
           ) : (
             <span />
           )}
+          <MobileCardArtwork
+            card={card}
+            config={config}
+            home={home}
+            offline={offline}
+            lang={lang}
+          />
           <ChevronRight size={15} />
         </span>
         <strong className="mobile-card-title">{title}</strong>

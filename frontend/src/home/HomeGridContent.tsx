@@ -9,7 +9,7 @@ import {
 import { Maximize2 } from "lucide-react";
 import { SettingsDialog } from "./SettingsDialog";
 import type { CardConfig } from "./homeGridModel";
-import { cardImageURL } from "./CardPresentation";
+import { cardImageURL, photoImages } from "./CardPresentation";
 import type { CardTone } from "./cardToneModel";
 import { MobileCardTile, type MobileCardProps } from "./MobileCardTile";
 
@@ -84,6 +84,7 @@ export function HomeGridContent({
             config.type !== "picture" && (
               <img
                 className="personal-card-backdrop"
+                data-photo={photoImages.has(config.image) || undefined}
                 src={cardImageURL(config.image)}
                 alt=""
               />

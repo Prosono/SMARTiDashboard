@@ -1,3 +1,46 @@
+# Mobile product portraits and translucent card materials — release 1.36.91
+
+Phone tiles now reuse the local equipment cutouts, media-device selection and
+state-aware equipment illustrations from larger cards. Lighting summaries use
+actual light controls; explicit source and image choices take precedence. Images
+occupy a bounded header row, separate from the title, reading and secondary text.
+Failed images retain a decorative fallback; unavailable equipment is dimmed.
+There are no additional live streams, history queries or measuring loops.
+
+Non-photographic Home card surfaces, previews and full views use one translucent
+colored gradient with a fine border, inset highlight and backdrop filter. Inner
+specialist cards inherit a transparent skin, so an opaque second background does
+not mask the glass. Only the material is translucent: content opacity remains 1.
+Weather scenes and selected room photographs keep their existing treatment.
+Transparent product cutouts are distinguished from photographic backgrounds.
+Blur is 5px on phones and 8px elsewhere. Reduced-transparency preference switches
+to an opaque material without blur; a forced-colors fallback is included.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, test TypeScript, changed-file
+  Prettier, git diff --check and deterministic packaging checks passed. The
+  existing Vite chunk-size advisory remains. **253 unit cases passed.**
+- **40 selected desktop/mobile browser regressions passed** against the production
+  build, covering palettes, equipment types, layout editing, room grouping,
+  reference controls and the new portraits/materials.
+- The final extracted archive passed 29 of 30 targeted scenarios on the first
+  pass. The remaining thermostat scenario encountered an in-flight test response
+  being disposed during teardown; awaiting route cleanup fixed the fixture, and
+  that scenario then passed twice on each browser profile. No app change was
+  needed for that test cleanup.
+- Final-package cases verify 320/390/430px portraits without text collisions,
+  native artwork selection, square geometry, 390/834/1440px glass surfaces,
+  transparent inner cards, photo exclusions, custom cutouts, no-image choices,
+  image failures, reduced transparency and deferred history mounting. Picker,
+  media, weather and thermostat behavior are retained.
+- Light/dark phone renders were visually checked. Results use Chromium emulation,
+  not physical devices. All **263 runtime files** match the extracted tested
+  archive. Backend code and the existing background animation are unchanged;
+  earlier repository-wide validation limitations below still apply.
+
+---
+
 # Compact phone tiles and full controls — release 1.36.90
 
 Phones now default to two square tiles per row. Wider landscape phones use

@@ -5,6 +5,10 @@ import {
 } from "../../frontend/node_modules/@playwright/test";
 import type { GridItem } from "../../frontend/src/home/homeGridModel";
 const fixed = new Date("2026-11-01T20:36:00Z");
+// Finish in-flight route.fetch() handlers before Playwright disposes responses.
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "wait" });
+});
 async function setup(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem("smarti-home-style", "harmony");

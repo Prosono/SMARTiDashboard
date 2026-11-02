@@ -1,0 +1,64 @@
+/* One translucent material per card. Product cutouts stay separate from photo backgrounds. */
+html[data-home-style="harmony"] {
+  --glass-opacity: 86%;
+  --glass-depth-opacity: 90%;
+  --glass-blur: 8px;
+  --glass-filter: blur(var(--glass-blur)) saturate(112%);
+  :is(
+      .home-canvas-surface,
+      .home-canvas-expanded,
+      .home-canvas-cell[data-preview]
+    )[data-card-tone]:not(
+      :has(
+        .mobile-card-tile[data-photo],
+        .simple-weather[data-scene],
+        .personal-card-backdrop[data-photo],
+        .personal-status-card[data-picture="true"]
+      )
+    ) {
+    --card-glass: 1;
+    /* Specialist cards inherit transparency instead of painting a second opaque skin. */
+    --equipment-surface: transparent;
+    background:
+      linear-gradient(145deg, #ffffff0c, transparent 48%),
+      linear-gradient(
+        125deg,
+        color-mix(
+          in srgb,
+          var(--card-color, var(--surface)) var(--glass-opacity),
+          transparent
+        ),
+        color-mix(
+          in srgb,
+          var(--card-depth, var(--surface)) var(--glass-depth-opacity),
+          transparent
+        )
+      );
+    border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+    box-shadow:
+      var(--home-card-shadow),
+      inset 0 1px 0 #ffffff18;
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
+
+    .personal-status-card:not([data-picture="true"]),
+    .simple-weather:not([data-scene]) {
+      background: transparent;
+    }
+    @media (forced-colors: active) {
+      background: Canvas;
+      border: 1px solid CanvasText;
+      box-shadow: none;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+  @media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+    --glass-blur: 5px;
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    --glass-opacity: 100%;
+    --glass-depth-opacity: 100%;
+    --glass-filter: none;
+  }
+}
