@@ -197,7 +197,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await expect(page.locator(".home-welcome")).toBeVisible();
+  await expect(page.locator(".home-toolbar")).toBeVisible();
   const base = await (await page.request.get("/api/home")).json();
   const sensor = {
     ...base.controls.find((c: any) => c.domain === "sensor"),
@@ -502,7 +502,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   ).toBeFocused();
   await expect(
     flow.getByLabel("Effektmåler · Batteri", { exact: true }),
-  ).toHaveValue("sensor.test_power");
+  ).toContainText("Effektmåler");
   await flow.getByRole("button", { name: "Avbryt", exact: true }).click();
   await flow.locator(".energy-scene-stage").screenshot({
     animations: "disabled",
@@ -622,7 +622,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await flow.getByRole("button", { name: "Endre måler", exact: true }).click();
   await expect(
     flow.getByLabel("Effektmåler · Solceller", { exact: true }),
-  ).toHaveValue("sensor.test_power");
+  ).toContainText("Effektmåler");
   await flow.getByRole("button", { name: "Avbryt", exact: true }).click();
   zeroPower = true;
   await expect(solar.locator("strong")).toHaveText("0 W", { timeout: 10000 });

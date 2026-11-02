@@ -168,6 +168,29 @@ const history = (page: Page) =>
   page
     .getByRole("tab", { name: "Historikk og strømpriser", exact: true })
     .click();
+
+async function expectUnobstructedSceneControls(page: Page) {
+  const overlaps = await page
+    .locator(".energy-scene-tools button")
+    .evaluateAll((buttons) => {
+      const labels = [...document.querySelectorAll(".energy-hotspot")].map(
+        (node) => node.getBoundingClientRect(),
+      );
+      return buttons.some((button) => {
+        const b = button.getBoundingClientRect();
+        return labels.some(
+          (a) =>
+            a.left < b.right &&
+            a.right > b.left &&
+            a.top < b.bottom &&
+            a.bottom > b.top,
+        );
+      });
+    });
+  expect(overlaps, "Rotation buttons must not cover equipment readings").toBe(
+    false,
+  );
+}
 test.afterEach(async ({ page }) => {
   await page.unrouteAll({ behavior: "wait" });
 });
@@ -175,6 +198,7 @@ test.afterEach(async ({ page }) => {
 test("energy defaults are independent cards; both layouts resize, save, reload and restore removed modules", async ({
   page,
 }, info) => {
+  test.setTimeout(60000);
   await page.setViewportSize({ width: 1440, height: 1050 });
   const state = await setup(page);
   const overview = page.locator('.home-canvas[data-page="energy"]');
@@ -188,7 +212,18 @@ test("energy defaults are independent cards; both layouts resize, save, reload a
     "3",
   );
   const flow = overview.locator('[data-card="energy:flow"]');
-  await expect(flow.locator(".energy-scene")).toBeVisible();
+  // The lazy Three.js module and software WebGL can take longer on a cold browser.
+  await expect(flow.locator(".energy-scene")).toBeVisible({ timeout: 20000 });
+  await expect(flow.locator(".energy-scene")).toHaveCSS("height", "390px");
+  for (const [id, tone] of Object.entries({
+    flow: "energy-flow",
+    today: "energy-use",
+    spot: "energy-price",
+    "self-supply": "energy-solar",
+  }))
+    await expect(
+      overview.locator(`[data-card="energy:${id}"] .home-canvas-surface`),
+    ).toHaveAttribute("data-card-tone", tone);
   await expect(flow.locator(".home-canvas-viewport")).toHaveAttribute(
     "data-overflow",
     "false",
@@ -197,11 +232,20 @@ test("energy defaults are independent cards; both layouts resize, save, reload a
   await expect(
     flow.getByRole("button", { name: "Vis flyt", exact: true }),
   ).toBeVisible();
+  await flow.getByRole("button", { name: "Drei huset mot venstre" }).click();
+  await flow.getByRole("button", { name: "Drei huset mot høyre" }).click();
+  await expectUnobstructedSceneControls(page);
+  await flow.getByRole("button", { name: "Konfigurer energiflyt" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.screenshot({
     path: `/private/tmp/smarti-energy-module-overview-${info.project.name}.png`,
   });
   await page.evaluate(() => {
     document.documentElement.dataset.theme = "light";
+  });
+  await page.screenshot({
+    path: `/private/tmp/smarti-energy-module-overview-light-${info.project.name}.png`,
   });
   await edit(page);
   await flow.getByRole("combobox", { name: /bredde/ }).selectOption("2");
@@ -354,7 +398,15 @@ test("phone energy tiles show real summaries and mount the full module only on d
   await expect(page.locator(".energy-scene")).toHaveCount(0);
   await flow.click();
   await expect(page.getByRole("dialog")).toContainText("Energiflyt");
-  await expect(page.locator(".energy-scene")).toBeVisible();
+  await expect(page.locator(".energy-scene")).toBeVisible({ timeout: 20000 });
+  expect(
+    (await page.locator(".energy-scene").boundingBox())?.height,
+  ).toBeGreaterThanOrEqual(420);
+  await expectUnobstructedSceneControls(page);
+  await page.screenshot({
+    path: `/private/tmp/smarti-energy-module-expanded-${info.project.name}.png`,
+    fullPage: true,
+  });
   await page.keyboard.press("Escape");
   await expect(flow).toBeFocused();
   await expect(page.locator(".energy-scene")).toHaveCount(0);

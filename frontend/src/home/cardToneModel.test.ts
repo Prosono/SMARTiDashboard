@@ -72,6 +72,27 @@ describe("card type surface colors", () => {
         ]),
       ).toBe(expected);
   });
+  it("distinguishes native energy categories while keeping custom sources authoritative", () => {
+    for (const [id, expected] of Object.entries({
+      flow: "energy-flow",
+      power: "energy-use",
+      today: "energy-use",
+      history: "energy-use",
+      spot: "energy-price",
+      prices: "energy-price",
+      "today-cost": "energy-price",
+      breakdown: "energy-price",
+      solar: "energy-solar",
+      "self-supply": "energy-solar",
+    }))
+      expect(cardTone({ id: `energy:${id}` }, undefined, [])).toBe(expected);
+    const source = control("sensor", { unit_of_measurement: "°C" });
+    expect(
+      cardTone({ id: "energy:power" }, defaultCardConfig([source.entity_id]), [
+        source,
+      ]),
+    ).toBe("temperature");
+  });
   it("colors all clock and sky designs from their configured type", () => {
     for (const choice of ambientChoices) {
       expect(cardTone(undefined, ambientConfig(choice.id), [])).toBe(

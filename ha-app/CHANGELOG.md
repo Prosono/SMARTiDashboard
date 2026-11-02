@@ -1,3 +1,8 @@
+## 1.36.98
+- Energisiden i Harmoni har tydeligere kategorifarger: turkis energiflyt, friskt blått forbruk, gulltoner for strømpris og kostnader, og mintgrønt for solenergi. Fargene følger kortet ved flytting, i mobilruter og i fullvisning. Glasspreget beholdes med tilpasset tekstkontrast i lyst og mørkt tema.
+- 3D-huset får en større scene i standardkortet, fra 270 til 390 piksler. Kompakte målefelt og samlede kontroller gir modellen mer plass uten å endre lagrede kortstørrelser. På mobil ligger dreieknappene under modellen, og fullvisning gir ekstra plass.
+- Målinger, historikk, energiinnstillinger og lagrede kortoppsett beholdes. Fargene viser kortkategori og endrer ikke vurderingen av hjemmets forbruk.
+
 ## 1.36.97
 - Romvisningen tilpasser antall enhetskort til tilgjengelig bredde. Smale skjermer får ett kort i bredden, og kortene vokser med innholdet. Lange navn, brytere, måleverdier, ekstra energimålinger og enhetsbilder overlapper ikke lenger.
 - Tall og måleenhet vises samlet, med mindre måleenhet. Lange navn får to linjer i kortet; hele navnet er fortsatt tilgjengelig ved åpning av enhetsdetaljene. Enhetsbilder beholdes.

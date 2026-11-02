@@ -6,6 +6,10 @@ export type CardTone =
   | "clock"
   | "calendar"
   | "energy"
+  | "energy-flow"
+  | "energy-use"
+  | "energy-price"
+  | "energy-solar"
   | "temperature"
   | "humidity"
   | "warm"
@@ -81,6 +85,19 @@ const widgetTones: Record<string, CardTone> = {
   "summary:connection": "misc",
 };
 
+const energyTones: Record<string, CardTone> = {
+  flow: "energy-flow",
+  solar: "energy-solar",
+  "self-supply": "energy-solar",
+  spot: "energy-price",
+  prices: "energy-price",
+  cost: "energy-price",
+  "today-cost": "energy-price",
+  breakdown: "energy-price",
+  schemes: "energy-price",
+  timing: "energy-price",
+};
+
 /** Presentation follows actual sources/type, never a translated or user-written title. */
 export function cardTone(
   card: { id: string; entityId?: string } | undefined,
@@ -105,6 +122,7 @@ export function cardTone(
   );
   if (sources.length) return tones.size === 1 ? [...tones][0] : "neutral";
   if (card?.id.startsWith("room:")) return "fresh";
-  if (card?.id.startsWith("energy:")) return "energy";
+  if (card?.id.startsWith("energy:"))
+    return energyTones[card.id.slice(7)] || "energy-use";
   return widgetTones[card?.id || ""] || "neutral";
 }

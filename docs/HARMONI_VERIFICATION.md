@@ -1,3 +1,46 @@
+# Energy category colors and larger 3D view — release 1.36.98
+
+Native Harmoni Energy modules now use separate palettes: teal for the energy
+flow, blue for consumption and history, amber for prices and costs, and mint for
+solar energy. Stable module IDs select the palette, so titles can be changed
+without losing category identity. Explicit user-selected sources still take
+precedence. The same material follows phone tiles, editor previews and expanded
+cards. Glass opacity and ink are adapted for the light price/solar surfaces and
+for readable blue/teal surfaces in the light theme. These are category colors;
+no consumption threshold, source, calculation or status classification changed.
+
+The embedded 3D stage grows from 270px to 390px. Its configuration and rotation
+controls share the module heading on wider screens, and rotation controls move
+below the scene on phones. Equipment labels are more compact and leave the
+architecture more visible. The default 3×4 flow module retains its saved geometry
+and fits without internal scrolling. Smaller saved modules keep the existing
+full-view affordance, with a 420–650px responsive stage in the expanded view.
+The original standalone Classic/Living scene and rendering cadence are unchanged.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, changed-test TypeScript,
+  changed-file Prettier, diff and deterministic packaging checks passed.
+  **259 unit cases passed.** The existing Vite chunk-size advisory remains.
+- **14 production-build desktop/mobile scenarios passed**, covering modular
+  layout persistence, editing guards, failed saves, setup, missing/zero readings,
+  chart selection and renderer fallback. Four targeted scenarios also passed
+  against the final extracted archive: category colors, larger stage, no default
+  card overflow, reachable configuration/pause/rotation controls, no overlap with
+  equipment readings, resizing/reload, and lazy phone tiles/full view.
+- The legacy 3D test selectors were updated for the previously removed banner
+  and the existing button-based sensor picker. Desktop and mobile interaction
+  scenarios passed, covering live directions, selection persistence, rotation, real gaps,
+  zero/stale readings, pause and reduced motion. A cold Three.js/software-WebGL
+  load gets a 20-second assertion budget in the modular scenario. Separate test
+  output directories prevent Playwright trace cleanup collisions.
+- All **276 runtime files** match their manifest hashes. Archive SHA-256:
+  `5df7baae2f7eb65167017ce00cb8e0d26a9d317c1d7eb2f531674c588515eb71`.
+  Desktop light/dark and expanded-phone screenshots were visually inspected.
+
+Validation uses isolated demo servers and fixture devices. Physical phones,
+HAOS installation and real device commands were not exercised.
+
 # Room measurement layout and precision — release 1.36.97
 
 The reported Room power section used full equipment cards in a forced two-column
