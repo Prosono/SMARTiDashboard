@@ -20,7 +20,38 @@ Use case: product-mockup. Asset type: transparent product cutout for a premium s
 - `lock.webp`: one modern slim charcoal electronic door lock, vertical rounded rectangular housing with a small flush numeric keypad and a horizontal metal lever handle, isolated without any door panel
 - `contact.webp`: one compact matte charcoal magnetic contact sensor, with a tall small rounded rectangular main module and a narrower matching magnet module alongside it with a small gap
 
-Other illustrations in `EquipmentArtwork.tsx` are native SVG. Cover position,
+## Expanded component set — 2 November 2026
+
+Thirteen additional transparent product portraits were generated with the built-in
+`image_gen.imagegen` tool and encoded to 512 × 512 WebP using the same settings.
+The complete final prompt for each asset and its original generated PNG filename
+are saved in [the prompt manifest](../../../../docs/equipment-images-2026-11-02.json).
+Original PNGs remain in Codex's generated-images directory; the final runtime files
+are all saved in this directory.
+
+| File | Subject |
+| --- | --- |
+| `leak.webp` | Water leak detector with stainless sensing contacts |
+| `motion.webp` | Wall PIR sensor with a segmented Fresnel lens |
+| `charger.webp` | Generic EV wallbox with cable and Type 2 connector |
+| `switch.webp` | European single-gang rocker light switch |
+| `strip.webp` | Flexible LED strip |
+| `outdoor.webp` | Outdoor up/down wall luminaire |
+| `spot.webp` | Recessed downlight |
+| `track.webp` | Three-head track lighting assembly |
+| `ceiling.webp` | Low-profile flush ceiling lamp |
+| `smoke.webp` | Vented optical smoke detector |
+| `bulb.webp` | E27 LED bulb |
+| `floor.webp` | Complete floor lamp |
+| `desk.webp` | Articulated desk lamp |
+
+These images are illustrative, unbranded and unlit. Status, warnings, readings and
+color controls continue to come from the actual device. Named EV charging switches
+and a reported EV-station icon can select the wallbox; an ordinary phone charger
+does not. A resident's explicit light type overrides name-based selection.
+
+Remaining illustrations and image-failure fallbacks in `EquipmentArtwork.tsx`
+are native SVG. Cover position,
 window state and light tint use actual device attributes. Artwork is decorative
 and hidden from accessibility APIs; the adjacent text supplies the real status.
 Unavailable/missing measurements never become inferred product readings.

@@ -129,6 +129,19 @@ class CardConfig(BaseModel):
         "plug",
         "lock",
         "contact",
+        "equipment-leak",
+        "equipment-motion",
+        "equipment-charger",
+        "equipment-switch",
+        "equipment-strip",
+        "equipment-outdoor",
+        "equipment-spot",
+        "equipment-track",
+        "equipment-ceiling",
+        "equipment-smoke",
+        "equipment-bulb",
+        "equipment-floor",
+        "equipment-desk",
     ] = "auto"
     sources: list[
         Annotated[str, Field(min_length=3, max_length=250, pattern=r"^[a-z_]+\.[a-zA-Z0-9_]+$")]

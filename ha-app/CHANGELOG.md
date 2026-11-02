@@ -1,3 +1,9 @@
+## 1.36.92
+- 13 nye, genererte enhetsillustrasjoner: vanndetektor med følekontakter, PIR-bevegelsesdetektor med Fresnel-linse, elbillader med Type 2-kontakt, lysbryter, røykdetektor og åtte lampetyper: LED-list, utelys, spot/downlight, lysskinne, taklampe, lyspære, gulvlampe og bordlampe.
+- Bildene har transparent bakgrunn og brukes i både mobilruter og de større kortene. De kan også velges under «Ikon og bilde». Alle 13 er komprimert til 512 × 512 WebP og utgjør samlet omtrent 240 kB.
+- Lysskinne har fått et eget valg under «Tilpass lys». Automatisk gjenkjenning skiller bedre mellom blant annet LED-taklamper, spotter og LED-lister; eksplisitte valg beholdes. Elbilladerillustrasjonen velges for tydelige elbilhint, og vanlige telefonladere beholder vanlig kontaktillustrasjon.
+- Tilstandsverdier og kommandoer er uendret. Bildefeil bruker SVG-reserve, og glassflater, bildevalg og lagrede kortstørrelser beholdes.
+
 ## 1.36.91
 - Mobilrutene viser nå små enhetsbilder fra de samme illustrasjonene som brukes på PC og nettbrett: blant annet lamper, låser, stikkontakter, solskjerming, termostater, multimedia og robotstøvsugere. Valgt medietype, lysstatus og «Uten bilde» respekteres. Navn og nøkkelstatus beholder plassen sin også på små skjermer.
 - Kort uten heldekkende bildebakgrunn får en lett gjennomsiktig glassflate med farget gradient, myk kant og diskret bakgrunnsuskarphet. Effekten følger korttypen på mobil, nettbrett, PC og i forhåndsvisningen. Tekst, bilder og kontroller beholder full opasitet; værfoto og valgte fotobakgrunner beholdes.

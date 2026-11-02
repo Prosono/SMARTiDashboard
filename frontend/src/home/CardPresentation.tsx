@@ -29,6 +29,7 @@ import {
   Moon,
 } from "lucide-react";
 import type { CardConfig } from "./homeGridModel";
+import { equipmentImageChoices } from "./equipmentAssets";
 
 export const CardPresentation = createContext<Partial<CardConfig>>({});
 export const cardIcons = [
@@ -108,6 +109,7 @@ export const cardImages = [
     en: "Door sensor",
     path: "home/equipment/contact.webp",
   },
+  ...equipmentImageChoices,
 ];
 export const cardImageURL = (image: string) => {
   const path = cardImages.find((option) => option.id === image)?.path;

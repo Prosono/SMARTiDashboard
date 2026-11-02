@@ -93,6 +93,7 @@ class ControlAppearance(BaseModel):
         "desk",
         "ceiling",
         "strip",
+        "track",
         "sun",
         "outdoor",
         "tv",
@@ -662,7 +663,7 @@ def create_app(
         if not control or control.domain not in {"light", "media_player"}:
             raise HTTPException(404, "entity_not_found")
         icons = (
-            {"auto", "bulb", "pendant", "floor", "desk", "ceiling", "strip", "sun", "outdoor"}
+            {"auto", "bulb", "pendant", "floor", "desk", "ceiling", "strip", "track", "sun", "outdoor"}
             if control.domain == "light"
             else {
                 "auto",

@@ -10,6 +10,8 @@ export type EquipmentArt =
   | "strip"
   | "spot"
   | "outdoor"
+  | "track"
+  | "charger"
   | "plug"
   | "switch"
   | "lock"
@@ -44,15 +46,28 @@ export function equipmentArt(c: Control): EquipmentArt {
         "strip",
         "sun",
         "outdoor",
+        "track",
+        "spot",
       ].includes(chosen)
     )
       return chosen === "sun" ? "spot" : (chosen as EquipmentArt);
     const name = c.name.toLocaleLowerCase();
-    if (/led|strip|lyslist|benk/.test(name)) return "strip";
+    if (
+      /lysskinne|lysskinna|spottskinne|spot\s*skinne|track|\brail\b/.test(name)
+    )
+      return "track";
+    if (
+      /utelys|utelampe|utendørs|outdoor|terrasselampe|vegglampe ute/.test(name)
+    )
+      return "outdoor";
+    if (/lyspære|\bpære\b|\bbulb\b|\be27\b|\be14\b/.test(name)) return "bulb";
+    if (/strip|lyslist|lysbånd|led[ -]?(list|bånd)|benk/.test(name))
+      return "strip";
     if (/spot|downlight/.test(name)) return "spot";
     if (/gulv|floor/.test(name)) return "floor";
     if (/bord|desk|table/.test(name)) return "desk";
     if (/tak|ceiling|plafond/.test(name)) return "ceiling";
+    if (/led/.test(name)) return "strip";
     return "pendant";
   }
   if (c.domain === "cover")
@@ -72,10 +87,17 @@ export function equipmentArt(c: Control): EquipmentArt {
   if (c.domain === "climate") return "thermostat";
   if (c.domain === "fan") return "fan";
   if (["switch", "input_boolean"].includes(c.domain))
-    return deviceClass === "outlet" ||
-      /stikk|socket|plug/.test(c.name.toLocaleLowerCase())
-      ? "plug"
-      : "switch";
+    return /elbillad|ev[ _-]?(charg|lad)|\bevse\b|wallbox|ladestasjon/.test(
+      [c.name, c.device_name, c.attributes.smarti_device_model]
+        .filter((v) => typeof v === "string")
+        .join(" ")
+        .toLocaleLowerCase(),
+    ) || c.attributes.icon === "mdi:ev-station"
+      ? "charger"
+      : deviceClass === "outlet" ||
+          /stikk|socket|plug/.test(c.name.toLocaleLowerCase())
+        ? "plug"
+        : "switch";
   if (c.domain === "alarm_control_panel") return "alarm";
   if (c.domain === "sensor" && deviceClass === "battery") return "battery";
   if (c.domain === "binary_sensor")

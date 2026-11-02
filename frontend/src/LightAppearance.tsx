@@ -12,6 +12,7 @@ import {
   LightStrip,
   LightSpot,
   LightOutdoor,
+  LightTrack,
 } from "./LightIcons";
 import type { Control } from "./types";
 import { SettingsDialog } from "./home/SettingsDialog";
@@ -25,6 +26,7 @@ const icons = [
   { id: "desk", nb: "Bordlampe", en: "Table lamp", Icon: LightDesk },
   { id: "ceiling", nb: "Taklys", en: "Ceiling light", Icon: LightCeiling },
   { id: "strip", nb: "LED-list", en: "LED strip", Icon: LightStrip },
+  { id: "track", nb: "Lysskinne", en: "Track lighting", Icon: LightTrack },
   { id: "sun", nb: "Spotlys", en: "Spotlight", Icon: LightSpot },
   {
     id: "outdoor",

@@ -187,6 +187,9 @@ html[data-home-style="harmony"] {
   .equipment-art[data-lit="false"].art-pendant img {
     filter: brightness(0.78) saturate(0.4) drop-shadow(0 6px 7px #111b2720);
   }
+  .equipment-art[data-light="true"][data-lit="false"] img {
+    filter: brightness(0.82) saturate(0.4) drop-shadow(0 6px 7px #111b2720);
+  }
   .equipment-card[data-available="false"] .equipment-art {
     opacity: 0.45;
     filter: grayscale(1);

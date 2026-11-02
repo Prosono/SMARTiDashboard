@@ -1,6 +1,7 @@
 import { useContext, useId, useState, type CSSProperties } from "react";
 import { CardPresentation } from "./CardPresentation";
 import type { Control } from "../types";
+import { equipmentPortraitKinds } from "./equipmentAssets";
 import {
   equipmentArt,
   finiteReading,
@@ -29,7 +30,7 @@ export function EquipmentArtwork({
       (c.state === "closed" ? 0 : c.state === "open" ? 100 : null))
     : null;
   const level = (position ?? 50) / 100;
-  const image = ["pendant", "plug", "lock", "contact"].includes(kind)
+  const image = equipmentPortraitKinds.has(kind)
     ? new URL(`home/equipment/${kind}.webp`, document.baseURI).href
     : null;
   if (appearance.image && appearance.image !== "auto") return null;
@@ -37,7 +38,8 @@ export function EquipmentArtwork({
     return (
       <div
         className={`equipment-art art-${kind}`}
-        data-lit={kind === "pendant" && active}
+        data-lit={active}
+        data-light={c.domain === "light" || undefined}
         aria-hidden="true"
         style={{ "--lamp-color": lightColor(c) } as CSSProperties}
       >
@@ -45,6 +47,7 @@ export function EquipmentArtwork({
           src={image}
           alt=""
           loading="lazy"
+          decoding="async"
           draggable={false}
           onError={() => fail(image)}
         />
@@ -499,6 +502,54 @@ export function EquipmentArtwork({
                 />
               </>
             )}
+          </g>
+        ) : kind === "track" ? (
+          <g stroke="#adb8c2" strokeWidth="2">
+            <path d="M18 29H162V39H18Z" fill={`url(#${id}metal)`} />
+            {[42, 90, 138].map((x) => (
+              <g key={x}>
+                <path d={`M${x} 39V63`} strokeWidth="5" />
+                <rect
+                  x={x - 14}
+                  y="59"
+                  width="28"
+                  height="54"
+                  rx="8"
+                  fill={`url(#${id}metal)`}
+                />
+                <ellipse
+                  cx={x}
+                  cy="110"
+                  rx="12"
+                  ry="5"
+                  fill={active ? lightColor(c) : "#c0c5cb"}
+                />
+              </g>
+            ))}
+          </g>
+        ) : kind === "charger" ? (
+          <g stroke="#adb8c2" strokeWidth="2" fill="none">
+            <rect
+              x="37"
+              y="15"
+              width="84"
+              height="90"
+              rx="18"
+              fill={`url(#${id}metal)`}
+            />
+            <path
+              d="M64 106V127C64 151 149 151 149 115V59"
+              stroke="#343e49"
+              strokeWidth="9"
+            />
+            <rect
+              x="138"
+              y="39"
+              width="21"
+              height="35"
+              rx="7"
+              fill={`url(#${id}metal)`}
+            />
           </g>
         ) : kind === "fan" ? (
           <g>

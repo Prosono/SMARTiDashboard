@@ -347,6 +347,9 @@ def test_light_appearance_is_persisted_and_admin_only(client, app):
     assert changed["name"] == "Spisebord"
     assert changed["attributes"]["smarti_icon"] == "pendant"
     assert changed["id"] == original["id"]
+    assert client.put(route, json={"name": "Lysskinne", "icon": "track"}).status_code == 200
+    tracked = next(c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == original["entity_id"])
+    assert tracked["attributes"]["smarti_icon"] == "track"
     assert client.put(route, json={"name": "Bad", "icon": "<svg>"}).status_code == 422
     assert client.put(route, json={"name": "", "icon": "auto"}).status_code == 200
     restored = next(

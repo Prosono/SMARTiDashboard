@@ -29,6 +29,66 @@ const control = (changes: Partial<Control> = {}): Control => ({
 const home = (controls: Control[]) => ({ controls }) as Home;
 
 describe("equipment card data", () => {
+  it("keeps lighting types distinct and honors the resident's explicit choice", () => {
+    for (const [name, kind] of [
+      ["LED lysskinne", "track"],
+      ["Spottskinne stue", "track"],
+      ["Utelys", "outdoor"],
+      ["Spot kjøkken", "spot"],
+      ["Taklampe", "ceiling"],
+      ["Bordlampe", "desk"],
+      ["Gulvlampe", "floor"],
+      ["LED-list", "strip"],
+      ["LED taklampe", "ceiling"],
+      ["LED spot", "spot"],
+      ["LED lyspære", "bulb"],
+    ]) {
+      expect(equipmentArt(control({ name }))).toBe(kind);
+    }
+    expect(
+      equipmentArt(
+        control({ name: "LED-list", attributes: { smarti_icon: "track" } }),
+      ),
+    ).toBe("track");
+    expect(
+      equipmentArt(
+        control({ name: "Lysskinne", attributes: { smarti_icon: "sun" } }),
+      ),
+    ).toBe("spot");
+  });
+  it("uses charger artwork only with explicit EV hints, preserving ordinary switches and phone chargers", () => {
+    expect(
+      equipmentArt(control({ domain: "switch", name: "Elbillader garasje" })),
+    ).toBe("charger");
+    expect(
+      equipmentArt(
+        control({
+          domain: "switch",
+          name: "Lading",
+          attributes: { icon: "mdi:ev-station" },
+        }),
+      ),
+    ).toBe("charger");
+    expect(
+      equipmentArt(
+        control({ domain: "switch", name: "Smart stikkontakt lader telefon" }),
+      ),
+    ).toBe("plug");
+    expect(equipmentArt(control({ domain: "switch", name: "Lysbryter" }))).toBe(
+      "switch",
+    );
+    for (const [device_class, kind] of [
+      ["motion", "motion"],
+      ["occupancy", "presence"],
+      ["moisture", "leak"],
+      ["smoke", "smoke"],
+    ])
+      expect(
+        equipmentArt(
+          control({ domain: "binary_sensor", attributes: { device_class } }),
+        ),
+      ).toBe(kind);
+  });
   it("respects chosen light art and distinguishes actual cover and sensor classes", () => {
     expect(
       equipmentArt(

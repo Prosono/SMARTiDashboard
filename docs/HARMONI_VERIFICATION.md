@@ -1,3 +1,48 @@
+# Expanded transparent equipment portraits — release 1.36.92
+
+Thirteen new product portraits were generated with the built-in image_gen tool:
+water leak detector, PIR motion detector, EV wallbox, light switch, smoke detector,
+LED strip, outdoor fixture, downlight, track lighting, ceiling lamp, E27 bulb,
+floor lamp and desk lamp. Each original has genuine alpha. Runtime WebPs are
+512×512 with transparency retained; the thirteen files total **246,066 bytes**.
+Original PNGs remain in Codex's generated-images directory. The complete prompts
+and original filenames are recorded in equipment-images-2026-11-02.json.
+
+The shared equipment artwork selects the new portraits on both full cards and
+mobile tiles, with existing SVG fallbacks on failure. Explicit image choices
+include the new portraits using namespaced IDs, separate from existing room
+photographs. The backend accepts only these additional allowlisted image IDs.
+Track lighting also has a native picker icon and a persisted admin light-type
+choice. Existing source bindings, permissions and device commands are retained.
+Name-based selection gives physical lamp types priority over a generic LED hint;
+EV wallbox art requires clear EV hints on a switching entity, keeping ordinary
+phone-charging sockets distinct. Images are decorative and contain no live values.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, changed browser-test TypeScript,
+  changed-file Prettier, git diff --check and deterministic packaging checks passed.
+  Existing Vite chunk-size advisory remains.
+- **255 frontend unit cases passed**, including lamp-type precedence, explicit
+  overrides, EV charging versus ordinary sockets, and sensor classifications.
+- **43 selected backend tests passed**, covering appearance permissions,
+  track-type persistence, image allowlisting and personal layout persistence.
+  Scoped application/layout-test Ruff passed; the API test file's pre-existing
+  I001 import ordering was excluded. Existing TestClient deprecation remains.
+- **38 desktop/mobile browser scenarios passed against the final extracted
+  archive.** New cases load all thirteen images at 390/834/1440px in both themes,
+  verify bounds, transparent card materials, image selection/save/reload and
+  image-failure fallbacks without issuing device commands. The light picker
+  selects and persists track lighting. Regression cases retain mobile layouts,
+  source readings, device controls, weather photos, media and thermostat behavior.
+- Generated originals and actual light/dark card renders were visually inspected.
+  These are Chromium emulations rather than physical-device validation.
+- All **276 runtime files** match the extracted tested archive. Backend changes
+  only extend presentation allowlists. Earlier repository-wide validation
+  limitations below remain applicable.
+
+---
+
 # Mobile product portraits and translucent card materials — release 1.36.91
 
 Phone tiles now reuse the local equipment cutouts, media-device selection and
