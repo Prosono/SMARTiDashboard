@@ -1,3 +1,57 @@
+# Modular Energy overview and history — release 1.36.96
+
+Harmoni's Energy page now uses the same three-column Home canvas, card picker,
+resize/reorder/remove behavior and top gear as the other destinations. Overview
+and History have separate personal layouts (`energy` and `energy_history`). Both
+start with available modules and retain explicit empty layouts. Native modules
+can be restored from the picker, and existing device/graph/ambient cards remain
+available. Energy layouts do not use room grouping.
+
+The overview includes the 3D flow and independent price, consumption, cost and
+optional self-sufficiency modules. History exposes individual metrics, charts,
+solar, totals, cost breakdown, forecasts, comparisons, consumers and sync status.
+Less common meter/vehicle details can be added from the picker. Period/date,
+refresh and energy settings remain outside the canvas. Attribution remains
+visible independently of which cards are removed. Existing calculations,
+coverage warnings, missing intervals and setup wizard are preserved. Classic and
+Living retain their original presentation.
+
+Modules share Home's glass/materials and compact headings. Charts scale within
+their cards instead of adding horizontal scrollbars. Dense/resized content keeps
+the existing full-card view. The standard 3D module fits four rows and its pause
+control is positioned within the compact stage. Its data/configuration controls
+remain available. Phone tiles use reported energy summaries and open full
+charts/3D only on demand; the 3D view unmounts when History is selected.
+
+Both layout routes use existing authentication, personal storage, validation,
+revision conflicts and atomic saves. Energy setup is stored separately. Switching
+energy subviews protects unsaved drafts. Toolbar registration runs before paint
+so fast view changes bind the gear/search to the newly mounted view. Mobile
+summaries defer to explicitly chosen sources and mark an offline home offline.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, changed-test TypeScript,
+  changed-file Prettier, diff and deterministic packaging checks passed.
+  **256 frontend unit cases and 80 selected backend cases passed.**
+- **28 production-build desktop/mobile browser scenarios passed**, covering
+  independent defaults/layouts, resize/save/reload, module removal/reinsertion,
+  failed saves, guarded subview changes, energy settings, periods/prices, missing
+  readings, mobile deferred mounting and the existing Home toolbar behavior.
+- **8 browser scenarios passed against the final extracted runtime archive**.
+  They verify both themes, actual summaries, an interactive default 3D module,
+  separate saved arrangements and unchanged tariff configuration.
+- Desktop overview/history and phone screenshots were visually inspected.
+- The changed backend files pass Ruff lint and formatting. Full-backend checks
+  still report pre-existing issues outside those files: 45 lint diagnostics in
+  37 files and 27 files needing formatting. They were left outside this change.
+  The existing Vite chunk-size advisory also remains.
+- All **276 runtime files** match their manifest hashes. Archive SHA-256:
+  `7465d32c9106b1762284ed07a9b158f887ec86d24458388a2df67b2fcf87c715`.
+
+Browser checks used isolated demo servers and fixture energy measurements. Real
+metering, energy bills and Home Assistant hardware were not exercised.
+
 # Compact Home toolbar and hidden search — release 1.36.95
 
 The existing top-right gear starts editing the active Harmoni canvas. The inline

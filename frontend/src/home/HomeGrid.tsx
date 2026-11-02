@@ -2,6 +2,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -60,6 +61,7 @@ import { cardTone } from "./cardToneModel";
 import { lightCardStyle } from "./lightCardModel";
 import { mobileGridItems } from "./mobileCardModel";
 import { HomePageTools } from "./HomePageTools";
+import type { MobileSummary } from "./mobileCardModel";
 
 const phoneQuery =
   "(max-width: 650px), (max-height: 500px) and (pointer: coarse)";
@@ -83,6 +85,7 @@ export type HomeGridCard = {
   hidden?: boolean;
   defaultHidden?: boolean;
   entityId?: string;
+  summary?: MobileSummary;
 };
 
 export function HomeGrid({
@@ -322,7 +325,7 @@ export function HomeGrid({
   const beginEditing = useRef(begin);
   beginEditing.current = begin;
   const ready = !!saved.data && !saved.isError;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!tools) return;
     tools.setEditor({
       id: editorId,

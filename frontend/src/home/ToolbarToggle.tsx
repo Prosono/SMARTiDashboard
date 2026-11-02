@@ -1,5 +1,12 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useCallback, useContext, useEffect, useId, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useState,
+} from "react";
 import { HomeBannerless } from "./CategoryIntro";
 import { HomePageTools } from "./HomePageTools";
 import "./toolbarToggle.css";
@@ -9,7 +16,7 @@ export function useToolbarDisclosure() {
   const [expanded, setExpanded] = useState(false);
   const id = useId();
   const toggle = useCallback(() => setExpanded((value) => !value), []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!tools) return;
     tools.setSearch({ id, expanded, toggle });
     return () => tools.setSearch(null);

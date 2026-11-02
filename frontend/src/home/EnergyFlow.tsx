@@ -62,11 +62,13 @@ export function EnergyFlow({
   offline,
   lang,
   managedEquipment = false,
+  embedded = false,
 }: {
   home: Home;
   offline: boolean;
   lang: string;
   managedEquipment?: boolean;
+  embedded?: boolean;
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb),
@@ -265,7 +267,9 @@ export function EnergyFlow({
       aria-label={t("Energiflyt", "Energy flow")}
     >
       <header className="flow-heading">
-        <EnergyWelcome home={home} offline={offline} lang={lang} />
+        {!embedded && (
+          <EnergyWelcome home={home} offline={offline} lang={lang} />
+        )}
         <div className="flow-heading-actions">
           {!managedEquipment && (
             <button

@@ -99,12 +99,16 @@ for (const style of ["classic", "living", "harmony"]) {
         await expect(toggle).toHaveAttribute("aria-expanded", "false");
         await expect(toggle).toHaveCSS("border-radius", "50%");
         await expect(home.locator(".toolbar-toggle")).toHaveCount(0);
+        const toolbarId = (await home
+          .locator("[data-collapsible-toolbar]")
+          .getAttribute("id"))!;
+        await expect(toggle).toHaveAttribute("aria-controls", toolbarId);
         await toggle.click();
         await expect(input).toBeVisible();
         await expect(input).toBeFocused();
         await expect(
           home.locator("[data-collapsible-toolbar]"),
-        ).toHaveAttribute("id", (await toggle.getAttribute("aria-controls"))!);
+        ).toHaveAttribute("id", toolbarId);
         await input.fill("finnes-ikke-9571");
         await expect(input).toHaveValue("finnes-ikke-9571");
         await input.clear();

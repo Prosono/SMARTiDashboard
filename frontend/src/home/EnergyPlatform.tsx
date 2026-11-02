@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useRef, useEffect } from "react";
+import { type ReactNode, useState, useRef, useEffect, useContext } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -22,6 +22,13 @@ import { EnergyPriceChart } from "./EnergyPriceChart";
 import { EnergySensorPicker } from "./EnergySensorPicker";
 
 import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
+import type { Home } from "../types";
+import {
+  EnergyModule,
+  EnergyModuleGroup,
+  EnergyModules,
+} from "./EnergyModules";
+import { HomeGridGuard } from "./HomeGridGuard";
 
 type Meter = { role: string; entity: string; name: string };
 type Config = {
@@ -176,14 +183,24 @@ export function EnergyPlatform({
   lang,
   overview,
   historyExtras,
+  home,
+  offline = false,
 }: {
   admin: boolean;
   lang: string;
   overview?: (managedEquipment: boolean) => ReactNode;
   historyExtras?: ReactNode;
+  home?: Home;
+  offline?: boolean;
 }) {
   const cache = useQueryClient();
+  const guard = useContext(HomeGridGuard);
   const [view, setView] = useState("overview");
+  function changeView(next: string) {
+    if (next !== view && guard?.current && !guard.current()) return false;
+    setView(next);
+    return true;
+  }
   const [editing, setEditing] = useState<boolean | null>(null);
   const setup = useQuery({
     queryKey: ["energy-platform-setup"],
@@ -275,10 +292,10 @@ export function EnergyPlatform({
       ? (Number(selfUse) / (Number(selfUse) + Number(importedToday))) * 100
       : null;
   function openSummary(target: string) {
+    if (!changeView("history")) return;
     setDay(dayString(new Date()));
     setPeriod("day");
     setSelected(null);
-    setView("history");
     requestAnimationFrame(() => {
       const element =
         document.getElementById(target) ||
@@ -352,7 +369,7 @@ export function EnergyPlatform({
                 aria-selected={view === id}
                 aria-controls={`energy-panel-${id}`}
                 tabIndex={view === id ? 0 : -1}
-                onClick={() => setView(id)}
+                onClick={() => changeView(id)}
                 onKeyDown={(e) => {
                   if (
                     ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
@@ -365,8 +382,8 @@ export function EnergyPlatform({
                         : e.key === "End"
                           ? tabs[1]
                           : tabs[(tabs.indexOf(view) + 1) % 2];
-                    setView(next);
-                    document.getElementById(`energy-view-${next}`)?.focus();
+                    if (changeView(next))
+                      document.getElementById(`energy-view-${next}`)?.focus();
                   }
                 }}
               >
@@ -471,362 +488,594 @@ export function EnergyPlatform({
                   "Kunne ikke hente energihistorikken. Prøv å oppdatere."}
               </p>
             )}
-            <div className="ep-metrics">
-              <article>
-                <small>
-                  <Zap size={18} /> Strømforbruk nå
-                </small>
-                <strong>
-                  {fmt(data?.power_kw)} <span>kW</span>
-                </strong>
-                <p>
-                  {data?.power_kw == null
-                    ? "Ingen fersk effektmåling"
-                    : "Målt effekt fra hjemmet"}
-                </p>
-              </article>
-              <article>
-                <small>
-                  <BarChart3 size={18} /> Forbruk i perioden
-                </small>
-                <strong>
-                  {fmt(grid?.summary.available_kwh)} <span>kWh</span>
-                </strong>
-                <p>
-                  {grid?.summary.complete
-                    ? "Komplett målegrunnlag"
-                    : `${fmt((grid?.summary.coverage || 0) * 100, 0)} % datadekning · ufullstendig`}
-                </p>
-              </article>
-              <article>
-                <small>
-                  <Coins size={18} /> Beregnet energikostnad
-                </small>
-                <strong>
-                  {fmt(totalCost)} <span>kr</span>
-                </strong>
-                <p>
-                  {totalCost != null
-                    ? grid?.cost_total != null
-                      ? "Estimat inkl. fordelte faste beløp"
-                      : "Registrert forbruk · uten faste beløp"
-                    : "Mangler komplett pris- eller støttegrunnlag"}
-                </p>
-              </article>
-              <article>
-                <small>
-                  <Tag size={18} /> Spotpris akkurat nå
-                </small>
-                <strong>
-                  {fmt(
-                    currentPrice?.NOK_per_kWh == null
-                      ? null
-                      : currentPrice.NOK_per_kWh * 100,
-                  )}{" "}
-                  <span>øre/kWh</span>
-                </strong>
-                <p>Uten mva., påslag og nettleie</p>
-              </article>
-            </div>
-            {liveRate?.variable_rate != null && (
-              <p className="ep-current-rate">
-                Din energipris nå:{" "}
-                <strong>
-                  {fmt(Number(liveRate.variable_rate) * 100, 1)} øre/kWh
-                </strong>{" "}
-                inkl. påslag, energiledd, avgifter og foreløpig støtte. Faste
-                beløp kommer i tillegg.
-              </p>
-            )}
-            {bestRate?.variable_rate != null &&
-              liveRate?.variable_rate != null &&
-              Number(bestRate.variable_rate) <
-                Number(liveRate.variable_rate) && (
-                <p className="ep-help">
-                  Flytter du 10 kWh til kl.{" "}
-                  {new Date(bestRate.start).toLocaleString("nb-NO", {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    timeZone: "Europe/Oslo",
-                  })}
-                  , er beregnet besparelse{" "}
-                  {fmt(
-                    (Number(liveRate.variable_rate) -
-                      Number(bestRate.variable_rate)) *
-                      10,
-                    2,
-                  )}{" "}
-                  kr. Estimat uten eventuell endring i kapasitetstrinn.
-                </p>
-              )}
-            {data?.solar && (
-              <div className="ep-solar" id="ep-solar-summary" tabIndex={-1}>
-                <h3>Solenergien din</h3>
-                <div className="ep-period-summary">
-                  <div>
-                    <span>Produsert</span>
-                    <strong>{fmt(data.solar.production)} kWh</strong>
-                  </div>
-                  <div>
-                    <span>Brukt i hjemmet</span>
-                    <strong>{fmt(data.solar.self_consumption)} kWh</strong>
-                  </div>
-                  <div>
-                    <span>Eksportert</span>
-                    <strong>{fmt(data.solar.export)} kWh</strong>
-                  </div>
-                  <div>
-                    <span>Beregnet spotverdi · eksport</span>
-                    <strong>{fmt(data.solar.export_spot_value, 2)} kr</strong>
-                  </div>
-                </div>
-                <small>{data.solar.note}</small>
-              </div>
-            )}
-            {grid?.capacity?.next_threshold_kw != null &&
-              Number(grid.capacity.peak_kw) >=
-                Number(grid.capacity.next_threshold_kw) * 0.9 && (
-                <p role="status">
-                  Kapasitetsgrunnlaget er {fmt(grid.capacity.peak_kw)} kW, nær
-                  neste nettleietrinn på {fmt(grid.capacity.next_threshold_kw)}{" "}
-                  kW. Unngå gjerne å lade bilen og varme varmtvann samtidig.
-                  Dette er et foreløpig grunnlag for måneden.
-                </p>
-              )}
-            {grid?.cost_total == null && grid?.available_cost != null && (
-              <p role="status">{grid.available_cost_note}</p>
-            )}
-            <div className="ep-history" id="ep-consumption-chart" tabIndex={-1}>
-              <header>
-                <h3>Forbruket ditt</h3>
-                <span>
-                  {start} – {end} · Oslo-tid
-                </span>
-              </header>
-              {points.some((p) => p.kwh != null) ? (
-                <>
-                  <EnergyHistoryChart
-                    points={points}
-                    prices={data?.spot || []}
-                    selected={selected}
-                    onSelect={setSelected}
-                  />
-                  <p className="ep-chart-detail" aria-live="polite">
-                    {active
-                      ? `${active.label}${active.partial ? " · ufullstendig / pågående" : ""} · ${fmt(active.kwh)} kWh · ${active.priced ? fmt(active.cost) + " kr uten faste beløp" : "kostnad ikke tilgjengelig"}`
-                      : "Trykk på en søyle for å se forbruk og kostnad."}
-                  </p>
-                </>
-              ) : (
-                <div className="ep-empty">
-                  <Zap size={28} />
-                  <h4>
-                    {dashboard.isLoading
-                      ? "Henter historikken…"
-                      : "Her kommer forbruket ditt"}
-                  </h4>
-                  <p>
-                    Vi samler målinger fra hjemmet. Med en effektmåler vises
-                    beregnet forbruk normalt innen 2–3 minutter. Manglende
-                    målinger blir aldri vist som null.
-                  </p>
-                </div>
-              )}
-            </div>
-            <EnergyPriceChart
-              today={data?.spot || null}
-              tomorrow={data?.tomorrow || null}
-              area={setup.data.config.area}
-            />
-            <section className="ep-summary-panel">
-              <h3>
-                <BarChart3 size={18} /> Forbruk over tid
-              </h3>
-              <div className="ep-period-summary" aria-label="Forbruksoversikt">
-                {[
-                  ["today", "I dag"],
-                  ["month", "Denne måneden"],
-                  ["year", "Hittil i år"],
-                ].map(([key, label]) => (
-                  <div key={key}>
-                    <span>{label}</span>
+            <EnergyModules
+              page="energy_history"
+              home={home}
+              offline={offline}
+              lang={lang}
+            >
+              <EnergyModuleGroup className="ep-metrics">
+                <EnergyModule
+                  id="energy:power"
+                  title="Effekt nå"
+                  summary={{
+                    reading: `${fmt(data?.power_kw)} kW`,
+                    detail: "Målt effekt fra hjemmet",
+                    icon: "energy",
+                  }}
+                >
+                  <article>
+                    <small>
+                      <Zap size={18} /> Strømforbruk nå
+                    </small>
                     <strong>
-                      {fmt(data?.totals?.[key]?.available_kwh)} kWh
+                      {fmt(data?.power_kw)} <span>kW</span>
                     </strong>
+                    <p>
+                      {data?.power_kw == null
+                        ? "Ingen fersk effektmåling"
+                        : "Målt effekt fra hjemmet"}
+                    </p>
+                  </article>
+                </EnergyModule>
+                <EnergyModule
+                  id="energy:consumption"
+                  title="Forbruk i perioden"
+                  summary={{
+                    reading: `${fmt(grid?.summary.available_kwh)} kWh`,
+                    detail: "Valgt periode",
+                    icon: "energy",
+                  }}
+                >
+                  <article>
                     <small>
-                      Estimert kostnad: {fmt(data?.totals?.[key]?.cost, 2)} kr
-                      {data?.totals?.[key]?.cost_note && (
-                        <span> · {data.totals[key].cost_note}</span>
-                      )}
+                      <BarChart3 size={18} /> Forbruk i perioden
                     </small>
+                    <strong>
+                      {fmt(grid?.summary.available_kwh)} <span>kWh</span>
+                    </strong>
+                    <p>
+                      {grid?.summary.complete
+                        ? "Komplett målegrunnlag"
+                        : `${fmt((grid?.summary.coverage || 0) * 100, 0)} % datadekning · ufullstendig`}
+                    </p>
+                  </article>
+                </EnergyModule>
+                <EnergyModule
+                  id="energy:cost"
+                  title="Beregnet energikostnad"
+                  summary={{
+                    reading: `${fmt(totalCost)} kr`,
+                    detail: "Foreløpig kostnad",
+                    icon: "energy",
+                  }}
+                >
+                  <article>
                     <small>
-                      {data?.totals?.[key]?.complete
-                        ? data?.history_estimated
-                          ? "Estimert forbruk"
-                          : "Målt forbruk"
-                        : "Ufullstendig målegrunnlag"}
+                      <Coins size={18} /> Beregnet energikostnad
                     </small>
+                    <strong>
+                      {fmt(totalCost)} <span>kr</span>
+                    </strong>
+                    <p>
+                      {totalCost != null
+                        ? grid?.cost_total != null
+                          ? "Estimat inkl. fordelte faste beløp"
+                          : "Registrert forbruk · uten faste beløp"
+                        : "Mangler komplett pris- eller støttegrunnlag"}
+                    </p>
+                  </article>
+                </EnergyModule>
+                <EnergyModule
+                  id="energy:spot"
+                  title="Spotpris akkurat nå"
+                  summary={{
+                    reading: `${fmt(currentPrice ? currentPrice.NOK_per_kWh * 100 : null)} øre/kWh`,
+                    detail: "Uten mva., påslag og nettleie",
+                    icon: "energy",
+                  }}
+                >
+                  <article>
+                    <small>
+                      <Tag size={18} /> Spotpris akkurat nå
+                    </small>
+                    <strong>
+                      {fmt(
+                        currentPrice?.NOK_per_kWh == null
+                          ? null
+                          : currentPrice.NOK_per_kWh * 100,
+                      )}{" "}
+                      <span>øre/kWh</span>
+                    </strong>
+                    <p>Uten mva., påslag og nettleie</p>
+                  </article>
+                </EnergyModule>
+              </EnergyModuleGroup>
+              <EnergyModule
+                id="energy:advice"
+                summary={{
+                  reading: cheapest
+                    ? `${fmt(cheapest.NOK_per_kWh * 100)} øre/kWh`
+                    : "Venter på priser",
+                  detail: "Gunstig tidspunkt",
+                  icon: "energy",
+                }}
+                title="Gunstige timer"
+                h={2}
+              >
+                {liveRate?.variable_rate != null && (
+                  <p className="ep-current-rate">
+                    Din energipris nå:{" "}
+                    <strong>
+                      {fmt(Number(liveRate.variable_rate) * 100, 1)} øre/kWh
+                    </strong>{" "}
+                    inkl. påslag, energiledd, avgifter og foreløpig støtte.
+                    Faste beløp kommer i tillegg.
+                  </p>
+                )}
+                {bestRate?.variable_rate != null &&
+                  liveRate?.variable_rate != null &&
+                  Number(bestRate.variable_rate) <
+                    Number(liveRate.variable_rate) && (
+                    <p className="ep-help">
+                      Flytter du 10 kWh til kl.{" "}
+                      {new Date(bestRate.start).toLocaleString("nb-NO", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: "Europe/Oslo",
+                      })}
+                      , er beregnet besparelse{" "}
+                      {fmt(
+                        (Number(liveRate.variable_rate) -
+                          Number(bestRate.variable_rate)) *
+                          10,
+                        2,
+                      )}{" "}
+                      kr. Estimat uten eventuell endring i kapasitetstrinn.
+                    </p>
+                  )}
+              </EnergyModule>
+              <EnergyModule
+                id="energy:solar"
+                summary={{
+                  reading: `${fmt(data?.solar?.production)} kWh`,
+                  detail: "Solproduksjon",
+                  icon: "energy",
+                }}
+                title="Solenergien din"
+                w={2}
+                h={2}
+                defaultHidden={
+                  !setup.data.config.equipment?.solar &&
+                  !setup.data.config.meters.some((m) => m.role === "solar")
+                }
+              >
+                {data?.solar && (
+                  <div className="ep-solar" id="ep-solar-summary" tabIndex={-1}>
+                    <h3>Solenergien din</h3>
+                    <div className="ep-period-summary">
+                      <div>
+                        <span>Produsert</span>
+                        <strong>{fmt(data.solar.production)} kWh</strong>
+                      </div>
+                      <div>
+                        <span>Brukt i hjemmet</span>
+                        <strong>{fmt(data.solar.self_consumption)} kWh</strong>
+                      </div>
+                      <div>
+                        <span>Eksportert</span>
+                        <strong>{fmt(data.solar.export)} kWh</strong>
+                      </div>
+                      <div>
+                        <span>Beregnet spotverdi · eksport</span>
+                        <strong>
+                          {fmt(data.solar.export_spot_value, 2)} kr
+                        </strong>
+                      </div>
+                    </div>
+                    <small>{data.solar.note}</small>
+                  </div>
+                )}
+              </EnergyModule>
+              <EnergyModule
+                id="energy:history"
+                title="Forbruket ditt"
+                w={2}
+                h={3}
+                summary={{
+                  reading: `${fmt(grid?.summary.available_kwh)} kWh`,
+                  detail: "Forbruk og historikk",
+                  icon: "energy",
+                }}
+              >
+                <div
+                  className="ep-history"
+                  id="ep-consumption-chart"
+                  tabIndex={-1}
+                >
+                  <header>
+                    <h3>Forbruket ditt</h3>
+                    <span>
+                      {start} – {end} · Oslo-tid
+                    </span>
+                  </header>
+                  {points.some((p) => p.kwh != null) ? (
+                    <>
+                      <EnergyHistoryChart
+                        points={points}
+                        prices={data?.spot || []}
+                        selected={selected}
+                        onSelect={setSelected}
+                      />
+                      <p className="ep-chart-detail" aria-live="polite">
+                        {active
+                          ? `${active.label}${active.partial ? " · ufullstendig / pågående" : ""} · ${fmt(active.kwh)} kWh · ${active.priced ? fmt(active.cost) + " kr uten faste beløp" : "kostnad ikke tilgjengelig"}`
+                          : "Trykk på en søyle for å se forbruk og kostnad."}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="ep-empty">
+                      <Zap size={28} />
+                      <h4>
+                        {dashboard.isLoading
+                          ? "Henter historikken…"
+                          : "Her kommer forbruket ditt"}
+                      </h4>
+                      <p>
+                        Vi samler målinger fra hjemmet. Med en effektmåler vises
+                        beregnet forbruk normalt innen 2–3 minutter. Manglende
+                        målinger blir aldri vist som null.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </EnergyModule>
+              <EnergyModule
+                id="energy:prices"
+                title="Strømpriser"
+                w={3}
+                h={4}
+                summary={{
+                  reading: `${fmt(currentPrice ? currentPrice.NOK_per_kWh * 100 : null)} øre/kWh`,
+                  detail: setup.data.config.area,
+                  icon: "energy",
+                }}
+              >
+                <EnergyPriceChart
+                  today={data?.spot || null}
+                  tomorrow={data?.tomorrow || null}
+                  area={setup.data.config.area}
+                />
+              </EnergyModule>
+              <EnergyModule
+                id="energy:totals"
+                summary={{
+                  reading: `${fmt(data?.totals?.month?.available_kwh)} kWh`,
+                  detail: "Denne måneden",
+                  icon: "energy",
+                }}
+                title="Forbruk over tid"
+                h={3}
+              >
+                <section className="ep-summary-panel">
+                  <h3>
+                    <BarChart3 size={18} /> Forbruk over tid
+                  </h3>
+                  <div
+                    className="ep-period-summary"
+                    aria-label="Forbruksoversikt"
+                  >
+                    {[
+                      ["today", "I dag"],
+                      ["month", "Denne måneden"],
+                      ["year", "Hittil i år"],
+                    ].map(([key, label]) => (
+                      <div key={key}>
+                        <span>{label}</span>
+                        <strong>
+                          {fmt(data?.totals?.[key]?.available_kwh)} kWh
+                        </strong>
+                        <small>
+                          Estimert kostnad: {fmt(data?.totals?.[key]?.cost, 2)}{" "}
+                          kr
+                          {data?.totals?.[key]?.cost_note && (
+                            <span> · {data.totals[key].cost_note}</span>
+                          )}
+                        </small>
+                        <small>
+                          {data?.totals?.[key]?.complete
+                            ? data?.history_estimated
+                              ? "Estimert forbruk"
+                              : "Målt forbruk"
+                            : "Ufullstendig målegrunnlag"}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </EnergyModule>
+              <EnergyModule
+                id="energy:breakdown"
+                summary={{
+                  reading: `${fmt(totalCost, 2)} kr`,
+                  detail: "Kostnader og nettleie",
+                  icon: "energy",
+                }}
+                title="Slik fordeler kostnaden seg"
+                h={3}
+              >
+                {grid?.capacity?.next_threshold_kw != null &&
+                  Number(grid.capacity.peak_kw) >=
+                    Number(grid.capacity.next_threshold_kw) * 0.9 && (
+                    <p role="status">
+                      Kapasitetsgrunnlaget er {fmt(grid.capacity.peak_kw)} kW,
+                      nær neste nettleietrinn på{" "}
+                      {fmt(grid.capacity.next_threshold_kw)} kW. Unngå gjerne å
+                      lade bilen og varme varmtvann samtidig. Dette er et
+                      foreløpig grunnlag for måneden.
+                    </p>
+                  )}
+                {grid?.cost_total == null && grid?.available_cost != null && (
+                  <p role="status">{grid.available_cost_note}</p>
+                )}
+
+                {grid?.cost_total != null && (
+                  <div
+                    className="ep-cost-breakdown"
+                    id="ep-cost-breakdown"
+                    tabIndex={-1}
+                  >
+                    <h3>Slik fordeler kostnaden seg</h3>
+                    <dl>
+                      {Object.entries(grid.breakdown).map(([key, value]) => (
+                        <div key={key}>
+                          <dt>
+                            {(
+                              {
+                                electricity: "Strøm",
+                                markup: "Påslag",
+                                grid: "Nettleie · energi",
+                                electricity_tax: "Elavgift",
+                                enova: "Energifondet",
+                                support: "Støtte / Norgespris",
+                                vat: "Merverdiavgift",
+                              } as Record<string, string>
+                            )[key] || key}
+                          </dt>
+                          <dd>{fmt(value, 2)} kr</dd>
+                        </div>
+                      ))}
+                      <div>
+                        <dt>Fordelte faste beløp inkl. mva.</dt>
+                        <dd>{fmt(grid.monthly_fees, 2)} kr</dd>
+                      </div>
+                    </dl>
+                    <small>
+                      Foreløpig beregning. Endelig kapasitetstrinn og støtte kan
+                      endres ved månedsslutt.
+                    </small>
+                    {grid.capacity && (
+                      <p>
+                        Kapasitetsgrunnlag så langt:{" "}
+                        {fmt(grid.capacity.peak_kw)} kW.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </EnergyModule>
+              <EnergyModule
+                id="energy:comparison"
+                summary={{
+                  reading: `${fmt(data?.previous?.kwh)} kWh`,
+                  detail: "Forrige periode",
+                  icon: "energy",
+                }}
+                title="Sammenlign med forrige periode"
+                defaultHidden={
+                  data?.previous?.kwh == null || !grid?.summary.complete
+                }
+              >
+                {data?.previous?.kwh != null && grid?.summary.complete && (
+                  <p>
+                    Forrige like lange periode: {fmt(data.previous.kwh)} kWh ·{" "}
+                    {fmt(
+                      Number(grid.summary.available_kwh) -
+                        Number(data.previous.kwh),
+                    )}{" "}
+                    kWh endring.
+                  </p>
+                )}
+              </EnergyModule>
+              <EnergyModule
+                id="energy:forecast"
+                summary={{
+                  reading: `${fmt(data?.forecast?.value, 0)} kr`,
+                  detail: "Forventet denne måneden",
+                  icon: "energy",
+                }}
+                title="Forventet denne måneden"
+                defaultHidden={!data?.forecast}
+              >
+                {data?.forecast && (
+                  <div className="ep-forecast">
+                    <small>FORVENTET DENNE MÅNEDEN</small>
+                    <strong>{fmt(data.forecast.value, 0)} kr</strong>
+                    <p>
+                      {data.forecast.method} Estimatet tar ikke hensyn til
+                      kommende vær eller prisendringer.
+                    </p>
+                  </div>
+                )}
+              </EnergyModule>
+              <EnergyModule
+                id="energy:schemes"
+                summary={{
+                  reading: "Se sammenligning",
+                  detail: "Støtteordninger",
+                  icon: "energy",
+                }}
+                title="Sammenlign støtteordninger"
+                h={3}
+                defaultHidden={!data?.comparisons?.some((c) => c.cost != null)}
+              >
+                {!!data?.comparisons?.some((c) => c.cost != null) && (
+                  <div className="ep-alternatives">
+                    <h3>Hva ville støtteordningene betydd?</h3>
+                    <p>
+                      Samme forbruk og strømavtale hittil denne måneden.
+                      Beregnet med ulike støttevalg.
+                    </p>
+                    {data.comparisons.map((c) => (
+                      <div key={c.scheme}>
+                        <span>
+                          {c.scheme === "none"
+                            ? "Uten støtte"
+                            : c.scheme === "norgespris"
+                              ? "Norgespris"
+                              : "Strømstøtte"}
+                        </span>
+                        <strong>{fmt(c.cost, 2)} kr</strong>
+                      </div>
+                    ))}
+                    <small>
+                      Dette er et estimat og endrer ikke avtalen din.
+                    </small>
+                  </div>
+                )}
+              </EnergyModule>
+              <EnergyModuleGroup className="ep-details">
+                <EnergyModule
+                  id="energy:timing"
+                  summary={{
+                    reading: cheapest
+                      ? `${fmt(cheapest.NOK_per_kWh * 100)} øre/kWh`
+                      : "Venter på priser",
+                    detail: "Laveste gjenværende spotpris",
+                    icon: "energy",
+                  }}
+                  title="Et godt tidspunkt å bruke strøm"
+                >
+                  <article>
+                    <h3>Et godt tidspunkt å bruke strøm</h3>
+                    <p>
+                      {cheapest
+                        ? `Laveste gjenværende spotpris i dag er ${fmt(cheapest.NOK_per_kWh * 100)} øre/kWh kl. ${new Date(cheapest.time_start).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Oslo" })}.`
+                        : "Vi venter på dagens priser."}
+                    </p>
+                    <small>
+                      Spotpris uten avgifter. Din avtale og nettleie kan endre
+                      hva som lønner seg.
+                    </small>
+                  </article>
+                </EnergyModule>
+                <EnergyModule
+                  id="energy:sync"
+                  summary={{
+                    reading: !setup.data.config.cloud_history
+                      ? "Sky av"
+                      : data?.cloud === "synced"
+                        ? "Synkronisert"
+                        : "Lokalt",
+                    detail: "Lagring av historikk",
+                    icon: "energy",
+                  }}
+                  title="Historikken følger hjemmet"
+                >
+                  <article>
+                    <Cloud size={20} />
+                    <h3>Historikken følger hjemmet</h3>
+                    <p>
+                      {!setup.data.config.cloud_history
+                        ? "Skylagring er slått av."
+                        : data?.cloud === "synced"
+                          ? "Målehistorikken er synkronisert til SMARTi-skyen."
+                          : "Målehistorikken lagres lokalt. Venter på synkronisering til skyen."}
+                    </p>
+                    {data?.cloud_at && (
+                      <small>
+                        Sist bekreftet:{" "}
+                        {new Date(data.cloud_at).toLocaleString("nb-NO")}
+                      </small>
+                    )}
+                  </article>
+                </EnergyModule>
+              </EnergyModuleGroup>
+              <EnergyModule
+                id="energy:consumers"
+                summary={{
+                  reading: "Se målere",
+                  detail: "Effekt og forbruk per enhet",
+                  icon: "energy",
+                }}
+                title="Forbruk per enhet"
+                w={2}
+                h={3}
+                defaultHidden={
+                  !setup.data.config.meters.some((m) => m.role !== "grid") &&
+                  !data?.power_consumers?.length
+                }
+              >
+                {data?.power_consumers?.map((m) => (
+                  <div className="ep-consumer" key={m.entity}>
+                    <span>
+                      {m.name}
+                      <small>Effekt akkurat nå</small>
+                    </span>
+                    <strong>
+                      {m.watts == null
+                        ? "Utilgjengelig"
+                        : `${fmt(m.watts, 0)} W`}
+                      <small>Ingen kWh-historikk fra denne måleren</small>
+                    </strong>
                   </div>
                 ))}
-              </div>
-            </section>
-            {grid?.cost_total != null && (
-              <div
-                className="ep-cost-breakdown"
-                id="ep-cost-breakdown"
-                tabIndex={-1}
-              >
-                <h3>Slik fordeler kostnaden seg</h3>
-                <dl>
-                  {Object.entries(grid.breakdown).map(([key, value]) => (
-                    <div key={key}>
-                      <dt>
-                        {(
-                          {
-                            electricity: "Strøm",
-                            markup: "Påslag",
-                            grid: "Nettleie · energi",
-                            electricity_tax: "Elavgift",
-                            enova: "Energifondet",
-                            support: "Støtte / Norgespris",
-                            vat: "Merverdiavgift",
-                          } as Record<string, string>
-                        )[key] || key}
-                      </dt>
-                      <dd>{fmt(value, 2)} kr</dd>
+                {data?.meters
+                  ?.filter((m) => m.role !== "grid")
+                  .map((m) => (
+                    <div className="ep-consumer" key={m.name}>
+                      <span>
+                        {m.name}
+                        <small>
+                          {m.role === "solar"
+                            ? "Solproduksjon"
+                            : m.role === "export"
+                              ? "Solgt til nettet"
+                              : m.role === "ev"
+                                ? "Elbillading"
+                                : "Energimåler"}
+                        </small>
+                      </span>
+                      <strong>
+                        {fmt(m.summary.available_kwh)} kWh
+                        {m.cost_total != null && (
+                          <small>
+                            Estimert kostnad: {fmt(m.cost_total, 2)} kr
+                          </small>
+                        )}
+                        <small>
+                          {fmt(m.summary.coverage * 100, 0)} % datadekning
+                        </small>
+                      </strong>
                     </div>
                   ))}
-                  <div>
-                    <dt>Fordelte faste beløp inkl. mva.</dt>
-                    <dd>{fmt(grid.monthly_fees, 2)} kr</dd>
-                  </div>
-                </dl>
-                <small>
-                  Foreløpig beregning. Endelig kapasitetstrinn og støtte kan
-                  endres ved månedsslutt.
-                </small>
-                {grid.capacity && (
-                  <p>
-                    Kapasitetsgrunnlag så langt: {fmt(grid.capacity.peak_kw)}{" "}
-                    kW.
-                  </p>
-                )}
-              </div>
-            )}
-            {data?.previous?.kwh != null && grid?.summary.complete && (
-              <p>
-                Forrige like lange periode: {fmt(data.previous.kwh)} kWh ·{" "}
-                {fmt(
-                  Number(grid.summary.available_kwh) -
-                    Number(data.previous.kwh),
-                )}{" "}
-                kWh endring.
-              </p>
-            )}
-            {data?.forecast && (
-              <div className="ep-forecast">
-                <small>FORVENTET DENNE MÅNEDEN</small>
-                <strong>{fmt(data.forecast.value, 0)} kr</strong>
-                <p>
-                  {data.forecast.method} Estimatet tar ikke hensyn til kommende
-                  vær eller prisendringer.
-                </p>
-              </div>
-            )}
-            {!!data?.comparisons?.some((c) => c.cost != null) && (
-              <div className="ep-alternatives">
-                <h3>Hva ville støtteordningene betydd?</h3>
-                <p>
-                  Samme forbruk og strømavtale hittil denne måneden. Beregnet
-                  med ulike støttevalg.
-                </p>
-                {data.comparisons.map((c) => (
-                  <div key={c.scheme}>
-                    <span>
-                      {c.scheme === "none"
-                        ? "Uten støtte"
-                        : c.scheme === "norgespris"
-                          ? "Norgespris"
-                          : "Strømstøtte"}
-                    </span>
-                    <strong>{fmt(c.cost, 2)} kr</strong>
-                  </div>
-                ))}
-                <small>Dette er et estimat og endrer ikke avtalen din.</small>
-              </div>
-            )}
-            <div className="ep-details">
-              <article>
-                <h3>Et godt tidspunkt å bruke strøm</h3>
-                <p>
-                  {cheapest
-                    ? `Laveste gjenværende spotpris i dag er ${fmt(cheapest.NOK_per_kWh * 100)} øre/kWh kl. ${new Date(cheapest.time_start).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Oslo" })}.`
-                    : "Vi venter på dagens priser."}
-                </p>
-                <small>
-                  Spotpris uten avgifter. Din avtale og nettleie kan endre hva
-                  som lønner seg.
-                </small>
-              </article>
-              <article>
-                <Cloud size={20} />
-                <h3>Historikken følger hjemmet</h3>
-                <p>
-                  {!setup.data.config.cloud_history
-                    ? "Skylagring er slått av."
-                    : data?.cloud === "synced"
-                      ? "Målehistorikken er synkronisert til SMARTi-skyen."
-                      : "Målehistorikken lagres lokalt. Venter på synkronisering til skyen."}
-                </p>
-                {data?.cloud_at && (
-                  <small>
-                    Sist bekreftet:{" "}
-                    {new Date(data.cloud_at).toLocaleString("nb-NO")}
-                  </small>
-                )}
-              </article>
-            </div>
-            {data?.power_consumers?.map((m) => (
-              <div className="ep-consumer" key={m.entity}>
-                <span>
-                  {m.name}
-                  <small>Effekt akkurat nå</small>
-                </span>
-                <strong>
-                  {m.watts == null ? "Utilgjengelig" : `${fmt(m.watts, 0)} W`}
-                  <small>Ingen kWh-historikk fra denne måleren</small>
-                </strong>
-              </div>
-            ))}
-            {data?.meters
-              ?.filter((m) => m.role !== "grid")
-              .map((m) => (
-                <div className="ep-consumer" key={m.name}>
-                  <span>
-                    {m.name}
-                    <small>
-                      {m.role === "solar"
-                        ? "Solproduksjon"
-                        : m.role === "export"
-                          ? "Solgt til nettet"
-                          : m.role === "ev"
-                            ? "Elbillading"
-                            : "Energimåler"}
-                    </small>
-                  </span>
-                  <strong>
-                    {fmt(m.summary.available_kwh)} kWh
-                    {m.cost_total != null && (
-                      <small>Estimert kostnad: {fmt(m.cost_total, 2)} kr</small>
-                    )}
-                    <small>
-                      {fmt(m.summary.coverage * 100, 0)} % datadekning
-                    </small>
-                  </strong>
-                </div>
-              ))}
+              </EnergyModule>
+              <EnergyModule
+                id="energy:meters"
+                summary={{
+                  reading: "Åpne målere",
+                  detail: "Målere og kjøretøy",
+                  icon: "energy",
+                }}
+                title="Målere og kjøretøy"
+                w={3}
+                h={3}
+                defaultHidden
+              >
+                {historyExtras}
+              </EnergyModule>
+            </EnergyModules>
             <p className="ep-source">
               Priser fra{" "}
               <a
@@ -847,7 +1096,6 @@ export function EnergyPlatform({
               , datagrunnlag {setup.data.tariff_source.updated}. Beregninger er
               et estimat, ikke en strømregning.
             </p>
-            {historyExtras}
           </div>
         ) : null}
         {(editing ?? (admin && !setup.data?.config)) && setup.data && (
@@ -879,82 +1127,147 @@ export function EnergyPlatform({
             }}
           />
         )}
-        {setup.data?.config && (
+        {setup.data?.config && (!home || view === "overview") && (
           <div
             role="tabpanel"
             hidden={view !== "overview"}
             id="energy-panel-overview"
             aria-labelledby="energy-view-overview"
           >
-            {overview?.(setup.data?.config?.equipment != null)}
-            <div className="ep-scene-summary" aria-label="Energitall for i dag">
-              <button onClick={() => openSummary("ep-price-chart")}>
-                <span className="ep-scene-label">
-                  <Tag size={20} /> Spotpris nå <ArrowRight size={16} />
-                </span>
-                <strong>
-                  {fmt(currentPrice ? currentPrice.NOK_per_kWh * 100 : null)}{" "}
-                  <span>øre/kWh</span>
-                </strong>
-                <small>
-                  {currentPrice
-                    ? "Uten mva., påslag og nettleie"
-                    : "Venter på dagens priser"}
-                </small>
-              </button>
-              <button onClick={() => openSummary("ep-consumption-chart")}>
-                <span className="ep-scene-label">
-                  <BarChart3 size={20} /> Forbruk i dag <ArrowRight size={16} />
-                </span>
-                <strong>
-                  {fmt(grid?.summary.available_kwh)} <span>kWh</span>
-                </strong>
-                <small>
-                  {grid?.summary.available_kwh == null
-                    ? "Venter på målinger"
-                    : `${data?.history_estimated ? "Estimert" : "Målt"} · ${grid?.summary.complete ? "komplett grunnlag" : "ufullstendig grunnlag"}`}
-                </small>
-              </button>
-              <button
-                onClick={() =>
-                  openSummary(
-                    grid?.cost_total != null
-                      ? "ep-cost-breakdown"
-                      : "ep-consumption-chart",
-                  )
-                }
+            <EnergyModules
+              page="energy"
+              home={home}
+              offline={offline}
+              lang={lang}
+            >
+              <EnergyModule
+                id="energy:flow"
+                title="Energiflyt"
+                w={3}
+                h={4}
+                summary={{
+                  reading: `${fmt(data?.power_kw)} kW`,
+                  detail: "Energiflyt i hjemmet",
+                  icon: "energy",
+                }}
               >
-                <span className="ep-scene-label">
-                  <Coins size={20} /> Estimert kostnad i dag{" "}
-                  <ArrowRight size={16} />
-                </span>
-                <strong>
-                  {fmt(todayCost, 2)} <span>kr</span>
-                </strong>
-                <small>
-                  {todayCost != null
-                    ? data?.totals?.today?.cost_note || "Foreløpig kostnad"
-                    : "Mangler komplett beregningsgrunnlag"}
-                </small>
-              </button>
-              {(setup.data.config.equipment?.solar ||
-                setup.data.config.meters.some((m) => m.role === "solar")) && (
-                <button onClick={() => openSummary("ep-solar-summary")}>
-                  <span className="ep-scene-label">
-                    <Leaf size={20} /> Selvforsyning i dag{" "}
-                    <ArrowRight size={16} />
-                  </span>
-                  <strong>
-                    {fmt(selfSupply, 0)} <span>%</span>
-                  </strong>
-                  <small>
-                    {selfSupply != null
-                      ? "Egen solenergi · ferdige timer"
-                      : "Krever komplette målinger, uten batteri"}
-                  </small>
-                </button>
-              )}
-            </div>
+                {overview?.(setup.data?.config?.equipment != null)}
+              </EnergyModule>
+              <EnergyModuleGroup
+                className="ep-scene-summary"
+                label="Energitall for i dag"
+              >
+                <EnergyModule
+                  id="energy:spot"
+                  title="Spotpris nå"
+                  summary={{
+                    reading: `${fmt(currentPrice ? currentPrice.NOK_per_kWh * 100 : null)} øre/kWh`,
+                    detail: "I dag",
+                    icon: "energy",
+                  }}
+                >
+                  <button onClick={() => openSummary("ep-price-chart")}>
+                    <span className="ep-scene-label">
+                      <Tag size={20} /> Spotpris nå <ArrowRight size={16} />
+                    </span>
+                    <strong>
+                      {fmt(
+                        currentPrice ? currentPrice.NOK_per_kWh * 100 : null,
+                      )}{" "}
+                      <span>øre/kWh</span>
+                    </strong>
+                    <small>
+                      {currentPrice
+                        ? "Uten mva., påslag og nettleie"
+                        : "Venter på dagens priser"}
+                    </small>
+                  </button>
+                </EnergyModule>
+                <EnergyModule
+                  id="energy:today"
+                  title="Forbruk i dag"
+                  summary={{
+                    reading: `${fmt(grid?.summary.available_kwh)} kWh`,
+                    detail: "I dag",
+                    icon: "energy",
+                  }}
+                >
+                  <button onClick={() => openSummary("ep-consumption-chart")}>
+                    <span className="ep-scene-label">
+                      <BarChart3 size={20} /> Forbruk i dag{" "}
+                      <ArrowRight size={16} />
+                    </span>
+                    <strong>
+                      {fmt(grid?.summary.available_kwh)} <span>kWh</span>
+                    </strong>
+                    <small>
+                      {grid?.summary.available_kwh == null
+                        ? "Venter på målinger"
+                        : `${data?.history_estimated ? "Estimert" : "Målt"} · ${grid?.summary.complete ? "komplett grunnlag" : "ufullstendig grunnlag"}`}
+                    </small>
+                  </button>
+                </EnergyModule>
+                <EnergyModule
+                  id="energy:today-cost"
+                  title="Estimert kostnad i dag"
+                  summary={{
+                    reading: `${fmt(todayCost, 2)} kr`,
+                    detail: "I dag",
+                    icon: "energy",
+                  }}
+                >
+                  <button
+                    onClick={() =>
+                      openSummary(
+                        grid?.cost_total != null
+                          ? "ep-cost-breakdown"
+                          : "ep-consumption-chart",
+                      )
+                    }
+                  >
+                    <span className="ep-scene-label">
+                      <Coins size={20} /> Estimert kostnad i dag{" "}
+                      <ArrowRight size={16} />
+                    </span>
+                    <strong>
+                      {fmt(todayCost, 2)} <span>kr</span>
+                    </strong>
+                    <small>
+                      {todayCost != null
+                        ? data?.totals?.today?.cost_note || "Foreløpig kostnad"
+                        : "Mangler komplett beregningsgrunnlag"}
+                    </small>
+                  </button>
+                </EnergyModule>
+                {(setup.data.config.equipment?.solar ||
+                  setup.data.config.meters.some((m) => m.role === "solar")) && (
+                  <EnergyModule
+                    id="energy:self-supply"
+                    title="Selvforsyning i dag"
+                    summary={{
+                      reading: `${fmt(selfSupply, 0)} %`,
+                      detail: "I dag",
+                      icon: "energy",
+                    }}
+                  >
+                    <button onClick={() => openSummary("ep-solar-summary")}>
+                      <span className="ep-scene-label">
+                        <Leaf size={20} /> Selvforsyning i dag{" "}
+                        <ArrowRight size={16} />
+                      </span>
+                      <strong>
+                        {fmt(selfSupply, 0)} <span>%</span>
+                      </strong>
+                      <small>
+                        {selfSupply != null
+                          ? "Egen solenergi · ferdige timer"
+                          : "Krever komplette målinger, uten batteri"}
+                      </small>
+                    </button>
+                  </EnergyModule>
+                )}
+              </EnergyModuleGroup>
+            </EnergyModules>
           </div>
         )}
       </section>

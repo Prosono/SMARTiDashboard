@@ -35,6 +35,8 @@ export type GridSize = {
 export type HomeGridPage =
   | "overview"
   | "overview_simple"
+  | "energy"
+  | "energy_history"
   | "lights"
   | "climate"
   | "security"

@@ -83,7 +83,17 @@ class HeaderImage(BaseModel):
     data: str = Field(default="", max_length=1_400_000)
 
 
-LayoutPage = Literal["overview", "overview_simple", "lights", "climate", "security", "media", "misc"]
+LayoutPage = Literal[
+    "overview",
+    "overview_simple",
+    "lights",
+    "climate",
+    "security",
+    "media",
+    "misc",
+    "energy",
+    "energy_history",
+]
 
 
 class CardConfig(BaseModel):

@@ -1,3 +1,9 @@
+## 1.36.96
+- Energisiden i Harmoni er modulbasert. Både 3D-oversikt og Historikk og strømpriser har egne lagrede kortoppsett som kan flyttes, endres i størrelse, slettes og bygges opp igjen via tannhjulet og kortvelgeren.
+- Energiflyt, effekt, forbruk, strømpriser, kostnader, solenergi, prognose, sammenligninger, enhetsforbruk og historikksynkronisering finnes som selvstendige moduler. Startoppsettet fylles med tilgjengelige moduler; flere kan legges til fra kortvelgeren.
+- Mobilruter viser faktiske nøkkeltall. Grafer og 3D-modellen monteres først når den aktuelle ruten åpnes, og 3D-visningen tas ut når historikkfanen vises. Standardmodulen har kompakte kontroller uten intern rulling; mindre eller tette kort kan åpnes i fullvisning.
+- Energioppsett, målere, strømavtale, periodevalg, prisdager og datadekning beholdes. Kortoppsett endrer ikke energiinnstillingene. Ulagrede endringer beskyttes også ved bytte mellom de to energivisningene, og lagring har samme konfliktbeskyttelse som øvrige sider.
+
 ## 1.36.95
 - Innstillingsikonet øverst åpner nå redigering av kortoppsettet for den aktive fanen i Harmoni. Den separate «Rediger oppsett»-knappen og tittellinjen over kortene er fjernet. Lagre og Avbryt vises når du redigerer, og fokus går tilbake til innstillingsikonet etterpå.
 - Søk og filtre er skjult som standard og åpnes fra et rundt forstørrelsesglass ved siden av varsler og innstillinger. Søkefeltet får fokus når det åpnes; Escape lukker det og flytter fokus tilbake til ikonet. Hver underside starter med skjult søk.

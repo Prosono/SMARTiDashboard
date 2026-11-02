@@ -25,7 +25,7 @@ def test_personal_grid_is_versioned_and_separate_for_each_page(client):  # noqa:
         "revision": 2,
         "items": [],
     }
-    assert client.get("/api/home/layout/energy").status_code == 422
+    assert client.get("/api/home/layout/not-a-page").status_code == 422
 
 
 @pytest.mark.parametrize(
@@ -131,12 +131,54 @@ def test_overview_keeps_its_free_layout(client, page):  # noqa: F811
     )
 
 
-@pytest.mark.parametrize("kind", ["leak", "motion", "charger", "switch", "strip", "outdoor", "spot", "track", "ceiling", "smoke", "bulb", "floor", "desk"])
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "leak",
+        "motion",
+        "charger",
+        "switch",
+        "strip",
+        "outdoor",
+        "spot",
+        "track",
+        "ceiling",
+        "smoke",
+        "bulb",
+        "floor",
+        "desk",
+    ],
+)
 def test_equipment_portrait_choices_persist_without_changing_sources(client, kind):  # noqa: F811
     image = "equipment-" + kind
     config = {"type": "auto", "image": image, "sources": ["light.living_pendant"]}
-    response = client.put("/api/home/layout/overview", json={"revision": 0, "items": [card("custom:equipment", config=config)]})
+    response = client.put(
+        "/api/home/layout/overview", json={"revision": 0, "items": [card("custom:equipment", config=config)]}
+    )
     assert response.status_code == 200
     saved = client.get("/api/home/layout/overview").json()["items"][0]["config"]
     assert saved["image"] == image
     assert saved["sources"] == config["sources"]
+
+
+@pytest.mark.parametrize("page", ["energy", "energy_history"])
+def test_energy_layouts_are_personal_versioned_and_independent(client, page):  # noqa: F811
+    other = "energy_history" if page == "energy" else "energy"
+    original = client.get("/api/home/preferences").json()
+    assert client.get(f"/api/home/layout/{page}").json() == {"revision": 0, "items": None}
+    layout = {"revision": 0, "items": [card("energy:flow", w=3, h=4)]}
+    saved = client.put(f"/api/home/layout/{page}", json=layout)
+    assert saved.status_code == 200
+    assert saved.json()["revision"] == 1
+    assert client.get(f"/api/home/layout/{page}").json() == saved.json()
+    assert client.get(f"/api/home/layout/{other}").json()["items"] is None
+    assert client.get("/api/home/layout/overview").json()["items"] is None
+    assert client.put(f"/api/home/layout/{page}", json=layout).status_code == 409
+    assert (
+        client.put(
+            f"/api/home/layout/{page}", json={"revision": 1, "items": [], "group_by_room": True}
+        ).status_code
+        == 422
+    )
+    assert client.get("/api/home/preferences").json() == original
+    assert client.put(f"/api/home/layout/{page}", json={"revision": 1, "items": []}).json()["items"] == []

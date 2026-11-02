@@ -105,5 +105,6 @@ export function cardTone(
   );
   if (sources.length) return tones.size === 1 ? [...tones][0] : "neutral";
   if (card?.id.startsWith("room:")) return "fresh";
+  if (card?.id.startsWith("energy:")) return "energy";
   return widgetTones[card?.id || ""] || "neutral";
 }

@@ -195,3 +195,30 @@ describe("display-only phone geometry", () => {
     expect(view.groups).toHaveLength(2);
   });
 });
+
+it("energy module summaries retain reported values, defer to explicit sources and stop claiming live readings offline", () => {
+  const card = {
+    id: "energy:power",
+    title: "Effekt nå",
+    summary: { reading: "4,2 kW", detail: "Målt effekt", icon: "energy" },
+  };
+  const meter = control("sensor", "0", {
+    device_class: "power",
+    unit_of_measurement: "W",
+  });
+  expect(
+    mobileCardSummary(card, undefined, home([meter]), false, "nb").reading,
+  ).toBe("4,2 kW");
+  expect(
+    mobileCardSummary(card, undefined, home([meter]), true, "nb").reading,
+  ).toBe("Frakoblet");
+  expect(
+    mobileCardSummary(
+      card,
+      defaultCardConfig([meter.entity_id]),
+      home([meter]),
+      false,
+      "nb",
+    ).reading,
+  ).not.toBe("4,2 kW");
+});

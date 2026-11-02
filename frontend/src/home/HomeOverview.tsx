@@ -576,11 +576,7 @@ export function HomeOverview({
                 <HomePageToolButtons
                   tools={tools}
                   lang={lang}
-                  fallback={
-                    !harmony || tab === "energy"
-                      ? () => configure(true)
-                      : undefined
-                  }
+                  fallback={!harmony ? () => configure(true) : undefined}
                 />
               </div>
             </div>
@@ -1339,12 +1335,15 @@ export function HomeOverview({
                   <EnergyPlatform
                     admin={admin}
                     lang={lang}
+                    home={harmony ? h : undefined}
+                    offline={offline}
                     overview={(managedEquipment) => (
                       <EnergyFlow
                         home={h}
                         offline={offline}
                         lang={lang}
                         managedEquipment={managedEquipment}
+                        embedded={harmony}
                       />
                     )}
                     historyExtras={

@@ -4,7 +4,12 @@ import { controlState } from "../controlState";
 import { numeric, overview, temperature, usable } from "./homeModel";
 import { weatherLabel } from "./weatherPresentation";
 
-export type MobileCardRef = { id: string; title: string; entityId?: string };
+export type MobileCardRef = {
+  id: string;
+  title: string;
+  entityId?: string;
+  summary?: MobileSummary;
+};
 export type MobileSummary = {
   reading: string;
   detail: string;
@@ -46,6 +51,7 @@ export function mobileCardSummary(
     : card.entityId
       ? [card.entityId]
       : [];
+  if (!sources.length && card.summary) return card.summary;
   if (!sources.length && card.id === "routines")
     return {
       reading: t("Velg rutine", "Choose routine"),
