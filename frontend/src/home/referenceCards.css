@@ -22,12 +22,22 @@ html[data-home-style="harmony"] {
     --card-depth: #22282a;
   }
   [data-card-tone="calendar"] {
-    --card-identity: #8b691f;
-    --card-base: #584318;
+    --card-identity: #eef0f3;
+    --card-base: #d9dee4;
+    --card-color: #eef0f3;
+    --card-depth: #d9dee4;
+    --glass-opacity: 90%;
+    --glass-depth-opacity: 92%;
+    --text: #172231;
+    --muted: #344254;
+    --accent: #27384d;
+    --on-accent: #f9fbff;
+    --equipment-orange: #27384d;
+    color-scheme: light;
   }
   [data-card-tone="warm"] {
-    --card-identity: #b14e1b;
-    --card-base: #773217;
+    --card-identity: #943006;
+    --card-base: #76230a;
     --thermostat-line: #ffdec13d;
     --thermostat-wash: #f9ac6724;
     --thermostat-button: #ffdab9;
@@ -50,18 +60,18 @@ html[data-home-style="harmony"] {
     --thermostat-ink: #2b3d36;
   }
   [data-card-tone="fresh"] {
-    --card-identity: #65b69f;
-    --card-base: #479580;
+    --card-identity: #42dfb3;
+    --card-base: #26c2a4;
     --text: #071e19;
     --equipment-orange: #123b30;
   }
   [data-card-tone="plum"] {
-    --card-identity: #472b51;
-    --card-base: #241f2e;
+    --card-identity: #7420b7;
+    --card-base: #401267;
   }
   [data-card-tone="media"] {
-    --card-identity: #692b39;
-    --card-base: #371c27;
+    --card-identity: #9e1749;
+    --card-base: #60102e;
   }
   [data-card-tone="energy"] {
     --card-identity: #2e3538;
@@ -69,16 +79,15 @@ html[data-home-style="harmony"] {
     --card-series-1: #8dcb50;
   }
   [data-card-tone="temperature"] {
-    --card-identity: #183c50;
-    --card-base: #102735;
+    --card-identity: #084b71;
+    --card-base: #07314a;
     --card-series-1: #45b6ff;
   }
   [data-card-tone="humidity"] {
-    --card-identity: #303044;
-    --card-base: #20212d;
+    --card-identity: #47366e;
+    --card-base: #292447;
     --card-series-1: #c78af3;
   }
-  [data-card-tone="calendar"],
   [data-card-tone="energy"],
   [data-card-tone="temperature"],
   [data-card-tone="humidity"] {
@@ -416,7 +425,7 @@ html[data-home-style="harmony"] {
   }
   :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
     .simple-date-day {
-    border-right: 1px solid #ffffff24;
+    border-right: 1px solid var(--line);
     padding-right: 18px;
   }
   :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
@@ -430,13 +439,13 @@ html[data-home-style="harmony"] {
     .simple-date-day
     > span {
     font-size: 14px;
-    color: #fff8f1;
+    color: var(--muted);
   }
   :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
     .simple-dashboard-date
     .simple-agenda-empty {
     font-size: 12px;
-    color: #fff7ee;
+    color: var(--muted);
   }
   :is(.home-canvas, .card-builder-preview, .home-canvas-expanded)
     .simple-dashboard-date
@@ -444,7 +453,7 @@ html[data-home-style="harmony"] {
     border: 0;
     min-height: 15px;
     font-size: 10px;
-    color: #f4e4d9;
+    color: var(--muted);
     margin: 0;
     padding: 0;
   }

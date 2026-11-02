@@ -667,7 +667,7 @@
   background: transparent;
 }
 .media-player-card[data-unavailable="true"] .media-device-visual {
-  opacity: 0.35;
+  opacity: 1;
 }
 .media-show-all {
   grid-column: 1 / -1;
@@ -740,7 +740,7 @@
   background: #e84e67;
 }
 .media-player-card[data-unavailable="true"] .media-device-visual {
-  opacity: 0.65;
+  opacity: 1;
 }
 @media (min-width: 1150px) {
   .multimedia-view {

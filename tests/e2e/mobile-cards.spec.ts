@@ -586,3 +586,167 @@ test("glass carries through detailed cards; photo choices, image failures and tr
   ).toBe("100%");
   await client.detach();
 });
+test("stronger glass keeps a light gray calendar, readable ink and fully opaque device images", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 1000 });
+  const data = await setup(page);
+  for (const theme of ["light", "dark"])
+    for (const width of [390, 834, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.evaluate(
+        (theme) => (document.documentElement.dataset.theme = theme),
+        theme,
+      );
+      await expect(page.locator(".home-canvas")).toHaveAttribute(
+        "data-mobile-layout",
+        width === 390 ? "compact" : "detailed",
+      );
+      const material = await page
+        .locator(".home-canvas")
+        .evaluate((el, theme) => {
+          const ctx = document.createElement("canvas").getContext("2d")!;
+          const rgb = (color: string) => {
+            ctx.clearRect(0, 0, 1, 1);
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, 1, 1);
+            return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
+          };
+          const lum = (c: number[]) =>
+            c.reduce(
+              (sum, n, i) =>
+                sum +
+                (n / 255 <= 0.04045
+                  ? n / 255 / 12.92
+                  : ((n / 255 + 0.055) / 1.055) ** 2.4) *
+                  [0.2126, 0.7152, 0.0722][i],
+              0,
+            );
+          const background = theme === "light" ? [244, 246, 249] : [23, 28, 36];
+          const results = [
+            ...el.querySelectorAll<HTMLElement>(".home-canvas-surface"),
+          ]
+            .filter(
+              (s) =>
+                !s.querySelector("[data-photo], .simple-weather[data-scene]"),
+            )
+            .map((s) => {
+              const css = getComputedStyle(s),
+                readings = [
+                  ...s.querySelectorAll<HTMLElement>(
+                    ".mobile-card-reading,.mobile-card-detail,.harmony-device-reading,.home-metric-reading,.ambient-heading strong,.home-grid-routines header strong,.simple-date-day strong,.simple-date-day > span,.simple-agenda-empty,.simple-dashboard-date > small,.person-info strong",
+                  ),
+                ];
+              const inks = (readings.length ? readings : [s]).map((node) =>
+                lum(rgb(getComputedStyle(node).color)),
+              );
+              const alphas = [
+                parseFloat(css.getPropertyValue("--glass-opacity")) / 100,
+                parseFloat(css.getPropertyValue("--glass-depth-opacity")) / 100,
+              ];
+              const stops = [
+                css.getPropertyValue("--card-color"),
+                css.getPropertyValue("--card-depth"),
+              ].map((color, i) =>
+                rgb(color).map(
+                  (n, j) => n * alphas[i] + background[j] * (1 - alphas[i]),
+                ),
+              );
+              const ratios = inks.flatMap((inkL) =>
+                stops.map((c) => {
+                  const l = lum(c);
+                  return (
+                    (Math.max(l, inkL) + 0.05) / (Math.min(l, inkL) + 0.05)
+                  );
+                }),
+              );
+              return {
+                id: s.closest("[data-card]")!.getAttribute("data-card"),
+                tone: s.dataset.cardTone,
+                opacity: alphas[0],
+                color: rgb(css.getPropertyValue("--card-color")),
+                contrast: Math.min(...ratios),
+              };
+            });
+          return results;
+        }, theme);
+      const calendar = material.find((m) => m.id === "calendar")!;
+      expect(Math.min(...calendar.color)).toBeGreaterThan(225);
+      expect(
+        Math.max(...calendar.color) - Math.min(...calendar.color),
+      ).toBeLessThan(8);
+      for (const card of material) {
+        expect(
+          card.contrast,
+          `${theme}/${width}/${card.id}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+      expect(material.find((m) => m.id === "routines")!.opacity).toBeLessThan(
+        0.86,
+      );
+      if (width === 1440)
+        await page.locator(".home-canvas").screenshot({
+          path: `/private/tmp/smarti-1.36.93-cards-${theme}.png`,
+        });
+    }
+  data.saved().items.find((i) => i.id === "climate")!.config = {
+    type: "auto",
+    title: "Termostat",
+    icon: "auto",
+    image: "equipment-charger",
+    sources: [],
+    period: "24",
+  };
+  data.controls.find((c) => c.domain === "climate")!.availability =
+    "unavailable";
+  data.controls.find((c) => c.domain === "media_player")!.availability =
+    "unavailable";
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.reload();
+    for (const id of ["climate", "media"]) {
+      const cell = page.locator(`[data-card="${id}"]`);
+      await cell.scrollIntoViewIfNeeded();
+      const product = cell.locator(
+        width === 390
+          ? ".mobile-card-product img"
+          : id === "climate"
+            ? ".personal-card-backdrop"
+            : ".media-product-image",
+      );
+      await expect(product).toBeVisible();
+      expect(
+        await product.evaluate((img) => {
+          let opacity = 1;
+          for (
+            let node: Element | null = img;
+            node;
+            node = node.parentElement
+          ) {
+            opacity *= Number(getComputedStyle(node).opacity);
+            if (node.classList.contains("home-canvas-cell")) break;
+          }
+          return opacity;
+        }),
+      ).toBe(1);
+    }
+  }
+  const photoCard = data.saved().items.find((i) => i.id === "climate")!;
+  photoCard.config!.image = "living";
+  photoCard.h = 1;
+  await page.reload();
+  const tiny = page.locator('[data-card="climate"]');
+  await expect(tiny.locator(".personal-card-backdrop")).toHaveCSS(
+    "opacity",
+    "1",
+  );
+  await tiny.getByRole("button", { name: /Vis hele kortet/ }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Termostat", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  expect(data.commands).toHaveLength(0);
+});

@@ -584,21 +584,22 @@ html[data-home-style="harmony"] {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.26;
+    opacity: 1;
     pointer-events: none;
   }
   .home-canvas-viewport:is(
       [data-card-image="pendant"],
       [data-card-image="plug"],
       [data-card-image="lock"],
-      [data-card-image="contact"]
+      [data-card-image="contact"],
+      [data-card-image^="equipment-"]
     )
     > .personal-card-backdrop {
     width: 52%;
     left: auto;
     object-fit: contain;
     object-position: right center;
-    opacity: 0.8;
+    opacity: 1;
   }
   .home-canvas-viewport[data-card-image="none"]
     :is(
@@ -621,6 +622,30 @@ html[data-home-style="harmony"] {
   }
   .home-canvas-viewport:has(> .personal-card-backdrop) {
     --equipment-surface: transparent;
+  }
+  .home-canvas-viewport:has(> .personal-card-backdrop[data-photo]) {
+    --text: #fffaf6;
+    --muted: #f2f5f7;
+    --accent: #fff0d9;
+    --equipment-reading: #fffaf6;
+    --equipment-orange: #ffe2b0;
+    color-scheme: dark;
+  }
+  .home-canvas-viewport:has(> .personal-card-backdrop[data-photo])::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(100deg, #07111bd9, #07111b99 65%, #07111b45);
+  }
+  .home-canvas-viewport:has(> .personal-card-backdrop[data-photo])
+    > .home-canvas-content {
+    z-index: 2;
+  }
+  .home-canvas-viewport:has(> .personal-card-backdrop[data-photo])
+    > .home-canvas-expand {
+    z-index: 3;
   }
   .home-canvas-viewport > .home-canvas-content {
     position: relative;

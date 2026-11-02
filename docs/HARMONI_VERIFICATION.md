@@ -1,3 +1,48 @@
+# Stronger colored glass, opaque portraits and light-gray calendar — release 1.36.93
+
+Category colors now use more saturated identities and gradients. The former dark
+mode strength reduction is removed. Reported RGB lighting still supplies its
+exact configured color, while clock/energy remain charcoal. The calendar uses a
+light-gray gradient with dark ink; month, empty agenda, footer and separators
+now inherit that ink instead of the previous pale warm labels.
+
+The glass material has lower opacity (82/88% in light mode, 74/84% in dark mode),
+stronger backdrop saturation and a clearer lit edge/reflection. Calendar opacity
+stays higher to retain its light-gray appearance. Blur remains 5px on phones and
+8px elsewhere; there are no added animated filters or runtime measuring loops.
+Reduced transparency restores opaque material, including calendar overrides.
+
+Equipment, unavailable media portraits and mobile portraits retain CSS opacity 1.
+The unavailable mobile icon is dimmed independently, so its parent no longer
+fades the product. Grayscale/status and disabled actions remain available cues.
+Manually selected cutouts also use full opacity and bounded contain sizing.
+Full photographic backdrops use full opacity, with an independent text scrim.
+Small photographic cards keep their expansion button above the scrim/content.
+The actual image files and their transparent outer margins are unchanged.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, changed-test TypeScript,
+  changed-file Prettier, git diff --check and deterministic packaging checks
+  passed. Existing Vite chunk-size advisory remains. **255 unit cases passed.**
+- **28 selected production-build browser regressions passed**, followed by
+  **26 desktop/mobile browser scenarios against the final extracted archive**.
+  They retain equipment images, image selection, weather, media and thermostat
+  behavior, preview/save, reduced transparency and compact/detailed layouts.
+- A new scenario verifies a neutral light-gray calendar, darker readable labels,
+  greater glass transparency and at least 4.5:1 sampled composite contrast for
+  readings/secondary/calendar text over gradient stops and representative light/
+  dark page backdrops, at 390/834/1440px. This sampling is not a full WCAG audit.
+- Portrait opacity is checked through its ancestor chain, including unavailable
+  devices and explicit image choices. A deliberately small photo card still
+  opens its full view. Test commands use isolated fixtures.
+- Actual light/dark renders were visually inspected. These are Chromium
+  emulations, not physical-device validation. All **276 runtime files** match
+  the final extracted tested archive. Backend and image assets are unchanged;
+  earlier repository-wide validation limitations below still apply.
+
+---
+
 # Expanded transparent equipment portraits — release 1.36.92
 
 Thirteen new product portraits were generated with the built-in image_gen tool:

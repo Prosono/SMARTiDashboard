@@ -1,3 +1,9 @@
+## 1.36.93
+- Kortfargene har fått sterkere metning og tydeligere gradienter. Kategorifargene beholdes, og lyskort følger fortsatt lysets faktiske rapporterte farge. Kalenderkortet har fått lysegrå bakgrunn, mørk tekst og tilpassede skillelinjer.
+- Mer glasspreg med en mer gjennomsiktig kortflate, markert lyskant og en diskret refleks. Bakgrunnsfilteret bruker fortsatt 5 px på mobil og 8 px ellers. Redusert gjennomsiktighet i nettleseren gir fortsatt en tett flate uten uskarphet.
+- Enhetsbilder vises med full opasitet, også på utilgjengelige enheter og når bildet er valgt manuelt. Status og deaktiverte kontroller viser fortsatt utilgjengelighet. Transparensen rundt selve produktillustrasjonen beholdes.
+- Valgte fotobakgrunner vises med full opasitet og et eget skyggefelt for lesbar tekst. «Vis hele kortet» ligger over fotoflaten, slik at små kort fortsatt kan åpnes.
+
 ## 1.36.92
 - 13 nye, genererte enhetsillustrasjoner: vanndetektor med følekontakter, PIR-bevegelsesdetektor med Fresnel-linse, elbillader med Type 2-kontakt, lysbryter, røykdetektor og åtte lampetyper: LED-list, utelys, spot/downlight, lysskinne, taklampe, lyspære, gulvlampe og bordlampe.
 - Bildene har transparent bakgrunn og brukes i både mobilruter og de større kortene. De kan også velges under «Ikon og bilde». Alle 13 er komprimert til 512 × 512 WebP og utgjør samlet omtrent 240 kB.

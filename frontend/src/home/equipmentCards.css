@@ -191,7 +191,7 @@ html[data-home-style="harmony"] {
     filter: brightness(0.82) saturate(0.4) drop-shadow(0 6px 7px #111b2720);
   }
   .equipment-card[data-available="false"] .equipment-art {
-    opacity: 0.45;
+    opacity: 1;
     filter: grayscale(1);
   }
   .equipment-card[data-attention="true"] {

@@ -1,9 +1,13 @@
 /* One translucent material per card. Product cutouts stay separate from photo backgrounds. */
 html[data-home-style="harmony"] {
-  --glass-opacity: 86%;
-  --glass-depth-opacity: 90%;
+  --glass-opacity: 82%;
+  --glass-depth-opacity: 88%;
   --glass-blur: 8px;
-  --glass-filter: blur(var(--glass-blur)) saturate(112%);
+  --glass-filter: blur(var(--glass-blur)) saturate(155%);
+  &[data-theme="dark"] {
+    --glass-opacity: 74%;
+    --glass-depth-opacity: 84%;
+  }
   :is(
       .home-canvas-surface,
       .home-canvas-expanded,
@@ -20,7 +24,7 @@ html[data-home-style="harmony"] {
     /* Specialist cards inherit transparency instead of painting a second opaque skin. */
     --equipment-surface: transparent;
     background:
-      linear-gradient(145deg, #ffffff0c, transparent 48%),
+      radial-gradient(ellipse at 0% 0%, #ffffff0f, transparent 62%),
       linear-gradient(
         125deg,
         color-mix(
@@ -34,10 +38,12 @@ html[data-home-style="harmony"] {
           transparent
         )
       );
-    border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+    border-top-color: color-mix(in srgb, #ffffff 40%, transparent);
     box-shadow:
       var(--home-card-shadow),
-      inset 0 1px 0 #ffffff18;
+      inset 0 1px 0 #ffffff40,
+      inset 0 -1px 0 #ffffff0a;
     -webkit-backdrop-filter: var(--glass-filter);
     backdrop-filter: var(--glass-filter);
 
@@ -60,5 +66,13 @@ html[data-home-style="harmony"] {
     --glass-opacity: 100%;
     --glass-depth-opacity: 100%;
     --glass-filter: none;
+    :is(
+      .home-canvas-surface,
+      .home-canvas-expanded,
+      .home-canvas-cell[data-preview]
+    )[data-card-tone] {
+      --glass-opacity: 100%;
+      --glass-depth-opacity: 100%;
+    }
   }
 }
