@@ -1,3 +1,46 @@
+# Room measurement layout and precision — release 1.36.97
+
+The reported Room power section used full equipment cards in a forced two-column
+phone grid. Narrow headers left almost no space beside the toggle, while the
+large value shared its row with artwork. Units broke across lines and fixed
+card heights let secondary measurements escape their cards.
+
+Room equipment grids now choose columns from actual available width (260px
+minimum, bounded by the viewport), giving narrow phones one column. Cards grow
+with their content. Headers reserve separate space for icon, name and control;
+long names occupy at most two visible lines and retain their full accessible
+Open label and detail-dialog title. Narrow cards place their retained artwork
+below the measurement. Values, labels, extra energy readings and controls stay
+inside their own cards. Other Home canvas geometry is unchanged.
+
+Numeric equipment readings now render a value and a smaller, unbroken native
+unit together. The shared formatter retains three energy decimals for ordinary
+values and three significant digits for electrical values between zero and one.
+Very small values use scientific notation instead of disappearing into zero.
+Examples: 14.9 W → 14,9 W; 0.0246 kWh → 0,0246 kWh; 0.000248 kWh →
+0,000248 kWh. Actual zero remains zero, and unavailable/nonfinite readings remain
+unavailable. No conversion, source mapping, stored data or calculations changed.
+Linked switch readings still require an unambiguous sensor on the same device.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, changed-test TypeScript,
+  changed-file Prettier, diff and deterministic packaging checks passed.
+  The existing Vite chunk-size advisory remains. **258 unit cases passed.**
+- **18 production-build desktop/mobile browser scenarios passed**, including
+  Room settings and existing equipment, weather, media and thermostat behavior.
+- **4 scenarios passed against the final extracted runtime archive**. Fixtures
+  reproduce ten power cards and long names from the reported layout. Checks cover
+  widths 320, 390, 430, 834 and 1440px, both themes, card/value containment,
+  intact units, correct linked readings, zero/missing values, switch commands
+  and detail-dialog focus return. Screenshots were visually inspected.
+- All **276 runtime files** match their manifest hashes. Archive SHA-256:
+  `92ef5b1a1dd227a85f9dde1b781fa53a87b6068f3fd5335b3c390d24d5dd0619`.
+
+Browser checks used isolated demo servers and fixture devices. The screenshot
+establishes the layout failure; the user's live raw meter values were not queried.
+Physical phones and real device commands were not exercised.
+
 # Modular Energy overview and history — release 1.36.96
 
 Harmoni's Energy page now uses the same three-column Home canvas, card picker,

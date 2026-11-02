@@ -40,7 +40,7 @@ import { Thermostat, ThermostatModeIcon } from "../Thermostat";
 import type { Capability, Control, Home } from "../types";
 import { MetricDeviceRenderer } from "./MetricDetails";
 import { InSettingsDialog, SettingsDialog } from "./SettingsDialog";
-import { numeric, reading, usable } from "./homeModel";
+import { numeric, measurementParts, usable } from "./homeModel";
 import { RobotVacuumIcon } from "./RobotVacuumIcon";
 import { TemperatureValue } from "./TemperatureValue";
 import { EquipmentArtwork } from "./EquipmentArtwork";
@@ -65,6 +65,21 @@ const requiresConfirmation = new Set([
   "close_cover",
   "activate",
 ]);
+function EquipmentMeasurement({ c, lang }: { c: Control; lang: string }) {
+  const parts = measurementParts(c, lang);
+  if (!parts) return <>—</>;
+  return (
+    <span className="equipment-measurement">
+      <span className="equipment-measurement-value">{parts.value}</span>
+      {parts.unit && (
+        <>
+          {" "}
+          <span className="equipment-measurement-unit">{parts.unit}</span>
+        </>
+      )}
+    </span>
+  );
+}
 function feature(c: Control) {
   if (c.domain === "light") return "lights";
   if (["climate", "fan"].includes(c.domain)) return "climate";
@@ -380,34 +395,41 @@ function HarmonyDevice({
           minute: "2-digit",
         })
       : null;
-  const primary = !available
-    ? state
-    : c.domain === "binary_sensor" && c.attributes.device_class === "occupancy"
-      ? c.state === "on"
-        ? t("Registrert", "Occupied")
-        : state
-      : c.domain === "light" &&
-          c.state === "on" &&
-          white &&
-          kelvin !== null &&
-          (c.attributes.color_mode === "color_temp" || !rgb)
-        ? `${kelvin.toLocaleString(en ? "en-GB" : "nb-NO")} K`
-        : c.domain === "light" &&
-            c.state === "on" &&
-            brightness &&
-            percent !== null
-          ? `${percent} %`
-          : c.domain === "switch" && power
-            ? reading(power, lang)
-            : c.domain === "cover" && position !== null
-              ? `${position}%`
-              : c.domain === "sensor" && art === "battery"
-                ? batteryPercent === null
-                  ? "—"
-                  : `${batteryPercent} %`
-                : c.domain === "sensor" && numeric(c) !== null
-                  ? reading(c, lang)
-                  : state;
+  const primary = !available ? (
+    state
+  ) : c.domain === "binary_sensor" &&
+    c.attributes.device_class === "occupancy" ? (
+    c.state === "on" ? (
+      t("Registrert", "Occupied")
+    ) : (
+      state
+    )
+  ) : c.domain === "light" &&
+    c.state === "on" &&
+    white &&
+    kelvin !== null &&
+    (c.attributes.color_mode === "color_temp" || !rgb) ? (
+    `${kelvin.toLocaleString(en ? "en-GB" : "nb-NO")} K`
+  ) : c.domain === "light" &&
+    c.state === "on" &&
+    brightness &&
+    percent !== null ? (
+    `${percent} %`
+  ) : c.domain === "switch" && power ? (
+    <EquipmentMeasurement c={power} lang={lang} />
+  ) : c.domain === "cover" && position !== null ? (
+    `${position}%`
+  ) : c.domain === "sensor" && art === "battery" ? (
+    batteryPercent === null ? (
+      "—"
+    ) : (
+      `${batteryPercent} %`
+    )
+  ) : c.domain === "sensor" && numeric(c) !== null ? (
+    <EquipmentMeasurement c={c} lang={lang} />
+  ) : (
+    state
+  );
   const secondary =
     c.domain === "light" && c.state === "on" && brightness
       ? whiteMode && percent !== null
@@ -560,7 +582,9 @@ function HarmonyDevice({
             {available && energy && c.domain === "switch" && (
               <span className="equipment-extra-reading">
                 <small>{energy.name}</small>
-                <strong>{reading(energy, lang)}</strong>
+                <strong>
+                  <EquipmentMeasurement c={energy} lang={lang} />
+                </strong>
               </span>
             )}
             {feedback}

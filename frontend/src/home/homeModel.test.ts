@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { overview, temperature } from "./homeModel";
+import { overview, temperature, reading, measurementParts } from "./homeModel";
 import type { Control, Home } from "../types";
 const c = (
   domain: string,
@@ -91,4 +91,46 @@ it("indexes large homes without truncating discoverable controls", () => {
   );
   expect(m.byRoom.get("room")).toHaveLength(800);
   expect(m.controls).toHaveLength(800);
+});
+
+it("keeps small energy and power readings nonzero while preserving real zero and native units", () => {
+  const meter = (state: string, unit = "kWh") =>
+    c("sensor", state, {
+      device_class: unit.includes("h") ? "energy" : "power",
+      unit_of_measurement: unit,
+    });
+  expect(reading(meter("0.0246"), "nb")).toBe("0,0246 kWh");
+  expect(reading(meter("0.000248"), "nb")).toBe("0,000248 kWh");
+  expect(reading(meter("0.000248"), "en")).toBe("0.000248 kWh");
+  expect(reading(meter("14.9", "W"), "nb")).toBe("14,9 W");
+  expect(reading(meter("0", "W"), "nb")).toBe("0 W");
+  expect(reading(meter("0"), "nb")).toBe("0 kWh");
+  expect(reading(meter("-0.0049", "kW"), "nb")).toBe("−0,0049 kW");
+  expect(measurementParts(meter("123456.789"), "en")?.value).toBe(
+    "123,456.789",
+  );
+  expect(reading(meter("0.0000001"), "en")).toBe("1E-7 kWh");
+});
+it("does not format missing, invalid or unavailable readings as zero", () => {
+  for (const state of ["unknown", "unavailable", "", "NaN", "Infinity"])
+    expect(
+      measurementParts(
+        c("sensor", state, { unit_of_measurement: "kWh" }),
+        "nb",
+      ),
+    ).toBeNull();
+  expect(
+    reading(c("sensor", "unavailable", { unit_of_measurement: "kWh" }), "nb"),
+  ).toBe("Utilgjengelig");
+  expect(
+    measurementParts(
+      c(
+        "sensor",
+        "14.9",
+        { unit_of_measurement: "W" },
+        { availability: "unavailable" },
+      ),
+      "nb",
+    ),
+  ).toBeNull();
 });

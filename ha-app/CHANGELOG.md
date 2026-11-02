@@ -1,3 +1,8 @@
+## 1.36.97
+- Romvisningen tilpasser antall enhetskort til tilgjengelig bredde. Smale skjermer får ett kort i bredden, og kortene vokser med innholdet. Lange navn, brytere, måleverdier, ekstra energimålinger og enhetsbilder overlapper ikke lenger.
+- Tall og måleenhet vises samlet, med mindre måleenhet. Lange navn får to linjer i kortet; hele navnet er fortsatt tilgjengelig ved åpning av enhetsdetaljene. Enhetsbilder beholdes.
+- Små energi- og effektverdier avrundes ikke lenger til et misvisende null i den delte måleformateringen. Energimålinger får større presisjon, ekte null beholdes, og manglende målinger vises fortsatt som utilgjengelige. Enheter og datakilder endres ikke.
+
 ## 1.36.96
 - Energisiden i Harmoni er modulbasert. Både 3D-oversikt og Historikk og strømpriser har egne lagrede kortoppsett som kan flyttes, endres i størrelse, slettes og bygges opp igjen via tannhjulet og kortvelgeren.
 - Energiflyt, effekt, forbruk, strømpriser, kostnader, solenergi, prognose, sammenligninger, enhetsforbruk og historikksynkronisering finnes som selvstendige moduler. Startoppsettet fylles med tilgjengelige moduler; flere kan legges til fra kortvelgeren.

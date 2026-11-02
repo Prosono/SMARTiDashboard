@@ -1,0 +1,58 @@
+/* Room cards keep their full controls and grow with their content. */
+html[data-home-style="harmony"] .room-detail {
+  .harmony-device-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 12px;
+    align-items: stretch;
+  }
+  .harmony-device.equipment-card {
+    height: auto;
+    min-width: 0;
+    container: room-equipment / inline-size;
+  }
+  .equipment-card .harmony-device-header {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+  }
+  .equipment-card .harmony-device-open {
+    min-width: 0;
+    min-height: 44px;
+    width: 100%;
+    strong {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: normal;
+    }
+  }
+  .equipment-card .harmony-device-reading {
+    font-size: clamp(24px, 10cqi, 36px);
+  }
+  .equipment-card .equipment-body {
+    flex: 1 0 auto;
+    min-height: auto;
+  }
+  .equipment-card .equipment-extra-reading {
+    min-width: 0;
+    > small {
+      overflow-wrap: anywhere;
+    }
+  }
+  @container room-equipment (max-width: 400px) {
+    .equipment-body {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .equipment-art {
+      flex: none;
+      align-self: flex-end;
+      width: 80px;
+      height: 80px;
+      max-height: none;
+    }
+  }
+}

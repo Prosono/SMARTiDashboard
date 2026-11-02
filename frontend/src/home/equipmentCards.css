@@ -116,6 +116,20 @@ html[data-home-style="harmony"] {
     margin-right: 6px;
     vertical-align: middle;
   }
+  .equipment-measurement {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.16em;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+  }
+  .equipment-measurement-unit {
+    font-size: 0.55em;
+    font-weight: 500;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
   .equipment-reading-caption,
   .equipment-updated,
   .equipment-battery {

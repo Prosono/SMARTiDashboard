@@ -131,11 +131,32 @@ export function overview(h: Home) {
     unavailable: controls.filter((c) => !usable(c)),
   };
 }
-export function reading(c: Control, lang: string) {
+export function measurementParts(c: Control, lang: string) {
   const n = numeric(c);
-  return n === null
+  if (n === null) return null;
+  const unit = String(c.attributes.unit_of_measurement || "");
+  const energy =
+    c.attributes.device_class === "energy" ||
+    ["Wh", "kWh", "MWh"].includes(unit);
+  const electrical = energy || ["W", "kW", "MW"].includes(unit);
+  const magnitude = Math.abs(n);
+  const options: Intl.NumberFormatOptions =
+    electrical && magnitude > 0 && magnitude < 1
+      ? {
+          maximumSignificantDigits: 3,
+          ...(magnitude < 0.000001 ? { notation: "scientific" } : {}),
+        }
+      : { maximumFractionDigits: energy ? 3 : 1 };
+  return {
+    value: n.toLocaleString(lang === "en" ? "en-GB" : "nb-NO", options),
+    unit,
+  };
+}
+export function reading(c: Control, lang: string) {
+  const parts = measurementParts(c, lang);
+  return parts === null
     ? lang === "en"
       ? "Unavailable"
       : "Utilgjengelig"
-    : `${n.toLocaleString(lang === "en" ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })} ${String(c.attributes.unit_of_measurement || "")}`;
+    : `${parts.value} ${parts.unit}`;
 }
