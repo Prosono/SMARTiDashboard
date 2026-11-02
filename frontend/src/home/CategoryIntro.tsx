@@ -4,6 +4,8 @@ import { HeaderAppearance, HomeHeaderImage } from "./HomeAppearance";
 import "./categoryIntro.css";
 
 const InCategoryHeader = createContext(false);
+/** Scoped to Home: device-management pages keep their existing headers. */
+export const HomeBannerless = createContext(false);
 
 /** Shared title and photo summary for the home's device categories. */
 export function CategoryHeading({
@@ -22,6 +24,15 @@ export function CategoryHeading({
   summary?: ReactNode;
 }) {
   const harmony = useContext(HeaderAppearance);
+  const bannerless = useContext(HomeBannerless);
+  if (bannerless)
+    return (
+      <header className="home-category-title">
+        <Icon size={22} aria-hidden="true" />
+        <h1>{title}</h1>
+        {children}
+      </header>
+    );
   const heading = (
     <>
       <Icon size={36} aria-hidden="true" />
@@ -69,6 +80,8 @@ export function CategorySummary({
 }) {
   const harmony = useContext(HeaderAppearance);
   const inHeader = useContext(InCategoryHeader);
+  const bannerless = useContext(HomeBannerless);
+  if (bannerless) return null;
   // Harmoni renders the same summary in its photo header; Classic/Living retain their existing layout.
   if (harmony && !inHeader) return null;
   return (

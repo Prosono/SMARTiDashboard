@@ -24,7 +24,7 @@ async function login(page: Page) {
       .click();
     await navigate(page, "Hjem");
   }
-  await expect(page.locator(".home-welcome")).toBeVisible();
+  await expect(page.locator(".home-overview")).toBeVisible();
 }
 async function navigate(page: Page, name: string) {
   await page
@@ -249,7 +249,7 @@ test("Harmoni is selectable and persisted without changing home preferences; bot
       "data-home-style",
       style,
     );
-    await expect(page.locator(".home-welcome")).toBeVisible();
+    await expect(page.locator(".home-overview")).toBeVisible();
   }
   expect(
     await (await page.request.get("/api/home/preferences")).json(),
@@ -515,10 +515,10 @@ test("missing history, loading commands, failures and disconnection show honest 
   });
   await page.clock.install();
   await page.reload();
-  await expect(page.locator(".home-welcome")).toBeVisible();
+  await expect(page.locator(".home-overview")).toBeVisible();
   await page.clock.fastForward(31_000);
-  await expect(page.locator(".home-welcome")).toContainText(
-    "venter på ferske data",
+  await expect(page.locator(".home-offline-notice")).toContainText(
+    "Hjemmet er frakoblet",
   );
   await expect(
     page.locator('.harmony-device[data-domain="light"]').first(),
@@ -580,181 +580,6 @@ test.afterEach(async ({ page }) => {
   });
 });
 
-test("photo headers use the standard red alert at top left, respect reduced motion and keep home/date above tabs", async ({
-  page,
-}, info) => {
-  await page.addInitScript(() =>
-    localStorage.setItem("smarti-home-style", "harmony"),
-  );
-  await page.route("**/api/home", async (route) => {
-    const response = await route.fetch(),
-      home = await response.json();
-    const alarms = Array.from({ length: 19 }, (_, i) => ({
-      ...control("binary_sensor", `Røykvarsler ${i + 1}`, "on", {
-        device_class: "smoke",
-      }),
-      id: `binary_sensor.alert_${i}`,
-      entity_id: `binary_sensor.alert_${i}`,
-    }));
-    await route.fulfill({
-      json: {
-        ...home,
-        controls: [
-          ...home.controls,
-          ...alarms,
-          control("weather", "Været hjemme", "partlycloudy", {
-            temperature: 11.8,
-            temperature_unit: "°C",
-          }),
-        ],
-      },
-    });
-  });
-  await page.route("**/api/home/weather/*", (route) =>
-    route.fulfill({ json: { days: {}, temperature_unit: "°C" } }),
-  );
-  await login(page);
-  const warningOffset = (el: Element) => {
-    const header = el
-        .closest(".home-hero-focus, .simple-welcome")!
-        .getBoundingClientRect(),
-      button = el.getBoundingClientRect();
-    return { x: button.x - header.x, y: button.y - header.y };
-  };
-  const warningStyle = (el: Element) => {
-    const button = getComputedStyle(el),
-      badge = getComputedStyle(el.querySelector("span")!);
-    return {
-      color: button.color,
-      border: button.border,
-      radius: button.borderRadius,
-      width: button.width,
-      badge: badge.backgroundColor,
-      badgeColor: badge.color,
-    };
-  };
-  await appearance(page);
-  await page.getByLabel("Stil for Hjem").selectOption("classic");
-  await navigate(page, "Hjem");
-  const standardWarning = await page
-    .locator(".home-alert-corner .simple-warning-button")
-    .evaluate(warningStyle);
-  await appearance(page);
-  await page.getByLabel("Stil for Hjem").selectOption("harmony");
-  await navigate(page, "Hjem");
-  const header = page.locator(".home-hero-stage");
-  const alert = header.getByRole("button", {
-    name: "Trenger din oppmerksomhet: 19",
-    exact: true,
-  });
-  await expect(header.locator(".home-header-photo")).toHaveAttribute(
-    "data-ready",
-    "true",
-  );
-  await expect(
-    page
-      .locator('.home-canvas [data-card="weather"]')
-      .getByRole("img", { name: "11,8 °C", exact: true }),
-  ).toBeVisible();
-  const currentDate = await page.evaluate(() =>
-    new Date().toLocaleDateString("nb-NO", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    }),
-  );
-  await expect(page.locator(".home-toolbar .home-date")).toHaveText(
-    currentDate,
-  );
-  for (const width of [1440, 834, 390, 320]) {
-    await page.setViewportSize({ width, height: 1000 });
-    await expect
-      .poll(async () => {
-        const offset = await alert.evaluate(warningOffset);
-        return Math.max(
-          Math.abs(offset.x - (width <= 600 ? 22 : 32)),
-          Math.abs(offset.y - (width <= 600 ? 22 : 24)),
-        );
-      })
-      .toBeLessThan(0.5);
-    const alertBox = (await alert.boundingBox())!;
-    expect(await alert.evaluate(warningStyle)).toEqual(standardWarning);
-    if (width <= 1000) {
-      const weather = (await page
-        .locator('.home-canvas [data-card="weather"]')
-        .boundingBox())!;
-      expect(alertBox.y + alertBox.height + 8).toBeLessThanOrEqual(weather.y);
-    }
-    const greetingBox = (await header
-      .locator(".home-welcome-content")
-      .boundingBox())!;
-    expect(alertBox.y + alertBox.height + 8).toBeLessThanOrEqual(greetingBox.y);
-    const meta = (await page.locator(".home-toolbar").boundingBox())!,
-      tabs = (await page
-        .getByRole("tablist", { name: "Visninger i Hjem" })
-        .boundingBox())!;
-    expect(meta.y + meta.height).toBeLessThanOrEqual(tabs.y);
-    expect(
-      await page
-        .locator("body")
-        .evaluate((el) => el.scrollWidth <= el.clientWidth),
-    ).toBe(true);
-    await header.screenshot({
-      path: `/private/tmp/smarti-header-${width}-${info.project.name}.png`,
-      animations: "disabled",
-    });
-  }
-  expect(
-    await alert.evaluate(
-      (el) => getComputedStyle(el, "::before").animationName,
-    ),
-  ).toBe("harmony-alert-pulse");
-  await alert.click();
-  await expect(page.locator(".home-alert-list li")).toHaveCount(19);
-  await page.keyboard.press("Escape");
-  await expect(alert).toBeFocused();
-  await appearance(page);
-  await page
-    .getByRole("combobox", { name: "Utseende", exact: true })
-    .selectOption("dark");
-  await navigate(page, "Hjem");
-  expect(await alert.evaluate(warningStyle)).toEqual(standardWarning);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(
-    await alert.evaluate(
-      (el) => getComputedStyle(el, "::before").animationName,
-    ),
-  ).toBe("none");
-  await appearance(page);
-  await page.locator('.experience-picker button[data-mode="simple"]').click();
-  await navigate(page, "Hjem");
-  const simpleHeader = page.locator(".simple-welcome"),
-    simpleAlert = simpleHeader.getByRole("button", {
-      name: "Trenger din oppmerksomhet: 19",
-      exact: true,
-    });
-  expect(await simpleAlert.evaluate(warningStyle)).toEqual(standardWarning);
-  await expect
-    .poll(async () => {
-      const offset = await simpleAlert.evaluate(warningOffset);
-      return Math.max(Math.abs(offset.x - 22), Math.abs(offset.y - 22));
-    })
-    .toBeLessThan(0.5);
-  const alertBounds = (await simpleAlert.boundingBox())!,
-    titleBounds = (await simpleHeader.getByRole("heading").boundingBox())!;
-  expect(alertBounds.y + alertBounds.height + 8).toBeLessThanOrEqual(
-    titleBounds.y,
-  );
-  await simpleHeader.screenshot({
-    path: `/private/tmp/smarti-red-alert-simple-${info.project.name}.png`,
-    animations: "disabled",
-  });
-  await simpleAlert.click();
-  await expect(page.locator(".simple-warning-list li")).toHaveCount(19);
-  await page.keyboard.press("Escape");
-  await expect(simpleAlert).toBeFocused();
-});
-
 test("header backgrounds can be chosen, uploaded, reloaded and removed without changing the home", async ({
   page,
 }) => {
@@ -784,39 +609,20 @@ test("header backgrounds can be chosen, uploaded, reloaded and removed without c
     settings.getByRole("radio", { name: "Utendørs", exact: true }),
   ).toHaveAttribute("aria-checked", "true");
   await navigate(page, "Hjem");
+  await expect(page.locator(".home-header-photo")).toHaveCount(0);
+  async function devices() {
+    await navigate(page, "Enheter");
+    await page.locator(".device-toolbar select").selectOption("light");
+  }
+  await devices();
   await expect(
-    page.locator(".home-hero-stage .home-header-photo"),
+    page.locator(".category-heading .home-header-photo"),
   ).toHaveAttribute("src", /home-outdoor.webp/);
   await page.reload();
+  await devices();
   await expect(
-    page.locator(".home-hero-stage .home-header-photo"),
+    page.locator(".category-heading .home-header-photo"),
   ).toHaveAttribute("src", /home-outdoor.webp/);
-  for (const name of [
-    "Lys",
-    "Energi",
-    "Sikkerhet",
-    "Klima",
-    "Multimedia",
-    "Diverse",
-  ]) {
-    await page.getByRole("tab", { name, exact: true }).click();
-    if (name === "Energi") {
-      const setup = page.getByRole("dialog", {
-        name: "Energien i hjemmet ditt",
-        exact: true,
-      });
-      await expect(setup).toBeVisible();
-      await setup
-        .getByRole("button", { name: "Lukk innstillinger", exact: true })
-        .click();
-    }
-    await expect(
-      page.locator(".category-heading .home-header-photo"),
-    ).toHaveAttribute("src", /home-outdoor.webp/);
-    await expect(
-      page.locator(".category-heading .home-header-photo"),
-    ).toHaveAttribute("data-ready", "true");
-  }
   await appearance(page);
   const photo = await page.screenshot({
     clip: { x: 0, y: 0, width: 160, height: 100 },
@@ -836,16 +642,17 @@ test("header backgrounds can be chosen, uploaded, reloaded and removed without c
   const image = await page.request.get("/api/home/appearance/image");
   expect(image.headers()["content-type"]).toBe("image/jpeg");
   expect((await image.body()).length).toBeLessThanOrEqual(1_000_000);
-  await navigate(page, "Hjem");
+  await devices();
   await page.reload();
+  await devices();
   await expect(
-    page.locator(".home-hero-stage .home-header-photo"),
+    page.locator(".category-heading .home-header-photo"),
   ).toHaveAttribute(
     "src",
     new RegExp(`/api/home/appearance/image\\?v=${saved.image_version}`),
   );
   await expect(
-    page.locator(".home-hero-stage .home-header-photo"),
+    page.locator(".category-heading .home-header-photo"),
   ).toHaveAttribute("data-ready", "true");
   await appearance(page);
   await settings
@@ -854,10 +661,10 @@ test("header backgrounds can be chosen, uploaded, reloaded and removed without c
   await expect(
     settings.getByRole("radio", { name: "Uten bilde", exact: true }),
   ).toHaveAttribute("aria-checked", "true");
-  await navigate(page, "Hjem");
-  await expect(page.locator(".home-hero-stage .home-header-photo")).toHaveCount(
-    0,
-  );
+  await devices();
+  await expect(
+    page.locator(".category-heading .home-header-photo"),
+  ).toHaveCount(0);
   await appearance(page);
   await settings
     .getByRole("button", { name: "Fjern eget bilde", exact: true })
@@ -873,112 +680,7 @@ test("header backgrounds can be chosen, uploaded, reloaded and removed without c
   ).toEqual(original);
 });
 
-test("summary pills live inside the photos and still open their details at every screen size", async ({
-  page,
-}, info) => {
-  await page.addInitScript(() =>
-    localStorage.setItem("smarti-home-style", "harmony"),
-  );
-  await richHome(page);
-  await login(page);
-  const categories = [
-    { name: "Lys", id: "lights", label: "Lys på", count: 3 },
-    { name: "Klima", id: "climate", label: "Snittemperatur", count: 3 },
-    { name: "Sikkerhet", id: "security", label: "Dører låst", count: 4 },
-    { name: "Multimedia", id: "media", label: "Spillere", count: 4 },
-    { name: "Diverse", id: "misc", label: "Brytere", count: 3 },
-  ];
-  for (const theme of ["light", "dark"]) {
-    await appearance(page);
-    await page
-      .getByRole("combobox", { name: "Utseende", exact: true })
-      .selectOption(theme);
-    await navigate(page, "Hjem");
-    for (const width of [320, 834, 1440]) {
-      await page.setViewportSize({ width, height: 1100 });
-      await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
-      const welcome = page.locator(".home-hero-stage");
-      await expect(welcome.locator(".home-status-grid")).toHaveCount(1);
-      await expect(page.locator(".home-status-grid")).toHaveCount(1);
-      const bounds = (await welcome.boundingBox())!;
-      for (const pill of await welcome.locator(".home-status").all()) {
-        const box = (await pill.boundingBox())!;
-        expect(box.x).toBeGreaterThanOrEqual(bounds.x);
-        expect(box.x + box.width).toBeLessThanOrEqual(
-          bounds.x + bounds.width + 1,
-        );
-        expect(box.y + box.height).toBeLessThanOrEqual(
-          bounds.y + bounds.height + 1,
-        );
-      }
-      await welcome.locator(".home-status.status-climate").click();
-      await expect(
-        page.getByRole("tab", { name: "Klima", exact: true }),
-      ).toHaveAttribute("aria-selected", "true");
-      for (const category of categories) {
-        await page
-          .getByRole("tab", { name: category.name, exact: true })
-          .click();
-        const header = page.locator(".category-heading");
-        await expect(header.locator(".home-header-photo")).toHaveAttribute(
-          "data-ready",
-          "true",
-        );
-        await expect(header.locator(".category-metric-button")).toHaveCount(
-          category.count,
-        );
-        await expect(page.locator(".category-metric-button")).toHaveCount(
-          category.count,
-        );
-        const photo = (await header.boundingBox())!;
-        if (category.id === "media") {
-          const view = (await page.locator(".multimedia-view").boundingBox())!;
-          expect(Math.abs(photo.width - view.width)).toBeLessThan(1);
-        }
-        for (const pill of await header
-          .locator(".category-metric-button")
-          .all()) {
-          const box = (await pill.boundingBox())!;
-          expect(box.x).toBeGreaterThanOrEqual(photo.x);
-          expect(box.y).toBeGreaterThanOrEqual(photo.y);
-          expect(box.x + box.width).toBeLessThanOrEqual(
-            photo.x + photo.width + 1,
-          );
-          expect(box.y + box.height).toBeLessThanOrEqual(
-            photo.y + photo.height + 1,
-          );
-          await expect(pill).toHaveCSS("color", "rgb(255, 254, 253)");
-        }
-        const pill = header.getByRole("button", {
-          name: category.label,
-          exact: true,
-        });
-        await pill.click();
-        await expect(
-          page.getByRole("dialog", { name: category.label, exact: true }),
-        ).toBeVisible();
-        await page.keyboard.press("Escape");
-        await expect(pill).toBeFocused();
-        expect(
-          await page
-            .locator("body")
-            .evaluate((el) => el.scrollWidth <= el.clientWidth),
-        ).toBe(true);
-        if (
-          (theme === "light" && width === 1440) ||
-          (theme === "dark" && width === 320)
-        ) {
-          await header.screenshot({
-            path: `/private/tmp/smarti-pills-${category.id}-${width}-${info.project.name}.png`,
-            animations: "disabled",
-          });
-        }
-      }
-    }
-  }
-});
-
-test("photo banners share a height and the three-column canvas edits, resizes, saves and reloads", async ({
+test("bannerless pages keep the three-column canvas editable, resizable and persistent", async ({
   page,
 }, info) => {
   test.setTimeout(90000);
@@ -996,7 +698,6 @@ test("photo banners share a height and the three-column canvas edits, resizes, s
       path: `/private/tmp/smarti-grid-first-${width}-${info.project.name}.png`,
       fullPage: true,
     });
-    let expectedHeight = 0;
     for (const name of [
       "Oversikt",
       "Lys",
@@ -1007,12 +708,9 @@ test("photo banners share a height and the three-column canvas edits, resizes, s
       "Diverse",
     ]) {
       await page.getByRole("tab", { name, exact: true }).click();
-      const header = page.locator(
-        name === "Oversikt" ? ".home-hero-stage" : ".category-heading",
-      );
-      const box = (await header.boundingBox())!;
-      if (!expectedHeight) expectedHeight = box.height;
-      expect(Math.abs(expectedHeight - box.height)).toBeLessThan(1);
+      await expect(
+        page.locator(".home-hero-stage, .category-heading"),
+      ).toHaveCount(0);
       if (name === "Energi") {
         await expect(page.locator(".home-canvas")).toHaveCount(0);
         const wizard = page.getByRole("dialog", {

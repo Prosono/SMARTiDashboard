@@ -122,6 +122,7 @@ import "./home/referenceCards.css";
 import "./home/thermostatCard.css";
 import "./home/mobileCards.css";
 import "./home/glassCards.css";
+import "./home/bannerlessHome.css";
 import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
@@ -1063,7 +1064,6 @@ function Dashboard({
         ) : page === "home" ? (
           <HomeOverview
             homeStyle={homeStyle}
-            residentName={session.name}
             home={h}
             offline={offline}
             lang={lang}

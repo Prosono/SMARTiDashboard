@@ -3,7 +3,7 @@ import { CardIcon, CardTitle } from "./CardPresentation";
 import { mediaIcon } from "../MediaIcons";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { MetricDetails, MetricDeviceRenderer } from "./MetricDetails";
-import { CategoryHeading } from "./CategoryIntro";
+import { CategoryHeading, HomeBannerless } from "./CategoryIntro";
 import { HeaderAppearance } from "./HomeAppearance";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { allViews } from "../access";
@@ -426,6 +426,7 @@ export function Multimedia({
             .photo || "home-living",
         );
   const harmony = useContext(HeaderAppearance);
+  const bannerless = useContext(HomeBannerless);
   const summary = (
     <div className="media-summary-metrics">
       {[
@@ -606,7 +607,7 @@ export function Multimedia({
           </button>
         </div>
       </div>
-      {!harmony && summary}
+      {!harmony && !bannerless && summary}
       {harmony ? (
         <HomeGrid
           page="media"

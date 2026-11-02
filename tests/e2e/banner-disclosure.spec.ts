@@ -1,60 +1,239 @@
-import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import {
+  test,
+  expect,
+  type Page,
+} from "../../frontend/node_modules/@playwright/test";
 
-test("search toolbars start collapsed while image banners stay visible", async ({
-  page,
-}, info) => {
+async function login(page: Page, mode = "advanced") {
+  await page.route("**/api/home/experience", (route) =>
+    route.fulfill({ json: { mode } }),
+  );
+  await page.route("**/api/home", async (route) => {
+    const response = await route.fetch();
+    const home = await response.json();
+    const device = (
+      domain: string,
+      name: string,
+      state: string,
+      attributes = {},
+    ) => ({
+      id: `${domain}.banner_test`,
+      entity_id: `${domain}.banner_test`,
+      domain,
+      name,
+      state,
+      attributes,
+      area_id: "living",
+      device_id: null,
+      availability: "available",
+      diagnostic: false,
+      updated_at: null,
+      integration: null,
+      capabilities: [],
+    });
+    await route.fulfill({
+      json: {
+        ...home,
+        controls: [
+          ...home.controls,
+          device("media_player", "Stuehøyttaler", "idle"),
+          device("alarm_control_panel", "Alarm", "disarmed"),
+          device("binary_sensor", "Røykvarsler", "on", {
+            device_class: "smoke",
+          }),
+        ],
+      },
+    });
+  });
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
   await page
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  let bannerHeight: number | undefined;
-  for (const name of ["Lys", "Klima", "Sikkerhet", "Multimedia", "Diverse"]) {
-    await page.getByRole("tab", { name, exact: true }).click();
-    const imageBanner = page.locator(".category-summary");
-    await expect(imageBanner).toBeVisible();
-    const height = (await imageBanner.boundingBox())!.height;
-    if (bannerHeight !== undefined)
-      expect(Math.abs(height - bannerHeight)).toBeLessThanOrEqual(1);
-    bannerHeight = height;
-    await expect(page.locator(".category-heading h1")).toHaveText(name);
-    await expect
-      .poll(() =>
-        imageBanner
-          .locator("img")
-          .evaluate((img: HTMLImageElement) => img.naturalWidth),
-      )
-      .toBeGreaterThan(0);
-    await imageBanner.screenshot({
-      path: `/tmp/smarti-category-${name}-${info.project.name}.png`,
-    });
-    const toggle = page.getByRole("button", {
-      name: "Vis søk og filtre",
+  await expect(page.locator('[data-home-banners="off"]')).toBeVisible();
+}
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "wait" });
+});
+const banners =
+  ".home-welcome, .home-hero-stage, .category-heading, .category-summary, .home-header-photo, .simple-welcome, .media-summary-metrics";
+const categories = [
+  ["Lys", "Søk etter rom eller lys"],
+  ["Klima", "Søk i klima"],
+  ["Sikkerhet", "Søk i sikkerhet"],
+  ["Multimedia", "Søk i multimedia"],
+  ["Diverse", "Søk i diverse"],
+];
+for (const style of ["classic", "living", "harmony"]) {
+  test(`${style}: Home has no banners and category search remains directly available`, async ({
+    page,
+  }, info) => {
+    await page.addInitScript(
+      (style) => localStorage.setItem("smarti-home-style", style),
+      style,
+    );
+    await login(page);
+    const home = page.locator(".home-overview");
+    await expect(home.locator(banners)).toHaveCount(0);
+    await expect(home.locator(".home-toolbar .home-date")).toBeVisible();
+    const toolbar = (await home.locator(".home-toolbar").boundingBox())!;
+    const tabs = (await page.getByRole("tablist").boundingBox())!;
+    expect(toolbar.y + toolbar.height).toBeLessThanOrEqual(tabs.y + 1);
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate((theme) => {
+        document.documentElement.dataset.theme = theme;
+      }, theme);
+      for (const [name, search] of categories) {
+        await page.getByRole("tab", { name, exact: true }).click();
+        await expect(home.locator(banners)).toHaveCount(0);
+        await expect(
+          home.getByRole("heading", { name, exact: true, level: 1 }),
+        ).toBeVisible();
+        expect(
+          (await home.locator(".home-category-title").boundingBox())!.height,
+        ).toBeLessThanOrEqual(40);
+        const input = home.getByRole("textbox", { name: search, exact: true });
+        await expect(input).toBeVisible();
+        await expect(home.locator("[data-collapsible-toolbar]")).toBeVisible();
+        await expect(home.locator(".toolbar-toggle")).toHaveCount(0);
+        await input.fill("finnes-ikke-9571");
+        await expect(input).toHaveValue("finnes-ikke-9571");
+        await input.clear();
+        expect(
+          await page
+            .locator("body")
+            .evaluate((e) => e.scrollWidth <= e.clientWidth),
+        ).toBe(true);
+      }
+    }
+    await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+    if (style === "harmony") {
+      const grid = home.locator(".home-canvas");
+      await expect(grid).toBeVisible();
+      const gridBox = (await grid.boundingBox())!;
+      const tabsBox = (await page.getByRole("tablist").boundingBox())!;
+      expect(gridBox.y - tabsBox.y - tabsBox.height).toBeLessThan(70);
+      await page.screenshot({
+        path: `/private/tmp/smarti-bannerless-${info.project.name}.png`,
+        fullPage: true,
+      });
+    }
+  });
+}
+
+test("visible Home searches filter devices and room selection remains available", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await login(page);
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const canvas = page.locator('.home-canvas[data-page="lights"]');
+  await expect(canvas.locator(".home-canvas-cell")).not.toHaveCount(0);
+  const count = await canvas.locator(".home-canvas-cell").count();
+  const search = page.getByRole("textbox", {
+    name: "Søk etter rom eller lys",
+    exact: true,
+  });
+  await search.fill("finnes-ikke-9571");
+  await expect(canvas.locator(".home-canvas-cell")).toHaveCount(0);
+  await search.clear();
+  await expect(canvas.locator(".home-canvas-cell")).toHaveCount(count);
+  await page
+    .getByLabel("Velg rom", { exact: true })
+    .selectOption("room:kitchen");
+  await expect(canvas).toContainText("Kjøkkenbenk");
+  await expect(canvas).not.toContainText("Pendellampe");
+  await page.getByLabel("Velg rom", { exact: true }).selectOption("all");
+});
+
+test("red alert stays accessible above tabs and respects reduced motion", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await login(page);
+  const alert = page.locator(".home-toolbar-alert");
+  await expect(alert).toBeVisible();
+  await expect(alert).toHaveAccessibleName(/Trenger din oppmerksomhet: [1-9]/);
+  await expect(alert).toHaveCSS("color", "rgb(212, 59, 41)");
+  expect(
+    await alert.evaluate((e) => getComputedStyle(e, "::before").animationName),
+  ).toBe("harmony-alert-pulse");
+  await alert.click();
+  await expect(
+    page.getByRole("dialog", {
+      name: "Trenger din oppmerksomhet",
       exact: true,
-    });
-    await expect(toggle).toHaveAttribute("aria-expanded", "false");
-    const id = await toggle.getAttribute("aria-controls");
-    const banner = page
-      .locator("[data-collapsible-toolbar]")
-      .filter({ visible: false });
-    await expect(banner).toHaveCount(1);
-    await toggle.click();
-    const collapse = page.getByRole("button", {
-      name: "Skjul søk og filtre",
+    }),
+  ).toContainText("Røykvarsler");
+  await page.keyboard.press("Escape");
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await alert.click();
+  await expect(
+    page.getByRole("dialog", {
+      name: "Trenger din oppmerksomhet",
       exact: true,
-    });
-    await expect(collapse).toHaveAttribute("aria-expanded", "true");
-    await expect(page.locator("[data-collapsible-toolbar]")).toBeVisible();
-    expect(await collapse.getAttribute("aria-controls")).toBe(id);
-    await expect(imageBanner).toBeVisible();
-    await collapse.click();
-    await expect(page.locator("[data-collapsible-toolbar]")).toBeHidden();
-    await expect(imageBanner).toBeVisible();
-    expect(
-      await page
-        .locator("body")
-        .evaluate((e) => e.scrollWidth <= e.clientWidth),
-    ).toBe(true);
+    }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(
+    await alert.evaluate((e) => getComputedStyle(e, "::before").animationName),
+  ).toBe("none");
+});
+
+test("simple Home omits banners but keeps search on its category destinations", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "classic"),
+  );
+  await login(page, "simple");
+  const simple = page.locator(".simple-home-dashboard");
+  await expect(simple.locator(banners)).toHaveCount(0);
+  await expect(simple.locator(".home-toolbar .home-date")).toBeVisible();
+  for (const [button, search] of [
+    ["Diverse", "Søk i diverse"],
+    ["Musikk og TV", "Søk i multimedia"],
+    ["Kameraer og trygghet", "Søk i sikkerhet"],
+  ]) {
+    const browse = simple.locator(".simple-dashboard-browse");
+    if ((await browse.getAttribute("open")) === null)
+      await browse.locator("summary").first().click();
+    await simple.getByRole("button", { name: button, exact: true }).click();
+    await expect(simple.locator(banners)).toHaveCount(0);
+    await expect(
+      simple.getByRole("textbox", { name: search, exact: true }),
+    ).toBeVisible();
+    await simple
+      .getByRole("button", { name: "← Tilbake til hjemmet", exact: true })
+      .click();
   }
+});
+
+test("device management retains its own heading and collapsible toolbar", async ({
+  page,
+}) => {
+  await login(page);
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Enheter", exact: true })
+    .click();
+  await page.locator(".device-toolbar select").selectOption("light");
+  const lights = page.locator(".light-overview");
+  await expect(lights.locator(".category-heading")).toBeVisible();
+  await expect(lights.locator("[data-collapsible-toolbar]")).toBeHidden();
+  await lights
+    .getByRole("button", { name: "Vis søk og filtre", exact: true })
+    .click();
+  await expect(
+    lights.getByRole("textbox", {
+      name: "Søk etter rom eller lys",
+      exact: true,
+    }),
+  ).toBeVisible();
 });

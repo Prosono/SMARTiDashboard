@@ -1,3 +1,8 @@
+## 1.36.94
+- Toppbannerne er fjernet fra alle fanene i Hjem, inkludert Oversikt. Undersidene har en kompakt sidetittel, og søk og filtre er synlige direkte. Dette gjelder Klassisk, Living og Harmoni, samt undersidene i Enkel visning.
+- Varselknappen er flyttet til toppfeltet ved siden av innstillingene og kan åpne varslene fra alle faner. Navn og dato beholdes over navigasjonen, også på mobil.
+- Kort, lagrede oppsett og enhetskontroller beholdes. Rutiner og tilstedeværelse i Klassisk og Living vises utenfor det tidligere banneret. Frakoblet status har en egen tekstmelding. Enhetsadministrasjonen beholder sine egne overskrifter og filtre.
+
 ## 1.36.93
 - Kortfargene har fått sterkere metning og tydeligere gradienter. Kategorifargene beholdes, og lyskort følger fortsatt lysets faktiske rapporterte farge. Kalenderkortet har fått lysegrå bakgrunn, mørk tekst og tilpassede skillelinjer.
 - Mer glasspreg med en mer gjennomsiktig kortflate, markert lyskant og en diskret refleks. Bakgrunnsfilteret bruker fortsatt 5 px på mobil og 8 px ellers. Redusert gjennomsiktighet i nettleseren gir fortsatt en tett flate uten uskarphet.

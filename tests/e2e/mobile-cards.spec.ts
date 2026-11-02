@@ -373,10 +373,9 @@ test("tiles adapt at 320–430px, retain room grouping and return to full cards 
       page.locator(`.home-canvas[data-page="${key}"]`),
     ).toHaveAttribute("data-mobile-layout", "compact");
     await expect(page.locator(".mobile-card-tile").first()).toBeVisible();
-    await expect(page.locator(".category-heading")).toHaveCSS(
-      "height",
-      "320px",
-    );
+    await expect(page.locator(".category-heading")).toHaveCount(0);
+    await expect(page.locator(".home-category-title")).toBeVisible();
+    await expect(page.locator("[data-collapsible-toolbar]")).toBeVisible();
   }
   await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
   await page.setViewportSize({ width: 834, height: 1112 });

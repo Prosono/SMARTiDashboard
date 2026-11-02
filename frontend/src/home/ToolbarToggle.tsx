@@ -1,11 +1,17 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useId, useState } from "react";
+import { useContext, useId, useState } from "react";
+import { HomeBannerless } from "./CategoryIntro";
 import "./toolbarToggle.css";
 
 export function useToolbarDisclosure() {
+  const bannerless = useContext(HomeBannerless);
   const [expanded, setExpanded] = useState(false);
   const id = useId();
-  return { expanded, id, toggle: () => setExpanded((value) => !value) };
+  return {
+    expanded: bannerless || expanded,
+    id,
+    toggle: () => setExpanded((value) => !value),
+  };
 }
 
 export function ToolbarToggle({
@@ -14,6 +20,8 @@ export function ToolbarToggle({
   toggle,
   lang,
 }: ReturnType<typeof useToolbarDisclosure> & { lang: string }) {
+  const bannerless = useContext(HomeBannerless);
+  if (bannerless) return null;
   const label =
     lang === "en"
       ? expanded

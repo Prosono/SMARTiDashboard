@@ -1,3 +1,41 @@
+# Banner-free Home destinations — release 1.36.94
+
+The image/greeting banner is removed from Overview and all Home categories,
+including Energy's Home heading. Categories retain a compact icon/title and
+show their existing search, room selectors and filters directly. Classic,
+Living, Harmoni and the category destinations in Simple mode share this policy.
+
+Home name/date stay above the tabs on desktop and phones. The existing red
+alert opens its details from the toolbar on every advanced Home tab, including
+when reduced motion is requested. A compact offline message preserves stale-data
+feedback. Overview retains its accessible page heading. Classic/Living routines
+and presence remain available outside their former banner.
+
+The Home-only context leaves the reusable device-management headings, photo
+preferences and collapsible toolbars intact. Existing layouts, card imagery,
+colors, glass surfaces, mobile tiles, command behavior and saved image data are
+preserved. No backend or asset files changed.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, changed-test TypeScript,
+  changed-file Prettier, git diff checks and deterministic package checks passed.
+  The existing Vite chunk-size advisory remains. **255 unit cases passed.**
+- **48 selected production-build browser scenarios passed** across the initial
+  and follow-up runs, covering the bannerless destinations, both themes, all
+  three Home styles, search/room filtering, alerts, Simple mode, offline states,
+  mobile layouts, device images, card controls and saved layouts.
+- **18 desktop/mobile browser scenarios passed against the final extracted
+  runtime archive**, including the surviving Devices photo upload/preference
+  flow and canvas editing/resizing/reload. Desktop/mobile screenshots were
+  visually inspected; no empty banner stage remains above the cards.
+- The archive contains **276 runtime files**. Every extracted file matches its
+  manifest hash. SHA-256:
+  `39ba89538aaac1f10df929534fb1516a14fabccf2cb19e36913c0db57d5cd0c3`.
+
+Browser checks used isolated demo servers and fixture devices. Real device
+commands and Home Assistant hardware were not exercised.
+
 # Stronger colored glass, opaque portraits and light-gray calendar — release 1.36.93
 
 Category colors now use more saturated identities and gradients. The former dark
