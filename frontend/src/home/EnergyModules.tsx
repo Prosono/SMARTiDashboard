@@ -1,10 +1,22 @@
 import { Children, isValidElement, type ReactNode } from "react";
-import { Sun, Zap } from "lucide-react";
+import { BarChart3, Coins, Sun, Tag, Zap, type LucideIcon } from "lucide-react";
 import type { Home } from "../types";
 import { HomeGrid, type HomeGridCard } from "./HomeGrid";
 import { CardIcon, CardTitle } from "./CardPresentation";
 import type { MobileSummary } from "./mobileCardModel";
 import "./energyModules.css";
+
+const moduleIcons: Record<string, LucideIcon> = {
+  "energy:spot": Tag,
+  "energy:prices": Tag,
+  "energy:today": BarChart3,
+  "energy:consumption": BarChart3,
+  "energy:history": BarChart3,
+  "energy:cost": Coins,
+  "energy:today-cost": Coins,
+  "energy:breakdown": Coins,
+  "energy:self-supply": Sun,
+};
 
 type ModuleProps = {
   id: string;
@@ -71,7 +83,9 @@ export function EnergyModules({
             <section className="energy-module" data-energy-module={id}>
               <header className="energy-module-heading">
                 <CardIcon
-                  fallback={id.includes("solar") ? Sun : Zap}
+                  fallback={
+                    moduleIcons[id] || (id.includes("solar") ? Sun : Zap)
+                  }
                   size={22}
                 />
                 <h2>

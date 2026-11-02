@@ -1,0 +1,221 @@
+.energy-summary {
+  --es-low: #3c7c13;
+  --es-medium: #b65c00;
+  --es-high: #bc2938;
+  --es-unknown: #65717d;
+  --es-electricity: #097998;
+  --es-grid: #7851b5;
+  --es-tax: #bd531a;
+  --es-support: #2f8055;
+  height: 100%;
+  min-height: 178px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text);
+  &[data-kind="consumption"] {
+    --es-low: #96e044;
+    --es-medium: #ffca55;
+    --es-high: #ff7076;
+    --es-unknown: #b4c2d3;
+  }
+  .energy-summary-reading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    strong {
+      font-size: clamp(28px, 3vw, 36px);
+      line-height: 1.1;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      white-space: nowrap;
+    }
+    strong span {
+      font-size: 0.44em;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+    > svg {
+      flex: none;
+      opacity: 0.75;
+    }
+    &:hover > svg {
+      opacity: 1;
+    }
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 3px;
+    }
+  }
+  .energy-summary-caption {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 10px;
+    line-height: 14px;
+    > span:first-child {
+      min-width: 0;
+    }
+    > span:last-child {
+      flex: none;
+    }
+  }
+  .energy-summary-chart {
+    position: relative;
+    min-width: 0;
+    min-height: 88px;
+    flex: 1;
+    border-radius: 6px;
+    touch-action: pan-y;
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 3px;
+    }
+    > svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      overflow: visible;
+    }
+    text {
+      fill: currentColor;
+      font:
+        9px "Bai Jamjuree",
+        sans-serif;
+    }
+    line {
+      stroke: currentColor;
+      stroke-opacity: 0.14;
+      vector-effect: non-scaling-stroke;
+    }
+    .es-zero {
+      stroke-opacity: 0.4;
+    }
+    .es-missing {
+      stroke-opacity: 0.6;
+      stroke-dasharray: 2 2;
+    }
+    .es-highlight {
+      fill: currentColor;
+      fill-opacity: 0.1;
+    }
+    [data-partial] rect[data-part] {
+      stroke: currentColor;
+      stroke-width: 0.7;
+      stroke-dasharray: 2 2;
+      vector-effect: non-scaling-stroke;
+    }
+    .es-now line {
+      stroke-opacity: 0.8;
+      stroke-dasharray: 2 2;
+    }
+    .es-now circle {
+      fill: var(--text);
+      stroke: var(--card-depth);
+      stroke-width: 1;
+    }
+  }
+  [data-part="low"] {
+    fill: var(--es-low);
+    background: var(--es-low);
+  }
+  [data-part="medium"] {
+    fill: var(--es-medium);
+    background: var(--es-medium);
+  }
+  [data-part="high"] {
+    fill: var(--es-high);
+    background: var(--es-high);
+  }
+  [data-part="unknown"],
+  [data-part="other"],
+  [data-part="total"] {
+    fill: var(--es-unknown);
+    background: var(--es-unknown);
+  }
+  [data-part="electricity"] {
+    fill: var(--es-electricity);
+    background: var(--es-electricity);
+  }
+  [data-part="grid"] {
+    fill: var(--es-grid);
+    background: var(--es-grid);
+  }
+  [data-part="tax"] {
+    fill: var(--es-tax);
+    background: var(--es-tax);
+  }
+  [data-part="support"] {
+    fill: var(--es-support);
+    background: var(--es-support);
+  }
+  .energy-summary-empty {
+    position: absolute;
+    inset: 0 0 14px 28px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+  }
+  .energy-summary-detail {
+    min-height: 26px;
+    display: flex;
+    align-content: center;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0 6px;
+    font-size: 10px;
+    line-height: 13px;
+  }
+  .energy-summary-parts {
+    flex-basis: 100%;
+    font-size: 9px;
+  }
+  .energy-summary-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px 10px;
+    width: 100%;
+    > span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    i {
+      width: 7px;
+      height: 7px;
+      border-radius: 3px;
+    }
+  }
+  .energy-summary-now {
+    margin-left: auto;
+  }
+}
+.home-canvas-expanded .energy-summary {
+  min-height: 250px;
+}
+@media (forced-colors: active) {
+  .energy-summary [data-part] {
+    fill: CanvasText;
+    background: CanvasText;
+  }
+  .energy-summary .energy-summary-chart line {
+    stroke: CanvasText;
+    stroke-opacity: 1;
+  }
+  .energy-summary .es-now circle {
+    fill: Highlight;
+  }
+}

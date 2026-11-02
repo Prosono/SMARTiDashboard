@@ -29,6 +29,8 @@ import {
   EnergyModules,
 } from "./EnergyModules";
 import { HomeGridGuard } from "./HomeGridGuard";
+import { EnergySummaryCard } from "./EnergySummaryCard";
+import { finiteReading, type SummaryKind } from "./energySummaryModel";
 
 type Meter = { role: string; entity: string; name: string };
 type Config = {
@@ -293,8 +295,10 @@ export function EnergyPlatform({
       : null;
   function openSummary(target: string) {
     if (!changeView("history")) return;
-    setDay(dayString(new Date()));
-    setPeriod("day");
+    if (view !== "history") {
+      setDay(dayString(new Date()));
+      setPeriod("day");
+    }
     setSelected(null);
     requestAnimationFrame(() => {
       const element =
@@ -303,6 +307,68 @@ export function EnergyPlatform({
       element?.focus({ preventScroll: true });
       element?.scrollIntoView({ block: "nearest" });
     });
+  }
+  function summaryCard(
+    kind: SummaryKind,
+    total: string | number | null | undefined,
+    label: string,
+    target: string,
+  ) {
+    const [todayStart, todayEnd] = range(dayString(new Date()), "day");
+    const fees =
+      grid?.cost_total != null ? finiteReading(grid.monthly_fees) : null;
+    const note =
+      kind === "spot"
+        ? "Uten mva. og tillegg"
+        : kind === "consumption"
+          ? total == null
+            ? "Venter på målinger"
+            : `${data?.history_estimated ? "Estimert" : "Målt"} · ${grid?.summary.complete ? "komplett" : "delvis historikk"}`
+          : total == null
+            ? "Ufullstendig grunnlag"
+            : fees !== null && fees !== 0
+              ? `Estimat · inkl. ${fmt(fees, 2)} kr fast`
+              : "Estimat · uten faste beløp";
+    return (
+      <EnergySummaryCard
+        kind={kind}
+        total={total}
+        label={label}
+        lang={lang}
+        points={grid?.points}
+        prices={data?.spot || []}
+        start={kind === "spot" ? todayStart : start}
+        end={kind === "spot" ? todayEnd : end}
+        now={Date.now()}
+        note={note}
+        description={
+          kind === "spot"
+            ? "Spotpris uten mva., påslag og nettleie. Fargene sammenligner prisene denne dagen."
+            : kind === "cost"
+              ? `${note}. Søylene viser registrert forbruk, uten faste beløp. Støtte og prisjusteringer vises med sine faktiske fortegn.`
+              : `${note}. Fargene sammenligner hjemmets registrerte forbruk i perioden.`
+        }
+        context={
+          kind === "cost"
+            ? view === "overview" || period === "day"
+              ? "kr/time"
+              : period === "year"
+                ? "kr/mnd"
+                : "kr/dag"
+            : kind === "spot" || view === "overview"
+              ? "I dag"
+              : (
+                  {
+                    day: "Døgn",
+                    week: "Uke",
+                    month: "Måned",
+                    year: "År",
+                  } as Record<string, string>
+                )[period]
+        }
+        onOpen={() => openSummary(target)}
+      />
+    );
   }
   async function refresh() {
     setBusy(true);
@@ -527,19 +593,28 @@ export function EnergyPlatform({
                     icon: "energy",
                   }}
                 >
-                  <article>
-                    <small>
-                      <BarChart3 size={18} /> Forbruk i perioden
-                    </small>
-                    <strong>
-                      {fmt(grid?.summary.available_kwh)} <span>kWh</span>
-                    </strong>
-                    <p>
-                      {grid?.summary.complete
-                        ? "Komplett målegrunnlag"
-                        : `${fmt((grid?.summary.coverage || 0) * 100, 0)} % datadekning · ufullstendig`}
-                    </p>
-                  </article>
+                  {home ? (
+                    summaryCard(
+                      "consumption",
+                      grid?.summary.available_kwh,
+                      "Forbruk i perioden",
+                      "ep-consumption-chart",
+                    )
+                  ) : (
+                    <article>
+                      <small>
+                        <BarChart3 size={18} /> Forbruk i perioden
+                      </small>
+                      <strong>
+                        {fmt(grid?.summary.available_kwh)} <span>kWh</span>
+                      </strong>
+                      <p>
+                        {grid?.summary.complete
+                          ? "Komplett målegrunnlag"
+                          : `${fmt((grid?.summary.coverage || 0) * 100, 0)} % datadekning · ufullstendig`}
+                      </p>
+                    </article>
+                  )}
                 </EnergyModule>
                 <EnergyModule
                   id="energy:cost"
@@ -550,21 +625,32 @@ export function EnergyPlatform({
                     icon: "energy",
                   }}
                 >
-                  <article>
-                    <small>
-                      <Coins size={18} /> Beregnet energikostnad
-                    </small>
-                    <strong>
-                      {fmt(totalCost)} <span>kr</span>
-                    </strong>
-                    <p>
-                      {totalCost != null
-                        ? grid?.cost_total != null
-                          ? "Estimat inkl. fordelte faste beløp"
-                          : "Registrert forbruk · uten faste beløp"
-                        : "Mangler komplett pris- eller støttegrunnlag"}
-                    </p>
-                  </article>
+                  {home ? (
+                    summaryCard(
+                      "cost",
+                      totalCost,
+                      "Beregnet energikostnad",
+                      grid?.cost_total != null
+                        ? "ep-cost-breakdown"
+                        : "ep-consumption-chart",
+                    )
+                  ) : (
+                    <article>
+                      <small>
+                        <Coins size={18} /> Beregnet energikostnad
+                      </small>
+                      <strong>
+                        {fmt(totalCost)} <span>kr</span>
+                      </strong>
+                      <p>
+                        {totalCost != null
+                          ? grid?.cost_total != null
+                            ? "Estimat inkl. fordelte faste beløp"
+                            : "Registrert forbruk · uten faste beløp"
+                          : "Mangler komplett pris- eller støttegrunnlag"}
+                      </p>
+                    </article>
+                  )}
                 </EnergyModule>
                 <EnergyModule
                   id="energy:spot"
@@ -575,20 +661,29 @@ export function EnergyPlatform({
                     icon: "energy",
                   }}
                 >
-                  <article>
-                    <small>
-                      <Tag size={18} /> Spotpris akkurat nå
-                    </small>
-                    <strong>
-                      {fmt(
-                        currentPrice?.NOK_per_kWh == null
-                          ? null
-                          : currentPrice.NOK_per_kWh * 100,
-                      )}{" "}
-                      <span>øre/kWh</span>
-                    </strong>
-                    <p>Uten mva., påslag og nettleie</p>
-                  </article>
+                  {home ? (
+                    summaryCard(
+                      "spot",
+                      currentPrice ? currentPrice.NOK_per_kWh * 100 : null,
+                      "Spotpris akkurat nå",
+                      "ep-price-chart",
+                    )
+                  ) : (
+                    <article>
+                      <small>
+                        <Tag size={18} /> Spotpris akkurat nå
+                      </small>
+                      <strong>
+                        {fmt(
+                          currentPrice?.NOK_per_kWh == null
+                            ? null
+                            : currentPrice.NOK_per_kWh * 100,
+                        )}{" "}
+                        <span>øre/kWh</span>
+                      </strong>
+                      <p>Uten mva., påslag og nettleie</p>
+                    </article>
+                  )}
                 </EnergyModule>
               </EnergyModuleGroup>
               <EnergyModule
@@ -1166,22 +1261,31 @@ export function EnergyPlatform({
                     icon: "energy",
                   }}
                 >
-                  <button onClick={() => openSummary("ep-price-chart")}>
-                    <span className="ep-scene-label">
-                      <Tag size={20} /> Spotpris nå <ArrowRight size={16} />
-                    </span>
-                    <strong>
-                      {fmt(
-                        currentPrice ? currentPrice.NOK_per_kWh * 100 : null,
-                      )}{" "}
-                      <span>øre/kWh</span>
-                    </strong>
-                    <small>
-                      {currentPrice
-                        ? "Uten mva., påslag og nettleie"
-                        : "Venter på dagens priser"}
-                    </small>
-                  </button>
+                  {home ? (
+                    summaryCard(
+                      "spot",
+                      currentPrice ? currentPrice.NOK_per_kWh * 100 : null,
+                      "Spotpris nå",
+                      "ep-price-chart",
+                    )
+                  ) : (
+                    <button onClick={() => openSummary("ep-price-chart")}>
+                      <span className="ep-scene-label">
+                        <Tag size={20} /> Spotpris nå <ArrowRight size={16} />
+                      </span>
+                      <strong>
+                        {fmt(
+                          currentPrice ? currentPrice.NOK_per_kWh * 100 : null,
+                        )}{" "}
+                        <span>øre/kWh</span>
+                      </strong>
+                      <small>
+                        {currentPrice
+                          ? "Uten mva., påslag og nettleie"
+                          : "Venter på dagens priser"}
+                      </small>
+                    </button>
+                  )}
                 </EnergyModule>
                 <EnergyModule
                   id="energy:today"
@@ -1192,20 +1296,29 @@ export function EnergyPlatform({
                     icon: "energy",
                   }}
                 >
-                  <button onClick={() => openSummary("ep-consumption-chart")}>
-                    <span className="ep-scene-label">
-                      <BarChart3 size={20} /> Forbruk i dag{" "}
-                      <ArrowRight size={16} />
-                    </span>
-                    <strong>
-                      {fmt(grid?.summary.available_kwh)} <span>kWh</span>
-                    </strong>
-                    <small>
-                      {grid?.summary.available_kwh == null
-                        ? "Venter på målinger"
-                        : `${data?.history_estimated ? "Estimert" : "Målt"} · ${grid?.summary.complete ? "komplett grunnlag" : "ufullstendig grunnlag"}`}
-                    </small>
-                  </button>
+                  {home ? (
+                    summaryCard(
+                      "consumption",
+                      grid?.summary.available_kwh,
+                      "Forbruk i dag",
+                      "ep-consumption-chart",
+                    )
+                  ) : (
+                    <button onClick={() => openSummary("ep-consumption-chart")}>
+                      <span className="ep-scene-label">
+                        <BarChart3 size={20} /> Forbruk i dag{" "}
+                        <ArrowRight size={16} />
+                      </span>
+                      <strong>
+                        {fmt(grid?.summary.available_kwh)} <span>kWh</span>
+                      </strong>
+                      <small>
+                        {grid?.summary.available_kwh == null
+                          ? "Venter på målinger"
+                          : `${data?.history_estimated ? "Estimert" : "Målt"} · ${grid?.summary.complete ? "komplett grunnlag" : "ufullstendig grunnlag"}`}
+                      </small>
+                    </button>
+                  )}
                 </EnergyModule>
                 <EnergyModule
                   id="energy:today-cost"
@@ -1216,28 +1329,40 @@ export function EnergyPlatform({
                     icon: "energy",
                   }}
                 >
-                  <button
-                    onClick={() =>
-                      openSummary(
-                        grid?.cost_total != null
-                          ? "ep-cost-breakdown"
-                          : "ep-consumption-chart",
-                      )
-                    }
-                  >
-                    <span className="ep-scene-label">
-                      <Coins size={20} /> Estimert kostnad i dag{" "}
-                      <ArrowRight size={16} />
-                    </span>
-                    <strong>
-                      {fmt(todayCost, 2)} <span>kr</span>
-                    </strong>
-                    <small>
-                      {todayCost != null
-                        ? data?.totals?.today?.cost_note || "Foreløpig kostnad"
-                        : "Mangler komplett beregningsgrunnlag"}
-                    </small>
-                  </button>
+                  {home ? (
+                    summaryCard(
+                      "cost",
+                      todayCost,
+                      "Estimert kostnad i dag",
+                      grid?.cost_total != null
+                        ? "ep-cost-breakdown"
+                        : "ep-consumption-chart",
+                    )
+                  ) : (
+                    <button
+                      onClick={() =>
+                        openSummary(
+                          grid?.cost_total != null
+                            ? "ep-cost-breakdown"
+                            : "ep-consumption-chart",
+                        )
+                      }
+                    >
+                      <span className="ep-scene-label">
+                        <Coins size={20} /> Estimert kostnad i dag{" "}
+                        <ArrowRight size={16} />
+                      </span>
+                      <strong>
+                        {fmt(todayCost, 2)} <span>kr</span>
+                      </strong>
+                      <small>
+                        {todayCost != null
+                          ? data?.totals?.today?.cost_note ||
+                            "Foreløpig kostnad"
+                          : "Mangler komplett beregningsgrunnlag"}
+                      </small>
+                    </button>
+                  )}
                 </EnergyModule>
                 {(setup.data.config.equipment?.solar ||
                   setup.data.config.meters.some((m) => m.role === "solar")) && (

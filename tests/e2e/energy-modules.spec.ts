@@ -6,7 +6,7 @@ import {
 import type { SavedGrid } from "../../frontend/src/home/homeGridModel";
 
 const now = new Date("2026-11-02T12:00:00Z");
-async function setup(page: Page, compact = false) {
+async function setup(page: Page, compact = false, chartsOnly = false) {
   await page.addInitScript((compact) => {
     localStorage.setItem("smarti-home-style", "harmony");
     localStorage.setItem("smarti-theme", "dark");
@@ -114,13 +114,64 @@ async function setup(page: Page, compact = false) {
       },
     ],
   };
+  if (chartsOnly) {
+    const midnight = Date.parse("2026-11-01T23:00:00Z");
+    const readings = Array.from({ length: 24 }, (_, h) => {
+      const kwh = h >= 13 || h === 6 ? null : h === 0 ? 0 : (h + 1) / 10;
+      const electricity = kwh === null ? 0 : kwh * 0.8;
+      const grid = kwh === null ? 0 : kwh * 0.25;
+      const support = kwh === null ? 0 : -kwh * 0.1;
+      const vat = (electricity + grid + support) * 0.25;
+      return {
+        start: new Date(midnight + h * 3600000).toISOString(),
+        end: new Date(midnight + (h + 1) * 3600000).toISOString(),
+        kwh,
+        cost: {
+          total: kwh === null ? null : electricity + grid + support + vat,
+          parts: { electricity, grid, support, vat },
+        },
+      };
+    });
+    const kwh = readings.reduce((n, p) => n + (p.kwh ?? 0), 0);
+    const cost = readings.reduce((n, p) => n + (p.cost.total ?? 0), 0);
+    Object.assign(meter, {
+      points: readings,
+      cost_total: null,
+      available_cost: cost,
+      monthly_fees: null,
+      summary: { available_kwh: kwh, complete: false, coverage: 12 / 24 },
+    });
+    Object.assign(dashboard.totals.today, {
+      available_kwh: kwh,
+      total_kwh: null,
+      cost,
+    });
+    dashboard.spot = readings
+      .filter((_, h) => h !== 2)
+      .map((p, h) => ({
+        time_start: p.start,
+        time_end: p.end,
+        NOK_per_kWh: h === 1 ? -0.25 : 0.2 + Math.sin(h / 3) ** 2,
+      }));
+  }
   let historyRequests = 0;
   await page.route("**/api/home/energy/platform/dashboard?*", (route) => {
     historyRequests++;
     return route.fulfill({ json: dashboard });
   });
   const layouts: Record<string, SavedGrid> = {
-    energy: { revision: 0, items: null },
+    energy: {
+      revision: 0,
+      items: chartsOnly
+        ? ["spot", "today", "today-cost"].map((id, x) => ({
+            id: `energy:${id}`,
+            x,
+            y: 0,
+            w: 1,
+            h: 2,
+          }))
+        : null,
+    },
     energy_history: { revision: 0, items: null },
   };
   let failSave = false;
@@ -154,6 +205,7 @@ async function setup(page: Page, compact = false) {
     layouts,
     configWrites: () => configWrites,
     historyRequests: () => historyRequests,
+    dashboard,
     failSave: (value: boolean) => {
       failSave = value;
     },
@@ -193,6 +245,114 @@ async function expectUnobstructedSceneControls(page: Page) {
 }
 test.afterEach(async ({ page }) => {
   await page.unrouteAll({ behavior: "wait" });
+});
+
+test("energy summary cards explain actual price, consumption and cost with accessible interval charts", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await setup(page, false, true);
+  const grid = page.locator('.home-canvas[data-page="energy"]');
+  const spot = grid.locator('[data-card="energy:spot"]');
+  const consumption = grid.locator('[data-card="energy:today"]');
+  const cost = grid.locator('[data-card="energy:today-cost"]');
+  await expect(grid.locator(".energy-summary")).toHaveCount(3);
+  for (const card of [spot, consumption, cost])
+    await expect(card.locator(".home-canvas-viewport")).toHaveAttribute(
+      "data-overflow",
+      "false",
+    );
+  await expect(spot.locator("[data-summary-bar][data-current]")).toHaveCount(1);
+  await expect(
+    spot.locator('[data-summary-bar][data-value="-25"]'),
+  ).toHaveCount(1);
+  await expect(
+    spot.locator('[data-summary-bar][data-value="missing"]'),
+  ).toHaveCount(1);
+  await expect(cost.locator('rect[data-part="electricity"]')).not.toHaveCount(
+    0,
+  );
+  await expect(cost.locator('rect[data-part="support"]')).not.toHaveCount(0);
+  await expect(cost.locator(".energy-summary-legend")).toContainText(
+    "Nettleie",
+  );
+  await spot.locator(".energy-summary-chart").focus();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowRight");
+  await expect(spot.getByRole("status")).toContainText(/[-−]25 øre\/kWh/);
+  await consumption.locator(".energy-summary-chart").focus();
+  await page.keyboard.press("Home");
+  await expect(consumption.getByRole("status")).toContainText("0 kWh");
+  for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
+  await expect(consumption.getByRole("status")).toContainText("Ingen måling");
+  await page.keyboard.press("End");
+  await expect(consumption.getByRole("status")).toContainText("Ikke målt ennå");
+  await cost.locator(".energy-summary-chart").focus();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowRight");
+  await expect(cost.getByRole("status")).toContainText(
+    /Strøm.*Nettleie.*Avgifter.*Støtte/,
+  );
+  await expect(cost.getByRole("status")).toContainText(/[-−]0,02 kr/);
+  await page.locator(".energy-summary-reading").first().focus();
+  await grid.screenshot({
+    path: `/private/tmp/smarti-99-summary-dark-${info.project.name}.png`,
+  });
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "light";
+  });
+  await grid.screenshot({
+    path: `/private/tmp/smarti-99-summary-light-${info.project.name}.png`,
+  });
+  await page.setViewportSize({ width: 834, height: 1000 });
+  for (const card of [spot, consumption, cost])
+    await expect(card.locator(".home-canvas-viewport")).toHaveAttribute(
+      "data-overflow",
+      "false",
+    );
+  await cost.locator(".energy-summary-reading").click();
+  await expect(
+    page.getByRole("tab", { name: "Historikk og strømpriser", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  const historical = page.locator('.home-canvas[data-page="energy_history"]');
+  await expect(historical.locator(".energy-summary")).toHaveCount(3);
+  await page.getByRole("button", { name: "Uke", exact: true }).click();
+  await historical
+    .locator('[data-card="energy:consumption"] .energy-summary-reading')
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Uke", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+});
+
+test("phone energy summary tiles open readable graphs and keep interval selection inside their cards", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setup(page, true, true);
+  const grid = page.locator('.home-canvas[data-page="energy"]');
+  await expect(grid.locator(".energy-summary")).toHaveCount(0);
+  await grid
+    .locator('[data-card="energy:today-cost"] .mobile-card-tile')
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.locator(".energy-summary")).toBeVisible();
+  await dialog.locator(".energy-summary-chart").focus();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowRight");
+  await expect(dialog.getByRole("status")).toContainText("Nettleie");
+  expect(
+    await dialog.evaluate((node) => node.scrollWidth - node.clientWidth),
+  ).toBeLessThanOrEqual(1);
+  await page.screenshot({
+    path: `/private/tmp/smarti-99-summary-phone-${info.project.name}.png`,
+  });
+  await dialog
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  await expect(
+    grid.locator('[data-card="energy:today-cost"] .mobile-card-tile'),
+  ).toBeFocused();
 });
 
 test("energy defaults are independent cards; both layouts resize, save, reload and restore removed modules", async ({

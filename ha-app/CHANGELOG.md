@@ -1,3 +1,10 @@
+## 1.36.99
+- Spotpris-, forbruks- og kostnadskortene i Harmoni har fått interaktive søylediagrammer, tydelige nøkkeltall og kortere forklaringer, både i 3D-oversikten og historikkvisningen.
+- Spotpris viser døgnets faktiske prisintervaller, negative priser og markering av nåværende pris. Fargene viser lavt, middels og høyt prisnivå sammenlignet med prisene samme dag. Spotpris vises fortsatt uten mva., påslag og nettleie.
+- Forbruk bruker samme fargeprinsipp som forbrukskortet på hovedsiden, basert på hjemmets egen registrerte historikk. Null, manglende data og timer som ikke er målt ennå vises forskjellig. Uke, måned og år grupperes etter Oslo-kalenderen.
+- Kostnad viser stablede søyler for strøm, nettleie, avgifter og faktiske støtte-/prisjusteringer når beregningsgrunnlaget finnes. Fratrekk beholdes under null, og faste beløp legges ikke kunstig inn i timesøylene. Kortet forklarer om totalen inkluderer faste beløp.
+- Grafene kan utforskes med pekeren, berøring og piltaster. Mobilruter åpner hele kortet ved trykk. Lagrede oppsett og energiinnstillinger beholdes; åpning av detaljer i historikk beholder valgt periode.
+
 ## 1.36.98
 - Energisiden i Harmoni har tydeligere kategorifarger: turkis energiflyt, friskt blått forbruk, gulltoner for strømpris og kostnader, og mintgrønt for solenergi. Fargene følger kortet ved flytting, i mobilruter og i fullvisning. Glasspreget beholdes med tilpasset tekstkontrast i lyst og mørkt tema.
 - 3D-huset får en større scene i standardkortet, fra 270 til 390 piksler. Kompakte målefelt og samlede kontroller gir modellen mer plass uten å endre lagrede kortstørrelser. På mobil ligger dreieknappene under modellen, og fullvisning gir ekstra plass.

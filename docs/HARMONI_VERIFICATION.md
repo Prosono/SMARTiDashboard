@@ -1,3 +1,48 @@
+# Graphical Energy summary cards — release 1.36.99
+
+Harmoni's overview and history price, consumption and cost summaries now use
+small interactive column charts with a large headline reading, a short caption
+and a legend. Prices show the actual published intervals, negative values and
+a current-interval marker. The colors compare the day's prices; the reading is
+still spot price excluding VAT, markup and grid charges. Consumption shares Home's
+time-weighted own-history color assessment. Cost columns group reported parts
+into electricity/markup, grid, taxes/VAT, support/price adjustments and other
+reported amounts. Discounts retain their negative sign below the zero line.
+Missing or inconsistent cost splits fall back to the reported interval total;
+no breakdown or fee is fabricated. Fixed fees stay out of interval columns and
+are identified in the headline caption when included in its reported total.
+
+Charts preserve real zero, missing past intervals, partial readings and future
+unmeasured intervals. They use timestamp widths, Oslo calendar boundaries and
+all 23/25 hours on DST days. Week/month consumption and cost are grouped by local
+day; year by local month. Pointer, touch and arrow/Home/End keys expose interval
+values and available cost parts in a live readout. The headline opens details;
+opening details within history preserves the selected period. Compact phone tiles
+still mount the full chart only when opened. Classic/Living retain their existing
+summary presentation. No backend rate, bill, source or stored configuration changed.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, browser-test TypeScript,
+  changed-file Prettier, diff and deterministic packaging checks passed.
+  **268 unit cases passed**, including nine new interval-model cases for gaps,
+  zero, future readings, signed cost parts, inconsistent splits, weighted price
+  bands, aggregation, nonfinite data and DST. The existing Vite chunk-size
+  advisory remains.
+- **16 production-build desktop/mobile browser scenarios passed**, covering the
+  new graphs, value selection, missing/zero/negative readings, signed cost parts,
+  layout editing/persistence, history periods, setup, price days and existing
+  detailed charts. The three default summaries fit without internal scrolling at
+  1440px and 834px; compact-phone expansion is checked at 390px. Desktop light/dark
+  and phone screenshots were visually inspected.
+- The final extracted archive is checked with the four targeted desktop/mobile
+  summary scenarios. All **276 runtime files** match their manifest hashes.
+  Archive SHA-256:
+  `2d55563f04bfb475a3b9377e2176053ae49119f1e7864ee33e6aeb1303429f35`.
+
+Browser validation uses isolated demo servers and fixture measurements. Physical
+phones, HAOS installation and real device commands were not exercised.
+
 # Energy category colors and larger 3D view — release 1.36.98
 
 Native Harmoni Energy modules now use separate palettes: teal for the energy
