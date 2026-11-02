@@ -1,3 +1,9 @@
+## 1.36.90
+- Harmoni får en egen mobilvisning med to kvadratiske ruter i bredden. Kortene viser navn, ikon og faktisk nøkkelstatus; et trykk åpner kortets fulle kontroller. I liggende mobilvisning kan tre ruter vises i bredden.
+- Velg «Ruter» eller «Detaljert» på telefonen. Valget huskes i denne nettleseren. Mobilrutene endrer ikke de lagrede størrelsene eller plasseringene for større skjermer; redigeringsmodus bruker fortsatt det vanlige oppsettet. Romgrupperingen beholdes.
+- Grafer og fulle enhetskontroller monteres først når ruten åpnes. Små klokker deler eksisterende tidsoppdatering, vær viser lokale bilder etter rapportert tilstand, og utilgjengelige datakilder markeres tydelig. Fullvisningen beholder tastaturbetjening, fokusretur, rettigheter og temperaturgrenser.
+- Toppbannerne får felles, lavere høyde på telefon, med kompakte statusfelt slik at kortene kommer tidligere til syne.
+
 ## 1.36.89
 - Termostatkortet følger nå den siste bildereferansen: «Ønsket temperatur» over en stor, sentrert verdi, med runde minus/pluss-knapper på hver side. Det innrammede feltet og den sidestilte romtemperaturen er erstattet av denne oppbygningen.
 - Romtemperaturen har fått en egen rad nederst, under en vannrett skillelinje. Etiketten står til venstre og den målte temperaturen til høyre. Desimaler og enhet er tilpasset referansen.

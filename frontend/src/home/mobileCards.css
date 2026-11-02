@@ -1,0 +1,235 @@
+html[data-home-style="harmony"] {
+  @media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+    /* Leave room for the actual dashboard on phones; all destinations share it. */
+    --harmony-header-height: 320px;
+    .home-overview .home-welcome .home-hero-focus {
+      min-height: 0;
+      padding: 20px 16px;
+      align-items: center;
+    }
+    .home-overview .home-welcome .home-hero-focus:has(.home-alert-corner) {
+      min-height: 0;
+      padding-top: 76px;
+    }
+    .home-overview .home-welcome .home-hero-focus .home-alert-corner {
+      inset: 14px auto auto 16px;
+    }
+    .home-overview .home-welcome .home-hero-focus .home-welcome-content h1 {
+      font-size: clamp(23px, 6.5vw, 28px);
+    }
+    .home-hero-stage > .home-status-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: 0 16px 16px;
+      gap: 8px;
+    }
+    .home-hero-stage > .home-status-grid > .home-status {
+      min-height: 52px;
+      padding: 10px;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+    }
+    .home-hero-stage > .home-status-grid > .home-status > svg {
+      width: 23px;
+      height: 23px;
+    }
+    .home-hero-stage > .home-status-grid > .home-status strong {
+      font-size: 13px;
+    }
+  }
+  .home-canvas[data-mobile-layout="compact"] {
+    container-type: inline-size;
+    .home-canvas-grid {
+      --mobile-card-row: calc(
+        (100cqi - (var(--canvas-columns) - 1) * 12px) / var(--canvas-columns)
+      );
+      grid-auto-rows: var(--mobile-card-row);
+      gap: 12px;
+    }
+    .home-canvas-surface {
+      border-radius: 18px;
+    }
+  }
+  .home-canvas[data-phone="true"] {
+    .home-canvas-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .home-canvas-actions {
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .home-canvas-actions > button,
+    .mobile-layout-picker button {
+      padding: 8px;
+      font-size: 12px;
+      min-height: 44px;
+    }
+  }
+  .mobile-layout-picker {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    button {
+      border: 0;
+      background: transparent;
+      border-radius: 9px;
+      gap: 5px;
+    }
+    button[aria-pressed="true"] {
+      background: var(--tint);
+      color: var(--accent);
+    }
+  }
+  .mobile-card-tile {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: clamp(12px, 8cqi, 17px);
+    gap: 5px;
+    border: 0;
+    border-radius: inherit;
+    box-sizing: border-box;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    overflow: hidden;
+    cursor: pointer;
+    &[data-reading-long] .mobile-card-reading {
+      font-size: clamp(14px, 10cqi, 20px);
+    }
+    .mobile-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex: none;
+      margin-bottom: 2px;
+    }
+    .mobile-card-top > svg:last-child {
+      opacity: 0.6;
+    }
+    .mobile-card-title {
+      font-size: clamp(12px, 8.2cqi, 15px);
+      font-weight: 600;
+      line-height: 1.25;
+      min-height: 1.25em;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+    .mobile-card-reading {
+      margin-top: auto;
+      font-size: clamp(17px, 15cqi, 30px);
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+    .mobile-card-detail {
+      font-size: clamp(10px, 6.8cqi, 12px);
+      font-weight: 400;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+    &:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: -4px;
+    }
+    &:active {
+      filter: brightness(0.94);
+    }
+    &[data-unavailable] .mobile-card-top {
+      opacity: 0.7;
+    }
+    &[data-photo] {
+      color: #fffaf6;
+      background: #071421;
+    }
+    &[data-photo]::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(110deg, #03101bd9, #03101b60);
+    }
+    .mobile-card-photo {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    &[data-clock] {
+      gap: 2px;
+    }
+    &[data-clock] .mobile-card-reading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      min-height: 0;
+    }
+    &[data-clock] .ambient-dial {
+      height: 60px;
+      max-height: 100%;
+      width: auto;
+    }
+  }
+  @container (max-width:150px) {
+    .mobile-card-tile .mobile-card-title,
+    .mobile-card-tile .mobile-card-detail {
+      -webkit-line-clamp: 1;
+    }
+  }
+  [data-card-tone="warm"]:has(.mobile-card-tile[data-climate-tone="cool"]) {
+    --card-identity: #216d9b;
+    --card-base: #163e65;
+  }
+  [data-card-tone="warm"]:has(.mobile-card-tile[data-climate-tone="off"]) {
+    --card-identity: #42494b;
+    --card-base: #2b3235;
+  }
+  .home-canvas-expanded[data-mobile-dialog] {
+    container-type: inline-size;
+    min-height: 240px;
+    .simple-weather {
+      min-height: 280px;
+    }
+    :is(.media-player-card, .vacuum-card, .home-metric-card) {
+      min-height: 280px;
+    }
+    :is(.home-grid-routines, .home-presence, .simple-dashboard-date) {
+      min-height: 240px;
+    }
+  }
+}
+@media (forced-colors: active) {
+  .mobile-card-tile {
+    border: 1px solid ButtonText;
+  }
+  .mobile-card-photo {
+    display: none;
+  }
+}

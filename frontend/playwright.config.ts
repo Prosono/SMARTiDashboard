@@ -4,7 +4,23 @@ export default defineConfig({
   testDir: "../tests/e2e",
   fullyParallel: false,
   workers: 1,
-  use: { baseURL, trace: "retain-on-failure" },
+  use: {
+    baseURL,
+    trace: "retain-on-failure",
+    // Existing suites exercise inline controls in the retained detailed mode.
+    // mobile-cards.spec.ts clears this state to verify the fresh phone default.
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: baseURL,
+          localStorage: [
+            { name: "smarti-home-mobile-layout", value: "detailed" },
+          ],
+        },
+      ],
+    },
+  },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     {

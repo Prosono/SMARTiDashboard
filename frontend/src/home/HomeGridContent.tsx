@@ -1,5 +1,6 @@
 import {
   useLayoutEffect,
+  useEffect,
   useRef,
   useState,
   type ReactNode,
@@ -10,6 +11,7 @@ import { SettingsDialog } from "./SettingsDialog";
 import type { CardConfig } from "./homeGridModel";
 import { cardImageURL } from "./CardPresentation";
 import type { CardTone } from "./cardToneModel";
+import { MobileCardTile, type MobileCardProps } from "./MobileCardTile";
 
 /** Cards never scroll internally. Unusually dense/small cards offer the full view. */
 export function HomeGridContent({
@@ -20,6 +22,7 @@ export function HomeGridContent({
   config,
   tone,
   lightStyle,
+  mobile,
 }: {
   children: ReactNode;
   title: string;
@@ -28,6 +31,7 @@ export function HomeGridContent({
   config?: CardConfig;
   tone: CardTone;
   lightStyle?: CSSProperties;
+  mobile?: MobileCardProps;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -35,6 +39,7 @@ export function HomeGridContent({
   const [expanded, expand] = useState(false);
 
   useLayoutEffect(() => {
+    if (mobile) return;
     const frame = viewport.current!,
       node = content.current!;
     let request: number | null = null;
@@ -60,48 +65,56 @@ export function HomeGridContent({
       node.removeEventListener("load", measure, true);
       if (request !== null) cancelAnimationFrame(request);
     };
-  }, [children, editing]);
+  }, [children, editing, !!mobile]);
+  useEffect(() => expand(false), [!!mobile]);
 
   return (
     <>
-      <div
-        ref={viewport}
-        className="home-canvas-viewport"
-        data-overflow={overflow}
-        data-card-image={config?.image}
-      >
-        {config && cardImageURL(config.image) && config.type !== "picture" && (
-          <img
-            className="personal-card-backdrop"
-            src={cardImageURL(config.image)}
-            alt=""
-          />
-        )}
+      {mobile ? (
+        <MobileCardTile {...mobile} onOpen={() => expand(true)} />
+      ) : (
         <div
-          ref={content}
-          className="home-canvas-content"
-          {...(editing || expanded || overflow ? { inert: true } : {})}
+          ref={viewport}
+          className="home-canvas-viewport"
+          data-overflow={overflow}
+          data-card-image={config?.image}
         >
-          {children}
-        </div>
-        {overflow && !editing && (
-          <button
-            className="home-canvas-expand"
-            aria-label={`${lang === "en" ? "Show full card" : "Vis hele kortet"}: ${title}`}
-            onClick={() => expand(true)}
+          {config &&
+            cardImageURL(config.image) &&
+            config.type !== "picture" && (
+              <img
+                className="personal-card-backdrop"
+                src={cardImageURL(config.image)}
+                alt=""
+              />
+            )}
+          <div
+            ref={content}
+            className="home-canvas-content"
+            {...(editing || expanded || overflow ? { inert: true } : {})}
           >
-            <span>
-              <Maximize2 size={15} aria-hidden="true" />
-              {lang === "en" ? "Show full card" : "Vis hele kortet"}
-            </span>
-          </button>
-        )}
-      </div>
+            {children}
+          </div>
+          {overflow && !editing && (
+            <button
+              className="home-canvas-expand"
+              aria-label={`${lang === "en" ? "Show full card" : "Vis hele kortet"}: ${title}`}
+              onClick={() => expand(true)}
+            >
+              <span>
+                <Maximize2 size={15} aria-hidden="true" />
+                {lang === "en" ? "Show full card" : "Vis hele kortet"}
+              </span>
+            </button>
+          )}
+        </div>
+      )}
       {expanded && (
         <SettingsDialog title={title} lang={lang} onClose={() => expand(false)}>
           <div
             className="home-canvas-expanded"
             data-card-tone={tone}
+            data-mobile-dialog={!!mobile || undefined}
             style={lightStyle}
           >
             {children}

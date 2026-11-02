@@ -92,6 +92,7 @@ export function roomGridView(
   roomOf: RoomOf,
   columns: number,
   compact = false,
+  rowHeight = "128px",
 ) {
   const sections = roomSections(items, roomOf);
   let offset = 0;
@@ -105,7 +106,7 @@ export function roomGridView(
       headingRow = offset + index + 1;
     const shown = local.map((item) => ({ ...item, y: item.y + offset }));
     for (const item of shown) displayRows.set(item.id, item.y + index + 2);
-    rows.push("36px", `repeat(${size}, 128px)`);
+    rows.push("36px", `repeat(${size}, ${rowHeight})`);
     offset += size;
     return { key: section.key, items: shown, headingRow };
   });

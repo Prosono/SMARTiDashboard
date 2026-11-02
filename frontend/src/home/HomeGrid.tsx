@@ -14,6 +14,8 @@ import {
   Grip,
   House,
   LoaderCircle,
+  LayoutGrid,
+  Rows3,
   Maximize2,
   Pencil,
   Plus,
@@ -55,6 +57,20 @@ import { useGridMotion } from "./useGridMotion";
 import { useGridWiggle } from "./useGridWiggle";
 import { cardTone } from "./cardToneModel";
 import { lightCardStyle } from "./lightCardModel";
+import { mobileGridItems } from "./mobileCardModel";
+
+const phoneQuery =
+  "(max-width: 650px), (max-height: 500px) and (pointer: coarse)";
+const mobilePreference = "smarti-home-mobile-layout";
+const storedMobileLayout = () => {
+  try {
+    return localStorage.getItem(mobilePreference) === "detailed"
+      ? "detailed"
+      : "compact";
+  } catch {
+    return "compact";
+  }
+};
 
 export type HomeGridCard = {
   id: string;
@@ -103,6 +119,10 @@ export function HomeGrid({
     [active, setActive] = useState<string | null>(null);
   const [editingCard, setEditingCard] = useState<string | null>(null);
   const [columns, setColumns] = useState(3);
+  const [phone, setPhone] = useState(
+    () => window.matchMedia(phoneQuery).matches,
+  );
+  const [mobileLayout, setMobileLayout] = useState(storedMobileLayout);
   const surface = useRef<HTMLDivElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(false);
@@ -167,32 +187,59 @@ export function HomeGrid({
       )
     : rawLayout;
   const editing = draft !== null;
+  const compactMobile = phone && mobileLayout === "compact" && !editing;
+  const displayColumns = compactMobile ? (columns > 1 ? 3 : 2) : columns;
   const visibleLayout = layout.filter(
     (item) =>
       catalog.has(item.id) && (editing || !catalog.get(item.id)!.hidden),
   );
+  const displayLayout = compactMobile
+    ? mobileGridItems(visibleLayout)
+    : visibleLayout;
   const roomView = grouped
     ? roomGridView(
-        visibleLayout,
+        displayLayout,
         roomOf,
-        columns,
-        !editing && cards.some((card) => card.hidden),
+        displayColumns,
+        compactMobile || (!editing && cards.some((card) => card.hidden)),
+        compactMobile ? "var(--mobile-card-row)" : "128px",
       )
     : null;
   const shown =
     roomView?.items ??
-    (!editing && cards.some((card) => card.hidden)
+    (compactMobile || (!editing && cards.some((card) => card.hidden))
       ? defaultGrid(
-          [...visibleLayout].sort((a, b) => a.y - b.y || a.x - b.x),
-          columns,
+          [...displayLayout].sort((a, b) => a.y - b.y || a.x - b.x),
+          displayColumns,
         )
-      : responsiveGrid(visibleLayout, columns));
+      : responsiveGrid(displayLayout, displayColumns));
   const layoutKey =
     `${roomView?.template ?? "flat"}|` +
     shown.map(({ id, x, y, w, h }) => `${id}:${x},${y},${w},${h}`).join("|");
   useGridMotion(surface, layoutKey, editing, active);
   useGridWiggle(surface, editing);
 
+  useEffect(() => {
+    const query = window.matchMedia(phoneQuery);
+    const update = () => setPhone(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.key === mobilePreference) setMobileLayout(storedMobileLayout());
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+  function chooseMobileLayout(value: "compact" | "detailed") {
+    setMobileLayout(value);
+    try {
+      localStorage.setItem(mobilePreference, value);
+    } catch {
+      /* Retain this session's choice. */
+    }
+  }
   useEffect(() => {
     if (wasEditing.current && !editing) editButton.current?.focus();
     wasEditing.current = editing;
@@ -473,6 +520,8 @@ export function HomeGrid({
       className="home-canvas"
       data-page={page}
       data-editing={editing}
+      data-mobile-layout={compactMobile ? "compact" : "detailed"}
+      data-phone={phone}
       data-grouped={grouped}
       data-dragging={!!active}
       data-card-dialog={adding || !!editingCard}
@@ -492,13 +541,37 @@ export function HomeGrid({
                     "Dra i håndtaket. Endre størrelse fra hjørnet.",
                     "Drag the handle. Resize from the corner.",
                   )
-              : t(
-                  "Tilpass kortene slik du vil ha dem.",
-                  "Arrange your cards your way.",
-                )}
+              : compactMobile
+                ? t("Trykk på et kort for å styre.", "Tap a card for controls.")
+                : t(
+                    "Tilpass kortene slik du vil ha dem.",
+                    "Arrange your cards your way.",
+                  )}
           </span>
         </div>
         <div className="home-canvas-actions">
+          {phone && !editing && (
+            <div
+              className="mobile-layout-picker"
+              role="group"
+              aria-label={t("Mobilvisning", "Mobile layout")}
+            >
+              <button
+                aria-pressed={mobileLayout === "compact"}
+                onClick={() => chooseMobileLayout("compact")}
+              >
+                <LayoutGrid size={15} />
+                {t("Ruter", "Tiles")}
+              </button>
+              <button
+                aria-pressed={mobileLayout === "detailed"}
+                onClick={() => chooseMobileLayout("detailed")}
+              >
+                <Rows3 size={15} />
+                {t("Detaljert", "Detailed")}
+              </button>
+            </div>
+          )}
           {editing ? (
             <>
               {canGroup && (
@@ -632,7 +705,7 @@ export function HomeGrid({
         className="home-canvas-grid"
         style={
           {
-            "--canvas-columns": columns,
+            "--canvas-columns": displayColumns,
             ...(roomView?.template
               ? { gridTemplateRows: roomView.template }
               : {}),
@@ -794,6 +867,11 @@ export function HomeGrid({
                   config={original.config}
                   tone={tone}
                   lightStyle={lightStyle}
+                  mobile={
+                    compactMobile
+                      ? { card, config: original.config, home, offline, lang }
+                      : undefined
+                  }
                 >
                   {original.config ? (
                     <ConfiguredHomeCard

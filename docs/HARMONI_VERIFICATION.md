@@ -1,3 +1,45 @@
+# Compact phone tiles and full controls — release 1.36.90
+
+Phones now default to two square tiles per row. Wider landscape phones use
+three columns. Each tile shows its name, icon, actual reading and brief status;
+a tap mounts the original full controls in the existing accessible dialog.
+The per-browser Tiles/Detailed choice is separate from saved layout geometry.
+Editing uses the existing layout, and returning to tiles does not overwrite
+card sizes, placement, configuration or room grouping. Tablet and desktop
+layouts remain detailed. The energy destination keeps its existing layout.
+
+Phone banners share a compact 320px height, with smaller inline status fields.
+Weather tiles reuse the state-driven local scenes and localized labels. Clock
+tiles reuse the shared minute snapshot, without adding a timer per card. Full
+card children, history queries and control measurement observers remain unmounted
+until needed in tile mode. Missing sources, unavailable controls, offline homes,
+unknown temperatures and unknown light states are represented explicitly.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, mobile-test TypeScript,
+  changed-file Prettier and git diff --check passed. The existing Vite chunk-size
+  advisory remains.
+- **253 frontend unit cases passed.** New cases cover real zero versus missing
+  readings, explicit missing sources, native thermostat units and modes,
+  Fahrenheit normalization, W/kW versus counters, unknown light states, weather
+  labels/scenes, graph sources and immutable phone geometry with room tracks.
+- **32 selected desktop/mobile browser scenarios passed against the final
+  extracted archive.** Fresh-default tests verify 320–430px squares, three-column
+  phone landscape, all grouped categories, shared banner heights, tablet/desktop
+  fallback, persistent detailed choice, edit/save geometry, focus return, actual
+  temperature commands, unavailable devices and deferred history mounting.
+  Existing suites explicitly retain detailed mode to verify inline controls.
+- Regression cases cover reference layouts/materials, weather image fallbacks,
+  thermostat limits/modes, media controls, room editing and no nested card scroll.
+  Commands run against isolated fixtures. The phone rendering was visually
+  checked; these are Chromium emulations, not physical-device validation.
+- Deterministic packaging check passed. All **263 runtime files** match the
+  extracted archive used by the final browser tests. No backend code changed;
+  the earlier repository-wide limitations below remain applicable.
+
+---
+
 # Centered thermostat setpoint and bottom reading — release 1.36.89
 
 The latest confirmed reference uses a centered large target, minus/plus controls

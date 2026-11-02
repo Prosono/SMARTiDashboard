@@ -7,6 +7,7 @@ import { TemperatureValue } from "./TemperatureValue";
 import { CardIcon, CardTitle, CardPresentation } from "./CardPresentation";
 import { useContext, useState } from "react";
 import { WeatherArtwork, useWeatherNight } from "./WeatherArtwork";
+import { weatherLabel, weatherScene } from "./weatherPresentation";
 type Day = {
   date: string;
   condition: string;
@@ -45,24 +46,7 @@ export function Weather({
     refetchInterval: 600000,
     retry: false,
   });
-  const label = (state: string) =>
-    ({
-      sunny: t("Sol", "Sunny"),
-      cloudy: t("Skyet", "Cloudy"),
-      partlycloudy: t("Delvis skyet", "Partly cloudy"),
-      rainy: t("Regn", "Rain"),
-      pouring: t("Kraftig regn", "Heavy rain"),
-      snowy: t("Snø", "Snow"),
-      "snowy-rainy": t("Sludd", "Sleet"),
-      "clear-night": t("Klar natt", "Clear night"),
-      fog: t("Tåke", "Fog"),
-      windy: t("Vind", "Wind"),
-      lightning: t("Torden", "Thunder"),
-      "lightning-rainy": t("Tordenbyger", "Thunderstorms"),
-      hail: t("Hagl", "Hail"),
-      "windy-variant": t("Vind og skyer", "Wind and clouds"),
-      exceptional: t("Ekstremvær", "Exceptional weather"),
-    })[state] || t("Ukjent", "Unknown");
+  const label = (state: string) => weatherLabel(state, lang);
   const now =
       typeof c.attributes.temperature === "number"
         ? c.attributes.temperature
@@ -77,23 +61,7 @@ export function Weather({
     const usable = c.availability === "available";
     const today = q.data?.days.today;
     const current = usable && now !== null && Number.isFinite(now) ? now : null;
-    const scenes: Record<string, string> = {
-      sunny: "sunny",
-      "clear-night": "night",
-      cloudy: "cloudy",
-      partlycloudy:
-        night === true ? "night" : night === false ? "partly-cloudy" : "cloudy",
-      rainy: "rain",
-      pouring: "rain",
-      lightning: "storm",
-      "lightning-rainy": "storm",
-      fog: "fog",
-      snowy: "snow",
-      windy: "wind",
-      "windy-variant": "wind",
-    };
-    // Mixed precipitation, hail and unknown states retain their precise artwork.
-    const scene = usable ? scenes[c.state] || null : null;
+    const scene = usable ? weatherScene(c.state, night) : null;
     const hasScene =
       polished &&
       scene !== null &&
