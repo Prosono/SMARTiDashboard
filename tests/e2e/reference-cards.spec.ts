@@ -535,7 +535,8 @@ test("simple volume keeps keyboard and mute control; climate modes keep round co
       for (const button of buttons) {
         // Browser transforms/scroll offsets can round viewport bounds by <0.01px.
         expect(button.width).toBeCloseTo(button.height, 2);
-        expect(button.width).toBeCloseTo(44, 2);
+        expect(button.width).toBeGreaterThanOrEqual(43.99);
+        expect(button.width).toBeLessThanOrEqual(104.01);
         expect(button.radius).toBe("50%");
       }
       if (activity === "cooling") {
@@ -631,12 +632,12 @@ test("weather photos follow rain, thunder, fog, snow and wind; uncertain and cus
   expect(state.calls).toHaveLength(0);
 });
 
-test("thermostat reference scales its header, separator, framed target and round controls without overlaps", async ({
+test("thermostat reference centers target between round controls above a separate room-temperature footer", async ({
   page,
 }, info) => {
   test.setTimeout(60000);
   const state = await setup(page);
-  state.climate.name = "Termostat Vaskerom";
+  state.climate.name = "Vaskerom";
   state.climate.attributes.current_temperature = 16.5;
   state.areas[0].name = "Laundry Room";
   state.saved().items = [{ id: "climate", x: 0, y: 0, w: 1, h: 4 }];
@@ -646,7 +647,7 @@ test("thermostat reference scales its header, separator, framed target and round
   const sizes =
     info.project.name === "desktop"
       ? [
-          [778, 490],
+          [778, 478],
           [400, 230],
           [778, 230],
           [400, 490],
@@ -715,7 +716,15 @@ test("thermostat reference scales its header, separator, framed target and round
     });
     expect(Math.abs(geometry.card.width - width)).toBeLessThan(3);
     expect(Math.abs(geometry.card.height - height)).toBeLessThan(3);
-    expect(geometry.panel.left).toBeGreaterThan(geometry.room.right);
+    expect(geometry.room.top).toBeGreaterThan(geometry.panel.bottom);
+    expect(geometry.buttons[0].right).toBeLessThanOrEqual(geometry.target.left);
+    expect(geometry.target.right).toBeLessThanOrEqual(geometry.buttons[1].left);
+    expect(
+      Math.abs(
+        (geometry.target.left + geometry.target.right) / 2 -
+          (geometry.card.left + geometry.card.right) / 2,
+      ),
+    ).toBeLessThan(2);
     expect(geometry.title.right).toBeLessThanOrEqual(geometry.badge.left + 1);
     for (const button of geometry.buttons) {
       expect(button.width).toBeCloseTo(button.height, 2);
@@ -724,24 +733,32 @@ test("thermostat reference scales its header, separator, framed target and round
       expect(button.right).toBeLessThanOrEqual(geometry.panel.right + 1);
       expect(button.bottom).toBeLessThan(geometry.card.bottom);
     }
-    if (width === 778 && height === 490) {
-      expect(geometry.font).toBeGreaterThanOrEqual(78);
-      expect(geometry.buttons[0].width).toBeCloseTo(80, 0);
-      expect(geometry.panel.height / height).toBeCloseTo(0.38, 1);
+    if (width === 778 && height === 478) {
+      expect(geometry.font).toBeGreaterThanOrEqual(116);
+      expect(geometry.buttons[0].width).toBeCloseTo(100, 0);
+      await expect(cell.locator(".thermostat-target > span")).toHaveText(
+        "Ønsket temperatur",
+      );
+      await expect(cell.locator(".thermostat-room-reading > span")).toHaveText(
+        "Romtemperatur",
+      );
+      await expect(cell.locator(".harmony-device-open small")).toHaveText(
+        "Termostat",
+      );
       for (const theme of ["dark", "light"]) {
         await page.evaluate(
           (theme) => (document.documentElement.dataset.theme = theme),
           theme,
         );
         await cell.screenshot({
-          path: `/private/tmp/smarti-88-thermostat-reference-${theme}.png`,
+          path: `/private/tmp/smarti-89-thermostat-reference-${theme}.png`,
         });
       }
     }
     const nextTemperature = Number(state.climate.attributes.temperature) + 0.5;
     await cell
       .getByRole("button", {
-        name: "Termostat Vaskerom: Ønsket temperatur +",
+        name: "Vaskerom: Ønsket temperatur +",
         exact: true,
       })
       .click();
@@ -752,7 +769,7 @@ test("thermostat reference scales its header, separator, framed target and round
       String(nextTemperature).replace(".", ","),
     );
     await cell.screenshot({
-      path: `/private/tmp/smarti-88-thermostat-${width}x${height}.png`,
+      path: `/private/tmp/smarti-89-thermostat-${width}x${height}.png`,
     });
   }
   if (sizing)
@@ -773,7 +790,7 @@ test("thermostat reference scales its header, separator, framed target and round
   const expandedTarget = Number(state.climate.attributes.temperature) + 0.5;
   await expanded
     .getByRole("button", {
-      name: "Termostat Vaskerom: Ønsket temperatur +",
+      name: "Vaskerom: Ønsket temperatur +",
       exact: true,
     })
     .click();

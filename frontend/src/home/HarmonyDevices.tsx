@@ -472,7 +472,9 @@ function HarmonyDevice({
             <strong>
               <CardTitle>{c.name}</CardTitle>
             </strong>
-            <small>{room}</small>
+            <small>
+              {c.domain === "climate" ? t("Termostat", "Thermostat") : room}
+            </small>
           </span>
           {!topSwitch && <ChevronRight size={17} aria-hidden="true" />}
         </button>

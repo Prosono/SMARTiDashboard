@@ -1,3 +1,42 @@
+# Centered thermostat setpoint and bottom reading — release 1.36.89
+
+The latest confirmed reference uses a centered large target, minus/plus controls
+on either side, and a full-width room-temperature footer below a horizontal line.
+The preceding side-by-side framed layout is replaced with this composition.
+The header uses the actual device/card name, a localized Thermostat subtitle and
+its reported mode badge. Target/measurement values remain supplied by the home.
+
+The compact setting uses three native grid columns. Its label spans the row
+above the number and controls, with no overlay covering interactive buttons.
+The room reading follows in its own row; its fractional digits and unit scale
+match the latest reference. Typography and circular 44–104px controls respond to
+both card dimensions, with wider relative spacing on phones. Feedback receives a
+separate flow row. Existing mode materials, limits, permissions, saved layout and
+small-card full view are retained. There are no new runtime measuring loops or
+animations.
+
+Validation on 2 November 2026:
+
+- Production TypeScript/Vite build, frontend TypeScript lint, reference-test
+  TypeScript, changed-file Prettier and git diff --check passed. Existing Vite
+  chunk-size advisory remains.
+- **244 frontend unit cases passed.**
+- **28 selected desktop/mobile browser scenarios passed against the final
+  extracted archive.** The updated reference check verifies 778×478, 400×230,
+  778×230, 400×490, 282×270 and 348×270 cards; centered setpoint/side controls;
+  a separate bottom reading; header/badge separation; real setpoint changes after
+  resizing; and working controls in the full view of a deliberately tiny card.
+- Regression coverage includes cooling/modes, unknown readings and unavailable
+  controls, previews/custom images, Home styles, responsive categories, card
+  editing and volume/weather behavior. Commands use isolated demo fixtures.
+- Large light/dark cards and phone variants were visually checked against the
+  latest image. These are Chromium results, not physical wall-panel validation.
+- Packaging check passed. All **263 runtime files** match the extracted archive
+  used by browser tests. No backend code changed; earlier repository-wide
+  limitations below remain applicable.
+
+---
+
 # Thermostat reference layout at every card size — release 1.36.88
 
 The thermostat card now follows the supplied close-up: the device/room header and

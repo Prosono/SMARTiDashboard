@@ -168,18 +168,6 @@ export function Thermostat({
             </select>
           </label>
         )}
-      {compact && (
-        <div className="thermostat-room-reading">
-          <span>{t("Rommet nå", "Room now")}</span>
-          <strong>
-            <TemperatureValue
-              value={known ? current : null}
-              unit={unit}
-              lang={lang}
-            />
-          </strong>
-        </div>
-      )}
       <div className="thermostat-setting">
         <div className="thermostat-dial">
           {!compact && (
@@ -210,7 +198,7 @@ export function Thermostat({
           <div className="thermostat-target">
             <span>
               {compact
-                ? t("Still inn temperatur", "Set temperature")
+                ? t("Ønsket temperatur", "Target temperature")
                 : t("Ønsket", "Target")}
             </span>
             <strong>
@@ -256,6 +244,18 @@ export function Thermostat({
           </button>
         </div>
       </div>
+      {compact && (
+        <div className="thermostat-room-reading">
+          <span>{t("Romtemperatur", "Room temperature")}</span>
+          <strong>
+            <TemperatureValue
+              value={known ? current : null}
+              unit={unit}
+              lang={lang}
+            />
+          </strong>
+        </div>
+      )}
       {!cap && (
         <small className="thermostat-readonly">
           {t(

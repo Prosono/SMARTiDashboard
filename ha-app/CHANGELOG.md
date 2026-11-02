@@ -1,3 +1,8 @@
+## 1.36.89
+- Termostatkortet følger nå den siste bildereferansen: «Ønsket temperatur» over en stor, sentrert verdi, med runde minus/pluss-knapper på hver side. Det innrammede feltet og den sidestilte romtemperaturen er erstattet av denne oppbygningen.
+- Romtemperaturen har fått en egen rad nederst, under en vannrett skillelinje. Etiketten står til venstre og den målte temperaturen til høyre. Desimaler og enhet er tilpasset referansen.
+- Kortets topp viser enhetsnavn, «Termostat» og modusmerke. Tekst, kontroller og avstander tilpasses kortstørrelsen, med 44–104 px runde knapper. De vanlige temperaturgrensene, trinnene, kjølefargen, statusene og fullvisningen beholdes.
+
 ## 1.36.88
 - Termostatkortet i Harmoni er utformet etter den nye bildereferansen: tydelig tittel og rom, modusmerke i topprekken, romtemperatur til venstre, skillelinje og et samlet temperaturfelt med store, runde knapper til høyre.
 - Tekst, felt og kontroller skaleres etter både kortets bredde og høyde. Den tidligere grensen på 460 px innvendig bredde er fjernet fra termostatkort i dashbordet og fullvisningen, slik at også store kort bruker hele flaten. Knappene skaleres fra 44 til 80 px.
