@@ -37,6 +37,7 @@ export type HomeGridPage =
   | "overview_simple"
   | "energy"
   | "energy_history"
+  | "energy_control"
   | "lights"
   | "climate"
   | "security"
@@ -46,6 +47,7 @@ export type SavedGrid = {
   revision: number;
   items: GridItem[] | null;
   group_by_room?: boolean;
+  notice?: string;
 };
 
 const overlaps = (a: GridItem, b: GridItem) =>

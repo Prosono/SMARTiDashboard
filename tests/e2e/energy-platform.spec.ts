@@ -199,19 +199,13 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   expect(config.scheme).toBe("norgespris");
   expect(config.meters[0].entity).toBe("sensor.grid");
   expect(config.equipment).toEqual({ solar: true, ev: false, battery: false });
+  await expect(page.locator(".energy-control")).toBeVisible();
   await expect(
     page.getByRole("tab", { name: "3D-oversikt", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
-  await expect(
-    page.getByRole("tabpanel", {
-      name: "Historikk og strømpriser",
-      exact: true,
-    }),
   ).toHaveCount(0);
-  await page
-    .getByRole("tab", { name: "Historikk og strømpriser", exact: true })
-    .click();
-  await expect(page.getByText("Ingen fersk effektmåling")).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: "Periode", exact: true }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
   dashboardReady = true;
   await page
@@ -305,7 +299,7 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
     ),
   ).toBe(true);
   await page
-    .locator(".ep-dashboard")
+    .locator(".energy-control")
     .screenshot({ path: `/tmp/smarti-energy-chart-${info.project.name}.png` });
 
   await expect(pricePanel.locator(".ep-now-marker")).toHaveCount(1);
@@ -332,15 +326,11 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
     path: `/tmp/smarti-price-chart-${info.project.name}.png`,
   });
 
-  await page.getByRole("tab", { name: "3D-oversikt", exact: true }).click();
-  const summary = page.getByLabel("Energitall for i dag", { exact: true });
-  await expect(summary.getByRole("button")).toHaveCount(4);
+  const summary = page.locator(".energy-control-legacy-grid").first();
+  await expect(summary.locator(".energy-summary-reading")).toHaveCount(3);
   await expect(
     summary.getByRole("button", { name: /Forbruk i dag/ }),
   ).toContainText("52");
-  await expect(
-    summary.getByRole("button", { name: /Selvforsyning i dag/ }),
-  ).toContainText("—");
   await expect(
     summary.getByRole("button", { name: /Estimert kostnad i dag/ }),
   ).toContainText("42,6");
@@ -349,8 +339,8 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   });
   await summary.getByRole("button", { name: /Spotpris nå/ }).click();
   await expect(
-    page.getByRole("tab", { name: "Historikk og strømpriser", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
+    page.getByRole("group", { name: "Periode", exact: true }),
+  ).toBeVisible();
   await expect(pricePanel).toBeFocused();
   // Existing homes edit one section directly, preserving the other settings.
   const saved = structuredClone(config);
@@ -384,8 +374,8 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   expect(config.meters).toEqual(saved.meters);
   expect(config.cloud_history).toBe(saved.cloud_history);
   await expect(
-    page.getByRole("tab", { name: "Historikk og strømpriser", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
+    page.getByRole("group", { name: "Periode", exact: true }),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Energiinnstillinger", exact: true })
     .click();
@@ -458,9 +448,7 @@ test("energy chart distinguishes zero from missing readings and supports keyboar
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
-  await page
-    .getByRole("tab", { name: "Historikk og strømpriser", exact: true })
-    .click();
+  await expect(page.locator(".energy-control")).toBeVisible();
   const chart = page.getByRole("group", { name: "Forbruksgraf" });
   await expect(chart.getByRole("button")).toHaveCount(3);
   await chart.getByRole("button").nth(1).focus();
@@ -479,6 +467,7 @@ test("energy chart distinguishes zero from missing readings and supports keyboar
   await expect(page.locator(".ep-history .ep-chart-detail")).toContainText(
     "kostnad ikke tilgjengelig",
   );
+  await page.getByText("Flere energimålinger", { exact: true }).click();
   await expect(
     page.getByText("Målehistorikken er synkronisert til SMARTi-skyen."),
   ).toBeVisible();

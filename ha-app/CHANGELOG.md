@@ -1,3 +1,9 @@
+## 1.36.100
+- Energi har én samlet kontrollflate med stort 3D-hus, forbruks- og kostnadsgrafer og strømpriser. De to tidligere underfanene er slått sammen. Periodevalget endrer historikken, mens dagens nøkkeltall beholdes.
+- Nye kort viser foreløpig kapasitetstrinn med registrerte døgnmaksverdier, månedsbeløp og neste grense, nettleie med energiledd og nettselskap, og dagens billigste og dyreste hele strømpristime. Prisene vektes fra publiserte intervaller; manglende grunnlag vises uten oppdiktede verdier. Avgiftsgrunnlag, støtteordning og foreløpige beregninger merkes.
+- Harmoni beholder flytting, størrelsesendring og kortvelger. Tidligere energioppsett leses inn i en samlet flate uten å overskrive originalene; det nye oppsettet lagres først ved eksplisitt lagring. Flere målinger finnes i kortvelgeren, eller under «Flere energimålinger» i de øvrige stilene.
+- Mobilruter viser nøkkeltall og åpner hele kortet ved trykk. 3D-huset beholder stor scene på PC og nettbrett og monteres først ved åpning på kompakt mobil. Ingen import fra den vedlagte Home Assistant-filen eller endringer i faktureringsreglene.
+
 ## 1.36.99
 - Spotpris-, forbruks- og kostnadskortene i Harmoni har fått interaktive søylediagrammer, tydelige nøkkeltall og kortere forklaringer, både i 3D-oversikten og historikkvisningen.
 - Spotpris viser døgnets faktiske prisintervaller, negative priser og markering av nåværende pris. Fargene viser lavt, middels og høyt prisnivå sammenlignet med prisene samme dag. Spotpris vises fortsatt uten mva., påslag og nettleie.

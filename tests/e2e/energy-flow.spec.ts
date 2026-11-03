@@ -299,13 +299,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
   const flow = page.getByRole("region", { name: "Energiflyt", exact: true });
   await expect(flow).toContainText("Gjør huset til ditt");
-  await expect(flow.locator(".flow-current-weather")).toContainText("12°C");
-  await expect(flow.locator(".flow-current-weather")).toContainText(
-    "Klar himmel",
-  );
-  await expect(flow.locator(".flow-current-weather")).toContainText(
-    "Kristiansand",
-  );
+  await expect(flow.locator(".flow-current-weather")).toHaveCount(0);
   const solar = flow.locator('.flow-measurement[data-role="solar"]');
   const grid = flow.locator('.flow-measurement[data-role="grid"]');
   const battery = flow.locator('.flow-measurement[data-role="battery"]');
@@ -514,9 +508,7 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     animations: "disabled",
     path: `../artifacts/${test.info().project.name}-energy-flow.png`,
   });
-  await page
-    .getByRole("tab", { name: "Historikk og strømpriser", exact: true })
-    .click();
+  await page.getByText("Flere energimålinger", { exact: true }).click();
   await page.getByText("Detaljert målerhistorikk", { exact: true }).click();
   await expect(
     page.locator(".energy-workspace .energy-large-chart"),
@@ -525,14 +517,14 @@ test("3D hotspots configure live measurements and preserve directions, freshness
     animations: "disabled",
     path: `../artifacts/${test.info().project.name}-energy-overview.png`,
   });
-  await page.getByRole("tab", { name: "3D-oversikt", exact: true }).click();
+  await flow.scrollIntoViewIfNeeded();
   if (test.info().project.name === "desktop") {
     const originalViewport = page.viewportSize()!;
     await page.setViewportSize({ width: 1920, height: 1200 });
     await flow
       .getByLabel("Historikkperiode", { exact: true })
       .selectOption("24h");
-    await flow.locator(".flow-nav-overview").click();
+    await flow.locator('.flow-measurement[data-role="battery"]').click();
     await expect(historyPanel).toHaveCount(0);
     await flow
       .getByRole("button", { name: "Drei huset mot venstre", exact: true })

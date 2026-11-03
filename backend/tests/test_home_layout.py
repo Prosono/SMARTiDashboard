@@ -161,7 +161,7 @@ def test_equipment_portrait_choices_persist_without_changing_sources(client, kin
     assert saved["sources"] == config["sources"]
 
 
-@pytest.mark.parametrize("page", ["energy", "energy_history"])
+@pytest.mark.parametrize("page", ["energy", "energy_history", "energy_control"])
 def test_energy_layouts_are_personal_versioned_and_independent(client, page):  # noqa: F811
     other = "energy_history" if page == "energy" else "energy"
     original = client.get("/api/home/preferences").json()
@@ -182,3 +182,35 @@ def test_energy_layouts_are_personal_versioned_and_independent(client, page):  #
     )
     assert client.get("/api/home/preferences").json() == original
     assert client.put(f"/api/home/layout/{page}", json={"revision": 1, "items": []}).json()["items"] == []
+
+
+def test_combined_energy_layout_is_a_read_only_migration_until_saved(client):  # noqa: F811
+    overview = client.put(
+        "/api/home/layout/energy", json={"revision": 0, "items": [card("energy:flow", w=3, h=4)]}
+    ).json()
+    history = client.put(
+        "/api/home/layout/energy_history", json={"revision": 0, "items": [card("energy:history", w=2, h=3)]}
+    ).json()
+    merged = client.get("/api/home/layout/energy_control").json()
+    assert merged["revision"] == 0
+    assert {item["id"] for item in merged["items"]} == {
+        "energy:flow",
+        "energy:history",
+        "energy:capacity",
+        "energy:tariff",
+        "energy:price-hours",
+    }
+    assert client.get("/api/home/layout/energy").json() == overview
+    assert client.get("/api/home/layout/energy_history").json() == history
+    saved = client.put("/api/home/layout/energy_control", json=merged)
+    assert saved.status_code == 200
+    assert client.put("/api/home/layout/energy_control", json=merged).status_code == 409
+    assert client.get("/api/home/layout/energy_control").json() == saved.json()
+    assert client.get("/api/home/layout/energy").json() == overview
+    client.post(
+        "/api/users",
+        json={"name": "energy-resident", "password": "a different long password", "role": "user"},
+    )
+    client.post("/api/logout")
+    login(client, "energy-resident", "a different long password")
+    assert client.get("/api/home/layout/energy_control").json() == {"revision": 0, "items": None}

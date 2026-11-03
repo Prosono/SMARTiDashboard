@@ -93,6 +93,7 @@ LayoutPage = Literal[
     "misc",
     "energy",
     "energy_history",
+    "energy_control",
 ]
 
 
@@ -270,6 +271,11 @@ def home_router(store, user, ha, settings):
     @router.get("/layout/{page}")
     async def home_layout(page: LayoutPage, current=Depends(user)):
         saved = store.get(f"home_layout:{current['id']}:{page}")
+        if not saved and page == "energy_control":
+            from .energy_layout import combined_layout
+
+            legacy = [store.get(f"home_layout:{current['id']}:{old}") for old in ("energy", "energy_history")]
+            return combined_layout(*(json.loads(value) if value else None for value in legacy))
         return json.loads(saved) if saved else {"revision": 0, "items": None}
 
     @router.put("/layout/{page}")

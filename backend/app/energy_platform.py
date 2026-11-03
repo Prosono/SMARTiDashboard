@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from .access import visible
 from .certificate_hook import read_identity
 from .energy_analysis import analyze, chart_points
+from .energy_control import current_context
 from .energy_costs import cost, spot_rate
 from .energy_flow import power_reading
 from .energy_intervals import Interval, local_day
@@ -549,6 +550,7 @@ def platform_router(service, user, admin):
                 price_day += timedelta(days=1)
         return {
             "period_prices": period_prices if report else None,
+            "current": current_context(repo, config, grid),
             "price_area": config.area,
             "configured": True,
             "history_estimated": estimated_history,

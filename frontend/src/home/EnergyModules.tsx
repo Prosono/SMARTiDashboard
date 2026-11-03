@@ -1,10 +1,21 @@
 import { Children, isValidElement, type ReactNode } from "react";
-import { BarChart3, Coins, Sun, Tag, Zap, type LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  Coins,
+  Gauge,
+  Sun,
+  Tag,
+  UtilityPole,
+  Clock3,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import type { Home } from "../types";
 import { HomeGrid, type HomeGridCard } from "./HomeGrid";
 import { CardIcon, CardTitle } from "./CardPresentation";
 import type { MobileSummary } from "./mobileCardModel";
 import "./energyModules.css";
+import { energyControlDefaults } from "./energyControlModel";
 
 const moduleIcons: Record<string, LucideIcon> = {
   "energy:spot": Tag,
@@ -16,6 +27,9 @@ const moduleIcons: Record<string, LucideIcon> = {
   "energy:today-cost": Coins,
   "energy:breakdown": Coins,
   "energy:self-supply": Sun,
+  "energy:capacity": Gauge,
+  "energy:tariff": UtilityPole,
+  "energy:price-hours": Clock3,
 };
 
 type ModuleProps = {
@@ -59,9 +73,9 @@ export function EnergyModules({
   home?: Home;
   offline: boolean;
   lang: string;
-  page: "energy" | "energy_history";
+  page: "energy" | "energy_history" | "energy_control";
 }) {
-  if (!home) return <>{children}</>;
+  if (!home && page !== "energy_control") return <>{children}</>;
   const cards: HomeGridCard[] = [];
   function collect(nodes: ReactNode) {
     Children.forEach(nodes, (child) => {
@@ -75,6 +89,7 @@ export function EnergyModules({
           children: content,
           ...options
         } = child.props as ModuleProps;
+        if (cards.some((card) => card.id === id)) return;
         cards.push({
           id,
           title,
@@ -110,6 +125,44 @@ export function EnergyModules({
     });
   }
   collect(children);
+  if (page === "energy_control") {
+    const order = (id: string) => {
+      const index = energyControlDefaults.indexOf(id);
+      return index < 0 ? 100 : index;
+    };
+    cards.sort((a, b) => order(a.id) - order(b.id));
+    for (const card of cards) {
+      card.defaultHidden =
+        card.defaultHidden || !energyControlDefaults.includes(card.id);
+      if (card.id === "energy:flow") card.w = 2;
+    }
+  }
+  if (!home) {
+    const renderCards = (list: HomeGridCard[]) => (
+      <div className="energy-control-legacy-grid">
+        {list.map((card) => (
+          <div
+            key={card.id}
+            style={{
+              gridColumn: `span ${card.w || 1}`,
+              gridRow: `span ${card.h || 2}`,
+            }}
+          >
+            {card.content}
+          </div>
+        ))}
+      </div>
+    );
+    return (
+      <>
+        {renderCards(cards.filter((card) => !card.defaultHidden))}
+        <details className="energy-more">
+          <summary>Flere energimålinger</summary>
+          {renderCards(cards.filter((card) => card.defaultHidden))}
+        </details>
+      </>
+    );
+  }
   return (
     <HomeGrid
       key={page}

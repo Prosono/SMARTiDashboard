@@ -1,3 +1,61 @@
+# Unified Energy control — release 1.36.100
+
+Energy now combines the 3D overview and history/price workspace into a single
+canvas. A 390px house scene shares the first rows with current capacity and
+grid-company/tariff cards; daily price, consumption and cost charts, period
+history and whole-hour price extrema follow. Day/week/month/year filters affect
+history without remounting the house or changing today's headline cards. Both
+Harmoni and the retained Classic/Living presentations use the combined workspace.
+Optional measurements remain available through the card picker or “Flere
+energimålinger”. Compact phones show readings and mount graphs/3D only when opened.
+
+Current capacity uses this month's known complete hourly import readings and the
+existing dated tariff engine. Distinct daily peaks, the next threshold, the
+monthly rate, VAT basis and incomplete/provisional status are visible. No tier
+is fabricated for missing readings or unsupported tariffs; manual rates and real
+zero are retained. The tariff card identifies the company, area and agreement,
+energy-rate basis excluding taxes, and tariff source date/staleness. Cheapest
+and dearest whole Oslo clock hours use duration-weighted published prices;
+partial/overlapping intervals are rejected, negative and zero prices retained,
+and 23/25-hour days supported. Raw spot prices exclude VAT and other additions.
+This change does not alter billing rules and does not use the attached HA file.
+
+A new personal energy_control layout derives its initial state from both legacy
+layouts without writing to either. Geometry and configurations survive, shared
+native cards deduplicate, and colliding custom IDs are retained independently.
+Explicitly cleared layouts remain empty. Oversized combined layouts fall back
+with a visible notice; original records stay intact. Saving uses the existing
+per-user revision/compare-and-set protection and never changes energy setup.
+
+Validation on 3 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, browser-test TypeScript,
+  changed-file Prettier, Ruff and diff checks passed. **272 frontend unit cases**
+  and **75 selected backend cases** passed. New cases cover current-month daily
+  maxima, partial coverage, manual/zero rates, VAT, hidden meter privacy,
+  non-mutating layout migration, save conflicts, price-hour weighting and DST.
+  The existing Vite chunk-size advisory remains.
+- **14 desktop/mobile production-build scenarios passed** for the unified
+  workspace, current versus historical readings, signed and missing values,
+  layout resizing/removal/addition, failed-save retention, price interaction,
+  setup and lazy phone cards. Default flow and KPI cards fit at 1440px and 834px;
+  compact expansion is checked at 390px. Desktop light/dark and phone screenshots
+  were visually inspected.
+- Desktop 3D interaction and desktop/mobile renderer-failure scenarios passed.
+  The full mobile interaction scenario initially exposed overlapping instruments
+  in the newly embedded Classic view. Compact instrument sizing now applies to
+  all combined-workspace styles and fits two upper/three lower readings. The
+  corrected mobile scenario passed, including rotation, all five measurements,
+  persistence, stale/zero values, pause and reduced motion. Four final targeted
+  desktop/mobile canvas and phone-expansion scenarios passed against the exact
+  extracted release archive after this correction.
+- The deterministic archive contains **278 runtime files**, each checked against
+  its manifest hash. Archive SHA-256:
+  `0f345340efd919e665acc109049652fafad9207c8eb9d51ae70e5cea11d0fd0f`.
+
+Validation uses isolated demo servers and fixture measurements. Physical phones,
+HAOS installation and real device commands were not exercised.
+
 # Graphical Energy summary cards — release 1.36.99
 
 Harmoni's overview and history price, consumption and cost summaries now use

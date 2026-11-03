@@ -96,6 +96,9 @@ const energyTones: Record<string, CardTone> = {
   breakdown: "energy-price",
   schemes: "energy-price",
   timing: "energy-price",
+  tariff: "energy-price",
+  "price-hours": "energy-price",
+  capacity: "energy-flow",
 };
 
 /** Presentation follows actual sources/type, never a translated or user-written title. */

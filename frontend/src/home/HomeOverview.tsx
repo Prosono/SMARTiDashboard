@@ -1343,7 +1343,7 @@ export function HomeOverview({
                         offline={offline}
                         lang={lang}
                         managedEquipment={managedEquipment}
-                        embedded={harmony}
+                        embedded
                       />
                     )}
                     historyExtras={

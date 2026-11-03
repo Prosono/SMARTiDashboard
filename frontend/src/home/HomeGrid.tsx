@@ -712,9 +712,9 @@ export function HomeGrid({
           </button>
         </p>
       )}
-      {message && (
+      {(message || saved.data?.notice) && (
         <p className="home-canvas-message" role="status">
-          {message}
+          {message || saved.data?.notice}
         </p>
       )}
       {(adding || editingCard) && editing && (
