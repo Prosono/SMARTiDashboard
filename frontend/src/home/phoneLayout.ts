@@ -5,7 +5,12 @@ import { securityAttention } from "./equipmentModel";
 
 export const phoneQuery =
   "(max-width: 650px), (max-height: 500px) and (pointer: coarse)";
-export const phonePages = new Set(["lights", "security", "energy_control"]);
+export const phonePages = new Set([
+  "lights",
+  "security",
+  "energy_control",
+  "media",
+]);
 export const phoneEnergyPrimary = new Set([
   "energy:flow",
   "energy:spot",
@@ -15,8 +20,18 @@ export const phoneEnergyPrimary = new Set([
 ]);
 export type PhoneSize = { w: number; h: number; order?: number };
 
+export function phoneMediaCompact(c: Control) {
+  const actions = c.capabilities.flatMap((cap) => cap.actions);
+  return (
+    actions.length > 0 &&
+    actions.every((action) => ["turn_on", "turn_off"].includes(action))
+  );
+}
+
 export function phoneDeviceSize(c?: Control): PhoneSize {
   if (!c) return { w: 1, h: 2 };
+  if (c.domain === "media_player")
+    return { w: 2, h: phoneMediaCompact(c) ? 1 : 3, order: 2 };
   if (c.domain === "camera") return { w: 2, h: 2, order: 1 };
   if (c.domain !== "light" && (!usable(c) || securityAttention(c)))
     return { w: 2, h: 1, order: 0 };

@@ -15,6 +15,7 @@ import { MobileCardArtwork } from "./MobileCardArtwork";
 import type { MobileCardProps } from "./MobileCardTile";
 import { usable } from "./homeModel";
 import { lightPercentage, securityAttention } from "./equipmentModel";
+import { PhoneMediaCard } from "./PhoneMediaCard";
 
 function useLightCommand(home: Home, offline: boolean, lang: string) {
   const query = useQueryClient(),
@@ -295,6 +296,8 @@ export function PhoneDeviceCard({
     <CardPresentation.Provider value={config || {}}>
       {c.domain === "light" ? (
         <PhoneLight {...props} c={c} onOpen={onOpen} />
+      ) : c.domain === "media_player" ? (
+        <PhoneMediaCard {...props} c={c} onOpen={onOpen} />
       ) : c.domain === "camera" ? (
         <article className="phone-camera">
           <header>

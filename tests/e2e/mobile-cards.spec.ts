@@ -111,15 +111,23 @@ async function setup(page: Page) {
     c("lock", "Ytterdør", "locked", {}, ["lock", "unlock"]),
     c("switch", "Smart stikkontakt", "off", {}, ["turn_on", "turn_off"]),
   ];
+  const areas = [{ area_id: "living", name: "Stue" }];
+  const access = {
+    permissions: undefined as string[] | undefined,
+    connected: true,
+  };
   await page.route("**/api/home", async (route) => {
     const response = await route.fetch();
     await route.fulfill({
       json: {
         ...(await response.json()),
-        connected: true,
+        connected: access.connected,
+        ...(access.permissions === undefined
+          ? {}
+          : { permissions: access.permissions }),
         controls,
         favorites: [],
-        areas: [{ area_id: "living", name: "Stue" }],
+        areas,
       },
     });
   });
@@ -237,6 +245,8 @@ async function setup(page: Page) {
   return {
     commands,
     controls,
+    areas,
+    access,
     saved: () => saved,
     writes: () => writes,
     history: () => history,
@@ -381,12 +391,20 @@ test("tiles adapt at 320–430px, retain room grouping and return to full cards 
     await expect(
       page.locator(`.home-canvas[data-page="${key}"]`),
     ).toHaveAttribute(
-      key === "security" ? "data-reference-phone" : "data-mobile-layout",
-      key === "security" ? "true" : "compact",
+      ["security", "media"].includes(key)
+        ? "data-reference-phone"
+        : "data-mobile-layout",
+      ["security", "media"].includes(key) ? "true" : "compact",
     );
     await expect(
       page
-        .locator(key === "security" ? ".phone-security" : ".mobile-card-tile")
+        .locator(
+          key === "security"
+            ? ".phone-security"
+            : key === "media"
+              ? ".phone-media"
+              : ".mobile-card-tile",
+        )
         .first(),
     ).toBeVisible();
     await expect(page.locator(".category-heading")).toHaveCount(0);
@@ -947,4 +965,233 @@ test("phone security prioritises unavailable contacts, shows product portraits a
     .click();
   await expect(page.locator("video")).toHaveCount(0);
   expect(data.writes()).toBe(0);
+});
+
+test("phone multimedia matches wide TV and speaker cards, sends bounded volume commands and keeps rooms and desktop layouts", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const data = await setup(page);
+  const tv = data.controls.find((c) => c.domain === "media_player")!;
+  tv.name = "Samsung Q90 Series (75)";
+  tv.state = "idle";
+  tv.attributes = {
+    volume_level: 0.2,
+    device_class: "tv",
+    smarti_media_image: "tv",
+  };
+  tv.capabilities = [
+    {
+      kind: "media",
+      actions: [
+        "media_play",
+        "media_pause",
+        "turn_on",
+        "turn_off",
+        "set_volume",
+      ],
+      unit: "%",
+      minimum: 0,
+      maximum: 100,
+      step: 1,
+    },
+  ];
+  const speaker = {
+    ...structuredClone(tv),
+    id: "media_player.voice",
+    entity_id: "media_player.voice",
+    name: "SMARTi Voice Stue",
+    attributes: { volume_level: 0.98, smarti_media_image: "mini" },
+  };
+  const power = {
+    ...structuredClone(tv),
+    id: "media_player.power",
+    entity_id: "media_player.power",
+    name: "TV Stue",
+    state: "on",
+    capabilities: [{ ...tv.capabilities[0], actions: ["turn_on", "turn_off"] }],
+  };
+  data.controls.push(speaker, power, {
+    ...structuredClone(speaker),
+    id: "media_player.bedroom",
+    entity_id: "media_player.bedroom",
+    name: "Soveromsspiller",
+    area_id: "bedroom",
+  });
+  data.areas.push({ area_id: "bedroom", name: "Soverom" });
+  const sent: { entity: string; action: string; value?: number }[] = [];
+  await page.route("**/api/controls/media_player.*/commands", async (route) => {
+    const entity = decodeURIComponent(
+      new URL(route.request().url()).pathname.split("/").at(-2)!,
+    );
+    const body = route.request().postDataJSON();
+    sent.push({ entity, ...body });
+    if (body.action === "set_volume")
+      speaker.attributes.volume_level = body.value / 100;
+    if (body.action === "turn_off") power.state = "off";
+    return route.fulfill({ json: { status: "state_updated" } });
+  });
+  await page.reload();
+  await page.getByRole("tab", { name: "Multimedia", exact: true }).click();
+  const grid = page.locator('.home-canvas[data-page="media"]');
+  await expect(grid).toHaveAttribute("data-reference-phone", "true");
+  await expect(grid.locator(".phone-media")).toHaveCount(3);
+  await expect(grid.getByLabel("Velg rom", { exact: true })).toHaveValue(
+    "room:living",
+  );
+  const television = grid.locator('[data-card="device:media_player.mobile"]');
+  const voice = grid.locator('[data-card="device:media_player.voice"]');
+  await expect(television.locator(".mobile-card-product img")).toHaveJSProperty(
+    "naturalWidth",
+    600,
+  );
+  await expect(voice.locator(".mobile-card-product img")).toHaveJSProperty(
+    "naturalWidth",
+    600,
+  );
+  await voice
+    .getByRole("button", {
+      name: "SMARTi Voice Stue: Høyere volum",
+      exact: true,
+    })
+    .click();
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toEqual({
+    entity: speaker.entity_id,
+    action: "set_volume",
+    value: 100,
+  });
+  await expect(
+    voice.getByRole("button", {
+      name: "SMARTi Voice Stue: Høyere volum",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await voice
+    .getByRole("button", {
+      name: "SMARTi Voice Stue: Lavere volum",
+      exact: true,
+    })
+    .click();
+  await expect.poll(() => sent.length).toBe(2);
+  expect(sent[1].value).toBe(95);
+  await grid
+    .getByRole("button", { name: "Slå av: TV Stue", exact: true })
+    .click();
+  await expect(
+    grid.getByRole("button", { name: "Slå på: TV Stue", exact: true }),
+  ).toBeVisible();
+  await television
+    .getByRole("button", { name: "Fjernkontroll", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog").locator(".media-player-card"),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(
+    television.getByRole("button", { name: "Fjernkontroll", exact: true }),
+  ).toBeFocused();
+  await grid
+    .getByRole("button", { name: "Soverom 1 spiller", exact: true })
+    .click();
+  await expect(grid.locator(".phone-media")).toHaveCount(1);
+  await expect(grid).toContainText("Soveromsspiller");
+  await grid.getByLabel("Velg rom", { exact: true }).selectOption("all");
+  await expect(grid.locator(".phone-media")).toHaveCount(4);
+  await grid
+    .getByLabel("Velg rom", { exact: true })
+    .selectOption("room:living");
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+      )
+      .toBeLessThanOrEqual(1);
+    for (const card of await grid.locator(".phone-media").all()) {
+      expect(
+        await card.evaluate((el) => el.scrollHeight - el.clientHeight),
+      ).toBeLessThanOrEqual(1);
+      const box = await card.boundingBox();
+      expect(box!.width).toBeGreaterThan(width - 75);
+      for (const image of await card.locator(".phone-media-art img").all()) {
+        expect(
+          await image.evaluate((el) => {
+            const image = el.getBoundingClientRect();
+            const frame = el
+              .closest(".phone-media-art")!
+              .getBoundingClientRect();
+            return (
+              image.top >= frame.top - 1 && image.bottom <= frame.bottom + 1
+            );
+          }),
+        ).toBe(true);
+      }
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect
+    .poll(() =>
+      page.locator(".home-tabs").evaluate((el) => {
+        const r = el.getBoundingClientRect(),
+          t = el
+            .querySelector('[aria-selected="true"]')!
+            .getBoundingClientRect();
+        return t.left >= r.left - 1 && t.right <= r.right + 1;
+      }),
+    )
+    .toBe(true);
+  for (const theme of ["dark", "light"]) {
+    await page.evaluate(
+      (theme) => (document.documentElement.dataset.theme = theme),
+      theme,
+    );
+    await page.screenshot({
+      path: `/private/tmp/smarti-104-media-${theme}-${info.project.name}.png`,
+      fullPage: true,
+      animations: "disabled",
+    });
+  }
+  expect(data.writes()).toBe(0);
+  await page
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await expect(grid).toHaveAttribute("data-editing", "true");
+  await expect(grid.locator(".phone-media")).toHaveCount(0);
+  await page.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(grid.locator(".phone-media")).toHaveCount(3);
+  await page.setViewportSize({ width: 834, height: 1112 });
+  await expect(grid.locator(".phone-media")).toHaveCount(0);
+  await expect(grid.locator(".media-player-card")).toHaveCount(4);
+  expect(data.writes()).toBe(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  speaker.availability = "unavailable";
+  await page.reload();
+  await page.getByRole("tab", { name: "Multimedia", exact: true }).click();
+  await expect(voice).toContainText("Utilgjengelig");
+  await expect(
+    voice.getByRole("button", {
+      name: "SMARTi Voice Stue: Lavere volum",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  speaker.availability = "available";
+  data.access.permissions = ["home.view", "media.view"];
+  await page.reload();
+  await page.getByRole("tab", { name: "Multimedia", exact: true }).click();
+  await expect(
+    voice.getByRole("button", {
+      name: "SMARTi Voice Stue: Lavere volum",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await voice
+    .getByRole("button", { name: "Åpne spiller", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("slider", { name: "SMARTi Voice Stue: Volum", exact: true }),
+  ).toBeDisabled();
+  expect(sent).toHaveLength(3);
 });

@@ -22,6 +22,8 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  ChevronRight,
+  Sofa,
   Trash2,
   X,
 } from "lucide-react";
@@ -140,7 +142,7 @@ export function HomeGrid({
     () => window.matchMedia(phoneQuery).matches,
   );
   const [mobileLayout, setMobileLayout] = useState(storedMobileLayout);
-  const [phoneRoom, choosePhoneRoom] = useState("all");
+  const [phoneRoom, choosePhoneRoom] = useState("default");
   const [moreEnergy, showMoreEnergy] = useState(false);
   const surface = useRef<HTMLDivElement>(null);
   const standaloneEditButton = useRef<HTMLButtonElement>(null);
@@ -224,7 +226,14 @@ export function HomeGrid({
   const phoneRooms = [...new Set(availableLayout.map(roomOf))].filter(
     (key) => key !== "shared",
   );
-  const activePhoneRoom = phoneRooms.includes(phoneRoom) ? phoneRoom : "all";
+  const activePhoneRoom = phoneRooms.includes(phoneRoom)
+    ? phoneRoom
+    : phoneRoom === "default" &&
+        page === "media" &&
+        grouped &&
+        phoneRooms.length > 1
+      ? phoneRooms[0] || "all"
+      : "all";
   const hiddenEnergyCount = availableLayout.filter(
     (item) => !phoneEnergyPrimary.has(item.id),
   ).length;
@@ -236,7 +245,8 @@ export function HomeGrid({
       !referencePhone ||
       ((activePhoneRoom === "all" ||
         page === "energy_control" ||
-        roomOf(item) === activePhoneRoom) &&
+        roomOf(item) === activePhoneRoom ||
+        (page === "media" && roomOf(item) === "shared")) &&
         (page !== "security" ||
           item.id !== "events" ||
           !availableLayout.some((item) => catalog.get(item.id)?.entityId)) &&
@@ -273,7 +283,9 @@ export function HomeGrid({
             compactMobile ||
             (!editing && cards.some((card) => card.hidden)),
           referencePhone
-            ? "90px"
+            ? page === "media"
+              ? "58px"
+              : "90px"
             : compactMobile
               ? "var(--mobile-card-row)"
               : "128px",
@@ -819,6 +831,7 @@ export function HomeGrid({
           <label>
             <span className="sr-only">{t("Velg rom", "Choose room")}</span>
             <select
+              aria-label={t("Velg rom", "Choose room")}
               value={activePhoneRoom}
               onChange={(event) => choosePhoneRoom(event.target.value)}
             >
@@ -1121,6 +1134,39 @@ export function HomeGrid({
           ];
         })}
       </div>
+      {referencePhone && page === "media" && activePhoneRoom !== "all" && (
+        <nav
+          className="phone-media-rooms"
+          aria-label={t("Andre multimediarom", "Other media rooms")}
+        >
+          {phoneRooms
+            .filter((key) => key !== activePhoneRoom)
+            .map((key) => {
+              const name =
+                home.areas.find((area) => `room:${area.area_id}` === key)
+                  ?.name || t("Uten rom", "No room");
+              const count = availableLayout.filter(
+                (item) => roomOf(item) === key,
+              ).length;
+              return (
+                <button key={key} onClick={() => choosePhoneRoom(key)}>
+                  <Sofa size={27} />
+                  <span>
+                    <strong>{name}</strong>
+                    <small>
+                      {count}{" "}
+                      {t(
+                        count === 1 ? "spiller" : "spillere",
+                        count === 1 ? "player" : "players",
+                      )}
+                    </small>
+                  </span>
+                  <ChevronRight size={23} />
+                </button>
+              );
+            })}
+        </nav>
+      )}
       {referencePhone &&
         page === "energy_control" &&
         hasPrimaryEnergy &&

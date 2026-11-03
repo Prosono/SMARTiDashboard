@@ -66,8 +66,11 @@ export function MediaCard({
   useEffect(() => setVolume(measured ?? 0), [measured]);
   const actions = c.capabilities.flatMap((cap) => cap.actions);
   const supports = (action: string) => actions.includes(action);
-  const unavailable = offline || c.availability !== "available";
-  const blocked = unavailable || busy;
+  const unavailable =
+    offline || !home.connected || c.availability !== "available";
+  const permitted =
+    !home.permissions || home.permissions.includes("media.control");
+  const blocked = unavailable || !permitted || busy;
   const Icon = mediaIcon(c);
   const renderDevice = useContext(MetricDeviceRenderer);
   const inDialog = useContext(InSettingsDialog);

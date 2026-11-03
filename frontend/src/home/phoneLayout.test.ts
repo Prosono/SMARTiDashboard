@@ -62,4 +62,34 @@ describe("phone display adaptation", () => {
       }).w,
     ).toBe(1);
   });
+  it("keeps media players wide, including unavailable ones, and only compacts power-only devices", () => {
+    const player = {
+      domain: "media_player",
+      availability: "available",
+      capabilities: [{ actions: ["set_volume", "media_play"] }],
+    } as Control;
+    expect(phoneDeviceSize(player)).toMatchObject({ w: 2, h: 3 });
+    expect(
+      phoneDeviceSize({ ...player, availability: "unavailable" }),
+    ).toMatchObject({ w: 2, h: 3 });
+    expect(
+      phoneDeviceSize({
+        ...player,
+        capabilities: [
+          {
+            kind: "media",
+            actions: ["turn_on", "turn_off"],
+            minimum: null,
+            maximum: null,
+            step: null,
+            unit: null,
+          },
+        ],
+      }),
+    ).toMatchObject({ w: 2, h: 1 });
+    expect(phoneDeviceSize({ ...player, capabilities: [] })).toMatchObject({
+      w: 2,
+      h: 3,
+    });
+  });
 });

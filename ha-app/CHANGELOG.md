@@ -1,3 +1,8 @@
+## 1.36.104
+- Multimedia i Harmoni har fått brede mobilkort etter bildereferansen: stort TV-bilde med fjernkontroll, eget høyttalerkort med «Åpne spiller» og runde volumknapper, samt lave av/på-rader for enheter som bare støtter dette. Blågrå og dempet lilla glassflater tilpasses lyst og mørkt tema.
+- Romgrupperte oppsett åpner første rom, med øvrige rom som kompakte rader nederst. Romvelgeren kan også vise alle rom. Søk, egne kort og redigering beholdes, og mobilvisningen overskriver ikke lagret oppsett for PC eller nettbrett.
+- Volum endres i små steg innenfor enhetens grenser. Kommandoer følger tilgjengelighet, forbindelse, støttede handlinger og rettigheten til å styre multimedia. Fjernkontroll og spiller åpner eksisterende kontroller.
+
 ## 1.36.103
 - Alle mobilfanene i Harmoni bruker nå det samme toppfeltet og de samme ikonfanene, også Oversikt, Klima, Multimedia og Diverse.
 - Toppfeltet har fått 16 px ekstra luft, med hensyn til telefonens sikre toppområde. Søkeknappen følger den nye plasseringen, og søk, filtre og redigering er fortsatt tilgjengelige.

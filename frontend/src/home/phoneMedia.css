@@ -1,0 +1,327 @@
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  html[data-home-style="harmony"][data-theme]
+    .home-canvas[data-reference-phone="true"][data-page="media"] {
+    --media-phone-accent: #514d86;
+    --media-phone-button: #dedff0;
+    --media-phone-line: #a7aec847;
+    .home-canvas-grid {
+      grid-auto-rows: 58px;
+      gap: 10px;
+    }
+    .home-canvas-surface:has(.phone-media) {
+      background: linear-gradient(140deg, #f4f5fcf5, #e5ecf3ee);
+      color: var(--phone-ink);
+      border: 1px solid #ffffff80;
+      box-shadow:
+        var(--phone-shadow),
+        inset 0 1px 0 #ffffff45;
+    }
+    .home-canvas-surface:has(.phone-media[data-kind="speaker"]) {
+      background: linear-gradient(130deg, #efedf9f5, #e5e6f0ee);
+    }
+    .phone-media {
+      position: relative;
+      height: 100%;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 15px;
+      color: var(--phone-ink);
+      background: transparent;
+      font-size: 14px;
+    }
+    .phone-media button {
+      min-width: 44px;
+      min-height: 44px;
+      margin: 0;
+      color: inherit;
+      box-shadow: none;
+      font: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .phone-media button:disabled {
+      cursor: default;
+      opacity: 0.45;
+    }
+    .phone-media button:focus-visible,
+    .phone-media-rooms button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -3px;
+    }
+    .phone-media > header {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      min-width: 0;
+    }
+    .phone-media .phone-media-title {
+      flex: 1;
+      min-width: 0;
+      min-height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      text-align: left;
+      line-height: 1.2;
+    }
+    .phone-media-title > strong {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      font-size: clamp(16px, 4.5vw, 20px);
+      font-weight: 650;
+    }
+    .phone-media-title > small {
+      display: block;
+      color: var(--phone-muted);
+      font-size: 12px;
+      font-weight: 400;
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .phone-media-state {
+      flex: none;
+      max-width: 40%;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #7f91b425;
+      color: var(--media-phone-accent);
+      font-size: 11px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .phone-media-main {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+    .phone-media .phone-media-art {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: auto;
+      min-height: 0;
+      min-width: 0;
+      width: 43%;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    .phone-media-art .mobile-card-product {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      max-height: none;
+      margin: 0;
+      transform: none;
+      opacity: 1;
+      filter: none;
+    }
+    .phone-media-art .mobile-card-product > img {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
+      max-width: none;
+      object-fit: contain;
+      opacity: 1;
+      filter: drop-shadow(0 5px 5px #080e1a30);
+    }
+    .phone-media[data-kind="tv"] .phone-media-art {
+      width: 100%;
+    }
+    .phone-media .phone-media-open {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid var(--media-phone-line);
+      border-radius: 12px;
+      background: var(--media-phone-button);
+      color: var(--media-phone-accent);
+      padding: 6px 12px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .phone-media-main .phone-media-open {
+      flex: 1;
+      min-width: 0;
+      align-self: center;
+    }
+    .phone-media-open svg {
+      flex: none;
+    }
+    .phone-media-tv-actions,
+    .phone-media-volume,
+    .phone-media-footer {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      color: inherit;
+      font-size: 14px;
+    }
+    .phone-media-tv-actions .phone-media-open {
+      flex: 1;
+    }
+    .phone-media .phone-media-power,
+    .phone-media-volume button,
+    .phone-media .phone-media-details {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      flex: none;
+      border: 1px solid var(--media-phone-line);
+      border-radius: 50%;
+      padding: 0;
+      background: var(--media-phone-button);
+      color: var(--media-phone-accent);
+    }
+    .phone-media .phone-media-power[data-on="true"] {
+      background: linear-gradient(125deg, #ffc676, #ff9b45);
+      border-color: #ffbf75;
+      color: #302219;
+    }
+    .phone-media-volume {
+      border-top: 1px solid var(--media-phone-line);
+      padding-top: 5px;
+      gap: 8px;
+    }
+    .phone-media-volume > span {
+      flex: 1;
+    }
+    .phone-media-volume output {
+      font-size: 11px;
+      color: var(--phone-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .phone-media-footer {
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--phone-muted);
+    }
+    .phone-media[data-kind="power"] {
+      justify-content: center;
+      padding-block: 6px;
+    }
+    .phone-media[data-kind="power"] > header {
+      display: grid;
+      grid-template-columns: 33px 1fr 44px;
+      grid-template-rows: auto auto;
+      align-items: center;
+      column-gap: 12px;
+      row-gap: 2px;
+    }
+    .phone-media[data-kind="power"] header > svg {
+      grid-row: 1 / 3;
+    }
+    .phone-media-inline-state {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      grid-row: 2;
+      grid-column: 2;
+      color: var(--phone-muted);
+      font-size: 13px;
+    }
+    .phone-media-inline-state > i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #8f99a9;
+    }
+    .phone-media-inline-state > i[data-on="true"] {
+      background: #2ac97a;
+    }
+    .phone-media[data-kind="power"] .phone-media-power,
+    .phone-media[data-kind="power"] .phone-media-details {
+      grid-column: 3;
+      grid-row: 1 / 3;
+    }
+    .phone-media[data-unavailable="true"] .phone-media-state {
+      color: var(--phone-muted);
+    }
+    .phone-media-rooms {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .phone-media-rooms > button {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      min-height: 66px;
+      padding: 12px 16px;
+      background: linear-gradient(
+        135deg,
+        var(--phone-paper),
+        color-mix(in srgb, var(--phone-paper), #8292ae 8%)
+      );
+      color: var(--phone-ink);
+      border: 1px solid var(--media-phone-line);
+      border-radius: 18px;
+      text-align: left;
+      box-shadow: var(--phone-shadow);
+    }
+    .phone-media-rooms > button > span {
+      display: grid;
+      gap: 2px;
+      flex: 1;
+    }
+    .phone-media-rooms strong {
+      font-size: 18px;
+    }
+    .phone-media-rooms small {
+      font-size: 12px;
+      color: var(--phone-muted);
+    }
+  }
+  html[data-home-style="harmony"][data-theme="dark"]
+    .home-canvas[data-reference-phone="true"][data-page="media"] {
+    --media-phone-accent: #d0d5ff;
+    --media-phone-button: #858bbb40;
+    --media-phone-line: #a2acc048;
+    .home-canvas-surface:has(.phone-media) {
+      background: linear-gradient(140deg, #2c394bf5, #202832ee);
+      border-color: #8d9bb530;
+    }
+    .home-canvas-surface:has(.phone-media[data-kind="speaker"]) {
+      background: linear-gradient(130deg, #39394df5, #262835ee);
+    }
+    .phone-media-open {
+      border-color: #b4bcff55;
+    }
+  }
+  @media (forced-colors: active) {
+    html[data-home-style="harmony"][data-theme]
+      .home-canvas[data-page="media"]
+      .home-canvas-surface:has(.phone-media) {
+      background: Canvas;
+      color: CanvasText;
+    }
+  }
+}

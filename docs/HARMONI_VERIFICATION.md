@@ -1,3 +1,41 @@
+# Phone Multimedia — release 1.36.104
+
+Harmoni now presents native media-player cards as wide phone cards following
+this release's reference: a slate TV card with a complete local product image,
+controls opener and supported power action, a plum speaker card with player
+opener and round volume buttons, and low rows for power-only players. Light
+mode uses matching pale surfaces. The shared phone header remains in use.
+
+Room-grouped layouts start in their first room, with other rooms available as
+compact navigation rows and an All rooms option. Layouts without room grouping
+start with all cards. Custom presentations, source selections, image choices,
+editing and saved desktop geometry remain intact. Custom shared cards remain
+visible when filtering media by room. Tablet/desktop use existing full players.
+
+Inline commands require media.control, a connected home, an available player
+and its declared capability. Volume uses the latest reported level, bounded to
+the capability range, with no optimistic device-state claims. Unknown levels,
+off players and unavailable/read-only controls cannot send volume commands.
+The existing expanded player also respects connection and media permissions.
+The controls opener uses existing supported playback/volume/power controls;
+it does not pretend to provide directional remote keys or source switching.
+
+Validation on 3 November 2026: production build, frontend lint, browser-test
+TypeScript, changed-file formatting and diff checks passed. All 275 frontend
+unit tests and all 11 phone-card browser scenarios passed. The new media case
+covers real artwork, exact entity/command payloads, volume clamping, power,
+full-player opening and focus restoration, room selection, 320–430px layouts,
+editing, unchanged saved geometry, tablet restoration, unavailable and view-only
+states, including the expanded player. The existing desktop multimedia scenario
+(filters, commands and product artwork) also passed. Dark/light screenshots were
+visually inspected. Existing Vite chunk-size
+and headless-browser environment advisories remain. Tests use isolated demo
+data; physical phones and live HA hardware were not exercised.
+
+All 278 extracted runtime files match the manifest. The new media browser case
+also passed against that exact extracted archive. Archive SHA-256:
+`067b2ea718e6b614a9e8b7b423c2edc7d8af8110227779d2c96fe0d00e24eb9c`.
+
 # Shared phone navigation and top spacing — release 1.36.103
 
 All Harmoni Home phone destinations now share the header introduced for Energy,
