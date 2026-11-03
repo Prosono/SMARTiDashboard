@@ -76,7 +76,9 @@ for (const style of ["classic", "living", "harmony"]) {
     await login(page);
     const home = page.locator(".home-overview");
     await expect(home.locator(banners)).toHaveCount(0);
-    await expect(home.locator(".home-toolbar .home-date")).toBeVisible();
+    if (style === "harmony" && info.project.name === "mobile")
+      await expect(home.locator(".home-toolbar .home-date")).toBeHidden();
+    else await expect(home.locator(".home-toolbar .home-date")).toBeVisible();
     const toolbar = (await home.locator(".home-toolbar").boundingBox())!;
     const tabs = (await page.getByRole("tablist").boundingBox())!;
     expect(toolbar.y + toolbar.height).toBeLessThanOrEqual(tabs.y + 1);
@@ -88,9 +90,14 @@ for (const style of ["classic", "living", "harmony"]) {
         await page.getByRole("tab", { name, exact: true }).click();
         await expect(home.locator(banners)).toHaveCount(0);
         await expect(home.locator(".home-category-title")).toHaveCount(0);
-        await expect(
-          home.getByRole("heading", { name, exact: true, level: 1 }),
-        ).toHaveCSS("position", "absolute");
+        if (style === "harmony" && info.project.name === "mobile")
+          await expect(
+            home.getByRole("heading", { name, exact: true, level: 1 }),
+          ).toBeVisible();
+        else
+          await expect(
+            home.getByRole("heading", { name, exact: true, level: 1 }),
+          ).toHaveCSS("position", "absolute");
         const input = home.getByRole("textbox", { name: search, exact: true });
         const toggle = home
           .locator(".home-toolbar")

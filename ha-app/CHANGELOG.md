@@ -1,3 +1,7 @@
+## 1.36.103
+- Alle mobilfanene i Harmoni bruker nå det samme toppfeltet og de samme ikonfanene, også Oversikt, Klima, Multimedia og Diverse.
+- Toppfeltet har fått 16 px ekstra luft, med hensyn til telefonens sikre toppområde. Søkeknappen følger den nye plasseringen, og søk, filtre og redigering er fortsatt tilgjengelige.
+
 ## 1.36.102
 - Harmoni har nye mobilvisninger for Energi, Sikkerhet og Lys etter de tre bildereferansene. Tydelig sidetittel, SMARTi-merke, varselbjelle og ikonfaner gir et samlet toppfelt. Søk åpnes fortsatt fra forstørrelsesglasset, og tannhjulet åpner redigering.
 - Energi viser effekt nå med reell historikk for siste 60 minutter, to små prisfelt, forbruk med periodevalg og et kompakt kapasitetstrinn. Energiflyt åpner 3D-huset ved trykk; flere energikort finnes bak «Flere energikort». Grafer og kapasitet beholder faktiske måleverdier, hull og foreløpig status.

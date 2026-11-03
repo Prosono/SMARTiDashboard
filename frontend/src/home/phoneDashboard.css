@@ -13,6 +13,8 @@
     }
     .home-overview[data-phone-section] {
       position: relative;
+      --phone-top-space: max(16px, env(safe-area-inset-top, 0px));
+      padding-top: var(--phone-top-space);
       --phone-paper: #fbfdff;
       --phone-ink: #172632;
       --phone-muted: #596572;
@@ -67,7 +69,7 @@
       .home-search-tool {
         position: absolute;
         right: 0;
-        top: 64px;
+        top: calc(64px + var(--phone-top-space));
         z-index: 2;
       }
       .phone-page-heading {

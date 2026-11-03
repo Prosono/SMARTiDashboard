@@ -1,3 +1,24 @@
+# Shared phone navigation and top spacing — release 1.36.103
+
+All Harmoni Home phone destinations now share the header introduced for Energy,
+Security and Lights, including Overview, Climate, Multimedia and More. The
+wrapper adds at least 16px top spacing, respecting safe-area-inset-top when it
+is larger. Search follows the same offset and remains aligned with the page
+title. This changes header presentation only; card layouts keep their existing
+page-specific presentation and saved geometry. Tablet/desktop styles are unchanged.
+
+Validation on 3 November 2026: production build, frontend lint, browser-test
+TypeScript, changed-file Prettier, diff and deterministic packaging checks passed.
+Three existing mobile scenarios passed, exercising all category searches in
+both themes, Escape/focus restoration, page switching, 320–430px widths, Overview
+readings and return to tablet cards. The final Overview screenshot was visually
+inspected. The existing Vite chunk-size advisory remains. All 278 extracted
+runtime files match their manifest hashes. The all-category mobile search/header
+scenario also passed against the final extracted archive. Archive SHA-256:
+`161914c9cfadf2d088a3905f397420ff7f785091a2f8a99c8c903416afb90a16`.
+
+Validation uses isolated demo data; physical phones and HAOS were not exercised.
+
 # Phone Energy, Security and Lights — release 1.36.102
 
 Harmoni adapts these three destinations to the supplied phone references. The

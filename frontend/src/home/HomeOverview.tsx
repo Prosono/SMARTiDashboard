@@ -547,9 +547,7 @@ export function HomeOverview({
           <div
             className="home-overview"
             data-home-banners="off"
-            data-phone-section={
-              ["energy", "lights", "security"].includes(tab) || undefined
-            }
+            data-phone-section={harmony || undefined}
             data-overview-detail={mode === "advanced"}
           >
             <div className="home-toolbar">
