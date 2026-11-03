@@ -264,7 +264,7 @@ def extras_router(store, user, ha, settings):
         }
 
     @router.get("/controls/{entity_id}/history")
-    async def control_history(entity_id: str, hours: Literal["6", "24", "168"] = "24", current=Depends(user)):
+    async def control_history(entity_id: str, hours: Literal["1", "6", "24", "168"] = "24", current=Depends(user)):
         c = next((c for c in ha.controls() if c.entity_id == entity_id), None)
         if not c:
             raise HTTPException(404, "control_not_found")

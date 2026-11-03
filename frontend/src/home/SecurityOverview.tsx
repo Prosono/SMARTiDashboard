@@ -23,6 +23,7 @@ import {
   Wind,
   Zap,
   Bell,
+  LayoutGrid,
 } from "lucide-react";
 import type { Control, Home } from "../types";
 import { api } from "../api";
@@ -68,11 +69,13 @@ export function SecurityOverview({
   lang,
   offline,
   renderControls,
+  openDevices,
 }: {
   home: Home;
   lang: string;
   offline: boolean;
   renderControls: (c: Control[]) => ReactNode;
+  openDevices?: () => void;
 }) {
   const toolbar = useToolbarDisclosure();
   const harmony = useContext(HeaderAppearance);
@@ -378,6 +381,13 @@ export function SecurityOverview({
         </nav>
       </div>
       {summary}
+      {openDevices && (
+        <button className="phone-security-all" onClick={openDevices}>
+          <LayoutGrid size={21} />
+          {t("Vis alle enheter", "View all devices")}
+          <ChevronRight size={20} />
+        </button>
+      )}
       {harmony ? (
         <HomeGrid
           page="security"

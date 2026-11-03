@@ -1,0 +1,950 @@
+.phone-home-mark,
+.phone-page-heading,
+.phone-alert-bell,
+.phone-security-all,
+.phone-energy-settings {
+  display: none;
+}
+
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  html[data-home-style="harmony"][data-theme] {
+    &:has(.home-overview[data-phone-section]) .topbar {
+      display: none;
+    }
+    .home-overview[data-phone-section] {
+      position: relative;
+      --phone-paper: #fbfdff;
+      --phone-ink: #172632;
+      --phone-muted: #596572;
+      --phone-line: #dce3eb;
+      --phone-shadow: 0 5px 15px #1d355b0d, 0 1px 2px #1d355b08;
+      .home-toolbar {
+        margin: 0 0 16px;
+        min-height: 48px;
+      }
+      .home-location {
+        display: flex;
+        gap: 10px;
+        font-size: 17px;
+        font-weight: 600;
+        min-width: 0;
+      }
+      .home-location > svg,
+      .home-location .home-date {
+        display: none;
+      }
+      .home-location > span:first-of-type {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 180px;
+      }
+      .phone-home-mark {
+        display: block;
+        width: 25px;
+        height: 25px;
+        object-fit: cover;
+        object-position: left;
+        flex: none;
+      }
+      .home-toolbar-actions {
+        gap: 9px;
+      }
+      .home-toolbar-alert {
+        border-color: transparent;
+        color: var(--text);
+        box-shadow: var(--phone-shadow);
+      }
+      .home-toolbar-alert > svg:first-child,
+      .home-toolbar-alert::before {
+        display: none;
+      }
+      .phone-alert-bell {
+        display: block;
+      }
+      .home-search-tool {
+        position: absolute;
+        right: 0;
+        top: 64px;
+        z-index: 2;
+      }
+      .phone-page-heading {
+        display: block;
+        padding-right: 54px;
+        min-height: 48px;
+        margin-bottom: 14px;
+        font-size: 31px;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        line-height: 1.35;
+      }
+      .home-tabs {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none;
+        gap: 1px;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        margin: 0;
+      }
+      .home-tabs [role="tab"] {
+        flex: 0 0 calc((100% - 4px) / 5);
+        min-width: 0;
+        min-height: 62px;
+        padding: 7px 2px;
+        gap: 4px;
+        border-radius: 15px;
+        font-size: 11px;
+        background: transparent;
+      }
+      .home-tabs [role="tab"] svg {
+        width: 23px;
+        height: 23px;
+      }
+      .home-tabs [aria-selected="true"] {
+        background: #ffeadc;
+        color: #ba4c0b;
+      }
+      .home-tabs [aria-selected="true"] svg {
+        color: #d4660b;
+      }
+      .home-tab-panel {
+        padding-top: 14px;
+      }
+      .home-page-title {
+        display: none;
+      }
+      .security-overview {
+        display: flex;
+        flex-direction: column;
+      }
+      .phone-security-all {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        order: 10;
+        padding: 13px 17px;
+        min-height: 48px;
+        margin-top: 12px;
+        width: 100%;
+        border: 1px solid var(--phone-line);
+        border-radius: 17px;
+        color: var(--phone-ink);
+        background: var(--phone-paper);
+        box-shadow: var(--phone-shadow);
+        text-align: left;
+      }
+      .phone-security-all svg:last-child {
+        margin-left: auto;
+      }
+    }
+    .home-canvas[data-reference-phone="true"] {
+      --phone-paper: #fbfdff;
+      --phone-ink: #172632;
+      --phone-muted: #596572;
+      --phone-line: #dce3eb;
+      --phone-shadow: 0 5px 15px #1d355b0d, 0 1px 2px #1d355b08;
+      .home-canvas-grid {
+        grid-auto-rows: 90px;
+        gap: 12px;
+      }
+      .home-canvas-cell,
+      .home-canvas-surface {
+        border-radius: 18px;
+      }
+      .home-canvas-surface {
+        height: 100%;
+        box-shadow:
+          var(--phone-shadow),
+          inset 0 1px 0 #ffffff70;
+        border: 1px solid #ffffff80;
+      }
+      .home-canvas-surface:has(.phone-light[data-on="true"]) {
+        background: linear-gradient(
+          125deg,
+          color-mix(in srgb, var(--card-color) 38%, #fffbf5),
+          color-mix(in srgb, var(--card-color) 45%, #fff4e0)
+        );
+      }
+      .home-canvas-surface:has(.phone-light[data-on="false"]) {
+        background: linear-gradient(125deg, var(--phone-paper), #f0f2f6);
+        color: var(--phone-ink);
+      }
+      .home-canvas-surface:has(.phone-light[data-colored="true"]) {
+        background: linear-gradient(
+          125deg,
+          var(--card-color),
+          var(--card-depth)
+        );
+        color: var(--text);
+      }
+      .home-canvas-surface:has(.phone-security),
+      .home-canvas-surface:has(.phone-camera) {
+        background: linear-gradient(135deg, var(--phone-paper) 68%, #e8f7f1);
+        color: var(--phone-ink);
+      }
+      .home-canvas-surface:has(.phone-security[data-attention="true"]) {
+        background: linear-gradient(125deg, #fff8ee, #fff0db);
+      }
+      .home-canvas-room-heading {
+        font-size: 20px;
+        padding: 0 3px;
+      }
+      .home-canvas-room-heading > svg,
+      .home-canvas-room-heading > small {
+        display: none;
+      }
+      &[data-phone-single-room="true"] .home-canvas-room-heading {
+        visibility: hidden;
+      }
+      .phone-room-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0 0 12px;
+        min-height: 44px;
+      }
+      .phone-room-bar > label {
+        min-width: 0;
+      }
+      .phone-room-bar select {
+        max-width: 100%;
+        border: 0;
+        padding: 7px 22px 7px 0;
+        background: transparent;
+        color: var(--text);
+        font-size: 21px;
+        font-weight: 600;
+      }
+      .phone-room-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+      .phone-room-actions > button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 44px;
+        padding: 6px 12px;
+        border: 1px solid var(--phone-line);
+        background: var(--phone-paper);
+        border-radius: 24px;
+        font-size: 12px;
+        color: var(--phone-ink);
+      }
+      .phone-room-actions svg {
+        color: #da690b;
+      }
+      .phone-room-actions small {
+        max-width: 140px;
+        font-size: 10px;
+      }
+      .phone-more-energy {
+        display: block;
+        width: 100%;
+        min-height: 40px;
+        margin-top: 10px;
+        color: var(--accent);
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: var(--surface);
+        font-size: 12px;
+      }
+    }
+    .phone-light {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      padding: 12px 12px 8px;
+      gap: 5px;
+      box-sizing: border-box;
+      color: inherit;
+    }
+    .phone-product-open {
+      display: flex;
+      flex: 1;
+      align-items: flex-start;
+      justify-content: flex-start;
+      min-height: 55px;
+      padding: 0;
+      width: calc(100% - 38px);
+      border: 0;
+      background: transparent;
+    }
+    .phone-light .mobile-card-product {
+      width: 78px;
+      height: 78px;
+      display: block;
+      pointer-events: none;
+    }
+    .phone-light .mobile-card-product > :is(img, svg),
+    .phone-light .equipment-art,
+    .phone-light .equipment-art > :is(img, svg) {
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      object-fit: contain;
+      margin: 0;
+      opacity: 1;
+    }
+    .phone-light-power {
+      position: absolute;
+      top: 12px;
+      right: 10px;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid #e4b87538;
+      border-radius: 50%;
+      background: #ffe5be99;
+      color: #df720e;
+    }
+    .phone-light[data-on="false"] .phone-light-power {
+      color: #77808b;
+      background: #e9ecf0;
+      border-color: #dce0e6;
+    }
+    .phone-device-name {
+      display: block;
+      flex: none;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      color: inherit;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.2;
+      border: 0;
+      background: transparent;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+    .phone-device-name > :first-child {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .phone-light-reading {
+      display: flex;
+      justify-content: space-between;
+      gap: 5px;
+      font-size: 12px;
+      min-height: 16px;
+    }
+    .phone-light-reading strong {
+      font-weight: 500;
+    }
+    .phone-light input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      display: block;
+      width: 100%;
+      min-width: 0;
+      height: 44px;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .phone-light input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 8px;
+      background: linear-gradient(
+        to right,
+        #ec841c var(--phone-level),
+        #dfd3bd88 var(--phone-level)
+      );
+    }
+    .phone-light input[type="range"]::-moz-range-track {
+      height: 8px;
+      border-radius: 8px;
+      background: linear-gradient(
+        to right,
+        #ec841c var(--phone-level),
+        #dfd3bd88 var(--phone-level)
+      );
+    }
+    .phone-light input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      margin-top: -5.5px;
+      background: #fffefd;
+      box-shadow: 0 1px 4px #1a25322c;
+      border: 1px solid #e1e3e8;
+    }
+    .phone-light input[type="range"]::-moz-range-thumb {
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: #fffefd;
+      box-shadow: 0 1px 4px #1a25322c;
+      border: 1px solid #e1e3e8;
+    }
+    .phone-light[data-on="false"]
+      input[type="range"]::-webkit-slider-runnable-track {
+      background: #cfd5dd;
+    }
+    .phone-command-status {
+      position: absolute;
+      inset: auto 4px 0;
+      padding: 3px 5px;
+      background: var(--phone-paper);
+      color: var(--phone-ink);
+      border-radius: 5px;
+      font-size: 10px;
+      line-height: 1.15;
+      box-shadow: var(--phone-shadow);
+    }
+    .phone-security {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 5px;
+      width: 100%;
+      height: 100%;
+      padding: 12px 13px;
+      box-sizing: border-box;
+      background: transparent;
+      border: 0;
+      color: inherit;
+      text-align: left;
+    }
+    .phone-security .mobile-card-product {
+      display: block;
+      align-self: center;
+      width: 92px;
+      height: 86px;
+      margin: 0 auto 2px;
+      flex: 1;
+      min-height: 60px;
+    }
+    .phone-security .mobile-card-product > :is(img, svg),
+    .phone-security .equipment-art,
+    .phone-security .equipment-art > :is(img, svg) {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      object-fit: contain;
+      opacity: 1;
+      margin: 0;
+    }
+    .phone-security > strong {
+      font-size: 15px;
+      line-height: 1.15;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .phone-security-state {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      font-size: 13px;
+      color: #087e5c;
+      font-weight: 500;
+    }
+    .phone-security-state i {
+      width: 9px;
+      height: 9px;
+      flex: none;
+      background: #25bd86;
+      border-radius: 50%;
+    }
+    .phone-security[data-warning] .phone-security-state {
+      color: #a45b17;
+    }
+    .phone-security[data-warning] .phone-security-state i {
+      background: #d99432;
+    }
+    .phone-security-chevron {
+      position: absolute;
+      top: 24px;
+      right: 10px;
+      color: var(--phone-muted);
+    }
+    .phone-security > small {
+      display: none;
+    }
+    .phone-security[data-attention="true"] {
+      display: grid;
+      grid-template-columns: 62px minmax(0, 1fr) 65px;
+      grid-template-rows: 1fr 1fr;
+      gap: 3px 12px;
+      align-content: center;
+      align-items: center;
+      padding: 12px 14px;
+    }
+    .phone-security[data-attention="true"] .mobile-card-product {
+      grid-row: 1 / 3;
+      grid-column: 1;
+      width: 58px;
+      height: 60px;
+      min-height: 0;
+      margin: 0;
+      border-right: 1px solid #d7ba923d;
+      padding-right: 8px;
+      box-sizing: border-box;
+    }
+    .phone-security[data-attention="true"] > strong {
+      align-self: end;
+      font-size: 15px;
+    }
+    .phone-security[data-attention="true"] .phone-security-state {
+      align-self: start;
+      grid-column: 2;
+      color: #a25c0f;
+    }
+    .phone-security[data-attention="true"] > small {
+      display: block;
+      grid-column: 3;
+      grid-row: 1 / 3;
+      color: var(--phone-muted);
+      font-size: 10px;
+      padding-right: 8px;
+    }
+    .phone-security[data-attention="true"] .phone-security-chevron {
+      top: calc(50% - 10px);
+      right: 6px;
+    }
+    .phone-camera {
+      height: 100%;
+      padding: 13px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-sizing: border-box;
+    }
+    .phone-camera header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 25px;
+    }
+    .phone-camera header strong {
+      flex: 1;
+      min-width: 0;
+      font-size: 14px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+    .phone-camera header > span {
+      font-size: 10px;
+      padding: 4px 7px;
+      background: #e6e9ef;
+      color: #596572;
+      border-radius: 20px;
+    }
+    .phone-camera-preview {
+      flex: 1;
+      min-height: 0;
+      padding: 10px;
+      border: 0;
+      border-radius: 14px;
+      background: radial-gradient(ellipse at 40% 15%, #f3f5fa, #dfe4ed);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      color: #a7b0bd;
+    }
+    .phone-camera-preview > span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 30px;
+      background: var(--phone-paper);
+      color: var(--phone-ink);
+      font-size: 14px;
+      box-shadow: var(--phone-shadow);
+    }
+
+    .energy-control:has([data-reference-phone="true"])
+      > .energy-control-toolbar {
+      display: none;
+    }
+    .phone-energy-power {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 13px 14px 8px;
+      gap: 4px;
+      box-sizing: border-box;
+    }
+    .phone-energy-power header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .phone-energy-power header strong {
+      font-size: 16px;
+    }
+    .phone-energy-power header > span {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+    }
+    .phone-energy-power header i {
+      width: 8px;
+      height: 8px;
+      background: #9aa5b0;
+      border-radius: 50%;
+    }
+    .phone-energy-power header [data-live] i {
+      background: #24be78;
+    }
+    .phone-power-value {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      font-size: 45px;
+      font-weight: 600;
+      letter-spacing: -0.045em;
+      line-height: 1.1;
+    }
+    .phone-power-value small {
+      font-size: 24px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+    .phone-power-history {
+      flex: 1;
+      min-height: 30px;
+      color: #009b90;
+      position: relative;
+    }
+    .phone-power-history .flow-sparkline {
+      display: block;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+    }
+    .phone-power-history .measured-chart.harmony-trend {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+      margin: 0;
+    }
+    .phone-power-history .measured-chart-stage {
+      grid-column: 1;
+      grid-row: 1;
+      height: 100%;
+    }
+    .phone-power-history .measured-chart-scale,
+    .phone-power-history .measured-chart-times,
+    .phone-power-history .measured-chart-guide {
+      display: none;
+    }
+    .phone-power-history > span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .phone-energy-power footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+    }
+    .ep .phone-energy-power footer button {
+      min-height: 30px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      color: #008f86;
+      font-size: 13px;
+      font-weight: 600;
+      gap: 3px;
+    }
+    .ep .phone-energy-rate {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 0;
+      height: 100%;
+      width: 100%;
+      padding: 10px 12px;
+      border: 0;
+      border-radius: inherit;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+    }
+    .phone-energy-rate > span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+    .phone-energy-rate svg {
+      width: 18px;
+      height: 18px;
+      color: var(--accent);
+      flex: none;
+    }
+    .phone-energy-rate strong {
+      font-size: 29px;
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-top: 4px;
+    }
+    .phone-energy-rate small {
+      font-size: 12px;
+      line-height: 1.1;
+    }
+    .ep .phone-energy-capacity {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      height: 100%;
+      width: 100%;
+      padding: 12px 14px;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      color: inherit;
+    }
+    .phone-capacity-icon {
+      display: grid;
+      place-items: center;
+      flex: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #00998a12;
+      color: #008e82;
+    }
+    .phone-energy-capacity > span:nth-child(2) {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 1px;
+      min-width: 0;
+    }
+    .phone-energy-capacity small {
+      font-size: 11px;
+      line-height: 1.2;
+    }
+    .phone-energy-capacity strong {
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .phone-energy-capacity[data-waiting] strong {
+      font-size: 17px;
+    }
+    .phone-energy-capacity svg:last-child {
+      flex: none;
+    }
+    .phone-energy-consumption {
+      padding: 12px 13px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 8px;
+      box-sizing: border-box;
+    }
+    .phone-energy-consumption > header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .phone-energy-consumption > header strong {
+      font-size: 16px;
+    }
+    .ep .phone-consumption-open {
+      background: transparent;
+      color: inherit;
+      border: 0;
+      padding: 0;
+      min-height: 28px;
+      gap: 4px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .phone-energy-consumption > header label {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      position: relative;
+      font-size: 12px;
+    }
+    .phone-energy-consumption input[type="date"] {
+      position: absolute;
+      inset: -8px 0;
+      opacity: 0;
+      width: 100%;
+      height: 38px;
+      cursor: pointer;
+    }
+    .phone-energy-period {
+      display: flex;
+      gap: 2px;
+      padding: 2px;
+      border-radius: 16px;
+      background: var(--soft);
+    }
+    .ep .phone-energy-period > button {
+      flex: 1;
+      min-width: 0;
+      min-height: 30px;
+      padding: 4px;
+      border: 0;
+      border-radius: 15px;
+      font-size: 11px;
+      background: transparent;
+      color: var(--muted);
+    }
+    .ep .phone-energy-period > button[aria-pressed="true"] {
+      background: var(--phone-paper);
+      color: #008c80;
+      font-weight: 600;
+      box-shadow: 0 1px 4px #1d355b16;
+    }
+    .phone-energy-consumption .energy-summary {
+      min-height: 0;
+      flex: 1;
+      gap: 0;
+    }
+    .phone-energy-consumption .energy-summary-reading,
+    .phone-energy-consumption .energy-summary-detail {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    .phone-energy-consumption .energy-summary-caption {
+      font-size: 9px;
+      line-height: 12px;
+    }
+    .phone-energy-consumption .energy-summary-chart {
+      min-height: 64px;
+    }
+    .phone-energy-consumption .energy-summary [data-part] {
+      fill: #17a79b;
+    }
+    .ep .phone-energy-settings {
+      display: flex;
+      width: 100%;
+      min-height: 44px;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 10px 16px;
+      margin-top: 12px;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 14px;
+      box-shadow: var(--home-card-shadow);
+    }
+    .phone-energy-settings svg:last-child {
+      margin-left: auto;
+    }
+  }
+  html[data-home-style="harmony"][data-theme="dark"] {
+    .home-overview[data-phone-section],
+    .home-canvas[data-reference-phone="true"] {
+      --phone-paper: #253039;
+      --phone-ink: #edf4f6;
+      --phone-muted: #bac5d0;
+      --phone-line: #43515e;
+      --phone-shadow: 0 5px 18px #00000026;
+    }
+    .home-overview[data-phone-section] .home-tabs [aria-selected="true"] {
+      background: #523722;
+      color: #ffc395;
+    }
+    .home-overview[data-phone-section] .home-tabs [aria-selected="true"] svg {
+      color: #ffc395;
+    }
+    .home-canvas[data-reference-phone="true"] {
+      .home-canvas-surface:has(
+        .phone-light[data-on="true"]:not([data-colored="true"])
+      ) {
+        background: linear-gradient(130deg, #4f4130, #3d352b);
+        color: #fff3e4;
+      }
+      .home-canvas-surface:has(.phone-light[data-on="false"]) {
+        background: linear-gradient(130deg, #2e3740, #232c34);
+      }
+      .home-canvas-surface:has(.phone-security),
+      .home-canvas-surface:has(.phone-camera) {
+        background: linear-gradient(130deg, #2b3741, #20352f);
+      }
+      .home-canvas-surface:has(.phone-security[data-attention="true"]) {
+        background: linear-gradient(130deg, #483a2c, #392d24);
+      }
+    }
+    .phone-security-state {
+      color: #8ae6bd;
+    }
+    .phone-security[data-attention="true"] .phone-security-state {
+      color: #f3c783;
+    }
+    .phone-camera-preview {
+      background: radial-gradient(ellipse at 40% 15%, #3b4858, #2c3645);
+    }
+    .phone-camera header > span {
+      color: #d3dce6;
+      background: #424d59;
+    }
+    .phone-light-power {
+      background: #705131;
+      color: #ffca85;
+    }
+    .phone-power-history {
+      color: #70d7c9;
+    }
+    .ep .phone-energy-power footer button {
+      color: #75d6c6;
+    }
+    .ep .phone-energy-period > button[aria-pressed="true"] {
+      color: #8adaca;
+      background: #32464b;
+    }
+  }
+  @media (forced-colors: active) {
+    html[data-home-style="harmony"]
+      .home-canvas[data-reference-phone]
+      .home-canvas-surface {
+      background: Canvas;
+      color: CanvasText;
+      border: 1px solid CanvasText;
+    }
+    .phone-security-state,
+    .phone-security[data-attention="true"] .phone-security-state {
+      color: CanvasText;
+    }
+  }
+}

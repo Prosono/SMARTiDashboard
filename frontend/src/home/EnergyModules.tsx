@@ -17,6 +17,7 @@ import type { MobileSummary } from "./mobileCardModel";
 import "./energyModules.css";
 import { energyControlDefaults } from "./energyControlModel";
 import { cardTone } from "./cardToneModel";
+import type { PhoneSize } from "./phoneLayout";
 
 const moduleIcons: Record<string, LucideIcon> = {
   "energy:spot": Tag,
@@ -41,6 +42,8 @@ type ModuleProps = {
   h?: number;
   defaultHidden?: boolean;
   summary?: MobileSummary;
+  phoneSize?: PhoneSize;
+  phoneContent?: (open: () => void) => ReactNode;
 };
 
 /** Declarative slots preserve the original presentation outside the Home canvas. */

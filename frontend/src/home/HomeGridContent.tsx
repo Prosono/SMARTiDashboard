@@ -23,6 +23,7 @@ export function HomeGridContent({
   tone,
   lightStyle,
   mobile,
+  phoneContent,
 }: {
   children: ReactNode;
   title: string;
@@ -32,6 +33,7 @@ export function HomeGridContent({
   tone: CardTone;
   lightStyle?: CSSProperties;
   mobile?: MobileCardProps;
+  phoneContent?: (open: () => void) => ReactNode;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -70,7 +72,9 @@ export function HomeGridContent({
 
   return (
     <>
-      {mobile ? (
+      {mobile && phoneContent ? (
+        phoneContent(() => expand(true))
+      ) : mobile ? (
         <MobileCardTile {...mobile} onOpen={() => expand(true)} />
       ) : (
         <div

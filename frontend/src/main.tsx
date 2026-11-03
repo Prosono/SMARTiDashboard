@@ -123,6 +123,7 @@ import "./home/thermostatCard.css";
 import "./home/mobileCards.css";
 import "./home/glassCards.css";
 import "./home/energyPalette.css";
+import "./home/phoneDashboard.css";
 import "./home/bannerlessHome.css";
 import "./rooms/roomEquipment.css";
 import { integrationName } from "./branding";

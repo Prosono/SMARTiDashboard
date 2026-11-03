@@ -226,6 +226,44 @@ async function setup(page: Page, compact = false, chartsOnly = false) {
         : null,
     },
   };
+  await page.route("**/api/home", async (route) => {
+    const response = await route.fetch(),
+      home = await response.json();
+    await route.fulfill({
+      json: {
+        ...home,
+        connected: true,
+        controls: [
+          ...home.controls,
+          {
+            id: "sensor.power",
+            entity_id: "sensor.power",
+            domain: "sensor",
+            name: "House power",
+            state: "4200",
+            attributes: { device_class: "power", unit_of_measurement: "W" },
+            availability: "available",
+            diagnostic: false,
+            capabilities: [],
+            area_id: null,
+          },
+        ],
+      },
+    });
+  });
+  await page.route("**/api/controls/sensor.power/history?hours=1", (route) =>
+    route.fulfill({
+      json: {
+        start: "2026-11-02T11:00:00Z",
+        end: "2026-11-02T12:00:00Z",
+        unit: "W",
+        points: [3000, 3100, null, 3500, 3900, 4200].map((value, i) => ({
+          time: new Date(now.getTime() - 3600000 + i * 720000).toISOString(),
+          value,
+        })),
+      },
+    }),
+  );
   let failSave = false;
   for (const key of Object.keys(layouts))
     await page.route(`**/api/home/layout/${key}`, (route) => {
@@ -508,19 +546,32 @@ test("compact phone tiles show KPIs and only mount the opened house or graph", a
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page, true);
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
-  await expect(grid.locator(".mobile-card-tile")).toHaveCount(10);
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(5);
+  await expect(grid.locator(".phone-energy-power")).toBeVisible();
+  await expect(
+    grid.locator(".phone-power-history .measured-chart svg"),
+  ).toBeVisible();
+  await page.screenshot({
+    path: `/private/tmp/smarti-102-energy-${info.project.name}.png`,
+    fullPage: true,
+    animations: "disabled",
+  });
+  await expect(
+    grid.locator(".phone-energy-consumption .energy-summary-chart"),
+  ).toBeVisible();
   await expect(grid.locator('[data-card="energy:capacity"]')).toContainText(
     "2–5 kW",
   );
   await expect(page.locator(".energy-scene")).toHaveCount(0);
   await expect(page.locator(".ep-chart")).toHaveCount(0);
-  await grid.locator('[data-card="energy:flow"] .mobile-card-tile').click();
+  await grid.getByRole("button", { name: "Energiflyt", exact: true }).click();
   await expect(page.locator(".energy-scene")).toBeVisible({ timeout: 20000 });
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Lukk innstillinger", exact: true })
     .click();
   await expect(page.locator(".energy-scene")).toHaveCount(0);
+  await grid.getByRole("button", { name: /Flere energikort/ }).click();
   await grid
     .locator('[data-card="energy:price-hours"] .mobile-card-tile')
     .click();
@@ -529,7 +580,9 @@ test("compact phone tiles show KPIs and only mount the opened house or graph", a
     .getByRole("dialog")
     .getByRole("button", { name: "Lukk innstillinger", exact: true })
     .click();
-  await grid.locator('[data-card="energy:history"] .mobile-card-tile').click();
+  await grid
+    .getByRole("button", { name: "Åpne forbruksdetaljer", exact: true })
+    .click();
   await expect(page.getByRole("dialog").locator(".ep-chart")).toBeVisible();
   expect(
     await page

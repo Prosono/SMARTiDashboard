@@ -41,6 +41,7 @@ import {
   Radio,
   AlertCircle,
   Play,
+  Bell,
 } from "lucide-react";
 import { api } from "../api";
 import type { Home, Control } from "../types";
@@ -50,7 +51,7 @@ import { Energy } from "./EnergyOverview";
 import { EnergyPlatform } from "./EnergyPlatform";
 import { EnergyFlow } from "./EnergyFlow";
 import { Scenes } from "./Scenes";
-import { HomeTabs, type HomeTab } from "./HomeTabs";
+import { HomeTabs, homeTabs, type HomeTab } from "./HomeTabs";
 import { ClimateOverview } from "./ClimateOverview";
 import { Presence } from "./People";
 import { Calendar } from "./Calendar";
@@ -546,10 +547,18 @@ export function HomeOverview({
           <div
             className="home-overview"
             data-home-banners="off"
+            data-phone-section={
+              ["energy", "lights", "security"].includes(tab) || undefined
+            }
             data-overview-detail={mode === "advanced"}
           >
             <div className="home-toolbar">
               <div className="home-location">
+                <img
+                  className="phone-home-mark"
+                  src={new URL("brand/smarti-logo.png", document.baseURI).href}
+                  alt="SMARTi"
+                />
                 <MapPin size={15} />
                 <span>{h.home_name}</span>
                 <span className="home-date">
@@ -570,6 +579,11 @@ export function HomeOverview({
                     onClick={() => setShowAlerts(true)}
                   >
                     <TriangleAlert size={23} aria-hidden="true" />
+                    <Bell
+                      className="phone-alert-bell"
+                      size={22}
+                      aria-hidden="true"
+                    />
                     <span aria-hidden="true">{model.alerts.length}</span>
                   </button>
                 )}
@@ -579,6 +593,13 @@ export function HomeOverview({
                   fallback={!harmony ? () => configure(true) : undefined}
                 />
               </div>
+            </div>
+            <div className="phone-page-heading" role="heading" aria-level={1}>
+              {
+                homeTabs.find((item) => item.id === tab)?.[
+                  lang === "en" ? "en" : "nb"
+                ]
+              }
             </div>
             <HomeTabs
               tab={tab}
@@ -1317,6 +1338,7 @@ export function HomeOverview({
                   lang={lang}
                   offline={offline}
                   renderControls={renderControls}
+                  openDevices={openDevices}
                 />
               )}
               {tab === "energy" && (

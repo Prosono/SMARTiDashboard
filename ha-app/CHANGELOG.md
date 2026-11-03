@@ -1,3 +1,10 @@
+## 1.36.102
+- Harmoni har nye mobilvisninger for Energi, Sikkerhet og Lys etter de tre bildereferansene. Tydelig sidetittel, SMARTi-merke, varselbjelle og ikonfaner gir et samlet toppfelt. Søk åpnes fortsatt fra forstørrelsesglasset, og tannhjulet åpner redigering.
+- Energi viser effekt nå med reell historikk for siste 60 minutter, to små prisfelt, forbruk med periodevalg og et kompakt kapasitetstrinn. Energiflyt åpner 3D-huset ved trykk; flere energikort finnes bak «Flere energikort». Grafer og kapasitet beholder faktiske måleverdier, hull og foreløpig status.
+- Lys får to kolonner med enhetsbilder, rund av/på-knapp og dimming direkte på kortet. Romvalg og «Slå av alle» gjelder valgt rom, eller hele hjemmet når alle rom vises. Kommandoer følger støttede funksjoner og rettigheter; dimming sendes ved slipp eller tastatursteg.
+- Sikkerhet fremhever utilgjengelige enheter og alarmer, viser kamera i et bredt kort og øvrige enheter i to kolonner med bilde og status. Åpne kontakter markeres som åpne; status gjettes ikke ved manglende forbindelse. Kamera starter først når det åpnes.
+- Mobilgeometrien lagres ikke over PC-oppsettet. Romgruppering, bildevalg, redigering og lagrede kort beholdes. Nettbrett og PC beholder de større kortene.
+
 ## 1.36.101
 - Energisiden har fått en lysere palett etter den nye bildereferansen: turkis energiflyt og forbruk, lavendel for spotpris, mintgrønn kostnad, kremfarget nettleie og rolige, lyse flater for kapasitet og store grafer. Mørkt tema bruker de samme kategoriene med tilpassede farger og lesbar tekst.
 - Lilla strømprissøyler, turkise forbruksgrafer og grønne/oransje felt for billigste og dyreste time gjør informasjonen lettere å skille. Forbrukets lavt/middels/høyt-markeringer beholdes. Måleboksene ved 3D-huset har lyse flater og tydeligere ikonfarger.

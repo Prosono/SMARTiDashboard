@@ -80,7 +80,7 @@ export function HomePageToolButtons({
     <>
       {search && (
         <button
-          className="home-toolbar-tool"
+          className="home-toolbar-tool home-search-tool"
           ref={context.searchButton}
           aria-label={searchLabel}
           title={searchLabel}

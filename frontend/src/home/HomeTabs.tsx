@@ -14,6 +14,7 @@ import {
   AudioLines,
   LayoutGrid,
 } from "lucide-react";
+import { phoneQuery } from "./phoneLayout";
 export const homeTabs = [
   { id: "overview", nb: "Oversikt", en: "Overview", Icon: House },
   { id: "lights", nb: "Lys", en: "Lights", Icon: Lightbulb },
@@ -67,6 +68,14 @@ export function HomeTabs({
       const selected = container!.querySelector<HTMLElement>(
         '[aria-selected="true"]',
       );
+      if (
+        index < 5 &&
+        window.matchMedia(phoneQuery).matches &&
+        container!.closest(".home-overview[data-phone-section]")
+      ) {
+        container!.scrollTo({ left: 0, behavior: "instant" });
+        return;
+      }
       if (!selected || container!.scrollWidth <= container!.clientWidth) return;
       const box = container!.getBoundingClientRect();
       const item = selected.getBoundingClientRect();

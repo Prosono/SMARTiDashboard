@@ -3,13 +3,14 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
-from app.home_extras import daily_forecasts, extras_router, forecast_days, person_image_path
-from app.models import normalize
-from app.storage import Store
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from test_api import login
 from test_management import client  # noqa: F401
+
+from app.home_extras import daily_forecasts, extras_router, forecast_days, person_image_path
+from app.models import normalize
+from app.storage import Store
 
 
 def test_people_preferences_photo_and_roles(client):  # noqa: F811
@@ -143,13 +144,19 @@ def test_live_forecast_and_device_history_contract(tmp_path, period):
         direct = c.get("/api/controls/sensor.temp/history?hours=6")
         assert direct.status_code == 200
         assert direct.json()["points"] == history["points"]
+        hour = c.get("/api/controls/sensor.temp/history?hours=1")
+        assert hour.status_code == 200
+        short = hour.json()
+        assert abs((datetime.fromisoformat(short["end"]) - datetime.fromisoformat(short["start"])).total_seconds() - 3600) < 5
+        assert short["unit"] == "°C" and short["points"][1]["value"] is None
         assert c.get("/api/manage/device/one/history?entity_id=sensor.other").status_code == 404
         assert c.get("/api/manage/device/one/history?entity_id=sensor.temp&hours=999").status_code == 422
 
 
 def test_profile_proxy_keeps_supervisor_prefix_and_credentials_server_side(tmp_path, monkeypatch):
-    import app.home_extras as extras
     import httpx
+
+    import app.home_extras as extras
 
     seen = []
 

@@ -11,6 +11,7 @@ import { EnergyModule, EnergyModuleGroup } from "./EnergyModules";
 import { finiteReading } from "./energySummaryModel";
 import { priceHours } from "./energyControlModel";
 import "./energyControl.css";
+import { PhoneCapacity, PhoneEnergyRate } from "./PhoneEnergy";
 
 const format = (n: number | string | null | undefined, digits = 1) => {
   const value = finiteReading(n);
@@ -25,7 +26,11 @@ const time = (stamp: number) =>
     timeZone: "Europe/Oslo",
   });
 
-export function energyKpiModules(data: Dashboard | undefined, setup: Setup) {
+export function energyKpiModules(
+  data: Dashboard | undefined,
+  setup: Setup,
+  lang = "nb",
+) {
   const current = data?.current,
     capacity = current?.capacity;
   const now = Date.now(),
@@ -76,6 +81,10 @@ export function energyKpiModules(data: Dashboard | undefined, setup: Setup) {
     <EnergyModuleGroup className="energy-kpis">
       <EnergyModule
         id="energy:capacity"
+        phoneSize={{ w: 2, h: 1, order: 4 }}
+        phoneContent={(open) => (
+          <PhoneCapacity data={data} lang={lang} open={open} />
+        )}
         title="Kapasitetstrinn"
         summary={{
           reading: tier,
@@ -163,6 +172,15 @@ export function energyKpiModules(data: Dashboard | undefined, setup: Setup) {
       </EnergyModule>
       <EnergyModule
         id="energy:tariff"
+        phoneSize={{ w: 1, h: 1, order: 2 }}
+        phoneContent={(open) => (
+          <PhoneEnergyRate
+            kind="tariff"
+            value={rate === null ? null : rate * 100}
+            lang={lang}
+            open={open}
+          />
+        )}
         title="Nettleie nå"
         summary={{
           reading:

@@ -245,6 +245,13 @@ async function setup(page: Page) {
 async function squares(page: Page, columns = 2) {
   const grid = page.locator(".home-canvas-grid");
   await expect(page.locator(".mobile-card-tile")).toHaveCount(12);
+  await expect
+    .poll(() =>
+      grid.evaluate(
+        (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+      ),
+    )
+    .toBe(columns);
   // FLIP finishes after leaving edit mode; assess the final geometry.
   await expect
     .poll(async () =>
@@ -362,10 +369,8 @@ test("tiles adapt at 320–430px, retain room grouping and return to full cards 
   await expect(
     page.locator('.home-canvas[data-page="lights"]'),
   ).toHaveAttribute("data-grouped", "true");
-  await expect(
-    page.locator(".home-canvas-room-heading").filter({ hasText: "Stue" }),
-  ).toBeVisible();
-  await expect(page.locator(".mobile-card-tile")).not.toHaveCount(0);
+  await expect(page.locator(".phone-room-bar")).toContainText("Stue");
+  await expect(page.locator(".phone-light")).toBeVisible();
   for (const [label, key] of [
     ["Klima", "climate"],
     ["Sikkerhet", "security"],
@@ -375,8 +380,15 @@ test("tiles adapt at 320–430px, retain room grouping and return to full cards 
     await page.getByRole("tab", { name: label, exact: true }).click();
     await expect(
       page.locator(`.home-canvas[data-page="${key}"]`),
-    ).toHaveAttribute("data-mobile-layout", "compact");
-    await expect(page.locator(".mobile-card-tile").first()).toBeVisible();
+    ).toHaveAttribute(
+      key === "security" ? "data-reference-phone" : "data-mobile-layout",
+      key === "security" ? "true" : "compact",
+    );
+    await expect(
+      page
+        .locator(key === "security" ? ".phone-security" : ".mobile-card-tile")
+        .first(),
+    ).toBeVisible();
     await expect(page.locator(".category-heading")).toHaveCount(0);
     await expect(page.locator(".home-category-title")).toHaveCount(0);
     await expect(page.locator("[data-collapsible-toolbar]")).toBeHidden();
@@ -759,4 +771,180 @@ test("stronger glass keeps a light gray calendar, readable ink and fully opaque 
     .getByRole("button", { name: "Lukk innstillinger", exact: true })
     .click();
   expect(data.commands).toHaveLength(0);
+});
+
+test("phone lights have direct dimming and power controls, preserve rooms and block unavailable devices", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const data = await setup(page);
+  const light = data.controls.find((c) => c.domain === "light")!;
+  light.capabilities[0].minimum = 0;
+  light.capabilities[0].maximum = 100;
+  light.capabilities[0].step = 1;
+  for (let i = 0; i < 5; i++)
+    data.controls.push({
+      ...structuredClone(light),
+      id: `light.phone_${i}`,
+      entity_id: `light.phone_${i}`,
+      name: `Lys Stue ${i + 1}`,
+      state: i === 4 ? "off" : "on",
+      attributes: {
+        brightness: 94,
+        color_mode: "color_temp",
+        smarti_light_type: i > 2 ? "desk" : "pendant",
+      },
+    });
+  await page.reload();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  const grid = page.locator('.home-canvas[data-page="lights"]');
+  await expect(grid).toHaveAttribute("data-reference-phone", "true");
+  await expect(
+    grid.locator(".phone-light .mobile-card-product img").first(),
+  ).toBeVisible();
+  const range = grid.getByRole("slider", {
+    name: "Taklampe: lysstyrke",
+    exact: true,
+  });
+  await range.focus();
+  await range.press("ArrowRight");
+  await expect.poll(() => data.commands.length).toBe(1);
+  expect(data.commands[0]).toMatchObject({
+    action: "set_brightness",
+    value: 58,
+  });
+  await grid
+    .getByRole("button", { name: "Slå av: Taklampe", exact: true })
+    .click();
+  await expect.poll(() => data.commands.length).toBe(2);
+  expect(data.commands[1]).toMatchObject({ action: "turn_off" });
+  await grid.getByRole("button", { name: "Slå av alle", exact: true }).click();
+  await expect.poll(() => data.commands.length).toBe(7);
+  expect(
+    data.commands.slice(2).every((command) => command.action === "turn_off"),
+  ).toBe(true);
+  expect(data.writes()).toBe(0);
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - innerWidth,
+      ),
+    ).toBeLessThanOrEqual(1);
+    expect(
+      await grid
+        .locator(".home-canvas-grid")
+        .evaluate(
+          (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+        ),
+    ).toBe(2);
+  }
+  await page.evaluate(() => (document.documentElement.dataset.theme = "light"));
+  await page.screenshot({
+    path: `/private/tmp/smarti-102-lights-${info.project.name}.png`,
+    fullPage: true,
+    animations: "disabled",
+  });
+  light.availability = "unavailable";
+  await page.reload();
+  await page.getByRole("tab", { name: "Lys", exact: true }).click();
+  await expect(
+    grid.locator('[data-card="device:light.mobile"] .phone-light'),
+  ).toContainText("Utilgjengelig");
+  await expect(
+    grid.getByRole("slider", { name: "Taklampe: lysstyrke", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    grid.locator('[data-card="device:light.mobile"] .phone-light-power'),
+  ).toBeDisabled();
+  expect(data.commands).toHaveLength(7);
+  await page.setViewportSize({ width: 834, height: 1112 });
+  await expect(grid.locator(".phone-light")).toHaveCount(0);
+});
+
+test("phone security prioritises unavailable contacts, shows product portraits and opens cameras on demand", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const data = await setup(page);
+  const template = data.controls.find((c) => c.domain === "lock")!;
+  const add = (
+    id: string,
+    name: string,
+    state: string,
+    attributes: Record<string, unknown>,
+    availability = "available",
+  ) => ({
+    ...template,
+    id,
+    entity_id: id,
+    domain: id.split(".")[0],
+    name,
+    state,
+    attributes,
+    availability,
+    capabilities: [],
+  });
+  data.controls.push(
+    add(
+      "binary_sensor.contact",
+      "Åpne Lukke test",
+      "unavailable",
+      { device_class: "door" },
+      "unavailable",
+    ),
+    add("binary_sensor.window", "Vindu Kontor", "off", {
+      device_class: "window",
+    }),
+    add("binary_sensor.smoke", "Branndetektor Kontor", "off", {
+      device_class: "smoke",
+    }),
+    add("camera.phone", "Vetles Kamera Fluent", "idle", {}),
+  );
+  let starts = 0;
+  await page.reload();
+  await page.route("**/api/home/camera/*/live", (route) => {
+    starts++;
+    return route.fulfill({
+      status: 503,
+      json: { detail: "fixture_unavailable" },
+    });
+  });
+  await page.getByRole("tab", { name: "Sikkerhet", exact: true }).click();
+  const grid = page.locator('.home-canvas[data-page="security"]');
+  await expect(
+    grid.locator(".phone-security[data-unavailable=true]"),
+  ).toContainText("Utilgjengelig");
+  await expect(
+    grid.locator('[data-card="device:binary_sensor.contact"]'),
+  ).toHaveCSS("grid-column-end", "span 2");
+  await expect(grid.locator(".phone-camera")).toBeVisible();
+  await expect(
+    grid.locator('[data-card="device:binary_sensor.window"]'),
+  ).toContainText("Lukket");
+  await expect(
+    grid.locator('[data-card="device:binary_sensor.smoke"]'),
+  ).toContainText("Ingen røyk");
+  expect(starts).toBe(0);
+  expect(data.commands).toHaveLength(0);
+  await page.evaluate(() => (document.documentElement.dataset.theme = "light"));
+  await page.screenshot({
+    path: `/private/tmp/smarti-102-security-${info.project.name}.png`,
+    fullPage: true,
+    animations: "disabled",
+  });
+  await grid
+    .getByRole("button", {
+      name: "Åpne kamera: Vetles Kamera Fluent",
+      exact: true,
+    })
+    .click();
+  await expect.poll(() => starts).toBe(1);
+  await expect(page.getByRole("dialog")).toContainText("Vetles Kamera Fluent");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
+  await expect(page.locator("video")).toHaveCount(0);
+  expect(data.writes()).toBe(0);
 });

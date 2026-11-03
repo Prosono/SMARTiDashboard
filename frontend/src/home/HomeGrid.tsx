@@ -62,9 +62,17 @@ import { lightCardStyle } from "./lightCardModel";
 import { mobileGridItems } from "./mobileCardModel";
 import { HomePageTools } from "./HomePageTools";
 import type { MobileSummary } from "./mobileCardModel";
+import { photoImages } from "./CardPresentation";
+import {
+  phoneQuery,
+  phonePages,
+  phoneEnergyPrimary,
+  phoneItems,
+  phoneDeviceSize,
+  type PhoneSize,
+} from "./phoneLayout";
+import { PhoneDeviceCard, PhoneLightsOff } from "./PhoneDeviceCard";
 
-const phoneQuery =
-  "(max-width: 650px), (max-height: 500px) and (pointer: coarse)";
 const mobilePreference = "smarti-home-mobile-layout";
 const storedMobileLayout = () => {
   try {
@@ -86,6 +94,8 @@ export type HomeGridCard = {
   defaultHidden?: boolean;
   entityId?: string;
   summary?: MobileSummary;
+  phoneSize?: PhoneSize;
+  phoneContent?: (open: () => void) => ReactNode;
 };
 
 export function HomeGrid({
@@ -130,6 +140,8 @@ export function HomeGrid({
     () => window.matchMedia(phoneQuery).matches,
   );
   const [mobileLayout, setMobileLayout] = useState(storedMobileLayout);
+  const [phoneRoom, choosePhoneRoom] = useState("all");
+  const [moreEnergy, showMoreEnergy] = useState(false);
   const surface = useRef<HTMLDivElement>(null);
   const standaloneEditButton = useRef<HTMLButtonElement>(null);
   const editButton = tools?.editButton ?? standaloneEditButton;
@@ -195,27 +207,83 @@ export function HomeGrid({
       )
     : rawLayout;
   const editing = draft !== null;
-  const compactMobile = phone && mobileLayout === "compact" && !editing;
-  const displayColumns = compactMobile ? (columns > 1 ? 3 : 2) : columns;
-  const visibleLayout = layout.filter(
+  const referencePhone = phone && phonePages.has(page) && !editing;
+  const compactMobile =
+    phone && mobileLayout === "compact" && !editing && !referencePhone;
+  const displayColumns = referencePhone
+    ? 2
+    : compactMobile
+      ? columns > 1
+        ? 3
+        : 2
+      : columns;
+  const availableLayout = layout.filter(
     (item) =>
       catalog.has(item.id) && (editing || !catalog.get(item.id)!.hidden),
   );
-  const displayLayout = compactMobile
-    ? mobileGridItems(visibleLayout)
-    : visibleLayout;
-  const roomView = grouped
-    ? roomGridView(
-        displayLayout,
-        roomOf,
-        displayColumns,
-        compactMobile || (!editing && cards.some((card) => card.hidden)),
-        compactMobile ? "var(--mobile-card-row)" : "128px",
-      )
-    : null;
+  const phoneRooms = [...new Set(availableLayout.map(roomOf))].filter(
+    (key) => key !== "shared",
+  );
+  const activePhoneRoom = phoneRooms.includes(phoneRoom) ? phoneRoom : "all";
+  const hiddenEnergyCount = availableLayout.filter(
+    (item) => !phoneEnergyPrimary.has(item.id),
+  ).length;
+  const hasPrimaryEnergy = availableLayout.some((item) =>
+    phoneEnergyPrimary.has(item.id),
+  );
+  const visibleLayout = availableLayout.filter(
+    (item) =>
+      !referencePhone ||
+      ((activePhoneRoom === "all" ||
+        page === "energy_control" ||
+        roomOf(item) === activePhoneRoom) &&
+        (page !== "security" ||
+          item.id !== "events" ||
+          !availableLayout.some((item) => catalog.get(item.id)?.entityId)) &&
+        (page !== "energy_control" ||
+          moreEnergy ||
+          !hasPrimaryEnergy ||
+          phoneEnergyPrimary.has(item.id))),
+  );
+  const sizeOf = (item: GridItem): PhoneSize => {
+    if (item.config && !["auto", "compact"].includes(item.config.type))
+      return { w: 1, h: 2 };
+    const card = catalog.get(item.id);
+    if (card?.phoneSize) return card.phoneSize;
+    const c = home.controls.find(
+      (c) => c.entity_id === (item.config?.sources[0] || card?.entityId),
+    );
+    return page === "energy_control"
+      ? { w: 1, h: 1, order: 100 }
+      : phoneDeviceSize(c);
+  };
+  const displayLayout = referencePhone
+    ? phoneItems(visibleLayout, sizeOf, page !== "lights")
+    : compactMobile
+      ? mobileGridItems(visibleLayout)
+      : visibleLayout;
+  const roomView =
+    grouped &&
+    !(referencePhone && (phoneRooms.length <= 1 || activePhoneRoom !== "all"))
+      ? roomGridView(
+          displayLayout,
+          roomOf,
+          displayColumns,
+          referencePhone ||
+            compactMobile ||
+            (!editing && cards.some((card) => card.hidden)),
+          referencePhone
+            ? "90px"
+            : compactMobile
+              ? "var(--mobile-card-row)"
+              : "128px",
+        )
+      : null;
   const shown =
     roomView?.items ??
-    (compactMobile || (!editing && cards.some((card) => card.hidden))
+    (referencePhone ||
+    compactMobile ||
+    (!editing && cards.some((card) => card.hidden))
       ? defaultGrid(
           [...displayLayout].sort((a, b) => a.y - b.y || a.x - b.x),
           displayColumns,
@@ -546,6 +614,12 @@ export function HomeGrid({
       data-editing={editing}
       data-mobile-layout={compactMobile ? "compact" : "detailed"}
       data-phone={phone}
+      data-reference-phone={referencePhone || undefined}
+      data-phone-single-room={
+        (referencePhone &&
+          (phoneRooms.length <= 1 || activePhoneRoom !== "all")) ||
+        undefined
+      }
       data-grouped={grouped}
       data-dragging={!!active}
       data-card-dialog={adding || !!editingCard}
@@ -581,7 +655,7 @@ export function HomeGrid({
             </div>
           )}
           <div className="home-canvas-actions">
-            {phone && (!editing || !!tools) && (
+            {phone && !phonePages.has(page) && (!editing || !!tools) && (
               <div
                 className="mobile-layout-picker"
                 role="group"
@@ -739,6 +813,45 @@ export function HomeGrid({
           }}
           onApply={applyCard}
         />
+      )}
+      {referencePhone && page !== "energy_control" && (
+        <div className="phone-room-bar">
+          <label>
+            <span className="sr-only">{t("Velg rom", "Choose room")}</span>
+            <select
+              value={activePhoneRoom}
+              onChange={(event) => choosePhoneRoom(event.target.value)}
+            >
+              <option value="all">
+                {phoneRooms.length === 1
+                  ? home.areas.find(
+                      (area) => `room:${area.area_id}` === phoneRooms[0],
+                    )?.name || t("Uten rom", "No room")
+                  : t("Alle rom", "All rooms")}
+              </option>
+              {phoneRooms.length > 1 &&
+                phoneRooms.map((key) => (
+                  <option key={key} value={key}>
+                    {home.areas.find((area) => `room:${area.area_id}` === key)
+                      ?.name || t("Uten rom", "No room")}
+                  </option>
+                ))}
+            </select>
+          </label>
+          {page === "lights" && (
+            <PhoneLightsOff
+              home={home}
+              offline={offline}
+              lang={lang}
+              controls={home.controls.filter(
+                (c) =>
+                  !c.diagnostic &&
+                  (activePhoneRoom === "all" ||
+                    resolveRoom([c.entity_id]) === activePhoneRoom),
+              )}
+            />
+          )}
+        </div>
       )}
       <div
         ref={surface}
@@ -908,8 +1021,29 @@ export function HomeGrid({
                   tone={tone}
                   lightStyle={lightStyle}
                   mobile={
-                    compactMobile
+                    compactMobile || referencePhone
                       ? { card, config: original.config, home, offline, lang }
+                      : undefined
+                  }
+                  phoneContent={
+                    referencePhone &&
+                    (!original.config ||
+                      (["auto", "compact"].includes(original.config.type) &&
+                        original.config.sources.length <= 1 &&
+                        !photoImages.has(original.config.image)))
+                      ? card.phoneContent ||
+                        (page !== "energy_control" && card.entityId
+                          ? (open) => (
+                              <PhoneDeviceCard
+                                card={card}
+                                config={original.config}
+                                home={home}
+                                offline={offline}
+                                lang={lang}
+                                onOpen={open}
+                              />
+                            )
+                          : undefined)
                       : undefined
                   }
                 >
@@ -987,6 +1121,20 @@ export function HomeGrid({
           ];
         })}
       </div>
+      {referencePhone &&
+        page === "energy_control" &&
+        hasPrimaryEnergy &&
+        hiddenEnergyCount > 0 && (
+          <button
+            className="phone-more-energy"
+            aria-expanded={moreEnergy}
+            onClick={() => showMoreEnergy((value) => !value)}
+          >
+            {moreEnergy
+              ? t("Vis færre energikort", "Show fewer energy cards")
+              : `${t("Flere energikort", "More energy cards")} (${hiddenEnergyCount})`}
+          </button>
+        )}
       {!shown.length && (
         <div className="home-canvas-empty">
           <Plus size={28} />

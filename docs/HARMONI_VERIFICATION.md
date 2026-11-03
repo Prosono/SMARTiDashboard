@@ -1,3 +1,59 @@
+# Phone Energy, Security and Lights — release 1.36.102
+
+Harmoni adapts these three destinations to the supplied phone references. The
+phone header has the SMARTi mark, current destination, alert bell, settings and
+a separate search button. The first five category tabs stay visible; remaining
+destinations remain reachable by scrolling. The desktop header is unchanged.
+
+Phone Energy prioritises current power, a real last-60-minute curve, spot and
+network rates, period consumption and capacity. The existing measured chart
+uses actual timestamps, units, zero and gaps. The authenticated control-history
+endpoint now accepts a one-hour window as well as its existing windows. The
+3D scene mounts only when Energy flow is opened; remaining saved cards are
+available through More energy cards. Period selection still changes history
+while current KPIs retain today's values. Agreement/meter setup remains available.
+
+Lights use two portrait cards per row with local device art, direct power and
+release/keyboard-committed brightness controls. Room selection scopes the layout
+and Turn all off; that action sends supported turn-off commands sequentially.
+Commands obey availability, connection, capabilities and lights.control access;
+unconfirmed responses are labelled and reported state is not fabricated.
+Security gives unavailable/critical devices full-width status cards, a wide
+on-demand camera preview and smaller normal device cards. Open contacts retain
+an amber open status, and missing data never becomes a green all-clear. Actual
+camera playback uses the existing player/session cleanup after opening.
+
+All phone sizes and ordering are derived copies. Saved desktop coordinates and
+card configuration are retained; editing uses the existing canvas/revision
+protection. Custom card types and photo choices retain their ordinary mobile
+presentation. Other destinations retain their previous tile/detailed setting.
+At tablet/desktop widths the larger cards return. Existing glass filtering,
+reduced-motion preferences, warning labels and source-derived RGB colors remain.
+
+Validation on 3 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, browser-test TypeScript,
+  changed-file Prettier, Ruff, diff and deterministic package checks passed.
+  **274 frontend unit cases** and **18 selected backend cases** passed. The new
+  geometry cases check immutable source configuration and alert prioritisation;
+  the one-hour endpoint check covers duration, units and unknown readings.
+  The existing Vite chunk-size advisory remains.
+- **15 mobile and five desktop Energy scenarios passed** across the initial run
+  and targeted rechecks. They cover direct dimming/power, room/all-off behaviour,
+  disabled unavailable controls, camera start only after opening, preserved
+  layouts, failed saves, graphs, lazy 3D, custom imagery/glass, 320–430px sizing
+  and phone/tablet/landscape transitions. The square-layout helper now waits for
+  ResizeObserver reflow after rotation. A desktop reload assertion was repeated
+  successfully in isolation after a concurrent software-WebGL run.
+- Light phone reference captures and the dark Energy phone capture were visually
+  inspected. The three targeted phone Energy, Lights and Security scenarios
+  also passed against the exact final extracted archive. All **278 runtime files** in the extracted release
+  archive match their manifest hashes. SHA-256:
+  `cd18743ef09ff5ebcfaef8a7b0ebe3c306b540e1b2155350cdc6d4473a5507d6`.
+
+Checks use isolated demo servers and fixture devices. Physical phones, HAOS
+installation and real device commands were not exercised.
+
 # Energy colors from the new reference — release 1.36.101
 
 The Energy workspace now uses a cool, light palette: pale aqua for the house and

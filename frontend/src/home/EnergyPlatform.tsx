@@ -31,6 +31,11 @@ import { energyKpiModules } from "./EnergyKpis";
 import { EnergySummaryCard } from "./EnergySummaryCard";
 import { finiteReading, type SummaryKind } from "./energySummaryModel";
 import type { EnergyCurrent } from "./energyControlModel";
+import {
+  PhoneConsumption,
+  PhoneEnergyPower,
+  PhoneEnergyRate,
+} from "./PhoneEnergy";
 
 type Meter = { role: string; entity: string; name: string };
 type Config = {
@@ -573,6 +578,26 @@ export function EnergyPlatform({
         </EnergyModule>
         <EnergyModule
           id="energy:history"
+          phoneSize={{ w: 2, h: 2, order: 3 }}
+          phoneContent={(open) => (
+            <PhoneConsumption
+              data={data}
+              start={start}
+              end={end}
+              day={day}
+              period={period}
+              lang={lang}
+              changeDay={(value) => {
+                setDay(value);
+                setSelected(null);
+              }}
+              changePeriod={(value) => {
+                setPeriod(value);
+                setSelected(null);
+              }}
+              open={open}
+            />
+          )}
           title="Forbruket ditt"
           w={2}
           h={3}
@@ -957,6 +982,17 @@ export function EnergyPlatform({
       <EnergyModuleGroup className="ep-overview-modules">
         <EnergyModule
           id="energy:flow"
+          phoneSize={{ w: 2, h: 2, order: 0 }}
+          phoneContent={(open) => (
+            <PhoneEnergyPower
+              home={home}
+              offline={offline}
+              source={setup.data?.config?.power_entity}
+              data={liveData}
+              lang={lang}
+              open={open}
+            />
+          )}
           title="Energiflyt"
           w={3}
           h={4}
@@ -975,6 +1011,15 @@ export function EnergyPlatform({
           <EnergyModule
             id="energy:spot"
             title="Spotpris nå"
+            phoneSize={{ w: 1, h: 1, order: 1 }}
+            phoneContent={(open) => (
+              <PhoneEnergyRate
+                kind="spot"
+                value={currentPrice ? currentPrice.NOK_per_kWh * 100 : null}
+                lang={lang}
+                open={open}
+              />
+            )}
             summary={{
               reading: `${fmt(currentPrice ? currentPrice.NOK_per_kWh * 100 : null)} øre/kWh`,
               detail: "I dag",
@@ -1142,8 +1187,18 @@ export function EnergyPlatform({
           >
             {overviewCards()}
             {historyCards()}
-            {energyKpiModules(liveData, setup.data)}
+            {energyKpiModules(liveData, setup.data, lang)}
           </EnergyModules>
+          {admin && (
+            <button
+              className="phone-energy-settings"
+              onClick={() => setEditing(true)}
+            >
+              <Settings2 size={21} />
+              {lang === "en" ? "Agreement and meters" : "Avtale og målere"}
+              <ArrowRight size={19} />
+            </button>
+          )}
           <p className="ep-source">
             Priser fra{" "}
             <a
