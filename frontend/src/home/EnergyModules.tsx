@@ -16,6 +16,7 @@ import { CardIcon, CardTitle } from "./CardPresentation";
 import type { MobileSummary } from "./mobileCardModel";
 import "./energyModules.css";
 import { energyControlDefaults } from "./energyControlModel";
+import { cardTone } from "./cardToneModel";
 
 const moduleIcons: Record<string, LucideIcon> = {
   "energy:spot": Tag,
@@ -95,7 +96,13 @@ export function EnergyModules({
           title,
           ...options,
           content: (
-            <section className="energy-module" data-energy-module={id}>
+            <section
+              className="energy-module"
+              data-energy-module={id}
+              data-energy-tone={
+                home ? undefined : cardTone({ id }, undefined, [])
+              }
+            >
               <header className="energy-module-heading">
                 <CardIcon
                   fallback={

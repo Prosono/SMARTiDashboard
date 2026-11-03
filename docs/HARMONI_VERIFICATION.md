@@ -1,3 +1,44 @@
+# Energy colors from the new reference — release 1.36.101
+
+The Energy workspace now uses a cool, light palette: pale aqua for the house and
+consumption, lavender for the spot summary, mint for cost, cream for network
+charges, and porcelain for capacity, price hours and the large charts. Matching
+icons, teal period controls and purple price columns link the categories. Dark
+mode retains these categories with darker tinted surfaces and lighter ink.
+
+Stable native card tones carry the palette through saved cards, editor previews,
+compact phone tiles and expanded views. Classic/Living modules use the same
+palette without adding a second material to Harmoni cards. Explicit custom
+sources keep their original source-derived tone. Other Home card categories and
+all meter data, cost calculations, historical grouping and saved geometry are
+unchanged. Consumption keeps its labelled low/medium/high assessment; price
+levels use three labelled violet shades. Cost parts stay distinct and signed.
+Whole-hour extremes have separate mint/amber panels with readable status tags.
+The 3D model and product graphics remain opaque. Glass filtering is unchanged,
+and reduced-transparency/forced-color fallbacks are retained.
+
+Validation on 3 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, changed-file Prettier,
+  diff and deterministic package checks passed. **272 unit cases passed**,
+  including the existing native-category/source-precedence cases updated for
+  the new category mapping. No backend calculation code changed. The existing
+  Vite chunk-size advisory remains.
+- **Eight desktop/mobile browser scenarios passed**, covering the unified
+  canvas, readable KPI cards, the 390px house, phone expansion, classic setup,
+  negative/zero/missing values and keyboard chart selection. Visual snapshots
+  now finish finite transitions so theme switching is captured after the colors
+  settle, rather than halfway through the switch.
+- Four targeted desktop/mobile canvas and phone-expansion scenarios also passed
+  against the final extracted archive after the contrast refinement. Final light,
+  dark and expanded-phone screenshots were visually inspected.
+- All **278 runtime files** in the extracted release package match
+  their manifest hashes. Archive SHA-256:
+  `ad90f74c7bd0e46f4b37c96773e5d107822c8544d24afa1af1257ef8ab3ea49a`.
+
+Browser checks use isolated demo servers and fixture measurements. Physical
+phones, HAOS installation and real device commands were not exercised.
+
 # Unified Energy control — release 1.36.100
 
 Energy now combines the 3D overview and history/price workspace into a single

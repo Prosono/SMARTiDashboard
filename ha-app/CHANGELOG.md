@@ -1,3 +1,8 @@
+## 1.36.101
+- Energisiden har fått en lysere palett etter den nye bildereferansen: turkis energiflyt og forbruk, lavendel for spotpris, mintgrønn kostnad, kremfarget nettleie og rolige, lyse flater for kapasitet og store grafer. Mørkt tema bruker de samme kategoriene med tilpassede farger og lesbar tekst.
+- Lilla strømprissøyler, turkise forbruksgrafer og grønne/oransje felt for billigste og dyreste time gjør informasjonen lettere å skille. Forbrukets lavt/middels/høyt-markeringer beholdes. Måleboksene ved 3D-huset har lyse flater og tydeligere ikonfarger.
+- Paletten følger kortene i mobilruter, redigering og fullvisning. Klassisk og Living får tilsvarende energifarger. Måledata, beregninger, kildevalg, lagrede plasseringer og øvrige kortkategorier er uendret.
+
 ## 1.36.100
 - Energi har én samlet kontrollflate med stort 3D-hus, forbruks- og kostnadsgrafer og strømpriser. De to tidligere underfanene er slått sammen. Periodevalget endrer historikken, mens dagens nøkkeltall beholdes.
 - Nye kort viser foreløpig kapasitetstrinn med registrerte døgnmaksverdier, månedsbeløp og neste grense, nettleie med energiledd og nettselskap, og dagens billigste og dyreste hele strømpristime. Prisene vektes fra publiserte intervaller; manglende grunnlag vises uten oppdiktede verdier. Avgiftsgrunnlag, støtteordning og foreløpige beregninger merkes.

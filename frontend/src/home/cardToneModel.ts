@@ -10,6 +10,9 @@ export type CardTone =
   | "energy-use"
   | "energy-price"
   | "energy-solar"
+  | "energy-cost"
+  | "energy-tariff"
+  | "energy-status"
   | "temperature"
   | "humidity"
   | "warm"
@@ -90,15 +93,16 @@ const energyTones: Record<string, CardTone> = {
   solar: "energy-solar",
   "self-supply": "energy-solar",
   spot: "energy-price",
-  prices: "energy-price",
-  cost: "energy-price",
-  "today-cost": "energy-price",
-  breakdown: "energy-price",
+  prices: "energy-status",
+  history: "energy-status",
+  cost: "energy-cost",
+  "today-cost": "energy-cost",
+  breakdown: "energy-cost",
   schemes: "energy-price",
   timing: "energy-price",
-  tariff: "energy-price",
-  "price-hours": "energy-price",
-  capacity: "energy-flow",
+  tariff: "energy-tariff",
+  "price-hours": "energy-status",
+  capacity: "energy-status",
 };
 
 /** Presentation follows actual sources/type, never a translated or user-written title. */

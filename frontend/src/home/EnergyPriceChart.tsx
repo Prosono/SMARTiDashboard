@@ -184,8 +184,8 @@ export function EnergyPriceChart({
                       width={Math.max(1, x(end) - x(start) - 2)}
                       height={Math.max(1, Math.abs(y(value) - y(0)))}
                       rx="3"
-                      fill="var(--accent)"
-                      opacity={p === current || p === picked ? 1 : 0.62}
+                      fill="var(--energy-price-series, var(--accent))"
+                      opacity={p === current || p === picked ? 1 : 0.84}
                     />
                     {i % Math.max(1, Math.ceil(rows.length / 8)) === 0 && (
                       <text x={x(start)} y="262" textAnchor="middle">

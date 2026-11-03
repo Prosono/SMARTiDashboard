@@ -356,6 +356,7 @@ test("one energy canvas contains 3D, monthly capacity, tariff, hourly extremes a
   await page.screenshot({
     path: `/private/tmp/smarti-100-energy-dark-${info.project.name}.png`,
     fullPage: true,
+    animations: "disabled",
   });
   await page.evaluate(() => {
     document.documentElement.dataset.theme = "light";
@@ -363,6 +364,7 @@ test("one energy canvas contains 3D, monthly capacity, tariff, hourly extremes a
   await page.screenshot({
     path: `/private/tmp/smarti-100-energy-light-${info.project.name}.png`,
     fullPage: true,
+    animations: "disabled",
   });
   await page.setViewportSize({ width: 834, height: 1100 });
   await expect(flow.locator(".home-canvas-viewport")).toHaveAttribute(

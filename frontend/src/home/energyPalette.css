@@ -1,0 +1,250 @@
+/* November Energy reference: cool porcelain, aqua, lavender, mint and cream.
+   Stable tones also follow saved cards into phone tiles, previews and full view. */
+html[data-home-style] {
+  :is([data-card-tone^="energy-"], [data-energy-tone^="energy-"]) {
+    --text: #142b32;
+    --muted: #4e626c;
+    --card-color: #fbfdff;
+    --card-depth: #f0f5fa;
+    --accent: #007d73;
+    --on-accent: #f6fffc;
+    --glass-opacity: 92%;
+    --glass-depth-opacity: 95%;
+    --surface: var(--card-depth);
+    --line: color-mix(in srgb, var(--accent) 18%, transparent);
+    --soft: color-mix(in srgb, var(--accent) 7%, var(--card-depth));
+    --tint: var(--soft);
+    --equipment-line: var(--line);
+    --equipment-reading: var(--text);
+    --equipment-orange: var(--accent);
+    --equipment-muted-surface: var(--soft);
+    --harmony-border: var(--line);
+    --card-series-1: #009b91;
+    --card-series-2: #8961d7;
+    --card-series-3: #bd7b21;
+    --card-series-4: #2574a2;
+    --card-series-5: #aa5042;
+    --card-series-6: #617780;
+    --energy-price-series: #8650d6;
+    color: var(--text);
+    color-scheme: light;
+  }
+  :is([data-card-tone="energy-flow"], [data-energy-tone="energy-flow"]) {
+    --card-color: #f0fcfd;
+    --card-depth: #d7f1f3;
+    --accent: #007f77;
+  }
+  :is([data-card-tone="energy-use"], [data-energy-tone="energy-use"]) {
+    --card-color: #f2fcfd;
+    --card-depth: #dff5f6;
+    --accent: #00877f;
+  }
+  :is([data-card-tone="energy-price"], [data-energy-tone="energy-price"]) {
+    --card-color: #faf7ff;
+    --card-depth: #eee5fc;
+    --accent: #7542bd;
+  }
+  :is([data-card-tone="energy-cost"], [data-energy-tone="energy-cost"]) {
+    --card-color: #f4fdf6;
+    --card-depth: #e0f7eb;
+    --accent: #367e1c;
+  }
+  :is([data-card-tone="energy-tariff"], [data-energy-tone="energy-tariff"]) {
+    --card-color: #fffbf5;
+    --card-depth: #fbefd9;
+    --accent: #a35b16;
+  }
+  :is([data-card-tone="energy-solar"], [data-energy-tone="energy-solar"]) {
+    --card-color: #f3fcf1;
+    --card-depth: #e4f4da;
+    --accent: #427c22;
+  }
+  &[data-theme="dark"] {
+    :is([data-card-tone^="energy-"], [data-energy-tone^="energy-"]) {
+      --text: #edf7f7;
+      --muted: #b3c8cb;
+      --card-color: #26343c;
+      --card-depth: #1b282f;
+      --accent: #67d4c7;
+      --on-accent: #102e2b;
+      --line: color-mix(in srgb, var(--accent) 22%, transparent);
+      --glass-opacity: 86%;
+      --glass-depth-opacity: 93%;
+      --energy-price-series: #bd9af8;
+      --card-series-1: #59d3c5;
+      --card-series-2: #bd9af8;
+      --card-series-3: #e4bd75;
+      --card-series-4: #81b9df;
+      --card-series-5: #e69d8e;
+      --card-series-6: #afc2ca;
+      color-scheme: dark;
+    }
+    :is([data-card-tone="energy-flow"], [data-energy-tone="energy-flow"]) {
+      --card-color: #23474c;
+      --card-depth: #16353d;
+    }
+    :is([data-card-tone="energy-use"], [data-energy-tone="energy-use"]) {
+      --card-color: #26474a;
+      --card-depth: #19353e;
+    }
+    :is([data-card-tone="energy-price"], [data-energy-tone="energy-price"]) {
+      --card-color: #40354f;
+      --card-depth: #2d263e;
+      --accent: #c6a4fc;
+    }
+    :is([data-card-tone="energy-cost"], [data-energy-tone="energy-cost"]) {
+      --card-color: #29483e;
+      --card-depth: #1c352e;
+      --accent: #9eda91;
+    }
+    :is([data-card-tone="energy-tariff"], [data-energy-tone="energy-tariff"]) {
+      --card-color: #4a3f30;
+      --card-depth: #352c25;
+      --accent: #edc083;
+    }
+    :is([data-card-tone="energy-solar"], [data-energy-tone="energy-solar"]) {
+      --card-color: #35472d;
+      --card-depth: #253622;
+      --accent: #b3d993;
+    }
+  }
+}
+
+.energy-control-legacy-grid .energy-module[data-energy-tone] {
+  background: linear-gradient(125deg, var(--card-color), var(--card-depth));
+  border-color: var(--line);
+  box-shadow:
+    0 4px 14px #183c5010,
+    inset 0 1px 0 #ffffff30;
+}
+
+html[data-home-style]
+  :is(.energy-control, .home-canvas-expanded)
+  .energy-module {
+  .energy-module-heading > svg {
+    color: var(--accent);
+  }
+  /* The house stays fully opaque against its pale aqua scene. */
+  .energy-flow {
+    --flow-solar: #98631b;
+    --flow-home: #b15d39;
+    --flow-ev: #8152b9;
+    --flow-battery: #167c66;
+    --flow-grid: #008a8b;
+  }
+  .energy-hotspot {
+    --surface: #faffff;
+    --soft: #f1fafb;
+  }
+  .energy-capacity-progress i,
+  .energy-capacity-peaks i {
+    background: var(--accent);
+  }
+  .energy-summary {
+    --es-low: #14876a;
+    --es-medium: #b87516;
+    --es-high: #c34e46;
+    --es-unknown: #667c85;
+    --es-electricity: #008c87;
+    --es-grid: #7b59b3;
+    --es-tax: #b77127;
+    --es-support: #277c52;
+    &[data-kind="spot"] {
+      --es-low: #9878c3;
+      --es-medium: #9264cd;
+      --es-high: #6938b0;
+    }
+    &[data-kind="cost"] [data-part="total"] {
+      fill: var(--es-electricity);
+      background: var(--es-electricity);
+    }
+  }
+  .energy-price-hour {
+    align-items: stretch;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, #207a57 10%, transparent);
+    border-radius: 13px;
+    background: linear-gradient(120deg, #e4f7ed, #e9f8f2);
+    color: #1b4e3d;
+    &[data-level="high"] {
+      background: linear-gradient(120deg, #fff1e0, #fae8d3);
+      color: #754319;
+      border-color: #b7752520;
+    }
+    > span small {
+      border-radius: 12px;
+      padding: 2px 7px;
+      background: color-mix(in srgb, currentColor 8%, transparent);
+    }
+    &:hover {
+      border-color: currentColor;
+    }
+  }
+}
+
+html[data-home-style][data-theme="dark"]
+  :is(.energy-control, .home-canvas-expanded)
+  .energy-module {
+  .energy-flow {
+    --flow-solar: #e5c182;
+    --flow-home: #edb092;
+    --flow-ev: #c9aaf2;
+    --flow-battery: #81dbb9;
+    --flow-grid: #77d8d0;
+  }
+  .energy-hotspot {
+    --surface: #223c43;
+    --soft: #1c343b;
+  }
+  .energy-summary {
+    --es-low: #66c9a5;
+    --es-medium: #e3bb6e;
+    --es-high: #ed9b90;
+    --es-unknown: #a5bbc5;
+    --es-electricity: #65d3c5;
+    --es-grid: #bfa3eb;
+    --es-tax: #e3bb6e;
+    --es-support: #9bdda8;
+    &[data-kind="spot"] {
+      --es-low: #9b80c5;
+      --es-medium: #ba92ef;
+      --es-high: #e0c8ff;
+    }
+  }
+  .energy-price-hour {
+    background: linear-gradient(120deg, #254a3d, #203d36);
+    color: #c0eed7;
+    &[data-level="high"] {
+      background: linear-gradient(120deg, #4c3928, #3d3027);
+      color: #f5d3a4;
+    }
+    > span > svg {
+      color: inherit;
+    }
+  }
+}
+
+.energy-control .energy-control-toolbar {
+  --accent: #007f76;
+  button[aria-pressed="true"] {
+    background: #007f76;
+    border-color: #007f76;
+    color: #f5fffd;
+  }
+}
+
+@media (forced-colors: active) {
+  :is(.energy-control, .home-canvas-expanded) .energy-module {
+    .energy-price-hour {
+      background: Canvas;
+      color: CanvasText;
+      border: 1px solid ButtonText;
+    }
+    .energy-summary [data-part] {
+      fill: CanvasText !important;
+      background: CanvasText !important;
+    }
+  }
+}
