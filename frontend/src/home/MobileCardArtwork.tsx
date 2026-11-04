@@ -34,6 +34,8 @@ export function MobileCardArtwork({
           .slice(0, 3)
       : [];
   let image = custom;
+  if (!image && (card.id === "calendar" || config?.type === "date"))
+    image = new URL("home/equipment/calendar.webp", document.baseURI).href;
   if (!image && control?.domain === "vacuum")
     image = new URL("home/equipment/vacuum-dock.webp", document.baseURI).href;
   if (!image && control?.domain === "media_player")

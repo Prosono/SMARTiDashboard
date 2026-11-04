@@ -1,7 +1,16 @@
 /** Local transparent product portraits. IDs are distinct from room-photo IDs. */
 export const equipmentAssets = [
   { kind: "leak", nb: "Vanndetektor", en: "Water leak detector" },
-  { kind: "motion", nb: "PIR / bevegelsesdetektor", en: "PIR motion detector" },
+  {
+    kind: "motion",
+    nb: "Svart PIR / bevegelsesdetektor",
+    en: "Black PIR motion detector",
+  },
+  { kind: "movement", nb: "Bevegelse", en: "Movement" },
+  { kind: "presence", nb: "Tilstedeværelse", en: "Presence" },
+  { kind: "window-closed", nb: "Vindu · lukket", en: "Window · closed" },
+  { kind: "window-open", nb: "Vindu · åpent", en: "Window · open" },
+  { kind: "calendar", nb: "Kalender", en: "Calendar" },
   { kind: "charger", nb: "Elbillader", en: "EV charger" },
   { kind: "switch", nb: "Lysbryter", en: "Light switch" },
   { kind: "strip", nb: "LED-list", en: "LED strip" },

@@ -180,7 +180,8 @@ export function PhoneMiscDeviceCard({
             aria-label={`${t("Detaljer", "Details")}: ${c.name}`}
           >
             <span className="phone-misc-icon">
-              {config?.image && cardImageURL(config.image) ? (
+              {(c.domain === "switch" && config?.image !== "none") ||
+              (config?.image && cardImageURL(config.image)) ? (
                 <MobileCardArtwork {...props} />
               ) : (
                 <CardIcon fallback={Icon} size={24} />

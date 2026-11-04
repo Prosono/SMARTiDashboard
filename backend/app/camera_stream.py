@@ -10,6 +10,7 @@ from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
 
 from .ha import HAError
 
@@ -59,7 +60,9 @@ class CameraStreams:
         # Reserve capacity under the lock, but do not serialize camera startup.
         try:
             try:
-                result = await self.ha.request("camera/stream", entity_id=entity_id, format="hls")
+                result = await self.ha.request(
+                    "camera/stream", entity_id=entity_id, format="hls", _timeout=30
+                )
                 source = self.upstream_url(self.ha.http_url, result["url"])
                 parsed = urlsplit(source)
                 base = urlsplit(self.ha.http_url)
@@ -120,7 +123,7 @@ class CameraStreams:
             resources.popitem(last=False)
         return rid
 
-    async def fetch(self, session, rid, query):
+    def source(self, session, rid, query):
         source = session["resources"].get(rid)
         if not source:
             raise HTTPException(404, "stream_resource_expired")
@@ -132,6 +135,55 @@ class CameraStreams:
             raise HTTPException(422, "invalid_stream_query")
         parsed = urlsplit(source)
         url = urlunsplit(parsed._replace(query=urlencode(dict(parse_qsl(parsed.query)) | params)))
+        return parsed, url
+
+    async def media(self, session, rid, query, byte_range=None):
+        parsed, url = self.source(session, rid, query)
+        headers = {"Authorization": "Bearer " + self.ha.token}
+        if byte_range:
+            if not re.fullmatch(r"bytes=\d{1,12}-\d{0,12}", byte_range):
+                raise HTTPException(422, "invalid_stream_range")
+            headers["Range"] = byte_range
+        try:
+            upstream = await self.client.send(
+                self.client.build_request("GET", url, headers=headers), stream=True
+            )
+        except httpx.HTTPError:
+            raise HTTPException(502, "stream_unavailable") from None
+        if upstream.status_code not in {200, 206}:
+            status = 404 if upstream.status_code in {404, 410} else 502
+            await upstream.aclose()
+            raise HTTPException(status, "stream_unavailable")
+        response_headers = {"Cache-Control": "private, no-store"}
+        # Native HLS and LL-HLS can request byte ranges for initialization/parts.
+        if upstream.status_code == 206:
+            content_range = upstream.headers.get("content-range", "")
+            if not byte_range or not re.fullmatch(r"bytes \d+-\d+/(?:\d+|\*)", content_range):
+                await upstream.aclose()
+                raise HTTPException(502, "invalid_stream_range")
+            response_headers["Content-Range"] = content_range
+            response_headers["Accept-Ranges"] = "bytes"
+
+        async def chunks():
+            length = 0
+            try:
+                async for chunk in upstream.aiter_bytes():
+                    length += len(chunk)
+                    if length > 16_000_000:
+                        raise RuntimeError("stream_too_large")
+                    yield chunk
+            finally:
+                await upstream.aclose()
+
+        return StreamingResponse(
+            chunks(),
+            status_code=upstream.status_code,
+            media_type="video/mp2t" if parsed.path.endswith(".ts") else "video/mp4",
+            headers=response_headers,
+        )
+
+    async def fetch(self, session, rid, query):
+        parsed, url = self.source(session, rid, query)
         playlist = parsed.path.endswith(".m3u8")
         limit = 512_000 if playlist else 16_000_000
         try:
@@ -156,10 +208,10 @@ class CameraStreams:
             rewritten = []
             for line in manifest.splitlines():
                 if line and not line.startswith("#"):
-                    line = self.resource(session, source, line.strip())
+                    line = self.resource(session, url, line.strip())
                 elif "URI=" in line:
                     line = re.sub(
-                        r'URI="([^"]+)"', lambda m: 'URI="' + self.resource(session, source, m[1]) + '"', line
+                        r'URI="([^"]+)"', lambda m: 'URI="' + self.resource(session, url, m[1]) + '"', line
                     )
                 rewritten.append(line)
             return ("\n".join(rewritten) + "\n").encode(), "application/vnd.apple.mpegurl"
@@ -198,6 +250,9 @@ def camera_router(ha, user, settings):
     async def resource(sid: str, rid: str, request: Request, current=Depends(user)):
         session = streams.session(sid, owner(current))
         available(session["entity_id"])
+        parsed, _ = streams.source(session, rid, request.query_params)
+        if not parsed.path.endswith(".m3u8"):
+            return await streams.media(session, rid, request.query_params, request.headers.get("range"))
         data, media = await streams.fetch(session, rid, request.query_params)
         return Response(data, media_type=media, headers={"Cache-Control": "private, no-store"})
 

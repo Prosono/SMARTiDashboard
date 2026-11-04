@@ -13,6 +13,7 @@ import {
 import { api } from "../api";
 import { smartiName } from "../branding";
 import "./calendar.css";
+import { CalendarArtwork } from "./CalendarArtwork";
 
 type CalendarInfo = {
   sources: { id: string; name: string }[];
@@ -133,7 +134,11 @@ export function Calendar({
             {t("Plass til hverdagen", "Room for everyday life")}
           </span>
           <h2>
-            <CalendarDays size={23} />
+            {selectedDay ? (
+              <CalendarArtwork day={Number(selectedDay.slice(-2))} />
+            ) : (
+              <CalendarDays size={23} />
+            )}
             {t("På planen", "On the agenda")}
           </h2>
         </div>

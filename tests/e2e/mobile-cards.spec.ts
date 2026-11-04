@@ -542,8 +542,8 @@ test("phone tiles retain the desktop product artwork on glass in both themes, wi
   ).toHaveAttribute("src", /lock.webp$/);
   await page.getByRole("tab", { name: "Mer", exact: true }).click();
   await expect(
-    page.locator(".phone-misc-toggle .phone-misc-icon svg"),
-  ).toBeVisible();
+    page.locator(".phone-misc-toggle .phone-misc-icon img"),
+  ).toHaveAttribute("src", /plug\.webp$/);
   expect(data.history()).toBe(0);
   expect(data.commands).toHaveLength(0);
 });

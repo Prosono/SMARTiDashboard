@@ -26,6 +26,7 @@ import type { HomeGridCard } from "./HomeGrid";
 import { HarmonyDevices } from "./HarmonyDevices";
 import { GridLightingCard } from "./GridLightingCard";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { CalendarArtwork } from "./CalendarArtwork";
 import "./simpleDashboard.css";
 
 function SimpleAgenda({ lang, offline }: { lang: string; offline: boolean }) {
@@ -237,7 +238,7 @@ export function SimpleDashboard({
           </div>
           <div className="simple-date-content">
             <div className="simple-date-day">
-              <strong>{now.getDate()}</strong>
+              <CalendarArtwork day={now.getDate()} />
               <span>
                 {now.toLocaleDateString(en ? "en-GB" : "nb-NO", {
                   ...(renderCards ? {} : { weekday: "long" as const }),

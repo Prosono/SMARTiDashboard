@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Camera, Maximize, Play, Square, RefreshCw } from "lucide-react";
-import type Hls from "hls.js";
-import { api } from "../api";
 import type { Control } from "../types";
 import { usable } from "./homeModel";
 import { CardIcon, CardTitle } from "./CardPresentation";
 import "./homeMedia.css";
+import { CardLivePreview } from "./CardLivePreview";
+import {
+  cameraPlayback,
+  type CameraIssue,
+  type CameraState,
+} from "./cameraPlayback";
 
 export function CameraCard({
   c,
@@ -18,6 +22,8 @@ export function CameraCard({
   lang: string;
   compact?: boolean;
 }) {
+  const previewEnabled = useContext(CardLivePreview);
+  const [issue, setIssue] = useState<CameraIssue>("unavailable");
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const container = useRef<HTMLElement>(null),
     video = useRef<HTMLVideoElement>(null);
@@ -25,11 +31,9 @@ export function CameraCard({
     [foreground, setForeground] = useState(!document.hidden);
   const [paused, setPaused] = useState(false),
     [attempt, retry] = useState(0);
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "playing" | "buffering" | "error" | "blocked"
-  >("idle");
+  const [status, setStatus] = useState<CameraState>("idle");
   const available = !offline && usable(c),
-    active = available && visible && foreground && !paused;
+    active = available && visible && foreground && !paused && previewEnabled;
   useEffect(() => {
     let leaveTimer: ReturnType<typeof setTimeout> | undefined;
     const observer = new IntersectionObserver(
@@ -55,86 +59,7 @@ export function CameraCard({
       setStatus("idle");
       return;
     }
-    let cancelled = false,
-      player: Hls | undefined,
-      session: string | undefined;
-    const stop = () => {
-      if (session)
-        void api(`home/camera-stream/${session}`, "DELETE").catch(() => {});
-      session = undefined;
-    };
-    setStatus("loading");
-    const fail = () => {
-      if (!cancelled) {
-        setStatus("error");
-        player?.destroy();
-        element.removeAttribute("src");
-        element.load();
-        stop();
-      }
-    };
-    void (async () => {
-      try {
-        const native = !!element.canPlayType("application/vnd.apple.mpegurl");
-        // Download the player while HA prepares the stream, not afterwards.
-        const hlsModule = native ? null : import("hls.js").catch(() => null);
-        const stream = await api<{ id: string; path: string }>(
-          `home/camera/${encodeURIComponent(c.id)}/live`,
-          "POST",
-        );
-        session = stream.id;
-        if (cancelled) {
-          stop();
-          return;
-        }
-        const src = new URL(`api/${stream.path}`, document.baseURI).href;
-        const play = () => {
-          void element.play().catch(() => {
-            if (!cancelled) setStatus("blocked");
-          });
-        };
-        if (native) {
-          element.src = src;
-          play();
-        } else {
-          const module = await hlsModule;
-          if (!module) throw new Error("hls_unavailable");
-          const Hls = module.default;
-          if (cancelled) {
-            stop();
-            return;
-          }
-          if (!Hls.isSupported()) throw new Error("hls_unsupported");
-          player = new Hls({
-            enableWorker: false,
-            lowLatencyMode: true,
-            backBufferLength: 15,
-            maxBufferLength: 20,
-          });
-          player.on(Hls.Events.ERROR, (_event, data) => {
-            if (data.fatal) fail();
-          });
-          player.on(Hls.Events.MANIFEST_PARSED, play);
-          player.loadSource(src);
-          player.attachMedia(element);
-        }
-      } catch {
-        fail();
-      }
-    })();
-    const onError = () => fail();
-    element.addEventListener("error", onError);
-    element.addEventListener("ended", onError);
-    return () => {
-      cancelled = true;
-      element.removeEventListener("error", onError);
-      element.removeEventListener("ended", onError);
-      player?.destroy();
-      element.pause();
-      element.removeAttribute("src");
-      element.load();
-      stop();
-    };
+    return cameraPlayback(element, c.id, setStatus, setIssue);
   }, [active, c.id, attempt]);
   const label = !available
     ? t("Utilgjengelig", "Unavailable")
@@ -158,10 +83,6 @@ export function CameraCard({
           autoPlay
           controls={active}
           aria-label={`${t("Livekamera", "Live camera")}: ${c.name}`}
-          onPlaying={() => setStatus("playing")}
-          onWaiting={() => setStatus("buffering")}
-          onStalled={() => setStatus("buffering")}
-          onPause={() => setStatus((s) => (s === "playing" ? "blocked" : s))}
         />
         <span className="camera-state">
           <i className={status === "playing" ? "available" : ""} />
@@ -180,15 +101,27 @@ export function CameraCard({
             {status === "error" && (
               <small>
                 {t(
-                  "SMARTi kunne ikke hente eller spille av direktestrømmen. Prøv igjen.",
-                  "SMARTi could not fetch or play the live stream. Please retry.",
+                  issue === "limit"
+                    ? "For mange kameraer er åpne. Lukk et annet kamera og prøv igjen."
+                    : issue === "unsupported"
+                      ? "Videotypen kan ikke spilles av her. Prøv kameraets H.264-strøm."
+                      : issue === "timeout"
+                        ? "Kameraet svarte ikke i tide. Prøv igjen."
+                        : "Kameraet svarte ikke. Kontroller forbindelsen og prøv igjen.",
+                  issue === "limit"
+                    ? "Too many cameras are open. Close another camera and retry."
+                    : issue === "unsupported"
+                      ? "This video format cannot play here. Try the camera’s H.264 stream."
+                      : issue === "timeout"
+                        ? "The camera did not respond in time. Please retry."
+                        : "The camera did not respond. Check the connection and retry.",
                 )}
               </small>
             )}
             {status === "blocked" && (
               <button
                 onClick={() =>
-                  void video.current?.play().catch(() => setStatus("error"))
+                  void video.current?.play().catch(() => retry((v) => v + 1))
                 }
               >
                 <Play size={16} />

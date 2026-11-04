@@ -24,6 +24,7 @@ import {
 } from "./Experience";
 import { SimpleHome } from "./home/SimpleHome";
 import { HarmonyDevices } from "./home/HarmonyDevices";
+import { EquipmentArtwork } from "./home/EquipmentArtwork";
 import {
   HeaderAppearance,
   HomeBackgroundSettings,
@@ -1861,7 +1862,17 @@ function Device({
     >
       <div className="device-top">
         <span className="device-icon">
-          <Icon size={24} strokeWidth={1.5} />
+          {c.domain === "switch" ||
+          (c.domain === "binary_sensor" &&
+            ["window", "motion", "occupancy", "presence"].includes(
+              String(c.attributes.device_class),
+            )) ? (
+            <span className="device-product-art">
+              <EquipmentArtwork c={c} available={can} />
+            </span>
+          ) : (
+            <Icon size={24} strokeWidth={1.5} />
+          )}
         </span>
         <button
           className={

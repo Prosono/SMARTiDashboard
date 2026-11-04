@@ -1,5 +1,14 @@
 # Equipment card artwork
 
+## Shared updates — 4 November 2026
+
+The switch and PIR portraits have been replaced with black models. New window
+open/closed, movement, presence and calendar illustrations are used by the shared
+mobile, tablet and desktop renderers. These seven transparent 768 × 768 WebP
+assets total under 300 kB. See [the full prompts and final asset paths](../../../../docs/ARTWORK_1.36.110.md).
+Motion/presence status uses human illustrations; the PIR hardware portrait stays
+available as a separate image choice. Calendar dates remain live text.
+
 These four decorative product cutouts were generated with the built-in `image_gen`
 tool on 31 October 2026. They are generic illustrations, not product identification
 or images of residents' actual devices. No brand or product association is implied.

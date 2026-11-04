@@ -69,13 +69,13 @@ async function setup(page: Page) {
         type: "auto",
         title: c.name,
         icon: "auto",
-        image: "auto",
+        image: `equipment-${equipmentAssets[i].kind}`,
         sources: [c.entity_id],
         period: "24",
       },
     })),
   };
-  await page.route("**/api/home/layout/overview", (route) => {
+  await page.route("**/api/home/layout/overview*", (route) => {
     if (route.request().method() !== "GET")
       saved = {
         ...route.request().postDataJSON(),
@@ -107,10 +107,12 @@ async function setup(page: Page) {
       .click();
     await nav.getByRole("button", { name: "Hjem", exact: true }).click();
   }
-  await expect(page.locator(".home-canvas-cell")).toHaveCount(13);
+  await expect(page.locator(".home-canvas-cell")).toHaveCount(
+    equipmentAssets.length,
+  );
   return { controls, commands, saved: () => saved };
 }
-test("all thirteen component portraits load on phone, tablet and desktop glass cards in both themes", async ({
+test("all shared component portraits load on phone, tablet and desktop glass cards in both themes", async ({
   page,
 }) => {
   test.setTimeout(60000);
@@ -128,7 +130,7 @@ test("all thirteen component portraits load on phone, tablet and desktop glass c
       );
       for (const { kind } of equipmentAssets) {
         const cell = page.locator(`[data-card="custom:portrait_${kind}"]`),
-          image = cell.locator(`.art-${kind} img`);
+          image = cell.locator(`img[src*="/equipment/${kind}.webp"]`).first();
         await cell.scrollIntoViewIfNeeded();
         await expect(image).toHaveAttribute(
           "src",
@@ -138,7 +140,7 @@ test("all thirteen component portraits load on phone, tablet and desktop glass c
           .poll(() =>
             image.evaluate((img: HTMLImageElement) => img.naturalWidth),
           )
-          .toBe(512);
+          .toBeGreaterThanOrEqual(512);
         const measured = await image.evaluate((el) => {
           const a = el.getBoundingClientRect(),
             b = el.closest(".home-canvas-cell")!.getBoundingClientRect();
@@ -181,7 +183,10 @@ test("new images can be selected, saved and reloaded; missing images retain stat
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
   const cell = page.locator('[data-card="custom:portrait_charger"]');
-  await cell.getByRole("button", { name: /Rediger kort/ }).click();
+  await page
+    .getByRole("button", { name: "Valg for Elbillader", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Rediger kort", exact: true }).click();
   const editor = page.getByRole("dialog");
   const photos = editor.getByText("Ikon og bilde", { exact: true });
   if (await photos.count()) await photos.click();
@@ -199,7 +204,7 @@ test("new images can be selected, saved and reloaded; missing images retain stat
     "src",
     /charger.webp$/,
   );
-  await page.route("**/home/equipment/motion.webp", (route) => route.abort());
+  await page.route("**/home/equipment/movement.webp", (route) => route.abort());
   await page.route("**/home/equipment/charger.webp", (route) => route.abort());
   // Use automatic art again to exercise the native image-failure fallback.
   data
@@ -207,9 +212,14 @@ test("new images can be selected, saved and reloaded; missing images retain stat
     .items.find((i) => i.id === "custom:portrait_charger")!.config.image =
     "auto";
   await page.reload();
+  data
+    .saved()
+    .items.find((i) => i.id === "custom:portrait_motion")!.config.image =
+    "auto";
+  await page.reload();
   const motion = page.locator('[data-card="custom:portrait_motion"]');
   await motion.scrollIntoViewIfNeeded();
-  await expect(motion.locator(".art-motion svg")).toBeVisible();
+  await expect(motion.locator(".art-movement svg")).toBeVisible();
   await cell.scrollIntoViewIfNeeded();
   await expect(cell.locator(".art-charger svg")).toBeVisible();
   expect(data.commands).toHaveLength(0);

@@ -172,7 +172,6 @@ export function HomeTabs({
         id={`home-page-${tab}`}
         role="tabpanel"
         aria-labelledby={`home-tab-${tab}`}
-        tabIndex={0}
         onPointerDown={(e) => {
           gesture.current = null;
           if (

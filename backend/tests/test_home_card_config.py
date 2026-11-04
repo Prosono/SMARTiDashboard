@@ -6,6 +6,28 @@ from test_home_layout import card
 from test_management import client  # noqa: F401
 
 
+@pytest.mark.parametrize(
+    "image",
+    [
+        "equipment-movement",
+        "equipment-presence",
+        "equipment-window-closed",
+        "equipment-window-open",
+        "equipment-calendar",
+    ],
+)
+@pytest.mark.parametrize("suffix", ["", "?surface=mobile"])
+def test_shared_artwork_choices_round_trip_on_both_dashboard_surfaces(client, image, suffix):  # noqa: F811
+    source = client.get("/api/home").json()["controls"][0]["entity_id"]
+    path = "/api/home/layout/overview" + suffix
+    saved = client.put(
+        path,
+        json={"revision": 0, "items": [card("custom:art", config={"sources": [source], "image": image})]},
+    )
+    assert saved.status_code == 200
+    assert client.get(path).json()["items"][0]["config"]["image"] == image
+
+
 @pytest.mark.parametrize("kind", ["clock", "horizon", "daylight", "moon", "date"])
 def test_time_and_sky_cards_need_no_device_binding_and_preserve_private_options(client, kind):  # noqa: F811
     before = client.get("/api/home/preferences").json()

@@ -1,3 +1,59 @@
+# Camera delivery, focus and shared artwork — release 1.36.110
+
+The Home tab panel no longer enters the tab order. Repeated native-dialog
+open/close cycles cannot restore focus to the entire content area; individual
+buttons and arrow-key tab navigation retain visible keyboard focus.
+
+Camera startup permits a cold HA stream to initialize and downloads the player
+in parallel. HLS demuxing runs in a worker, enabled by a scoped worker-src CSP.
+The authenticated relay forwards media bytes immediately rather than waiting
+for an entire segment, supports bounded single byte ranges and preserves valid
+206 responses. Playlist rewriting, upstream origin/path restrictions and
+user/session ownership remain enforced. Playback gets one automatic session
+recovery for transient failure or lack of progress, bounded media recovery and
+a finite startup watchdog. Unsupported video and simultaneous-stream limits
+have separate messages. Closing a card, changing tabs, editing and opening the
+full card release its preview session. Late startup results and closing during
+a recovery delay also release their sessions.
+
+Seven transparent cutouts cover open/closed windows, movement, presence, a black
+PIR detector, a black rocker switch and a blank desk calendar. The shared
+renderer, phone wrappers, desktop/tablet cards and relevant legacy/details
+fallbacks reuse them. Actual motion and occupancy use human illustrations;
+physical PIR hardware remains a separate selectable image. Window art follows
+available, known open/closed state, and calendar numbers are real DOM dates.
+Custom images, no-image choices, protocol controller branding and native
+fallbacks are preserved. All seven application images total less than 300 kB.
+Generation mode, saved files and full prompts: [artwork record](ARTWORK_1.36.110.md).
+
+Validation on 4 November 2026:
+
+- Production TypeScript/Vite build, frontend lint, browser-test TypeScript,
+  scoped Ruff lint/format and git diff whitespace checks passed.
+- **281 frontend unit tests** and **140 targeted backend tests** passed.
+  Coverage includes bounded recovery/timeout, dismissal races, partial segment
+  delivery before completion, byte ranges, HA/Supervisor playlist rewriting,
+  credential isolation, authenticated camera access and new image choices on
+  both independent layout surfaces.
+- **19 targeted browser cases** passed against the exact extracted release
+  package. Camera cases decode actual H.264 HLS fixture video, recover from an
+  initial 503 and verify preview/full-card handoff and release. Artwork cases
+  cover both themes at phone, tablet and desktop widths, image selection/save/
+  reload and missing-image fallbacks. Mobile regressions cover 320–430px,
+  controls, room selection, disclosure, glass and per-surface layout behavior.
+- Phone artwork and the tablet calendar date overlay were visually inspected.
+  Existing Vite chunk-size and headless/TestClient environment advisories remain.
+- All **284 runtime files**, archive membership and source/payload hashes match
+  the deterministic manifest; scripts/package.py --check passed. Archive SHA-256:
+  `5cbfbdccb2332083deaa9e3fede32de22f57ebe84f9dae0d7723546be9e63605`.
+
+Tests use isolated demo data and controlled HLS/upstream fixtures. No live hub,
+physical camera or native Safari was tested or reconfigured. Actual camera
+startup time and codec compatibility need confirmation after updating the home.
+The existing historical-suite limitations documented below remain separate.
+Implementation references: [HA Stream](https://www.home-assistant.io/integrations/stream/)
+and [the pinned HLS.js 1.7.3 API](https://raw.githubusercontent.com/video-dev/hls.js/v1.7.3/docs/API.md).
+
 # Persistent sign-in and phone climate artwork — release 1.36.109
 
 Resident browser sessions, portal sessions and portal-to-home credentials now

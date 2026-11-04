@@ -12,6 +12,7 @@ import type { CardConfig } from "./homeGridModel";
 import { cardImageURL, photoImages } from "./CardPresentation";
 import type { CardTone } from "./cardToneModel";
 import { MobileCardTile, type MobileCardProps } from "./MobileCardTile";
+import { CardLivePreview } from "./CardLivePreview";
 
 /** Cards never scroll internally. Unusually dense/small cards offer the full view. */
 export function HomeGridContent({
@@ -98,7 +99,9 @@ export function HomeGridContent({
             className="home-canvas-content"
             {...(editing || expanded || overflow ? { inert: true } : {})}
           >
-            {children}
+            <CardLivePreview.Provider value={!editing && !expanded}>
+              {children}
+            </CardLivePreview.Provider>
           </div>
           {overflow && !editing && (
             <button

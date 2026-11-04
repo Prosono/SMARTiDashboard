@@ -30,8 +30,18 @@ export function EquipmentArtwork({
       (c.state === "closed" ? 0 : c.state === "open" ? 100 : null))
     : null;
   const level = (position ?? 50) / 100;
-  const image = equipmentPortraitKinds.has(kind)
-    ? new URL(`home/equipment/${kind}.webp`, document.baseURI).href
+  const portrait =
+    kind === "window"
+      ? available && ["on", "open"].includes(c.state)
+        ? "window-open"
+        : available && ["off", "closed"].includes(c.state)
+          ? "window-closed"
+          : null
+      : equipmentPortraitKinds.has(kind)
+        ? kind
+        : null;
+  const image = portrait
+    ? new URL(`home/equipment/${portrait}.webp`, document.baseURI).href
     : null;
   if (appearance.image && appearance.image !== "auto") return null;
   if (image && image !== failed)
@@ -401,6 +411,16 @@ export function EquipmentArtwork({
                 )}
               </>
             )}
+          </g>
+        ) : kind === "movement" ? (
+          <g
+            stroke="#9aa9b8"
+            strokeWidth="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="99" cy="28" r="11" fill="#9aa9b8" strokeWidth="1" />
+            <path d="M91 48L77 85L56 126M80 84L111 97L128 126M89 52L118 72L140 72M88 54L65 67L43 88" />
           </g>
         ) : kind === "presence" ? (
           <g stroke={active ? "#40d38a" : "#79889a"}>

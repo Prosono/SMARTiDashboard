@@ -17,16 +17,30 @@ export function DevicePicture({
   name: string;
   protocol?: string;
 }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [url]);
-  return url && !failed ? (
+  const fallback = protocol
+    ? undefined
+    : /\bpir\b|bevegelses(?:detektor|sensor)|motion[ _-]?(?:detector|sensor)/i.test(
+          name,
+        )
+      ? "home/equipment/motion.webp"
+      : /lysbryter|light[ _-]?switch|wall[ _-]?switch/i.test(name)
+        ? "home/equipment/switch.webp"
+        : /\bvindu\b|\bwindow\b/i.test(name)
+          ? "home/equipment/window-closed.webp"
+          : undefined;
+  const [failed, setFailed] = useState<string[]>([]);
+  useEffect(() => setFailed([]), [url, fallback]);
+  const source = [url, fallback].find(
+    (value) => value && !failed.includes(value),
+  );
+  return source ? (
     <img
       className="device-picture"
-      src={new URL(url, document.baseURI).href}
+      src={new URL(source, document.baseURI).href}
       alt={name}
       loading="lazy"
       referrerPolicy="no-referrer"
-      onError={() => setFailed(true)}
+      onError={() => setFailed((current) => [...current, source])}
     />
   ) : protocol ? (
     <ProtocolLogo
@@ -337,7 +351,14 @@ export function DeviceControl({
       const result = await api<{ status: string }>(
         `controls/${encodeURIComponent(c.entity_id)}/commands`,
         "POST",
-        { action, ...(action === "set_hvac_mode" ? { hvac_mode: amount } : amount == null ? {} : { value: amount }) },
+        {
+          action,
+          ...(action === "set_hvac_mode"
+            ? { hvac_mode: amount }
+            : amount == null
+              ? {}
+              : { value: amount }),
+        },
       );
       setMessage(
         result.status === "state_updated"
@@ -392,7 +413,7 @@ export function DeviceControl({
           lang={no ? "nb" : "en"}
           disabled={blocked}
           change={(v) => void command("set_temperature", v)}
-            changeMode={(mode) => void command("set_hvac_mode", mode)}
+          changeMode={(mode) => void command("set_hvac_mode", mode)}
         />
       )}
       {c.domain === "light" && (

@@ -78,7 +78,7 @@ describe("equipment card data", () => {
       "switch",
     );
     for (const [device_class, kind] of [
-      ["motion", "motion"],
+      ["motion", "movement"],
       ["occupancy", "presence"],
       ["moisture", "leak"],
       ["smoke", "smoke"],

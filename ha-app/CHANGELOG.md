@@ -1,3 +1,8 @@
+## 1.36.110
+- Hele innholdspanelet under Hjem-fanene får ikke lenger fokus når en popup lukkes. Dette fjerner den store blå kanten på mobil. Knapper og faner beholder tydelig tastaturmarkering.
+- Kameraspilleren håndterer kald oppstart og gjør ett kontrollert nytt forsøk ved midlertidige feil eller stopp i avspillingen. Videodeler sendes videre straks de kommer, og spilleren bruker en bakgrunnsarbeider. Åpning av hele kortet frigjør forhåndsvisningens strøm; lukking, fanebytte og redigering frigjør ressursene. Ved feil vises en forklaring og mulighet til å prøve igjen.
+- Nye enhetsbilder for åpne/lukkede vinduer, faktisk bevegelse, tilstedeværelse, svart PIR-detektor, svart lysbryter og kalender brukes i de delte kortene på mobil, nettbrett og PC. Bildene kan velges i kortredigering; vindusstatus og kalenderdato følger faktiske opplysninger. Egne bilder og bildevalg beholdes.
+
 ## 1.36.109
 - Vanlig SMARTi-innlogging beholdes nå til du logger ut eller tilgangen trekkes tilbake. Tidsgrensene på 12 timer lokalt og 24 timer via portalen fjernes, og innloggingskapslene fornyes automatisk. Oppgraderingen bevarer fortsatt gyldige økter uten å gjenåpne utløpte økter.
 - Korte nettverks- og portalfeil viser frakobling og prøver igjen. De sender deg ikke til innloggingsskjermen eller laster dashbordet på nytt. Utlogging sperrer også portalens tilgang til hjemmet på serveren. Oppsettslenker og midlertidig supporttilgang beholder sine tidsgrenser.

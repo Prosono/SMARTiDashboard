@@ -18,6 +18,7 @@ export type EquipmentArt =
   | "contact"
   | "window"
   | "motion"
+  | "movement"
   | "presence"
   | "smoke"
   | "leak"
@@ -126,7 +127,7 @@ export function equipmentArt(c: Control): EquipmentArt {
           door: "contact",
           opening: "contact",
           window: "window",
-          motion: "motion",
+          motion: "movement",
           occupancy: "presence",
           presence: "presence",
           smoke: "smoke",
