@@ -250,6 +250,8 @@ function App() {
       ? "Collapse sidebar"
       : "Trekk sammen sidemenyen";
   const [checking, setChecking] = useState(true);
+  const [sessionUnavailable, setSessionUnavailable] = useState(false);
+  const retrySession = useRef<() => void>(() => {});
   const [page, setPage] = useState<Page>("home");
   const [dirty, setDirty] = useState(false);
   function guard(work: () => void) {
@@ -308,32 +310,77 @@ function App() {
     writePreference("smarti-language", lang);
   }, [lang]);
   useEffect(() => {
-    api<Session>("session")
-      .then((v) => {
-        setSession(v);
-        updateSession(v);
-      })
-      .catch(() => {})
-      .finally(() => setChecking(false));
+    let active = true,
+      pending = false,
+      resolved = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const check = async () => {
+      if (!active || pending || resolved) return;
+      clearTimeout(timer);
+      pending = true;
+      setChecking(true);
+      try {
+        const value = await api<Session>("session");
+        if (!active) return;
+        setSession(value);
+        updateSession(value);
+        setSessionUnavailable(false);
+        resolved = true;
+      } catch (error) {
+        if (!active) return;
+        if (error instanceof ApiError && error.status === 401) {
+          setSessionUnavailable(false);
+          resolved = true;
+        } else {
+          setSessionUnavailable(true);
+          timer = setTimeout(() => void check(), 5000);
+        }
+      } finally {
+        pending = false;
+        if (active) setChecking(false);
+      }
+    };
+    retrySession.current = () => void check();
+    const resume = () => void check();
+    window.addEventListener("online", resume);
+    window.addEventListener("focus", resume);
+    void check();
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      window.removeEventListener("online", resume);
+      window.removeEventListener("focus", resume);
+    };
   }, []);
   useEffect(() => {
     if (!session) return;
     let active = true;
     const refresh = () => {
-      void api<Session>("session")
+      void api<Session>("session", "POST")
         .then((v) => {
           if (!active) return;
           setSession(v);
           updateSession(v);
         })
-        .catch(() => {});
+        .catch((error) => {
+          if (active && error instanceof ApiError && error.status === 401) {
+            setSession(null);
+            updateSession(null);
+            client.clear();
+          }
+        });
     };
+    refresh();
     const timer = setInterval(refresh, 15000);
     window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    window.addEventListener("smarti-check-session", refresh);
     return () => {
       active = false;
       clearInterval(timer);
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("smarti-check-session", refresh);
     };
   }, [session?.name]);
   function signedIn(v: Session) {
@@ -373,6 +420,19 @@ function App() {
         <Logo />
         <LoaderCircle className="spin" />
         <p>{t.loading}</p>
+      </div>
+    );
+  if (!session && sessionUnavailable)
+    return (
+      <div className="loading" role="status">
+        <Logo />
+        <WifiOff size={28} />
+        <p>
+          {lang === "en"
+            ? "Could not connect to your home. Retrying…"
+            : "Kunne ikke koble til hjemmet. Prøver igjen…"}
+        </p>
+        <button onClick={() => retrySession.current()}>{t.retry}</button>
       </div>
     );
   if (!session)
@@ -818,7 +878,7 @@ function Dashboard({
           { cancelRefetch: false },
         );
       },
-      () => window.location.reload(),
+      () => window.dispatchEvent(new Event("smarti-check-session")),
     );
   }, [queryClient]);
   useEffect(() => {

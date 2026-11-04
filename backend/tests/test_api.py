@@ -149,6 +149,10 @@ def test_ingress_cookie_path_and_secure(tmp_path):
         cookie = r.headers["set-cookie"]
         assert "Secure" in cookie and "HttpOnly" in cookie and "SameSite=strict" in cookie
         assert "Path=/api/hassio_ingress/test/" in cookie
+        renewed = c.post("/api/session", headers={"Cookie": "smarti_session=" + r.cookies["smarti_session"]})
+        assert renewed.status_code == 200
+        assert "Secure" in renewed.headers["set-cookie"]
+        assert "Path=/api/hassio_ingress/test/" in renewed.headers["set-cookie"]
 
 
 def test_rate_limit(client):
@@ -224,6 +228,9 @@ def test_multiple_ingress_origins(tmp_path, address, secure):
         c.headers.update({"origin": address, "x-ingress-path": "/"})
         r = login(c)
         assert ("Secure" in r.headers["set-cookie"]) == secure
+        renewed = c.post("/api/session")
+        assert renewed.status_code == 200
+        assert ("Secure" in renewed.headers["set-cookie"]) == secure
         assert c.get("/api/session").status_code == 200
         assert c.put("/api/favorites/light.living_pendant").status_code == 200
         for bad in ["https://evil.example", "null", "https://remote.example.evil.example"]:
@@ -348,7 +355,9 @@ def test_light_appearance_is_persisted_and_admin_only(client, app):
     assert changed["attributes"]["smarti_icon"] == "pendant"
     assert changed["id"] == original["id"]
     assert client.put(route, json={"name": "Lysskinne", "icon": "track"}).status_code == 200
-    tracked = next(c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == original["entity_id"])
+    tracked = next(
+        c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == original["entity_id"]
+    )
     assert tracked["attributes"]["smarti_icon"] == "track"
     assert client.put(route, json={"name": "Bad", "icon": "<svg>"}).status_code == 422
     assert client.put(route, json={"name": "", "icon": "auto"}).status_code == 200

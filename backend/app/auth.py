@@ -5,6 +5,8 @@ import time
 from fastapi import HTTPException
 from pwdlib import PasswordHash
 
+from .session_policy import SESSION_EXPIRY, persist_valid_sessions
+
 hasher = PasswordHash.recommended()
 DUMMY = hasher.hash(secrets.token_urlsafe(32))
 
@@ -16,6 +18,8 @@ def digest(token):
 class Auth:
     def __init__(self, store, settings):
         self.store, self.settings = store, settings
+        with self.store.connect() as db:
+            persist_valid_sessions(db, "sessions")
 
     def ready(self):
         with self.store.connect() as db:
@@ -60,7 +64,7 @@ class Auth:
             db.execute("DELETE FROM sessions WHERE expires < ?", (time.time(),))
             db.execute(
                 "INSERT INTO sessions VALUES (?,?,?,?)",
-                (digest(token), user["id"], csrf, time.time() + self.settings.session_hours * 3600),
+                (digest(token), user["id"], csrf, SESSION_EXPIRY),
             )
             return token, {"name": user["name"], "role": user["role"], "csrf": csrf}
 

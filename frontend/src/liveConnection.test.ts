@@ -30,6 +30,18 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
+it("reconnects after a temporary validation outage without expiring authentication", async () => {
+  const expired = vi.fn(),
+    status = vi.fn();
+  stop = liveConnection(status, vi.fn(), vi.fn(), expired);
+  const first = Stream.instances[0];
+  first.dispatchEvent(new Event("unavailable"));
+  expect(first.close).toHaveBeenCalled();
+  expect(expired).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(Stream.instances).toHaveLength(2);
+  expect(expired).not.toHaveBeenCalled();
+});
 it("reopens a failed stream and refreshes even without new revisions", () => {
   const status = vi.fn(),
     refresh = vi.fn();
@@ -82,15 +94,25 @@ async function failStreams() {
   await vi.advanceTimersByTimeAsync(0);
 }
 it("falls back to authenticated short polling after repeated stream failures", async () => {
-  const fetcher = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ revision: 5, radio_revision: 2 }) });
+  const fetcher = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({ revision: 5, radio_revision: 2 }),
+  });
   vi.stubGlobal("fetch", fetcher);
-  const status = vi.fn(), message = vi.fn();
+  const status = vi.fn(),
+    message = vi.fn();
   stop = liveConnection(status, message, vi.fn(), vi.fn());
   await failStreams();
-  expect(fetcher.mock.calls[0][0].href).toBe("https://example.test/ingress/api/events?poll=true");
+  expect(fetcher.mock.calls[0][0].href).toBe(
+    "https://example.test/ingress/api/events?poll=true",
+  );
   expect(fetcher.mock.calls[0][1].credentials).toBe("same-origin");
   expect(status).toHaveBeenLastCalledWith(true);
-  expect(JSON.parse(message.mock.calls[0][0].data)).toEqual({ revision: 5, radio_revision: 2 });
+  expect(JSON.parse(message.mock.calls[0][0].data)).toEqual({
+    revision: 5,
+    radio_revision: 2,
+  });
   await vi.advanceTimersByTimeAsync(5000);
   expect(fetcher).toHaveBeenCalledTimes(2);
   stop();
@@ -107,7 +129,17 @@ it("expires polling authentication and does not retry", async () => {
   expect(fetch).toHaveBeenCalledOnce();
 });
 it("does not mark failed polling as connected and recovers on the next poll", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue({ ok: true, status: 200, json: async () => ({ revision: 1, radio_revision: 1 }) }));
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ revision: 1, radio_revision: 1 }),
+      }),
+  );
   const status = vi.fn();
   stop = liveConnection(status, vi.fn(), vi.fn(), vi.fn());
   await failStreams();

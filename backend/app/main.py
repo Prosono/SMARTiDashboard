@@ -37,6 +37,7 @@ from .models import Command
 from .origins import OriginPolicy
 from .remote_access import remote_router
 from .scenes import scenes_router
+from .session_policy import SESSION_COOKIE_SECONDS
 from .setup import DeviceSetup
 from .sky import sky_router
 from .storage import Store
@@ -468,7 +469,7 @@ def create_app(
             secure=request.headers.get("origin", "").startswith("https://"),
             samesite="strict",
             path=cookie_path(request),
-            max_age=settings.session_hours * 3600,
+            max_age=SESSION_COOKIE_SECONDS,
         )
         return session
 
@@ -517,8 +518,30 @@ def create_app(
     async def session(current=Depends(user)):
         return current
 
+    @app.post("/api/session")
+    async def renew_session(request: Request, response: Response, current=Depends(user)):
+        # Origin and session CSRF are checked by the normal boundary/user paths.
+        # POST supplies the actual browser Origin even behind HA's HTTP proxy,
+        # so renewing an HTTPS cookie can never silently drop its Secure flag.
+        if current.get("customer"):
+            customer.renew_cookie(request, response)
+        elif not current.get("support"):
+            response.set_cookie(
+                session_cookie,
+                request.cookies[session_cookie],
+                httponly=True,
+                secure=request.headers.get("origin", "").startswith("https://"),
+                samesite="strict",
+                path=cookie_path(request),
+                max_age=SESSION_COOKIE_SECONDS,
+            )
+        return current
+
     @app.post("/api/logout")
     async def logout(request: Request, response: Response, current=Depends(user)):
+        if current.get("customer"):
+            await customer.cloud("logout", request.cookies.get(customer_cookie, ""))
+            customer.checks.clear()
         auth.logout(request.cookies.get(session_cookie))
         if customer:
             response.delete_cookie(customer_cookie, path="/", secure=True, httponly=True, samesite="strict")
@@ -833,8 +856,9 @@ def create_app(
                             support_checked = time.monotonic()
                     else:
                         auth.session(request.cookies.get(session_cookie))
-                except HTTPException:
-                    yield "event: expired\ndata: {}\n\n"
+                except HTTPException as error:
+                    event = "expired" if error.status_code in {401, 403} else "unavailable"
+                    yield f"event: {event}\ndata: {{}}\n\n"
                     return
                 current_revision = (ha.revision, setup.inventory.revision)
                 if current_revision != revision:

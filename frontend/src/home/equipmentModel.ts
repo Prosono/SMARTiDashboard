@@ -29,8 +29,27 @@ export type EquipmentArt =
   | "garage"
   | "fan"
   | "thermostat"
+  | "air-conditioner"
   | "battery"
   | "generic";
+
+export function isAirConditioner(c: Control) {
+  return (
+    c.domain === "climate" &&
+    (/\b(ac|air[ _-]?con(?:ditioner)?|airconditioning)\b|varmepumpe|luft[ -]til[ -]luft/i.test(
+      [
+        c.name,
+        c.device_name,
+        c.entity_id,
+        c.attributes.device_class,
+        c.attributes.smarti_device_model,
+      ]
+        .filter((v) => typeof v === "string")
+        .join(" "),
+    ) ||
+      c.attributes.icon === "mdi:air-conditioner")
+  );
+}
 
 export function equipmentArt(c: Control): EquipmentArt {
   const deviceClass = String(c.attributes.device_class || "");

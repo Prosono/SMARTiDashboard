@@ -20,9 +20,14 @@ export function liveConnection(
     pending = controller;
     const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await fetch(new URL("api/events?poll=true", document.baseURI), {
-        credentials: "same-origin", cache: "no-store", signal: controller.signal,
-      });
+      const response = await fetch(
+        new URL("api/events?poll=true", document.baseURI),
+        {
+          credentials: "same-origin",
+          cache: "no-store",
+          signal: controller.signal,
+        },
+      );
       if (stopped) return;
       if (response.status === 401) {
         stopped = true;
@@ -32,7 +37,10 @@ export function liveConnection(
       }
       if (!response.ok) throw new Error("Polling unavailable");
       const data = await response.json();
-      if (typeof data.revision !== "number" || typeof data.radio_revision !== "number")
+      if (
+        typeof data.revision !== "number" ||
+        typeof data.radio_revision !== "number"
+      )
         throw new Error("Invalid revision response");
       if (stopped) return;
       if (!connected) refresh();
@@ -41,11 +49,18 @@ export function liveConnection(
       status(true);
       message(new MessageEvent("message", { data: JSON.stringify(data) }));
     } catch {
-      if (!stopped) { connected = false; status(false); }
+      if (!stopped) {
+        connected = false;
+        status(false);
+      }
     } finally {
       clearTimeout(timeout);
       pending = undefined;
-      if (!stopped) retry = setTimeout(() => { retry = undefined; void poll(); }, 5000);
+      if (!stopped)
+        retry = setTimeout(() => {
+          retry = undefined;
+          void poll();
+        }, 5000);
     }
   }
   const close = () => {
@@ -98,6 +113,9 @@ export function liveConnection(
     current.onerror = () => {
       if (source === current) reconnect();
     };
+    current.addEventListener("unavailable", () => {
+      if (source === current) reconnect();
+    });
     current.addEventListener("expired", () => {
       if (source !== current) return;
       stopped = true;

@@ -16,6 +16,8 @@ from fastapi import BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 
+from .session_policy import SESSION_EXPIRY, persist_valid_sessions
+
 
 def digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
@@ -98,6 +100,7 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
           id INTEGER PRIMARY KEY, recipient TEXT NOT NULL, subject TEXT NOT NULL,
           body TEXT NOT NULL, created REAL NOT NULL, sent REAL, error TEXT);
         """)
+        persist_valid_sessions(c, "customer_connections")
 
     mail_lock = threading.Lock()
 
@@ -484,7 +487,7 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
                 raise HTTPException(401, "link_expired")
             permission(c, home, row["account"])
             token, csrf = secrets.token_urlsafe(48), secrets.token_urlsafe(32)
-            expires = time.time() + 86400
+            expires = SESSION_EXPIRY
             c.execute(
                 "INSERT INTO customer_connections VALUES(?,?,?,?,?)",
                 (digest(token), row["account"], home, csrf, expires),
@@ -513,3 +516,13 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             "expires": row["expires"],
             "profile": dict(p) if p else None,
         }
+
+    @app.post("/api/hubs/{home}/customer/logout")
+    def customer_logout(home: str, body: Token, request: Request):
+        home_auth(home, request)
+        with db() as c:
+            c.execute(
+                "DELETE FROM customer_connections WHERE hash=? AND home=?",
+                (digest(body.token), home),
+            )
+        return {"logged_out": True}

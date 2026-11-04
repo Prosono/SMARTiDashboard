@@ -1,3 +1,50 @@
+# Persistent sign-in and phone climate artwork — release 1.36.109
+
+Resident browser sessions, portal sessions and portal-to-home credentials now
+persist until logout or revocation. Still-valid legacy rows are upgraded without
+reviving expired rows. Cookies use the browser's 400-day persistent window and
+renew on session checks. Local renewal is an Origin/CSRF-protected POST so HTTPS
+Secure flags and HA Ingress paths remain intact. Home logout revokes the cloud
+credential and clears its validation cache. Support grants and native mobile
+bearer-token rotation retain their original independent lifetimes.
+
+Temporary validation failures now return unavailable rather than authentication
+failure. SSE emits unavailable and reconnects; only confirmed 401/403 denial
+emits expired. The client rechecks a denied session without reloading the page.
+Initial loading retries network/server failures without showing a login form.
+Protected data and commands still require successful validation.
+
+Phone Climate now reuses the larger cards' device artwork automatically, with
+a dedicated AC illustration and constrained, fully opaque thumbnails. Configured
+images remain supported, and sensors without artwork retain semantic icon
+fallbacks. Desktop geometry, mobile layout isolation, temperature commands and
+sensor disclosure are retained.
+
+Validation on 4 November 2026: production build, frontend lint, browser-test
+TypeScript, 276 frontend unit tests and 121 backend regression tests passed.
+Backend cases cover 45-day clock jumps, cookie renewal, HTTP/HTTPS Ingress,
+CSRF, logout replay rejection, legacy/restart preservation without revival,
+real portal-to-home credential revocation, transient validation status codes,
+SSE, membership, support expiry, native mobile and account recovery boundaries.
+Four focused mobile/desktop browser scenarios passed for initial and active
+validation outages, no page reload, confirmed revocation, persistent cookies and
+Climate artwork/controls. Both-theme Climate screenshots were visually checked.
+Checks use isolated demo state, not live device commands or physical phones.
+Existing Vite chunk-size and headless environment advisories remain.
+
+All 279 extracted runtime files and archive membership match the manifest.
+The four focused browser cases passed again against the exact extracted package.
+Archive SHA-256:
+`368c1359d2a11ddb821990648237286b6e3dc8c19883d878e76814f15b2fb6bd`.
+
+The portal image `smartihome:persistent-sessions-1.36.109-20261104` passed an
+isolated, network-disabled smoke test for 45-day persistence, cookie renewal and
+logout/replay rejection, then replaced only the portal service. Runtime source
+hashes match the tested local files; public HTTPS health returns ok. A private
+SQLite snapshot and Compose backup precede deployment. Relay, edge and unrelated
+services were not recreated. This publishes the app package for installation;
+no live hub was upgraded or sent a device command.
+
 # Separate dashboard surfaces — release 1.36.108
 
 Mobile dashboards now use an independent per-user, per-page layout store and

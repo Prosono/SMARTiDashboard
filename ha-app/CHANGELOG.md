@@ -1,3 +1,8 @@
+## 1.36.109
+- Vanlig SMARTi-innlogging beholdes nå til du logger ut eller tilgangen trekkes tilbake. Tidsgrensene på 12 timer lokalt og 24 timer via portalen fjernes, og innloggingskapslene fornyes automatisk. Oppgraderingen bevarer fortsatt gyldige økter uten å gjenåpne utløpte økter.
+- Korte nettverks- og portalfeil viser frakobling og prøver igjen. De sender deg ikke til innloggingsskjermen eller laster dashbordet på nytt. Utlogging sperrer også portalens tilgang til hjemmet på serveren. Oppsettslenker og midlertidig supporttilgang beholder sine tidsgrenser.
+- Klima på mobil viser små enhetsillustrasjoner for termostater, AC og vifter, og beholder valgte kortbilder. Målinger uten en passende enhetsillustrasjon bruker ikon som reserve. Temperaturstyring, romvalg og separat mobiloppsett beholdes.
+
 ## 1.36.108
 - Mobil og PC/nettbrett har nå helt separate dashbordoppsett på alle faner, også Energi. Kort, rekkefølge, størrelser, romgruppering og egne kortinnstillinger lagres bare for flaten du redigerer. Dagens lagrede oppsett kopieres én gang som startpunkt for mobil; videre endringer holdes adskilt.
 - Mobilredigeringen har fått en kompakt verktøylinje med «Legg til», «Valg», avbryt og lagre. Kortene vises i en ryddig liste med enhetsbilder, flyttehåndtak og én meny for redigering, flytting og sletting. Romgruppering, startoppsett og tømming finnes under «Valg».

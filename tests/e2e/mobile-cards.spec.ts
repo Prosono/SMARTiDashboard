@@ -1607,6 +1607,13 @@ test("phone climate shows a real thermostat, AC readings and sensor disclosure w
     .locator(".phone-room-bar")
     .getByRole("combobox", { name: "Velg rom", exact: true });
   await expect(grid).toHaveAttribute("data-reference-phone", "true");
+  await expect(
+    thermo.locator(".phone-climate-art .equipment-art.art-thermostat"),
+  ).toBeVisible();
+  await expect(
+    grid.locator(".phone-climate-ac .mobile-card-product"),
+  ).toBeVisible();
+  await expect(thermo.locator(".phone-climate-art > svg")).toBeHidden();
   await expect(thermo.locator(".phone-climate-setpoint > strong")).toHaveText(
     "20 °C",
   );

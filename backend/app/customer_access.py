@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from .certificate_hook import read_identity
 from .cloud_accounts import Token
 from .remote_access import CLOUD_ORIGIN
+from .session_policy import SESSION_COOKIE_SECONDS
 
 COOKIE = "__Host-smarti_customer"
 
@@ -35,14 +36,27 @@ class CustomerAccess:
                     headers={"Authorization": "Bearer " + credential},
                     json={"token": token},
                 )
-                if response.status_code != 200:
+                if response.status_code in {401, 403, 404}:
                     raise HTTPException(401, "customer_session_expired")
+                if response.status_code != 200:
+                    raise HTTPException(503, "customer_validation_unavailable")
                 data = response.json()
                 if action == "check" and len(self.checks) < 128:
                     self.checks[key] = (time.monotonic() + 5, data)
                 return data
         except (OSError, ValueError, httpx.HTTPError):
             raise HTTPException(503, "customer_validation_unavailable") from None
+
+    def renew_cookie(self, request, response):
+        response.set_cookie(
+            COOKIE,
+            request.cookies[COOKIE],
+            secure=True,
+            httponly=True,
+            samesite="strict",
+            path="/",
+            max_age=SESSION_COOKIE_SECONDS,
+        )
 
     async def console_admin(self, token):
         from types import SimpleNamespace
@@ -149,6 +163,6 @@ def install_customer_access(app, customer):
             httponly=True,
             samesite="strict",
             path="/",
-            max_age=max(0, int(data["expires"] - time.time())),
+            max_age=min(SESSION_COOKIE_SECONDS, max(0, int(data["expires"] - time.time()))),
         )
         return {"ready": True}

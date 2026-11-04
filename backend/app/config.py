@@ -27,7 +27,6 @@ class Settings(BaseSettings):
     remote_identity_file: Path | None = Field(default=None, repr=False)
     mobile_enabled: bool = False
     mobile_url: str = ""
-    session_hours: int = 12
     tls_cert: str | None = None
     tls_key: str | None = None
 

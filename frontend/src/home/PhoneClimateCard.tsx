@@ -16,11 +16,12 @@ import {
 import { api } from "../api";
 import type { Control } from "../types";
 import { ThermostatModeIcon } from "../Thermostat";
-import { CardIcon, CardTitle, cardImageURL } from "./CardPresentation";
+import { CardIcon, CardTitle } from "./CardPresentation";
 import { MobileCardArtwork } from "./MobileCardArtwork";
 import type { MobileCardProps } from "./MobileCardTile";
 import { measurementParts, usable } from "./homeModel";
 import { controlState } from "../controlState";
+import { isAirConditioner } from "./equipmentModel";
 
 const finite = (value: unknown) =>
   typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -49,12 +50,7 @@ export function PhoneClimateCard({
   ]
     .filter((v) => typeof v === "string")
     .join(" ");
-  const ac =
-    climate &&
-    (/\b(ac|air[ _-]?con(?:ditioner)?|airconditioning)\b|varmepumpe|luft[ -]til[ -]luft/i.test(
-      info,
-    ) ||
-      c.attributes.icon === "mdi:air-conditioner");
+  const ac = isAirConditioner(c);
   const forecast = !climate && /forecast|prognos/i.test(info);
   const water =
     c.attributes.device_class === "humidity" ||
@@ -168,13 +164,12 @@ export function PhoneClimateCard({
             onClick={onOpen}
             aria-label={`${t("Detaljer", "Details")}: ${c.name}`}
           >
-            {config?.image && cardImageURL(config.image) ? (
-              <MobileCardArtwork {...props} />
-            ) : (
-              config?.icon !== "none" && (
+            <span className="phone-climate-art" aria-hidden="true">
+              {config?.icon !== "none" && (
                 <CardIcon fallback={ac ? AirVent : Thermometer} size={24} />
-              )
-            )}
+              )}
+              <MobileCardArtwork {...props} />
+            </span>
             <strong>
               <CardTitle>{c.name}</CardTitle>
             </strong>
@@ -278,10 +273,9 @@ export function PhoneClimateCard({
       aria-label={`${c.name}: ${parts ? `${parts.value} ${parts.unit}` : state}. ${t("Detaljer", "Details")}`}
     >
       <span className="phone-climate-sensor-icon">
-        {config?.image && cardImageURL(config.image) ? (
-          <MobileCardArtwork {...props} />
-        ) : (
-          config?.icon !== "none" && (
+        <MobileCardArtwork {...props} />
+        <span className="phone-climate-icon-fallback">
+          {config?.icon !== "none" && (
             <>
               {forecast &&
                 !water &&
@@ -294,8 +288,8 @@ export function PhoneClimateCard({
                   <ArrowDown size={15} />
                 )}
             </>
-          )
-        )}
+          )}
+        </span>
       </span>
       <strong className="phone-climate-sensor-title">
         <CardTitle>{c.name}</CardTitle>

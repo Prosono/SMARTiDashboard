@@ -62,8 +62,10 @@ class SupportAccess:
                     headers={"Authorization": "Bearer " + credential},
                     json=body,
                 )
-                if r.status_code != 200:
+                if r.status_code in {401, 403, 404}:
                     raise HTTPException(401, "support_access_expired")
+                if r.status_code != 200:
+                    raise HTTPException(503, "support_validation_unavailable")
                 return r.json()
         except (OSError, ValueError, KeyError, httpx.HTTPError):
             raise HTTPException(503, "support_validation_unavailable") from None

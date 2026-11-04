@@ -1,5 +1,30 @@
 # SMARTi remote access — enrollment foundation
 
+## Persistent resident sign-in — 4 November 2026
+
+Published portal image: `smartihome:persistent-sessions-1.36.109-20261104`.
+Resident portal and home-connection sessions persist until explicit logout or
+revocation; the 24-hour absolute expiry has been removed. Still-valid old rows
+are preserved, expired rows stay expired, and portal cookies renew with a
+400-day browser window. Membership, email verification, password reset and
+temporary support grants retain their own authorization rules. Home logout now
+revokes its server-side connection; the matching hub changes ship in 1.36.109.
+
+Validation: 121 backend regression tests, four focused app browser cases and an
+isolated network-disabled image smoke test passed. The image smoke checks a
+45-day clock jump, cookie renewal and rejection of a replay after logout.
+Deployed runtime source hashes match the local tested code. Public HTTPS
+`/healthz` returns ok. Only `smartihome` was recreated; relay, edge, Caddy and
+other applications remained running.
+
+Rollback image: `smartihome:serial-1.36.78-20261101`. Compose backup and candidate
+source/build/smoke/deployment records are in
+`/home/omni/smartihome/releases/persistent-sessions-1.36.109/`. A private online
+SQLite backup was taken at
+`/data/backups/before-persistent-sessions-1.36.109.sqlite` inside the portal's data
+volume before deployment. No account passwords, memberships or live device
+commands were changed for verification.
+
 ## Deployment target
 
 - Host: 65.21.203.106; SSH user: omni

@@ -128,11 +128,45 @@
       flex: none;
       color: var(--phone-muted);
     }
+    .phone-climate-art {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      flex: none;
+      overflow: hidden;
+    }
     .phone-climate-name .mobile-card-product {
-      width: 28px;
-      height: 28px;
+      width: 44px;
+      height: 44px;
       margin: 0;
       flex: none;
+    }
+    .phone-climate-art:has(.mobile-card-product) > svg,
+    .phone-climate-sensor-icon:has(.mobile-card-product)
+      > .phone-climate-icon-fallback {
+      display: none;
+    }
+    .phone-climate-art .equipment-art[class],
+    .phone-climate-sensor-icon .equipment-art[class] {
+      position: relative;
+      inset: auto;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      margin: 0;
+      transform: none;
+    }
+    .phone-climate-art .equipment-art > svg,
+    .phone-climate-sensor-icon .equipment-art > svg {
+      width: 100%;
+      height: 100%;
+    }
+    .phone-climate-art .equipment-art::before,
+    .phone-climate-sensor-icon .equipment-art::before {
+      display: none;
     }
     .phone-climate-name .mobile-card-product img {
       width: 100%;
@@ -315,6 +349,10 @@
       display: flex;
       align-items: center;
       color: var(--climate-phone-accent);
+    }
+    .phone-climate-icon-fallback {
+      display: flex;
+      align-items: center;
     }
     .phone-climate-sensor[data-forecast="true"] .phone-climate-sensor-icon {
       color: #6250a0;

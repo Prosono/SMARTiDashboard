@@ -5,6 +5,7 @@ import { cardImageURL, photoImages } from "./CardPresentation";
 import { EquipmentArtwork } from "./EquipmentArtwork";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { usable } from "./homeModel";
+import { isAirConditioner } from "./equipmentModel";
 
 /** The same local cutouts and state-aware illustrations used by the larger cards. */
 export function MobileCardArtwork({
@@ -78,6 +79,7 @@ export function MobileCardArtwork({
       ) : equipment ? (
         <EquipmentArtwork
           c={control}
+          kind={isAirConditioner(control) ? "air-conditioner" : undefined}
           available={!offline && home.connected && usable(control)}
         />
       ) : (

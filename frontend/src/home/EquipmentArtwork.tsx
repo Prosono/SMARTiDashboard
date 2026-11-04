@@ -463,6 +463,29 @@ export function EquipmentArtwork({
               strokeLinejoin="round"
             />
           </g>
+        ) : kind === "air-conditioner" ? (
+          <g>
+            <path
+              d="M24 45L156 41L164 51V95L154 109L24 108L16 98V56Z"
+              fill={`url(#${id}white)`}
+              stroke="#929fab"
+              strokeWidth="2"
+            />
+            <path
+              d="M24 48H153L157 54V88H23Z"
+              fill="#e4e9ed"
+              stroke="#bac4cd"
+            />
+            <path d="M26 91H152L147 102H30Z" fill="#34424e" />
+            <path d="M32 94H147M33 98H146" stroke="#8a9ba9" strokeWidth="2" />
+            <path d="M27 57H152M27 61H152" stroke="#c0cad2" />
+            <circle
+              cx="141"
+              cy="80"
+              r="2"
+              fill={active ? "#68d3ba" : "#83939f"}
+            />
+          </g>
         ) : ["switch", "thermostat"].includes(kind) ? (
           <g>
             <rect

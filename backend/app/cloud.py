@@ -26,6 +26,7 @@ from app.cloud_accounts import Profile, install_accounts, remote_allowed
 from app.cloud_admin import install_admin
 from app.cloud_onboarding import install_onboarding
 from app.cloud_support import install_support
+from app.session_policy import SESSION_COOKIE_SECONDS, SESSION_EXPIRY, persist_valid_sessions
 
 PASSWORDS = PasswordHash.recommended()
 PASSWORD_WORKERS = threading.BoundedSemaphore(2)
@@ -130,6 +131,7 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
         columns = {row[1] for row in c.execute("PRAGMA table_info(homes)")}
         if "remote_enabled" not in columns:
             c.execute("ALTER TABLE homes ADD COLUMN remote_enabled INTEGER NOT NULL DEFAULT 1")
+        persist_valid_sessions(c, "sessions")
     os.chmod(database, 0o600)
 
     @asynccontextmanager
@@ -284,7 +286,7 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
                     digest(token),
                     account["id"],
                     csrf,
-                    time.time() + 86400,
+                    SESSION_EXPIRY,
                 ),
             )
         response.set_cookie(
@@ -293,13 +295,22 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
             secure=True,
             httponly=True,
             samesite="strict",
-            max_age=86400,
+            max_age=SESSION_COOKIE_SECONDS,
             path="/",
         )
         return {"csrf": csrf, "username": account["username"]}
 
     @app.get("/api/session")
-    def current(s=Depends(session)):
+    def current(request: Request, response: Response, s=Depends(session)):
+        response.set_cookie(
+            "__Host-smarti_cloud",
+            request.cookies["__Host-smarti_cloud"],
+            secure=True,
+            httponly=True,
+            samesite="strict",
+            path="/",
+            max_age=SESSION_COOKIE_SECONDS,
+        )
         return {"csrf": s["csrf"], "portal_admin": is_admin(s["account"])}
 
     @app.post("/api/logout")
