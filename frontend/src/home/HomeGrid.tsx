@@ -247,7 +247,7 @@ export function HomeGrid({
       ((activePhoneRoom === "all" ||
         page === "energy_control" ||
         roomOf(item) === activePhoneRoom ||
-        (page === "media" && roomOf(item) === "shared")) &&
+        (["media", "misc"].includes(page) && roomOf(item) === "shared")) &&
         (page !== "security" ||
           item.id !== "events" ||
           !availableLayout.some((item) => catalog.get(item.id)?.entityId)) &&
@@ -827,7 +827,7 @@ export function HomeGrid({
           onApply={applyCard}
         />
       )}
-      {referencePhone && !["energy_control", "misc"].includes(page) && (
+      {referencePhone && page !== "energy_control" && (
         <div className="phone-room-bar">
           <label>
             <span className="sr-only">{t("Velg rom", "Choose room")}</span>

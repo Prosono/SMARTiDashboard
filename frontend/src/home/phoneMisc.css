@@ -47,6 +47,11 @@
         font-size: 12px;
         font-weight: 400;
       }
+      &[data-phone-single-room="true"]
+        .phone-misc-room:not([data-room="shared"])
+        > h2 {
+        display: none;
+      }
       .home-canvas-cell {
         height: 194px;
         width: 100%;

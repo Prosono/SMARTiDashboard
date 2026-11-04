@@ -91,6 +91,7 @@ export function PhoneMiscBoard({
           return (
             <section
               className="phone-misc-room"
+              data-room={key}
               key={key}
               aria-label={name || (en ? "Other devices" : "Andre enheter")}
             >

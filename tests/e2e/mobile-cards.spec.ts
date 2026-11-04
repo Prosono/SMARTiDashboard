@@ -1291,6 +1291,21 @@ test("phone More groups blinds and switches by room, confirms movement and prese
   await expect(grid).toHaveAttribute("data-reference-phone", "true");
   const bath = grid.getByRole("region", { name: "Bad", exact: true });
   const none = grid.getByRole("region", { name: "Uten rom", exact: true });
+  const roomPicker = grid
+    .locator(".phone-room-bar")
+    .getByRole("combobox", { name: "Velg rom", exact: true });
+  await expect(roomPicker).toBeVisible();
+  await expect(roomPicker).toHaveValue("all");
+  await roomPicker.selectOption("room:bath");
+  await expect(grid.locator(".phone-misc-device")).toHaveCount(2);
+  await expect(none).toHaveCount(0);
+  await expect(bath.locator("h2")).toBeHidden();
+  await roomPicker.selectOption("none");
+  await expect(bath).toHaveCount(0);
+  await expect(grid.locator(".phone-misc-toggle")).toHaveCount(2);
+  await roomPicker.selectOption("all");
+  expect(sent).toHaveLength(0);
+  expect(writes).toBe(0);
   await expect(bath).toBeVisible();
   await expect(none.locator("h2")).toContainText("3 enheter");
   await expect(bath.locator(".phone-misc-cover")).toContainText("Lukket");
@@ -1435,10 +1450,12 @@ test("phone More groups blinds and switches by room, confirms movement and prese
       h: 2,
       config: { ...defaultCardConfig([]), type: "clock", title: "Min klokke" },
     },
+    { id: "device:switch.load", x: 0, y: 3, w: 1, h: 2 },
   ];
   const before = structuredClone(customItems);
   await page.reload();
   await page.getByRole("tab", { name: "Mer", exact: true }).click();
+  await roomPicker.selectOption("room:bath");
   await expect(grid.locator(".home-canvas-cell")).toHaveCount(2);
   await expect(grid.locator(".phone-misc-toggle")).toContainText(
     "Min bortemodus",

@@ -1,3 +1,7 @@
+## 1.36.106
+- Mer/Diverse på mobil har nå romvelger øverst, slik som Lys, Sikkerhet og Multimedia. Velg et bestemt rom, «Uten rom» eller «Alle rom».
+- Romvalg endrer bare hvilke kort som vises. Felles kort beholdes, og gjentatt romoverskrift skjules når romnavnet allerede står i velgeren.
+
 ## 1.36.105
 - Mer/Diverse i Harmoni har fått en egen mobilvisning etter bildereferansen. Rom har tydelige overskrifter, persienner et bredt kort med enhetsillustrasjon og åpne/stopp/lukk, og brytere kompakte rader samlet på blågrå glassflater. Mobilfanen heter nå «Mer»; PC og nettbrett beholder «Diverse».
 - Rom med mange brytere viser to rader og «Vis alle enheter». Uten rom vises som en egen gruppe med antall. Robotstøvsugere, egne kort, bilde- og kildevalg er fortsatt tilgjengelige. Søk, redigering og lagret oppsett beholdes.

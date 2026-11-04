@@ -1,3 +1,26 @@
+# More phone room picker — release 1.36.106
+
+More/Miscellaneous now includes the same top room selector as the other native
+phone destinations. It offers the rooms present in the saved visible layout,
+No room and All rooms. Shared custom cards remain visible when a room is chosen.
+The redundant section heading is hidden when the selected room already names
+the view; the shared section retains its heading. Selection never saves layout
+changes or sends device commands. Existing search, editing and desktop layouts
+keep their behavior.
+
+Validation on 4 November 2026: production build, frontend lint, browser-test
+TypeScript, changed-file formatting and diff checks passed. Four existing phone
+browser scenarios passed for More, Multimedia, Lights and Security. The More
+case now exercises named/unassigned/all-room selection, hidden duplicate titles,
+zero writes/commands on room changes and retained shared custom cards. The
+updated dark screenshot was visually inspected. Existing Vite chunk-size and
+headless environment advisories remain. Checks use isolated demo data, not
+physical phones or live HA hardware.
+
+All 278 extracted runtime files match the manifest. The updated More scenario
+also passed against the exact extracted package. Archive SHA-256:
+`ac1c630b24f38f59dc8a89ac5eb03e48454e5a8e84e624ea9bb50e969284644a`.
+
 # Phone More — release 1.36.105
 
 Harmoni's More/Miscellaneous destination now follows the phone reference with
