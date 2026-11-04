@@ -30,6 +30,8 @@ import {
   HomeBackgroundSettings,
 } from "./home/HomeAppearance";
 import { liveConnection } from "./liveConnection";
+import { StartupScreen } from "./StartupScreen";
+import { HomeLaunchError, prepareStartupSession } from "./startupSession";
 import { RoomsOverview } from "./rooms/RoomsOverview";
 import { ClimateOverview } from "./home/ClimateOverview";
 import { LightOverview } from "./home/LightOverview";
@@ -145,6 +147,7 @@ import {
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } },
 });
+const startupSession = prepareStartupSession();
 const icons = {
   home: House,
   rooms: LayoutGrid,
@@ -260,6 +263,7 @@ function App() {
       : "Trekk sammen sidemenyen";
   const [checking, setChecking] = useState(true);
   const [sessionUnavailable, setSessionUnavailable] = useState(false);
+  const [launchFailed, setLaunchFailed] = useState(false);
   const retrySession = useRef<() => void>(() => {});
   const [page, setPage] = useState<Page>("home");
   const [dirty, setDirty] = useState(false);
@@ -334,7 +338,7 @@ function App() {
       pending = true;
       setChecking(true);
       try {
-        const value = await api<Session>("session");
+        const value = await startupSession();
         if (!active) return;
         setSession(value);
         updateSession(value);
@@ -342,7 +346,10 @@ function App() {
         resolved = true;
       } catch (error) {
         if (!active) return;
-        if (error instanceof ApiError && error.status === 401) {
+        if (error instanceof HomeLaunchError) {
+          setLaunchFailed(true);
+          resolved = true;
+        } else if (error instanceof ApiError && error.status === 401) {
           setSessionUnavailable(false);
           resolved = true;
         } else {
@@ -428,26 +435,34 @@ function App() {
     updateSession(null);
     client.clear();
   }
-  if (starting)
+  if (starting) return <StartupScreen message={t.loading} />;
+  if (launchFailed)
     return (
-      <div className="loading" role="status" aria-live="polite">
-        <Logo />
-        <LoaderCircle className="spin" aria-hidden="true" />
-        <p>{t.loading}</p>
-      </div>
+      <StartupScreen
+        busy={false}
+        message={
+          lang === "en"
+            ? "Could not verify access. Open your home again from My homes in SMARTi."
+            : "Kunne ikke bekrefte tilgangen. Åpne hjemmet på nytt fra Mine hjem i SMARTi."
+        }
+      >
+        <a href="https://home.smarti.dev/" className="button" target="_top">
+          {lang === "en" ? "Back to My homes" : "Tilbake til Mine hjem"}
+        </a>
+      </StartupScreen>
     );
   if (!session && sessionUnavailable)
     return (
-      <div className="loading" role="status">
-        <Logo />
-        <WifiOff size={28} />
-        <p>
-          {lang === "en"
+      <StartupScreen
+        busy={false}
+        message={
+          lang === "en"
             ? "Could not connect to your home. Retrying…"
-            : "Kunne ikke koble til hjemmet. Prøver igjen…"}
-        </p>
+            : "Kunne ikke koble til hjemmet. Prøver igjen…"
+        }
+      >
         <button onClick={() => retrySession.current()}>{t.retry}</button>
-      </div>
+      </StartupScreen>
     );
   if (!session)
     return <Login t={t} lang={lang} language={language} signedIn={signedIn} />;

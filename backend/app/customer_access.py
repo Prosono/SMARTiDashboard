@@ -7,7 +7,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import HTTPException, Response
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 
 from .certificate_hook import read_identity
 from .cloud_accounts import Token
@@ -126,16 +126,18 @@ class CustomerAccess:
         }
 
 
-def install_customer_access(app, customer):
-    @app.get("/_account", response_class=HTMLResponse)
+def install_customer_access(app, customer, static_dir):
+    @app.get("/_account")
     def launch():
-        return """<!doctype html><html lang="nb"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-        <title>Velkommen hjem · SMARTi</title><link rel="stylesheet" href="/_account/launch.css"></head><body><main>
-        <img class="logo" src="/_account/logo.png" alt=""><div class="wordmark">SMARTi</div>
-        <h1>Velkommen hjem</h1><p id="status" role="status">Vi bekrefter tilgangen og åpner hjemmet ditt.</p><div class="loader" aria-hidden="true"></div>
-        <a href="https://home.smarti.dev/" id="return" hidden>Tilbake til Mine hjem</a></main>
-        <script src="/_account/launch.js"></script></body></html>"""
+        # Redeem inside the application so access verification and home startup
+        # keep one document and one animation, without a redirect/reload.
+        index = Path(static_dir) / "index.html"
+        if not index.is_file():
+            raise HTTPException(503, "frontend_not_built")
+        return FileResponse(index, media_type="text/html")
 
+    # Compatibility for launch documents already open during an app update.
+    # New /_account responses load only the shared application above.
     @app.get("/_account/launch.css")
     def launch_style():
         return FileResponse(Path(__file__).parent / "cloud_web" / "launch.css", media_type="text/css")

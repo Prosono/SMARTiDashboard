@@ -287,7 +287,7 @@ def create_app(
 
     customer = CustomerAccess(support_identity, store) if remote_surface and support_identity else None
     if customer:
-        install_customer_access(app, customer)
+        install_customer_access(app, customer, settings.static_dir)
     app.state.customer = customer
     app.state.support = support
     app.state.factory_reset = reset

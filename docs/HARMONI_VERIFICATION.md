@@ -1,3 +1,50 @@
+# One animation from portal entry to dashboard — release 1.36.112
+
+The remaining transition came from the remote /_account landing document, which
+showed its own welcome animation and navigated to a second document after ticket
+redemption. That path now serves the exact application index. The application
+captures and removes the one-time ticket/address before rendering, redeems through
+the existing protected endpoint, then checks the session and fetches home data
+within the same document. A shared promise prevents duplicate redemption during
+StrictMode effects or session retries. Failed/ambiguous redemption is never
+replayed and never falls through to an existing local/customer session; it offers
+a fresh opening from My homes. Secure/HttpOnly cookies, ownership checks, Origin
+and CSRF enforcement remain on the backend. Legacy asset endpoints remain only
+for documents already open during an update; new landing responses do not use them.
+
+Startup uses one stationary SMARTi symbol with one rotating ring, a short status
+and a solid theme background. The dashboard's RGB animations pause behind this
+surface. The same component covers all startup phases and connection errors;
+reduced motion stops rotation. Successful opening removes the loader directly
+when the dashboard is ready, without a redirect, second animation or minimum delay.
+
+Validation on 4 November 2026:
+
+- Production build, frontend lint, browser-test TypeScript, scoped Ruff and
+  whitespace checks passed; **286 frontend unit tests** passed.
+- **41 backend cases** passed, including actual remote landing HTML equality
+  with the app index, unavailable-build handling, real customer-cookie session
+  creation, logout, membership, transport, permissions and CSRF boundaries.
+- **20 Chromium browser cases** passed against both the working build and exact
+  extracted package. The new cases hold redemption/session/preferences/home
+  responses, verify one document request and one ticket exchange, unchanged
+  spinner DOM and animation start time, exactly one running animation, both
+  themes, failed/missing tickets, no prior-session fallback and reduced motion.
+  Initial-error retry, session recovery and sidebar regressions also pass.
+- **Two additional integrated HTTPS browser checks** used the extracted app and
+  actual customer-entry/redeem/session routes in an isolated test home, with a
+  fake cloud validator. Mobile/light and desktop/dark both reach the dashboard
+  through one document and one redemption, with a real Secure/HttpOnly/Strict
+  customer cookie and no local login cookie. The disposable localhost certificate
+  is trusted only in that isolated browser context; production TLS is unchanged.
+- Mobile light/dark startup screenshots were visually inspected. No live hub,
+  customer data, portal deployment, physical phone or native Safari was used.
+  Existing build-size and test-environment advisories remain separate.
+
+All **284 runtime files**, archive membership and source/payload hashes match
+the deterministic manifest. scripts/package.py --check passed. Archive SHA-256:
+`b906c6c908fd0cce386cac18e753241326c10e2acc4014308ae39951db6513e0`.
+
 # One startup loading screen — release 1.36.111
 
 Home data now starts in the authenticated application alongside the experience

@@ -4,12 +4,11 @@ import sqlite3
 import time
 from urllib.parse import urlparse
 
+from app.multihome_relay import HomeRegistry
 from fastapi.testclient import TestClient
 from test_cloud import ORIGIN
 from test_onboarding import PLAN, ready_and_claim
 from test_onboarding import factory as base_factory
-
-from app.multihome_relay import HomeRegistry
 
 PROFILE = dict(
     email="owner@example.com",
@@ -169,11 +168,10 @@ async def test_hub_customer_mapping_does_not_claim_local_admin(tmp_path):
     from types import SimpleNamespace
 
     import pytest
-    from fastapi import HTTPException
-
     from app.config import Settings
     from app.customer_access import CustomerAccess
     from app.storage import Store
+    from fastapi import HTTPException
 
     store = Store(Settings(data_dir=tmp_path).database)
     with store.connect() as c:
@@ -235,8 +233,16 @@ def test_remote_session_is_established_without_password_and_logout_clears_it(tmp
     from app.main import create_app
 
     origin = f"https://{uuid.uuid4()}.home.smarti.dev"
+    frontend = tmp_path / "frontend"
+    frontend.mkdir()
+    (frontend / "index.html").write_text('<html><body><div id="root"></div></body></html>')
     settings = Settings(
-        _env_file=None, mode="demo", data_dir=tmp_path, origin=origin, auto_local_origins=False
+        _env_file=None,
+        mode="demo",
+        data_dir=tmp_path,
+        origin=origin,
+        auto_local_origins=False,
+        static_dir=frontend,
     )
     app = create_app(settings, Demo(), remote_surface=True, support_identity=tmp_path / "identity")
 
@@ -253,7 +259,11 @@ def test_remote_session_is_established_without_password_and_logout_clears_it(tmp
 
     app.state.customer.cloud = fake
     client = TestClient(app, base_url=origin, headers={"Origin": origin})
-    assert client.get("/_account").status_code == 200
+    landing = client.get("/_account")
+    assert landing.status_code == 200
+    assert landing.content == client.get("/").content
+    assert 'id="root"' in landing.text
+    assert "launch.js" not in landing.text and "Velkommen hjem" not in landing.text
     assert client.get("/_account/launch.css").status_code == 200
     assert client.get("/_account/logo.png").headers["content-type"] == "image/png"
     result = client.post("/api/customer-access/redeem", json={"token": "x" * 48})
@@ -267,6 +277,8 @@ def test_remote_session_is_established_without_password_and_logout_clears_it(tmp
     assert client.post("/api/logout").status_code == 403
     assert client.post("/api/logout", headers={"X-CSRF-Token": "test-csrf"}).status_code == 200
     assert client.get("/api/session").status_code == 401
+    (frontend / "index.html").unlink()
+    assert client.get("/_account").status_code == 503
 
 
 def test_mail_queue_retries_and_erases_delivered_links(tmp_path, monkeypatch):

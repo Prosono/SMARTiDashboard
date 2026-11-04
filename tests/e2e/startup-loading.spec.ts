@@ -50,13 +50,15 @@ for (const first of ["home", "preferences"] as const) {
       });
     }
     await page.reload();
-    const loading = page.locator(".loading");
+    const loading = page.locator(".startup-screen");
     await expect(loading).toHaveCount(1);
     await expect(loading).toContainText("Henter hjemmet");
     await expect(loading).toHaveAttribute("role", "status");
     const original = (await loading.elementHandle())!;
-    const spinner = (await loading.locator(".spin").elementHandle())!;
-    const position = await loading.locator(".brand").boundingBox();
+    const spinner = (await loading
+      .locator(".startup-spinner")
+      .elementHandle())!;
+    const position = await loading.locator(".startup-symbol").boundingBox();
     expect(requested).toEqual({ home: 0, preferences: 0 });
     session.release();
     await expect.poll(() => requested).toEqual({ home: 1, preferences: 1 });
@@ -71,15 +73,18 @@ for (const first of ["home", "preferences"] as const) {
     );
     expect(
       await original.evaluate(
-        (node) => node === document.querySelector(".loading"),
+        (node) => node === document.querySelector(".startup-screen"),
       ),
     ).toBe(true);
     expect(
       await spinner.evaluate(
-        (node) => node === document.querySelector(".loading .spin"),
+        (node) =>
+          node === document.querySelector(".startup-screen .startup-spinner"),
       ),
     ).toBe(true);
-    expect(await loading.locator(".brand").boundingBox()).toEqual(position);
+    expect(await loading.locator(".startup-symbol").boundingBox()).toEqual(
+      position,
+    );
     await expect(page.locator(".shell")).toHaveCount(0);
     await expect(page.locator(".login")).toHaveCount(0);
     await page.screenshot({
@@ -118,10 +123,10 @@ test("signed-out startup fetches no home data; a failed initial home load remain
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   await expect(page.locator(".empty")).toBeVisible();
-  await expect(page.locator(".loading")).toHaveCount(0);
+  await expect(page.locator(".startup-screen")).toHaveCount(0);
   // A live-connection refresh after a failed initial request must retain the page.
   await expect.poll(() => calls).toBe(3);
-  await expect(page.locator(".loading")).toHaveCount(0);
+  await expect(page.locator(".startup-screen")).toHaveCount(0);
   await expect(page.locator(".empty")).toBeVisible();
   background.release();
   const retry = page.getByRole("button", { name: "Prøv igjen", exact: true });
@@ -130,5 +135,5 @@ test("signed-out startup fetches no home data; a failed initial home load remain
   failed = false;
   await retry.click();
   await expect(page.locator(".home-overview")).toBeVisible();
-  await expect(page.locator(".loading")).toHaveCount(0);
+  await expect(page.locator(".startup-screen")).toHaveCount(0);
 });
