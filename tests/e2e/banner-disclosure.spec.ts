@@ -86,7 +86,13 @@ for (const style of ["classic", "living", "harmony"]) {
       await page.evaluate((theme) => {
         document.documentElement.dataset.theme = theme;
       }, theme);
-      for (const [name, search] of categories) {
+      for (const [category, search] of categories) {
+        const name =
+          category === "Diverse" &&
+          style === "harmony" &&
+          info.project.name === "mobile"
+            ? "Mer"
+            : category;
         await page.getByRole("tab", { name, exact: true }).click();
         await expect(home.locator(banners)).toHaveCount(0);
         await expect(home.locator(".home-category-title")).toHaveCount(0);
@@ -287,7 +293,7 @@ test("the top settings icon edits the active canvas and returns focus after canc
     "Klima",
     "Sikkerhet",
     "Multimedia",
-    "Diverse",
+    info.project.name === "mobile" ? "Mer" : "Diverse",
   ]) {
     await page.getByRole("tab", { name, exact: true }).click();
     const canvas = page.locator(".home-canvas");

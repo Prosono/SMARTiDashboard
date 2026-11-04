@@ -10,6 +10,7 @@ export const phonePages = new Set([
   "security",
   "energy_control",
   "media",
+  "misc",
 ]);
 export const phoneEnergyPrimary = new Set([
   "energy:flow",

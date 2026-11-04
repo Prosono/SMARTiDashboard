@@ -1,3 +1,45 @@
+# Phone More — release 1.36.105
+
+Harmoni's More/Miscellaneous destination now follows the phone reference with
+room headings, wide shade cards, a state-aware device illustration and supported
+open/stop/close buttons. Switches and input booleans use compact icon/status
+rows with native switch semantics. A room initially previews two switch rows;
+Show all reveals the rest without changing the saved canvas. Unassigned devices
+have their own counted group. Slate glass surfaces adapt to light/dark mode.
+The phone heading/tab uses Mer in Norwegian; desktop/tablet retain Diverse.
+
+The display wrapper reuses the existing configured canvas cells and full-view
+openers, rather than saving a second layout. Room grouping can still be disabled,
+and search, editing, configured sources/icons/images, custom cards and the tablet
+layout are retained. Vacuum cards keep their product art and open the existing
+controls. System color and reduced-transparency preferences are respected. Native mobile rows grow with long text and command feedback. Product
+art is separate from the translucent surface.
+
+Switches require known on/off state, an available connected device, its declared
+action and other.control. Shade commands require security.control; opening and
+closing retain the existing explicit confirmation and confirmed payload, while
+Stop sends directly. Requests are guarded against reentry. Unconfirmed commands
+do not update the reported state optimistically. Unavailable/read-only controls
+remain labelled and disabled. No backend command or permission rules changed.
+
+Validation on 4 November 2026: production build, frontend lint, browser-test
+TypeScript, changed-file formatting and diff checks passed. All 275 frontend
+unit tests passed. Thirteen mobile browser scenarios passed, covering all phone
+cards plus all-category search in both themes. Two desktop scenarios passed,
+covering all-category search and editing from the shared settings button.
+The new More case checks room ordering, two-row disclosure, shade confirmation
+and cancellation, exact command/entity payloads, honest unconfirmed switch state,
+320–430px widths, search, editing, tablet restoration, grouping disabled,
+unavailable/read-only devices and custom card/source/image preservation.
+Dark/light screenshots were visually inspected. Existing Vite chunk-size and
+headless environment advisories remain. Validation uses isolated demo data;
+physical phones and live HA hardware were not exercised.
+
+All 278 extracted runtime files match their manifest hashes. The More and
+all-category search scenarios also passed against the exact final archive,
+including long names and system-color contrast. Archive SHA-256:
+`ca039390c30364fdd5c6b46b98808a368574e6ce874fa267c1037e75bb83433f`.
+
 # Phone Multimedia — release 1.36.104
 
 Harmoni now presents native media-player cards as wide phone cards following

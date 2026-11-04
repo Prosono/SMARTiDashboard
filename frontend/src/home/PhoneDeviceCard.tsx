@@ -16,6 +16,7 @@ import type { MobileCardProps } from "./MobileCardTile";
 import { usable } from "./homeModel";
 import { lightPercentage, securityAttention } from "./equipmentModel";
 import { PhoneMediaCard } from "./PhoneMediaCard";
+import { PhoneMiscDeviceCard } from "./PhoneMiscDeviceCard";
 
 function useLightCommand(home: Home, offline: boolean, lang: string) {
   const query = useQueryClient(),
@@ -264,8 +265,9 @@ function PhoneLight({
 
 export function PhoneDeviceCard({
   onOpen,
+  miscellaneous = false,
   ...props
-}: MobileCardProps & { onOpen: () => void }) {
+}: MobileCardProps & { onOpen: () => void; miscellaneous?: boolean }) {
   const { home, config, card, offline, lang } = props;
   const c = home.controls.find(
     (c) => c.entity_id === (config?.sources[0] || card.entityId),
@@ -294,7 +296,10 @@ export function PhoneDeviceCard({
     : controlState(c, c.state, lang);
   return (
     <CardPresentation.Provider value={config || {}}>
-      {c.domain === "light" ? (
+      {miscellaneous &&
+      ["cover", "switch", "input_boolean", "vacuum"].includes(c.domain) ? (
+        <PhoneMiscDeviceCard {...props} c={c} onOpen={onOpen} />
+      ) : c.domain === "light" ? (
         <PhoneLight {...props} c={c} onOpen={onOpen} />
       ) : c.domain === "media_player" ? (
         <PhoneMediaCard {...props} c={c} onOpen={onOpen} />

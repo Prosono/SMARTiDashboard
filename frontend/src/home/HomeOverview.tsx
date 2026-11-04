@@ -593,11 +593,11 @@ export function HomeOverview({
               </div>
             </div>
             <div className="phone-page-heading" role="heading" aria-level={1}>
-              {
-                homeTabs.find((item) => item.id === tab)?.[
-                  lang === "en" ? "en" : "nb"
-                ]
-              }
+              {tab === "misc" && lang !== "en"
+                ? "Mer"
+                : homeTabs.find((item) => item.id === tab)?.[
+                    lang === "en" ? "en" : "nb"
+                  ]}
             </div>
             <HomeTabs
               tab={tab}

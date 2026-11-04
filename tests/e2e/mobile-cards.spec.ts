@@ -4,6 +4,7 @@ import {
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
 import type { GridItem } from "../../frontend/src/home/homeGridModel";
+import { defaultCardConfig } from "../../frontend/src/home/cardConfigModel";
 
 // Verify the real fresh-install default, independent of detailed-mode legacy suites.
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -385,16 +386,16 @@ test("tiles adapt at 320–430px, retain room grouping and return to full cards 
     ["Klima", "climate"],
     ["Sikkerhet", "security"],
     ["Multimedia", "media"],
-    ["Diverse", "misc"],
+    ["Mer", "misc"],
   ]) {
     await page.getByRole("tab", { name: label, exact: true }).click();
     await expect(
       page.locator(`.home-canvas[data-page="${key}"]`),
     ).toHaveAttribute(
-      ["security", "media"].includes(key)
+      ["security", "media", "misc"].includes(key)
         ? "data-reference-phone"
         : "data-mobile-layout",
-      ["security", "media"].includes(key) ? "true" : "compact",
+      ["security", "media", "misc"].includes(key) ? "true" : "compact",
     );
     await expect(
       page
@@ -403,7 +404,9 @@ test("tiles adapt at 320–430px, retain room grouping and return to full cards 
             ? ".phone-security"
             : key === "media"
               ? ".phone-media"
-              : ".mobile-card-tile",
+              : key === "misc"
+                ? ".phone-misc-device"
+                : ".mobile-card-tile",
         )
         .first(),
     ).toBeVisible();
@@ -523,10 +526,10 @@ test("phone tiles retain the desktop product artwork on glass in both themes, wi
   await expect(
     page.locator(".mobile-card-product img").first(),
   ).toHaveAttribute("src", /lock.webp$/);
-  await page.getByRole("tab", { name: "Diverse", exact: true }).click();
+  await page.getByRole("tab", { name: "Mer", exact: true }).click();
   await expect(
-    page.locator('.mobile-card-product img[src$="plug.webp"]'),
-  ).toHaveAttribute("src", /plug.webp$/);
+    page.locator(".phone-misc-toggle .phone-misc-icon svg"),
+  ).toBeVisible();
   expect(data.history()).toBe(0);
   expect(data.commands).toHaveLength(0);
 });
@@ -1194,4 +1197,282 @@ test("phone multimedia matches wide TV and speaker cards, sends bounded volume c
       .getByRole("slider", { name: "SMARTi Voice Stue: Volum", exact: true }),
   ).toBeDisabled();
   expect(sent).toHaveLength(3);
+});
+
+test("phone More groups blinds and switches by room, confirms movement and preserves honest command state", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const data = await setup(page);
+  const base = structuredClone(
+    data.controls.find((c) => c.domain === "switch")!,
+  );
+  data.controls.splice(
+    data.controls.findIndex((c) => c.domain === "vacuum"),
+    1,
+  );
+  const eco = data.controls.find((c) => c.domain === "switch")!;
+  Object.assign(eco, { name: "Eco Level 1", state: "on", area_id: "" });
+  const cover = Object.assign(structuredClone(base), {
+    domain: "cover",
+    id: "cover.bath",
+    entity_id: "cover.bath",
+    name: "Persienner",
+    device_name: "Test group for covers",
+    area_id: "bath",
+    state: "closed",
+    attributes: { device_class: "blind", current_position: 0 },
+    capabilities: [
+      {
+        ...base.capabilities[0],
+        actions: ["open_cover", "stop_cover", "close_cover"],
+      },
+    ],
+  });
+  const away = Object.assign(structuredClone(base), {
+    domain: "input_boolean",
+    id: "input_boolean.away",
+    entity_id: "input_boolean.away",
+    name: "Bortemodus",
+    device_name: "Termostat_Bad",
+    area_id: "bath",
+    state: "off",
+  });
+  data.controls.push(
+    cover,
+    away,
+    {
+      ...structuredClone(base),
+      id: "switch.load",
+      entity_id: "switch.load",
+      name: "SIMULERT SMARTi testlast",
+      area_id: "",
+    },
+    {
+      ...structuredClone(base),
+      id: "switch.extra",
+      entity_id: "switch.extra",
+      name: "Ekstra bryter",
+      area_id: "",
+    },
+  );
+  data.areas.push({ area_id: "bath", name: "Bad" });
+  let groupByRoom = true,
+    writes = 0,
+    status = "state_updated";
+  let customItems: GridItem[] | null = null;
+  await page.route("**/api/home/layout/misc", (route) => {
+    if (route.request().method() !== "GET") writes++;
+    return route.fulfill({
+      json: { revision: 0, items: customItems, group_by_room: groupByRoom },
+    });
+  });
+  const sent: { entity: string; action: string; confirmed?: boolean }[] = [];
+  await page.route("**/api/controls/*/commands", (route) => {
+    const entity = decodeURIComponent(
+      new URL(route.request().url()).pathname.split("/").at(-2)!,
+    );
+    const body = route.request().postDataJSON();
+    sent.push({ entity, ...body });
+    if (status === "state_updated") {
+      const c = data.controls.find((c) => c.entity_id === entity)!;
+      if (body.action === "turn_off") c.state = "off";
+      if (body.action === "turn_on") c.state = "on";
+      if (body.action === "open_cover") c.state = "opening";
+    }
+    return route.fulfill({ json: { status } });
+  });
+  await page.reload();
+  await page.getByRole("tab", { name: "Mer", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Mer", exact: true, level: 1 }),
+  ).toBeVisible();
+  const grid = page.locator('.home-canvas[data-page="misc"]');
+  await expect(grid).toHaveAttribute("data-reference-phone", "true");
+  const bath = grid.getByRole("region", { name: "Bad", exact: true });
+  const none = grid.getByRole("region", { name: "Uten rom", exact: true });
+  await expect(bath).toBeVisible();
+  await expect(none.locator("h2")).toContainText("3 enheter");
+  await expect(bath.locator(".phone-misc-cover")).toContainText("Lukket");
+  await expect(bath.locator(".phone-misc-art svg")).toBeVisible();
+  const coverBox = (await bath.locator(".phone-misc-cover").boundingBox())!;
+  const awayBox = (await bath.locator(".phone-misc-toggle").boundingBox())!;
+  expect(coverBox.y + coverBox.height).toBeLessThanOrEqual(awayBox.y);
+  await expect(
+    bath.getByRole("switch", { name: "Bortemodus: av/på", exact: true }),
+  ).toBeChecked({ checked: false });
+  await expect(none.locator(".phone-misc-toggle")).toHaveCount(2);
+  await none
+    .getByRole("button", { name: "Vis alle 3 enheter", exact: true })
+    .click();
+  await expect(none.locator(".phone-misc-toggle")).toHaveCount(3);
+  await none.getByRole("button", { name: "Vis færre", exact: true }).click();
+  await bath
+    .getByRole("button", { name: "Åpne: Persienner", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Åpne Persienner?", exact: true }),
+  ).toBeVisible();
+  expect(sent).toHaveLength(0);
+  await page.getByRole("button", { name: "Avbryt", exact: true }).click();
+  expect(sent).toHaveLength(0);
+  await bath
+    .getByRole("button", { name: "Åpne: Persienner", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Bekreft", exact: true }).click();
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toEqual({
+    entity: "cover.bath",
+    action: "open_cover",
+    confirmed: true,
+  });
+  await expect(bath.locator(".phone-misc-state")).toHaveText("Åpner");
+  await bath
+    .getByRole("button", { name: "Stopp: Persienner", exact: true })
+    .click();
+  await expect.poll(() => sent.length).toBe(2);
+  expect(sent[1]).toEqual({ entity: "cover.bath", action: "stop_cover" });
+  const ecoSwitch = none.getByRole("switch", {
+    name: "Eco Level 1: av/på",
+    exact: true,
+  });
+  await ecoSwitch.click();
+  await expect(ecoSwitch).toBeChecked({ checked: false });
+  expect(sent[2]).toEqual({ entity: eco.entity_id, action: "turn_off" });
+  status = "accepted_unconfirmed";
+  await ecoSwitch.click();
+  await expect(none.getByRole("status")).toContainText("Venter på bekreftelse");
+  await expect(ecoSwitch).toBeChecked({ checked: false });
+  expect(sent).toHaveLength(4);
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+      )
+      .toBeLessThanOrEqual(1);
+    for (const card of await grid.locator(".phone-misc-device").all()) {
+      expect(
+        await card.evaluate((el) => el.scrollHeight - el.clientHeight),
+      ).toBeLessThanOrEqual(1);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const theme of ["dark", "light"]) {
+    await page.evaluate(
+      (theme) => (document.documentElement.dataset.theme = theme),
+      theme,
+    );
+    await grid.screenshot({
+      path: `/private/tmp/smarti-105-more-${theme}-${info.project.name}.png`,
+      animations: "disabled",
+    });
+  }
+  await page
+    .getByRole("button", { name: "Vis søk og filtre", exact: true })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Søk i diverse", exact: true })
+    .fill("Persienner");
+  await expect(grid.locator(".phone-misc-device")).toHaveCount(1);
+  await page
+    .getByRole("textbox", { name: "Søk i diverse", exact: true })
+    .fill("");
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await expect(grid).toHaveAttribute("data-editing", "true");
+  await expect(grid.locator(".phone-misc-board")).toHaveCount(0);
+  await page.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(grid.locator(".phone-misc-board")).toBeVisible();
+  await page.setViewportSize({ width: 834, height: 1112 });
+  await expect(
+    page.getByRole("tab", { name: "Diverse", exact: true }),
+  ).toBeVisible();
+  await expect(grid.locator(".phone-misc-board")).toHaveCount(0);
+  expect(writes).toBe(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  groupByRoom = false;
+  eco.availability = "unavailable";
+  data.access.permissions = ["other.view", "security.view"];
+  await page.reload();
+  await page.getByRole("tab", { name: "Mer", exact: true }).click();
+  await expect(grid.locator(".phone-misc-room h2")).toHaveCount(0);
+  await expect(
+    grid.locator('[data-card="device:switch.mobile"]'),
+  ).toContainText("Utilgjengelig");
+  await expect(
+    grid.getByRole("switch", { name: "Eco Level 1: av/på", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    grid.getByRole("button", { name: "Åpne: Persienner", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    grid.getByRole("switch", { name: "Bortemodus: av/på", exact: true }),
+  ).toBeDisabled();
+  expect(sent).toHaveLength(4);
+  expect(writes).toBe(0);
+  customItems = [
+    {
+      id: `device:${eco.entity_id}`,
+      x: 0,
+      y: 0,
+      w: 2,
+      h: 3,
+      config: {
+        ...defaultCardConfig([away.entity_id]),
+        title: "Min bortemodus med et ekstra langt navn på enheten",
+        image: "equipment-switch",
+        icon: "home",
+      },
+    },
+    {
+      id: "custom:more_clock",
+      x: 2,
+      y: 0,
+      w: 1,
+      h: 2,
+      config: { ...defaultCardConfig([]), type: "clock", title: "Min klokke" },
+    },
+  ];
+  const before = structuredClone(customItems);
+  await page.reload();
+  await page.getByRole("tab", { name: "Mer", exact: true }).click();
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(2);
+  await expect(grid.locator(".phone-misc-toggle")).toContainText(
+    "Min bortemodus",
+  );
+  await expect(
+    grid.locator('.phone-misc-icon img[src$="switch.webp"]'),
+  ).toBeVisible();
+  await expect(grid.locator(".mobile-card-tile")).toContainText("Min klokke");
+  await page.setViewportSize({ width: 320, height: 740 });
+  expect(
+    await grid
+      .locator(".phone-misc-device")
+      .evaluate((el) => el.scrollHeight - el.clientHeight),
+  ).toBeLessThanOrEqual(1);
+  expect(customItems).toEqual(before);
+  expect(writes).toBe(0);
+  await page.emulateMedia({ forcedColors: "active" });
+  const systemColors = await page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.cssText = "color:CanvasText;background:Canvas";
+    document.body.append(probe);
+    const colors = {
+      background: getComputedStyle(probe).backgroundColor,
+      color: getComputedStyle(probe).color,
+    };
+    probe.remove();
+    return colors;
+  });
+  await expect(grid.locator(".phone-misc-device")).toHaveCSS(
+    "color",
+    systemColors.color,
+  );
+  await expect(grid.locator(".home-canvas-surface").first()).toHaveCSS(
+    "background-color",
+    systemColors.background,
+  );
 });

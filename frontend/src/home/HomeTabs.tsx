@@ -152,7 +152,18 @@ export function HomeTabs({
             }}
           >
             <Icon size={19} />
-            <span>{lang === "en" ? en : nb}</span>
+            <span>
+              {id === "misc" && lang !== "en" ? (
+                <>
+                  <span className="home-tab-misc-desktop">{nb}</span>
+                  <span className="home-tab-misc-phone">Mer</span>
+                </>
+              ) : lang === "en" ? (
+                en
+              ) : (
+                nb
+              )}
+            </span>
           </button>
         ))}
       </div>
