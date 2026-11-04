@@ -214,3 +214,119 @@ def test_combined_energy_layout_is_a_read_only_migration_until_saved(client):  #
     client.post("/api/logout")
     login(client, "energy-resident", "a different long password")
     assert client.get("/api/home/layout/energy_control").json() == {"revision": 0, "items": None}
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        "overview",
+        "overview_simple",
+        "lights",
+        "climate",
+        "security",
+        "media",
+        "misc",
+        "energy",
+        "energy_history",
+        "energy_control",
+    ],
+)
+def test_mobile_and_desktop_layouts_have_independent_revisions_and_content(client, page):  # noqa: F811
+    desktop = f"/api/home/layout/{page}"
+    mobile = desktop + "?surface=mobile"
+    first = client.put(desktop, json={"revision": 0, "items": [card("desktop")]})
+    assert first.status_code == 200
+    assert client.get(mobile).json() == {"revision": 0, "items": None}
+    second = client.put(mobile, json={"revision": 0, "items": [card("phone", w=2, h=3)]})
+    assert second.status_code == 200
+    assert second.json()["revision"] == 1
+    assert client.get(desktop).json() == first.json()
+    assert client.get(desktop + "?surface=desktop").json() == first.json()
+    desktop_edit = client.put(desktop, json={"revision": 1, "items": []})
+    assert desktop_edit.status_code == 200
+    assert client.get(mobile).json() == second.json()
+    assert client.put(mobile, json={"revision": 0, "items": []}).status_code == 409
+    assert client.get(mobile).json() == second.json()
+    assert client.put(mobile, json={"revision": 1, "items": []}).status_code == 200
+    assert client.get(desktop).json() == desktop_edit.json()
+    assert client.get(desktop + "?surface=tablet").status_code == 422
+    assert client.put(desktop + "?surface=tablet", json={"revision": 0, "items": []}).status_code == 422
+
+
+def test_surface_migration_copies_existing_layouts_once_without_overwriting_phone_data(tmp_path):
+    import json
+
+    from app.storage import MIGRATIONS, Store
+
+    path = tmp_path / "surfaces.sqlite"
+    store = Store(path)
+    original = {
+        "revision": 7,
+        "items": [
+            card(
+                "custom:old",
+                config={
+                    "type": "auto",
+                    "title": "Old",
+                    "sources": ["light.old"],
+                    "icon": "light",
+                    "image": "auto",
+                    "period": "24",
+                },
+            )
+        ],
+        "group_by_room": False,
+    }
+    empty = {"revision": 3, "items": []}
+    existing_mobile = {"revision": 4, "items": [card("phone")]}
+    store.set("home_layout:1:overview", json.dumps(original))
+    store.set("home_layout:2:overview", json.dumps(empty))
+    store.set("home_layout:1:lights", json.dumps(original))
+    store.set("home_layout_mobile:1:lights", json.dumps(existing_mobile))
+    with store.connect() as db:
+        db.execute(f"PRAGMA user_version={len(MIGRATIONS) - 1}")
+    store = Store(path)
+    assert json.loads(store.get("home_layout_mobile:1:overview")) == original
+    assert json.loads(store.get("home_layout_mobile:2:overview")) == empty
+    assert json.loads(store.get("home_layout_mobile:1:lights")) == existing_mobile
+    store.set("home_layout:1:overview", json.dumps(empty))
+    store.set("home_layout:3:overview", json.dumps(original))
+    store = Store(path)
+    assert json.loads(store.get("home_layout_mobile:1:overview")) == original
+    assert store.get("home_layout_mobile:3:overview") == ""
+    assert json.loads(store.get("home_layout:1:overview")) == empty
+
+
+def test_energy_combination_only_reads_its_own_surface(client):  # noqa: F811
+    client.put("/api/home/layout/energy", json={"revision": 0, "items": [card("energy:flow")]})
+    assert client.get("/api/home/layout/energy_control?surface=mobile").json()["items"] is None
+    client.put(
+        "/api/home/layout/energy_history?surface=mobile",
+        json={"revision": 0, "items": [card("energy:history")]},
+    )
+    desktop = client.get("/api/home/layout/energy_control").json()
+    mobile = client.get("/api/home/layout/energy_control?surface=mobile").json()
+    assert "energy:flow" in {item["id"] for item in desktop["items"]}
+    assert "energy:history" not in {item["id"] for item in desktop["items"]}
+    assert "energy:history" in {item["id"] for item in mobile["items"]}
+    assert "energy:flow" not in {item["id"] for item in mobile["items"]}
+
+
+def test_phone_surface_is_private_and_csrf_protected(client):  # noqa: F811
+    path = "/api/home/layout/lights?surface=mobile"
+    saved = client.put(path, json={"revision": 0, "items": [card("private")]})
+    assert saved.status_code == 200
+    assert (
+        client.put(path, json={"revision": 1, "items": []}, headers={"x-csrf-token": "invalid"}).status_code
+        == 403
+    )
+    client.post(
+        "/api/users", json={"name": "phone-owner", "password": "another very long password", "role": "user"}
+    )
+    client.post("/api/logout")
+    assert client.get(path).status_code == 401
+    login(client, "phone-owner", "another very long password")
+    assert client.get(path).json() == {"revision": 0, "items": None}
+    client.post("/api/logout")
+    login(client)
+    assert client.get(path).json() == saved.json()

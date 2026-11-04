@@ -1,3 +1,42 @@
+# Separate dashboard surfaces — release 1.36.108
+
+Mobile dashboards now use an independent per-user, per-page layout store and
+query cache. Desktop and tablet retain the existing layout store. Membership,
+geometry, room grouping and card configuration have separate revisions and
+conflict checks. The startup schema migration copies existing layouts into the
+mobile namespace once, including empty layouts and configured cards, without
+overwriting existing mobile data. Later desktop changes never seed mobile data.
+The combined energy view reads legacy layouts from its own surface only.
+
+The mobile editor replaces the large canvas toolbar and per-card controls with
+a short action bar and a sortable list with product thumbnails. One card menu
+offers configuration, move up/down and removal. Touch/pointer drag commits on
+release, supports edge scrolling and can be cancelled; keyboard alternatives
+remain available. Grouping, defaults, clear and the Overview display preference
+are behind Options. Editing mounts no live device controls. Desktop/tablet
+keeps its original resize-and-drag canvas. A draft locks its original surface
+across breakpoint changes until save or cancel. The design context records
+this separation for future changes.
+
+Validation on 4 November 2026: production build, frontend lint, browser-test
+TypeScript and 275 frontend unit tests passed. The 98 backend tests for home
+layouts, API and mobile passed, including migration/restart, every layout page,
+per-surface revisions, same-surface conflicts, user privacy, CSRF and energy
+fallback isolation. Three desktop browser regressions passed for search, shared
+settings editing and saving the unified energy canvas. A real-API browser case
+uses two separate sessions to verify independent edits, configured titles,
+pointer/keyboard sorting, reload persistence, 320–430px overflow, image bounds,
+clear/cancel, conflicts, no device commands and a phone draft saved after resizing
+to tablet. The compact editor screenshot was visually inspected. Tests use an
+isolated demo backend; physical phones and live HA hardware were not exercised.
+Existing Vite chunk-size and headless environment advisories remain.
+
+All 278 extracted runtime files match the manifest and the archive has exactly
+the listed runtime members. All 16 selected mobile browser scenarios passed
+against this exact extracted package, including the real-API surface isolation
+case and shared search/settings on every mobile category. Archive SHA-256:
+`371f09bc9e165aebbd20caf458d32735c2a69e581459b79c7b89fc32d4f6e2e6`.
+
 # Phone Climate — release 1.36.107
 
 Harmoni's Climate phone view follows the supplied reference with a wide

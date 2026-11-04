@@ -40,6 +40,11 @@ CREATE TABLE notification_inbox (id TEXT PRIMARY KEY, device_id TEXT NOT NULL,
  read_at REAL, delivery TEXT NOT NULL DEFAULT 'pending');
 CREATE INDEX notification_inbox_device ON notification_inbox(device_id, created DESC);
 """,
+    """
+INSERT OR IGNORE INTO settings(key,value)
+SELECT 'home_layout_mobile:' || substr(key,13), value FROM settings
+WHERE key GLOB 'home_layout:*:*' AND key NOT GLOB 'home_layout:*:*:*';
+""",
 ]
 
 

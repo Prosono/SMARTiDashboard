@@ -95,6 +95,7 @@ LayoutPage = Literal[
     "energy_history",
     "energy_control",
 ]
+LayoutSurface = Literal["desktop", "mobile"]
 
 
 class CardConfig(BaseModel):
@@ -269,20 +270,24 @@ def home_router(store, user, ha, settings):
         return appearance_value(current)
 
     @router.get("/layout/{page}")
-    async def home_layout(page: LayoutPage, current=Depends(user)):
-        saved = store.get(f"home_layout:{current['id']}:{page}")
+    async def home_layout(page: LayoutPage, surface: LayoutSurface = "desktop", current=Depends(user)):
+        prefix = "home_layout_mobile" if surface == "mobile" else "home_layout"
+        saved = store.get(f"{prefix}:{current['id']}:{page}")
         if not saved and page == "energy_control":
             from .energy_layout import combined_layout
 
-            legacy = [store.get(f"home_layout:{current['id']}:{old}") for old in ("energy", "energy_history")]
+            legacy = [store.get(f"{prefix}:{current['id']}:{old}") for old in ("energy", "energy_history")]
             return combined_layout(*(json.loads(value) if value else None for value in legacy))
         return json.loads(saved) if saved else {"revision": 0, "items": None}
 
     @router.put("/layout/{page}")
-    async def save_home_layout(page: LayoutPage, body: HomeLayout, current=Depends(user)):
+    async def save_home_layout(
+        page: LayoutPage, body: HomeLayout, surface: LayoutSurface = "desktop", current=Depends(user)
+    ):
         if body.group_by_room and page not in {"lights", "misc", "climate", "security", "media"}:
             raise HTTPException(422, "room_grouping_not_supported")
-        key = f"home_layout:{current['id']}:{page}"
+        prefix = "home_layout_mobile" if surface == "mobile" else "home_layout"
+        key = f"{prefix}:{current['id']}:{page}"
         entities = {c.entity_id: c for c in ha.controls()}
         for item in body.items:
             if item.id.startswith("custom:") and not (

@@ -1,3 +1,8 @@
+## 1.36.108
+- Mobil og PC/nettbrett har nå helt separate dashbordoppsett på alle faner, også Energi. Kort, rekkefølge, størrelser, romgruppering og egne kortinnstillinger lagres bare for flaten du redigerer. Dagens lagrede oppsett kopieres én gang som startpunkt for mobil; videre endringer holdes adskilt.
+- Mobilredigeringen har fått en kompakt verktøylinje med «Legg til», «Valg», avbryt og lagre. Kortene vises i en ryddig liste med enhetsbilder, flyttehåndtak og én meny for redigering, flytting og sletting. Romgruppering, startoppsett og tømming finnes under «Valg».
+- Et åpent utkast beholder sin opprinnelige flate når vinduet endrer størrelse eller telefonen roteres. Samtidige endringer kontrolleres separat for mobil og PC/nettbrett, og konflikter beholder utkastet.
+
 ## 1.36.107
 - Klima i Harmoni har fått en egen mobilvisning etter bildereferansen: bredt termostatkort med rund temperaturjustering, modusikon og målt temperatur, og et AC-kort med målt temperatur og måltemperatur side om side.
 - Sensorer vises som to tydelige målefelt og en kompakt liste med «Vis alle sensorer» ved behov. Lyse blå, varme og lavendelfargede glassflater tilpasses mørkt tema. Minimum, prognose og duggpunkt viser bare verdiene fra sine faktiske kilder.

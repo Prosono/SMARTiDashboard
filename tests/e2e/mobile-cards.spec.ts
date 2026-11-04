@@ -192,7 +192,7 @@ async function setup(page: Page) {
   await page.route("**/api/home/layout/*", (route) =>
     route.fulfill({ json: { revision: 0, items: null, group_by_room: true } }),
   );
-  await page.route("**/api/home/layout/overview", (route) => {
+  await page.route("**/api/home/layout/overview*", (route) => {
     if (route.request().method() !== "GET") {
       writes++;
       saved = {
@@ -339,7 +339,7 @@ test("opening a tile mounts controls, restores focus and preserves command limit
   await page.locator('[data-card="metric:energy"] .mobile-card-tile').click();
   await expect.poll(() => data.history()).toBeGreaterThan(0);
 });
-test("detailed choice persists and editing never replaces saved desktop sizes with phone squares", async ({
+test("phone view choice persists and editing retains saved card data", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -348,17 +348,29 @@ test("detailed choice persists and editing never replaces saved desktop sizes wi
   await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
+  await page
+    .getByRole("button", { name: "Valg for mobiloppsett", exact: true })
+    .click();
   await page.getByRole("button", { name: "Detaljert", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
   await page.getByRole("button", { name: "Avbryt", exact: true }).click();
   await expect(page.locator(".mobile-card-tile")).toHaveCount(0);
   await page.reload();
   await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
+  await page
+    .getByRole("button", { name: "Valg for mobiloppsett", exact: true })
+    .click();
   await expect(
     page.getByRole("button", { name: "Detaljert", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Ruter", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
   await expect(page.locator(".mobile-card-tile")).toHaveCount(0);
   await page.getByRole("button", { name: "Lagre", exact: true }).click();
   await squares(page);
@@ -592,7 +604,13 @@ test("glass carries through detailed cards; photo choices, image failures and tr
   await page
     .getByRole("button", { name: "Rediger oppsett", exact: true })
     .click();
+  await page
+    .getByRole("button", { name: "Valg for mobiloppsett", exact: true })
+    .click();
   await page.getByRole("button", { name: "Detaljert", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .click();
   await page.getByRole("button", { name: "Avbryt", exact: true }).click();
   for (const width of [390, 834, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -1263,7 +1281,7 @@ test("phone More groups blinds and switches by room, confirms movement and prese
     writes = 0,
     status = "state_updated";
   let customItems: GridItem[] | null = null;
-  await page.route("**/api/home/layout/misc", (route) => {
+  await page.route("**/api/home/layout/misc*", (route) => {
     if (route.request().method() !== "GET") writes++;
     return route.fulfill({
       json: { revision: 0, items: customItems, group_by_room: groupByRoom },
@@ -1557,7 +1575,7 @@ test("phone climate shows a real thermostat, AC readings and sensor disclosure w
   const sent: { entity: string; action: string; value?: number }[] = [];
   let status = "state_updated",
     writes = 0;
-  await page.route("**/api/home/layout/climate", (route) => {
+  await page.route("**/api/home/layout/climate*", (route) => {
     if (route.request().method() !== "GET") writes++;
     return route.fulfill({
       json: { revision: 0, items: null, group_by_room: true },

@@ -314,12 +314,16 @@ test("the top settings icon edits the active canvas and returns focus after canc
     await settings.click();
     await expect(canvas).toHaveAttribute("data-editing", "true");
     await expect(settings).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      canvas.locator(".home-canvas-content").first(),
-    ).toHaveAttribute("inert", "");
+    if (info.project.name === "mobile") {
+      await expect(canvas.locator(".mobile-layout-editor")).toBeVisible();
+      await expect(canvas.locator(".home-canvas-resize-tools")).toHaveCount(0);
+    } else
+      await expect(
+        canvas.locator(".home-canvas-content").first(),
+      ).toHaveAttribute("inert", "");
     await settings.click();
     await expect(canvas).toHaveAttribute("data-editing", "true");
-    if (name === "Oversikt") {
+    if (name === "Oversikt" && info.project.name !== "mobile") {
       await canvas
         .getByRole("button", { name: "Tilpass Hjem", exact: true })
         .click();

@@ -266,7 +266,7 @@ async function setup(page: Page, compact = false, chartsOnly = false) {
   );
   let failSave = false;
   for (const key of Object.keys(layouts))
-    await page.route(`**/api/home/layout/${key}`, (route) => {
+    await page.route(`**/api/home/layout/${key}*`, (route) => {
       if (route.request().method() === "PUT") {
         if (failSave)
           return route.fulfill({

@@ -1,0 +1,176 @@
+html[data-home-style="harmony"] {
+  .mobile-layout-toolbar {
+    display: grid;
+    gap: 7px;
+    padding: 0 0 10px;
+  }
+  .mobile-layout-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .mobile-layout-main-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .mobile-layout-main-actions > button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 44px;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .mobile-layout-main-actions > button:first-child {
+    flex: 1;
+  }
+  .mobile-layout-main-actions > .mobile-layout-cancel {
+    width: 44px;
+    padding: 0;
+  }
+  .mobile-layout-main-actions > .primary {
+    background: var(--accent);
+    color: var(--accent-ink, #ffffff);
+    border-color: var(--accent);
+  }
+  .mobile-layout-editor {
+    display: grid;
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+  .mobile-layout-entry {
+    min-width: 0;
+  }
+  .mobile-layout-entry > h2 {
+    margin: 10px 4px 8px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .mobile-layout-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 65px;
+    padding: 4px 5px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--surface) 93%, transparent);
+  }
+  .mobile-layout-row[data-dragging="true"] {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  .mobile-layout-row[data-drop-target="true"] {
+    border-color: var(--accent);
+    border-style: dashed;
+  }
+  .mobile-layout-row > button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    min-height: 44px;
+    flex: none;
+    border: 0;
+    padding: 0;
+    border-radius: 10px;
+    color: var(--muted);
+    background: transparent;
+  }
+  .mobile-layout-grip {
+    touch-action: none;
+    cursor: grab;
+  }
+  .mobile-layout-thumbnail {
+    display: grid;
+    place-items: center;
+    position: relative;
+    width: 38px;
+    height: 40px;
+    flex: none;
+    color: var(--accent);
+    overflow: hidden;
+  }
+  .mobile-layout-thumbnail:has(.mobile-card-product) > svg {
+    display: none;
+  }
+  .mobile-layout-thumbnail .mobile-card-product {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 1;
+  }
+  .mobile-layout-thumbnail img,
+  .mobile-layout-thumbnail .equipment-art,
+  .mobile-layout-thumbnail .equipment-art > :is(svg, img) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 1;
+  }
+  .mobile-layout-thumbnail .equipment-art[class] {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    max-width: 100%;
+    max-height: 100%;
+    transform: none;
+  }
+  .mobile-layout-thumbnail .equipment-art::before {
+    display: none;
+  }
+  .mobile-layout-card-name {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+    font-weight: 550;
+    line-height: 1.25;
+  }
+  .home-canvas[data-editing-surface="mobile"] .home-canvas-grid {
+    display: block;
+    background: none;
+  }
+  .home-canvas[data-editing-surface="mobile"] {
+    max-width: 600px;
+  }
+  .home-layout-surface-label {
+    color: var(--muted);
+    font-size: 13px;
+  }
+}
+.mobile-layout-options {
+  display: grid;
+  gap: 8px;
+}
+.mobile-layout-options > button,
+.mobile-layout-options > label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  font-size: 14px;
+}
+.mobile-layout-options > label input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}

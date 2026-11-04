@@ -76,6 +76,7 @@ import {
 import { PhoneDeviceCard, PhoneLightsOff } from "./PhoneDeviceCard";
 import { PhoneMiscBoard } from "./PhoneMiscBoard";
 import { PhoneClimateBoard } from "./PhoneClimateBoard";
+import { MobileLayoutEditor, MobileLayoutToolbar } from "./MobileLayoutEditor";
 
 const mobilePreference = "smarti-home-mobile-layout";
 const storedMobileLayout = () => {
@@ -119,7 +120,15 @@ export function HomeGrid({
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
-  const queryKey = ["home-grid", page];
+  const [phone, setPhone] = useState(
+    () => window.matchMedia(phoneQuery).matches,
+  );
+  const [draftSurface, setDraftSurface] = useState<"mobile" | "desktop" | null>(
+    null,
+  );
+  const layoutSurface = draftSurface ?? (phone ? "mobile" : "desktop");
+  const layoutURL = `home/layout/${page}${layoutSurface === "mobile" ? "?surface=mobile" : ""}`;
+  const queryKey = ["home-grid", page, layoutSurface];
   const cards = useMemo(() => availableCards.slice(0, 300), [availableCards]);
   const qc = useQueryClient();
   const guard = useContext(HomeGridGuard);
@@ -127,7 +136,7 @@ export function HomeGrid({
   const editorId = useId();
   const saved = useQuery({
     queryKey,
-    queryFn: () => api<SavedGrid>(`home/layout/${page}`),
+    queryFn: () => api<SavedGrid>(layoutURL),
     staleTime: 60000,
     retry: false,
   });
@@ -140,9 +149,6 @@ export function HomeGrid({
     [active, setActive] = useState<string | null>(null);
   const [editingCard, setEditingCard] = useState<string | null>(null);
   const [columns, setColumns] = useState(3);
-  const [phone, setPhone] = useState(
-    () => window.matchMedia(phoneQuery).matches,
-  );
   const [mobileLayout, setMobileLayout] = useState(storedMobileLayout);
   const [phoneRoom, choosePhoneRoom] = useState("default");
   const [moreEnergy, showMoreEnergy] = useState(false);
@@ -211,6 +217,7 @@ export function HomeGrid({
       )
     : rawLayout;
   const editing = draft !== null;
+  const mobileEditor = editing && draftSurface === "mobile";
   const referencePhone = phone && phonePages.has(page) && !editing;
   const compactMobile =
     phone && mobileLayout === "compact" && !editing && !referencePhone;
@@ -309,7 +316,7 @@ export function HomeGrid({
         )
       : responsiveGrid(displayLayout, displayColumns));
   const layoutKey =
-    `${roomView?.template ?? "flat"}|` +
+    `${layoutSurface}|${roomView?.template ?? "flat"}|` +
     shown.map(({ id, x, y, w, h }) => `${id}:${x},${y},${w},${h}`).join("|");
   useGridMotion(surface, layoutKey, editing, active);
   useGridWiggle(surface, editing);
@@ -401,6 +408,7 @@ export function HomeGrid({
   function begin() {
     if (editing || busy || !saved.data || saved.isError) return;
     setDraftGrouped(grouped);
+    setDraftSurface(layoutSurface);
     setDraft(
       layout
         .filter((item) => catalog.has(item.id))
@@ -427,6 +435,7 @@ export function HomeGrid({
     gesture.current = null;
     setActive(null);
     setDraft(null);
+    setDraftSurface(null);
     setAdding(false);
     setEditingCard(null);
     setMessage("");
@@ -437,15 +446,20 @@ export function HomeGrid({
     setBusy(true);
     setMessage("");
     try {
-      const result = await api<SavedGrid>(`home/layout/${page}`, "PUT", {
+      const result = await api<SavedGrid>(layoutURL, "PUT", {
         revision,
         items: draft,
         ...(canGroup ? { group_by_room: draftGrouped } : {}),
       });
       qc.setQueryData(queryKey, result);
       setDraft(null);
+      setDraftSurface(null);
       setAdding(false);
-      setMessage(t("Oppsettet er lagret.", "Layout saved."));
+      setMessage(
+        layoutSurface === "mobile"
+          ? t("Mobiloppsettet er lagret.", "Phone layout saved.")
+          : t("Oppsettet er lagret.", "Layout saved."),
+      );
       editButton.current?.focus();
     } catch (error) {
       const conflict = String(error).includes("409");
@@ -466,6 +480,27 @@ export function HomeGrid({
   }
   function update(item: GridItem) {
     setDraft((current) => current && changePlacement(current, item));
+  }
+  function restoreLayout() {
+    setDraftGrouped(canGroup);
+    setDraft(canGroup ? normalizeRoomGrid(defaults, roomOf, true) : defaults);
+    setMessage(
+      t(
+        "Startoppsettet er hentet. Lagre for å beholde det.",
+        "Default layout restored. Save to keep it.",
+      ),
+    );
+  }
+  function clearLayout() {
+    setDraft([]);
+    setAdding(false);
+    setEditingCard(null);
+    setMessage(
+      t(
+        "Oppsettet er tømt. Legg til kort og lagre, eller velg Avbryt for å hente alt tilbake.",
+        "Layout cleared. Add cards and save, or cancel to restore everything.",
+      ),
+    );
   }
   function changePlacement(items: GridItem[], item: GridItem) {
     return grouped
@@ -633,6 +668,8 @@ export function HomeGrid({
       className="home-canvas"
       data-page={page}
       data-editing={editing}
+      data-layout-surface={layoutSurface}
+      data-editing-surface={editing ? draftSurface : undefined}
       data-mobile-layout={compactMobile ? "compact" : "detailed"}
       data-phone={phone}
       data-reference-phone={referencePhone || undefined}
@@ -647,8 +684,51 @@ export function HomeGrid({
       data-toolbar={tools ? "external" : undefined}
       aria-label={title || t("Kort i hjemmet", "Home cards")}
     >
-      {(editing || !tools) && (
+      {mobileEditor && (
+        <MobileLayoutToolbar
+          lang={lang}
+          busy={busy}
+          count={draft.length}
+          grouped={grouped}
+          canGroup={canGroup}
+          onGroup={toggleGrouping}
+          onAdd={() => setAdding(true)}
+          onRestore={restoreLayout}
+          onClear={clearLayout}
+          onCancel={cancel}
+          onSave={() => void save()}
+        >
+          {!phonePages.has(page) && (
+            <div
+              className="mobile-layout-picker"
+              role="group"
+              aria-label={t("Mobilvisning", "Mobile layout")}
+            >
+              <button
+                aria-pressed={mobileLayout === "compact"}
+                onClick={() => chooseMobileLayout("compact")}
+              >
+                <LayoutGrid size={15} />
+                {t("Ruter", "Tiles")}
+              </button>
+              <button
+                aria-pressed={mobileLayout === "detailed"}
+                onClick={() => chooseMobileLayout("detailed")}
+              >
+                <Rows3 size={15} />
+                {t("Detaljert", "Detailed")}
+              </button>
+            </div>
+          )}
+        </MobileLayoutToolbar>
+      )}
+      {!mobileEditor && (editing || !tools) && (
         <div className="home-canvas-toolbar">
+          {editing && tools && (
+            <span className="home-layout-surface-label">
+              {t("Desktop / nettbrett", "Desktop / tablet")}
+            </span>
+          )}
           {!tools && (
             <div>
               <strong>{title || t("Ditt oppsett", "Your layout")}</strong>
@@ -729,39 +809,13 @@ export function HomeGrid({
                   <Plus size={17} />
                   {t("Legg til kort", "Add card")}
                 </button>
-                <button
-                  onClick={() => {
-                    setDraftGrouped(canGroup);
-                    setDraft(
-                      canGroup
-                        ? normalizeRoomGrid(defaults, roomOf, true)
-                        : defaults,
-                    );
-                    setMessage(
-                      t(
-                        "Startoppsettet er hentet. Lagre for å beholde det.",
-                        "Default layout restored. Save to keep it.",
-                      ),
-                    );
-                  }}
-                  disabled={busy}
-                >
+                <button onClick={restoreLayout} disabled={busy}>
                   <RotateCcw size={16} />
                   {t("Startoppsett", "Default layout")}
                 </button>
                 <button
                   disabled={busy || !!active || !draft.length}
-                  onClick={() => {
-                    setDraft([]);
-                    setAdding(false);
-                    setEditingCard(null);
-                    setMessage(
-                      t(
-                        "Oppsettet er tømt. Legg til kort og lagre, eller velg Avbryt for å hente alt tilbake.",
-                        "Layout cleared. Add cards and save, or cancel to restore everything.",
-                      ),
-                    );
-                  }}
+                  onClick={clearLayout}
                 >
                   <Trash2 size={16} />
                   {t("Tøm oppsett", "Clear layout")}
@@ -887,281 +941,318 @@ export function HomeGrid({
           } as CSSProperties
         }
       >
-        <PhoneBoard
-          enabled={flowingPhone}
-          items={shown}
-          catalog={catalog}
-          home={home}
-          grouped={grouped}
-          roomOf={roomOf}
-          lang={lang}
-        >
-          {shown.flatMap((item) => {
-            const card = catalog.get(item.id)!;
-            const group = roomView?.groups.find(
-              (group) => group.items[0]?.id === item.id,
-            );
-            const original = layout.find((saved) => saved.id === item.id)!;
-            const cardTitle = original.config?.title || card.title;
-            const tone = cardTone(card, original.config, home.controls);
-            const lightStyle =
-              tone === "lighting"
-                ? lightCardStyle(
-                    card,
-                    original.config,
-                    home.controls,
-                    home.connected && !offline,
-                  )
-                : undefined;
-            const phase = Array.from(item.id).reduce(
-              (sum, c) => sum + c.charCodeAt(0),
-              0,
-            );
-            return [
-              group && (
-                <h2
-                  className="home-canvas-room-heading"
-                  key={`heading:${group.key}`}
-                  data-room={group.key}
-                  style={{ gridColumn: "1 / -1", gridRow: group.headingRow }}
-                >
-                  <House size={18} aria-hidden="true" />
-                  <span>
-                    {group.key === "shared"
-                      ? t("Felles for hjemmet", "Shared across the home")
-                      : group.key === "none"
-                        ? t("Uten rom", "No room")
-                        : home.areas.find(
-                            (area) => `room:${area.area_id}` === group.key,
-                          )?.name}
-                  </span>
-                  <small>
-                    {group.items.length} {t("kort", "cards")}
-                  </small>
-                </h2>
-              ),
-              <div
-                key={item.id}
-                className="home-canvas-cell"
-                data-card={item.id}
-                data-room={grouped ? roomOf(item) : undefined}
-                data-rows={item.h}
-                data-active={active === item.id}
-                style={{
-                  gridColumn: flowingPhone
-                    ? undefined
-                    : `${item.x + 1} / span ${item.w}`,
-                  gridRow: flowingPhone
-                    ? undefined
-                    : `${roomView?.displayRows.get(item.id) ?? item.y + 1} / span ${item.h}`,
-                }}
-              >
-                {editing && (
-                  <div className="home-canvas-card-tools">
-                    <button
-                      className="home-canvas-grip"
-                      disabled={busy}
-                      aria-label={`${t("Flytt", "Move")} ${cardTitle}`}
-                      onPointerDown={(event) => start(event, item.id, false)}
-                      onPointerMove={move}
-                      onPointerUp={(event) => end(event)}
-                      onPointerCancel={(event) => end(event, true)}
-                      onKeyDown={(event) => {
-                        const directions: Record<string, [number, number]> = {
-                          ArrowLeft: [-1, 0],
-                          ArrowRight: [1, 0],
-                          ArrowUp: [0, -1],
-                          ArrowDown: [0, 1],
-                        };
-                        if (directions[event.key]) {
-                          event.preventDefault();
-                          const [x, y] = directions[event.key];
-                          if (columns < 3) {
-                            const siblings = shown.filter(
-                              (item) =>
-                                !grouped || roomOf(item) === roomOf(original),
-                            );
-                            const index = siblings.findIndex(
-                              (item) => item.id === original.id,
-                            );
-                            const target =
-                              siblings[
-                                Math.max(
-                                  0,
-                                  Math.min(
-                                    siblings.length - 1,
-                                    index + (y ? y * columns : x),
-                                  ),
-                                )
-                              ];
-                            setDraft(
-                              (current) =>
-                                current &&
-                                reorderPlacement(
-                                  current,
-                                  original.id,
-                                  target.id,
-                                ),
-                            );
-                            return;
-                          }
-                          update({
-                            ...original,
-                            x: original.x + x,
-                            y: original.y + y,
-                          });
-                        }
-                      }}
-                    >
-                      <Grip size={18} />
-                      <span>{cardTitle}</span>
-                    </button>
-                    <button
-                      disabled={busy}
-                      aria-label={`${t("Rediger kort", "Edit card")}: ${cardTitle}`}
-                      onClick={() => setEditingCard(item.id)}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      aria-label={`${t("Fjern", "Remove")} ${cardTitle}`}
-                      disabled={busy}
-                      onClick={() =>
-                        setDraft(
-                          (current) =>
-                            current &&
-                            (grouped
-                              ? removeRoomCard(current, card.id, roomOf)
-                              : removeGridCard(current, card.id)),
-                        )
-                      }
-                    >
-                      <X size={17} />
-                    </button>
-                  </div>
-                )}
+        {mobileEditor ? (
+          <MobileLayoutEditor
+            items={availableLayout}
+            catalog={catalog}
+            home={home}
+            offline={offline}
+            lang={lang}
+            grouped={grouped}
+            roomOf={roomOf}
+            busy={busy}
+            onReorder={(id, target) =>
+              setDraft(
+                (current) => current && reorderPlacement(current, id, target),
+              )
+            }
+            onEdit={setEditingCard}
+            onRemove={(id) =>
+              setDraft(
+                (current) =>
+                  current &&
+                  (grouped
+                    ? removeRoomCard(current, id, roomOf)
+                    : removeGridCard(current, id)),
+              )
+            }
+          />
+        ) : (
+          <PhoneBoard
+            enabled={flowingPhone}
+            items={shown}
+            catalog={catalog}
+            home={home}
+            grouped={grouped}
+            roomOf={roomOf}
+            lang={lang}
+          >
+            {shown.flatMap((item) => {
+              const card = catalog.get(item.id)!;
+              const group = roomView?.groups.find(
+                (group) => group.items[0]?.id === item.id,
+              );
+              const original = layout.find((saved) => saved.id === item.id)!;
+              const cardTitle = original.config?.title || card.title;
+              const tone = cardTone(card, original.config, home.controls);
+              const lightStyle =
+                tone === "lighting"
+                  ? lightCardStyle(
+                      card,
+                      original.config,
+                      home.controls,
+                      home.connected && !offline,
+                    )
+                  : undefined;
+              const phase = Array.from(item.id).reduce(
+                (sum, c) => sum + c.charCodeAt(0),
+                0,
+              );
+              return [
+                group && (
+                  <h2
+                    className="home-canvas-room-heading"
+                    key={`heading:${group.key}`}
+                    data-room={group.key}
+                    style={{ gridColumn: "1 / -1", gridRow: group.headingRow }}
+                  >
+                    <House size={18} aria-hidden="true" />
+                    <span>
+                      {group.key === "shared"
+                        ? t("Felles for hjemmet", "Shared across the home")
+                        : group.key === "none"
+                          ? t("Uten rom", "No room")
+                          : home.areas.find(
+                              (area) => `room:${area.area_id}` === group.key,
+                            )?.name}
+                    </span>
+                    <small>
+                      {group.items.length} {t("kort", "cards")}
+                    </small>
+                  </h2>
+                ),
                 <div
-                  className="home-canvas-surface"
-                  data-card-tone={tone}
-                  style={
-                    {
-                      ...lightStyle,
-                      "--wiggle-angle": `${0.22 / Math.max(item.w, item.h / 2)}deg`,
-                      "--wiggle-duration": `${560 + (phase % 5) * 37}ms`,
-                      "--wiggle-delay": `${-(phase % 900)}ms`,
-                    } as CSSProperties
-                  }
+                  key={item.id}
+                  className="home-canvas-cell"
+                  data-card={item.id}
+                  data-room={grouped ? roomOf(item) : undefined}
+                  data-rows={item.h}
+                  data-active={active === item.id}
+                  style={{
+                    gridColumn: flowingPhone
+                      ? undefined
+                      : `${item.x + 1} / span ${item.w}`,
+                    gridRow: flowingPhone
+                      ? undefined
+                      : `${roomView?.displayRows.get(item.id) ?? item.y + 1} / span ${item.h}`,
+                  }}
                 >
-                  <HomeGridContent
-                    title={cardTitle}
-                    lang={lang}
-                    editing={editing}
-                    config={original.config}
-                    tone={tone}
-                    lightStyle={lightStyle}
-                    mobile={
-                      compactMobile || referencePhone
-                        ? { card, config: original.config, home, offline, lang }
-                        : undefined
-                    }
-                    phoneContent={
-                      referencePhone &&
-                      (!original.config ||
-                        (["auto", "compact"].includes(original.config.type) &&
-                          original.config.sources.length <= 1 &&
-                          !photoImages.has(original.config.image)))
-                        ? card.phoneContent ||
-                          (page !== "energy_control" && card.entityId
-                            ? (open) => (
-                                <PhoneDeviceCard
-                                  miscellaneous={page === "misc"}
-                                  climatePage={page === "climate"}
-                                  card={card}
-                                  config={original.config}
-                                  home={home}
-                                  offline={offline}
-                                  lang={lang}
-                                  onOpen={open}
-                                />
-                              )
-                            : undefined)
-                        : undefined
+                  {editing && (
+                    <div className="home-canvas-card-tools">
+                      <button
+                        className="home-canvas-grip"
+                        disabled={busy}
+                        aria-label={`${t("Flytt", "Move")} ${cardTitle}`}
+                        onPointerDown={(event) => start(event, item.id, false)}
+                        onPointerMove={move}
+                        onPointerUp={(event) => end(event)}
+                        onPointerCancel={(event) => end(event, true)}
+                        onKeyDown={(event) => {
+                          const directions: Record<string, [number, number]> = {
+                            ArrowLeft: [-1, 0],
+                            ArrowRight: [1, 0],
+                            ArrowUp: [0, -1],
+                            ArrowDown: [0, 1],
+                          };
+                          if (directions[event.key]) {
+                            event.preventDefault();
+                            const [x, y] = directions[event.key];
+                            if (columns < 3) {
+                              const siblings = shown.filter(
+                                (item) =>
+                                  !grouped || roomOf(item) === roomOf(original),
+                              );
+                              const index = siblings.findIndex(
+                                (item) => item.id === original.id,
+                              );
+                              const target =
+                                siblings[
+                                  Math.max(
+                                    0,
+                                    Math.min(
+                                      siblings.length - 1,
+                                      index + (y ? y * columns : x),
+                                    ),
+                                  )
+                                ];
+                              setDraft(
+                                (current) =>
+                                  current &&
+                                  reorderPlacement(
+                                    current,
+                                    original.id,
+                                    target.id,
+                                  ),
+                              );
+                              return;
+                            }
+                            update({
+                              ...original,
+                              x: original.x + x,
+                              y: original.y + y,
+                            });
+                          }
+                        }}
+                      >
+                        <Grip size={18} />
+                        <span>{cardTitle}</span>
+                      </button>
+                      <button
+                        disabled={busy}
+                        aria-label={`${t("Rediger kort", "Edit card")}: ${cardTitle}`}
+                        onClick={() => setEditingCard(item.id)}
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        aria-label={`${t("Fjern", "Remove")} ${cardTitle}`}
+                        disabled={busy}
+                        onClick={() =>
+                          setDraft(
+                            (current) =>
+                              current &&
+                              (grouped
+                                ? removeRoomCard(current, card.id, roomOf)
+                                : removeGridCard(current, card.id)),
+                          )
+                        }
+                      >
+                        <X size={17} />
+                      </button>
+                    </div>
+                  )}
+                  <div
+                    className="home-canvas-surface"
+                    data-card-tone={tone}
+                    style={
+                      {
+                        ...lightStyle,
+                        "--wiggle-angle": `${0.22 / Math.max(item.w, item.h / 2)}deg`,
+                        "--wiggle-duration": `${560 + (phase % 5) * 37}ms`,
+                        "--wiggle-delay": `${-(phase % 900)}ms`,
+                      } as CSSProperties
                     }
                   >
-                    {original.config ? (
-                      <ConfiguredHomeCard
-                        config={original.config}
-                        home={home}
-                        offline={offline}
-                        lang={lang}
-                        original={card.content}
-                        originalEntity={card.entityId}
-                      />
-                    ) : (
-                      card.content
-                    )}
-                  </HomeGridContent>
-                </div>
-                {editing && (
-                  <div className="home-canvas-resize-tools">
-                    <label>
-                      {t("Bredde", "Width")}
-                      <select
-                        aria-label={`${cardTitle}: ${t("bredde", "width")}`}
-                        value={original.w}
-                        disabled={busy}
-                        onChange={(event) =>
-                          update({
-                            ...original,
-                            x: Math.min(
-                              original.x,
-                              3 - Number(event.target.value),
-                            ),
-                            w: Number(event.target.value),
-                          })
-                        }
-                      >
-                        {[1, 2, 3].map((value) => (
-                          <option key={value} value={value}>
-                            {value}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      {t("Høyde", "Height")}
-                      <select
-                        aria-label={`${cardTitle}: ${t("høyde", "height")}`}
-                        value={original.h}
-                        disabled={busy}
-                        onChange={(event) =>
-                          update({ ...original, h: Number(event.target.value) })
-                        }
-                      >
-                        {[1, 2, 3, 4].map((value) => (
-                          <option key={value} value={value}>
-                            {value}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <button
-                      aria-label={`${t("Endre størrelse på", "Resize")} ${cardTitle}`}
-                      className="home-canvas-resize"
-                      disabled={busy}
-                      onPointerDown={(event) => start(event, item.id, true)}
-                      onPointerMove={move}
-                      onPointerUp={(event) => end(event)}
-                      onPointerCancel={(event) => end(event, true)}
+                    <HomeGridContent
+                      title={cardTitle}
+                      lang={lang}
+                      editing={editing}
+                      config={original.config}
+                      tone={tone}
+                      lightStyle={lightStyle}
+                      mobile={
+                        compactMobile || referencePhone
+                          ? {
+                              card,
+                              config: original.config,
+                              home,
+                              offline,
+                              lang,
+                            }
+                          : undefined
+                      }
+                      phoneContent={
+                        referencePhone &&
+                        (!original.config ||
+                          (["auto", "compact"].includes(original.config.type) &&
+                            original.config.sources.length <= 1 &&
+                            !photoImages.has(original.config.image)))
+                          ? card.phoneContent ||
+                            (page !== "energy_control" && card.entityId
+                              ? (open) => (
+                                  <PhoneDeviceCard
+                                    miscellaneous={page === "misc"}
+                                    climatePage={page === "climate"}
+                                    card={card}
+                                    config={original.config}
+                                    home={home}
+                                    offline={offline}
+                                    lang={lang}
+                                    onOpen={open}
+                                  />
+                                )
+                              : undefined)
+                          : undefined
+                      }
                     >
-                      <Maximize2 size={17} />
-                    </button>
+                      {original.config ? (
+                        <ConfiguredHomeCard
+                          config={original.config}
+                          home={home}
+                          offline={offline}
+                          lang={lang}
+                          original={card.content}
+                          originalEntity={card.entityId}
+                        />
+                      ) : (
+                        card.content
+                      )}
+                    </HomeGridContent>
                   </div>
-                )}
-              </div>,
-            ];
-          })}
-        </PhoneBoard>
+                  {editing && (
+                    <div className="home-canvas-resize-tools">
+                      <label>
+                        {t("Bredde", "Width")}
+                        <select
+                          aria-label={`${cardTitle}: ${t("bredde", "width")}`}
+                          value={original.w}
+                          disabled={busy}
+                          onChange={(event) =>
+                            update({
+                              ...original,
+                              x: Math.min(
+                                original.x,
+                                3 - Number(event.target.value),
+                              ),
+                              w: Number(event.target.value),
+                            })
+                          }
+                        >
+                          {[1, 2, 3].map((value) => (
+                            <option key={value} value={value}>
+                              {value}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        {t("Høyde", "Height")}
+                        <select
+                          aria-label={`${cardTitle}: ${t("høyde", "height")}`}
+                          value={original.h}
+                          disabled={busy}
+                          onChange={(event) =>
+                            update({
+                              ...original,
+                              h: Number(event.target.value),
+                            })
+                          }
+                        >
+                          {[1, 2, 3, 4].map((value) => (
+                            <option key={value} value={value}>
+                              {value}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        aria-label={`${t("Endre størrelse på", "Resize")} ${cardTitle}`}
+                        className="home-canvas-resize"
+                        disabled={busy}
+                        onPointerDown={(event) => start(event, item.id, true)}
+                        onPointerMove={move}
+                        onPointerUp={(event) => end(event)}
+                        onPointerCancel={(event) => end(event, true)}
+                      >
+                        <Maximize2 size={17} />
+                      </button>
+                    </div>
+                  )}
+                </div>,
+              ];
+            })}
+          </PhoneBoard>
+        )}
       </div>
       {referencePhone && page === "media" && activePhoneRoom !== "all" && (
         <nav
