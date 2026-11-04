@@ -1,3 +1,23 @@
+# Remove the loading panel edges on wide screens — release 1.36.113
+
+The fixed startup main inherited the global main element's 1400px max-width and
+automatic margins. At 1920px it occupied x=260..1660, exposing paused RGB ribbons
+at the sides and appearing as a dark rectangular panel. The startup surface now
+explicitly clears that width limit and margin, filling the viewport uniformly.
+The icon remains transparent and the existing single animation is retained.
+
+Production build, frontend lint, browser-test TypeScript and whitespace checks
+passed on 4 November 2026. **Eight Chromium mobile/desktop browser cases** passed
+against both the working build and exact extracted app package. Coverage checks
+768/1024/1440/1920px in both themes, surface bounds and all four viewport corners,
+transparent icon backgrounds, continuous startup, failure and retry. Before/after
+1920px screenshots were visually inspected. Authentication logic is unchanged;
+no live home or physical device was modified. Existing build advisories remain.
+
+All **284 runtime files**, archive membership and source/payload hashes match
+the deterministic manifest. scripts/package.py --check passed. Archive SHA-256:
+`8af6f9d07b6dbcbff0aba82f931c9b968596f0f604cb35ea3ff4f8cd762eb590`.
+
 # One animation from portal entry to dashboard — release 1.36.112
 
 The remaining transition came from the remote /_account landing document, which

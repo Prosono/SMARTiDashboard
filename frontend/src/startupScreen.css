@@ -1,6 +1,8 @@
 .startup-screen {
   position: fixed;
   inset: 0;
+  max-width: none;
+  margin: 0;
   z-index: 20;
   display: grid;
   place-content: center;

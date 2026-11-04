@@ -137,3 +137,65 @@ test("signed-out startup fetches no home data; a failed initial home load remain
   await expect(page.locator(".home-overview")).toBeVisible();
   await expect(page.locator(".startup-screen")).toHaveCount(0);
 });
+
+test("loading has one edge-to-edge background on tablets and wide desktops", async ({
+  page,
+}, info) => {
+  const session = gate();
+  await page.route("**/api/session", async (route) => {
+    await session.wait;
+    await route.continue();
+  });
+  await page.addInitScript(() =>
+    localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await page.goto("/");
+  const loading = page.locator(".startup-screen");
+  await expect(loading).toBeVisible();
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate((theme) => {
+      document.documentElement.dataset.theme = theme;
+    }, theme);
+    for (const width of [768, 1024, 1440, 1920]) {
+      await page.setViewportSize({ width, height: 1080 });
+      const surface = await loading.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const corners = [
+          [0, 0],
+          [innerWidth - 1, 0],
+          [0, innerHeight - 1],
+          [innerWidth - 1, innerHeight - 1],
+        ];
+        return {
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          coversCorners: corners.every(
+            ([x, y]) => document.elementFromPoint(x, y) === element,
+          ),
+        };
+      });
+      expect(surface).toEqual({
+        left: 0,
+        top: 0,
+        width,
+        height: 1080,
+        coversCorners: true,
+      });
+      await expect(loading.locator(".startup-symbol")).toHaveCSS(
+        "background-color",
+        "rgba(0, 0, 0, 0)",
+      );
+      await expect(loading.locator(".startup-symbol img")).toHaveCSS(
+        "background-color",
+        "rgba(0, 0, 0, 0)",
+      );
+    }
+    await page.screenshot({
+      path: `/private/tmp/smarti-113-wide-${info.project.name}-${theme}.png`,
+      animations: "disabled",
+    });
+  }
+  session.release();
+});

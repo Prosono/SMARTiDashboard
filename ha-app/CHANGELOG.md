@@ -1,3 +1,6 @@
+## 1.36.113
+- Fjerner den synlige mørke boksen rundt lasteanimasjonen på brede skjermer. Lasteflaten arver ikke lenger dashbordets breddegrense og marger; bakgrunnen dekker hele vinduet på mobil, nettbrett og desktop.
+
 ## 1.36.112
 - Åpning fra «Mine hjem» viser nå appen direkte. Den separate «Velkommen hjem»-mellomsiden og omlastingen etter tilgangskontrollen er fjernet fra det nye åpningsforløpet.
 - Én enkel animasjon med SMARTi-symbol og rolig ring beholdes gjennom tilgangskontroll, innlogging og lasting av hjemmet, før dashbordet vises. Oppstarten har en ren bakgrunn i lyst og mørkt tema; RGB-bølgene er satt på pause til dashbordet er klart. Redusert bevegelse respekteres.
