@@ -1,3 +1,44 @@
+# Phone Climate — release 1.36.107
+
+Harmoni's Climate phone view follows the supplied reference with a wide
+thermostat, mode icon, round setpoint buttons and measured-temperature footer.
+Reported AC device hints select a compact measured/target summary that opens
+the original controls. Sensor groups have two prominent readings, a compact
+more-sensors list and a disclosure for remaining saved sensors. Forecast,
+minimum, dew-point and vehicle labels/icons use the real source hints; no new
+measurements, minimum calculations or weather forecasts are invented.
+
+The shared room selector and search remain available. Grouping, custom card
+content, source/title/icon/image choices and desktop geometry remain in the
+original canvas. Dedicated phone controls replace only native auto/compact
+presentations; photos and other configured types keep their full-view path.
+Primary controls and compact rows can grow with content. Sensor histories and
+advanced climate controls mount on opening, not invisibly in phone previews.
+
+Temperature commands require climate.control, availability, connection and a
+valid declared range/step. Setpoints use the native reported unit and preserve
+zero, negative values and range-only displays. Reentry is blocked while a
+request is pending. Unconfirmed/failing requests do not optimistically change
+the reported target. Cooling/heating colors and mode icons follow real state.
+Read-only and unavailable devices remain labelled and disabled. No backend
+command, sensor collection or permission rules changed.
+
+Validation on 4 November 2026: production build, frontend lint, browser-test
+TypeScript, formatting and diff checks passed. All 275 frontend unit tests and
+14 mobile scenarios passed. Two desktop scenarios passed for all-category
+search and shared settings editing. The new climate scenario covers measured
+versus target readings, sensor disclosure, room selection, exact command/entity
+payloads, bounds, 0.5-degree steps, zero/negative values, cooling, unconfirmed and
+failed requests, view-only/unavailable state, lazy sensor history, AC controls,
+focus restoration, 320–430px layouts, editing and tablet restoration. Both-theme
+screenshots were visually inspected. Existing Vite chunk-size and headless
+browser advisories remain. Tests use isolated demo data; physical phones and
+live HA hardware were not exercised.
+
+All 278 extracted runtime files match the manifest. The new climate scenario
+also passed against the exact extracted package. Archive SHA-256:
+`14b353b881669c9e6deec0913b8647121850c6f20f42e6fd331cf3760af79982`.
+
 # More phone room picker — release 1.36.106
 
 More/Miscellaneous now includes the same top room selector as the other native

@@ -75,6 +75,7 @@ import {
 } from "./phoneLayout";
 import { PhoneDeviceCard, PhoneLightsOff } from "./PhoneDeviceCard";
 import { PhoneMiscBoard } from "./PhoneMiscBoard";
+import { PhoneClimateBoard } from "./PhoneClimateBoard";
 
 const mobilePreference = "smarti-home-mobile-layout";
 const storedMobileLayout = () => {
@@ -247,7 +248,8 @@ export function HomeGrid({
       ((activePhoneRoom === "all" ||
         page === "energy_control" ||
         roomOf(item) === activePhoneRoom ||
-        (["media", "misc"].includes(page) && roomOf(item) === "shared")) &&
+        (["media", "misc", "climate"].includes(page) &&
+          roomOf(item) === "shared")) &&
         (page !== "security" ||
           item.id !== "events" ||
           !availableLayout.some((item) => catalog.get(item.id)?.entityId)) &&
@@ -269,7 +271,11 @@ export function HomeGrid({
       : phoneDeviceSize(c);
   };
   const displayLayout = referencePhone
-    ? phoneItems(visibleLayout, sizeOf, !["lights", "misc"].includes(page))
+    ? phoneItems(
+        visibleLayout,
+        sizeOf,
+        !["lights", "misc", "climate"].includes(page),
+      )
     : compactMobile
       ? mobileGridItems(visibleLayout)
       : visibleLayout;
@@ -619,6 +625,8 @@ export function HomeGrid({
     if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
   }
+  const PhoneBoard = page === "climate" ? PhoneClimateBoard : PhoneMiscBoard;
+  const flowingPhone = referencePhone && ["misc", "climate"].includes(page);
   return (
     <section
       id={editorId}
@@ -879,8 +887,8 @@ export function HomeGrid({
           } as CSSProperties
         }
       >
-        <PhoneMiscBoard
-          enabled={referencePhone && page === "misc"}
+        <PhoneBoard
+          enabled={flowingPhone}
           items={shown}
           catalog={catalog}
           home={home}
@@ -940,14 +948,12 @@ export function HomeGrid({
                 data-rows={item.h}
                 data-active={active === item.id}
                 style={{
-                  gridColumn:
-                    referencePhone && page === "misc"
-                      ? undefined
-                      : `${item.x + 1} / span ${item.w}`,
-                  gridRow:
-                    referencePhone && page === "misc"
-                      ? undefined
-                      : `${roomView?.displayRows.get(item.id) ?? item.y + 1} / span ${item.h}`,
+                  gridColumn: flowingPhone
+                    ? undefined
+                    : `${item.x + 1} / span ${item.w}`,
+                  gridRow: flowingPhone
+                    ? undefined
+                    : `${roomView?.displayRows.get(item.id) ?? item.y + 1} / span ${item.h}`,
                 }}
               >
                 {editing && (
@@ -1069,6 +1075,7 @@ export function HomeGrid({
                             ? (open) => (
                                 <PhoneDeviceCard
                                   miscellaneous={page === "misc"}
+                                  climatePage={page === "climate"}
                                   card={card}
                                   config={original.config}
                                   home={home}
@@ -1154,7 +1161,7 @@ export function HomeGrid({
               </div>,
             ];
           })}
-        </PhoneMiscBoard>
+        </PhoneBoard>
       </div>
       {referencePhone && page === "media" && activePhoneRoom !== "all" && (
         <nav

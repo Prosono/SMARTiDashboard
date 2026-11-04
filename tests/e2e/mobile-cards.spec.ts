@@ -392,10 +392,12 @@ test("tiles adapt at 320–430px, retain room grouping and return to full cards 
     await expect(
       page.locator(`.home-canvas[data-page="${key}"]`),
     ).toHaveAttribute(
-      ["security", "media", "misc"].includes(key)
+      ["security", "media", "misc", "climate"].includes(key)
         ? "data-reference-phone"
         : "data-mobile-layout",
-      ["security", "media", "misc"].includes(key) ? "true" : "compact",
+      ["security", "media", "misc", "climate"].includes(key)
+        ? "true"
+        : "compact",
     );
     await expect(
       page
@@ -406,7 +408,7 @@ test("tiles adapt at 320–430px, retain room grouping and return to full cards 
               ? ".phone-media"
               : key === "misc"
                 ? ".phone-misc-device"
-                : ".mobile-card-tile",
+                : ".phone-climate-device",
         )
         .first(),
     ).toBeVisible();
@@ -1492,4 +1494,249 @@ test("phone More groups blinds and switches by room, confirms movement and prese
     "background-color",
     systemColors.background,
   );
+});
+
+test("phone climate shows a real thermostat, AC readings and sensor disclosure with safe adjustments and room selection", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const data = await setup(page);
+  const thermostat = data.controls.find((c) => c.domain === "climate")!;
+  thermostat.name = "Termostat · Vaskerom";
+  thermostat.area_id = "laundry";
+  thermostat.attributes.current_temperature = 20.5;
+  const minimum = data.controls.find(
+    (c) => c.entity_id === "sensor.mobile_temperature",
+  )!;
+  Object.assign(minimum, {
+    name: "Minimumstemperatur",
+    area_id: "",
+    device_name: "Temperature Min",
+  });
+  const forecast = data.controls.find(
+    (c) => c.entity_id === "sensor.mobile_humidity",
+  )!;
+  Object.assign(forecast, {
+    name: "Prognosetemperatur",
+    state: "5.6",
+    area_id: "",
+    device_name: "SMARTi Forecast",
+    attributes: { device_class: "temperature", unit_of_measurement: "°C" },
+  });
+  const ac = Object.assign(structuredClone(thermostat), {
+    id: "climate.ac",
+    entity_id: "climate.ac",
+    area_id: "",
+    name: "Stue · AC",
+    state: "cool",
+    attributes: {
+      temperature: 20,
+      current_temperature: 22.1,
+      temperature_unit: "°C",
+      hvac_action: "cooling",
+      hvac_modes: ["cool", "heat", "off"],
+    },
+  });
+  data.controls.push(ac);
+  for (let i = 0; i < 7; i++)
+    data.controls.push(
+      Object.assign(structuredClone(minimum), {
+        id: `sensor.extra_climate_${i}`,
+        entity_id: `sensor.extra_climate_${i}`,
+        name:
+          i === 0
+            ? "Duggpunkt"
+            : i === 1
+              ? "Temperatur · Bil"
+              : `Temperatur ${i + 1}`,
+        device_name: i === 0 ? "SMARTi Forecast" : "Temperatursensor",
+        state: String(7 + i / 10),
+      }),
+    );
+  data.areas.push({ area_id: "laundry", name: "Vaskerom" });
+  const sent: { entity: string; action: string; value?: number }[] = [];
+  let status = "state_updated",
+    writes = 0;
+  await page.route("**/api/home/layout/climate", (route) => {
+    if (route.request().method() !== "GET") writes++;
+    return route.fulfill({
+      json: { revision: 0, items: null, group_by_room: true },
+    });
+  });
+  await page.route("**/api/controls/*/commands", (route) => {
+    const entity = decodeURIComponent(
+      new URL(route.request().url()).pathname.split("/").at(-2)!,
+    );
+    const body = route.request().postDataJSON();
+    sent.push({ entity, ...body });
+    if (status === "state_updated" && body.action === "set_temperature")
+      thermostat.attributes.temperature = body.value;
+    return route.fulfill({ json: { status } });
+  });
+  await page.reload();
+  await page.getByRole("tab", { name: "Klima", exact: true }).click();
+  const grid = page.locator('.home-canvas[data-page="climate"]');
+  const thermo = grid.locator(".phone-climate-thermostat");
+  const plus = thermo.getByRole("button", {
+    name: "Termostat · Vaskerom: Øk ønsket temperatur",
+    exact: true,
+  });
+  const minus = thermo.getByRole("button", {
+    name: "Termostat · Vaskerom: Senk ønsket temperatur",
+    exact: true,
+  });
+  const picker = grid
+    .locator(".phone-room-bar")
+    .getByRole("combobox", { name: "Velg rom", exact: true });
+  await expect(grid).toHaveAttribute("data-reference-phone", "true");
+  await expect(thermo.locator(".phone-climate-setpoint > strong")).toHaveText(
+    "20 °C",
+  );
+  await expect(thermo).toContainText("Målt av termostat: 20,5 °C");
+  await expect(thermo.locator(".phone-climate-mode")).toContainText(
+    "Varmemodus",
+  );
+  await expect(grid.locator(".phone-climate-ac-values")).toContainText(
+    "22,1 °C",
+  );
+  await expect(grid.locator(".phone-climate-ac-values")).toContainText("20 °C");
+  const unassigned = grid.getByRole("region", {
+    name: "Uten rom",
+    exact: true,
+  });
+  await expect(unassigned.locator("h2")).toContainText("9 sensorer");
+  await expect(unassigned.locator(".phone-climate-sensor")).toHaveCount(4);
+  await unassigned
+    .getByRole("button", { name: "Vis alle 9 sensorer", exact: true })
+    .click();
+  await expect(unassigned.locator(".phone-climate-sensor")).toHaveCount(9);
+  await unassigned
+    .getByRole("button", { name: "Vis færre sensorer", exact: true })
+    .click();
+  await picker.selectOption("room:laundry");
+  await expect(grid.locator(".phone-climate-device")).toHaveCount(1);
+  await expect(grid.locator(".phone-climate-room h2")).toBeHidden();
+  await picker.selectOption("none");
+  await expect(thermo).toHaveCount(0);
+  await picker.selectOption("all");
+  expect(sent).toHaveLength(0);
+  expect(writes).toBe(0);
+  expect(data.history()).toBe(0);
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(
+      (theme) => (document.documentElement.dataset.theme = theme),
+      theme,
+    );
+    await grid.screenshot({
+      path: `/private/tmp/smarti-107-climate-${theme}-${info.project.name}.png`,
+      animations: "disabled",
+    });
+  }
+  await plus.click();
+  await expect(thermo.locator(".phone-climate-setpoint > strong")).toHaveText(
+    "20,5 °C",
+  );
+  expect(sent[0]).toEqual({
+    entity: thermostat.entity_id,
+    action: "set_temperature",
+    value: 20.5,
+  });
+  await minus.click();
+  await expect(thermo.locator(".phone-climate-setpoint > strong")).toHaveText(
+    "20 °C",
+  );
+  await grid
+    .getByRole("button", { name: "Åpne klima: Stue · AC", exact: true })
+    .click();
+  await expect(page.getByRole("dialog").locator(".thermostat")).toBeVisible();
+  await page.keyboard.press("Escape");
+  const sensor = grid.locator(
+    '[data-card="device:sensor.mobile_temperature"] .phone-climate-sensor',
+  );
+  await sensor.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect.poll(() => data.history()).toBeGreaterThan(0);
+  await page.keyboard.press("Escape");
+  await expect(sensor).toBeFocused();
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+      )
+      .toBeLessThanOrEqual(1);
+    for (const card of await grid.locator(".phone-climate-device").all())
+      expect(
+        await card.evaluate((el) => el.scrollHeight - el.clientHeight),
+      ).toBeLessThanOrEqual(1);
+  }
+  await page
+    .getByRole("button", { name: "Vis søk og filtre", exact: true })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Søk i klima", exact: true })
+    .fill("Duggpunkt");
+  // The existing category search includes the matching room's sources.
+  await expect(unassigned).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Søk i klima", exact: true })
+    .fill("");
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("button", { name: "Rediger oppsett", exact: true })
+    .click();
+  await expect(grid.locator(".phone-climate-board")).toHaveCount(0);
+  await page.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(thermo).toBeVisible();
+  await page.setViewportSize({ width: 834, height: 1112 });
+  await expect(grid.locator(".phone-climate-board")).toHaveCount(0);
+  await expect(grid.locator(".thermostat")).toHaveCount(2);
+  expect(writes).toBe(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  thermostat.attributes.temperature = 30;
+  await page.reload();
+  await page.getByRole("tab", { name: "Klima", exact: true }).click();
+  await expect(plus).toBeDisabled();
+  thermostat.capabilities[0].minimum = -10;
+  thermostat.attributes.temperature = 0;
+  thermostat.state = "cool";
+  thermostat.attributes.hvac_action = "cooling";
+  await page.reload();
+  await page.getByRole("tab", { name: "Klima", exact: true }).click();
+  await expect(thermo).toHaveAttribute("data-tone", "cool");
+  await expect(thermo.locator(".phone-climate-setpoint > strong")).toHaveText(
+    "0 °C",
+  );
+  await minus.click();
+  await expect(thermo.locator(".phone-climate-setpoint > strong")).toHaveText(
+    "−0,5 °C",
+  );
+  status = "accepted_unconfirmed";
+  await plus.click();
+  await expect(thermo.getByRole("status")).toContainText(
+    "Venter på termostaten",
+  );
+  await expect(thermo.locator(".phone-climate-setpoint > strong")).toHaveText(
+    "−0,5 °C",
+  );
+  status = "failed";
+  await plus.click();
+  await expect(thermo.getByRole("status")).toContainText(
+    "Kunne ikke stille temperaturen",
+  );
+  expect(sent).toHaveLength(5);
+  data.access.permissions = ["climate.view"];
+  await page.reload();
+  await page.getByRole("tab", { name: "Klima", exact: true }).click();
+  await expect(plus).toBeDisabled();
+  await expect(thermo).toContainText("Kun visning");
+  thermostat.availability = "unavailable";
+  await page.reload();
+  await page.getByRole("tab", { name: "Klima", exact: true }).click();
+  await expect(thermo.locator(".phone-climate-setpoint > strong")).toHaveText(
+    "—",
+  );
+  await expect(minus).toBeDisabled();
+  expect(sent).toHaveLength(5);
+  expect(writes).toBe(0);
 });

@@ -17,6 +17,7 @@ import { usable } from "./homeModel";
 import { lightPercentage, securityAttention } from "./equipmentModel";
 import { PhoneMediaCard } from "./PhoneMediaCard";
 import { PhoneMiscDeviceCard } from "./PhoneMiscDeviceCard";
+import { PhoneClimateCard } from "./PhoneClimateCard";
 
 function useLightCommand(home: Home, offline: boolean, lang: string) {
   const query = useQueryClient(),
@@ -266,8 +267,13 @@ function PhoneLight({
 export function PhoneDeviceCard({
   onOpen,
   miscellaneous = false,
+  climatePage = false,
   ...props
-}: MobileCardProps & { onOpen: () => void; miscellaneous?: boolean }) {
+}: MobileCardProps & {
+  onOpen: () => void;
+  miscellaneous?: boolean;
+  climatePage?: boolean;
+}) {
   const { home, config, card, offline, lang } = props;
   const c = home.controls.find(
     (c) => c.entity_id === (config?.sources[0] || card.entityId),
@@ -296,8 +302,10 @@ export function PhoneDeviceCard({
     : controlState(c, c.state, lang);
   return (
     <CardPresentation.Provider value={config || {}}>
-      {miscellaneous &&
-      ["cover", "switch", "input_boolean", "vacuum"].includes(c.domain) ? (
+      {climatePage ? (
+        <PhoneClimateCard {...props} c={c} onOpen={onOpen} />
+      ) : miscellaneous &&
+        ["cover", "switch", "input_boolean", "vacuum"].includes(c.domain) ? (
         <PhoneMiscDeviceCard {...props} c={c} onOpen={onOpen} />
       ) : c.domain === "light" ? (
         <PhoneLight {...props} c={c} onOpen={onOpen} />

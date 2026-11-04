@@ -1,3 +1,8 @@
+## 1.36.107
+- Klima i Harmoni har fått en egen mobilvisning etter bildereferansen: bredt termostatkort med rund temperaturjustering, modusikon og målt temperatur, og et AC-kort med målt temperatur og måltemperatur side om side.
+- Sensorer vises som to tydelige målefelt og en kompakt liste med «Vis alle sensorer» ved behov. Lyse blå, varme og lavendelfargede glassflater tilpasses mørkt tema. Minimum, prognose og duggpunkt viser bare verdiene fra sine faktiske kilder.
+- Romvelger, søk, egne kort og redigering beholdes. Sensorhistorikk og øvrige kontroller åpnes ved trykk. Temperaturjustering følger enhetens grenser, trinn og styringsrettigheter; ubekreftede og mislykkede handlinger endrer ikke vist tilstand.
+
 ## 1.36.106
 - Mer/Diverse på mobil har nå romvelger øverst, slik som Lys, Sikkerhet og Multimedia. Velg et bestemt rom, «Uten rom» eller «Alle rom».
 - Romvalg endrer bare hvilke kort som vises. Felles kort beholdes, og gjentatt romoverskrift skjules når romnavnet allerede står i velgeren.

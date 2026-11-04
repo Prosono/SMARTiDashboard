@@ -1,0 +1,484 @@
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  html[data-home-style="harmony"][data-theme]
+    .home-canvas[data-reference-phone="true"][data-page="climate"] {
+    --climate-phone-paper: linear-gradient(135deg, #ffffffed, #f3f8ffe6);
+    --climate-phone-heat: linear-gradient(175deg, #ffffffed 42%, #fff0e5e6);
+    --climate-phone-cool: linear-gradient(165deg, #ffffffed 38%, #dff1ffe6);
+    --climate-phone-forecast: linear-gradient(145deg, #faf8ffed, #ece4ffe6);
+    --climate-phone-line: #b8c3d547;
+    --climate-phone-accent: #1763a2;
+    .home-canvas-grid {
+      display: block;
+    }
+    .phone-climate-board {
+      display: grid;
+      gap: 14px;
+    }
+    .phone-climate-room {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+    .phone-climate-room > h2 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 2px;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--phone-ink);
+    }
+    .phone-climate-room > h2 > small {
+      margin-left: auto;
+      color: var(--phone-muted);
+      font-size: 12px;
+      font-weight: 400;
+    }
+    &[data-phone-single-room="true"]
+      .phone-climate-room:not([data-room="shared"])
+      > h2 {
+      display: none;
+    }
+    .phone-climate-room > h3 {
+      margin: 0 3px -4px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--phone-ink);
+    }
+    .home-canvas-cell {
+      height: 164px;
+      min-width: 0;
+    }
+    .home-canvas-cell:has(.phone-climate-device) {
+      height: auto;
+    }
+    .home-canvas-surface:has(.phone-climate-device) {
+      position: relative;
+      height: auto;
+      background: var(--climate-phone-paper);
+      border: 1px solid #ffffffa0;
+      border-radius: 17px;
+      color: var(--phone-ink);
+      box-shadow:
+        var(--phone-shadow),
+        inset 0 1px 0 #ffffff45;
+    }
+    .home-canvas-surface:has(.phone-climate-thermostat[data-tone="heat"]) {
+      background: var(--climate-phone-heat);
+    }
+    .home-canvas-surface:has(.phone-climate-ac),
+    .phone-climate-readings .home-canvas-surface:has(.phone-climate-sensor),
+    .home-canvas-surface:has(.phone-climate-thermostat[data-tone="cool"]) {
+      background: var(--climate-phone-cool);
+    }
+    .phone-climate-readings
+      .home-canvas-surface:has(.phone-climate-sensor[data-forecast="true"]) {
+      background: var(--climate-phone-forecast);
+    }
+    .phone-climate-device {
+      position: relative;
+      min-width: 0;
+      width: 100%;
+      color: var(--phone-ink);
+    }
+    .phone-climate-device button,
+    .phone-climate-show-all {
+      min-height: 44px;
+      font: inherit;
+      box-shadow: none;
+      touch-action: manipulation;
+    }
+    .phone-climate-device button:disabled {
+      opacity: 0.42;
+      cursor: default;
+    }
+    .phone-climate-device button:focus-visible,
+    .phone-climate-sensor:focus-visible,
+    .phone-climate-show-all:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -3px;
+    }
+    .phone-climate-thermostat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-height: 164px;
+      padding: 8px 14px;
+    }
+    .phone-climate-device > header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .phone-climate-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+      border: 0;
+      padding: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+    }
+    .phone-climate-name > svg {
+      flex: none;
+      color: var(--phone-muted);
+    }
+    .phone-climate-name .mobile-card-product {
+      width: 28px;
+      height: 28px;
+      margin: 0;
+      flex: none;
+    }
+    .phone-climate-name .mobile-card-product img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 1;
+    }
+    .phone-climate-name > strong {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 650;
+    }
+    .phone-climate-mode {
+      position: relative;
+      isolation: isolate;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      max-width: 48%;
+      flex: none;
+      padding: 0 9px;
+      background: transparent;
+      color: var(--phone-muted);
+      border: 0;
+      border-radius: 30px;
+      font-size: 11px !important;
+      line-height: 1.15;
+    }
+    .phone-climate-mode::before {
+      content: "";
+      position: absolute;
+      inset: 8px 0;
+      z-index: -1;
+      border-radius: 30px;
+      background: #7a8eaa1a;
+    }
+    .phone-climate-mode svg {
+      flex: none;
+    }
+    .phone-climate-thermostat[data-tone="heat"] .phone-climate-mode {
+      color: #c24c10;
+    }
+    .phone-climate-thermostat[data-tone="heat"] .phone-climate-mode::before {
+      background: #ffb39133;
+    }
+    .phone-climate-thermostat[data-tone="cool"] .phone-climate-mode {
+      color: #1764ae;
+    }
+    .phone-climate-thermostat[data-tone="cool"] .phone-climate-mode::before {
+      background: #73bdff33;
+    }
+    .phone-climate-target-label {
+      text-align: center;
+      color: var(--phone-muted);
+      font-size: 12px;
+      line-height: 16px;
+    }
+    .phone-climate-setpoint {
+      display: grid;
+      grid-template-columns: 44px minmax(0, auto) 44px;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(10px, 4vw, 23px);
+      min-height: 48px;
+    }
+    .phone-climate-setpoint > button {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid #9dabc022;
+      border-radius: 50%;
+      background: #ffffffb8;
+      color: #445166;
+      box-shadow: 0 3px 9px #213f6610;
+    }
+    .phone-climate-setpoint > button[data-direction="-1"] {
+      grid-area: 1 / 1;
+    }
+    .phone-climate-setpoint > button[data-direction="1"] {
+      grid-area: 1 / 3;
+    }
+    .phone-climate-setpoint > strong {
+      grid-area: 1 / 2;
+      font-size: clamp(28px, 9vw, 38px);
+      font-weight: 650;
+      line-height: 1.15;
+      letter-spacing: -0.035em;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+    .phone-climate-measured {
+      border-top: 1px solid var(--climate-phone-line);
+      padding-top: 6px;
+      margin-top: 3px;
+      color: var(--phone-muted);
+      font-size: 12px;
+      line-height: 18px;
+      text-align: center;
+    }
+    .phone-climate-measured > strong {
+      font-weight: 400;
+      white-space: nowrap;
+    }
+    .phone-climate-feedback {
+      display: block;
+      font-size: 10px;
+      line-height: 1.2;
+      color: var(--phone-muted);
+      text-align: center;
+      margin-top: 3px;
+    }
+    .phone-climate-ac {
+      padding: 7px 14px 12px;
+    }
+    .phone-climate-ac > header {
+      color: var(--phone-muted);
+    }
+    .phone-climate-ac .phone-climate-name {
+      color: var(--phone-ink);
+    }
+    .phone-climate-ac-values {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 0 7px;
+      width: 100%;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+    }
+    .phone-climate-ac-values > div {
+      display: grid;
+      min-width: 0;
+    }
+    .phone-climate-ac-values > div + div {
+      border-left: 1px solid var(--climate-phone-line);
+      padding-left: 18px;
+    }
+    .phone-climate-ac-values span {
+      color: var(--phone-muted);
+      font-size: 12px;
+    }
+    .phone-climate-ac-values strong {
+      font-size: clamp(22px, 6.8vw, 30px);
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+    .phone-climate-readings {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .phone-climate-sensor {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 2px;
+      min-height: 106px;
+      padding: 10px 13px;
+      background: transparent;
+      border: 0;
+      border-radius: inherit;
+      text-align: left;
+    }
+    .phone-climate-sensor-icon {
+      display: flex;
+      align-items: center;
+      color: var(--climate-phone-accent);
+    }
+    .phone-climate-sensor[data-forecast="true"] .phone-climate-sensor-icon {
+      color: #6250a0;
+    }
+    .phone-climate-sensor-title {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 600;
+    }
+    .phone-climate-reading {
+      font-size: clamp(22px, 6.7vw, 31px);
+      line-height: 1.1;
+      font-weight: 650;
+      letter-spacing: -0.025em;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+    .phone-climate-sensor > small {
+      color: var(--phone-muted);
+      font-size: 11px;
+      line-height: 1.2;
+      max-width: 100%;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    .phone-climate-chevron {
+      display: none;
+    }
+    .phone-climate-sensor-icon .mobile-card-product {
+      width: 32px;
+      height: 26px;
+      margin: 0;
+    }
+    .phone-climate-sensor-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 1;
+    }
+    .phone-climate-more {
+      border: 1px solid #ffffffa0;
+      border-radius: 17px;
+      background: var(--climate-phone-paper);
+      box-shadow: var(--phone-shadow);
+      overflow: hidden;
+    }
+    .phone-climate-more .home-canvas-surface {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+    .phone-climate-more .home-canvas-cell {
+      border-radius: 0;
+    }
+    .phone-climate-more .home-canvas-cell + .home-canvas-cell {
+      border-top: 1px solid var(--climate-phone-line);
+    }
+    .phone-climate-more .phone-climate-sensor {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) auto 14px;
+      grid-template-rows: auto auto;
+      align-content: center;
+      gap: 1px 9px;
+      min-height: 64px;
+    }
+    .phone-climate-more .phone-climate-sensor-icon {
+      grid-area: 1 / 1 / 3;
+    }
+    .phone-climate-more .phone-climate-sensor-title {
+      grid-area: 1 / 2;
+      font-size: 14px;
+    }
+    .phone-climate-more .phone-climate-sensor > small {
+      grid-area: 2 / 2;
+    }
+    .phone-climate-more .phone-climate-reading {
+      grid-area: 1 / 3 / 3;
+      font-size: 15px;
+      letter-spacing: normal;
+    }
+    .phone-climate-more .phone-climate-chevron {
+      display: block;
+      grid-area: 1 / 4 / 3;
+      width: 16px;
+    }
+    .phone-climate-sensor[data-unavailable="true"] .phone-climate-reading {
+      font-size: 14px;
+      color: var(--phone-muted);
+    }
+    .phone-climate-show-all {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 7px 15px;
+      border: 1px solid #ffffffa0;
+      border-radius: 16px;
+      background: var(--climate-phone-paper);
+      color: var(--phone-ink);
+      font-size: 14px;
+      text-align: left;
+      box-shadow: var(--phone-shadow);
+    }
+    .phone-climate-show-all > span {
+      flex: 1;
+    }
+  }
+  html[data-home-style="harmony"][data-theme="dark"]
+    .home-canvas[data-reference-phone="true"][data-page="climate"] {
+    --climate-phone-paper: linear-gradient(135deg, #2c3744ed, #222c38e6);
+    --climate-phone-heat: linear-gradient(170deg, #2c3744ed 40%, #45342be6);
+    --climate-phone-cool: linear-gradient(160deg, #2c3744ed 38%, #203c53e6);
+    --climate-phone-forecast: linear-gradient(145deg, #33314bed, #3c3156e6);
+    --climate-phone-line: #93a4b64a;
+    --climate-phone-accent: #83c7ff;
+    .home-canvas-surface:has(.phone-climate-device),
+    .phone-climate-more,
+    .phone-climate-show-all {
+      border-color: #aabed130;
+    }
+    .phone-climate-setpoint > button {
+      background: #3e4855d9;
+      color: #e6edf5;
+    }
+    .phone-climate-thermostat[data-tone="heat"] .phone-climate-mode {
+      color: #ffbc91;
+    }
+    .phone-climate-thermostat[data-tone="cool"] .phone-climate-mode {
+      color: #a0d2ff;
+    }
+    .phone-climate-sensor[data-forecast="true"] .phone-climate-sensor-icon {
+      color: #d3bcff;
+    }
+  }
+  @media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+    html[data-home-style="harmony"][data-theme]
+      .home-canvas[data-reference-phone="true"][data-page="climate"] {
+      --climate-phone-paper: var(--phone-paper);
+      --climate-phone-heat: var(--phone-paper);
+      --climate-phone-cool: var(--phone-paper);
+      --climate-phone-forecast: var(--phone-paper);
+    }
+  }
+  @media (forced-colors: active) {
+    html[data-home-style="harmony"][data-theme]
+      .home-canvas[data-reference-phone="true"][data-page="climate"] {
+      --climate-phone-paper: Canvas;
+      --climate-phone-heat: Canvas;
+      --climate-phone-cool: Canvas;
+      --climate-phone-forecast: Canvas;
+      --climate-phone-line: CanvasText;
+      .phone-climate-setpoint > button {
+        background: ButtonFace;
+        border-color: ButtonText;
+        color: ButtonText;
+      }
+    }
+  }
+}

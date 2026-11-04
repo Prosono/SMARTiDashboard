@@ -11,6 +11,7 @@ export const phonePages = new Set([
   "energy_control",
   "media",
   "misc",
+  "climate",
 ]);
 export const phoneEnergyPrimary = new Set([
   "energy:flow",
