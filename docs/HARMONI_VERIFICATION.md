@@ -1,3 +1,30 @@
+# One startup loading screen — release 1.36.111
+
+Home data now starts in the authenticated application alongside the experience
+preferences. One loading-screen instance remains mounted until the initial
+session, preferences and home request settle. The former second spinner inside
+the dashboard is removed; logo/spinner placement and animation do not reset
+between phases. Initial-query completion is latched through the query's fetched
+state, so later retries after an error retain the dashboard rather than remounting
+its live connection in a startup loop. Failed loads remain retryable; background
+refresh, authentication gates, polling and session revocation are retained.
+Navigation centering runs when the startup screen leaves.
+
+Validation on 4 November 2026: production build, frontend lint, browser-test
+TypeScript, whitespace checks and all **281 frontend unit tests** passed.
+**10 browser cases** passed on Chromium mobile/desktop against both the working
+build and the exact extracted app package. Controlled requests finish session,
+home and preferences in both orders and verify the same loader and spinner nodes,
+unchanged logo position, parallel authenticated requests, no intermediate shell
+or login form, signed-out request gating, initial failure, live refresh and retry.
+Existing session-outage/revocation and sidebar persistence cases also pass.
+The mobile loading screenshot was visually checked. No physical device testing
+is claimed; existing build-size and headless-environment advisories remain.
+
+All **284 runtime files**, archive membership and payload/source hashes match
+the deterministic manifest. scripts/package.py --check passed. Archive SHA-256:
+`7771d55ce2f24f307fa2947355c90f249fc0aa40415efd37d37c8a45438ed05f`.
+
 # Camera delivery, focus and shared artwork — release 1.36.110
 
 The Home tab panel no longer enters the tab order. Repeated native-dialog

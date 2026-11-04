@@ -56,6 +56,7 @@ import {
   QueryClientProvider,
   useQuery,
   useQueryClient,
+  type UseQueryResult,
 } from "@tanstack/react-query";
 import {
   ScrollText,
@@ -229,6 +230,13 @@ function App() {
   const lang = session ? userLanguage.data?.language || "nb" : guestLang;
   const t = lang === "en" ? en : nb;
   const experience = useExperiencePreference(!!session);
+  // Fetch alongside preferences and keep the same startup screen until both settle.
+  const home = useQuery({
+    queryKey: ["home"],
+    queryFn: () => api<Home>("home"),
+    enabled: !!session,
+    refetchInterval: 30000,
+  });
   const mode = experience.data?.mode || "advanced";
   const sidebarKey = `smarti-sidebar:${session?.name || "guest"}`;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -275,6 +283,11 @@ function App() {
         : p,
     );
   }, [mode]);
+  const starting =
+    checking ||
+    (!!session &&
+      ((experience.isLoading && !experience.isFetched) ||
+        (home.isLoading && !home.isFetched)));
   const mainNav = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const nav = mainNav.current;
@@ -300,7 +313,7 @@ function App() {
     observer.observe(nav);
     nav.querySelectorAll("button").forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [page, mode, lang, session?.role]);
+  }, [page, mode, lang, session?.role, starting]);
   const navigate = (p: Page) => guard(() => setPage(p));
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -415,11 +428,11 @@ function App() {
     updateSession(null);
     client.clear();
   }
-  if (checking || (session && experience.isLoading))
+  if (starting)
     return (
-      <div className="loading">
+      <div className="loading" role="status" aria-live="polite">
         <Logo />
-        <LoaderCircle className="spin" />
+        <LoaderCircle className="spin" aria-hidden="true" />
         <p>{t.loading}</p>
       </div>
     );
@@ -529,6 +542,7 @@ function App() {
         <div className="workspace">
           <HeaderAppearance.Provider value={homeStyle === "harmony"}>
             <Dashboard
+              home={home}
               t={t}
               session={session}
               page={page}
@@ -778,6 +792,7 @@ function Login({
   );
 }
 function Dashboard({
+  home,
   palette,
   setPalette,
   t,
@@ -794,6 +809,7 @@ function Dashboard({
   language,
   logout,
 }: {
+  home: UseQueryResult<Home, Error>;
   palette: string;
   setPalette: (s: string) => void;
   t: Text;
@@ -812,11 +828,6 @@ function Dashboard({
 }) {
   const mode = useExperience();
   const queryClient = useQueryClient();
-  const home = useQuery({
-    queryKey: ["home"],
-    queryFn: () => api<Home>("home"),
-    refetchInterval: 30000,
-  });
   const [streamConnected, streamStatus] = useState(true);
   const [room, setRoom] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -900,19 +911,14 @@ function Dashboard({
     const timer = window.setTimeout(() => setConnectionWarning(true), 120_000);
     return () => window.clearTimeout(timer);
   }, [offline]);
-  if (home.isLoading)
-    return (
-      <div className="loading">
-        <LoaderCircle className="spin" />
-        <p>{t.loading}</p>
-      </div>
-    );
   if (!home.data)
     return (
       <div className="empty">
         <AlertCircle />
         <h2>{t.loadError}</h2>
-        <button onClick={() => home.refetch()}>{t.retry}</button>
+        <button disabled={home.isFetching} onClick={() => home.refetch()}>
+          {t.retry}
+        </button>
       </div>
     );
   const h = display.home!;

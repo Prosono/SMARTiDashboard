@@ -1,3 +1,7 @@
+## 1.36.111
+- Oppstart av hjemmet bruker én sammenhengende lasteskjerm med samme logo og spinner gjennom kontroll av innlogging, visningsinnstillinger og hjemmedata. Den andre lasteskjermen inne i dashbordet er fjernet, og hjemmedata hentes parallelt med innstillingene.
+- Nye forsøk og bakgrunnsoppdateringer etter en feil starter ikke hele oppstartsskjermen på nytt. Feilmelding og prøv igjen beholdes, og navigasjonen sentreres når hjemmet er klart.
+
 ## 1.36.110
 - Hele innholdspanelet under Hjem-fanene får ikke lenger fokus når en popup lukkes. Dette fjerner den store blå kanten på mobil. Knapper og faner beholder tydelig tastaturmarkering.
 - Kameraspilleren håndterer kald oppstart og gjør ett kontrollert nytt forsøk ved midlertidige feil eller stopp i avspillingen. Videodeler sendes videre straks de kommer, og spilleren bruker en bakgrunnsarbeider. Åpning av hele kortet frigjør forhåndsvisningens strøm; lukking, fanebytte og redigering frigjør ressursene. Ved feil vises en forklaring og mulighet til å prøve igjen.
