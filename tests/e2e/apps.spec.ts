@@ -2,6 +2,8 @@ import {test,expect} from '../../frontend/node_modules/@playwright/test';
 const installed={slug:'core_mqtt',name:'MQTT broker',description:'Meldinger mellom enhetene dine.',installed:true,version:'1.0',version_latest:'1.1',state:'started',repository:'core',available:true,update_available:true,system_managed:false};
 const candidate={...installed,slug:'community_music',name:'Music server',description:'Musikk i alle rom.',installed:false,version:null,state:null,update_available:false};
 test.beforeEach(async({page})=>{
+ await page.addInitScript(()=>{Object.defineProperty(Crypto.prototype,'randomUUID',{configurable:true,value:undefined});});
+ await page.route('**/api/home/experience',r=>r.fulfill({json:{mode:'advanced'}}));
  await page.route('**/api/manage/apps',r=>r.fulfill({json:[installed,candidate]}));
  await page.route('**/api/manage/apps/operations',r=>r.fulfill({json:[]}));
  await page.goto('/');await page.getByLabel('Brukernavn',{exact:true}).fill('tester');await page.getByLabel('Passord',{exact:true}).fill('test-password-not-for-live');await page.getByRole('button',{name:'Logg inn',exact:true}).click();await page.getByRole('navigation',{name:'Hovedmeny'}).getByRole('button',{name:'Apper',exact:true}).click();

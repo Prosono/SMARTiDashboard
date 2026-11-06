@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, ApiError } from "../api";
 import { words } from "./shared";
 import { SettingsDialog } from "../home/SettingsDialog";
+import { operationId } from "./operationId";
 
 type Version = {
   slug: string;
@@ -49,17 +50,20 @@ export function SelfUpdate({ lang }: { lang: string }) {
     }
   }
   async function install() {
-    if (!q.data) return;
+    if (!q.data || busy || requestId) return;
     setBusy(true);
-    const id = requestId || crypto.randomUUID();
-    setRequestId(id);
-    setConfirm(false);
-    setProgress({
-      slug: q.data.slug,
-      target: q.data.version_latest,
-      started: Date.now(),
-    });
+    setMessage("");
+    let dispatched = false;
     try {
+      const id = operationId();
+      setRequestId(id);
+      setConfirm(false);
+      setProgress({
+        slug: q.data.slug,
+        target: q.data.version_latest,
+        started: Date.now(),
+      });
+      dispatched = true;
       const result = await api<{ status: string }>(
         "manage/apps/self-update",
         "POST",
@@ -67,6 +71,7 @@ export function SelfUpdate({ lang }: { lang: string }) {
       );
       if (result.status === "failed") {
         setProgress(null);
+        setRequestId(null);
         setMessage(
           t(
             "Home Assistant avviste oppdateringen. Kontroller oppdateringsstatus og loggen i HA.",
@@ -88,6 +93,18 @@ export function SelfUpdate({ lang }: { lang: string }) {
       );
       setConfirm(false);
     } catch (error) {
+      if (!dispatched) {
+        setConfirm(false);
+        setProgress(null);
+        setRequestId(null);
+        setMessage(
+          t(
+            "Nettleseren kunne ikke klargjøre oppdateringen. Ingen oppdatering ble sendt. Last inn siden på nytt og prøv igjen.",
+            "The browser could not prepare the update. No update was sent. Reload the page and try again.",
+          ),
+        );
+        return;
+      }
       if (
         error instanceof ApiError &&
         error.status >= 400 &&

@@ -1,3 +1,45 @@
+# Update confirmation on local HTTP — release 1.36.115
+
+The confirmation handler set busy state and then called crypto.randomUUID outside
+its try/finally block. On non-secure LAN HTTP, the method is absent: the browser
+threw TypeError, kept the confirmation open/disabled and sent no POST to the
+server. This exact symptom was reproduced before the fix (zero update requests,
+"crypto.randomUUID is not a function" in the browser trace).
+
+SMARTi self-update and app actions now use UUID v4 IDs from crypto.getRandomValues,
+which remains available on local HTTP. Preparation is caught and exits busy state
+with a message if it fails. Definitive HA rejection allows a fresh ID only after
+another explicit confirmation; accepted/unconfirmed requests remain locked against
+resubmission. Backup choice and existing HA/Supervisor routing, admin/CSRF checks,
+identity checks and server idempotency are unchanged. The installed faulty version
+must be updated once directly through HA to receive this frontend fix.
+
+Validation on 6 November 2026:
+
+- Production build, frontend lint, browser-test TypeScript and whitespace checks
+  passed; all **286 frontend unit tests** and **15 backend app-management tests**
+  passed. Existing Vite chunk-size and TestClient advisories remain.
+- **22 Chromium mobile/desktop browser cases** passed against both the working
+  build and exact extracted release package. Native randomUUID is removed in
+  the new regression fixture and all app-management fixtures. They verify zero
+  writes before confirmation, a valid UUID, one update POST, backup on/off,
+  completion only after the target version returns, definite rejection/retry,
+  preparation failure/recovery, no automatic resend after an uncertain result,
+  and no uncaught browser errors in the new cases. Existing update progress,
+  rejection, app configuration, library and repository cases also pass.
+- Browser/API cases use isolated demo data and intercepted writes; backend cases
+  mock Supervisor and HA. No real hub was updated and no physical phone/native
+  Safari or actual non-loopback ingress was used. The missing Web Crypto method
+  is reproduced explicitly; no transport/authentication policy is relaxed.
+
+References: [randomUUID secure contexts](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID),
+[getRandomValues on local HTTP](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues),
+and [Supervisor's self-update restriction](https://github.com/home-assistant/supervisor/blob/main/supervisor/api/store.py).
+
+All **284 runtime files**, archive membership and source/payload hashes match
+the deterministic manifest. scripts/package.py --check passed. Archive SHA-256:
+`eab50c193cab2b97937c09b16f6c3934e9006f76a1d640c7e9c4bf1565a83934`.
+
 # Harmoni room overview and room details — release 1.36.114
 
 The Harmoni room pages now share Home's glass material, category colors, device

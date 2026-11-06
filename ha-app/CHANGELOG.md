@@ -1,3 +1,8 @@
+## 1.36.115
+- Retter at «Bekreft oppdatering» kunne bli stående uten å sende forespørselen til Home Assistant ved lokal HTTP/HA-ingress. SMARTi-oppdatering og apphandlinger bruker nå en tilfeldig forespørsels-ID som støttes også her.
+- Feil før sending avslutter ventetilstanden og viser en forklaring. En bekreftet avvisning fra HA tillater et nytt forsøk etter ny bekreftelse; ubekreftede oppdateringer sendes ikke automatisk på nytt. Bekreftelse og valget om sikkerhetskopi beholdes.
+- Hvis oppdateringsknappen låser seg i din installerte versjon, installer denne versjonen direkte fra Home Assistant én gang.
+
 ## 1.36.114
 - Romoversikten følger nå Harmoni med bilder, glassflater, tydelig status og et luftig rutenett tilpasset mobil, nettbrett og PC. Søk åpnes fra en rund søkeknapp.
 - Inne i rommet er det store banneret erstattet av en kompakt topp med romvelger, tilbakeknapp og rominnstillinger. Enhetskort, farger og termostat følger Harmoni; mobil får egne kortstørrelser og beholder enhetsbildene.

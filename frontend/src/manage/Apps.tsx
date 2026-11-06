@@ -18,6 +18,7 @@ import {
 import { api, ApiError } from "../api";
 import { smartiName } from "../branding";
 import { SettingsDialog } from "../home/SettingsDialog";
+import { operationId } from "./operationId";
 import "./apps.css";
 type AppItem = {
   slug: string;
@@ -138,7 +139,17 @@ export function Apps({ lang }: { lang: string }) {
   function ask(app: AppItem, action: Action) {
     setError("");
     setBackup(true);
-    setConfirm({ app, action, id: crypto.randomUUID() });
+    try {
+      setConfirm({ app, action, id: operationId() });
+    } catch {
+      select(null);
+      setError(
+        t(
+          "Nettleseren kunne ikke klargjøre handlingen. Ingen forespørsel ble sendt. Last inn siden på nytt og prøv igjen.",
+          "The browser could not prepare the action. No request was sent. Reload the page and try again.",
+        ),
+      );
+    }
   }
   async function perform() {
     if (!confirm) return;
