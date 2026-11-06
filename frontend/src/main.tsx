@@ -3,8 +3,7 @@ import { MetricDeviceRenderer } from "./home/MetricDetails";
 import { MediaCard } from "./home/Multimedia";
 import { useAvailabilityGrace } from "./useAvailabilityGrace";
 import { HideControl, HiddenControls } from "./ControlVisibility";
-import { LightAppearance, lightIcon } from "./LightAppearance";
-import { mediaIcon } from "./MediaIcons";
+import { LightAppearance } from "./LightAppearance";
 import "./manage/settingsOverview.css";
 import { Database, Network, Server, Code, Palette } from "lucide-react";
 import { PhoneSettings } from "./PhoneSettings";
@@ -24,7 +23,7 @@ import {
 } from "./Experience";
 import { SimpleHome } from "./home/SimpleHome";
 import { HarmonyDevices } from "./home/HarmonyDevices";
-import { EquipmentArtwork } from "./home/EquipmentArtwork";
+import { DeviceArtwork } from "./home/DeviceArtwork";
 import {
   HeaderAppearance,
   HomeBackgroundSettings,
@@ -80,13 +79,6 @@ import {
   Lightbulb,
   Plug,
   Thermometer,
-  DoorOpen,
-  LockKeyhole,
-  UnlockKeyhole,
-  PanelsTopLeft,
-  Blinds,
-  Droplets,
-  Flame,
   History,
   Activity,
   WifiOff,
@@ -1308,6 +1300,7 @@ function Dashboard({
               <ProtocolDevices
                 key={protocol}
                 provider={protocol}
+                controls={h.controls}
                 pairedDevice={
                   pairedDevice?.provider === protocol ? pairedDevice : null
                 }
@@ -1714,33 +1707,6 @@ function Device({
   const device = h.devices.find((v) => v.id === c.device_id);
   const power = c.capabilities.some((v) => v.kind === "power");
   const dim = c.capabilities.find((v) => v.kind === "brightness");
-  const Icon =
-    c.domain === "lock"
-      ? c.state === "locked"
-        ? LockKeyhole
-        : UnlockKeyhole
-      : c.domain === "cover"
-        ? Blinds
-        : c.attributes.device_class === "window"
-          ? PanelsTopLeft
-          : ["humidity", "moisture"].includes(String(c.attributes.device_class))
-            ? Droplets
-            : c.attributes.device_class === "smoke"
-              ? Flame
-              : c.domain === "light"
-                ? lightIcon(c)
-                : c.domain === "media_player"
-                  ? mediaIcon(c)
-                  : c.domain === "switch"
-                    ? Plug
-                    : c.domain === "climate" ||
-                        c.attributes.device_class === "temperature"
-                      ? Thermometer
-                      : c.domain === "binary_sensor"
-                        ? DoorOpen
-                        : c.domain === "automation"
-                          ? Zap
-                          : Activity;
   async function command(action: string, value?: number | number[] | string) {
     const actionNames: Record<string, string> =
       document.documentElement.lang === "en"
@@ -1869,20 +1835,11 @@ function Device({
       }
       data-domain={c.domain}
       data-state={c.state}
+      data-entity={c.entity_id}
     >
       <div className="device-top">
         <span className="device-icon">
-          {c.domain === "switch" ||
-          (c.domain === "binary_sensor" &&
-            ["window", "motion", "occupancy", "presence"].includes(
-              String(c.attributes.device_class),
-            )) ? (
-            <span className="device-product-art">
-              <EquipmentArtwork c={c} available={can} />
-            </span>
-          ) : (
-            <Icon size={24} strokeWidth={1.5} />
-          )}
+          <DeviceArtwork c={c} available={can} />
         </span>
         <button
           className={

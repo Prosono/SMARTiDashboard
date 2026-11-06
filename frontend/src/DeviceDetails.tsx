@@ -7,38 +7,49 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, Radio } from "lucide-react";
 import { api } from "./api";
 import type { Control } from "./types";
+import { DeviceArtwork } from "./home/DeviceArtwork";
+import { primaryDeviceControl } from "./home/deviceAppearance";
 
 export function DevicePicture({
   url,
   name,
   protocol,
+  control,
+  available = true,
+  customImage = false,
 }: {
   url?: string | null;
   name: string;
   protocol?: string;
+  control?: Control;
+  available?: boolean;
+  customImage?: boolean;
 }) {
-  const fallback = protocol
-    ? undefined
-    : /\bpir\b|bevegelses(?:detektor|sensor)|motion[ _-]?(?:detector|sensor)/i.test(
-          name,
-        )
-      ? "home/equipment/motion.webp"
-      : /lysbryter|light[ _-]?switch|wall[ _-]?switch/i.test(name)
-        ? "home/equipment/switch.webp"
-        : /\bvindu\b|\bwindow\b/i.test(name)
-          ? "home/equipment/window-closed.webp"
+  const fallback =
+    protocol || control
+      ? undefined
+      : /\bpir\b|bevegelses(?:detektor|sensor)|motion[ _-]?(?:detector|sensor)/i.test(
+            name,
+          )
+        ? "home/equipment/motion.webp"
+        : /lysbryter|light[ _-]?switch|wall[ _-]?switch/i.test(name)
+          ? "home/equipment/switch.webp"
           : undefined;
   const [failed, setFailed] = useState<string[]>([]);
   useEffect(() => setFailed([]), [url, fallback]);
-  const source = [url, fallback].find(
-    (value) => value && !failed.includes(value),
-  );
+  // Shared defaults match Home/Rooms. Uploaded product images remain explicit overrides.
+  const source = [
+    protocol || customImage || !control ? url : undefined,
+    fallback,
+  ].find((value) => value && !failed.includes(value));
   return source ? (
     <img
       className="device-picture"
       src={new URL(source, document.baseURI).href}
       alt={name}
       loading="lazy"
+      decoding="async"
+      draggable={false}
       referrerPolicy="no-referrer"
       onError={() => setFailed((current) => [...current, source])}
     />
@@ -48,6 +59,8 @@ export function DevicePicture({
       className="controller-protocol-logo"
       label={name}
     />
+  ) : control ? (
+    <DeviceArtwork c={control} available={available} />
   ) : (
     <Radio aria-label={name} size={30} />
   );
@@ -211,6 +224,13 @@ export function DeviceDetails({
             url={d?.image_url}
             name={name}
             protocol={d?.controller ? provider : undefined}
+            customImage={d?.custom_image}
+            control={d && primaryDeviceControl(d.controls)}
+            available={
+              !detail.isError &&
+              d?.network_status === "ready" &&
+              d.status !== "offline"
+            }
           />
         </div>
         <div>

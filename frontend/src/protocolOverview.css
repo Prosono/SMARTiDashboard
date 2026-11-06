@@ -231,7 +231,7 @@
   color: var(--radio-accent);
   border-radius: 14px;
 }
-.protocol-devices .protocol-device-icon .device-picture {
+.protocol-devices .protocol-device-icon :is(.device-picture, .device-product-art) {
   width: 48px;
   height: 56px;
   object-fit: contain;
@@ -342,7 +342,7 @@
   .protocol-devices .protocol-device-icon {
     padding: 6px;
   }
-  .protocol-devices .protocol-device-icon .device-picture {
+  .protocol-devices .protocol-device-icon :is(.device-picture, .device-product-art) {
     width: 40px;
     height: 46px;
   }

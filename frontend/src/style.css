@@ -1527,7 +1527,8 @@ footer span:last-child {
 }
 
 .device-picture { width: 60px; height: 60px; object-fit: contain; }
-.device-product-art { display: block; width: 64px; height: 64px; }
+.device-product-art { display: grid; place-items: center; flex-shrink: 0; width: 64px; height: 64px; }
+.device-product-art > img { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 1; }
 .device-product-art .equipment-art[class] { position: relative; inset: auto; width: 100%; height: 100%; margin: 0; max-width: 100%; max-height: 100%; transform: none; }
 .device-product-art .equipment-art > :is(img,svg) { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 1; }
 .device-open { text-align: left; display: flex; flex-direction: column; gap: .35rem; width: 100%; padding: 0; color: var(--text); }
@@ -1541,6 +1542,7 @@ footer span:last-child {
 .device-dialog-title h2 { margin: 0; overflow-wrap: anywhere; }
 .device-dialog-picture { flex-shrink: 0; display: grid; place-items: center; width: 100px; height: 100px; background: var(--soft); border-radius: 16px; }
 .device-dialog-picture img { width: 88px; height: 88px; }
+.device-dialog-picture .device-product-art { width: 88px; height: 88px; }
 .device-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 2rem; }
 .device-facts dt { font-size: .78rem; color: var(--muted); }
 .device-facts dd { margin: .3rem 0 0; overflow-wrap: anywhere; }

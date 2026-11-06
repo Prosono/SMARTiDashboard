@@ -21,9 +21,13 @@ import {
 } from "lucide-react";
 import { api } from "./api";
 import { DeviceDetails, DevicePicture } from "./DeviceDetails";
+import type { Control } from "./types";
+import { primaryDeviceControl } from "./home/deviceAppearance";
 
 type Device = {
   image_url?: string;
+  custom_image?: boolean;
+  ha_device_id?: string | null;
   id: string;
   name: string;
   model?: string;
@@ -49,10 +53,12 @@ export function ProtocolDevices({
   lang,
   admin,
   pairedDevice,
+  controls = [],
 }: {
   provider: string;
   lang: "nb" | "en";
   admin: boolean;
+  controls?: Control[];
   pairedDevice?: { id?: string; name?: string } | null;
 }) {
   const no = lang === "nb";
@@ -358,6 +364,14 @@ export function ProtocolDevices({
                   url={d.image_url}
                   name={d.name}
                   protocol={d.controller ? provider : undefined}
+                  customImage={d.custom_image}
+                  control={primaryDeviceControl(
+                    controls,
+                    d.ha_device_id ?? null,
+                  )}
+                  available={
+                    !stale && ["online", "awake", "asleep"].includes(d.status)
+                  }
                 />
               </div>
               <div className="protocol-identity">

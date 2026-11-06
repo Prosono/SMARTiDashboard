@@ -8,40 +8,31 @@ import {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Activity,
   ArrowDown,
   ArrowUp,
   Battery,
-  Blinds,
   ChevronRight,
-  Droplets,
-  Fan,
   House,
   LoaderCircle,
   LockKeyhole,
   Pause,
   Play,
-  Plug,
-  ShieldCheck,
   Sparkles,
   Square,
   Sun,
-  Thermometer,
   UnlockKeyhole,
   Volume2,
   WifiOff,
   TriangleAlert,
 } from "lucide-react";
+import { deviceAppearance } from "./deviceAppearance";
 import { api } from "../api";
 import { controlState } from "../controlState";
-import { lightIcon } from "../LightAppearance";
-import { mediaIcon } from "../MediaIcons";
 import { Thermostat, ThermostatModeIcon } from "../Thermostat";
 import type { Capability, Control, Home } from "../types";
 import { MetricDeviceRenderer } from "./MetricDetails";
 import { InSettingsDialog, SettingsDialog } from "./SettingsDialog";
 import { numeric, measurementParts, usable } from "./homeModel";
-import { RobotVacuumIcon } from "./RobotVacuumIcon";
 import { TemperatureValue } from "./TemperatureValue";
 import { EquipmentArtwork } from "./EquipmentArtwork";
 import { EquipmentColorControls } from "./EquipmentColorControls";
@@ -94,34 +85,6 @@ function feature(c: Control) {
   if (["scene", "script", "automation"].includes(c.domain)) return "scenes";
   return "other";
 }
-function deviceAppearance(c: Control) {
-  const dc = c.attributes.device_class;
-  if (c.domain === "sensor" && dc === "battery")
-    return { Icon: Battery, tone: "energy" };
-  if (c.domain === "light") return { Icon: lightIcon(c), tone: "light" };
-  if (c.domain === "climate" || dc === "temperature")
-    return { Icon: Thermometer, tone: "climate" };
-  if (dc === "humidity" || dc === "moisture")
-    return { Icon: Droplets, tone: "air" };
-  if (c.domain === "fan") return { Icon: Fan, tone: "air" };
-  if (c.domain === "switch") return { Icon: Plug, tone: "energy" };
-  if (c.domain === "lock")
-    return {
-      Icon: c.state === "locked" ? LockKeyhole : UnlockKeyhole,
-      tone: "security",
-    };
-  if (c.domain === "cover") return { Icon: Blinds, tone: "shade" };
-  if (c.domain === "media_player") return { Icon: mediaIcon(c), tone: "media" };
-  if (c.domain === "vacuum") return { Icon: RobotVacuumIcon, tone: "cleaning" };
-  if (["scene", "script"].includes(c.domain))
-    return { Icon: Sparkles, tone: "light" };
-  if (["power", "energy"].includes(String(dc)))
-    return { Icon: Plug, tone: "energy" };
-  if (["binary_sensor", "alarm_control_panel"].includes(c.domain))
-    return { Icon: ShieldCheck, tone: "security" };
-  return { Icon: Activity, tone: "neutral" };
-}
-
 /** Commit once on release or a keyboard step; dragging never floods the hub. */
 function DeviceRange({
   label,

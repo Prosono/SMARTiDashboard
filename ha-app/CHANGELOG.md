@@ -1,3 +1,8 @@
+## 1.36.119
+- Enheter-siden bruker de samme enhetsbildene og ikonvalgene som Hjem og Rom, også for lamper, røykvarslere, låser, solskjerming, klima og multimedia. Lagrede lampe- og mediebildevalg beholdes.
+- Zigbee- og Z-Wave-listene og detaljvinduene bruker de samme standardbildene når enheten er koblet til SMARTis enhetsregister. Egne opplastede produktbilder og kontrollerlogoer beholdes. Ukjente enheter kobles ikke sammen basert på navn.
+- Bildene tilpasses mobil, nettbrett og PC. Manglende bilder får en passende illustrasjon eller et ikon; ukjent vindusstatus vises ikke som bekreftet lukket.
+
 ## 1.36.118
 - Oppdateringer er samlet på en egen side med fanene «SMARTi», «Utvidelser» og «Apper». SMARTi-appen og systemoppdateringer ligger under SMARTi; øvrige komponentoppdateringer ligger under Utvidelser.
 - App-fanen vises kun i avansert modus og viser tilgjengelige eller pågående appoppdateringer fra HA. Oppdatering krever fortsatt bekreftelse, med valg om sikkerhetskopi og synlig fremdrift. SMARTi-appens egen oppdatering vises bare på SMARTi-fanen.

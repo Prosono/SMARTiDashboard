@@ -1,3 +1,42 @@
+# Shared device inventory artwork — release 1.36.119
+
+The Devices inventory now uses the existing dashboard equipment illustrations,
+media image resolver and shared device icon choices. This covers its paginated
+all-controls view, light/climate filters and the legacy control detail dialog.
+The icon resolver was extracted from HarmonyDevices so both surfaces share the
+same defaults, including saved light and media icon choices. No new bitmap assets
+or external image dependencies were introduced.
+
+Zigbee and Z-Wave rows match controls by the existing HA device registry ID,
+prefer non-diagnostic device functions, and reuse those visuals in device details.
+Uploaded device pictures remain explicit overrides; catalog photos remain a
+fallback for devices without a matching control. Controller protocol branding is
+preserved. Unknown window readings no longer default to a closed-window photo.
+Unavailable devices retain their identity, and failed photos fall back to semantic
+illustrations or the configured media icon. Commands, pagination, confirmation
+and radio removal permissions are unchanged.
+
+Validation on 6 November 2026:
+
+- Production build, frontend lint, scoped browser-test TypeScript and whitespace
+  checks passed. **288 frontend unit tests** passed, including shared icon and
+  registry matching regression cases.
+- **14 Chromium browser cases** passed against the exact extracted release
+  archive. Coverage includes 320/390/834/1440 px widths, light/dark themes, opaque
+  and loaded product portraits, the retained detail dialog, Zigbee/Z-Wave image
+  overrides and controller branding, unmatched IDs, unknown window readings,
+  image failures, saved image choices and existing radio inventory/removal flows.
+  Isolated fixtures issued no hardware commands from the visual checks. Existing
+  protocol action tests use intercepted commands only.
+- Phone detail and inventory screenshots were visually inspected. Existing
+  shared dashboard image picker and portrait regressions also passed. Tests use
+  the Chromium iPhone profile; native Safari and live radio hardware were not
+  exercised. The existing Vite large-chunk warning remains.
+- Deterministic package check passed; all **284 runtime members** were extracted
+  and individually compared with the manifest before browser testing.
+  SHA-256: `ae78c76c3cb04db19e38f4d9034a69df51c9b4b3e40800f6731cfb5f1a8c8662`.
+  No live hub installation or update was initiated.
+
 # Dedicated update destination and category tabs — release 1.36.118
 
 Oppdateringer replaces the former embedded Settings update section. Administrators
