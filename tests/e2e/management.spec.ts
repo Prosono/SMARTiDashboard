@@ -170,7 +170,7 @@ test("integrations and branded updates use explicit confirmation", async ({
     .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Integrasjoner", exact: true })
+    .getByRole("button", { name: "Utvidelser", exact: true })
     .click();
   await expect(
     page.getByRole("button", { name: "Deaktiver", exact: true }),
@@ -623,7 +623,7 @@ test("integrations group connections and expand devices with logo fallback", asy
     .getByRole("button", { name: "Innstillinger", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Integrasjoner", exact: true })
+    .getByRole("button", { name: "Utvidelser", exact: true })
     .click();
   await expect(page.locator(".integration-card")).toHaveCount(2);
   const hue = page.locator(".integration-card").filter({
@@ -910,7 +910,7 @@ test('platform integrations use SMARTi names and local logos without rewriting I
   let brandRequests=0;
   page.on('request',r=>{if(r.url().includes('integration-brands/hassio') || r.url().includes('brands.home-assistant.io/hassio')) brandRequests++;});
   await page.getByRole('navigation').getByRole('button',{name:'Innstillinger',exact:true}).click();
-  await page.getByRole('button',{name:'Integrasjoner',exact:true}).click();
+  await page.getByRole('button',{name:'Utvidelser',exact:true}).click();
   await page.getByLabel('Søk i integrasjoner').fill('SMARTi');
   const card=page.locator('.integration-card');
   await expect(card.getByRole('heading',{name:'SMARTi Supervisor'})).toBeVisible();

@@ -23,7 +23,7 @@ test("integration wizard searches, validates credentials, completes and cancels"
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
   await page.getByLabel("Passord", { exact: true }).fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await page.getByRole("navigation", { name: "Hovedmeny" }).getByRole("button", { name: "Integrasjoner", exact: true }).click();
+  await page.getByRole("navigation", { name: "Hovedmeny" }).getByRole("button", { name: "Utvidelser", exact: true }).click();
   const open = page.getByRole("button", { name: "Legg til integrasjon", exact: true });
   await open.click();
   const dialog = page.getByRole("dialog", { name: "Legg til integrasjon" });

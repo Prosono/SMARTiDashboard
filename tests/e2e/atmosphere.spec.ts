@@ -146,7 +146,7 @@ test("gentle RGB waves persist behind every destination, home style and palette 
     "Rom",
     "Enheter",
     "Automasjoner",
-    "Integrasjoner",
+    "Utvidelser",
     "Oppdateringer",
     "Historikk",
     "Rapporter og innsikt",
@@ -158,7 +158,7 @@ test("gentle RGB waves persist behind every destination, home style and palette 
     expect(
       await backdrop.evaluate((node, original) => node === original, identity),
     ).toBe(true);
-    if (name === "Integrasjoner") {
+    if (name === "Utvidelser") {
       await page.getByRole("tab", { name: "Apper", exact: true }).click();
       await expect(backdrop).toBeVisible();
       expect(

@@ -1,3 +1,6 @@
+## 1.36.117
+- Den samlede siden for integrasjoner og apper heter nå «Utvidelser» i navigasjonen, sidetittelen og brødsmulestien. Underfanene «Integrasjoner» og «Apper» beholdes; Apper vises fortsatt bare i avansert modus.
+
 ## 1.36.116
 - Oppdateringer av andre apper og enheter viser ikke lenger en handlingsfeil bare fordi HA bruker lenger tid på svaret. Faktisk versjon og fremdrift avgjør om installasjonen er fullført eller pågår; ved ukjent resultat vises en nøytral ventestatus uten automatisk ny installasjon.
 - Integrasjoner og Apper er samlet på én side under «Integrasjoner», med egne faner. App-fanen, appbiblioteket og appinnstillingene vises bare i avansert modus. Integrasjoner er tilgjengelig for administratorer i normal og avansert modus.

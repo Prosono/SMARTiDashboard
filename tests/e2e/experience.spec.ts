@@ -199,7 +199,7 @@ test("personal experience modes simplify navigation and survive reload", async (
   await expect(
     page
       .getByRole("navigation")
-      .getByRole("button", { name: "Integrasjoner", exact: true }),
+      .getByRole("button", { name: "Utvidelser", exact: true }),
   ).toHaveCount(0);
   await home().click();
   const alertButton = page
@@ -376,7 +376,7 @@ test("personal experience modes simplify navigation and survive reload", async (
   await expect(
     page
       .getByRole("navigation")
-      .getByRole("button", { name: "Integrasjoner", exact: true }),
+      .getByRole("button", { name: "Utvidelser", exact: true }),
   ).toBeVisible();
   await home().click();
   await expect(

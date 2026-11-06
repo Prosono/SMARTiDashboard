@@ -14,7 +14,7 @@ test("reauthentication badge and popup clear when request is completed", async (
   await page.getByLabel("Passord",{exact:true}).fill("test-password-not-for-live");
   await page.getByRole("button",{name:"Logg inn",exact:true}).click();
   const nav=page.getByRole("navigation",{name:"Hovedmeny"});
-  const integrations=nav.getByRole("button",{name:"Integrasjoner",exact:true});
+  const integrations=nav.getByRole("button",{name:"Utvidelser",exact:true});
   await expect(integrations.locator(".nav-discovery-count")).toHaveText("1");
   if (test.info().project.name === "desktop") {
     for (const width of [800, 1100, 1440]) {

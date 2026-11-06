@@ -59,8 +59,8 @@ test("integrations and apps share one responsive destination, with apps only in 
   await expect(
     nav.getByRole("button", { name: "Apper", exact: true }),
   ).toHaveCount(0);
-  await nav.getByRole("button", { name: "Integrasjoner", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await nav.getByRole("button", { name: "Utvidelser", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Utvidelser");
   const integrationTab = page.getByRole("tab", {
     name: "Integrasjoner",
     exact: true,
@@ -74,7 +74,7 @@ test("integrations and apps share one responsive destination, with apps only in 
   await expect(appsTab).toBeFocused();
   await expect(appsTab).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".app-card")).toContainText("MQTT broker");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Utvidelser");
   for (const theme of ["light", "dark"]) {
     await page.evaluate((theme) => {
       document.documentElement.dataset.theme = theme;
@@ -108,7 +108,7 @@ test("integrations and apps share one responsive destination, with apps only in 
     .locator(".experience-picker")
     .getByRole("button", { name: /^Normal/ })
     .click();
-  await nav.getByRole("button", { name: "Integrasjoner", exact: true }).click();
+  await nav.getByRole("button", { name: "Utvidelser", exact: true }).click();
   await expect(page.locator(".integration-card")).toBeVisible();
   await expect(appsTab).toHaveCount(0);
   await expect(page.locator(".apps-page")).toHaveCount(0);
@@ -117,7 +117,7 @@ test("integrations and apps share one responsive destination, with apps only in 
   ).toHaveCount(0);
   expect(appReads).toBe(beforeNormal);
   await page.reload();
-  await nav.getByRole("button", { name: "Integrasjoner", exact: true }).click();
+  await nav.getByRole("button", { name: "Utvidelser", exact: true }).click();
   await expect(appsTab).toHaveCount(0);
   await expect(page.locator(".integration-card")).toBeVisible();
   expect(appReads).toBe(beforeNormal);
@@ -127,7 +127,7 @@ test("integrations and apps share one responsive destination, with apps only in 
     .getByRole("button", { name: /^Enkel/ })
     .click();
   await expect(
-    nav.getByRole("button", { name: "Integrasjoner", exact: true }),
+    nav.getByRole("button", { name: "Utvidelser", exact: true }),
   ).toHaveCount(0);
   await expect(page.locator(".apps-page")).toHaveCount(0);
 });

@@ -1,3 +1,18 @@
+# Rename the shared destination to Utvidelser — release 1.36.117
+
+The navigation label, breadcrumb and shared page title now read Utvidelser
+(Extensions in English). Integrasjoner and Apper remain the inner tabs, with
+app management still limited to the advanced view. Affected navigation fixtures
+and the saved design context use the new destination name.
+
+Production build, frontend lint, whitespace and deterministic package checks
+passed. The two existing Chromium mobile/desktop connections cases passed on
+both the working build and exact extracted package, covering both themes,
+320–1440px, the visible title and normal/advanced/simple navigation. This is a
+copy change; no backend behavior changed and no live hub was updated.
+All **284 runtime files** and source/payload hashes match the manifest.
+Archive SHA-256: `53e742c2039e17c4ba0cf1e6eebcfd7f006181f57b4407c9d4989837d77be544`.
+
 # Installation feedback and a shared integrations/apps page — release 1.36.116
 
 The non-SMARTi update endpoint awaited HA's service result through the generic
