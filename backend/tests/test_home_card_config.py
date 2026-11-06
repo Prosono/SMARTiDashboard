@@ -14,6 +14,15 @@ from test_management import client  # noqa: F401
         "equipment-window-closed",
         "equipment-window-open",
         "equipment-calendar",
+        "equipment-thermostat",
+        "equipment-air-conditioner",
+        "equipment-fan",
+        "equipment-blind",
+        "equipment-roller",
+        "equipment-curtain",
+        "equipment-awning",
+        "equipment-garage",
+        "equipment-alarm",
     ],
 )
 @pytest.mark.parametrize("suffix", ["", "?surface=mobile"])

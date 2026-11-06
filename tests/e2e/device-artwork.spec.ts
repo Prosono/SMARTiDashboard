@@ -66,11 +66,70 @@ const controls = [
   control("AC", "climate"),
   control("thermostat", "climate"),
   control("camera", "camera"),
+  ...["pendant", "bulb", "floor", "desk", "ceiling", "spot", "outdoor"].map(
+    (kind) => ({
+      ...control(kind, "light", {
+        smarti_icon: kind,
+        brightness: 81,
+        supported_color_modes: ["rgb", "color_temp"],
+        color_mode: "color_temp",
+        rgb_color: [255, 212, 163],
+      }),
+      name: kind === "pendant" ? "Lys Spisebord ved vinduet" : kind,
+      capabilities: [
+        {
+          kind: "power",
+          actions: ["turn_on", "turn_off"],
+          unit: null,
+          minimum: null,
+          maximum: null,
+          step: null,
+        },
+        {
+          kind: "brightness",
+          actions: ["set_brightness"],
+          unit: "%",
+          minimum: 0,
+          maximum: 100,
+          step: 1,
+        },
+        {
+          kind: "color",
+          actions: ["set_rgb_color"],
+          unit: null,
+          minimum: null,
+          maximum: null,
+          step: null,
+        },
+        {
+          kind: "color_temperature",
+          actions: ["set_color_temp"],
+          unit: "K",
+          minimum: 2200,
+          maximum: 6500,
+          step: 100,
+        },
+      ],
+    }),
+  ),
+  control("fan", "fan"),
+  ...["blind", "shade", "curtain", "awning", "garage"].map((device_class) =>
+    control(
+      device_class,
+      "cover",
+      { device_class, current_position: 0 },
+      "closed",
+    ),
+  ),
+  control("alarm", "alarm_control_panel", {}, "disarmed"),
 ];
 async function setup(page: Page) {
   const mutations: string[] = [];
   await page.addInitScript(() =>
     localStorage.setItem("smarti-home-style", "harmony"),
+  );
+  await page.route("**/api/home/experience", (r) =>
+    r.fulfill({ json: { mode: "advanced" } }),
   );
   await page.route("**/api/home", async (route) => {
     const response = await route.fetch();
@@ -122,6 +181,15 @@ test("all-device visuals reuse shared artwork and semantic icons at phone, table
         ["open-window", "window-open"],
         ["front-lock", "lock"],
         ["media", "speaker-white"],
+        ["AC", "air-conditioner"],
+        ["thermostat", "thermostat"],
+        ["fan", "fan"],
+        ["blind", "blind"],
+        ["shade", "roller"],
+        ["curtain", "curtain"],
+        ["awning", "awning"],
+        ["garage", "garage"],
+        ["alarm", "alarm"],
       ]) {
         const card = page.locator(`.controls-grid > [data-entity$=".${id}"]`);
         const image = card.locator(".device-product-art img");
@@ -294,6 +362,94 @@ test("missing shared images fall back to the same semantic artwork and configure
   await page.screenshot({
     path: "/private/tmp/smarti-device-inventory.png",
     fullPage: true,
+    animations: "disabled",
+  });
+  expect(mutations).toEqual([]);
+});
+
+test("compact portraits never extend into room labels, titles or favorite buttons in either home style", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  const mutations = await setup(page);
+  for (const width of [320, 390, 700, 834, 1024, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const style of ["harmony", "classic"])
+      for (const theme of ["light", "dark"]) {
+        await page.evaluate(
+          ({ style, theme }) => {
+            document.documentElement.dataset.homeStyle = style;
+            document.documentElement.dataset.theme = theme;
+          },
+          { style, theme },
+        );
+        for (const kind of [
+          "pendant",
+          "bulb",
+          "floor",
+          "desk",
+          "ceiling",
+          "spot",
+          "outdoor",
+        ]) {
+          const card = page.locator(`[data-entity="light.${kind}"]`);
+          await card.scrollIntoViewIfNeeded();
+          await expect(
+            card.locator(".light-color-control > button"),
+          ).toBeVisible();
+          const image = card.locator(".device-product-art img");
+          await expect
+            .poll(() =>
+              image.evaluate((img: HTMLImageElement) => img.naturalWidth),
+            )
+            .toBeGreaterThan(0);
+          const geometry = await card.evaluate((card) => {
+            const bounds = (selector: string) =>
+              card.querySelector(selector)!.getBoundingClientRect();
+            const art = bounds(".equipment-art"),
+              image = bounds(".equipment-art img"),
+              box = bounds(".device-product-art"),
+              title = bounds(".device-title"),
+              star = bounds(".star");
+            return {
+              fits: [art, image].every(
+                (r) =>
+                  r.top >= box.top - 0.5 &&
+                  r.bottom <= box.bottom + 0.5 &&
+                  r.left >= box.left - 0.5 &&
+                  r.right <= box.right + 0.5,
+              ),
+              clearOfText: art.bottom <= title.top,
+              clearOfStar: art.right <= star.left,
+              glow: getComputedStyle(
+                card.querySelector(".equipment-art")!,
+                "::before",
+              ).content,
+            };
+          });
+          expect(
+            geometry.fits,
+            `${width}/${style}/${theme}/${kind}: portrait containment`,
+          ).toBe(true);
+          expect(
+            geometry.clearOfText,
+            `${width}/${style}/${theme}/${kind}: room/title overlap`,
+          ).toBe(true);
+          expect(
+            geometry.clearOfStar,
+            `${width}/${style}/${theme}/${kind}: favorite overlap`,
+          ).toBe(true);
+          expect(geometry.glow).toBe("none");
+        }
+      }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.evaluate(
+    () => (document.documentElement.dataset.homeStyle = "harmony"),
+  );
+  await page.locator('[data-entity="light.pendant"]').scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: `/private/tmp/smarti-120-spacing-${test.info().project.name}.png`,
     animations: "disabled",
   });
   expect(mutations).toEqual([]);

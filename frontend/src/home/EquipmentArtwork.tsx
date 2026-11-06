@@ -14,10 +14,12 @@ export function EquipmentArtwork({
   c,
   available = true,
   kind: override,
+  compact = false,
 }: {
   c: Control;
   available?: boolean;
   kind?: EquipmentArt;
+  compact?: boolean;
 }) {
   const appearance = useContext(CardPresentation);
   const kind = override || equipmentArt(c),
@@ -50,6 +52,7 @@ export function EquipmentArtwork({
         className={`equipment-art art-${kind}`}
         data-lit={active}
         data-light={c.domain === "light" || undefined}
+        data-compact={compact || undefined}
         aria-hidden="true"
         style={{ "--lamp-color": lightColor(c) } as CSSProperties}
       >
@@ -68,6 +71,7 @@ export function EquipmentArtwork({
       className={`equipment-art art-${kind}`}
       aria-hidden="true"
       data-lit={active}
+      data-compact={compact || undefined}
     >
       <svg viewBox="0 0 180 150" fill="none">
         <defs>

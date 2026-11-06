@@ -64,3 +64,10 @@ are native SVG. Cover position,
 window state and light tint use actual device attributes. Artwork is decorative
 and hidden from accessibility APIs; the adjacent text supplies the real status.
 Unavailable/missing measurements never become inferred product readings.
+
+## Shared additions — 6 November 2026
+
+Nine new 768 × 768 transparent product portraits cover thermostat, heat pump/AC,
+fan, Venetian blind, roller blind, curtains, awning, garage door and alarm panel.
+They share the same renderer and image picker on all screen sizes.
+See [final prompts, provenance and asset paths](../../../../docs/ARTWORK_1.36.120.md).

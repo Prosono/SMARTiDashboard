@@ -104,7 +104,8 @@ export function equipmentArt(c: Control): EquipmentArt {
       )[deviceClass] || "blind"
     );
   if (c.domain === "lock") return "lock";
-  if (c.domain === "climate") return "thermostat";
+  if (c.domain === "climate")
+    return isAirConditioner(c) ? "air-conditioner" : "thermostat";
   if (c.domain === "fan") return "fan";
   if (["switch", "input_boolean"].includes(c.domain))
     return /elbillad|ev[ _-]?(charg|lad)|\bevse\b|wallbox|ladestasjon/.test(

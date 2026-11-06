@@ -1,3 +1,8 @@
+## 1.36.120
+- Retter at enhetsbilder, særlig pendellamper, kunne overlappe romnavn og titler. Kompakte bilder har nå egne grenser og bruker ikke lysgløden fra de store dashbordkortene.
+- Ni nye produktbilder for termostat, varmepumpe/AC, vifte, persienne, rullegardin, gardiner, markise, garasjeport og alarmpanel er lagt til i det felles bildebiblioteket. Varmepumper gjenkjennes som egen type i den felles kortvisningen.
+- Bildene brukes på mobil, nettbrett og PC og kan velges og lagres i kortvelgeren. Tidligere bildevalg, separate mobil-/desktopoppsett, faktiske måleverdier og styringsbekreftelser beholdes.
+
 ## 1.36.119
 - Enheter-siden bruker de samme enhetsbildene og ikonvalgene som Hjem og Rom, også for lamper, røykvarslere, låser, solskjerming, klima og multimedia. Lagrede lampe- og mediebildevalg beholdes.
 - Zigbee- og Z-Wave-listene og detaljvinduene bruker de samme standardbildene når enheten er koblet til SMARTis enhetsregister. Egne opplastede produktbilder og kontrollerlogoer beholdes. Ukjente enheter kobles ikke sammen basert på navn.

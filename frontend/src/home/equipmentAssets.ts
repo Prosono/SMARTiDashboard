@@ -22,6 +22,15 @@ export const equipmentAssets = [
   { kind: "bulb", nb: "Lyspære", en: "Light bulb" },
   { kind: "floor", nb: "Gulvlampe", en: "Floor lamp" },
   { kind: "desk", nb: "Bordlampe", en: "Desk lamp" },
+  { kind: "thermostat", nb: "Termostat", en: "Thermostat" },
+  { kind: "air-conditioner", nb: "Varmepumpe / AC", en: "Heat pump / AC" },
+  { kind: "fan", nb: "Vifte", en: "Fan" },
+  { kind: "blind", nb: "Persienne", en: "Venetian blind" },
+  { kind: "roller", nb: "Rullegardin", en: "Roller blind" },
+  { kind: "curtain", nb: "Gardiner", en: "Curtains" },
+  { kind: "awning", nb: "Markise", en: "Awning" },
+  { kind: "garage", nb: "Garasjeport", en: "Garage door" },
+  { kind: "alarm", nb: "Alarmpanel", en: "Alarm panel" },
 ] as const;
 export const equipmentPortraitKinds = new Set<string>([
   "pendant",

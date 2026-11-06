@@ -90,6 +90,16 @@ describe("equipment card data", () => {
       ).toBe(kind);
   });
   it("respects chosen light art and distinguishes actual cover and sensor classes", () => {
+    expect(equipmentArt(control({ domain: "climate", name: "Stue AC" }))).toBe(
+      "air-conditioner",
+    );
+    expect(
+      equipmentArt(control({ domain: "climate", name: "Gulvvarme" })),
+    ).toBe("thermostat");
+    expect(equipmentArt(control({ domain: "fan" }))).toBe("fan");
+    expect(equipmentArt(control({ domain: "alarm_control_panel" }))).toBe(
+      "alarm",
+    );
     expect(
       equipmentArt(
         control({ name: "LED kjøkken", attributes: { smarti_icon: "floor" } }),

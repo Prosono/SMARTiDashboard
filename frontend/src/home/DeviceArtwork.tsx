@@ -54,6 +54,7 @@ export function DeviceArtwork({
       ) : equipment ? (
         <EquipmentArtwork
           c={c}
+          compact
           kind={isAirConditioner(c) ? "air-conditioner" : undefined}
           available={available && c.availability === "available"}
         />

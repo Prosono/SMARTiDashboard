@@ -187,7 +187,7 @@ html[data-home-style="harmony"] {
   .equipment-art.art-pendant {
     height: 143px;
   }
-  .equipment-art[data-lit="true"].art-pendant::before {
+  .equipment-art[data-lit="true"].art-pendant:not([data-compact])::before {
     content: "";
     position: absolute;
     inset: 50% -10% -15%;

@@ -1,3 +1,46 @@
+# Compact artwork bounds and nine new equipment portraits — release 1.36.120
+
+The reported Devices overlap came from global dashboard rules giving pendants a
+143 px height inside a 64 px inventory slot. The former generic containment
+selector lost to the more specific lamp selector. Compact equipment now has an
+explicit renderer flag, reserved and clipped inventory bounds, and sufficient
+selector specificity for every lamp shape. The dashboard's pendant halo is not
+created for compact illustrations. Full-size dashboard lamps retain their existing
+presentation.
+
+Nine new transparent product portraits cover thermostat, air conditioner/heat
+pump, fan, Venetian blind, roller blind, curtains, awning, garage door and alarm
+panel. They use the shared equipment renderer and card image picker across
+screen sizes. Air conditioners are recognized by the common type resolver.
+Backend image validation accepts all nine choices; existing mobile and
+PC/tablet layouts stay independent. Full final prompts and runtime paths are in
+[ARTWORK_1.36.120.md](ARTWORK_1.36.120.md).
+
+Validation on 6 November 2026:
+
+- Production build, frontend lint, scoped Playwright TypeScript, scoped Ruff
+  lint/format and whitespace checks passed. **288 frontend unit tests** and
+  **114 backend tests** passed. Backend cases round-trip each new image choice
+  on both dashboard surfaces and retain layout validation/versioning coverage.
+- **22 Chromium browser cases** passed against the exact extracted package.
+  The overlap regression includes active pendant, bulb, floor, desk, ceiling,
+  spotlight and outdoor lights, color controls, a long title, both classic and
+  Harmony styles and both light/dark themes at 320, 390, 700, 834, 1024, 1440
+  and 1920 px. It checks the complete image/illustration bounds against its
+  reserved slot, room/title area and favorite button, and rejects the large halo.
+- Browser coverage also checks all new automatic portraits, shared picker
+  choices/reload, image failures, unknown window state, protocol/custom pictures,
+  controller logos, room controls and permissions. Test commands are intercepted
+  or confined to the isolated demo; no live hardware action or hub update ran.
+- Generated images were visually inspected. All nine WebP files have an alpha
+  channel, 768 × 768 dimensions and valid structure; together they total 447,872
+  bytes. The long-title/color-control inventory screenshot was inspected after
+  testing. Native Safari and live radio hardware were not exercised. Existing
+  Vite chunk-size and Starlette TestClient warnings remain.
+- Deterministic packaging check passed; all **293 runtime members** were
+  extracted and individually compared with the manifest before browser testing.
+  SHA-256: `17a250c551cdf3e04f8220c74406c3570d1e0b470debac0803626dce58801e1c`.
+
 # Shared device inventory artwork — release 1.36.119
 
 The Devices inventory now uses the existing dashboard equipment illustrations,
