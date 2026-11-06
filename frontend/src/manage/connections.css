@@ -1,0 +1,66 @@
+.connections-page {
+  min-width: 0;
+}
+.connections-page > .page-heading {
+  margin-bottom: 24px;
+}
+.connections-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+.connections-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+}
+.connections-tabs button[aria-selected="true"] {
+  background: var(--tint);
+  border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.connections-tabs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.connections-app-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.connections-app-actions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.connections-page .apps-toolbar {
+  gap: 12px;
+}
+@media (max-width: 650px) {
+  .connections-tabs button {
+    flex: 1;
+    padding-inline: 12px;
+  }
+  .connections-page .apps-toolbar > nav {
+    flex-basis: 100%;
+  }
+  .connections-app-actions {
+    width: 100%;
+  }
+  .connections-app-actions button {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+  }
+}

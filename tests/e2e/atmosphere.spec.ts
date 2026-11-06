@@ -147,7 +147,6 @@ test("gentle RGB waves persist behind every destination, home style and palette 
     "Enheter",
     "Automasjoner",
     "Integrasjoner",
-    "Apper",
     "Oppdateringer",
     "Historikk",
     "Rapporter og innsikt",
@@ -159,6 +158,16 @@ test("gentle RGB waves persist behind every destination, home style and palette 
     expect(
       await backdrop.evaluate((node, original) => node === original, identity),
     ).toBe(true);
+    if (name === "Integrasjoner") {
+      await page.getByRole("tab", { name: "Apper", exact: true }).click();
+      await expect(backdrop).toBeVisible();
+      expect(
+        await backdrop.evaluate(
+          (node, original) => node === original,
+          identity,
+        ),
+      ).toBe(true);
+    }
   }
   await navigate(page, "Hjem");
   for (const name of [

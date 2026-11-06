@@ -1,3 +1,48 @@
+# Installation feedback and a shared integrations/apps page — release 1.36.116
+
+The non-SMARTi update endpoint awaited HA's service result through the generic
+12-second request wrapper, which converted a timeout into HTTP 503 and a generic
+failure notice even when installation continued. It now distinguishes completed,
+running, explicitly rejected and unknown outcomes using HA state after a missing
+reply. Numeric zero progress remains an active installation. Unknown outcomes keep
+the pending guard and never replay the install command. Approval/version/backup,
+admin and CSRF checks remain unchanged. The frontend reports completion from the
+installed version, shows neutral waiting on lost replies, and follows real progress.
+A confirmed target remains latched rather than reverting to a stale pending state.
+
+One Integrasjoner destination contains the integration and app views. Normal-mode
+administrators can use integrations; the App tab and its inventory/settings are
+mounted only in advanced mode. Simple navigation remains minimal. There is one
+page heading, accessible keyboard tabs, existing search/setup/configuration flows
+and responsive action placement. Display preferences do not grant backend rights.
+The primary navigation design context and affected navigation fixtures were updated.
+
+Validation on 6 November 2026:
+
+- Production build, frontend lint, new browser-case TypeScript, scoped Ruff and
+  whitespace checks passed. **286 frontend unit tests** and **51 backend cases**
+  covering management, apps, approval gates and installation outcomes passed.
+  Four added backend regression cases failed with HTTP 503 before the fix and
+  now return the observed result while keeping duplicate-install protection.
+- All **38 scoped Chromium mobile/desktop cases** passed against the exact
+  extracted release package. They cover completed/accepted/unknown/lost/rejected
+  update responses, actual-version reconciliation, no automatic resend, existing
+  SMARTi update and backup behavior, one shared destination, keyboard tabs,
+  normal/advanced/simple modes, no normal-mode app inventory request, 320–1440px
+  in both themes, app configuration/library/repositories, integration setup and
+  reauthentication. Working-build runs also exercised these cases.
+- Phone light and desktop dark screenshots were visually inspected. Tests use
+  isolated demo/HA/Supervisor fixtures; no physical device, live HA installation
+  or native Safari was used. Existing Vite/TestClient advisories remain. Older
+  standalone browser-fixture typechecks still lack Node Buffer types and type a
+  style handle as Node (remove); the new browser cases typecheck separately.
+
+Reference: [HA's blocking service-call handler](https://github.com/home-assistant/core/blob/dev/homeassistant/components/websocket_api/commands.py).
+
+All **284 runtime files**, archive membership and source/payload hashes match
+the deterministic manifest. scripts/package.py --check passed. Archive SHA-256:
+`30eb2c0d5af279f469967bf1852ca59b4f24aacdd2bba8962318d47d462f8ed8`.
+
 # Update confirmation on local HTTP — release 1.36.115
 
 The confirmation handler set busy state and then called crypto.randomUUID outside

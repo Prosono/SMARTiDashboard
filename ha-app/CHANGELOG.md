@@ -1,3 +1,8 @@
+## 1.36.116
+- Oppdateringer av andre apper og enheter viser ikke lenger en handlingsfeil bare fordi HA bruker lenger tid på svaret. Faktisk versjon og fremdrift avgjør om installasjonen er fullført eller pågår; ved ukjent resultat vises en nøytral ventestatus uten automatisk ny installasjon.
+- Integrasjoner og Apper er samlet på én side under «Integrasjoner», med egne faner. App-fanen, appbiblioteket og appinnstillingene vises bare i avansert modus. Integrasjoner er tilgjengelig for administratorer i normal og avansert modus.
+- Søk, integrasjonsoppsett, appkilder og bekreftelser beholdes. Siden er tilpasset mobil, nettbrett og PC og kan styres med tastatur.
+
 ## 1.36.115
 - Retter at «Bekreft oppdatering» kunne bli stående uten å sende forespørselen til Home Assistant ved lokal HTTP/HA-ingress. SMARTi-oppdatering og apphandlinger bruker nå en tilfeldig forespørsels-ID som støttes også her.
 - Feil før sending avslutter ventetilstanden og viser en forklaring. En bekreftet avvisning fra HA tillater et nytt forsøk etter ny bekreftelse; ubekreftede oppdateringer sendes ikke automatisk på nytt. Bekreftelse og valget om sikkerhetskopi beholdes.

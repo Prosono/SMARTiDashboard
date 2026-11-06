@@ -694,18 +694,36 @@ def management_router(service, admin):
             if m.demo:
                 return {"status": "simulated"}
             m.pending_updates[entity_id] = (body.version, time.monotonic())
-            await m.ws(
-                "call_service",
-                domain="update",
-                service="install",
-                service_data={"entity_id": entity_id}
-                | (
-                    {"version": body.version}
-                    if m.ha.states[entity_id].get("attributes", {}).get("supported_features", 0) & 2
-                    else {}
+            try:
+                await m.ha.request(
+                    "call_service",
+                    domain="update",
+                    service="install",
+                    service_data={"entity_id": entity_id}
+                    | (
+                        {"version": body.version}
+                        if m.ha.states[entity_id].get("attributes", {}).get("supported_features", 0) & 2
+                        else {}
+                    )
+                    | ({"backup": body.backup} if item["can_backup"] else {}),
                 )
-                | ({"backup": body.backup} if item["can_backup"] else {}),
-            )
+            except (HAError, TimeoutError, OSError) as error:
+                # HA waits for the installation, which can outlive our reply
+                # timeout. State events still arrive; never replay the command.
+                state = m.ha.states.get(entity_id, {})
+                attrs = state.get("attributes", {})
+                known = state.get("state") not in {None, "unavailable", "unknown"}
+                progress = attrs.get("in_progress")
+                running = progress is not None and progress is not False
+                if known and attrs.get("installed_version") == body.version and not running:
+                    m.pending_updates.pop(entity_id, None)
+                    return {"status": "completed"}
+                if known and running:
+                    return {"status": "accepted"}
+                if isinstance(error, HAError) and str(error) == "ha_request_rejected":
+                    m.pending_updates.pop(entity_id, None)
+                    return {"status": "failed"}
+                return {"status": "unconfirmed"}
             return {"status": "accepted"}
 
     return router

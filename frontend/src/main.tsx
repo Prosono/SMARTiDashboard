@@ -40,7 +40,7 @@ import { LightColor } from "./LightColor";
 import { controlState } from "./controlState";
 import { ProtocolLogo } from "./ProtocolLogo";
 import { RadioAdvanced } from "./RadioAdvanced";
-import { Apps } from "./manage/Apps";
+import { Connections } from "./manage/Connections";
 import { AccountAvatar } from "./manage/Accounts";
 import { Debugging } from "./manage/Debugging";
 import { HomeSettings } from "./manage/HomeSettings";
@@ -69,7 +69,6 @@ import {
   Menu,
   LayoutGrid,
   SlidersHorizontal,
-  AppWindow,
   Workflow,
   Blocks,
   DownloadCloud,
@@ -109,7 +108,7 @@ import "./login.css";
 import "./manage/manage.css";
 import { Automations } from "./manage/Automations";
 import { RoomManager } from "./manage/Rooms";
-import { Integrations, Updates } from "./manage/System";
+import { Updates } from "./manage/System";
 import { PalettePicker, palettes } from "./PalettePicker";
 import { RoomView } from "./rooms/RoomView";
 import "./palettes.css";
@@ -155,7 +154,6 @@ const icons = {
   devices: SlidersHorizontal,
   automations: Workflow,
   integrations: Blocks,
-  apps: AppWindow,
   updates: DownloadCloud,
   history: History,
   logbook: ScrollText,
@@ -496,7 +494,7 @@ function App() {
               .filter(
                 (p) =>
                   session.role === "admin" ||
-                  !["automations", "integrations", "apps", "updates"].includes(
+                  !["automations", "integrations", "updates"].includes(
                     p,
                   ),
               )
@@ -505,7 +503,7 @@ function App() {
                   mode === "advanced" ||
                   (mode === "simple"
                     ? ["home", "support", "more"].includes(p)
-                    : !["integrations", "apps", "updates"].includes(p)),
+                    : p !== "updates"),
               )
               .map((p) => {
                 const Icon = icons[p];
@@ -1431,9 +1429,7 @@ function Dashboard({
         ) : page === "automations" && session.role === "admin" ? (
           <Automations lang={lang} home={h} onDirty={onDirty} />
         ) : page === "integrations" && session.role === "admin" ? (
-          <Integrations lang={lang} />
-        ) : page === "apps" && session.role === "admin" ? (
-          <Apps lang={lang} />
+          <Connections lang={lang} />
         ) : page === "updates" && session.role === "admin" ? (
           <Updates lang={lang} />
         ) : (

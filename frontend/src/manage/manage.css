@@ -1904,3 +1904,21 @@ textarea:focus-visible {
     padding: 0.7rem;
   }
 }
+.update-install-results {
+  display: grid;
+  gap: 12px;
+  margin-block: 16px;
+}
+.update-install-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+}
+.update-install-result > svg { flex: none; margin-top: 2px; }
+.update-install-result p { margin: 4px 0 0; color: var(--muted); }
+.update-install-result[data-status="completed"] > svg { color: #16a369; }
+.update-install-result[data-status="failed"] > svg { color: var(--danger, #cc463e); }

@@ -3,7 +3,7 @@ import { DiscoveredDevices } from "./DiscoveredDevices";
 import { IntegrationLogo } from "./IntegrationLogo";
 import { IntegrationSetup } from "./IntegrationSetup";
 import { IntegrationDevice } from "./IntegrationDevice";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Download,
@@ -12,9 +12,12 @@ import {
   ChevronDown,
   ChevronUp,
   Box,
+  Check,
+  Clock,
+  CircleAlert,
 } from "lucide-react";
 import { smartiName, integrationName } from "../branding";
-import { api } from "../api";
+import { api, ApiError } from "../api";
 import { Feedback, LoadError, useWork, words } from "./shared";
 type Integration = {
   entry_id: string;
@@ -44,7 +47,16 @@ type Update = {
   can_backup: boolean;
   summary: string;
 };
-export function Integrations({ lang }: { lang: string }) {
+type InstallStatus =
+  "accepted" | "completed" | "unconfirmed" | "failed" | "simulated";
+type InstallAttempt = { name: string; version: string; status: InstallStatus };
+export function Integrations({
+  lang,
+  embedded = false,
+}: {
+  lang: string;
+  embedded?: boolean;
+}) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const q = useQuery({
     queryKey: ["manage", "integrations"],
@@ -139,18 +151,20 @@ export function Integrations({ lang }: { lang: string }) {
           close={() => selectDevice(null)}
         />
       )}
-      <div className="page-heading">
-        <span className="eyebrow">
-          {t("Tjenestene i hjemmet", "Services in your home")}
-        </span>
-        <h1>{t("Integrasjoner", "Integrations")}</h1>
-        <p>
-          {t(
-            "Se hva som er koblet til, og hold forbindelsene i orden.",
-            "See what is connected and manage each connection.",
-          )}
-        </p>
-      </div>
+      {!embedded && (
+        <div className="page-heading">
+          <span className="eyebrow">
+            {t("Tjenestene i hjemmet", "Services in your home")}
+          </span>
+          <h1>{t("Integrasjoner", "Integrations")}</h1>
+          <p>
+            {t(
+              "Se hva som er koblet til, og hold forbindelsene i orden.",
+              "See what is connected and manage each connection.",
+            )}
+          </p>
+        </div>
+      )}
       <DiscoveredDevices lang={lang} attention />
       <Feedback message={w.message} />
       <div className="device-toolbar">
@@ -409,6 +423,25 @@ export function Updates({
   const [selected, select] = useState<Update | null>(null);
   const [backup, setBackup] = useState(false);
   const w = useWork(lang);
+  const [attempts, setAttempts] = useState<Record<string, InstallAttempt>>({});
+  useEffect(() => {
+    setAttempts((previous) => {
+      let next = previous;
+      for (const [entity, attempt] of Object.entries(previous)) {
+        const current = q.data?.find((item) => item.entity_id === entity);
+        if (
+          attempt.status !== "completed" &&
+          current &&
+          !["unavailable", "unknown"].includes(current.state) &&
+          current.installed_version === attempt.version &&
+          !current.in_progress
+        ) {
+          next = { ...next, [entity]: { ...attempt, status: "completed" } };
+        }
+      }
+      return next;
+    });
+  }, [q.data]);
   const available = q.data?.filter(
     (u) => (u.state === "on" && u.can_install) || u.in_progress || u.pending,
   );
@@ -430,6 +463,67 @@ export function Updates({
       </div>
       <SelfUpdate lang={lang} />
       <Feedback message={w.message} />
+      {!!Object.keys(attempts).length && (
+        <div
+          className="update-install-results"
+          aria-label={t("Oppdateringsstatus", "Update status")}
+        >
+          {Object.entries(attempts).map(([entity, attempt]) => {
+            const current = q.data?.find((item) => item.entity_id === entity);
+            const done = attempt.status === "completed";
+            const failed = attempt.status === "failed";
+            const simulated = attempt.status === "simulated";
+            const running = current?.in_progress && !done && !failed;
+            return (
+              <div
+                className="update-install-result"
+                key={entity}
+                role="status"
+                data-status={attempt.status}
+              >
+                {done ? (
+                  <Check size={21} />
+                ) : failed ? (
+                  <CircleAlert size={21} />
+                ) : (
+                  <Clock size={21} />
+                )}
+                <div>
+                  <strong>{attempt.name}</strong>
+                  <p>
+                    {done
+                      ? `${t("Oppdatert til", "Updated to")} ${attempt.version}`
+                      : failed
+                        ? t(
+                            "Oppdateringen ble avvist av Home Assistant. Kontroller loggen før et nytt forsøk.",
+                            "Home Assistant rejected the update. Check its log before retrying.",
+                          )
+                        : simulated
+                          ? t(
+                              "Simulert i demohjemmet. Ingen programvare ble installert.",
+                              "Simulated in the demo home. No software was installed.",
+                            )
+                          : running
+                            ? t("Installerer …", "Installing …") +
+                              (current.percentage != null
+                                ? ` ${current.percentage} %`
+                                : "")
+                            : attempt.status === "unconfirmed"
+                              ? t(
+                                  "Venter på bekreftelse fra Home Assistant. Oppdateringen kan fortsatt pågå.",
+                                  "Awaiting confirmation from Home Assistant. The update may still be running.",
+                                )
+                              : t(
+                                  "Installasjon forespurt. Venter på oppdatert status.",
+                                  "Installation requested. Waiting for updated status.",
+                                )}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {q.isError && <LoadError lang={lang} retry={() => void q.refetch()} />}
       {q.isPending && <p>{t("Henter oppdateringer …", "Loading updates …")}</p>}
       <div className="management-rows">
@@ -474,7 +568,12 @@ export function Updates({
                 !u.can_install ||
                 u.state !== "on" ||
                 u.in_progress ||
-                u.pending
+                u.pending ||
+                ["accepted", "unconfirmed"].includes(
+                  attempts[u.entity_id]?.status,
+                ) ||
+                (attempts[u.entity_id]?.status === "completed" &&
+                  attempts[u.entity_id]?.version === u.latest_version)
               }
               onClick={() => {
                 select(u);
@@ -520,22 +619,40 @@ export function Updates({
                   onClick={() =>
                     void w.run(
                       async () => {
-                        const result = await api<{ status: string }>(
-                          `manage/updates/${encodeURIComponent(u.entity_id)}/install`,
-                          "POST",
-                          { version: selected.latest_version, backup },
-                        );
-                        w.setMessage(
-                          result.status === "simulated"
-                            ? t(
-                                "Simulert i demohjemmet. Ingen programvare ble installert.",
-                                "Simulated in the demo home. No software was installed.",
-                              )
-                            : t(
-                                "Installasjon forespurt. Vent på oppdatert status.",
-                                "Installation requested. Wait for updated status.",
-                              ),
-                        );
+                        let status: InstallStatus = "unconfirmed";
+                        try {
+                          const result = await api<{ status: InstallStatus }>(
+                            `manage/updates/${encodeURIComponent(u.entity_id)}/install`,
+                            "POST",
+                            { version: selected.latest_version, backup },
+                          );
+                          if (
+                            [
+                              "accepted",
+                              "completed",
+                              "failed",
+                              "simulated",
+                            ].includes(result.status)
+                          )
+                            status = result.status;
+                        } catch (error) {
+                          if (
+                            error instanceof ApiError &&
+                            error.status >= 400 &&
+                            error.status < 500
+                          )
+                            throw error;
+                          // A lost reply is not an installation failure. Poll
+                          // real update state instead of repeating the write.
+                        }
+                        setAttempts((previous) => ({
+                          ...previous,
+                          [u.entity_id]: {
+                            name: smartiName(u.name),
+                            version: selected.latest_version!,
+                            status,
+                          },
+                        }));
                       },
                       () => select(null),
                     )

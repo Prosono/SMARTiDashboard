@@ -84,7 +84,13 @@ function AppImage({ app, large = false }: { app: AppItem; large?: boolean }) {
     </span>
   );
 }
-export function Apps({ lang }: { lang: string }) {
+export function Apps({
+  lang,
+  embedded = false,
+}: {
+  lang: string;
+  embedded?: boolean;
+}) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
   const apps = useQuery({
@@ -195,22 +201,27 @@ export function Apps({ lang }: { lang: string }) {
   );
   return (
     <section className="apps-page management-page">
-      <div className="page-heading">
-        <span className="eyebrow">SMARTi</span>
-        <div className="heading-row">
-          <h1>{t("Apper", "Apps")}</h1>
-          <button onClick={() => setRepositories(true)} disabled={apps.isError}>
-            <Plus size={18} />
-            {t("Appkilder", "Repositories")}
-          </button>
+      {!embedded && (
+        <div className="page-heading">
+          <span className="eyebrow">SMARTi</span>
+          <div className="heading-row">
+            <h1>{t("Apper", "Apps")}</h1>
+            <button
+              onClick={() => setRepositories(true)}
+              disabled={apps.isError}
+            >
+              <Plus size={18} />
+              {t("Appkilder", "Repositories")}
+            </button>
+          </div>
+          <p>
+            {t(
+              "Utvid hjemmet ditt. Samle og administrer appene på hjemmesentralen.",
+              "Expand your home. Manage the apps running on your controller.",
+            )}
+          </p>
         </div>
-        <p>
-          {t(
-            "Utvid hjemmet ditt. Samle og administrer appene på hjemmesentralen.",
-            "Expand your home. Manage the apps running on your controller.",
-          )}
-        </p>
-      </div>
+      )}
       <div className="apps-toolbar">
         <nav
           className="management-tabs"
@@ -235,29 +246,40 @@ export function Apps({ lang }: { lang: string }) {
             </button>
           ))}
         </nav>
-        <button
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            setError("");
-            try {
-              await api("manage/apps/reload", "POST");
-              await apps.refetch();
-            } catch {
-              setError(
-                t(
-                  "Kunne ikke oppdatere appbiblioteket.",
-                  "Could not refresh the app library.",
-                ),
-              );
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <RefreshCw size={17} />
-          {t("Oppdater oversikt", "Refresh library")}
-        </button>
+        <div className="connections-app-actions">
+          {embedded && (
+            <button
+              onClick={() => setRepositories(true)}
+              disabled={apps.isError}
+            >
+              <Plus size={18} />
+              {t("Appkilder", "Repositories")}
+            </button>
+          )}
+          <button
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError("");
+              try {
+                await api("manage/apps/reload", "POST");
+                await apps.refetch();
+              } catch {
+                setError(
+                  t(
+                    "Kunne ikke oppdatere appbiblioteket.",
+                    "Could not refresh the app library.",
+                  ),
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <RefreshCw size={17} />
+            {t("Oppdater oversikt", "Refresh library")}
+          </button>
+        </div>
       </div>
       <label className="apps-search">
         <Search size={19} />

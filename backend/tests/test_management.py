@@ -626,3 +626,45 @@ def test_update_gate_pins_approved_version(live):
             "service_data": {"entity_id": "update.core", "version": "2", "backup": False},
         },
     ) in ha.calls
+
+
+@pytest.mark.parametrize(
+    "observed, expected",
+    [
+        ("completed", "completed"),
+        ("progress", "accepted"),
+        ("unknown", "unconfirmed"),
+        ("rejected", "failed"),
+    ],
+)
+def test_install_result_follows_ha_state_after_slow_or_lost_reply(live, monkeypatch, observed, expected):
+    client, ha = live
+    original = ha.request
+    calls = []
+
+    async def request(kind, **data):
+        if kind != "call_service":
+            return await original(kind, **data)
+        calls.append(data)
+        if observed == "completed":
+            ha.states["update.core"]["state"] = "off"
+            ha.states["update.core"]["attributes"]["installed_version"] = "2"
+        if observed == "progress":
+            ha.states["update.core"]["attributes"]["in_progress"] = 0
+        if observed == "rejected":
+            raise HAError("ha_request_rejected")
+        raise TimeoutError()
+
+    monkeypatch.setattr(ha, "request", request)
+    response = client.post("/api/manage/updates/update.core/install", json={"version": "2", "backup": True})
+    assert response.status_code == 200
+    assert response.json()["status"] == expected
+    assert len(calls) == 1
+    assert calls[0]["service_data"] == {"entity_id": "update.core", "backup": True}
+    if observed in {"progress", "unknown"}:
+        assert (
+            client.post("/api/manage/updates/update.core/install", json={"version": "2"}).status_code == 409
+        )
+        assert len(calls) == 1
+    if observed == "rejected":
+        assert "update.core" not in client.app.state.management.pending_updates
