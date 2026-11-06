@@ -46,6 +46,8 @@ import { TemperatureValue } from "./TemperatureValue";
 import { EquipmentArtwork } from "./EquipmentArtwork";
 import { EquipmentColorControls } from "./EquipmentColorControls";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { cardTone } from "./cardToneModel";
+import { lightCardStyle } from "./lightCardModel";
 import {
   deviceBattery,
   deviceReading,
@@ -203,12 +205,14 @@ function HarmonyDevice({
   lang,
   offline,
   open,
+  roomSurface = false,
 }: {
   c: Control;
   home: Home;
   lang: string;
   offline: boolean;
   open: () => void;
+  roomSurface?: boolean;
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
@@ -473,12 +477,34 @@ function HarmonyDevice({
       data-domain={c.domain}
       data-art={art}
       data-tone={tone}
+      data-room-surface={roomSurface || undefined}
+      data-card-tone={
+        roomSurface
+          ? cardTone(
+              { id: c.id, entityId: c.entity_id },
+              undefined,
+              home.controls,
+            )
+          : undefined
+      }
       data-active={on}
       data-available={available}
       data-attention={attention}
       data-color-light={rgb || white || undefined}
       aria-busy={busy}
-      style={{ "--equipment-color": lightColor(c) } as CSSProperties}
+      style={
+        {
+          "--equipment-color": lightColor(c),
+          ...(roomSurface && c.domain === "light"
+            ? lightCardStyle(
+                { id: c.id, entityId: c.entity_id },
+                undefined,
+                home.controls,
+                available,
+              )
+            : {}),
+        } as CSSProperties
+      }
     >
       <header className="harmony-device-header">
         <span className="harmony-device-icon">
@@ -749,11 +775,13 @@ export function HarmonyDevices({
   home,
   lang,
   offline,
+  roomSurface = false,
 }: {
   controls: Control[];
   home: Home;
   lang: string;
   offline: boolean;
+  roomSurface?: boolean;
 }) {
   const render = useContext(MetricDeviceRenderer);
   const inDialog = useContext(InSettingsDialog);
@@ -777,6 +805,7 @@ export function HarmonyDevices({
             home={home}
             lang={lang}
             offline={offline}
+            roomSurface={roomSurface}
             open={() => select(c.id)}
           />
         ))}

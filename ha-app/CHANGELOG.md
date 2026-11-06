@@ -1,3 +1,8 @@
+## 1.36.114
+- Romoversikten følger nå Harmoni med bilder, glassflater, tydelig status og et luftig rutenett tilpasset mobil, nettbrett og PC. Søk åpnes fra en rund søkeknapp.
+- Inne i rommet er det store banneret erstattet av en kompakt topp med romvelger, tilbakeknapp og rominnstillinger. Enhetskort, farger og termostat følger Harmoni; mobil får egne kortstørrelser og beholder enhetsbildene.
+- Lange navn og små energi-/effektverdier holdes lesbare. Personlig synlighet, lagrede rombilder, direkte styring, tilgangskontroll og bekreftelser beholdes. Hjem-dashbordenes separate mobil- og PC/nettbrettoppsett endres ikke.
+
 ## 1.36.113
 - Fjerner den synlige mørke boksen rundt lasteanimasjonen på brede skjermer. Lasteflaten arver ikke lenger dashbordets breddegrense og marger; bakgrunnen dekker hele vinduet på mobil, nettbrett og desktop.
 

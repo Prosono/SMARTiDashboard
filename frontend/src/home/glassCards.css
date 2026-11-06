@@ -11,7 +11,10 @@ html[data-home-style="harmony"] {
   :is(
       .home-canvas-surface,
       .home-canvas-expanded,
-      .home-canvas-cell[data-preview]
+      .home-canvas-cell[data-preview],
+      .harmony-device[data-room-surface],
+      .room-summary-card[data-card-tone],
+      .room-at-a-glance > [data-card-tone]
     )[data-card-tone]:not(
       :has(
         .mobile-card-tile[data-photo],
@@ -69,7 +72,10 @@ html[data-home-style="harmony"] {
     :is(
       .home-canvas-surface,
       .home-canvas-expanded,
-      .home-canvas-cell[data-preview]
+      .home-canvas-cell[data-preview],
+      .harmony-device[data-room-surface],
+      .room-summary-card[data-card-tone],
+      .room-at-a-glance > [data-card-tone]
     )[data-card-tone] {
       --glass-opacity: 100%;
       --glass-depth-opacity: 100%;

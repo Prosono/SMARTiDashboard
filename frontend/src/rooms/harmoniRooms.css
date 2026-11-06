@@ -1,0 +1,720 @@
+/* Rooms share Harmoni's surfaces and controls; phone and larger layouts reflow independently. */
+html[data-home-style="harmony"] {
+  .rooms-overview[data-harmoni-rooms],
+  .room-detail[data-harmoni-rooms] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    min-width: 0;
+  }
+  [data-harmoni-rooms] > * {
+    min-width: 0;
+  }
+  .harmoni-room-header {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 9px 20px;
+    min-width: 0;
+  }
+  .harmoni-room-home {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--muted);
+    font-size: 13px;
+    min-width: 0;
+  }
+  .harmoni-room-home img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex: none;
+  }
+  .harmoni-room-home > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .harmoni-room-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .harmoni-room-title {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    border-radius: 8px;
+  }
+  .harmoni-room-title h1 {
+    margin: 0;
+    font-size: clamp(29px, 3vw, 38px);
+    line-height: 1.2;
+    letter-spacing: -0.04em;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+  }
+  .harmoni-room-title > svg {
+    flex: none;
+    color: var(--muted);
+  }
+  .harmoni-room-title > select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .harmoni-room-title:focus-within {
+    outline: 3px solid var(--orange);
+    outline-offset: 5px;
+  }
+  .harmoni-room-actions {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .room-circle {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    flex: none;
+    border: 1px solid var(--harmony-border);
+    border-radius: 50%;
+    color: var(--text);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    box-shadow: var(--harmony-shadow);
+  }
+  .room-circle[aria-expanded="true"] {
+    color: var(--accent);
+    background: var(--tint);
+  }
+  .harmoni-room-thumbnail {
+    width: 58px;
+    height: 58px;
+    flex: none;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--soft);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+  }
+  .harmoni-room-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  [data-harmoni-rooms] [hidden] {
+    display: none !important;
+  }
+
+  .rooms-overview[data-harmoni-rooms] .rooms-overview-toolbar {
+    flex-wrap: wrap;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    gap: 14px;
+    box-shadow: none;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-search-field {
+    flex-basis: 100%;
+    min-height: 48px;
+    padding: 0 16px;
+    border: 1px solid var(--harmony-border);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+  }
+  .rooms-overview[data-harmoni-rooms] .rooms-overview-toolbar > span {
+    flex: 1;
+    gap: 8px;
+  }
+  .rooms-overview[data-harmoni-rooms] .rooms-overview-toolbar select {
+    min-height: 44px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    border: 1px solid var(--harmony-border);
+    border-radius: 13px;
+  }
+  .rooms-overview[data-harmoni-rooms] .rooms-overview-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--harmony-gap);
+    align-items: stretch;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 22px;
+    transition:
+      transform 0.2s ease-out,
+      box-shadow 0.2s ease-out;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-photo {
+    height: 172px;
+    flex: none;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-photo::after {
+    background: linear-gradient(180deg, #07142514 25%, #07142552);
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-photo > .room-summary-icon {
+    width: 37px;
+    height: 37px;
+    background: #182a3b69;
+    color: #fffaf5;
+    border: 1px solid #ffffff45;
+    border-radius: 12px;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-photo-state {
+    position: absolute;
+    z-index: 1;
+    right: 12px;
+    left: auto;
+    top: 12px;
+    bottom: auto;
+    width: auto;
+    height: auto;
+    padding: 6px 9px;
+    display: flex;
+    gap: 6px;
+    color: #fffaf6;
+    font-size: 11px;
+    background: #14202fb8;
+    border: 1px solid #ffffff30;
+    border-radius: 20px;
+  }
+  .room-summary-photo-state i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4de0b6;
+    flex: none;
+  }
+  .room-summary-photo-state[data-warning="true"] i {
+    background: #ffc96f;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-card header {
+    padding: 18px 18px 8px;
+    align-items: flex-start;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-card h2 {
+    font-size: 21px;
+    line-height: 1.25;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-card header small {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-readings {
+    padding: 9px 18px 18px;
+    gap: 16px;
+    font-size: 16px;
+    color: var(--text);
+    flex-wrap: wrap;
+  }
+  .room-summary-readings svg {
+    color: var(--harmony-air);
+    flex: none;
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-card footer {
+    margin-top: auto;
+    padding: 13px 18px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    border-color: var(--harmony-border);
+  }
+  .rooms-overview[data-harmoni-rooms] .room-summary-card footer small {
+    font-size: 11px;
+  }
+
+  .room-detail[data-harmoni-rooms] .room-at-a-glance {
+    margin: 0;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 12px;
+  }
+  .room-detail[data-harmoni-rooms] .room-at-a-glance > div {
+    padding: 15px;
+    min-height: 96px;
+    border-radius: 18px;
+    align-items: flex-start;
+    gap: 11px;
+  }
+  .room-detail[data-harmoni-rooms] .room-at-a-glance > div > svg {
+    width: 23px;
+    height: 23px;
+    filter: none;
+    color: var(--text);
+  }
+  .room-detail[data-harmoni-rooms] .room-at-a-glance strong {
+    font-size: 23px;
+    line-height: 1.2;
+    margin: 5px 0 0;
+    color: var(--text);
+  }
+  .room-detail[data-harmoni-rooms] .room-at-a-glance strong small {
+    font-size: 12px;
+  }
+  .room-detail[data-harmoni-rooms] .room-at-a-glance span {
+    font-size: 12px;
+  }
+  .room-detail[data-harmoni-rooms] .room-at-a-glance span > small {
+    display: block;
+    font-size: 10px;
+    margin-top: 4px;
+    overflow-wrap: anywhere;
+  }
+  .room-detail[data-harmoni-rooms] .notice {
+    margin: 0;
+  }
+  .room-detail[data-harmoni-rooms] .room-navigation {
+    margin: 0;
+    gap: 12px;
+  }
+  .room-detail[data-harmoni-rooms] .room-navigation nav {
+    gap: 3px;
+    padding: 5px;
+    border: 1px solid var(--harmony-border);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    box-shadow: var(--harmony-shadow);
+    scrollbar-width: none;
+  }
+  .room-detail[data-harmoni-rooms] .room-navigation nav button {
+    flex: 1 0 auto;
+    justify-content: center;
+    min-height: 44px;
+    border: 0;
+    border-radius: 13px;
+    background: transparent;
+    color: var(--muted);
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+  .room-detail[data-harmoni-rooms]
+    .room-navigation
+    nav
+    button[aria-pressed="true"] {
+    background: var(--tint);
+    color: var(--accent);
+  }
+  .room-detail[data-harmoni-rooms] .room-navigation nav button span {
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--muted) 10%, transparent);
+  }
+  .room-detail[data-harmoni-rooms] .room-detail-search {
+    margin: 0;
+    min-height: 48px;
+    border-radius: 16px;
+  }
+  .room-detail[data-harmoni-rooms] .room-sections {
+    gap: 27px;
+  }
+  .room-detail[data-harmoni-rooms] .room-section {
+    container: room-section / inline-size;
+  }
+  .room-detail[data-harmoni-rooms] .room-section > header {
+    margin-bottom: 12px;
+    gap: 9px;
+  }
+  .room-detail[data-harmoni-rooms] .room-section-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 0;
+    background: transparent;
+    color: var(--accent);
+  }
+  .room-detail[data-harmoni-rooms] .room-section h2 {
+    font-size: 19px;
+    margin: 0;
+  }
+  .room-detail[data-harmoni-rooms] .room-section-count {
+    font-size: 11px;
+    padding: 4px 9px;
+    background: var(--soft);
+    border-radius: 12px;
+  }
+  .room-detail[data-harmoni-rooms] .harmony-device-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .room-detail[data-harmoni-rooms] .harmony-device {
+    border-radius: 20px;
+    min-height: 238px;
+  }
+  .room-detail[data-harmoni-rooms] .harmony-device-open small {
+    display: none;
+  }
+  .room-detail[data-harmoni-rooms] .harmony-device .equipment-art img {
+    opacity: 1;
+  }
+  .room-detail[data-harmoni-rooms] .harmony-device .equipment-art {
+    width: 108px;
+    height: 108px;
+  }
+  @container room-section (max-width: 850px) {
+    .room-detail[data-harmoni-rooms] .harmony-device-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @container room-section (max-width: 550px) {
+    .room-detail[data-harmoni-rooms] .harmony-device-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 1100px) {
+    .rooms-overview[data-harmoni-rooms] .rooms-overview-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .rooms-overview[data-harmoni-rooms] .room-summary-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--home-card-lift);
+    }
+  }
+  @media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+    &:has([data-harmoni-rooms]) .topbar {
+      display: none;
+    }
+    [data-harmoni-rooms] {
+      padding-top: max(16px, env(safe-area-inset-top, 0px));
+    }
+    .harmoni-room-header {
+      gap: 21px 12px;
+    }
+    .harmoni-room-home {
+      min-height: 46px;
+      color: var(--text);
+      font-size: 17px;
+      font-weight: 600;
+      gap: 10px;
+    }
+    .harmoni-room-home img {
+      width: 25px;
+      height: 25px;
+    }
+    .harmoni-room-actions {
+      grid-row: 1;
+    }
+    .harmoni-room-actions .room-search-toggle {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+    }
+    .harmoni-room-heading {
+      grid-column: 1 / -1;
+      gap: 10px;
+      padding-right: 54px;
+      min-height: 46px;
+    }
+    .harmoni-room-title h1 {
+      font-size: 30px;
+    }
+    .harmoni-room-thumbnail {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+    }
+    .room-circle {
+      width: 44px;
+      height: 44px;
+    }
+    .room-back {
+      width: 44px;
+      box-shadow: none;
+      border-color: transparent;
+      background: transparent;
+    }
+    .rooms-overview[data-harmoni-rooms] .rooms-overview-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .rooms-overview[data-harmoni-rooms] .room-summary-photo {
+      height: 112px;
+    }
+    .rooms-overview[data-harmoni-rooms]
+      .room-summary-photo
+      > .room-summary-icon {
+      left: 11px;
+      bottom: 10px;
+      width: 29px;
+      height: 29px;
+      border-radius: 9px;
+    }
+    .rooms-overview[data-harmoni-rooms] .room-summary-photo-state {
+      top: 8px;
+      right: 8px;
+      padding: 4px 6px;
+      font-size: 9px;
+    }
+    .rooms-overview[data-harmoni-rooms] .room-summary-card header {
+      padding: 13px 12px 6px;
+      gap: 4px;
+    }
+    .rooms-overview[data-harmoni-rooms] .room-summary-card h2 {
+      font-size: 18px;
+    }
+    .rooms-overview[data-harmoni-rooms] .room-summary-card header small {
+      font-size: 11px;
+    }
+    .rooms-overview[data-harmoni-rooms] .room-summary-readings {
+      padding: 8px 12px 13px;
+      gap: 10px;
+      font-size: 14px;
+    }
+    .rooms-overview[data-harmoni-rooms] .room-summary-card footer {
+      padding: 10px 12px;
+      gap: 5px;
+      font-size: 11px;
+    }
+    .rooms-overview[data-harmoni-rooms] .rooms-overview-toolbar {
+      gap: 9px;
+    }
+    .rooms-overview[data-harmoni-rooms] .rooms-overview-toolbar > span {
+      font-size: 11px;
+      gap: 5px;
+    }
+    .rooms-overview[data-harmoni-rooms] .rooms-overview-toolbar i {
+      margin: 0 1px;
+    }
+    .rooms-overview[data-harmoni-rooms] .rooms-overview-toolbar select {
+      font-size: 11px;
+      padding: 8px;
+    }
+    .room-detail[data-harmoni-rooms] .room-at-a-glance {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .room-detail[data-harmoni-rooms] .room-at-a-glance > div {
+      min-height: 88px;
+      padding: 13px 12px;
+      gap: 8px;
+    }
+    .room-detail[data-harmoni-rooms] .room-at-a-glance > div > svg {
+      width: 19px;
+      height: 19px;
+    }
+    .room-detail[data-harmoni-rooms] .room-at-a-glance strong {
+      font-size: 21px;
+    }
+    .room-detail[data-harmoni-rooms] .room-navigation nav {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
+      gap: 3px;
+    }
+    .room-detail[data-harmoni-rooms] .room-navigation nav button {
+      position: relative;
+      flex: 0 0 76px;
+      flex-direction: column;
+      gap: 5px;
+      padding: 9px 4px;
+      min-height: 65px;
+      font-size: 11px;
+      border-radius: 15px;
+    }
+    .room-detail[data-harmoni-rooms] .room-navigation nav button svg {
+      width: 23px;
+      height: 23px;
+    }
+    .room-detail[data-harmoni-rooms] .room-navigation nav button span {
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      background: transparent;
+      padding: 0;
+      font-size: 9px;
+    }
+    .room-detail[data-harmoni-rooms] .room-section h2 {
+      font-size: 19px;
+    }
+    .room-detail[data-harmoni-rooms] .harmony-device {
+      min-height: 220px;
+      padding: 16px;
+    }
+    .room-detail[data-harmoni-rooms] .room-section-lights .harmony-device-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .room-detail[data-harmoni-rooms] .room-section-lights .harmony-device {
+      padding: 13px;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-lights
+      .harmony-device-header {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+    }
+    .room-detail[data-harmoni-rooms] .room-section-lights .harmony-device-icon {
+      display: none;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-lights
+      .harmony-device-reading {
+      font-size: 24px;
+    }
+    .room-detail[data-harmoni-rooms] .room-section-lights .equipment-body {
+      flex-direction: column-reverse;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .room-detail[data-harmoni-rooms] .room-section-lights .equipment-art {
+      align-self: center;
+      width: 90px;
+      height: 90px;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-lights
+      .equipment-card[data-color-light="true"] {
+      grid-column: 1 / -1;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-lights
+      .harmony-range
+      > span {
+      font-size: 11px;
+    }
+    .room-detail[data-harmoni-rooms] .room-section-lights .equipment-controls {
+      gap: 8px;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-security
+      .harmony-device-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .room-detail[data-harmoni-rooms] .room-section-security .harmony-device {
+      padding: 13px;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-security
+      .harmony-device-header {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-security
+      .harmony-device-icon {
+      display: none;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-security
+      .harmony-device-reading {
+      font-size: 21px;
+    }
+    .room-detail[data-harmoni-rooms] .room-section-security .equipment-body {
+      flex-direction: column-reverse;
+    }
+    .room-detail[data-harmoni-rooms] .room-section-security .equipment-art {
+      align-self: center;
+      width: 85px;
+      height: 85px;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-security
+      .harmony-device[data-attention="true"],
+    .room-detail[data-harmoni-rooms]
+      .room-section-security
+      .harmony-device[data-domain="lock"],
+    .room-detail[data-harmoni-rooms]
+      .room-section-security
+      .harmony-device[data-domain="alarm_control_panel"] {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 359px) {
+    .rooms-overview[data-harmoni-rooms] .rooms-overview-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .room-detail[data-harmoni-rooms] .room-section-lights .harmony-device-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-section-security
+      .harmony-device-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rooms-overview[data-harmoni-rooms] .room-summary-card {
+      transition: none;
+    }
+  }
+}
+
+html[data-home-style="harmony"] {
+  .rooms-overview[data-harmoni-rooms] .room-summary-card footer > span {
+    font-size: inherit;
+    letter-spacing: normal;
+  }
+  .room-detail[data-harmoni-rooms]
+    .room-at-a-glance
+    > [data-kind="connection"]
+    strong {
+    font-size: 18px;
+    overflow-wrap: normal;
+  }
+  @media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+    .room-detail[data-harmoni-rooms]
+      .room-at-a-glance
+      > [data-kind="connection"]:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+      min-height: 64px;
+      align-items: center;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-at-a-glance
+      > [data-kind="connection"]:last-child:nth-child(odd)
+      > span {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      width: 100%;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-at-a-glance
+      > [data-kind="connection"]:last-child:nth-child(odd)
+      strong {
+      grid-column: 2;
+      grid-row: 1 / 3;
+      align-self: center;
+      margin: 0;
+      font-size: 17px;
+    }
+    .room-detail[data-harmoni-rooms]
+      .room-at-a-glance
+      > [data-kind="connection"]:last-child:nth-child(odd)
+      small {
+      grid-column: 1;
+    }
+  }
+}
+
+html[data-home-style="harmony"] {
+  .room-detail[data-harmoni-rooms]
+    .harmony-device-grid:has(> .harmony-device:only-child) {
+    max-width: none;
+    width: 100%;
+  }
+  .room-detail[data-harmoni-rooms]
+    .harmony-device[data-domain="climate"]:has(.thermostat[data-compact]) {
+    height: 290px;
+    min-height: 290px;
+    border-radius: 20px;
+    padding: 0;
+    overflow: hidden;
+  }
+  @media (min-width: 651px) {
+    .room-detail[data-harmoni-rooms] .room-section-lights .equipment-body {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+}

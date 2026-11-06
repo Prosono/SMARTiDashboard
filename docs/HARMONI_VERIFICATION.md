@@ -1,3 +1,35 @@
+# Harmoni room overview and room details — release 1.36.114
+
+The Harmoni room pages now share Home's glass material, category colors, device
+artwork and thermostat. A compact header replaces the room photo banner and
+separate room-switcher row, with a native room selector, back navigation, search
+disclosure and existing room settings. Overview photos and saved custom artwork
+remain. Larger screens use three device columns, tablets reflow to two/one by
+available content width, and phones use smaller light/security cards while giving
+thermostats and long meter readings room to remain readable. Other home styles
+retain their existing room flow. Home layout storage and commands are unchanged.
+
+Validation on 6 November 2026:
+
+- Production build, frontend lint, browser-test TypeScript and whitespace checks
+  passed. All **286 frontend unit tests** passed.
+- **12 Chromium browser cases** passed against the working build and the exact
+  extracted release package. Coverage includes both themes at 320/390/834/1440px,
+  card bounds and overflow, real temperatures, humidity, small energy and zero
+  readings, unavailable devices, window artwork, room selection/search, light and
+  thermostat commands, unlock cancellation, persisted personal visibility,
+  view-only permissions, cooling colors, keyboard focus and reduced transparency.
+  No test changes either Home dashboard layout. Existing room-reading and
+  room-settings regression cases also pass.
+- Mobile light/dark, tablet light and desktop light/dark screenshots were visually
+  inspected. Tests use isolated demo data and intercepted device commands; no
+  live hub, real device, physical phone or native Safari was used. Existing Vite
+  chunk-size and headless-browser environment advisories remain separate.
+
+All **284 runtime files**, archive membership and source/payload hashes match
+the deterministic manifest. scripts/package.py --check passed. Archive SHA-256:
+`980246c40789ad248a20a73503fe5a877c8677b9f8c0022c34b004e8de3209df`.
+
 # Remove the loading panel edges on wide screens — release 1.36.113
 
 The fixed startup main inherited the global main element's 1400px max-width and

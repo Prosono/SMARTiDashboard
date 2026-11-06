@@ -1,6 +1,8 @@
 import { RoomArtwork } from "./RoomArtwork";
 import { RoomSettings } from "./RoomSettings";
-import { useId, useState, useEffect, type ReactNode } from "react";
+import { useId, useRef, useState, useEffect, type ReactNode } from "react";
+import { RoomPageHeader } from "./RoomPageHeader";
+import { lightCardStyle } from "../home/lightCardModel";
 import { useQuery } from "@tanstack/react-query";
 import {
   Settings2,
@@ -35,6 +37,8 @@ export function RoomView({
   admin,
   renderControls,
   add,
+  harmony = false,
+  selectRoom,
 }: {
   home: Home;
   room: string;
@@ -44,6 +48,8 @@ export function RoomView({
   admin: boolean;
   renderControls: (controls: Control[]) => ReactNode;
   add: () => void;
+  harmony?: boolean;
+  selectRoom?: (room: string | null) => void;
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
@@ -56,6 +62,13 @@ export function RoomView({
     enabled: !!room,
   });
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchButton = useRef<HTMLButtonElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (searchOpen) searchInput.current?.focus();
+  }, [searchOpen]);
+  const searchId = `${id}-room-search`;
   const [category, setCategory] = useState("all");
   useEffect(() => {
     setCategory("all");
@@ -194,8 +207,19 @@ export function RoomView({
       ) && usable(c),
   );
   const available = controls.filter(usable).length;
+  const shortNames: Record<string, string> = {
+    lights: t("Lys", "Lights"),
+    climate: t("Klima", "Climate"),
+    power: t("Energi", "Energy"),
+    security: t("Sikkerhet", "Security"),
+    cameras: t("Kameraer", "Cameras"),
+    other: t("Mer", "More"),
+  };
   return (
-    <div className="room-detail home-overview">
+    <div
+      className="room-detail home-overview"
+      data-harmoni-rooms={harmony || undefined}
+    >
       {editing && (
         <RoomSettings
           home={home}
@@ -212,65 +236,110 @@ export function RoomView({
           }}
         />
       )}
-      <header
-        className={`room-detail-hero ${photo && failedPhoto !== photo ? "has-photo" : ""}`}
-      >
-        {photo && failedPhoto !== photo && (
-          <RoomArtwork
-            src={photo}
-            alt=""
-            onError={() => setFailedPhoto(photo)}
-          />
-        )}
-        <div className="room-hero-copy">
-          <span className="room-eyebrow">
-            <Icon size={20} />
-            {home.home_name}
-          </span>
-          <h1>{name}</h1>
-          <p>
-            {offline
-              ? t(
-                  "Venter på ferske data fra rommet.",
-                  "Waiting for fresh room data.",
-                )
-              : t(
-                  "Lys, komfort og kontroll. Akkurat slik du vil ha det.",
-                  "Lighting, comfort and control. Just the way you like it.",
-                )}
-          </p>
-          {admin && (
-            <button
-              className="room-hero-settings"
-              onClick={() => setEditing(true)}
-            >
-              <Settings2 size={17} />
-              {t("Administrer rom", "Manage rooms")}
-            </button>
+      {harmony ? (
+        <RoomPageHeader
+          title={name}
+          homeName={home.home_name}
+          lang={lang}
+          art={
+            photo && failedPhoto !== photo ? (
+              <RoomArtwork
+                src={photo}
+                roomId={room}
+                alt=""
+                onError={() => setFailedPhoto(photo)}
+              />
+            ) : (
+              <Icon size={29} />
+            )
+          }
+          rooms={rooms}
+          selectedRoom={room}
+          selectRoom={selectRoom}
+          back={selectRoom ? () => selectRoom(null) : undefined}
+          manage={admin ? () => setEditing(true) : undefined}
+          searchOpen={searchOpen}
+          searchId={searchId}
+          searchButton={searchButton}
+          toggleSearch={() => {
+            setSearchOpen(!searchOpen);
+            if (searchOpen) setSearch("");
+          }}
+        />
+      ) : (
+        <header
+          className={`room-detail-hero ${photo && failedPhoto !== photo ? "has-photo" : ""}`}
+        >
+          {photo && failedPhoto !== photo && (
+            <RoomArtwork
+              src={photo}
+              alt=""
+              onError={() => setFailedPhoto(photo)}
+            />
           )}
-        </div>
-        <div className="room-hero-summary">
-          <Icon size={24} />
-          <span>{t("Ditt rom, samlet", "Your room, connected")}</span>
-          <strong>{controls.length}</strong>
-          <small>
-            {t("kontroller og målepunkter", "controls and readings")}
-          </small>
-        </div>
-        {photo && failedPhoto !== photo && (
-          <small className="room-photo-caption">
-            {personal
-              ? t("Ditt rombilde", "Your room photo")
-              : t("Stemningsbilde", "Decorative image")}
-          </small>
-        )}
-      </header>
+          <div className="room-hero-copy">
+            <span className="room-eyebrow">
+              <Icon size={20} />
+              {home.home_name}
+            </span>
+            <h1>{name}</h1>
+            <p>
+              {offline
+                ? t(
+                    "Venter på ferske data fra rommet.",
+                    "Waiting for fresh room data.",
+                  )
+                : t(
+                    "Lys, komfort og kontroll. Akkurat slik du vil ha det.",
+                    "Lighting, comfort and control. Just the way you like it.",
+                  )}
+            </p>
+            {admin && (
+              <button
+                className="room-hero-settings"
+                onClick={() => setEditing(true)}
+              >
+                <Settings2 size={17} />
+                {t("Administrer rom", "Manage rooms")}
+              </button>
+            )}
+          </div>
+          <div className="room-hero-summary">
+            <Icon size={24} />
+            <span>{t("Ditt rom, samlet", "Your room, connected")}</span>
+            <strong>{controls.length}</strong>
+            <small>
+              {t("kontroller og målepunkter", "controls and readings")}
+            </small>
+          </div>
+          {photo && failedPhoto !== photo && (
+            <small className="room-photo-caption">
+              {personal
+                ? t("Ditt rombilde", "Your room photo")
+                : t("Stemningsbilde", "Decorative image")}
+            </small>
+          )}
+        </header>
+      )}
       <div
         className="room-at-a-glance"
         aria-label={t("Romstatus", "Room status")}
       >
         {!!lights.length && (
-          <div data-kind="lights">
+          <div
+            data-kind="lights"
+            data-card-tone={harmony ? "lighting" : undefined}
+            style={
+              harmony
+                ? lightCardStyle(
+                    { id: "lighting" },
+                    undefined,
+                    controls,
+                    !offline && home.connected,
+                  )
+                : undefined
+            }
+          >
             <Lightbulb />
             <span>
               {t("Lys på", "Lights on")}
@@ -284,7 +353,10 @@ export function RoomView({
           </div>
         )}
         {tempControl && (
-          <div data-kind="temperature">
+          <div
+            data-kind="temperature"
+            data-card-tone={harmony ? "temperature" : undefined}
+          >
             <Thermometer />
             <span>
               {t("Temperatur", "Temperature")}
@@ -301,7 +373,10 @@ export function RoomView({
           </div>
         )}
         {humidity && (
-          <div data-kind="humidity">
+          <div
+            data-kind="humidity"
+            data-card-tone={harmony ? "humidity" : undefined}
+          >
             <Droplets />
             <span>
               {t("Luftfuktighet", "Humidity")}
@@ -310,7 +385,7 @@ export function RoomView({
           </div>
         )}
         {air && (
-          <div data-kind="air">
+          <div data-kind="air" data-card-tone={harmony ? "fresh" : undefined}>
             <Leaf />
             <span>
               {t("Luftkvalitet", "Air quality")}
@@ -319,7 +394,10 @@ export function RoomView({
             </span>
           </div>
         )}
-        <div data-kind="connection">
+        <div
+          data-kind="connection"
+          data-card-tone={harmony ? "neutral" : undefined}
+        >
           <Radio />
           <span>
             {t("Tilkobling", "Connection")}
@@ -373,15 +451,27 @@ export function RoomView({
                 }}
               >
                 <g.Icon size={17} />
-                {g.name}
+                {harmony ? shortNames[g.id] : g.name}
                 <span>{g.items.length}</span>
               </button>
             ))}
           </nav>
-          <label className="room-detail-search">
+          <label
+            className="room-detail-search"
+            id={searchId}
+            hidden={harmony && !searchOpen}
+          >
             <Search size={18} />
             <input
+              ref={searchInput}
               value={search}
+              onKeyDown={(e) => {
+                if (harmony && e.key === "Escape") {
+                  setSearch("");
+                  setSearchOpen(false);
+                  searchButton.current?.focus();
+                }
+              }}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t(
                 "Finn noe i rommet…",
@@ -433,7 +523,7 @@ export function RoomView({
               </span>
               <div>
                 <h2 id={`${id}-${g.id}-title`}>{g.name}</h2>
-                <p>{g.hint}</p>
+                {!harmony && <p>{g.hint}</p>}
               </div>
               <span className="room-section-count">{g.items.length}</span>
             </header>

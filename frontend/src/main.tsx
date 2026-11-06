@@ -130,6 +130,7 @@ import "./home/energyPalette.css";
 import "./home/phoneDashboard.css";
 import "./home/bannerlessHome.css";
 import "./rooms/roomEquipment.css";
+import "./rooms/harmoniRooms.css";
 import { integrationName } from "./branding";
 import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
@@ -950,6 +951,7 @@ function Dashboard({
           home={h}
           lang={lang}
           offline={offline}
+          roomSurface={page === "rooms"}
         />
       );
     return (
@@ -1098,30 +1100,34 @@ function Dashboard({
             </span>
           </div>
         )}
-        {mode !== "simple" && page === "rooms" && !roomEditing && !adding && (
-          <nav
-            className="tabs room-switcher"
-            aria-label={lang === "en" ? "Choose room" : "Velg rom"}
-          >
-            <button
-              className={room === null ? "selected" : ""}
-              aria-pressed={room === null}
-              onClick={() => setRoom(null)}
+        {mode !== "simple" &&
+          homeStyle !== "harmony" &&
+          page === "rooms" &&
+          !roomEditing &&
+          !adding && (
+            <nav
+              className="tabs room-switcher"
+              aria-label={lang === "en" ? "Choose room" : "Velg rom"}
             >
-              {t.allRooms}
-            </button>
-            {rooms.map((a) => (
               <button
-                key={a.area_id}
-                className={room === a.area_id ? "selected" : ""}
-                aria-pressed={room === a.area_id}
-                onClick={() => setRoom(a.area_id)}
+                className={room === null ? "selected" : ""}
+                aria-pressed={room === null}
+                onClick={() => setRoom(null)}
               >
-                {a.name}
+                {t.allRooms}
               </button>
-            ))}
-          </nav>
-        )}
+              {rooms.map((a) => (
+                <button
+                  key={a.area_id}
+                  className={room === a.area_id ? "selected" : ""}
+                  aria-pressed={room === a.area_id}
+                  onClick={() => setRoom(a.area_id)}
+                >
+                  {a.name}
+                </button>
+              ))}
+            </nav>
+          )}
         {mode === "simple" && ["home", "rooms"].includes(page) ? (
           <SimpleHome
             homeStyle={homeStyle}
@@ -1180,9 +1186,12 @@ function Dashboard({
             admin={session.role === "admin"}
             renderControls={cards}
             add={() => setAdding(true)}
+            harmony={homeStyle === "harmony"}
+            selectRoom={setRoom}
           />
         ) : page === "rooms" && room === null ? (
           <RoomsOverview
+            harmony={homeStyle === "harmony"}
             home={h}
             lang={lang}
             offline={offline}
