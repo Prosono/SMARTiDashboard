@@ -87,21 +87,27 @@ function AppImage({ app, large = false }: { app: AppItem; large?: boolean }) {
 export function Apps({
   lang,
   embedded = false,
+  updatesOnly = false,
+  active = true,
 }: {
   lang: string;
   embedded?: boolean;
+  updatesOnly?: boolean;
+  active?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
   const apps = useQuery({
     queryKey: ["apps"],
     queryFn: () => api<AppItem[]>("manage/apps"),
+    enabled: active,
     retry: false,
     refetchInterval: 15000,
   });
   const activity = useQuery({
     queryKey: ["app-operations"],
     queryFn: () => api<Operation[]>("manage/apps/operations"),
+    enabled: active,
     refetchInterval: 5000,
     retry: false,
   });
@@ -196,8 +202,23 @@ export function Apps({
   }
   const visible = (apps.data || []).filter(
     (a) =>
+      (!updatesOnly ||
+        (a.installed &&
+          (a.update_available ||
+            activity.data?.some(
+              (o) =>
+                o.slug === a.slug &&
+                o.action === "update" &&
+                o.status === "accepted",
+            )))) &&
       (tab === "installed" ? a.installed : !a.installed) &&
       `${a.name} ${a.description}`.toLowerCase().includes(search.toLowerCase()),
+  );
+  const operations = (activity.data || []).filter(
+    (operation) =>
+      !updatesOnly ||
+      (operation.action === "update" &&
+        apps.data?.some((app) => app.slug === operation.slug)),
   );
   return (
     <section className="apps-page management-page">
@@ -223,31 +244,33 @@ export function Apps({
         </div>
       )}
       <div className="apps-toolbar">
-        <nav
-          className="management-tabs"
-          aria-label={t("Appvisning", "App view")}
-        >
-          {[
-            ["installed", t("Installerte", "Installed")],
-            ["store", t("Appbibliotek", "App library")],
-          ].map(([key, name]) => (
-            <button
-              key={key}
-              aria-current={tab === key ? "page" : undefined}
-              className={tab === key ? "selected" : ""}
-              onClick={() => setTab(key)}
-            >
-              {key === "installed" ? (
-                <AppWindow size={18} />
-              ) : (
-                <Library size={18} />
-              )}{" "}
-              {name}
-            </button>
-          ))}
-        </nav>
+        {!updatesOnly && (
+          <nav
+            className="management-tabs"
+            aria-label={t("Appvisning", "App view")}
+          >
+            {[
+              ["installed", t("Installerte", "Installed")],
+              ["store", t("Appbibliotek", "App library")],
+            ].map(([key, name]) => (
+              <button
+                key={key}
+                aria-current={tab === key ? "page" : undefined}
+                className={tab === key ? "selected" : ""}
+                onClick={() => setTab(key)}
+              >
+                {key === "installed" ? (
+                  <AppWindow size={18} />
+                ) : (
+                  <Library size={18} />
+                )}{" "}
+                {name}
+              </button>
+            ))}
+          </nav>
+        )}
         <div className="connections-app-actions">
-          {embedded && (
+          {embedded && !updatesOnly && (
             <button
               onClick={() => setRepositories(true)}
               disabled={apps.isError}
@@ -277,7 +300,9 @@ export function Apps({
             }}
           >
             <RefreshCw size={17} />
-            {t("Oppdater oversikt", "Refresh library")}
+            {updatesOnly
+              ? t("Se etter oppdateringer", "Check for updates")
+              : t("Oppdater oversikt", "Refresh library")}
           </button>
         </div>
       </div>
@@ -322,15 +347,20 @@ export function Apps({
         <p className="empty">
           {search
             ? t("Ingen apper passer søket.", "No matching apps.")
-            : tab === "installed"
+            : updatesOnly
               ? t(
-                  "Ingen andre apper er installert. Finn din første i Appbibliotek.",
-                  "No other apps installed. Find your first in the App library.",
+                  "Ingen tilgjengelige appoppdateringer.",
+                  "No app updates available.",
                 )
-              : t(
-                  "Ingen flere apper fra appkildene dine.",
-                  "No more apps in your repositories.",
-                )}
+              : tab === "installed"
+                ? t(
+                    "Ingen andre apper er installert. Finn din første i Appbibliotek.",
+                    "No other apps installed. Find your first in the App library.",
+                  )
+                : t(
+                    "Ingen flere apper fra appkildene dine.",
+                    "No more apps in your repositories.",
+                  )}
         </p>
       )}
       <div className="apps-grid">
@@ -338,7 +368,12 @@ export function Apps({
           <button
             className="app-card"
             key={a.slug}
+            disabled={updatesOnly && (busy || pending(a.slug))}
             onClick={() => {
+              if (updatesOnly) {
+                ask(a, "update");
+                return;
+              }
               setError("");
               setConfig(false);
               select(a);
@@ -362,20 +397,28 @@ export function Apps({
             <p>{smartiName(a.description || "")}</p>
             <footer>
               <span>
-                {a.installed ? a.version : a.version_latest || a.version}
+                {updatesOnly
+                  ? `${a.version || "—"} → ${a.version_latest || "—"}`
+                  : a.installed
+                    ? a.version
+                    : a.version_latest || a.version}
                 {a.update_available
                   ? ` · ${t("Oppdatering klar", "Update available")}`
                   : ""}
               </span>
-              <ArrowUpRight size={19} />
+              {updatesOnly ? (
+                <Download size={19} />
+              ) : (
+                <ArrowUpRight size={19} />
+              )}
             </footer>
           </button>
         ))}
       </div>
-      {!!activity.data?.length && (
+      {!!operations.length && (
         <section className="app-activity">
           <h2>{t("Aktivitet", "Activity")}</h2>
-          {activity.data.slice(0, 8).map((o) => (
+          {operations.slice(0, 8).map((o) => (
             <div key={o.request_id}>
               <span>
                 <strong>{smartiName(o.name)}</strong>

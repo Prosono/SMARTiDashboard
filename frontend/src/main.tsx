@@ -108,7 +108,7 @@ import "./login.css";
 import "./manage/manage.css";
 import { Automations } from "./manage/Automations";
 import { RoomManager } from "./manage/Rooms";
-import { Updates } from "./manage/System";
+import { Updates } from "./manage/Updates";
 import { PalettePicker, palettes } from "./PalettePicker";
 import { RoomView } from "./rooms/RoomView";
 import "./palettes.css";
@@ -281,7 +281,7 @@ function App() {
   }
   useEffect(() => {
     setPage((p) =>
-      mode === "simple" && !["home", "support", "more"].includes(p)
+      mode === "simple" && !["home", "updates", "support", "more"].includes(p)
         ? "home"
         : p,
     );
@@ -494,16 +494,12 @@ function App() {
               .filter(
                 (p) =>
                   session.role === "admin" ||
-                  !["automations", "integrations", "updates"].includes(
-                    p,
-                  ),
+                  !["automations", "integrations", "updates"].includes(p),
               )
               .filter(
                 (p) =>
-                  mode === "advanced" ||
-                  (mode === "simple"
-                    ? ["home", "support", "more"].includes(p)
-                    : p !== "updates"),
+                  mode !== "simple" ||
+                  ["home", "updates", "support", "more"].includes(p),
               )
               .map((p) => {
                 const Icon = icons[p];
@@ -1464,12 +1460,6 @@ function Dashboard({
                       ],
                       ["network", lang === "en" ? "Network" : "Nettverk"],
                       ["system", "System"],
-                      [
-                        "updates",
-                        lang === "en"
-                          ? "SMARTi updates"
-                          : "SMARTi-oppdateringer",
-                      ],
                       ...(mode === "advanced"
                         ? [["debugging", "Debugging"]]
                         : []),
@@ -1508,8 +1498,6 @@ function Dashboard({
                     <Server size={19} />
                   ) : key === "debugging" ? (
                     <Code size={19} />
-                  ) : key === "updates" ? (
-                    <DownloadCloud size={19} />
                   ) : (
                     <Palette size={19} />
                   )}
@@ -1517,13 +1505,9 @@ function Dashboard({
                 </button>
               ))}
             </nav>
-            {mode !== "simple" &&
+            {mode === "advanced" &&
             session.role === "admin" &&
-            settingsSection === "updates" ? (
-              <Updates lang={lang} embedded />
-            ) : mode === "advanced" &&
-              session.role === "admin" &&
-              settingsSection === "debugging" ? (
+            settingsSection === "debugging" ? (
               <Debugging lang={lang} />
             ) : mode !== "simple" &&
               session.role === "admin" &&

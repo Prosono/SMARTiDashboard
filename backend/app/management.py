@@ -299,6 +299,13 @@ class Management:
                     "pending": bool(pending),
                     "can_install": bool(a.get("supported_features", 0) & 1) and approved,
                     "component": key,
+                    "category": "smarti"
+                    if key
+                    else (
+                        "apps"
+                        if getattr(self.ha, "entities", {}).get(eid, {}).get("platform") == "hassio"
+                        else "extensions"
+                    ),
                     "approved": approved,
                     "can_backup": bool(a.get("supported_features", 0) & 8),
                     "summary": brand(a.get("release_summary"))[:12000],

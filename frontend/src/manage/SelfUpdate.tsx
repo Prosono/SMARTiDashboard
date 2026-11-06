@@ -14,12 +14,19 @@ type Version = {
   checked_at?: number | null;
   check_error?: boolean;
 };
-export function SelfUpdate({ lang }: { lang: string }) {
+export function SelfUpdate({
+  lang,
+  active = true,
+}: {
+  lang: string;
+  active?: boolean;
+}) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const q = useQuery({
     queryKey: ["manage", "self-update"],
     queryFn: () => api<Version>("manage/apps/self-update/check", "POST", {}),
-    refetchInterval: 60000,
+    enabled: active,
+    refetchInterval: active ? 60000 : false,
     refetchOnMount: "always",
     refetchOnWindowFocus: "always",
   });
@@ -83,8 +90,8 @@ export function SelfUpdate({ lang }: { lang: string }) {
       setMessage(
         result.status === "unconfirmed"
           ? t(
-              "Resultatet er ikke bekreftet. Kontroller Aktivitet under Apper før du prøver igjen.",
-              "Result not confirmed. Check Activity under Apps before retrying.",
+              "Resultatet er ikke bekreftet. Kontroller status i Home Assistant før du prøver igjen.",
+              "Result not confirmed. Check the status in Home Assistant before retrying.",
             )
           : t(
               "Oppdateringen er sendt til Home Assistant. SMARTi blir midlertidig utilgjengelig. Åpne hjemmet igjen når oppdateringen er ferdig.",

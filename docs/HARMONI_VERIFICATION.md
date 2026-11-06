@@ -1,3 +1,42 @@
+# Dedicated update destination and category tabs — release 1.36.118
+
+Oppdateringer replaces the former embedded Settings update section. Administrators
+can reach it in simple, normal and advanced modes. SMARTi contains the app's own
+protected self-update and approved platform updates. Utvidelser contains other
+component/firmware updates. The advanced-only Apper pane reuses the protected
+Supervisor inventory/actions, showing only available or ongoing app updates and
+update activity for that inventory. The SMARTi app is excluded by the existing
+self-protection rules, avoiding a duplicate generic update entry.
+
+The backend supplies a category from the existing platform component identity and
+HA's hassio registry platform; vendor display branding does not override it.
+App updates retain explicit confirmation, UUID idempotency, backup choice and job
+status. Generic update reconciliation and approval gates are unchanged. Hidden
+panes preserve local progress while their automatic queries are disabled, and the
+app pane is not mounted until visited in advanced mode. Keyboard navigation and
+compact three-button phone tabs use the existing administration styling.
+
+Validation on 6 November 2026:
+
+- Production build, frontend lint, targeted browser-test TypeScript, scoped Ruff
+  lint/format and whitespace checks passed. **286 frontend unit tests** and
+  **52 backend cases** covering management, apps and approval gates passed.
+- **42 Chromium browser cases** passed against both the working build and exact
+  extracted package. New coverage verifies removal from Settings, all experience
+  modes, category separation including SMARTi-branded non-system firmware, no
+  duplicate self-update, no app inventory reads in normal/simple mode, lazy app
+  loading, confirmation/backup, one app action, completion and filtered activity.
+  Existing outage/rejection/reconciliation, app management and integration cases
+  also pass. Both themes and 320/390/834/1440px are checked; phone/light and
+  desktop/dark screenshots were visually inspected.
+- Tests use isolated demo, HA/Supervisor and intercepted action fixtures. No live
+  hub, actual app update, physical phone or native Safari was used. Existing
+  Vite/TestClient and legacy standalone fixture-type limitations remain separate.
+
+All **284 runtime files**, archive membership and source/payload hashes match
+the deterministic manifest. scripts/package.py --check passed. Archive SHA-256:
+`3074d37b9314e938d8245ae991a60201c05f2670fc5fd811c6d5515efceda291`.
+
 # Rename the shared destination to Utvidelser — release 1.36.117
 
 The navigation label, breadcrumb and shared page title now read Utvidelser

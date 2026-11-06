@@ -15,6 +15,7 @@ for (const reply of [
       entity_id: "update.mqtt_firmware",
       name: "MQTT programvare",
       smarti: false,
+      category: "extensions",
       installed_version: "1",
       latest_version: "2",
       state: "on",
@@ -68,6 +69,7 @@ for (const reply of [
       .getByRole("navigation", { name: "Hovedmeny" })
       .getByRole("button", { name: "Oppdateringer", exact: true })
       .click();
+    await page.getByRole("tab", { name: "Utvidelser", exact: true }).click();
     const row = page
       .locator(".system-row")
       .filter({ hasText: "MQTT programvare" });

@@ -1,3 +1,8 @@
+## 1.36.118
+- Oppdateringer er samlet på en egen side med fanene «SMARTi», «Utvidelser» og «Apper». SMARTi-appen og systemoppdateringer ligger under SMARTi; øvrige komponentoppdateringer ligger under Utvidelser.
+- App-fanen vises kun i avansert modus og viser tilgjengelige eller pågående appoppdateringer fra HA. Oppdatering krever fortsatt bekreftelse, med valg om sikkerhetskopi og synlig fremdrift. SMARTi-appens egen oppdatering vises bare på SMARTi-fanen.
+- Oppdateringsdelen er fjernet fra Innstillinger. «Oppdateringer» er tilgjengelig for administratorer i enkel, normal og avansert modus. Fanene tilpasses mobil, nettbrett og PC og støtter tastaturnavigasjon.
+
 ## 1.36.117
 - Den samlede siden for integrasjoner og apper heter nå «Utvidelser» i navigasjonen, sidetittelen og brødsmulestien. Underfanene «Integrasjoner» og «Apper» beholdes; Apper vises fortsatt bare i avansert modus.
 

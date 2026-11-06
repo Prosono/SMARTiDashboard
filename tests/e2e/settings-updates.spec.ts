@@ -1,6 +1,6 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
 
-test("settings combines SMARTi app and platform updates and checks without installing", async ({
+test("updates page combines SMARTi app and platform updates and checks without installing", async ({
   page,
 }) => {
   let checks = 0,
@@ -42,6 +42,7 @@ test("settings combines SMARTi app and platform updates and checks without insta
           entity_id: "update.home_assistant_core_update",
           name: "Home Assistant Core",
           smarti: true,
+          category: "smarti",
           installed_version: "2026.10.1",
           latest_version: "2026.10.2",
           state: "on",
@@ -63,8 +64,8 @@ test("settings combines SMARTi app and platform updates and checks without insta
     .click();
   await page.getByRole("button", { name: /^Normal/ }).click();
   await page
-    .getByRole("navigation", { name: "Innstillingskategorier" })
-    .getByRole("button", { name: "SMARTi-oppdateringer", exact: true })
+    .getByRole("navigation", { name: "Hovedmeny" })
+    .getByRole("button", { name: "Oppdateringer", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "SMARTi-appen", exact: true }),
@@ -167,6 +168,7 @@ test("rejected update stops installation animation", async ({ page }) => {
           entity_id: "update.home_assistant_core_update",
           name: "Home Assistant Core",
           smarti: true,
+          category: "smarti",
           installed_version: "2026.10.1",
           latest_version: "2026.10.2",
           state: "on",
@@ -188,8 +190,8 @@ test("rejected update stops installation animation", async ({ page }) => {
     .click();
   await page.getByRole("button", { name: /^Normal/ }).click();
   await page
-    .getByRole("navigation", { name: "Innstillingskategorier" })
-    .getByRole("button", { name: "SMARTi-oppdateringer", exact: true })
+    .getByRole("navigation", { name: "Hovedmeny" })
+    .getByRole("button", { name: "Oppdateringer", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "SMARTi-appen", exact: true }),

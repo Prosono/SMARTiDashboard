@@ -58,7 +58,7 @@ test('restore reviews contents and download remains a direct file link',async({p
 });
 test('updates hide current and non-installable entries',async({page})=>{
  await page.route('**/api/manage/updates',r=>r.fulfill({json:[{entity_id:'update.old',name:'Allerede oppdatert',state:'off',can_install:true},{entity_id:'update.unsupported',name:'Kan ikke installeres',state:'on',can_install:false},{entity_id:'update.new',name:'Ny firmware',state:'on',can_install:true,installed_version:'1',latest_version:'2'}]}));
- await page.getByRole('button',{name:'Oppdateringer',exact:true}).click();await expect(page.getByRole('heading',{name:'Ny firmware',exact:true})).toBeVisible();await expect(page.getByText('Allerede oppdatert',{exact:true})).toHaveCount(0);await expect(page.getByText('Kan ikke installeres',{exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'Oppdateringer',exact:true}).click();await page.getByRole('tab',{name:'Utvidelser',exact:true}).click();await expect(page.getByRole('heading',{name:'Ny firmware',exact:true})).toBeVisible();await expect(page.getByText('Allerede oppdatert',{exact:true})).toHaveCount(0);await expect(page.getByText('Kan ikke installeres',{exact:true})).toHaveCount(0);
 });
 test('linked household account and person share one row',async({page})=>{
  await page.route('**/api/manage/accounts',r=>r.fulfill({json:[{id:2,name:'ola',display_name:'Ola',role:'admin',linked:true,ha_user_id:'ha2',photo:false}]}));

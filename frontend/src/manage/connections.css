@@ -1,7 +1,9 @@
-.connections-page {
+.connections-page,
+.updates-page {
   min-width: 0;
 }
-.connections-page > .page-heading {
+.connections-page > .page-heading,
+.updates-page > .page-heading {
   margin-bottom: 24px;
 }
 .connections-tabs {
@@ -48,6 +50,14 @@
   gap: 12px;
 }
 @media (max-width: 650px) {
+  .updates-page .updates-tabs button {
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: 13px;
+  }
   .connections-tabs button {
     flex: 1;
     padding-inline: 12px;

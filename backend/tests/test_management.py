@@ -668,3 +668,32 @@ def test_install_result_follows_ha_state_after_slow_or_lost_reply(live, monkeypa
         assert len(calls) == 1
     if observed == "rejected":
         assert "update.core" not in client.app.state.management.pending_updates
+
+
+def test_update_categories_use_system_identity_and_hassio_platform_not_display_brand(live):
+    client, ha = live
+    for entity_id, title, platform in [
+        ("update.renamed_app", "Min tilkobling", "hassio"),
+        ("update.own_app", "SMARTi", "hassio"),
+        ("update.voice", "SMARTi Voice firmware", "esphome"),
+    ]:
+        ha.states[entity_id] = {
+            "entity_id": entity_id,
+            "state": "on",
+            "attributes": {
+                "title": title,
+                "installed_version": "1",
+                "latest_version": "2",
+                "supported_features": 1,
+            },
+        }
+        ha.entities[entity_id] = {
+            "entity_id": entity_id,
+            "platform": platform,
+            "unique_id": entity_id + "_version_latest",
+        }
+    rows = {row["entity_id"]: row for row in client.get("/api/manage/updates").json()}
+    assert rows["update.core"]["category"] == "smarti"
+    assert rows["update.renamed_app"]["category"] == "apps"
+    assert rows["update.own_app"]["category"] == "apps"
+    assert rows["update.voice"]["category"] == "extensions"

@@ -52,8 +52,8 @@ async function updatePage(page: Page) {
     .click();
   await page.getByRole("button", { name: /^Normal/ }).click();
   await page
-    .getByRole("navigation", { name: "Innstillingskategorier" })
-    .getByRole("button", { name: "SMARTi-oppdateringer", exact: true })
+    .getByRole("navigation", { name: "Hovedmeny" })
+    .getByRole("button", { name: "Oppdateringer", exact: true })
     .click();
   const update = page.getByRole("button", {
     name: "Oppdater SMARTi",

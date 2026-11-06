@@ -1,4 +1,3 @@
-import { SelfUpdate } from "./SelfUpdate";
 import { DiscoveredDevices } from "./DiscoveredDevices";
 import { IntegrationLogo } from "./IntegrationLogo";
 import { IntegrationSetup } from "./IntegrationSetup";
@@ -34,6 +33,7 @@ type Integration = {
   }[];
 };
 type Update = {
+  category?: "smarti" | "extensions" | "apps";
   entity_id: string;
   name: string;
   smarti: boolean;
@@ -407,18 +407,21 @@ export function Integrations({
     </section>
   );
 }
-export function Updates({
+export function UpdateList({
   lang,
-  embedded = false,
+  category,
+  active = true,
 }: {
   lang: string;
-  embedded?: boolean;
+  category: "smarti" | "extensions";
+  active?: boolean;
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const q = useQuery({
     queryKey: ["manage", "updates"],
     queryFn: () => api<Update[]>("manage/updates"),
-    refetchInterval: 4000,
+    enabled: active,
+    refetchInterval: active ? 4000 : false,
   });
   const [selected, select] = useState<Update | null>(null);
   const [backup, setBackup] = useState(false);
@@ -443,25 +446,15 @@ export function Updates({
     });
   }, [q.data]);
   const available = q.data?.filter(
-    (u) => (u.state === "on" && u.can_install) || u.in_progress || u.pending,
+    (u) =>
+      (u.category || (u.smarti ? "smarti" : "extensions")) === category &&
+      ((u.state === "on" && u.can_install) || u.in_progress || u.pending),
   );
   return (
-    <section>
-      <div className="page-heading">
-        <span className="eyebrow">SMARTi</span>
-        {embedded ? (
-          <h2>{t("SMARTi-oppdateringer", "SMARTi updates")}</h2>
-        ) : (
-          <h1>{t("Hold hjemmet oppdatert.", "Keep your home up to date.")}</h1>
-        )}
-        <p>
-          {t(
-            "System, apper og enheter samlet på ett sted.",
-            "System, apps and devices in one place.",
-          )}
-        </p>
-      </div>
-      <SelfUpdate lang={lang} />
+    <section className="update-list" data-category={category}>
+      {category === "smarti" && (
+        <h2>{t("Systemoppdateringer", "System updates")}</h2>
+      )}
       <Feedback message={w.message} />
       {!!Object.keys(attempts).length && (
         <div
@@ -671,8 +664,12 @@ export function Updates({
       {available?.length === 0 && (
         <p className="empty">
           {t(
-            "Ingen andre tilgjengelige oppdateringer.",
-            "No other updates available.",
+            category === "smarti"
+              ? "Ingen tilgjengelige systemoppdateringer."
+              : "Ingen tilgjengelige oppdateringer for utvidelser.",
+            category === "smarti"
+              ? "No system updates available."
+              : "No extension updates available.",
           )}
         </p>
       )}
