@@ -1,3 +1,32 @@
+# History within Reports and insights — release 1.36.125
+
+The standalone History navigation item has moved into Reports and insights. Its
+four tabs are Home report, Energy report, History and Activity. Existing source,
+room/type, date-range, chart inspection and CSV functions are reused. The history
+and activity panels have separate component keys; their mode does not leak between
+tabs. Embedded headings use level two beneath the shared page title.
+
+Phone tabs use two rows to keep labels and touch targets within the viewport.
+Desktop/tablet retain one row. Arrow keys and Home/End navigation include the new
+History tab. The shared sidebar/breadcrumb continues to select Reports and insights.
+Device-dialog history, backend permissions, experience-mode visibility and persisted
+mobile/desktop dashboard layouts are unchanged.
+
+Validation on 7 November 2026:
+
+- Frontend lint, production build, scoped browser-test TypeScript and whitespace
+  checks passed; **302 frontend unit tests in 50 files** passed.
+- **18 distinct Chromium browser cases** passed against the exact extracted
+  package: history source selection, previous-period navigation, chart keyboard
+  inspection, numeric gaps and touch/pointer inspection, house log, logout, existing
+  home/energy reports, CSV/print, English tab navigation and report error states.
+  The standalone History menu item is absent and History opens as an embedded tab.
+- Screenshots on phone and desktop were inspected; report viewport checks cover
+  320, 390, 820 and 1440 px in both themes. Native Safari and live HA/hardware were
+  not exercised. No live device actions or hub installation ran.
+- Deterministic packaging and all **299 runtime member hashes** were verified.
+  SHA-256: `2cb06f39d6db523b5c538968b59101f9b12c79d1103087fd108e512eaad93b5d`.
+
 # Reports and insights — release 1.36.124
 
 Reports now share a responsive workspace for home reports, energy reports and the

@@ -155,9 +155,9 @@ export function HistoryExplorer({
     <section className="history-explorer">
       <header className="history-heading">
         <div>
-          <h1>
+          <h2>
             {activity ? t("Huslogg", "Activity") : t("Historikk", "History")}
-          </h1>
+          </h2>
           <p>
             {activity
               ? t(
@@ -329,7 +329,12 @@ export function HistoryExplorer({
                 </p>
               )}
             </div>
-            <button className="history-sources-done" onClick={() => showSources(false)}>{t("Vis resultat", "Show results")}</button>
+            <button
+              className="history-sources-done"
+              onClick={() => showSources(false)}
+            >
+              {t("Vis resultat", "Show results")}
+            </button>
           </aside>
         )}
         <div className="history-results" aria-busy={query.isFetching}>

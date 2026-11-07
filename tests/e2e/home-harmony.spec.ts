@@ -2402,7 +2402,10 @@ test("numeric history keeps real gaps and supports keyboard and pointer or touch
       .getByRole("combobox", { name: "Utseende", exact: true })
       .selectOption("dark");
   }
-  await page.getByRole("button", { name: "Historikk", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Rapporter og innsikt", exact: true })
+    .click();
+  await page.getByRole("tab", { name: "Historikk", exact: true }).click();
   if (!(await page.locator("#history-sources").isVisible()))
     await page.getByRole("button", { name: "Velg kilder" }).click();
   await page.getByRole("checkbox", { name: /Temperatur i stuen/ }).check();
@@ -2428,7 +2431,8 @@ test("numeric history keeps real gaps and supports keyboard and pointer or touch
     "22 °C",
   );
   await page.keyboard.press("Escape");
-  await plot.scrollIntoViewIfNeeded();
+  // Keep the intended touch point above the fixed phone navigation.
+  await plot.evaluate((element) => element.scrollIntoView({ block: "center" }));
   const box = (await plot.boundingBox())!;
   const x = box.x + (box.width * (8 + (464 * 4) / 6)) / 480;
   if (info.project.name === "mobile")

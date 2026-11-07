@@ -9,7 +9,11 @@ test("history sources, dates, chart inspection, house log and mobile logout", as
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await expect(page.locator(".home-welcome")).toBeVisible();
+  const navigation = page.getByRole("navigation", {
+    name: "Hovedmeny",
+    exact: true,
+  });
+  await expect(navigation).toBeVisible();
   const home = await (await page.request.get("/api/home")).json();
   const c = home.controls.find((c: any) => c.domain === "sensor");
   await page.route("**/api/history/states?*", (route) => {
@@ -52,13 +56,31 @@ test("history sources, dates, chart inspection, house log and mobile logout", as
       },
     }),
   );
-  await page.getByRole("button", { name: "Historikk", exact: true }).click();
+  await expect(
+    navigation.getByRole("button", { name: "Historikk", exact: true }),
+  ).toHaveCount(0);
+  await navigation
+    .getByRole("button", { name: "Rapporter og innsikt", exact: true })
+    .click();
+  await expect(page.locator(".report-tabs").getByRole("tab")).toHaveCount(4);
+  await page.getByRole("tab", { name: "Historikk", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Historikk", exact: true, level: 2 }),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Hva vil du se historikken til?" }),
   ).toBeVisible();
   if (!(await page.locator("#history-sources").isVisible()))
     await page.getByRole("button", { name: "Velg kilder" }).click();
   await page.getByRole("checkbox", { name: new RegExp(c.name) }).check();
+  if (
+    await page
+      .getByRole("button", { name: "Vis resultat", exact: true })
+      .isVisible()
+  )
+    await page
+      .getByRole("button", { name: "Vis resultat", exact: true })
+      .click();
   await expect(page.locator(".history-series")).toHaveCount(1);
   await expect(page.locator(".history-series svg")).toBeVisible();
   await page.locator(".history-series svg").focus();
@@ -81,9 +103,6 @@ test("history sources, dates, chart inspection, house log and mobile logout", as
     path: `/tmp/smarti-history-${test.info().project.name}.png`,
     fullPage: true,
   });
-  await page
-    .getByRole("button", { name: "Rapporter og innsikt", exact: true })
-    .click();
   await page.getByRole("tab", { name: "Huslogg", exact: true }).click();
   await expect(page.locator(".house-log")).toContainText("Kveldslys");
   await expect(page.locator(".house-log")).toContainText("Slått på");

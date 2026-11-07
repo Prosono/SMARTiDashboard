@@ -128,7 +128,6 @@ import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
 import { HouseInsights } from "./HouseInsights";
-import { HistoryExplorer } from "./HistoryExplorer";
 import { ProtocolDevices } from "./ProtocolDevices";
 import { DeviceSetup } from "./DeviceSetup";
 import { readPreference, writePreference } from "./preferences";
@@ -148,7 +147,6 @@ const icons = {
   automations: Workflow,
   integrations: Blocks,
   updates: DownloadCloud,
-  history: History,
   logbook: ScrollText,
   support: LifeBuoy,
   more: Settings,
@@ -1386,8 +1384,6 @@ function Dashboard({
           </>
         ) : page === "logbook" ? (
           <HouseInsights home={h} lang={lang} />
-        ) : page === "history" ? (
-          <HistoryExplorer key={page} home={h} lang={lang} activity={false} />
         ) : page === "support" ? (
           <section className="support-home">
             <LifeBuoy size={34} aria-hidden="true" />

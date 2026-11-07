@@ -1,3 +1,7 @@
+## 1.36.125
+- Historikk er samlet under «Rapporter og innsikt» i en egen fane, sammen med Hjemmerapport, Energirapport og Huslogg. Det separate Historikk-valget i hovedmenyen er fjernet.
+- Historikk beholder kildevalg, rom-/typefilter, periodevalg, interaktive grafer og CSV-eksport. Fanene tilpasses mobil i to rader, og kan styres med tastatur. Historikk i enhetsdetaljer beholdes.
+
 ## 1.36.124
 - Rapporter og innsikt har fått ny utforming for mobil, nettbrett og PC, med egne faner for hjemmerapport, energirapport og huslogg. Velg periode og få en ryddig rapport med nøkkeltall, grafer og funn fra hjemmets faktiske målinger.
 - Hjemmerapporten viser temperatur- og fuktighetsspenn med tidsvektet gjennomsnitt, registrert på-tid for lys, tid hjemme per person og visuell fordeling av logghendelser. Kjent og ukjent historikk skilles tydelig; hendelser presenteres ikke som brukstid eller strømforbruk.

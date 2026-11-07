@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   CalendarDays,
   FileText,
+  History,
   Info,
   Lightbulb,
   Printer,
@@ -143,6 +144,15 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
       Icon: Zap,
     },
     {
+      id: "history",
+      label: t("Historikk", "History"),
+      hint: t(
+        "Målinger og tilstander over tid",
+        "Measurements and states over time",
+      ),
+      Icon: History,
+    },
+    {
       id: "log",
       label: t("Huslogg", "Activity"),
       hint: t("Utforsk hendelser i detalj", "Explore individual events"),
@@ -267,8 +277,13 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
         role="tabpanel"
         aria-labelledby={`house-tab-${tab}`}
       >
-        {tab === "log" ? (
-          <HistoryExplorer home={home} lang={lang} activity />
+        {tab === "log" || tab === "history" ? (
+          <HistoryExplorer
+            key={tab}
+            home={home}
+            lang={lang}
+            activity={tab === "log"}
+          />
         ) : tab === "energy" ? (
           <EnergyReport lang={lang} initialPeriod={energyPeriod} />
         ) : (
