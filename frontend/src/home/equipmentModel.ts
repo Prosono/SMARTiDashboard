@@ -34,10 +34,9 @@ export type EquipmentArt =
   | "battery"
   | "generic";
 
-export function isAirConditioner(c: Control) {
+export function hasAirConditionerHint(c: Control) {
   return (
-    c.domain === "climate" &&
-    (/\b(ac|air[ _-]?con(?:ditioner)?|airconditioning)\b|varmepumpe|luft[ -]til[ -]luft/i.test(
+    /\b(ac|air[ _-]?con(?:ditioner)?|airconditioning)\b|varmepumpe|luft[ -]til[ -]luft/i.test(
       [
         c.name,
         c.device_name,
@@ -46,10 +45,13 @@ export function isAirConditioner(c: Control) {
         c.attributes.smarti_device_model,
       ]
         .filter((v) => typeof v === "string")
-        .join(" "),
-    ) ||
-      c.attributes.icon === "mdi:air-conditioner")
+        .join(" ")
+        .replace(/[_-]/g, " "),
+    ) || c.attributes.icon === "mdi:air-conditioner"
   );
+}
+export function isAirConditioner(c: Control) {
+  return c.domain === "climate" && hasAirConditionerHint(c);
 }
 
 export function equipmentArt(c: Control): EquipmentArt {

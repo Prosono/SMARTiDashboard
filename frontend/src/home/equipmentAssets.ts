@@ -31,6 +31,12 @@ export const equipmentAssets = [
   { kind: "awning", nb: "Markise", en: "Awning" },
   { kind: "garage", nb: "Garasjeport", en: "Garage door" },
   { kind: "alarm", nb: "Alarmpanel", en: "Alarm panel" },
+  { kind: "meter", nb: "Strøm og forbruk", en: "Electricity and consumption" },
+  { kind: "money", nb: "Kostnad og opptjening", en: "Cost and earnings" },
+  { kind: "backup", nb: "Sikkerhetskopiering", en: "Backup" },
+  { kind: "environment", nb: "Klimasensor", en: "Environmental sensor" },
+  { kind: "data", nb: "Data og måleverdier", en: "Data and readings" },
+  { kind: "battery", nb: "Batterier", en: "Batteries" },
 ] as const;
 export const equipmentPortraitKinds = new Set<string>([
   "pendant",

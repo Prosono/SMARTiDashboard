@@ -9,6 +9,7 @@ import { Database, Network, Server, Code, Palette } from "lucide-react";
 import { PhoneSettings } from "./PhoneSettings";
 import { Scenes } from "./home/Scenes";
 import { PagedControls } from "./PagedControls";
+import { SensorValue } from "./SensorValue";
 import { DiscoveredDevices, useDiscoveries } from "./manage/DiscoveredDevices";
 import { SettingsDialog, InSettingsDialog } from "./home/SettingsDialog";
 import { ControlHistory } from "./ControlHistory";
@@ -1916,10 +1917,7 @@ function Device({
             changeMode={(mode) => void command("set_hvac_mode", mode)}
           />
         ) : c.domain === "sensor" && c.availability === "available" ? (
-          <span className="big-value">
-            {c.state}
-            <small>{String(c.attributes.unit_of_measurement || "")}</small>
-          </span>
+          <SensorValue c={c} lang={document.documentElement.lang} />
         ) : (
           <span className="state">
             <span className={c.state === "on" ? "state-dot on" : "state-dot"} />
@@ -2110,6 +2108,14 @@ function Device({
           <dd>{c.integration ? integrationName(c.integration) : t.unknown}</dd>
           <dt>{t.physical}</dt>
           <dd>{c.device_id || "—"}</dd>
+          {c.domain === "sensor" && (
+            <>
+              <dt>{t === en ? "Raw value" : "Råverdi"}</dt>
+              <dd>
+                {c.state} {String(c.attributes.unit_of_measurement || "")}
+              </dd>
+            </>
+          )}
           {battery && (
             <>
               <dt>{t.battery}</dt>

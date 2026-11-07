@@ -9,12 +9,9 @@
 .settings-overview .experience-picker>p{font-size:13px;margin:0 0 18px;line-height:1.6}
 .settings-overview .experience-picker>div{gap:14px}
 .settings-overview .experience-picker button{position:relative;overflow:hidden;isolation:isolate;min-height:156px;border:1px solid var(--settings-line);border-radius:14px;padding:20px 18px 18px 34%;background:var(--surface);text-align:left}
-.settings-overview .experience-picker button:before{content:'';position:absolute;inset:0 69% 0 0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surface) 30%,transparent)),url('/home/home-living.webp') center/cover;z-index:-1}
-.settings-overview .experience-picker button[data-mode=normal]:before{background-image:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surface) 30%,transparent)),url('/home/home-kitchen.webp')}
-.settings-overview .experience-picker button[data-mode=advanced]:before{background-image:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surface) 30%,transparent)),url('/home/home-outdoor.webp')}
 .settings-overview .experience-picker button[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface));box-shadow:inset 0 0 0 1px var(--accent)}
 .settings-overview .experience-option-top{margin-bottom:10px}
-.settings-overview .experience-symbol{color:var(--accent)}
+.settings-overview .experience-symbol{position:absolute;left:0;top:50%;width:31%;justify-content:center;transform:translateY(-50%);color:var(--accent)}
 .settings-overview .experience-picker button strong{font-size:17px;margin-bottom:6px}
 .settings-overview .experience-picker button>span{font-size:12px;line-height:1.55}
 .settings-overview .settings-sections{display:flex;gap:6px;padding:8px;background:var(--surface);border:1px solid var(--settings-line);border-radius:14px;overflow-x:auto;margin:20px 0 28px;scrollbar-width:thin}
@@ -38,8 +35,8 @@
 .settings-advanced>summary{font-size:16px;font-weight:600;cursor:pointer;min-height:44px;align-content:center}
 .settings-signout{border-top:1px solid var(--settings-line);margin-top:28px;padding-top:20px}
 .settings-signout button{display:flex;gap:10px;align-items:center;border:0;background:transparent;padding:8px 0}
-@media(max-width:900px){.settings-overview .settings-category-system{grid-template-columns:1fr}.settings-overview .experience-picker button{padding-left:20px;min-height:170px}.settings-overview .experience-picker button:before{display:none}}
-@media(max-width:600px){.settings-overview .settings-hero{min-height:170px;padding:26px 20px;border-radius:14px}.settings-overview .settings-hero p{font-size:14px;max-width:28ch}.settings-overview .experience-picker{padding:16px}.settings-overview .experience-picker>div{grid-template-columns:1fr;gap:10px}.settings-overview .experience-picker button{min-height:120px;padding:14px 16px 14px 32%}.settings-overview .experience-picker button:before{display:block;right:72%}.settings-overview .experience-option-top{margin-bottom:5px}.settings-overview .experience-picker button>span{font-size:13px}.settings-overview .settings-sections{margin:16px 0 22px}.settings-overview .settings-panel,.settings-overview .hub-overview{padding:18px}}
+@media(max-width:900px){.settings-overview .settings-category-system{grid-template-columns:1fr}.settings-overview .experience-picker button{padding-left:20px;min-height:170px}.settings-overview .experience-symbol{position:static;width:56px;transform:none}}
+@media(max-width:600px){.settings-overview .settings-hero{min-height:170px;padding:26px 20px;border-radius:14px}.settings-overview .settings-hero p{font-size:14px;max-width:28ch}.settings-overview .experience-picker{padding:16px}.settings-overview .experience-picker>div{grid-template-columns:1fr;gap:10px}.settings-overview .experience-picker button{min-height:120px;padding:14px 16px 14px 32%}.settings-overview .experience-symbol{position:absolute;left:0;top:50%;width:28%;transform:translateY(-50%)}.settings-overview .experience-option-top{margin-bottom:5px}.settings-overview .experience-picker button>span{font-size:13px}.settings-overview .settings-sections{margin:16px 0 22px}.settings-overview .settings-panel,.settings-overview .hub-overview{padding:18px}}
 .settings-overview .hub-product{min-height:145px;grid-template-columns:minmax(0,1fr) 100px;gap:14px;background:transparent}
 .settings-overview .hub-product h2{font-size:23px;line-height:1.2;margin:8px 0 12px;max-width:none;text-wrap:initial}
 .settings-overview .hub-product>img{justify-self:end;transform:none;filter:none}

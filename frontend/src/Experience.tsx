@@ -1,4 +1,5 @@
-import { Heart, LayoutGrid, SlidersHorizontal, Check } from "lucide-react";
+import { Check } from "lucide-react";
+import { ExperienceModeIcon } from "./ExperienceModeIcon";
 import { createContext, useContext, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
@@ -43,6 +44,11 @@ export function ExperiencePicker({ lang }: { lang: string }) {
     },
   ];
   async function choose(next: ExperienceMode) {
+    const active = document.activeElement;
+    const focusTarget =
+      active instanceof HTMLButtonElement && active.dataset.mode === next
+        ? active
+        : null;
     setBusy(true);
     setError("");
     try {
@@ -60,6 +66,15 @@ export function ExperiencePicker({ lang }: { lang: string }) {
       );
     } finally {
       setBusy(false);
+      if (focusTarget)
+        requestAnimationFrame(() => {
+          // Disabling while saving blurs the button; don't interrupt a new focus target.
+          if (
+            focusTarget.isConnected &&
+            document.activeElement === document.body
+          )
+            focusTarget.focus({ preventScroll: true });
+        });
     }
   }
   return (
@@ -84,13 +99,7 @@ export function ExperiencePicker({ lang }: { lang: string }) {
           >
             <div className="experience-option-top">
               <span className="experience-symbol">
-                {o.id === "simple" ? (
-                  <Heart size={24} />
-                ) : o.id === "normal" ? (
-                  <LayoutGrid size={24} />
-                ) : (
-                  <SlidersHorizontal size={24} />
-                )}
+                <ExperienceModeIcon mode={o.id} />
               </span>
               <span className="experience-check" aria-hidden="true">
                 {mode === o.id && <Check size={16} />}

@@ -1529,6 +1529,11 @@ footer span:last-child {
 .device-picture { width: 60px; height: 60px; object-fit: contain; }
 .device-product-art { display: grid; place-items: center; flex-shrink: 0; width: 64px; height: 64px; overflow: clip; isolation: isolate; }
 .device-product-art > img { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 1; }
+.device .sensor-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; min-width: 0; max-width: 100%; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.device .sensor-value[data-kind="text"] { font-size: 21px; line-height: 1.4; }
+.device .sensor-value[data-kind="timestamp"] { font-size: 22px; line-height: 1.4; }
+.sensor-value time { display: grid; gap: 3px; }
+.device .sensor-value small { font-size: 16px; margin: 0; }
 /* Compact inventory artwork must win over dashboard-specific lamp dimensions. */
 html .device-product-art[aria-hidden] .equipment-art[class] { position: relative; inset: auto; flex: none; width: 100%; height: 100%; min-width: 0; min-height: 0; margin: 0; max-width: 100%; max-height: 100%; transform: none; }
 html .device-product-art[aria-hidden] .equipment-art::before { content: none; }

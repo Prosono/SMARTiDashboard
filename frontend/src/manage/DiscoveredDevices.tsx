@@ -45,7 +45,11 @@ export function DiscoveredDevices({
   return (
     <section className="discovery-panel" aria-label={title}>
       <header>
-        {attention ? <RefreshCw size={24} /> : <Radar size={24} />}
+        {attention ? (
+          <RefreshCw size={24} aria-hidden="true" />
+        ) : (
+          <Radar size={24} aria-hidden="true" />
+        )}
         <div>
           <h2>
             {title}
@@ -65,7 +69,15 @@ export function DiscoveredDevices({
           className="compact"
           disabled={q.isFetching}
           onClick={() => void q.refetch()}
-          aria-label={attention ? (en ? "Refresh requests" : "Oppdater forespørsler") : en ? "Refresh discoveries" : "Oppdater oppdagede enheter"}
+          aria-label={
+            attention
+              ? en
+                ? "Refresh requests"
+                : "Oppdater forespørsler"
+              : en
+                ? "Refresh discoveries"
+                : "Oppdater oppdagede enheter"
+          }
         >
           <RefreshCw size={18} />
         </button>

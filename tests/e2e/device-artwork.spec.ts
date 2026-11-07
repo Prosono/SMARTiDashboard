@@ -122,6 +122,38 @@ const controls = [
     ),
   ),
   control("alarm", "alarm_control_panel", {}, "disarmed"),
+  control(
+    "consumption",
+    "sensor",
+    { device_class: "energy", unit_of_measurement: "kWh" },
+    "1783.80692",
+  ),
+  control(
+    "cost",
+    "sensor",
+    { device_class: "monetary", unit_of_measurement: "NOK" },
+    "166.17641",
+  ),
+  {
+    ...control(
+      "backup_next",
+      "sensor",
+      { device_class: "timestamp" },
+      "2026-11-08T04:14:23+00:00",
+    ),
+    name: "Backup Next scheduled automatic backup",
+  },
+  {
+    ...control("backup_state", "sensor", {}, "idle"),
+    name: "Backup Backup Manager state",
+  },
+  { ...control("ac_mode", "sensor", {}, "cool"), name: "Stue AC Mode" },
+  {
+    ...control("people", "sensor", {}, "unavailable"),
+    name: "Roode Combined People Inside",
+    availability: "unavailable",
+  },
+  control("generic", "sensor", {}, "idle"),
 ];
 async function setup(page: Page) {
   const mutations: string[] = [];
@@ -190,6 +222,15 @@ test("all-device visuals reuse shared artwork and semantic icons at phone, table
         ["awning", "awning"],
         ["garage", "garage"],
         ["alarm", "alarm"],
+        ["battery", "battery"],
+        ["temperature", "environment"],
+        ["consumption", "meter"],
+        ["cost", "money"],
+        ["backup_next", "backup"],
+        ["backup_state", "backup"],
+        ["ac_mode", "air-conditioner"],
+        ["people", "presence"],
+        ["generic", "data"],
       ]) {
         const card = page.locator(`.controls-grid > [data-entity$=".${id}"]`);
         const image = card.locator(".device-product-art img");
@@ -222,11 +263,7 @@ test("all-device visuals reuse shared artwork and semantic icons at phone, table
           '[data-entity="binary_sensor.unknown-window"] .device-product-art img',
         ),
       ).toHaveCount(0);
-      for (const [entity, icon] of [
-        ["sensor.battery", "battery"],
-        ["sensor.temperature", "thermometer"],
-        ["camera.camera", "camera"],
-      ])
+      for (const [entity, icon] of [["camera.camera", "camera"]])
         await expect(
           page.locator(`[data-entity="${entity}"] .device-product-art svg`),
         ).toHaveClass(new RegExp(`lucide-${icon}`));
@@ -452,5 +489,57 @@ test("compact portraits never extend into room labels, titles or favorite button
     path: `/private/tmp/smarti-120-spacing-${test.info().project.name}.png`,
     animations: "disabled",
   });
+  expect(mutations).toEqual([]);
+});
+
+test("sensor cards show readable values and timestamps while retaining exact raw data in details", async ({
+  page,
+}, info) => {
+  const mutations = await setup(page);
+  for (const width of [320, 390, 834, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const energy = page.locator('[data-entity="sensor.consumption"]');
+    await expect(energy.locator(".sensor-value")).toContainText("1 783,807");
+    await expect(energy.locator(".sensor-value")).toHaveAttribute(
+      "title",
+      "1783.80692 kWh",
+    );
+    await expect(
+      page.locator('[data-entity="sensor.cost"] .sensor-value'),
+    ).toContainText("166,18");
+    const backup = page.locator('[data-entity="sensor.backup_next"]');
+    await expect(backup.locator("time")).toHaveAttribute(
+      "datetime",
+      "2026-11-08T04:14:23+00:00",
+    );
+    await expect(backup.locator("time")).toContainText("08.11.2026");
+    await expect(backup.locator("time")).not.toContainText("T04:14:");
+    if (width === 390) {
+      await backup.scrollIntoViewIfNeeded();
+      await expect
+        .poll(() =>
+          backup
+            .locator(".device-product-art img")
+            .evaluate((img: HTMLImageElement) => img.naturalWidth),
+        )
+        .toBeGreaterThan(0);
+      await backup.screenshot({
+        path: `/private/tmp/smarti-121-sensor-${info.project.name}.png`,
+        animations: "disabled",
+      });
+    }
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBe(true);
+  }
+  const backup = page.locator('[data-entity="sensor.backup_next"]');
+  await backup
+    .getByRole("button", { name: "Tekniske detaljer", exact: true })
+    .click();
+  await expect(backup.locator(".details")).toContainText(
+    "2026-11-08T04:14:23+00:00",
+  );
   expect(mutations).toEqual([]);
 });

@@ -365,54 +365,81 @@ export function Apps({
       )}
       <div className="apps-grid">
         {visible.map((a) => (
-          <button
-            className="app-card"
+          <article
+            className="app-card-entry"
             key={a.slug}
-            disabled={updatesOnly && (busy || pending(a.slug))}
-            onClick={() => {
-              if (updatesOnly) {
-                ask(a, "update");
-                return;
-              }
-              setError("");
-              setConfig(false);
-              select(a);
-            }}
+            aria-label={smartiName(a.name)}
           >
-            <div className="app-card-top">
-              <AppImage app={a} />
-              <small data-running={a.state === "started"}>
-                {pending(a.slug)
-                  ? t("Pågår …", "In progress …")
-                  : a.installed
-                    ? a.state === "started"
-                      ? t("Kjører", "Running")
-                      : a.state === "stopped"
-                        ? t("Stoppet", "Stopped")
-                        : t("Ukjent status", "Unknown state")
-                    : t("Tilgjengelig", "Available")}
-              </small>
-            </div>
-            <h2>{smartiName(a.name)}</h2>
-            <p>{smartiName(a.description || "")}</p>
-            <footer>
-              <span>
-                {updatesOnly
-                  ? `${a.version || "—"} → ${a.version_latest || "—"}`
-                  : a.installed
-                    ? a.version
-                    : a.version_latest || a.version}
-                {a.update_available
-                  ? ` · ${t("Oppdatering klar", "Update available")}`
-                  : ""}
-              </span>
-              {updatesOnly ? (
-                <Download size={19} />
-              ) : (
-                <ArrowUpRight size={19} />
-              )}
-            </footer>
-          </button>
+            <button
+              className="app-card"
+              disabled={updatesOnly && (busy || pending(a.slug))}
+              onClick={() => {
+                if (updatesOnly) {
+                  ask(a, "update");
+                  return;
+                }
+                setError("");
+                setConfig(false);
+                select(a);
+              }}
+            >
+              <div className="app-card-top">
+                <AppImage app={a} />
+                <small data-running={a.state === "started"}>
+                  {pending(a.slug)
+                    ? t("Pågår …", "In progress …")
+                    : a.installed
+                      ? a.state === "started"
+                        ? t("Kjører", "Running")
+                        : a.state === "stopped"
+                          ? t("Stoppet", "Stopped")
+                          : t("Ukjent status", "Unknown state")
+                      : t("Tilgjengelig", "Available")}
+                </small>
+              </div>
+              <h2 id={`app-title-${a.slug}`}>{smartiName(a.name)}</h2>
+              <p>{smartiName(a.description || "")}</p>
+              <footer>
+                <span>
+                  {updatesOnly
+                    ? `${a.version || "—"} → ${a.version_latest || "—"}`
+                    : a.installed
+                      ? a.version
+                      : a.version_latest || a.version}
+                  {a.update_available
+                    ? ` · ${t("Oppdatering klar", "Update available")}`
+                    : ""}
+                </span>
+                {updatesOnly ? (
+                  <Download size={19} />
+                ) : (
+                  <ArrowUpRight size={19} />
+                )}
+              </footer>
+            </button>
+            {a.installed && !updatesOnly && (
+              <div className="app-card-management">
+                {a.system_managed ? (
+                  <small>
+                    {t(
+                      "Administreres av en integrasjon",
+                      "Managed by an integration",
+                    )}
+                  </small>
+                ) : (
+                  <button
+                    className="app-uninstall"
+                    aria-describedby={`app-title-${a.slug}`}
+                    disabled={busy || pending(a.slug)}
+                    onClick={() => ask(a, "uninstall")}
+                  >
+                    <Trash2 size={16} aria-hidden="true" />
+                    {t("Avinstaller", "Uninstall")}
+                  </button>
+                )}
+              </div>
+            )}
+          </article>
         ))}
       </div>
       {!!operations.length && (
@@ -494,7 +521,6 @@ export function Apps({
                       ...(selected.update_available
                         ? [["update", Download]]
                         : []),
-                      ["uninstall", Trash2],
                     ]
                   : [["install", Download]]
                 ).map(([action, Icon]) => {
@@ -525,6 +551,32 @@ export function Apps({
                   </button>
                 )}
               </div>
+              {selected.installed && (
+                <section
+                  className="app-removal"
+                  aria-label={t("Fjern app", "Remove app")}
+                >
+                  <div>
+                    <strong>{t("Fjern app", "Remove app")}</strong>
+                    <p className="muted">
+                      {t(
+                        "Avinstaller appen fra hjemmesentralen.",
+                        "Uninstall this app from the controller.",
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    className="app-uninstall"
+                    disabled={
+                      busy || pending(selected.slug) || selected.system_managed
+                    }
+                    onClick={() => ask(selected, "uninstall")}
+                  >
+                    <Trash2 size={18} aria-hidden="true" />
+                    {label("uninstall")}
+                  </button>
+                </section>
+              )}
               {selected.available === false && !selected.installed && (
                 <p>
                   {t(
@@ -581,6 +633,7 @@ export function Apps({
                     "App services may become temporarily unavailable. Follow the result under Activity.",
                   )}
           </p>
+          {error && <p role="alert">{error}</p>}
           {confirm.action === "update" && (
             <label>
               <input
@@ -595,7 +648,6 @@ export function Apps({
               )}
             </label>
           )}
-          {error && <p role="alert">{error}</p>}
           <button
             className="primary compact"
             disabled={busy}

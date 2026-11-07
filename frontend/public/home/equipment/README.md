@@ -71,3 +71,11 @@ Nine new 768 × 768 transparent product portraits cover thermostat, heat pump/AC
 fan, Venetian blind, roller blind, curtains, awning, garage door and alarm panel.
 They share the same renderer and image picker on all screen sizes.
 See [final prompts, provenance and asset paths](../../../../docs/ARTWORK_1.36.120.md).
+
+## Sensor categories — 7 November 2026
+
+Six new shared portraits cover electricity/consumption, cost/earnings, backup,
+environmental sensors, generic data sensors and neutral batteries. The entity
+metadata selects an appropriate category on inventory and phone cards; existing
+AC, presence and calendar images are reused for matching sensors. Live values
+remain separate text. See [prompts and final asset paths](../../../../docs/ARTWORK_1.36.121.md).

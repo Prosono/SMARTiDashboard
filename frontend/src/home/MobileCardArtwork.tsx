@@ -6,6 +6,8 @@ import { EquipmentArtwork } from "./EquipmentArtwork";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { usable } from "./homeModel";
 import { isAirConditioner } from "./equipmentModel";
+import { sensorDeviceArtwork } from "./sensorDeviceArtwork";
+import { deviceAppearance } from "./deviceAppearance";
 
 /** The same local cutouts and state-aware illustrations used by the larger cards. */
 export function MobileCardArtwork({
@@ -40,6 +42,9 @@ export function MobileCardArtwork({
     image = new URL("home/equipment/vacuum-dock.webp", document.baseURI).href;
   if (!image && control?.domain === "media_player")
     image = mediaDeviceArtwork(control) || undefined;
+  if (!image && control?.domain === "sensor")
+    image = sensorDeviceArtwork(control) || undefined;
+  const Fallback = control ? deviceAppearance(control).Icon : ImageOff;
   const equipment =
     control &&
     [
@@ -76,7 +81,7 @@ export function MobileCardArtwork({
         control?.domain === "vacuum" ? (
           <Bot />
         ) : (
-          <ImageOff />
+          <Fallback />
         )
       ) : equipment ? (
         <EquipmentArtwork

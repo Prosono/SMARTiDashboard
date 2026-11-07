@@ -1,3 +1,10 @@
+## 1.36.121
+- Oppdagede enheter har et ryddigere mobiloppsett med lesbare navn og informasjon, og en egen rad for «Sett opp»-knappen. Lange navn og ulike skjermbredder håndteres uten at teksten klemmes sammen.
+- Installerte apper har et synlig «Avinstaller»-valg direkte i oversikten og en egen fjerningsdel i appdetaljene. Bekreftelse, systembeskyttelse, status og eksisterende tilgangskontroll beholdes.
+- Seks nye bilder for strøm/forbruk, kostnad/opptjening, sikkerhetskopiering, klimasensorer, generelle datasensorer og batterier velges automatisk ut fra entitetstype. Eksisterende bilder for AC, tilstedeværelse og kalender brukes der de passer. Egne bildevalg og fallback-ikoner beholdes.
+- Sensorkort viser lokale tall og lesbare datoer i stedet for lange rå tidsstempler. Den nøyaktige råverdien beholdes i tekniske detaljer og som verktøytips.
+- Nye, tydeligere ikoner for Enkel, Normal og Avansert viser én stor hjemmekontroll, et oversiktspanel og flere justeringskontroller. De erstatter rombildene i modusvelgeren. Tastaturfokus og valgt nivå beholdes etter lagring; feil endrer ikke valgt modus.
+
 ## 1.36.120
 - Retter at enhetsbilder, særlig pendellamper, kunne overlappe romnavn og titler. Kompakte bilder har nå egne grenser og bruker ikke lysgløden fra de store dashbordkortene.
 - Ni nye produktbilder for termostat, varmepumpe/AC, vifte, persienne, rullegardin, gardiner, markise, garasjeport og alarmpanel er lagt til i det felles bildebiblioteket. Varmepumper gjenkjennes som egen type i den felles kortvisningen.

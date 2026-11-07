@@ -5,6 +5,7 @@ import { EquipmentArtwork } from "./EquipmentArtwork";
 import { isAirConditioner } from "./equipmentModel";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { deviceAppearance } from "./deviceAppearance";
+import { sensorDeviceArtwork } from "./sensorDeviceArtwork";
 
 /** Compact inventory visual, using the same artwork and icon choices as cards. */
 export function DeviceArtwork({
@@ -20,13 +21,15 @@ export function DeviceArtwork({
   const custom = image && image !== "auto";
   const url = custom
     ? cardImageURL(image)
-    : c.domain === "media_player"
-      ? mediaDeviceArtwork(c)
-      : c.domain === "vacuum"
-        ? new URL("home/equipment/vacuum-dock.webp", document.baseURI).href
-        : c.domain === "calendar"
-          ? new URL("home/equipment/calendar.webp", document.baseURI).href
-          : null;
+    : c.domain === "sensor"
+      ? sensorDeviceArtwork(c)
+      : c.domain === "media_player"
+        ? mediaDeviceArtwork(c)
+        : c.domain === "vacuum"
+          ? new URL("home/equipment/vacuum-dock.webp", document.baseURI).href
+          : c.domain === "calendar"
+            ? new URL("home/equipment/calendar.webp", document.baseURI).href
+            : null;
   const equipment =
     !custom &&
     [

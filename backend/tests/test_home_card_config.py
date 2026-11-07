@@ -23,6 +23,12 @@ from test_management import client  # noqa: F401
         "equipment-awning",
         "equipment-garage",
         "equipment-alarm",
+        "equipment-meter",
+        "equipment-money",
+        "equipment-backup",
+        "equipment-environment",
+        "equipment-data",
+        "equipment-battery",
     ],
 )
 @pytest.mark.parametrize("suffix", ["", "?surface=mobile"])

@@ -1,3 +1,57 @@
+# Mode icons, mobile discoveries, app removal and sensor artwork — release 1.36.121
+
+Discovered-device rows now reserve a real text column and put the setup action
+on its own full-width row on phones. Long names wrap inside that column instead
+of being compressed between a logo and button. The refresh button keeps a 44 px
+hit area; discovery claiming and integration setup use their existing endpoints.
+
+Installed apps expose uninstall beside the inventory card and in a separate
+removal section in app details. These use the existing confirmed, idempotent app
+action path; system-managed and SMARTi self-protection remain. App management is
+still administrator-only and available under advanced-mode Extensions/Apps. No
+uninstall was sent to a live hub during verification.
+
+Sensor inventory and phone cards now share category artwork for consumption,
+monetary values, backups, environmental readings, batteries and generic data.
+Existing AC, presence and calendar images are reused where applicable. Declared
+measurement metadata takes priority over incidental names; custom/no-image
+choices and semantic fallback icons are retained. Six new transparent 768 px
+WebP assets total 215,418 bytes. Their complete prompts and runtime paths are in
+[ARTWORK_1.36.121.md](ARTWORK_1.36.121.md).
+
+Sensor values use localized measurement formatting and split valid timestamps
+into browser-local date/time. The unchanged raw state remains in the tooltip and
+technical details, including original decimal precision. Unknown values are not
+replaced with invented readings. No measurements, units, commands or history data
+are rewritten.
+
+The experience picker replaces room photos and unrelated icons with three SVG
+panels: a single home control, a dashboard and several adjustment controls. The
+set shares geometry, stroke weight and theme colors. Selection, keyboard focus,
+reload persistence and failure behavior remain clear; restoring focus after a
+save does not steal focus from another control.
+
+Validation on 7 November 2026:
+
+- Production build, frontend lint, scoped Playwright TypeScript, scoped Ruff
+  lint/format and whitespace checks passed. **292 frontend unit tests** and
+  **83 backend tests** passed, including app protections and each new image
+  choice on independent phone/desktop layout surfaces.
+- **40 distinct Chromium browser cases** passed against the exact extracted
+  package. Coverage includes discovery text/button geometry, claims only after
+  setup is pressed; uninstall confirmation/cancel/success/failure and managed-app
+  protection; existing installation, configuration, image and update actions;
+  shared portraits, saved choices and fallbacks; localized readings and exact raw
+  values; mode keyboard/reload/failure behavior; and phone climate/tile artwork.
+- Geometry checks include 320–1920 px widths, light/dark themes and classic/
+  Harmony artwork presentation. Discovery, mode-picker and sensor-card captures
+  were inspected. Native Safari and actual radio/Supervisor hardware actions were
+  not exercised. Browser actions are confined to isolated demo fixtures. Existing
+  Vite chunk-size and Starlette TestClient warnings remain.
+- Deterministic packaging and all **299 runtime member hashes** were verified
+  before browser testing. No live hub installation/update ran.
+  SHA-256: `2445f1a00098ccd3b95d1ac2187edbd15d7f1e48dbab13fadf7d99af401ee591`.
+
 # Compact artwork bounds and nine new equipment portraits — release 1.36.120
 
 The reported Devices overlap came from global dashboard rules giving pendants a

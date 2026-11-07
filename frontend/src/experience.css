@@ -167,6 +167,14 @@
   align-items: center;
   color: var(--accent);
 }
+.experience-mode-icon {
+  display: block;
+  flex-shrink: 0;
+}
+.experience-picker button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
 .experience-picker .experience-check {
   display: grid;
   place-items: center;
@@ -174,6 +182,7 @@
   height: 24px;
   border: 1px solid var(--line);
   border-radius: 50%;
+  margin-inline-start: auto;
 }
 .experience-picker button[aria-pressed="true"] .experience-check {
   background: var(--accent);
