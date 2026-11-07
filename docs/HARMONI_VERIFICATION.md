@@ -1,3 +1,59 @@
+# Reports and insights — release 1.36.124
+
+Reports now share a responsive workspace for home reports, energy reports and the
+retained activity explorer. Period presets, explicit generation, report navigation,
+source counts and data-quality notes replace the text-heavy summary. Phone controls
+stack within the viewport; the report charts fit their available width. Light and
+dark themes use the existing SMARTi typography, surfaces and orange accents.
+
+The home report separates duration-weighted temperature/humidity ranges, light
+on-time, recorded time at home and event counts. Shared product artwork is used when
+the report source matches a visible home control. Numeric ranges are scaled within
+the same unit. Findings use actual measured on-time, comparable temperature spans
+and recorded unavailable events. Coverage describes analysed source-time, not house
+uptime. Truncated event samples, unavailable sources and overlapping light groups
+remain explicit. Motion sensors do not infer individual people.
+
+The energy report brings consumption, costs, period comparison, weighted spot
+prices, cost components, separate consumers and solar readings into one document.
+Its interactive graph switches between consumption and cost and can overlay prices
+aligned by timestamps. Missing readings remain gaps; zero and negative values are
+preserved. Comparison requires complete periods and a nonzero previous baseline.
+Recorded/estimated energy and costs retain their limitations and fixed-charge notes.
+The house excerpt covers only calendar days touched before the selected end time;
+the report explains the difference from exact event/sensor timestamps.
+
+Both reports export quoted CSV data, including raw energy values and source entity
+IDs, with formula-like names neutralized. Native print/save-to-PDF opens calculation
+notes temporarily and restores them afterwards. Print omits app navigation and
+controls, uses a white background in both themes, preserves charts and keeps rows,
+notes and footers together. Reports introduce no device, automation, preference or
+layout writes. Existing access controls and independent phone/desktop layouts remain.
+
+A recorder summary boundary fix excludes sensor states at the period's end from
+min/max and activation counts; zero-duration numeric states no longer invent a
+range. Existing event-log endpoint behavior is retained.
+
+Validation on 7 November 2026:
+
+- Frontend lint, production build, scoped browser-test TypeScript, Ruff and
+  whitespace checks passed. **302 frontend unit tests in 50 files** and **10
+  backend statistics/history tests** passed. Existing Vite chunk-size and
+  Starlette TestClient warnings remain.
+- **16 distinct Chromium browser cases** passed against the exact extracted
+  release package, covering home/energy reports, shared chart regression, raw CSV,
+  negative costs, missing versus zero readings, keyboard navigation, date limits,
+  errors/retry, empty/unconfigured data, English navigation and no new writes.
+  Visual checks include 320, 390, 820 and 1440 px in both themes. The phone energy
+  graph fits its container without horizontal scrolling.
+- Both A4 PDF exports were rendered and all pages inspected, including printing
+  from dark mode. Section headings, charts, calculation notes and final footers
+  remain readable; the demo home report uses four pages and energy report two.
+  Native Safari and a live HA installation were not exercised. No live device
+  commands, automation execution, hub installation or portal change ran.
+- Deterministic packaging and all **299 runtime member hashes** were verified.
+  SHA-256: `723f93a1a2baa616e5f3151facc9ccc4108ddef184fa2c0d2d74c5342234c5e1`.
+
 # Guided home-mode routines — release 1.36.123
 
 Unconfigured Home/Away/Night/Holiday buttons in the Routines card now offer a

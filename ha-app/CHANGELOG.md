@@ -1,3 +1,10 @@
+## 1.36.124
+- Rapporter og innsikt har fått ny utforming for mobil, nettbrett og PC, med egne faner for hjemmerapport, energirapport og huslogg. Velg periode og få en ryddig rapport med nøkkeltall, grafer og funn fra hjemmets faktiske målinger.
+- Hjemmerapporten viser temperatur- og fuktighetsspenn med tidsvektet gjennomsnitt, registrert på-tid for lys, tid hjemme per person og visuell fordeling av logghendelser. Kjent og ukjent historikk skilles tydelig; hendelser presenteres ikke som brukstid eller strømforbruk.
+- Energirapporten samler forbruk, kostnad, spotpriser, sammenligning med forrige periode, kostnadsfordeling og solenergi. Grafen kan veksle mellom forbruk og kostnad, vise spotpris og velges med berøring eller tastatur. Nullverdier, negative priser og manglende målinger vises forskjellig.
+- Begge rapporter kan lastes ned som CSV med måleverdier eller skrives ut / lagres som PDF. Utskriften har et rent oppsett med beregningsnotater. Rapportgrafene tilpasses skjermbredden på mobil.
+- Retter at en sensorendring akkurat ved rapportperiodens slutt kunne påvirke temperaturspennet uten å bidra med målt tid. Rapporter endrer ikke enheter, rutiner eller dashbordoppsett.
+
 ## 1.36.123
 - Modusknappene i Rutiner-kortet tilbyr «Lag rutine» når ingen rutine er valgt. Du kan lage en ny rutine eller velge en eksisterende scene, et skript eller en automasjon.
 - En veileder spør «Hva skal skje i …-modus?». Velg enheter og ønsket tilstand, lysstyrke, temperatur eller volum, og se gjennom valgene før rutinen lagres og knyttes til den valgte modusen.

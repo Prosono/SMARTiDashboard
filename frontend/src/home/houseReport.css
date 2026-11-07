@@ -1,78 +1,1238 @@
-/* Editorial home report. All figures remain sourced from report data. */
-.hr-document {
-  max-width: 1060px;
-  margin: 32px auto;
-  padding: clamp(20px, 4vw, 56px);
-  position: relative;
+/* Report workspace: quiet surfaces, meaningful charts and a printable document. */
+.house-insights {
+  max-width: 1280px;
+  margin: 8px auto 48px;
+  min-width: 0;
+}
+.report-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px 0 28px;
+}
+.report-page-head h1 {
+  font-size: clamp(28px, 3.2vw, 42px);
+  letter-spacing: -0.045em;
+  line-height: 1.15;
+  margin: 8px 0;
+}
+.report-page-head p {
+  margin: 0;
+  font-size: 1rem;
+}
+.report-kicker,
+.report-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.report-page-mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: var(--accent);
+  background: var(--surface);
+  flex: none;
+}
+.report-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 6px;
+  background: var(--surface);
+  gap: 6px;
+  margin-bottom: 24px;
+}
+.ep .report-tabs button {
+  padding: 16px;
+  gap: 12px;
+  justify-content: flex-start;
+  border: 1px solid transparent;
+  background: transparent;
+  min-width: 0;
+}
+.report-tabs button > svg {
+  flex: none;
+}
+.report-tabs strong,
+.report-tabs small {
+  display: block;
+  text-align: left;
+}
+.report-tabs strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.report-tabs small {
+  font-size: 11px;
+  margin-top: 3px;
+}
+.ep .report-tabs button[aria-selected="true"] {
+  background: var(--tint);
+  border-color: color-mix(in srgb, var(--accent) 16%, var(--line));
+  color: var(--accent);
+}
+.house-report-body,
+.house-insights .report-energy {
+  padding: 0;
+}
+.report-energy-intro {
+  margin: 0 0 20px;
+}
+.ep .report-energy-intro h2 {
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+.report-energy-intro p {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+.house-insights .report-builder {
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--text) 3%, transparent);
+}
+.report-builder-top,
+.report-builder-top > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.report-builder-top {
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.report-builder-top > div:first-child {
+  font-size: 14px;
+}
+.report-builder-top svg {
+  color: var(--accent);
+}
+.house-insights .er-presets {
+  margin: 0;
+  gap: 6px;
+}
+.ep .er-presets button {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-color: transparent;
+  background: var(--soft);
+}
+.ep .er-presets button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--tint);
+  border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.house-insights .er-fields {
+  gap: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+.house-insights .er-fields label {
+  min-width: 0;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.house-insights .er-fields input {
+  border: 1px solid var(--line);
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 46px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+.house-insights .er-fields > button {
+  min-height: 46px;
+  white-space: nowrap;
+}
+.house-insights .report-form-hint {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 12px 0 0;
+  color: var(--muted);
+}
+.report-start {
+  padding: 48px 8px;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+.report-start h2,
+.ep .report-start h3 {
+  font-size: clamp(28px, 3.4vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  margin: 14px 0;
+  max-width: 420px;
+}
+.report-start p {
+  font-size: 15px;
+  max-width: 480px;
+}
+.report-inclusions {
+  display: grid;
+  gap: 0;
+}
+.report-inclusions > div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding: 16px 0;
+}
+.report-inclusions > div:first-child {
+  padding-top: 0;
+}
+.report-inclusions svg {
+  color: var(--accent);
+  flex: none;
+}
+.report-inclusions strong,
+.report-inclusions small {
+  display: block;
+}
+.report-inclusions strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.report-inclusions small {
+  font-size: 12px;
+  margin-top: 3px;
+}
+.house-insights .er-document {
+  margin: 28px 0 0;
+  max-width: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: clamp(20px, 3.5vw, 48px);
   overflow: hidden;
-  --report-orange: #ef7100;
+  min-width: 0;
 }
-.hr-document .er-document-head { position: relative; z-index: 1; }
-.ep .hr-document .er-document-head h2 {
-  font-size: clamp(2.4rem, 5vw, 4.8rem);
-  line-height: 1.02;
-  letter-spacing: -.055em;
-  margin: 48px 0 20px;
-  max-width: 700px;
+.house-insights .er-document-head {
+  align-items: center;
+  padding-bottom: 24px;
 }
-.hr-document .report-brand { margin-bottom: 24px; }
-.hr-document .hr-home-name { font-size: 1.25rem; margin-bottom: 8px; }
-.hr-cover-art {
-  display: flex; align-items: center; justify-content: flex-end;
-  gap: 24px; margin: 12px 0 28px; border-bottom: 1px solid var(--line);
-  color: var(--muted); font-size: .75rem; letter-spacing: .12em;
+.house-insights .er-document-head h2 {
+  font-size: clamp(26px, 3vw, 38px);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  margin: 12px 0;
 }
-.hr-cover-art img { width: 190px; height: 140px; object-fit: contain; }
-.hr-document .hr-cover-kpis { gap: 14px; margin-bottom: 16px; }
-.hr-cover-kpis > div {
-  padding: 24px; border-radius: 16px;
-  background: color-mix(in srgb, var(--report-orange) 7%, var(--surface));
+.house-insights .report-brand {
+  margin: 0 0 20px;
 }
-.hr-cover-kpis svg { color: var(--report-orange); margin-bottom: 20px; }
-.hr-cover-kpis > div:nth-child(2) { background: color-mix(in srgb, var(--muted) 6%, var(--surface)); }
-.hr-document .er-kpis dd { font-size: clamp(2rem, 4vw, 3.6rem); line-height: 1.15; overflow-wrap: anywhere; }
-.hr-basis { font-size: .8rem; }
-.hr-kicker { font-size: .72rem; letter-spacing: .14em; font-weight: 600; color: var(--report-orange); }
-.hr-document h3 { font-size: clamp(1.35rem, 2.6vw, 2rem); letter-spacing: -.025em; line-height: 1.2; }
-.hr-followup { padding: 32px 0; border-top: 1px solid var(--line); margin-top: 32px; }
-.hr-followup ol { counter-reset: finding; list-style: none; padding: 0; margin: 16px 0 0; }
-.hr-followup li { counter-increment: finding; display: flex; gap: 24px; padding: 20px 0; border-bottom: 1px solid var(--line); break-inside: avoid; }
-.hr-followup li::before { content: counter(finding, decimal-leading-zero); font-size: 2rem; font-weight: 600; color: var(--report-orange); }
-.hr-followup strong { font-size: 1.15rem; }
-.hr-followup p { margin: 6px 0 0; }
-.hr-document .hr-stat-section { padding-top: 32px; border-top: 1px solid var(--line); }
-.hr-section-icon, .hr-reading-icon { color: var(--report-orange); }
-.hr-section-icon { display: inline-flex; margin-bottom: 12px; }
-.hr-document .house-stat-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.hr-document .house-stat-row { display: block; border: 1px solid var(--line); border-radius: 16px; padding: 24px; min-width: 0; }
-.hr-reading-icon { display: block; margin-bottom: 14px; width: 30px; height: 30px; }
-.hr-document .house-stat-name strong { font-size: 1.15rem; overflow-wrap: anywhere; }
-.hr-document .house-stat-row dl { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); flex-wrap: wrap; gap: 16px; }
-.hr-document .house-stat-row dd { font-size: 1.35rem; }
-.hr-document .er-solar { padding: 28px; border-radius: 16px; background: color-mix(in srgb, var(--report-orange) 7%, var(--surface)); }
-.hr-appendix { margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--line); }
-.hr-appendix .er-columns h3, .hr-appendix .house-report-days h3 { font-size: 1.15rem; }
-@media (max-width: 700px) {
-  .hr-document .house-stat-list { grid-template-columns: 1fr; }
-  .hr-document .er-document-head h2 { margin-top: 24px; }
-  .hr-cover-art { justify-content: center; gap: 12px; }
-  .hr-cover-art img { width: 120px; height: 100px; }
-  .hr-cover-kpis > div { padding: 20px; }
-  .hr-cover-kpis svg { margin-bottom: 10px; }
-  .hr-document .house-stat-row { padding: 20px; }
-  .hr-followup li { gap: 16px; }
-  .hr-document .er-solar { padding: 20px; }
+.house-insights .report-brand strong {
+  font-size: 18px;
+}
+.house-insights .report-brand img {
+  width: 25px;
+  height: 25px;
+}
+.house-insights .report-brand > span {
+  font-size: 12px;
+}
+.house-insights .hr-home-name {
+  color: var(--text);
+  font-weight: 600;
+  margin: 8px 0;
+  font-size: 14px;
+}
+.report-document-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ep .report-document-actions button {
+  min-height: 40px;
+  font-size: 12px;
+  padding: 8px 12px;
+  background: var(--soft);
+  white-space: nowrap;
+}
+.report-jump {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-block: 1px solid var(--line);
+  padding: 8px 0;
+  margin-bottom: 24px;
+}
+.report-jump a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.report-jump a:hover {
+  color: var(--accent);
+}
+.report-jump a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.house-insights .er-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 24px 0 32px;
+}
+.house-insights .er-kpis > div {
+  min-width: 0;
+  padding: 0 0 0 24px;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  border-bottom: 0;
+  border-radius: 0;
+}
+.house-insights .er-kpis > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.house-insights .er-kpis dt {
+  font-size: 12px;
+}
+.house-insights .er-kpis dd {
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1.25;
+  margin: 8px 0;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.house-insights .er-kpis dd small {
+  font-size: 15px;
+  font-weight: 400;
+}
+.house-insights .er-kpis p {
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0;
+}
+.report-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+.report-section-label {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.house-insights .report-section-head h3 {
+  font-size: clamp(21px, 2.5vw, 28px);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+.report-source-count {
+  flex: none;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+}
+.house-insights .report-section-description {
+  font-size: 13px;
+  margin: 0 0 20px;
+  max-width: 780px;
+  line-height: 1.65;
+}
+.report-findings {
+  padding: 24px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+  border-radius: 16px;
+}
+.report-finding-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.report-finding-grid > div {
+  min-width: 0;
+}
+.report-finding-grid > div > svg {
+  width: 21px;
+  height: 21px;
+  color: var(--accent);
+  margin: 6px 0 14px;
+  display: block;
+}
+.report-finding-grid > div > span {
+  font-size: 12px;
+  display: block;
+  color: var(--muted);
+}
+.report-finding-grid > div > strong {
+  display: block;
+  font-size: 25px;
+  letter-spacing: -0.025em;
+  margin: 6px 0;
+}
+.report-finding-grid strong small {
+  font-size: 12px;
+  font-weight: 400;
+}
+.report-finding-grid p {
+  margin: 0;
+  font-size: 12px;
+}
+.report-inline-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--soft);
+  line-height: 1.6;
+}
+.report-inline-note > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--accent);
+}
+.house-insights section[id] {
+  scroll-margin-top: 24px;
+}
+.house-insights .house-statistics {
+  margin: 0;
+}
+.house-insights .hr-stat-section {
+  margin: 36px 0;
+  padding: 32px 0 0;
+  border-top: 1px solid var(--line);
+  --reading-color: var(--accent);
+}
+.house-insights .hr-stat-temperatures {
+  --reading-color: #3187b0;
+}
+.house-insights .hr-stat-humidity {
+  --reading-color: #8b67bb;
+}
+.house-insights .hr-stat-people {
+  --reading-color: #309a88;
+}
+.house-insights .house-stat-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.house-insights .house-stat-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(100px, 0.65fr) minmax(
+      260px,
+      1.3fr
+    );
+  align-items: center;
+  gap: 24px;
+  padding: 20px 0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--line);
+}
+.house-stat-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.house-stat-name > svg {
+  color: var(--reading-color);
+  flex: none;
+}
+.house-insights .house-stat-name strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.house-insights .house-stat-name small {
+  font-size: 10px;
+  margin-top: 4px;
+}
+.house-insights .house-stat-row dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+.hr-stat-people .house-stat-row dl,
+.hr-stat-lights .house-stat-row dl {
+  grid-template-columns: 1.3fr 1fr;
+}
+.house-insights .house-stat-row dt {
+  font-size: 10px;
+  line-height: 1.4;
+}
+.house-insights .house-stat-row dd {
+  font-size: 15px;
+  margin-top: 6px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.house-insights .report-reading-primary dd {
+  font-weight: 700;
+}
+.report-range-track {
+  height: 8px;
+  position: relative;
+  margin: 0 5px;
+  background: var(--soft);
+  border-radius: 8px;
+}
+.report-range-fill {
+  position: absolute;
+  height: 100%;
+  background: var(--reading-color);
+  border-radius: 8px;
+  opacity: 0.55;
+  min-width: 2px;
+}
+.report-range-track > i {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--reading-color);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--reading-color);
+}
+.report-duration-track {
+  display: flex;
+  height: 8px;
+  background: var(--soft);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.report-duration-track > span {
+  background: var(--reading-color);
+}
+.report-duration-track > i {
+  background: color-mix(in srgb, var(--reading-color) 15%, var(--soft));
+}
+.report-duration-track > b {
+  background: repeating-linear-gradient(
+    110deg,
+    var(--line) 0 2px,
+    transparent 2px 5px
+  );
+}
+.report-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+  font-size: 10px !important;
+}
+.report-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.report-legend i {
+  width: 10px;
+  height: 7px;
+  background: var(--reading-color);
+  border-radius: 2px;
+}
+.report-legend > span:nth-child(2) i {
+  background: color-mix(in srgb, var(--reading-color) 15%, var(--soft));
+  border: 1px solid var(--line);
+}
+.report-legend > span:nth-child(3) i {
+  background: repeating-linear-gradient(
+    110deg,
+    var(--line) 0 2px,
+    transparent 2px 4px
+  );
+  border: 1px solid var(--line);
+}
+.report-method {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 12px;
+  margin: 24px 0 36px;
+}
+.report-method summary {
+  cursor: pointer;
+  color: var(--text);
+  min-height: 24px;
+}
+.report-method p {
+  font-size: 12px;
+}
+.report-empty-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  background: var(--soft);
+  border-radius: 12px;
+  margin: 20px 0;
+}
+.report-empty-inline > svg {
+  flex: none;
+  color: var(--muted);
+}
+.report-empty-inline p {
+  font-size: 13px;
+  margin: 0;
+}
+.report-empty-inline h3 {
+  margin: 0 0 8px;
+}
+.report-energy-summary,
+.report-activity,
+.report-energy .er-price-summary {
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  margin-top: 36px;
+}
+.ep .report-text-link {
+  border: 0;
+  padding: 8px 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+}
+.report-activity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  margin-top: 24px;
+}
+.house-insights h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+.report-category-bars > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+.report-category-bars > div > div {
+  grid-column: 1/-1;
+  height: 7px;
+  background: var(--soft);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.report-category-bars i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 6px;
+}
+.report-ranking {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.report-ranking li {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+.report-ranking li > span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.report-ranking strong {
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.report-ranking small {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.report-day-chart {
+  margin-top: 32px;
+}
+.report-day-scroll {
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.report-day-bars {
+  display: flex;
+  align-items: end;
+  gap: 4px;
+}
+.ep .report-day-bars button {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px 4px;
+  min-width: 40px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.ep .report-day-bars button[aria-pressed="true"] {
+  background: var(--tint);
+  border-color: var(--line);
+}
+.report-day-value {
+  font-weight: 500;
+}
+.report-day-bar {
+  display: flex;
+  height: 130px;
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+}
+.report-day-bar > i {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  opacity: 0.8;
+  border-radius: 5px 5px 0 0;
+}
+.report-day-bars small {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.report-chart-switch {
+  display: flex;
+  background: var(--soft);
+  padding: 4px;
+  border-radius: 10px;
+}
+.house-insights .ep-chart-fit .ep-chart {
+  min-width: 0;
+}
+.ep .report-chart-switch button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
+.ep .report-chart-switch button[aria-pressed="true"] {
+  background: var(--surface);
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--text) 8%, transparent);
+  font-weight: 600;
+}
+.report-price-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  margin: 16px 0;
+}
+.report-price-toggle input {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  accent-color: var(--accent);
+}
+.house-insights .er-coverage {
+  font-size: 12px;
+  margin-bottom: 28px;
+}
+.house-insights .er-chart {
+  margin-top: 32px;
+  padding: 0 0 28px;
+}
+.report-energy-finding {
+  display: flex;
+  gap: 18px;
+  margin: 28px 0;
+}
+.report-energy-finding > svg {
+  flex: none;
+  color: var(--accent);
+}
+.ep .report-energy-finding h3 {
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+.report-energy-finding p {
+  margin: 0;
+  font-size: 13px;
+}
+.report-price-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin: 24px 0;
+}
+.report-price-stats dt {
+  font-size: 11px;
+  color: var(--muted);
+}
+.report-price-stats dd {
+  margin: 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+}
+.report-price-stats dd small {
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.report-cost-columns {
+  margin-top: 36px;
+  border-top: 1px solid var(--line);
+  padding-top: 32px;
+  gap: 48px;
+}
+.report-cost-bars > div {
+  margin: 16px 0;
+}
+.report-cost-bars > div > div,
+.report-cost-total {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.report-cost-bars strong,
+.report-cost-total strong {
+  white-space: nowrap;
+  color: var(--text);
+}
+.report-cost-track {
+  display: block;
+  height: 7px;
+  border-radius: 6px;
+  background: var(--soft);
+  margin-top: 8px;
+}
+.report-cost-track i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--accent);
+}
+.report-cost-bars [data-credit] i {
+  background: #39a18a;
+}
+.house-insights .report-cost-total {
+  font-size: 14px;
+  padding-top: 16px;
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.house-insights .er-ledger {
+  margin: 0;
+}
+.house-insights .er-ledger > div {
+  font-size: 12px;
+  padding: 16px 0;
+}
+.house-insights .er-ledger dt {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.house-insights .er-ledger dd {
+  font-size: 14px;
+}
+.house-insights .er-ledger dt small {
+  font-size: 10px;
+  margin-top: 4px;
+}
+.house-insights .er-solar {
+  margin-top: 36px;
+  padding: 28px;
+  background: color-mix(in srgb, #309a88 5%, var(--surface));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.house-insights .er-document footer {
+  margin-top: 40px;
+  padding-top: 24px;
+}
+.house-insights .er-document footer .report-brand {
+  margin-bottom: 12px;
+}
+.house-insights .er-document footer p {
+  font-size: 11px;
+  max-width: 860px;
+}
+@media (max-width: 1050px) {
+  .house-insights .house-stat-row {
+    grid-template-columns: 1fr 1.2fr;
+    gap: 16px 24px;
+  }
+  .house-stat-name {
+    grid-column: 1/-1;
+  }
+  .report-start {
+    gap: 32px;
+  }
+  .report-tabs small {
+    display: none;
+  }
+  .house-insights .er-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .house-insights .er-fields > button {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 650px) {
+  .house-insights {
+    margin-top: 0;
+  }
+  .report-page-head {
+    padding: 8px 0 22px;
+  }
+  .report-page-mark {
+    display: none;
+  }
+  .report-page-head p {
+    font-size: 14px;
+  }
+  .report-tabs {
+    gap: 0;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+  .ep .report-tabs button {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 4px;
+  }
+  .report-tabs strong {
+    text-align: center;
+    font-size: 11px;
+  }
+  .house-insights .report-builder {
+    padding: 16px;
+  }
+  .house-insights .er-presets {
+    width: 100%;
+    display: flex;
+    gap: 5px;
+  }
+  .ep .er-presets button {
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 11px;
+    min-height: 44px;
+  }
+  .house-insights .er-fields {
+    gap: 12px;
+  }
+  .house-insights .er-fields input {
+    padding: 10px 7px;
+  }
+  .report-start {
+    grid-template-columns: 1fr;
+    padding: 32px 4px;
+    gap: 28px;
+  }
+  .report-start h2,
+  .ep .report-start h3 {
+    font-size: 30px;
+  }
+  .report-start p {
+    font-size: 14px;
+  }
+  .house-insights .er-document {
+    padding: 20px 16px;
+    border-radius: 16px;
+    margin-top: 20px;
+  }
+  .house-insights .er-document-head {
+    align-items: stretch;
+    gap: 16px;
+  }
+  .report-document-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .ep .report-document-actions button {
+    flex: 1;
+    min-height: 44px;
+  }
+  .report-jump {
+    gap: 0 20px;
+  }
+  .house-insights .er-kpis {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+  .house-insights .er-kpis > div {
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 0 0 18px;
+  }
+  .house-insights .er-kpis > div:last-child {
+    border: 0;
+    padding-bottom: 0;
+  }
+  .house-insights .er-kpis dd {
+    font-size: 34px;
+    margin: 5px 0;
+  }
+  .report-findings {
+    padding: 20px 16px;
+  }
+  .report-finding-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .report-finding-grid > div > svg {
+    float: right;
+    margin-top: 2px;
+  }
+  .report-section-head {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .report-source-count {
+    font-size: 10px;
+  }
+  .house-insights .house-stat-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .house-insights .house-stat-row dl {
+    gap: 12px;
+  }
+  .house-insights .house-stat-row dd {
+    font-size: 14px;
+  }
+  .report-reading-visual {
+    margin: 6px 0 0;
+  }
+  .report-activity-grid,
+  .report-cost-columns {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .report-ranking {
+    margin-top: 0;
+  }
+  .report-price-stats {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .report-price-stats > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .report-price-stats dd {
+    font-size: 22px;
+    white-space: nowrap;
+    margin: 0;
+  }
+  .report-price-stats dt {
+    max-width: 50%;
+  }
+  .report-energy-finding {
+    padding: 20px 16px;
+  }
+  .house-insights .er-solar {
+    padding: 20px 16px;
+  }
+  .report-price-toggle {
+    min-height: 44px;
+  }
 }
 @media print {
-  .hr-document { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-  .ep .hr-document .er-document-head h2 { font-size: 42pt; margin-top: 24px; }
-  .hr-document .house-stat-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  body.printing-energy-report .hr-document section { break-inside: auto; }
-  .hr-document h3 { break-after: avoid; }
-  .hr-document .house-stat-row, .hr-document .er-insight, .hr-cover-kpis > div { break-inside: avoid; }
-  .hr-document .hr-appendix { break-before: page; }
-  .hr-document .house-stat-row { padding: 16px; }
+  html:has(body.printing-energy-report),
+  body.printing-energy-report,
+  body.printing-energy-report :has(.er-document) {
+    background: #fff !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+  body.printing-energy-report::before,
+  body.printing-energy-report::after,
+  body.printing-energy-report :has(.er-document)::before,
+  body.printing-energy-report :has(.er-document)::after {
+    display: none !important;
+  }
+  body.printing-energy-report .er-document {
+    --soft: #f2f3f2;
+    --tint: #fff3e8;
+    --text: #202722;
+    --muted: #566059;
+    --line: #dce0dc;
+  }
+  .report-jump,
+  .report-document-actions,
+  .report-chart-switch,
+  .report-price-toggle {
+    display: none !important;
+  }
+  .house-insights .er-document {
+    overflow: visible;
+  }
+  .house-insights .er-document-head {
+    display: flex;
+    flex-direction: row;
+  }
+  .house-insights .er-document-head h2 {
+    font-size: 28pt;
+  }
+  .house-insights .er-kpis {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .report-finding-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .house-insights .house-stat-row {
+    grid-template-columns: 1fr 0.6fr 1.4fr;
+    break-inside: avoid;
+    padding: 14px 0;
+  }
+  .house-stat-name {
+    grid-column: auto;
+  }
+  .house-insights .hr-stat-section {
+    break-inside: auto !important;
+    margin: 24px 0;
+    padding-top: 20px;
+  }
+  .house-insights .house-stat-list {
+    display: block;
+  }
+  .report-section-head,
+  .report-section-description {
+    break-after: avoid;
+  }
+  .house-insights .er-document footer {
+    break-inside: avoid;
+    margin-top: 24px;
+    padding-top: 16px;
+  }
+  .house-insights .er-document details,
+  .report-activity-grid,
+  .report-day-scroll {
+    break-inside: avoid;
+  }
+  .house-insights .report-activity {
+    break-inside: auto !important;
+  }
+  .house-insights .report-cost-columns {
+    margin-top: 24px;
+    padding-top: 20px;
+  }
+  .house-insights .er-solar {
+    margin-top: 24px;
+    padding: 20px;
+  }
+  .report-energy-summary .report-text-link {
+    display: none;
+  }
+  .report-activity-grid,
+  .report-cost-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+  .report-price-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .report-price-stats > div {
+    display: block;
+  }
+  .report-price-stats dt {
+    max-width: none;
+  }
+  .report-day-scroll {
+    overflow: visible;
+  }
+  .report-day-bars {
+    min-width: 0 !important;
+  }
+  .ep .report-day-bars button {
+    min-width: 0;
+    padding: 2px;
+  }
+  .report-day-value {
+    font-size: 8px;
+  }
+  .report-day-bars small {
+    font-size: 6px;
+  }
+  .report-range-fill,
+  .report-duration-track,
+  .report-day-bar,
+  .report-cost-track,
+  .report-findings {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
 }
-.hr-cover-art img { width: min(55%, 420px); height: auto; }
-.hr-cover-art { min-height: 120px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--report-orange) 4%, var(--surface))); border-radius: 16px; }
-@media print { .hr-cover-art img { width: 240px; } }
+@media screen and (max-width: 650px) {
+  .house-report-body .er-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .house-insights .er-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .house-insights .er-kpis dd {
+    font-size: 28px;
+  }
+  .house-insights .er-kpis > div:last-child {
+    grid-column: 1/-1;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    align-items: center;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .house-insights .er-kpis > div:last-child p {
+    grid-column: 1/-1;
+  }
+}
+
+.house-insights {
+  color-scheme: light;
+}
+html[data-theme="dark"] .house-insights {
+  color-scheme: dark;
+}

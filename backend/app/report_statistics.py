@@ -1,6 +1,7 @@
 """Duration-weighted summaries of recorder states, including unknown intervals."""
-from datetime import datetime
+
 import math
+from datetime import datetime
 
 
 def summarize_states(points, start, end, kind):
@@ -12,18 +13,24 @@ def summarize_states(points, start, end, kind):
     last_arrival = None
     for i, point in enumerate(points):
         at = max(start, datetime.fromisoformat(point["time"]))
+        if at >= end:
+            break
         until = min(end, datetime.fromisoformat(points[i + 1]["time"])) if i + 1 < len(points) else end
         seconds = max(0, (until - at).total_seconds())
         state = point["state"]
         if kind in {"temperature", "humidity"}:
             value = point["value"]
             valid = value is not None and math.isfinite(value) and (kind != "humidity" or 0 <= value <= 100)
-            if valid:
+            if valid and seconds > 0:
                 values.append(value)
                 known += seconds
                 weighted += value * seconds
         else:
-            valid = state in {"on", "off"} if kind == "light" else state not in {"unknown", "unavailable", "", "None"}
+            valid = (
+                state in {"on", "off"}
+                if kind == "light"
+                else state not in {"unknown", "unavailable", "", "None"}
+            )
             is_active = state == ("on" if kind == "light" else "home")
             if valid:
                 known += seconds

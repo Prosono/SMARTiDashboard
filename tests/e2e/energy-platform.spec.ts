@@ -459,7 +459,7 @@ test("energy chart distinguishes zero from missing readings and supports keyboar
   await expect(page.locator(".ep-history .ep-chart-detail")).toContainText(
     "0 kWh",
   );
-  await page.keyboard.press("Tab");
+  await page.keyboard.press("ArrowRight");
   await expect(chart.getByRole("button").nth(2)).toHaveAttribute(
     "data-missing",
     "true",
