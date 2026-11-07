@@ -13,9 +13,11 @@ test("device first flow uses names, attributes and available actions", async ({
   const nav = page.getByRole("navigation", { name: "Hovedmeny" });
   await expect(nav).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
-  const title = `Enhetsflyt ${test.info().project.name}`;
+  const title = `Enhetsflyt ${test.info().project.name} ${Date.now()}`;
   // Fixtures include sensors excluded from the usual dashboard and a registry-ID based device trigger.
-  const data = await (await page.request.get("/api/manage/entities?details=true")).json();
+  const data = await (
+    await page.request.get("/api/manage/entities?details=true")
+  ).json();
   await page.route("**/api/manage/entities?details=true", async (route) => {
     await route.fulfill({
       json: [
@@ -97,7 +99,13 @@ test("device first flow uses names, attributes and available actions", async ({
           },
         ],
         conditions: [],
-        actions: [{ delay: 1 }],
+        actions: [
+          { delay: 1 },
+          {
+            action: "light.turn_on",
+            target: { entity_id: ["light.living_pendant", "light.kitchen"] },
+          },
+        ],
       },
     },
   });
@@ -117,6 +125,24 @@ test("device first flow uses names, attributes and available actions", async ({
   await expect(page.locator(".flow-board")).not.toContainText(
     "temperature-registry",
   );
+  await expect(
+    page
+      .locator(
+        '.flow-board [data-artwork-entity="sensor.fixture_temperature"] img',
+      )
+      .first(),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".flow-tree-node")
+      .filter({ hasText: "Vent" })
+      .locator(".flow-step-art img"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator(
+      '.flow-board .flow-step-art[data-art-targets="2"] .flow-art-count',
+    ),
+  ).toHaveText("+1");
   await page
     .getByRole("button", { name: "Fri arbeidsflate", exact: true })
     .click();
@@ -130,12 +156,16 @@ test("device first flow uses names, attributes and available actions", async ({
   const device = page
     .locator(".flow-device-list button")
     .filter({ hasText: "Multienhet test" });
+  await expect(device.locator(".device-product-art img")).toBeVisible();
   if (desktop) {
     const a = await device.boundingBox(),
       b = await page.locator(".canvas-viewport").boundingBox();
     await page.mouse.move(a!.x + a!.width / 2, a!.y + a!.height / 2);
     await page.mouse.down();
     await page.mouse.move(b!.x + 250, b!.y + 240, { steps: 15 });
+    await expect(
+      page.locator(".canvas-new-card-preview .device-product-art img"),
+    ).toBeVisible();
     await page.mouse.up();
   } else await device.click();
   let dialog = page.getByRole("dialog", {
@@ -143,14 +173,31 @@ test("device first flow uses names, attributes and available actions", async ({
     exact: true,
   });
   await expect(dialog).toBeVisible();
+  await expect(
+    dialog
+      .locator(
+        '.flow-device-features [data-artwork-entity="climate.fixture"] img',
+      )
+      .first(),
+  ).toBeVisible();
   await dialog.screenshot({
     path: `/tmp/smarti-device-picker-${test.info().project.name}.png`,
   });
   await dialog.getByRole("button", { name: /Målt temperatur/ }).click();
   await expect(dialog).toContainText("22.5");
+  await expect(
+    dialog.locator(
+      '.flow-device-current [data-artwork-entity="climate.fixture"] img',
+    ),
+  ).toBeVisible();
   await dialog.getByRole("button", { name: /^Og / }).click();
   const inspector = page.getByRole("dialog");
   await expect(inspector).toBeVisible();
+  await expect(
+    inspector.locator(
+      '.flow-edit-summary [data-artwork-entity="climate.fixture"] img',
+    ),
+  ).toBeVisible();
   await inspector
     .getByRole("button", { name: "Ferdig med steget", exact: true })
     .click();
@@ -176,6 +223,23 @@ test("device first flow uses names, attributes and available actions", async ({
     path: `/tmp/smarti-device-flow-${test.info().project.name}.png`,
     fullPage: true,
   });
+  const pictures = page.locator(".canvas-card-icon .device-product-art img");
+  await expect(pictures.first()).toBeVisible();
+  expect(
+    await pictures.evaluateAll((images) =>
+      images.every((image) => {
+        const img = image as HTMLImageElement;
+        const bounds = img.getBoundingClientRect(),
+          slot = img.closest(".canvas-card-icon")!.getBoundingClientRect();
+        return (
+          img.complete &&
+          img.naturalWidth > 0 &&
+          bounds.width <= slot.width + 1 &&
+          bounds.height <= slot.height + 1
+        );
+      }),
+    ),
+  ).toBe(true);
   const saved = page.waitForResponse(
     (r) =>
       r.request().method() === "PUT" &&

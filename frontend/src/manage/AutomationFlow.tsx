@@ -1,5 +1,6 @@
 import { Feedback } from "./shared";
 import { flowLibraryIcon } from "./flowLibraryIcon";
+import { FlowArtwork } from "./FlowArtwork";
 import { FlowStepPanel } from "./FlowStepPanel";
 import { flowCategories } from "./flowPresets";
 import { useEffect, useState } from "react";
@@ -12,7 +13,6 @@ import {
   ArrowUp,
   Check,
   ChevronRight,
-  GitBranch,
   LayoutGrid,
   ListTree,
   Plus,
@@ -32,7 +32,7 @@ import {
   replaceFlowPath,
   type FlowPath,
 } from "./flowStructure";
-import { flowIcon, kindAtPath, type FlowKind } from "./flowPresentation";
+import { kindAtPath, type FlowKind } from "./flowPresentation";
 import { flowLibrary, newFlowStep } from "./flowLibrary";
 import { SettingsDialog } from "../home/SettingsDialog";
 import type { Home } from "../types";
@@ -150,7 +150,6 @@ export function AutomationFlow({
   const row = selected ? readFlowPath(c, selected) : null;
   const kind = selected ? kindAtPath(selected) : "actions";
   const info = selected ? flowNarrative(row, kind, home, lang) : null;
-  const Icon = selected ? flowIcon(row, kind, home) : GitBranch;
   const parent = selected ? readFlowPath(c, selected.slice(0, -1)) : null;
   const index = selected?.at(-1);
   function move(direction: number) {
@@ -541,7 +540,7 @@ export function AutomationFlow({
               </button>
             )}
             <div className={`flow-edit-summary flow-${kind}`}>
-              <Icon size={28} />
+              <FlowArtwork row={row} kind={kind} home={home} size={44} />
               <div>
                 <strong>{info?.title}</strong>
                 <p>{info?.detail}</p>

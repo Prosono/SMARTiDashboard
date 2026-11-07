@@ -4,6 +4,7 @@ import { HomeDeviceGrid } from "./HomeDeviceGrid";
 import { MetricDetails } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RoomArtwork } from "../rooms/RoomArtwork";
+import { DeviceArtwork } from "./DeviceArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -343,6 +344,16 @@ export function ClimateOverview({
                     : target
                   : null;
               const air = a.air.find((c) => usable(c)) || a.air[0];
+              const portrait =
+                kind === "air"
+                  ? air
+                  : kind === "ventilation"
+                    ? a.fans[0]
+                    : (kind === "all" || kind === "temperature") && a.thermostat
+                      ? a.thermostat
+                      : a.items.find(
+                          (c) => kind === "all" || category(c) === kind,
+                        );
               const primary =
                 kind === "humidity"
                   ? fmt(a.humidity, " %")
@@ -405,29 +416,42 @@ export function ClimateOverview({
                               : t("Åpne for styring", "Open controls")}
                       </small>
                     </div>
-                    <div className="climate-dial" aria-hidden="true">
-                      <svg viewBox="0 0 80 80">
-                        <circle cx="40" cy="40" r="31" />
-                        <circle
-                          cx="40"
-                          cy="40"
-                          r="31"
-                          pathLength="100"
-                          strokeDasharray={`${dialLevel} 100`}
+                    <div
+                      className="climate-dial climate-device-portrait"
+                      aria-hidden="true"
+                    >
+                      {portrait ? (
+                        <DeviceArtwork
+                          c={portrait}
+                          available={!offline && home.connected}
+                          size={64}
                         />
-                      </svg>
-                      {kind === "humidity" ? (
-                        <Droplets />
-                      ) : kind === "air" ? (
-                        <Leaf />
-                      ) : kind === "ventilation" ? (
-                        <Wind />
-                      ) : heating ? (
-                        <Flame />
-                      ) : cooling ? (
-                        <Snowflake />
                       ) : (
-                        <Thermometer />
+                        <>
+                          <svg viewBox="0 0 80 80">
+                            <circle cx="40" cy="40" r="31" />
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="31"
+                              pathLength="100"
+                              strokeDasharray={`${dialLevel} 100`}
+                            />
+                          </svg>
+                          {kind === "humidity" ? (
+                            <Droplets />
+                          ) : kind === "air" ? (
+                            <Leaf />
+                          ) : kind === "ventilation" ? (
+                            <Wind />
+                          ) : heating ? (
+                            <Flame />
+                          ) : cooling ? (
+                            <Snowflake />
+                          ) : (
+                            <Thermometer />
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

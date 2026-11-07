@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, type ElementType } from "react";
 import type { Control } from "../types";
 import { CardIcon, CardPresentation, cardImageURL } from "./CardPresentation";
 import { EquipmentArtwork } from "./EquipmentArtwork";
@@ -11,13 +11,18 @@ import { sensorDeviceArtwork } from "./sensorDeviceArtwork";
 export function DeviceArtwork({
   c,
   available = true,
+  size,
+  fallback,
 }: {
   c: Control;
   available?: boolean;
+  size?: number;
+  fallback?: ElementType;
 }) {
   const { image } = useContext(CardPresentation);
   const [failed, setFailed] = useState<string[]>([]);
-  const { Icon } = deviceAppearance(c);
+  const { Icon: DefaultIcon } = deviceAppearance(c);
+  const Icon = fallback || DefaultIcon;
   const custom = image && image !== "auto";
   const url = custom
     ? cardImageURL(image)
@@ -44,7 +49,16 @@ export function DeviceArtwork({
       "alarm_control_panel",
     ].includes(c.domain);
   return (
-    <span className="device-product-art" aria-hidden="true">
+    <span
+      className="device-product-art"
+      aria-hidden="true"
+      data-artwork-entity={c.entity_id}
+      style={
+        size === undefined
+          ? undefined
+          : { width: size, height: size, flex: "none", display: "grid" }
+      }
+    >
       {url && !failed.includes(url) ? (
         <img
           src={url}

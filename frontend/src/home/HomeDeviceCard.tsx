@@ -35,6 +35,7 @@ function SensorCard({
         control={c}
         kind={kind}
         enhanced
+        deviceArtwork
         offline={offline || !home.connected}
         lang={lang}
         open={() => open(true)}

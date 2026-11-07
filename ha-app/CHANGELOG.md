@@ -1,3 +1,8 @@
+## 1.36.122
+- Klima bruker det felles bildebiblioteket for termostater, varmepumper/AC, vifter og sensorer, også på de store kortene og i den klassiske romoversikten. Bildene tilpasses mobil, nettbrett og PC; egne bildevalg og «uten bilde» beholdes.
+- Automasjonseditoren viser enhetsbilder i flyten, stegvisningen, redigeringsvinduet, enhetsbiblioteket og enhetsvelgeren. Bilder følger med når enheter dras inn. Tid, venting og logiske steg beholder forklarende symboler.
+- Flere mål markeres ved bildet. Register-ID-er kobles til riktig entitet; ukjente eller blandede mål får ikke et oppdiktet enhetsantall. Bilder er kun visuelle og endrer ikke automasjonens innhold eller kjøring.
+
 ## 1.36.121
 - Oppdagede enheter har et ryddigere mobiloppsett med lesbare navn og informasjon, og en egen rad for «Sett opp»-knappen. Lange navn og ulike skjermbredder håndteres uten at teksten klemmes sammen.
 - Installerte apper har et synlig «Avinstaller»-valg direkte i oversikten og en egen fjerningsdel i appdetaljene. Bekreftelse, systembeskyttelse, status og eksisterende tilgangskontroll beholdes.

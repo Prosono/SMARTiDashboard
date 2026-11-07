@@ -1,3 +1,48 @@
+# Shared climate and automation artwork — release 1.36.122
+
+Climate uses the shared artwork renderer for thermostat/AC headers, per-device
+metric cards, air-quality sensors and classic room portraits. Phone cards retain
+their dedicated layout and existing shared portraits. Product slots reserve their
+width and height; saved custom and no-image choices continue to apply. Aggregate
+summary icons, room photos, readings and climate control capabilities are retained.
+No new raster assets or image choices are introduced by this release.
+
+Automation canvas nodes, nested/step trees, selected-step summaries, device
+library rows, drag previews, device functions and entity-picker results now reuse
+the same pictures. Explicit entity and registry IDs identify controls; physical
+device/area targets choose a relevant function ahead of battery diagnostics.
+Homogeneous multiple targets show a small remaining-target count. Mixed targets
+show a generic plus rather than asserting a count from an incomplete home
+snapshot. Device-trigger metadata is not counted as an additional target. Logic,
+time, wait and other conceptual steps retain meaningful symbols; unknown targets
+retain the existing fallback. Lookup is visual only and never evaluates templates
+or mutates the automation configuration. Per-node lookup is memoized while dragging.
+
+Validation on 7 November 2026:
+
+- Production build, frontend lint, scoped Playwright TypeScript and whitespace
+  checks passed. **297 frontend unit tests in 49 files** passed, including exact
+  entity/registry matching, device/area selection, mixed targets, logical/template
+  fallback and unchanged automation/home snapshots.
+- **24 distinct Chromium browser cases** passed against the exact extracted
+  runtime package. Climate coverage includes classic/Harmony, light/dark,
+  390/820/1280 px views, loaded product images, custom/no-image choices, real
+  readings, search and confirmed/unconfirmed temperature controls. Existing
+  mobile coverage also exercises room selection, sensor disclosure, permissions,
+  safe adjustments, and retained desktop product art on phone tiles.
+- Automation cases cover canvas, nested trees, inspector summaries, library,
+  drag preview, device functions and entity picker; multi-target badges,
+  registry-ID triggers, nested logic, validation, cancellation and unchanged
+  saved HA configuration. Existing inventory/protocol artwork, missing-image
+  fallback, formatted readings and portrait overlap checks passed at
+  320–1920 px widths in both themes/styles.
+- Climate and flow screenshots were inspected. Native Safari and live hardware
+  were not exercised; all browser writes were confined to isolated demo fixtures.
+  No live hub installation/update or automation execution ran. Existing Vite
+  chunk-size warnings remain.
+- Deterministic packaging and all **299 runtime member hashes** were verified.
+  SHA-256: `895b48fd302ab3026f4072056da4997f2e0784e872c32299ca25385d6a53b942`.
+
 # Mode icons, mobile discoveries, app removal and sensor artwork — release 1.36.121
 
 Discovered-device rows now reserve a real text column and put the setup action

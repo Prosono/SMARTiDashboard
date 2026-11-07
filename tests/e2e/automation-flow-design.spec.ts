@@ -15,7 +15,7 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const config = {
-    alias: `Trygg kveldsrutine ${test.info().project.name}`,
+    alias: `Trygg kveldsrutine ${test.info().project.name} ${Date.now()}`,
     description: "Tester ekte HA-struktur uten å kjøre enheter.",
     mode: "queued",
     max: 3,
@@ -112,6 +112,18 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   ).toHaveAttribute("aria-pressed", "true");
   await expect(flow).not.toContainText("Avansert blokk");
   await expect(flow).toContainText("Når noen er hjemme");
+  const lampTree = flow
+    .locator(".flow-tree-node")
+    .filter({
+      has: page.getByRole("button", {
+        name: "Rediger steg: Demp pendellampen",
+        exact: true,
+      }),
+    })
+    .last();
+  await expect(
+    lampTree.locator('[data-artwork-entity="light.living_pendant"] img'),
+  ).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(
@@ -131,6 +143,14 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
     .click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
+  await expect(
+    dialog.locator(
+      '.flow-edit-summary [data-artwork-entity="light.living_pendant"] img',
+    ),
+  ).toBeVisible();
+  await expect(
+    dialog.locator(".entity-picker-opener .device-product-art img"),
+  ).toBeVisible();
   await dialog
     .getByRole("button", { name: "Enhetene som skal styres", exact: true })
     .click();
@@ -142,6 +162,11 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   await picker.getByRole("textbox").fill("Pendellampe");
   await expect(
     picker.getByRole("button", { name: /Pendellampe/ }),
+  ).toBeVisible();
+  await expect(
+    picker
+      .getByRole("button", { name: /Pendellampe/ })
+      .locator(".device-product-art img"),
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(picker).not.toBeVisible();

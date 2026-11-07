@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { Home } from "../types";
 import { words } from "./shared";
+import { DeviceArtwork } from "../home/DeviceArtwork";
 export type EntityChoice = { entity_id: string; name: string };
 export function EntityPicker({
   value,
@@ -86,7 +87,11 @@ export function EntityPicker({
           dialog.current?.showModal();
         }}
       >
-        <Icon size={24} />
+        {control(value) ? (
+          <DeviceArtwork c={control(value)!} size={40} />
+        ) : (
+          <Icon size={24} />
+        )}
         <span>
           <strong>
             {selected?.name || value || t("Velg enhet", "Choose device")}
@@ -198,7 +203,11 @@ export function EntityPicker({
                             close();
                           }}
                         >
-                          <Glyph size={26} />
+                          {known ? (
+                            <DeviceArtwork c={known} size={40} />
+                          ) : (
+                            <Glyph size={26} />
+                          )}
                           <span>
                             <strong>{c.name}</strong>
                             <small>

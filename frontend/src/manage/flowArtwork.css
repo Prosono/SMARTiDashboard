@@ -1,0 +1,37 @@
+.flow-step-art {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  pointer-events: none;
+}
+.flow-step-art[aria-hidden] .flow-art-count {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 3px;
+  border-radius: 9px;
+  border: 1px solid var(--surface);
+  background: var(--text);
+  color: var(--surface);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+}
+.flow-designer .canvas-card-icon:has(img),
+.flow-node-icon:has(img) {
+  background: transparent;
+  border-radius: 4px;
+}
+.flow-edit-summary > .flow-step-art {
+  align-self: center;
+}
+.flow-device-current {
+  align-items: center;
+}
+.flow-device-current > strong {
+  min-width: 0;
+}

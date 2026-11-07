@@ -9,6 +9,7 @@ import type { HomeGridCard } from "./HomeGrid";
 import { HarmonyTrend } from "./HarmonyTrend";
 import { TemperatureValue } from "./TemperatureValue";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { DeviceArtwork } from "./DeviceArtwork";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Droplets, Thermometer, Zap } from "lucide-react";
 import { api } from "../api";
@@ -104,6 +105,7 @@ export function HomeMetric({
   lang,
   offline,
   open,
+  deviceArtwork = false,
 }: {
   control: Control;
   enhanced: boolean;
@@ -111,6 +113,7 @@ export function HomeMetric({
   lang: string;
   offline: boolean;
   open: () => void;
+  deviceArtwork?: boolean;
 }) {
   const en = lang === "en",
     labels = {
@@ -182,8 +185,19 @@ export function HomeMetric({
         onClick={enhanced ? open : undefined}
         aria-label={enhanced ? `${labels[kind]}: ${control.name}` : undefined}
       >
-        <span className={`home-metric-icon is-${kind}`}>
-          <CardIcon fallback={Icon} size={20} />
+        <span
+          className={`home-metric-icon is-${kind}`}
+          style={
+            deviceArtwork
+              ? { width: 40, height: 40, flex: "0 0 40px" }
+              : undefined
+          }
+        >
+          {deviceArtwork ? (
+            <DeviceArtwork c={control} available={available} size={40} />
+          ) : (
+            <CardIcon fallback={Icon} size={20} />
+          )}
         </span>
         <strong>
           <CardTitle>{labels[kind]}</CardTitle>

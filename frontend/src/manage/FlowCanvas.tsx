@@ -1,5 +1,6 @@
 import { FlowDeviceLibrary } from "./FlowDeviceLibrary";
 import { flowLibraryIcon } from "./flowLibraryIcon";
+import { FlowArtwork } from "./FlowArtwork";
 import { flowLibrary } from "./flowLibrary";
 import { routeWire, wirePath, smoothWirePath } from "./flowRouting";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -25,7 +26,7 @@ import { planConnection, type ConnectionMode } from "./flowConnections";
 import { canvasModel } from "./flowCanvasModel";
 import { readFlowPath, flowGroups, type FlowPath } from "./flowStructure";
 import { flowNarrative as flowSummary } from "./flowNarrative";
-import { flowIcon, type FlowKind as FlowKey } from "./flowPresentation";
+import { type FlowKind as FlowKey } from "./flowPresentation";
 export function FlowCanvas({
   config,
   home,
@@ -272,11 +273,6 @@ export function FlowCanvas({
                   ? { title: n.label!, detail: "" }
                   : flowSummary(row, n.kind as FlowKey, home, lang),
               branches: n.path ? flowGroups(row, n.path, lang) : [],
-              CardIcon: flowIcon(
-                row,
-                n.kind === "gate" ? "triggers" : n.kind,
-                home,
-              ),
             },
           ];
         }),
@@ -855,9 +851,7 @@ export function FlowCanvas({
                 );
               })()}
             {nodes.map((n) => {
-              const { row, summary, branches, CardIcon } = presentations.get(
-                n.id,
-              )!;
+              const { row, summary, branches } = presentations.get(n.id)!;
               return (
                 <article
                   className={
@@ -973,7 +967,11 @@ export function FlowCanvas({
                     onClick={() => n.path && onSelect(n.path)}
                   >
                     <span className="canvas-card-icon">
-                      <CardIcon size={22} />
+                      <FlowArtwork
+                        row={row}
+                        kind={n.kind === "gate" ? "triggers" : n.kind}
+                        home={home}
+                      />
                     </span>
                     <strong>{summary.title}</strong>
                     <span>{summary.detail}</span>

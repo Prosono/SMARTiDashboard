@@ -3,7 +3,8 @@ import { ChevronDown, ChevronRight, Pencil, Eye } from "lucide-react";
 import type { Home } from "../types";
 import { flowGroups, has, type FlowPath } from "./flowStructure";
 import { flowNarrative } from "./flowNarrative";
-import { flowIcon, type FlowKind as FlowKey } from "./flowPresentation";
+import { type FlowKind as FlowKey } from "./flowPresentation";
+import { FlowArtwork } from "./FlowArtwork";
 export function FlowTree({
   row,
   path,
@@ -29,7 +30,6 @@ export function FlowTree({
   const [open, setOpen] = useState(depth < 3);
   const summary = flowNarrative(row, kind, home, lang);
   const groups = flowGroups(row, path, lang);
-  const Icon = flowIcon(row, kind, home);
   const extras = [
     "for",
     "from",
@@ -48,7 +48,7 @@ export function FlowTree({
     >
       <div className="flow-node-heading">
         <span className="flow-node-icon">
-          <Icon size={20} />
+          <FlowArtwork row={row} kind={kind} home={home} />
         </span>
         <button
           type="button"

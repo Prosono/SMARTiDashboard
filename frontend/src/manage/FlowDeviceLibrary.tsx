@@ -2,7 +2,6 @@ import { createPortal } from "react-dom";
 import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Radio,
   ChevronRight,
   ArrowLeft,
   Zap,
@@ -13,7 +12,9 @@ import {
 import type { Home } from "../types";
 import { api } from "../api";
 import { SettingsDialog } from "../home/SettingsDialog";
-import { flowIcon, type FlowKind } from "./flowPresentation";
+import { type FlowKind } from "./flowPresentation";
+import { DeviceArtwork } from "../home/DeviceArtwork";
+import { primaryDeviceControl } from "../home/deviceAppearance";
 import { entityState } from "./entityWords";
 import {
   flowDevices,
@@ -30,6 +31,14 @@ type Field = {
   fields?: Record<string, Field>;
 };
 type Service = { action: string; name: string; fields: Record<string, Field> };
+const artworkControl = (group: DeviceGroup) =>
+  primaryDeviceControl(
+    group.controls.filter(
+      (c) => !c.diagnostic && c.attributes.device_class !== "battery",
+    ),
+  ) ||
+  primaryDeviceControl(group.controls) ||
+  group.controls[0];
 function fieldsOf(fields: Record<string, Field>): [string, Field][] {
   return Object.entries(fields)
     .flatMap(([key, f]) =>
@@ -78,6 +87,7 @@ export function FlowDeviceLibrary({
   const [values, setValues] = useState<Record<string, any>>({});
   const [ghost, setGhost] = useState<{
     name: string;
+    group: DeviceGroup;
     x: number;
     y: number;
   } | null>(null);
@@ -167,7 +177,7 @@ export function FlowDeviceLibrary({
                 return;
               d.moved = true;
               skipClick.current = true;
-              setGhost({ name: g.name, x: e.clientX, y: e.clientY });
+              setGhost({ name: g.name, group: g, x: e.clientX, y: e.clientY });
             }}
             onPointerUp={(e) => {
               const d = gesture.current;
@@ -193,7 +203,7 @@ export function FlowDeviceLibrary({
               open(g);
             }}
           >
-            <Radio size={20} />
+            <DeviceArtwork c={artworkControl(g)} size={36} />
             <span>
               <strong>{g.name}</strong>
               <small>
@@ -216,7 +226,7 @@ export function FlowDeviceLibrary({
           style={{ left: ghost.x + 16, top: ghost.y + 16 }}
           aria-hidden="true"
         >
-          <Radio size={18} />
+          <DeviceArtwork c={artworkControl(ghost.group)} size={32} />
           {ghost.name}
         </div>
       )}
@@ -247,6 +257,7 @@ export function FlowDeviceLibrary({
                     {feature.attribute ? ` · ${feature.attribute}` : ""}
                   </p>
                   <div className="flow-device-current">
+                    <DeviceArtwork c={feature.control} size={40} />
                     <span>{t("Akkurat nå", "Right now")}</span>
                     <strong>
                       {feature.attribute
@@ -642,11 +653,6 @@ export function FlowDeviceLibrary({
                           .includes(featureSearch.toLocaleLowerCase()),
                       )
                       .map((f) => {
-                        const Icon = flowIcon(
-                          { trigger: "state", entity_id: f.control.entity_id },
-                          "triggers",
-                          home,
-                        );
                         return (
                           <button
                             type="button"
@@ -658,7 +664,7 @@ export function FlowDeviceLibrary({
                               setService(null);
                             }}
                           >
-                            <Icon size={22} />
+                            <DeviceArtwork c={f.control} size={40} />
                             <span>
                               <strong>{f.name}</strong>
                               <small>

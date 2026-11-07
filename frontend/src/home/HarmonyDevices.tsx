@@ -35,6 +35,7 @@ import { InSettingsDialog, SettingsDialog } from "./SettingsDialog";
 import { numeric, measurementParts, usable } from "./homeModel";
 import { TemperatureValue } from "./TemperatureValue";
 import { EquipmentArtwork } from "./EquipmentArtwork";
+import { DeviceArtwork } from "./DeviceArtwork";
 import { EquipmentColorControls } from "./EquipmentColorControls";
 import { CardIcon, CardTitle } from "./CardPresentation";
 import { cardTone } from "./cardToneModel";
@@ -470,8 +471,19 @@ function HarmonyDevice({
       }
     >
       <header className="harmony-device-header">
-        <span className="harmony-device-icon">
-          <CardIcon fallback={Icon} size={26} />
+        <span
+          className="harmony-device-icon"
+          style={
+            c.domain === "climate"
+              ? { width: 40, height: 40, flex: "0 0 40px", padding: 0 }
+              : undefined
+          }
+        >
+          {c.domain === "climate" ? (
+            <DeviceArtwork c={c} available={available} size={40} />
+          ) : (
+            <CardIcon fallback={Icon} size={26} />
+          )}
         </span>
         <button
           className="harmony-device-open"
@@ -578,7 +590,11 @@ function HarmonyDevice({
             )}
             {feedback}
           </div>
-          <EquipmentArtwork c={c} available={available} />
+          {c.domain === "sensor" ? (
+            <DeviceArtwork c={c} available={available} size={100} />
+          ) : (
+            <EquipmentArtwork c={c} available={available} />
+          )}
         </div>
       )}
       {c.domain === "media_player" && (
