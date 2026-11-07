@@ -54,7 +54,7 @@ export function mobileCardSummary(
   if (!sources.length && card.summary) return card.summary;
   if (!sources.length && card.id === "routines")
     return {
-      reading: t("Velg rutine", "Choose routine"),
+      reading: t("Velg eller lag rutine", "Choose or create routine"),
       detail: t(
         "Hjemme · Borte · Natt · Ferie",
         "Home · Away · Night · Holiday",

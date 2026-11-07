@@ -6,6 +6,7 @@ import {
 } from "../collectionIcons";
 import { allViews, allControls } from "../access";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { DeviceArtwork } from "./DeviceArtwork";
 import { LightColor } from "../LightColor";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -50,6 +51,7 @@ type Draft = {
   revision: string;
   preserved: string[];
 };
+export type SceneDraft = Draft;
 const empty: Draft = {
   name: "",
   icon: "mdi:sofa",
@@ -424,7 +426,7 @@ export function Scenes({
     </section>
   );
 }
-function SceneEditor({
+export function SceneEditor({
   initial,
   id,
   home,
@@ -432,6 +434,8 @@ function SceneEditor({
   offline,
   close,
   saved,
+  routine,
+  persist,
 }: {
   initial: Draft;
   id: string | null;
@@ -440,25 +444,39 @@ function SceneEditor({
   offline: boolean;
   close: () => void;
   saved: (deleted?: boolean) => Promise<void>;
+  routine?: { label: string; persisted: boolean };
+  persist?: (draft: Omit<Draft, "preserved">) => Promise<void>;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [draft, setDraft] = useState(initial),
-    [step, setStep] = useState(0),
+    [step, setStep] = useState(routine ? 1 : 0),
     [search, setSearch] = useState(""),
     [area, setArea] = useState("*"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
+  const pending = useRef(false);
+  const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     dialog.current?.showModal();
   }, []);
+  useEffect(() => {
+    if (routine) title.current?.focus();
+  }, [step, !!routine]);
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
   const exit = () => {
     if (
       !busy &&
       (!dirty ||
         window.confirm(
-          t("Forkaste endringene i scenen?", "Discard scene changes?"),
+          routine?.persisted
+            ? t(
+                "Rutinen er lagret, men ikke koblet til modusen. Lukke veilederen?",
+                "The routine is saved but not linked to the mode. Close the guide?",
+              )
+            : routine
+              ? t("Forkaste endringene i rutinen?", "Discard routine changes?")
+              : t("Forkaste endringene i scenen?", "Discard scene changes?"),
         ))
     )
       close();
@@ -481,40 +499,47 @@ function SceneEditor({
       entities: { ...d.entities, [eid]: { ...d.entities[eid], ...value } },
     }));
   async function save() {
+    if (pending.current || offline) return;
+    pending.current = true;
     setBusy(true);
     setError("");
     try {
       const { preserved, ...body } = draft;
-      await api(
-        id ? `scenes/config/${encodeURIComponent(id)}` : "scenes",
-        id ? "PUT" : "POST",
-        body,
-        AbortSignal.timeout(35000),
-      );
+      if (persist) await persist(body);
+      else
+        await api(
+          id ? `scenes/config/${encodeURIComponent(id)}` : "scenes",
+          id ? "PUT" : "POST",
+          body,
+          AbortSignal.timeout(35000),
+        );
       await saved();
     } catch (e) {
       setError(
-        e instanceof ApiError && e.status === 409
-          ? t(
-              "Scenen er endret et annet sted. Lukk og åpne den på nytt før du lagrer.",
-              "Scene changed elsewhere. Close and reopen before saving.",
-            )
-          : e instanceof ApiError && e.status === 422
+        persist && e instanceof Error
+          ? e.message
+          : e instanceof ApiError && e.status === 409
             ? t(
-                "En av innstillingene kan ikke lagres. Gå tilbake til Enheter og kontroller tilstand, temperatur, lysstyrke og volum.",
-                "One of the settings cannot be saved. Go back to Devices and check state, temperature, brightness and volume.",
+                "Scenen er endret et annet sted. Lukk og åpne den på nytt før du lagrer.",
+                "Scene changed elsewhere. Close and reopen before saving.",
               )
-            : e instanceof ApiError && e.status === 403
+            : e instanceof ApiError && e.status === 422
               ? t(
-                  "Du har ikke tilgang til å lagre scener.",
-                  "You do not have permission to save scenes.",
+                  "En av innstillingene kan ikke lagres. Gå tilbake til Enheter og kontroller tilstand, temperatur, lysstyrke og volum.",
+                  "One of the settings cannot be saved. Go back to Devices and check state, temperature, brightness and volume.",
                 )
-              : t(
-                  "Kunne ikke bekrefte lagringen. Kontroller scenelisten før du prøver igjen.",
-                  "Could not confirm the save. Check the scene list before retrying.",
-                ),
+              : e instanceof ApiError && e.status === 403
+                ? t(
+                    "Du har ikke tilgang til å lagre scener.",
+                    "You do not have permission to save scenes.",
+                  )
+                : t(
+                    "Kunne ikke bekrefte lagringen. Kontroller scenelisten før du prøver igjen.",
+                    "Could not confirm the save. Check the scene list before retrying.",
+                  ),
       );
     } finally {
+      pending.current = false;
       setBusy(false);
     }
   }
@@ -522,6 +547,7 @@ function SceneEditor({
     <dialog
       ref={dialog}
       className="scene-editor"
+      data-routine={routine ? true : undefined}
       aria-labelledby="scene-editor-title"
       onCancel={(e) => {
         e.preventDefault();
@@ -531,17 +557,32 @@ function SceneEditor({
       <header>
         <div>
           <span className="eyebrow">
-            {t("Skap et øyeblikk", "Create a moment")}
+            {routine
+              ? t("Ny rutine", "New routine")
+              : t("Skap et øyeblikk", "Create a moment")}
           </span>
-          <h2 id="scene-editor-title">
-            {id
-              ? t("Rediger scene", "Edit scene")
-              : t("Din nye scene", "Your new scene")}
+          <h2
+            id="scene-editor-title"
+            ref={title}
+            tabIndex={routine ? -1 : undefined}
+          >
+            {routine
+              ? t(
+                  `Hva skal skje i ${routine.label}-modus?`,
+                  `What should happen in ${routine.label} mode?`,
+                )
+              : id
+                ? t("Rediger scene", "Edit scene")
+                : t("Din nye scene", "Your new scene")}
           </h2>
         </div>
         <button
           className="icon-button"
-          aria-label={t("Lukk sceneredigering", "Close scene editor")}
+          aria-label={
+            routine
+              ? t("Lukk rutineveileder", "Close routine guide")
+              : t("Lukk sceneredigering", "Close scene editor")
+          }
           disabled={busy}
           onClick={exit}
         >
@@ -553,18 +594,23 @@ function SceneEditor({
           t("Navn og ikon", "Name and icon"),
           t("Enheter", "Devices"),
           t("Se over", "Review"),
-        ].map((label, i) => (
-          <li
-            key={label}
-            className={step === i ? "current" : step > i ? "done" : ""}
-          >
-            <span>{step > i ? <Check size={14} /> : i + 1}</span>
-            {label}
-          </li>
-        ))}
+        ].map((label, i) =>
+          routine && i === 0 ? null : (
+            <li
+              key={label}
+              className={step === i ? "current" : step > i ? "done" : ""}
+              aria-current={step === i ? "step" : undefined}
+            >
+              <span>
+                {step > i ? <Check size={14} /> : i + (routine ? 0 : 1)}
+              </span>
+              {label}
+            </li>
+          ),
+        )}
       </ol>
       <div className="scene-editor-body">
-        <fieldset disabled={busy || offline}>
+        <fieldset disabled={busy || offline || routine?.persisted}>
           {step === 0 && (
             <>
               <label className="scene-name">
@@ -605,8 +651,12 @@ function SceneEditor({
             <>
               <p className="scene-explainer">
                 {t(
-                  "Velg enheter og ønsket tilstand. Ingenting i hjemmet endres mens du redigerer.",
-                  "Choose devices and target settings. Nothing in your home changes while editing.",
+                  routine
+                    ? `Velg hva hjemmet skal gjøre når du aktiverer ${routine.label}. Enheter du ikke velger, beholdes som de er.`
+                    : "Velg enheter og ønsket tilstand. Ingenting i hjemmet endres mens du redigerer.",
+                  routine
+                    ? `Choose what your home should do when you activate ${routine.label}. Devices you do not select stay as they are.`
+                    : "Choose devices and target settings. Nothing in your home changes while editing.",
                 )}
               </p>
               <div className="scene-search">
@@ -634,6 +684,14 @@ function SceneEditor({
                 </select>
               </div>
               <div className="scene-device-list">
+                {!candidates.length && (
+                  <p role="status">
+                    {t(
+                      "Ingen støttede enheter er tilgjengelige. Du kan velge en eksisterende rutine i stedet.",
+                      "No supported devices are available. You can choose an existing routine instead.",
+                    )}
+                  </p>
+                )}
                 {candidates
                   .filter(
                     (c) =>
@@ -664,9 +722,12 @@ function SceneEditor({
                               })
                             }
                           />
+                          {routine && <DeviceArtwork c={c} size={44} />}
                           <span>
                             <strong>
-                              <DeviceIcon size={16} aria-hidden="true" />{" "}
+                              {!routine && (
+                                <DeviceIcon size={16} aria-hidden="true" />
+                              )}{" "}
                               {c.name}
                             </strong>
                             <small>
@@ -844,7 +905,15 @@ function SceneEditor({
             <div className="scene-review">
               <h3>{draft.name}</h3>
               <p>
-                {t("Når du aktiverer scenen:", "When you activate this scene:")}
+                {routine
+                  ? t(
+                      `Når du aktiverer ${routine.label}:`,
+                      `When you activate ${routine.label}:`,
+                    )
+                  : t(
+                      "Når du aktiverer scenen:",
+                      "When you activate this scene:",
+                    )}
               </p>
               <ul>
                 {selected.map(([eid, target]) => (
@@ -870,8 +939,12 @@ function SceneEditor({
               </ul>
               <p className="scene-explainer">
                 {t(
-                  "Lagring aktiverer ikke scenen. Andre eksisterende innstillinger, som lysfarger, beholdes.",
-                  "Saving does not activate the scene. Other existing settings, such as light colors, are preserved.",
+                  routine
+                    ? "Rutinen blir knyttet til modusknappen. Den kjøres først når du aktiverer og bekrefter modusen."
+                    : "Lagring aktiverer ikke scenen. Andre eksisterende innstillinger, som lysfarger, beholdes.",
+                  routine
+                    ? "The routine will be linked to the mode button. It runs only when you activate and confirm the mode."
+                    : "Saving does not activate the scene. Other existing settings, such as light colors, are preserved.",
                 )}
               </p>
             </div>
@@ -895,8 +968,12 @@ function SceneEditor({
       {busy && (
         <p role="status" aria-live="polite" className="notice">
           {t(
-            "Lagrer scenen og venter på bekreftelse fra hjemmesentralen…",
-            "Saving the scene and waiting for confirmation from the home hub…",
+            routine
+              ? "Lagrer rutinen og kobler den til modusen…"
+              : "Lagrer scenen og venter på bekreftelse fra hjemmesentralen…",
+            routine
+              ? "Saving the routine and linking it to the mode…"
+              : "Saving the scene and waiting for confirmation from the home hub…",
           )}
         </p>
       )}
@@ -944,8 +1021,11 @@ function SceneEditor({
           </button>
         )}
         <div>
-          {step > 0 && (
-            <button disabled={busy} onClick={() => setStep(step - 1)}>
+          {step > (routine ? 1 : 0) && (
+            <button
+              disabled={busy || routine?.persisted}
+              onClick={() => setStep(step - 1)}
+            >
               {t("Tilbake", "Back")}
             </button>
           )}
@@ -969,7 +1049,16 @@ function SceneEditor({
               disabled={busy || offline}
               onClick={() => void save()}
             >
-              {busy ? t("Lagrer…", "Saving…") : t("Lagre scene", "Save scene")}
+              {busy
+                ? t("Lagrer…", "Saving…")
+                : routine
+                  ? routine.persisted
+                    ? t(
+                        `Koble til ${routine.label}`,
+                        `Link to ${routine.label}`,
+                      )
+                    : t("Lagre rutine", "Save routine")
+                  : t("Lagre scene", "Save scene")}
               <Check size={16} />
             </button>
           )}

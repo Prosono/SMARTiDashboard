@@ -1,3 +1,9 @@
+## 1.36.123
+- Modusknappene i Rutiner-kortet tilbyr «Lag rutine» når ingen rutine er valgt. Du kan lage en ny rutine eller velge en eksisterende scene, et skript eller en automasjon.
+- En veileder spør «Hva skal skje i …-modus?». Velg enheter og ønsket tilstand, lysstyrke, temperatur eller volum, og se gjennom valgene før rutinen lagres og knyttes til den valgte modusen.
+- Lagring kjører ikke enhetene. Aktivering krever fortsatt bekreftelse. Andre moduser og de separate mobil-/desktopoppsettene beholdes.
+- Dersom rutinen lagres, men koblingen feiler, kan koblingen forsøkes igjen uten å opprette rutinen på nytt. Nye rutiner gjenkjennes på faktisk scene-/register-ID. Tilgangskontroll og frakoblet-status beholdes.
+
 ## 1.36.122
 - Klima bruker det felles bildebiblioteket for termostater, varmepumper/AC, vifter og sensorer, også på de store kortene og i den klassiske romoversikten. Bildene tilpasses mobil, nettbrett og PC; egne bildevalg og «uten bilde» beholdes.
 - Automasjonseditoren viser enhetsbilder i flyten, stegvisningen, redigeringsvinduet, enhetsbiblioteket og enhetsvelgeren. Bilder følger med når enheter dras inn. Tid, venting og logiske steg beholder forklarende symboler.

@@ -51,6 +51,8 @@ import { Energy } from "./EnergyOverview";
 import { EnergyPlatform } from "./EnergyPlatform";
 import { EnergyFlow } from "./EnergyFlow";
 import { Scenes } from "./Scenes";
+import { HomeModeSetup, type HomeMode } from "./HomeModeSetup";
+import { allControls } from "../access";
 import { HomeTabs, homeTabs, type HomeTab } from "./HomeTabs";
 import { ClimateOverview } from "./ClimateOverview";
 import { Presence } from "./People";
@@ -85,7 +87,7 @@ export type HomePreferences = {
   images: Record<string, boolean>;
   icons?: Record<string, string>;
 };
-const modes = [
+const modes: { id: HomeMode; nb: string; en: string; Icon: typeof House }[] = [
   { id: "home", nb: "Hjemme", en: "Home", Icon: House },
   { id: "away", nb: "Borte", en: "Away", Icon: Briefcase },
   { id: "night", nb: "Natt", en: "Night", Icon: Moon },
@@ -194,6 +196,8 @@ export function HomeOverview({
   });
   const [configuring, configure] = useState(false),
     [search, searchFor] = useState("");
+  const [settingUpMode, setSettingUpMode] = useState<HomeMode | null>(null);
+  const canManageModes = admin && allControls(h);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   const tools = useHomePageTools(configure);
@@ -515,10 +519,27 @@ export function HomeOverview({
           <button
             key={m.id}
             className={target ? "mode-configured" : "mode-unconfigured"}
-            title={target ? target.name : t("Velg rutine", "Choose routine")}
-            disabled={busy || offline || (!!target && !usable(target)) || !pref}
+            aria-label={`${t(m.nb, m.en)}: ${target ? t("Kjør rutine", "Run routine") : t("Lag rutine", "Create routine")}`}
+            title={
+              target
+                ? target.name
+                : canManageModes
+                  ? t("Lag eller velg rutine", "Create or choose routine")
+                  : t(
+                      "En administrator kan lage en rutine.",
+                      "An administrator can create a routine.",
+                    )
+            }
+            disabled={
+              busy ||
+              offline ||
+              !h.connected ||
+              (!!target && !usable(target)) ||
+              !pref ||
+              (!target && !canManageModes)
+            }
             onClick={() =>
-              target ? runMode(m.id, t(m.nb, m.en)) : configure(true)
+              target ? runMode(m.id, t(m.nb, m.en)) : setSettingUpMode(m.id)
             }
           >
             <m.Icon size={19} />
@@ -527,7 +548,7 @@ export function HomeOverview({
               <small>
                 {target
                   ? t("Kjør rutine", "Run routine")
-                  : t("Velg rutine", "Choose routine")}
+                  : t("Lag rutine", "Create routine")}
               </small>
             </span>
             {target && (
@@ -1438,6 +1459,29 @@ export function HomeOverview({
                 </button>
               )}
             </HomeTabs>
+            {settingUpMode && canManageModes && (
+              <HomeModeSetup
+                key={settingUpMode}
+                mode={settingUpMode}
+                label={t(
+                  modes.find((m) => m.id === settingUpMode)!.nb,
+                  modes.find((m) => m.id === settingUpMode)!.en,
+                )}
+                home={h}
+                offline={offline}
+                lang={lang}
+                close={() => setSettingUpMode(null)}
+                saved={() => {
+                  setSettingUpMode(null);
+                  setMessage(
+                    t(
+                      "Rutinen er lagret og knyttet til modusen. Den ble ikke aktivert.",
+                      "The routine is saved and linked to the mode. It was not activated.",
+                    ),
+                  );
+                }}
+              />
+            )}
           </div>
         </HomeBannerless.Provider>
       </HomePageTools.Provider>

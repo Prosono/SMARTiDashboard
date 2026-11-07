@@ -1,3 +1,50 @@
+# Guided home-mode routines — release 1.36.123
+
+Unconfigured Home/Away/Night/Holiday buttons in the Routines card now offer a
+choice between creating a routine and selecting an existing scene, script or
+automation. The same entry works in the full card and its compact phone dialog.
+Mode creation keeps the existing administrator/full-control requirements; offline
+homes and non-administrators cannot open creation. Configured buttons retain
+explicit activation confirmation and report accepted/simulated execution as before.
+
+New routines reuse the capability-scoped native scene editor rather than the
+scheduled-automation trigger guide. It opens directly at “What should happen in
+… mode?”, with device selection and a review step. Users can choose supported
+lights, switches, climate, covers and media settings. Shared product pictures,
+room/search filters and existing state/brightness/color/temperature/volume inputs
+are reused. Mode names/icons are seeded; ordinary scene creation keeps its original
+name/device/review steps.
+
+Saving first persists a native scene, resolves its exact returned config ID through
+the scene list and then binds its registered control ID to only the selected mode.
+No name or `scene.<config-ID>` assumption is made. Bounded reads accommodate delayed
+registration. If saving succeeds but binding fails, the guide locks the saved draft
+and offers a link-only retry; it does not create the routine again. Declining discard and
+invalid saves retain the current inputs. Saving never calls activation/device commands,
+and no mobile or desktop/tablet layout write is introduced. Existing mode settings
+and unrelated routines remain intact.
+
+Validation on 7 November 2026:
+
+- Frontend lint, production build, scoped Playwright TypeScript and whitespace
+  checks passed. **297 frontend unit tests in 49 files** passed. **7 backend
+  scene/mode tests** passed, covering roles, native persistence, validation,
+  conflicts and separate activation. Existing Vite chunk-size and Starlette
+  TestClient warnings remain.
+- **18 distinct Chromium browser cases** passed against the exact extracted
+  package: new routine creation/review/reload, only the chosen mode changed,
+  persisted device settings and unchanged live states; existing-routine selection;
+  failed binding and duplicate-free retry; cancelled/invalid drafts; offline and
+  non-admin restrictions; ordinary scene creation; delayed registration with
+  different friendly entity IDs/registry IDs and same-name decoys. Activation is
+  tested separately with dismiss/accept confirmation, inside the isolated demo.
+- Phone/product-art and climate-control regression cases passed. Layout writes
+  stayed at zero. Screenshots at 320, 390, 820 and 1440 px in both themes were
+  inspected; guides stay within their viewport. Native Safari and live HA/hardware
+  were not exercised. No live home automation execution or hub installation ran.
+- Deterministic packaging and all **299 runtime member hashes** were verified.
+  SHA-256: `2b56a8934afaa3ea8ebfc005ec2abcc446aa2e640a13bbd83eab3827fe6ffa41`.
+
 # Shared climate and automation artwork — release 1.36.122
 
 Climate uses the shared artwork renderer for thermostat/AC headers, per-device
