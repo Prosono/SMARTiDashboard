@@ -278,7 +278,13 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   await page.getByRole("button", { name: "Oppdater", exact: true }).click();
   const chart = page.getByRole("group", { name: "Forbruksgraf" });
   await expect(chart.getByRole("button")).toHaveCount(24);
-  await chart.getByRole("button").nth(5).focus();
+  await expect(chart.getByRole("button").nth(5)).toHaveAccessibleName(
+    /Måling mangler/,
+  );
+  await chart.scrollIntoViewIfNeeded();
+  if (info.project.name === "mobile")
+    await chart.getByRole("button").nth(5).tap();
+  else await chart.getByRole("button").nth(5).focus();
   await expect(chart.getByRole("button").nth(5)).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -286,7 +292,9 @@ test("energy setup is usable on mobile and desktop, and missing readings are exp
   await expect(chart.getByRole("button").nth(5)).toHaveAccessibleName(
     /Måling mangler/,
   );
-  await chart.getByRole("button").first().focus();
+  if (info.project.name === "mobile")
+    await chart.getByRole("button").first().tap();
+  else await chart.getByRole("button").first().focus();
   await expect(chart.getByRole("button").first()).toHaveAccessibleName(
     /spotpris [−-]12/,
   );

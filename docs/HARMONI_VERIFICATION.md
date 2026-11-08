@@ -1,3 +1,42 @@
+# Relative electricity-price colors — release 1.36.129
+
+The full electricity-price chart uses green, amber, orange and red columns for
+four equal bands of the available positive price range. Today and tomorrow share
+one scale when both Oslo calendar days are available, so an identical price
+retains its color when switching days. Zero and negative spot prices stay green;
+uniform positive prices and differences smaller than the displayed 0.1 øre
+precision get a steady level. Missing/invalid prices do not become zero readings.
+
+A compact labeled legend explains the scale. The selected interval includes a
+textual price level in the detail, accessible name and SVG title; negative prices
+are explicitly labeled. Selected columns have a contrasting outline, and the
+existing current-time marker, signed values, weighted average, day navigation and
+source disclaimer remain. Colors describe relative spot prices, not the final
+household bill. Fetching, tariff calculations, consumption/cost charts and saved
+dashboard layouts are unchanged.
+
+Validation on 8 November 2026:
+
+- Frontend lint, production build, scoped browser-test TypeScript, formatting and
+  whitespace checks passed. **339 unit tests in 52 files** passed, including five
+  price-level cases covering a common scale, duplicates, negative/zero prices,
+  invalid values and uniform/sub-precision values. Existing Vite chunk warning
+  remains.
+- **18 distinct Chromium browser cases** passed against the exact final package,
+  across the main run and targeted follow-ups. New desktop/phone cases cover
+  four actual fills, light/dark themes, a common today/tomorrow scale, keyboard
+  selection, the current-time marker, negative prices and uniform data without
+  setup writes. Existing cases retain module editing, saved layouts, setup,
+  missing readings and signed cost components. Readiness waits were added before
+  graph interaction; phone setup now tests touch selection rather than synthetic
+  SVG focus. Optional phone price cards are opened through their existing UI.
+- Final chart screenshots were inspected in light/dark themes on phone and
+  desktop. Light-theme bar colors exceed 3:1 contrast against white; textual
+  labels supplement color. Native Safari and physical devices were not tested.
+  No live-home actions or hub installation were performed.
+- Deterministic package and all **299 runtime member hashes** verified.
+  SHA-256: `16f10ca6bc28fe587c93e9ed2ad8ea60d16374356b53751edcefef4bf96d32ec`.
+
 # Local virtual flow testing — release 1.36.128
 
 The automation editor has a **Test mode** entry that opens the free canvas with a

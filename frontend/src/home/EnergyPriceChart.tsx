@@ -1,4 +1,9 @@
 import { useEffect, useState } from "react";
+import {
+  spotPriceScale,
+  spotPriceLevel,
+  spotPriceLabels,
+} from "./spotPriceColors";
 import { ChevronLeft, ChevronRight, Clock3, Tag } from "lucide-react";
 
 type Price = { time_start: string; time_end: string; NOK_per_kWh: number };
@@ -38,17 +43,34 @@ export function EnergyPriceChart({
   // Use Oslo calendar days, including days where DST changes the number of hours.
   const target = new Date(dayKey(now) + "T12:00:00Z");
   target.setUTCDate(target.getUTCDate() + day);
-  const rows =
-    (day === 0 ? today : tomorrow)
+  const validRows = (prices: Price[] | null, key: string) =>
+    prices
       ?.filter(
         (p) =>
           Number.isFinite(p.NOK_per_kWh) &&
           Date.parse(p.time_end) > Date.parse(p.time_start) &&
-          dayKey(Date.parse(p.time_start)) === dayKey(target.getTime()),
+          dayKey(Date.parse(p.time_start)) === key,
       )
       .slice()
       .sort((a, b) => Date.parse(a.time_start) - Date.parse(b.time_start)) ||
     [];
+  const todayRows = validRows(today, dayKey(now));
+  const nextDay = new Date(dayKey(now) + "T12:00:00Z");
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  const tomorrowRows = validRows(tomorrow, dayKey(nextDay.getTime()));
+  const rows = day === 0 ? todayRows : tomorrowRows;
+  const scale = spotPriceScale(
+    [...todayRows, ...tomorrowRows].map((p) => p.NOK_per_kWh),
+  );
+  const levelLabel = (value: number) =>
+    value < 0
+      ? "Negativ spotpris"
+      : spotPriceLabels[spotPriceLevel(value, scale)];
+  const steady =
+    rows.length > 0 &&
+    [...todayRows, ...tomorrowRows].every(
+      (p) => spotPriceLevel(p.NOK_per_kWh, scale) === "steady",
+    );
   const first = Date.parse(rows[0]?.time_start || ""),
     last = Date.parse(rows.at(-1)?.time_end || "");
   const current = rows.find(
@@ -119,7 +141,13 @@ export function EnergyPriceChart({
       {rows.length ? (
         <>
           <div className="ep-spot-stats">
-            <div>
+            <div
+              data-price-stat="low"
+              data-price-level={spotPriceLevel(
+                Math.min(...rows.map((p) => p.NOK_per_kWh)),
+                scale,
+              )}
+            >
               <small>Laveste</small>
               <strong>
                 {fmt(Math.min(...rows.map((p) => p.NOK_per_kWh)) * 100)}
@@ -129,7 +157,13 @@ export function EnergyPriceChart({
               <small>Gjennomsnitt</small>
               <strong>{fmt(average * 100)}</strong>
             </div>
-            <div>
+            <div
+              data-price-stat="peak"
+              data-price-level={spotPriceLevel(
+                Math.max(...rows.map((p) => p.NOK_per_kWh)),
+                scale,
+              )}
+            >
               <small>Høyeste</small>
               <strong>
                 {fmt(Math.max(...rows.map((p) => p.NOK_per_kWh)) * 100)}
@@ -177,15 +211,21 @@ export function EnergyPriceChart({
                   end = Date.parse(p.time_end),
                   value = p.NOK_per_kWh * 100;
                 return (
-                  <g key={p.time_start}>
+                  <g
+                    key={p.time_start}
+                    className="ep-price-column"
+                    data-price-level={spotPriceLevel(p.NOK_per_kWh, scale)}
+                  >
                     <rect
+                      className="ep-price-bar"
                       x={x(start) + 1}
                       y={Math.min(y(value), y(0))}
                       width={Math.max(1, x(end) - x(start) - 2)}
                       height={Math.max(1, Math.abs(y(value) - y(0)))}
                       rx="3"
-                      fill="var(--energy-price-series, var(--accent))"
-                      opacity={p === current || p === picked ? 1 : 0.84}
+                      fill="var(--ep-price-bar-color)"
+                      stroke={p === picked ? "var(--text)" : "none"}
+                      strokeWidth={p === picked ? 2 : 0}
                     />
                     {i % Math.max(1, Math.ceil(rows.length / 8)) === 0 && (
                       <text x={x(start)} y="262" textAnchor="middle">
@@ -202,7 +242,7 @@ export function EnergyPriceChart({
                       tabIndex={0}
                       role="button"
                       aria-pressed={p === picked}
-                      aria-label={`${time(p.time_start)}–${time(p.time_end)}: ${fmt(value)} øre/kWh`}
+                      aria-label={`${time(p.time_start)}–${time(p.time_end)}: ${fmt(value)} øre/kWh · ${levelLabel(p.NOK_per_kWh)}`}
                       onClick={() => setSelected(p.time_start)}
                       onFocus={() => setSelected(p.time_start)}
                       onKeyDown={(e) => {
@@ -214,7 +254,7 @@ export function EnergyPriceChart({
                     >
                       <title>
                         {time(p.time_start)}–{time(p.time_end)} · {fmt(value)}{" "}
-                        øre/kWh
+                        øre/kWh · {levelLabel(p.NOK_per_kWh)}
                       </title>
                     </rect>
                   </g>
@@ -254,12 +294,33 @@ export function EnergyPriceChart({
               )}
             </svg>
           </div>
+          <div
+            className="ep-price-legend"
+            aria-label="Fargeforklaring for strømpriser"
+          >
+            {(steady
+              ? (["steady"] as const)
+              : (["low", "medium", "high", "peak"] as const)
+            ).map((level) => (
+              <span key={level} data-price-level={level}>
+                <i aria-hidden="true" />
+                {spotPriceLabels[level]}
+              </span>
+            ))}
+            <small>
+              {steady
+                ? "Jevnt prisnivå."
+                : todayRows.length && tomorrowRows.length
+                  ? "Samme skala for i dag og i morgen."
+                  : "Prisnivå sammenlignet med resten av døgnet."}
+            </small>
+          </div>
           <p className="ep-chart-mobile-hint">
             Sveip grafen for å se hele dagen. Trykk på en søyle for pris.
           </p>
           <p className="ep-chart-detail" aria-live="polite">
             {picked
-              ? `${time(picked.time_start)}–${time(picked.time_end)} · ${fmt(picked.NOK_per_kWh * 100)} øre/kWh${picked === current ? " · akkurat nå" : ""}`
+              ? `${time(picked.time_start)}–${time(picked.time_end)} · ${fmt(picked.NOK_per_kWh * 100)} øre/kWh · ${levelLabel(picked.NOK_per_kWh)}${picked === current ? " · akkurat nå" : ""}`
               : "Velg et tidspunkt i grafen for å se prisen."}
           </p>
         </>

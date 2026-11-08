@@ -1215,3 +1215,78 @@
     grid-column: 1 / -1;
   }
 }
+/* Relative price levels are kept separate from the consumption/cost palette. */
+.ep-spot-chart {
+  --ep-price-low: #159c49;
+  --ep-price-medium: #b38600;
+  --ep-price-high: #db650d;
+  --ep-price-peak: #e63850;
+  --ep-price-steady: #8a761f;
+}
+[data-theme="dark"] .ep-spot-chart {
+  --ep-price-low: #26df7b;
+  --ep-price-medium: #f5d348;
+  --ep-price-high: #ff963e;
+  --ep-price-peak: #ff5069;
+  --ep-price-steady: #d7bf6e;
+}
+.ep-spot-chart [data-price-level="low"] {
+  --ep-price-bar-color: var(--ep-price-low);
+}
+.ep-spot-chart [data-price-level="medium"] {
+  --ep-price-bar-color: var(--ep-price-medium);
+}
+.ep-spot-chart [data-price-level="high"] {
+  --ep-price-bar-color: var(--ep-price-high);
+}
+.ep-spot-chart [data-price-level="peak"] {
+  --ep-price-bar-color: var(--ep-price-peak);
+}
+.ep-spot-chart [data-price-level="steady"] {
+  --ep-price-bar-color: var(--ep-price-steady);
+}
+.ep-spot-chart [data-price-level="unknown"] {
+  --ep-price-bar-color: var(--muted);
+}
+.ep-price-bar {
+  opacity: 1;
+}
+.ep-price-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 4px 0 0;
+}
+.ep-price-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text);
+}
+.ep-price-legend i {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 3px;
+  background: var(--ep-price-bar-color);
+}
+.ep-price-legend > small {
+  flex-basis: 100%;
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--muted);
+}
+.ep-spot-stats [data-price-stat] strong {
+  color: color-mix(in srgb, var(--ep-price-bar-color) 78%, var(--text));
+}
+@media (max-width: 700px) {
+  .ep-price-legend {
+    gap: 6px 12px;
+  }
+  .ep-price-legend > span {
+    font-size: 10px;
+  }
+}

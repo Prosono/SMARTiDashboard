@@ -1,3 +1,8 @@
+## 1.36.129
+- Strømprisgrafen viser nå periodene i tydelig grønt, gult, oransje og rødt etter relativt prisnivå. I dag og i morgen bruker samme skala når begge døgn er tilgjengelige, slik at samme pris får samme farge.
+- Negative og null spotpriser vises grønt. Jevne positive priser får et nøytralt nivå; svært små forskjeller under visningspresisjonen fremheves ikke som store pristopper.
+- Kompakt fargeforklaring, tekstlig prisnivå ved valg og tilgjengelige beskrivelser gjør grafen forståelig uten bare å bruke farge. Valgt periode, nå-markør, negative søyler, mobilvisning og eksisterende pris-/kostnadsberegninger beholdes.
+
 ## 1.36.128
 - Ny «Testmodus» i automasjonseditoren: velg hendelse, endre virtuelle før-/etterverdier og attributter, og test mot en egen dato, klokke og soltider. Vanlige av/på-tilstander vises med forståelige navn og enhetsbilder.
 - Spill av, pause, gå ett steg, vis hele resultatet eller kjør på nytt. Kjørte kort og forbindelser markeres underveis; aktiv forbindelse animeres. Arbeidsflaten kan følge det aktive kortet, og kjøreloggen viser forløp og virtuelle verdiendringer.

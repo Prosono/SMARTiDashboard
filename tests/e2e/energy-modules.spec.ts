@@ -3,10 +3,16 @@ import {
   expect,
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
+import type { SummaryPrice } from "../../frontend/src/home/energySummaryModel";
 import type { SavedGrid } from "../../frontend/src/home/homeGridModel";
 
 const now = new Date("2026-11-02T12:00:00Z");
-async function setup(page: Page, compact = false, chartsOnly = false) {
+async function setup(
+  page: Page,
+  compact = false,
+  chartsOnly = false,
+  priceData?: { spot: SummaryPrice[]; tomorrow: SummaryPrice[] | null },
+) {
   await page.addInitScript((compact) => {
     localStorage.setItem("smarti-home-style", "harmony");
     localStorage.setItem("smarti-theme", "dark");
@@ -187,6 +193,7 @@ async function setup(page: Page, compact = false, chartsOnly = false) {
         NOK_per_kWh: h === 1 ? -0.25 : 0.2 + Math.sin(h / 3) ** 2,
       }));
   }
+  if (priceData) Object.assign(dashboard, priceData);
   let historyRequests = 0;
   await page.route("**/api/home/energy/platform/dashboard?*", (route) => {
     historyRequests++;
@@ -519,6 +526,11 @@ test("summary charts preserve negative prices, missing consumption and signed co
       "data-overflow",
       "false",
     );
+  await expect(spot.locator(".energy-summary-chart")).toHaveAttribute(
+    "tabindex",
+    "0",
+  );
+  await spot.locator(".energy-summary-chart").scrollIntoViewIfNeeded();
   await spot.locator(".energy-summary-chart").focus();
   await page.keyboard.press("Home");
   await page.keyboard.press("ArrowRight");
@@ -592,4 +604,137 @@ test("compact phone tiles show KPIs and only mount the opened house or graph", a
   await page.screenshot({
     path: `/private/tmp/smarti-100-phone-${info.project.name}.png`,
   });
+});
+
+const priceRows = (values: number[], dayOffset = 0): SummaryPrice[] =>
+  Array.from({ length: 24 }, (_, hour) => ({
+    time_start: new Date(
+      Date.UTC(2026, 10, 1 + dayOffset, 23 + hour),
+    ).toISOString(),
+    time_end: new Date(
+      Date.UTC(2026, 10, 1 + dayOffset, 24 + hour),
+    ).toISOString(),
+    NOK_per_kWh: values[hour % values.length],
+  }));
+
+async function openPriceChart(page: Page) {
+  const grid = page.locator('.home-canvas[data-page="energy_control"]');
+  await expect(grid.locator(".home-canvas-cell").first()).toBeVisible();
+  const more = grid.getByRole("button", { name: /Flere energikort/ });
+  if (
+    (await more.isVisible()) &&
+    (await grid.locator('[data-card="energy:prices"]').count()) === 0
+  )
+    await more.click();
+  const card = grid.locator('[data-card="energy:prices"]');
+  await card.scrollIntoViewIfNeeded();
+  const tile = card.locator(".mobile-card-tile");
+  if (await tile.isVisible()) await tile.click();
+  else {
+    const expand = card.locator(".home-canvas-expand");
+    if (await expand.isVisible()) await expand.click();
+  }
+  return (await page.getByRole("dialog").isVisible())
+    ? page.getByRole("dialog").locator(".ep-spot-chart")
+    : card.locator(".ep-spot-chart");
+}
+
+test("price columns show relative cost levels consistently across both days and themes", async ({
+  page,
+}, info) => {
+  if (info.project.name === "desktop")
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  const state = await setup(page, false, false, {
+    spot: priceRows([-0.2, 0, 0.4, 0.9, 1.4, 2]),
+    tomorrow: priceRows([0.4, 0.9, 1.4, 2], 1),
+  });
+  let panel = await openPriceChart(page);
+  await panel.scrollIntoViewIfNeeded();
+  const bars = panel.locator(".ep-price-column");
+  await expect(bars).toHaveCount(24);
+  expect(
+    new Set(
+      await bars.evaluateAll((nodes) =>
+        nodes.map((n) => n.getAttribute("data-price-level")),
+      ),
+    ),
+  ).toEqual(new Set(["low", "medium", "high", "peak"]));
+  await expect(bars.nth(0)).toHaveAttribute("data-price-level", "low");
+  await expect(bars.nth(1)).toHaveAttribute("data-price-level", "low");
+  await expect(panel.locator(".ep-price-legend")).toContainText(
+    "Samme skala for i dag og i morgen",
+  );
+  const samePriceLevel = await bars.nth(3).getAttribute("data-price-level");
+  await panel.locator(".ep-chart-hit").first().focus();
+  await expect(panel.locator(".ep-chart-detail")).toContainText(
+    "Negativ spotpris",
+  );
+  await panel.locator(".ep-chart-hit").nth(5).focus();
+  await expect(panel.locator(".ep-chart-detail")).toContainText("Høyest pris");
+  await expect(panel.locator(".ep-chart-hit").nth(5)).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(panel.locator(".ep-now-marker")).toHaveCount(1);
+  await panel.getByRole("button", { name: "I morgen", exact: true }).click();
+  await expect(bars.nth(1)).toHaveAttribute(
+    "data-price-level",
+    samePriceLevel!,
+  );
+  await expect(panel.locator(".ep-now-marker")).toHaveCount(0);
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(
+      (t) => (document.documentElement.dataset.theme = t),
+      theme,
+    );
+    await page.waitForTimeout(250);
+    expect(
+      new Set(
+        await panel
+          .locator(".ep-price-bar")
+          .evaluateAll((nodes) => nodes.map((n) => getComputedStyle(n).fill)),
+      ).size,
+    ).toBe(4);
+    await panel.scrollIntoViewIfNeeded();
+    await panel.screenshot({
+      path: info.outputPath(`price-colors-${theme}.png`),
+      animations: "disabled",
+    });
+  }
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  expect(state.configWrites()).toBe(0);
+});
+
+test("flat positive prices stay neutral and an all-negative day stays green", async ({
+  page,
+}) => {
+  const state = await setup(page, false, false, {
+    spot: priceRows([1.5]),
+    tomorrow: priceRows([1.5], 1),
+  });
+  let panel = await openPriceChart(page);
+  await expect(
+    panel.locator('.ep-price-column[data-price-level="steady"]'),
+  ).toHaveCount(24);
+  await expect(panel.locator(".ep-price-legend")).toContainText("Jevn pris");
+  Object.assign(state.dashboard, {
+    spot: priceRows([-0.3, -0.2, -0.1]),
+    tomorrow: null,
+  });
+  await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  panel = await openPriceChart(page);
+  await expect(
+    panel.locator('.ep-price-column[data-price-level="low"]'),
+  ).toHaveCount(24);
+  await panel.scrollIntoViewIfNeeded();
+  await panel.locator(".ep-chart-hit").first().focus();
+  await expect(panel.locator(".ep-chart-detail")).toContainText(
+    "Negativ spotpris",
+  );
+  expect(state.configWrites()).toBe(0);
 });
