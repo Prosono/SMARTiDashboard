@@ -1,3 +1,5 @@
+import { FlowTestPanel, simulationStatus } from "./FlowTestPanel";
+import { useFlowSimulation } from "./useFlowSimulation";
 import { FlowDeviceLibrary } from "./FlowDeviceLibrary";
 import { flowLibraryIcon } from "./flowLibraryIcon";
 import { FlowArtwork } from "./FlowArtwork";
@@ -5,6 +7,7 @@ import { flowLibrary } from "./flowLibrary";
 import { createWireRouter } from "./flowRouting";
 import {
   memo,
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -30,6 +33,7 @@ import {
   Scan,
   SlidersHorizontal,
   HelpCircle,
+  FlaskConical,
 } from "lucide-react";
 import type { Home } from "../types";
 import { planConnection, type ConnectionMode } from "./flowConnections";
@@ -48,6 +52,7 @@ export function FlowCanvas({
   onRemove,
   onConnect,
   selected,
+  testMode = false,
 }: {
   config: Record<string, any>;
   home: Home;
@@ -59,8 +64,14 @@ export function FlowCanvas({
   onRemove: (p: FlowPath) => void;
   onConnect: (patch: Record<string, any>) => void;
   selected: FlowPath | null;
+  testMode?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const simulation = useFlowSimulation(config, home, lang, testMode);
+  const selectCard = useCallback(
+    (path: FlowPath) => (testMode ? simulation.seekNode(path) : onSelect(path)),
+    [testMode, simulation.seekNode, onSelect],
+  );
   const libraryId = useId();
   const [showLibrary, setShowLibrary] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -282,6 +293,13 @@ export function FlowCanvas({
       .forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, [graph]);
+  useEffect(() => {
+    if (testMode) {
+      setShowLibrary(false);
+      setShowOptions(false);
+      cancelConnection();
+    }
+  }, [testMode]);
   const nodes = useMemo(
     () => graph.nodes.map((n) => ({ ...n, ...positions[n.id] })),
     [graph, positions],
@@ -291,6 +309,43 @@ export function FlowCanvas({
       nodes.map((n) => ({ ...n, width: 260, height: heights[n.id] || 150 })),
     [nodes, heights],
   );
+  const followedEvent = simulation.result?.events[simulation.cursor - 1];
+  const followedNode =
+    simulation.frame.activeNode ||
+    (followedEvent ? JSON.stringify(followedEvent.path.slice(0, 2)) : null);
+  useEffect(() => {
+    if (!testMode || !simulation.follow || !followedNode || !viewport.current)
+      return;
+    const node = boxes.find((b) => b.id === followedNode),
+      el = viewport.current;
+    if (!node) return;
+    const left = node.x * zoom,
+      top = node.y * zoom,
+      right = (node.x + node.width) * zoom,
+      bottom = (node.y + node.height) * zoom;
+    if (
+      left < el.scrollLeft + 16 ||
+      right > el.scrollLeft + el.clientWidth - 16 ||
+      top < el.scrollTop + 16 ||
+      bottom > el.scrollTop + el.clientHeight - 16
+    )
+      el.scrollTo({
+        left: Math.max(0, (left + right - el.clientWidth) / 2),
+        top: Math.max(0, (top + bottom - el.clientHeight) / 2),
+        behavior:
+          matchMedia("(prefers-reduced-motion: reduce)").matches ||
+          simulation.speed > 1
+            ? "instant"
+            : "smooth",
+      });
+  }, [
+    testMode,
+    simulation.follow,
+    followedNode,
+    simulation.speed,
+    zoom,
+    boxes,
+  ]);
   const routeScene = useMemo(() => createWireRouter(), []);
   const routes = useMemo(() => {
     const routed = routeScene(boxes, graph.edges);
@@ -402,9 +457,11 @@ export function FlowCanvas({
   }
   return (
     <section
-      className={`flow-workspace flow-studio palette-${palette}${showLibrary ? " library-open" : ""}${linkFrom ? " is-linking" : ""}`}
+      className={`flow-workspace flow-studio palette-${palette}${showLibrary ? " library-open" : ""}${linkFrom ? " is-linking" : ""}${testMode ? " testing" : ""}${testMode && simulation.playing ? " test-playing" : ""}`}
+      data-test-mode={testMode ? "true" : undefined}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
+          if (testMode) simulation.pause();
           paletteDrag.current = null;
           setDragPreview(null);
           skipPaletteClick.current = true;
@@ -633,18 +690,29 @@ export function FlowCanvas({
           ))}
       </div>
 
+      {testMode && <FlowTestPanel sim={simulation} lang={lang} />}
       <div className="canvas-toolbar">
-        <button
-          type="button"
-          className="studio-add-button"
-          ref={addButton}
-          aria-expanded={showLibrary}
-          aria-controls={libraryId}
-          onClick={() => setShowLibrary((v) => !v)}
-        >
-          <Plus size={18} />
-          {t("Legg til kort", "Add card")}
-        </button>
+        {testMode ? (
+          <span className="canvas-test-label">
+            <FlaskConical size={18} />
+            {t(
+              "Virtuell test · ingen enhetskommandoer",
+              "Virtual test · no device commands",
+            )}
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="studio-add-button"
+            ref={addButton}
+            aria-expanded={showLibrary}
+            aria-controls={libraryId}
+            onClick={() => setShowLibrary((v) => !v)}
+          >
+            <Plus size={18} />
+            {t("Legg til kort", "Add card")}
+          </button>
+        )}
         <div className="canvas-legend">
           <span>
             <Zap size={15} />
@@ -690,6 +758,8 @@ export function FlowCanvas({
           </button>
           <button
             type="button"
+            className="studio-arrange"
+            disabled={testMode}
             onClick={() => {
               setPositions({});
               zoomAnchor.current = null;
@@ -945,6 +1015,20 @@ export function FlowCanvas({
                     <g
                       key={`${e.from}-${e.to}`}
                       className={`canvas-route from-${kind}`}
+                      data-sim-status={
+                        testMode
+                          ? simulation.frame.visited.has(e.to) &&
+                            simulation.frame.visited.has(e.from)
+                            ? simulation.frame.activeNode === e.to
+                              ? "running"
+                              : ["failed", "blocked", "stopped"].includes(
+                                    simulation.frame.nodes[e.to],
+                                  )
+                                ? "failed"
+                                : "done"
+                            : "pending"
+                          : undefined
+                      }
                     >
                       <path className="canvas-wire-halo" d={path} fill="none" />
                       <path
@@ -992,6 +1076,11 @@ export function FlowCanvas({
                     (connectableIds.has(n.id) ? " is-connectable" : "")
                   }
                   data-node-id={n.id}
+                  data-sim-status={
+                    testMode
+                      ? simulation.frame.nodes[n.id] || "pending"
+                      : undefined
+                  }
                   data-disabled={row?.enabled === false ? "true" : undefined}
                   data-selected={
                     n.path &&
@@ -1008,6 +1097,7 @@ export function FlowCanvas({
                     transform: `translate(${n.x}px, ${n.y}px)`,
                   }}
                   onPointerDown={(e) => {
+                    if (testMode) return;
                     if (
                       e.button !== 0 ||
                       (e.target as HTMLElement).closest(
@@ -1077,6 +1167,7 @@ export function FlowCanvas({
                       (row?.alias || summary.title)
                     }
                     onKeyDown={(e) => {
+                      if (testMode) return;
                       const delta: { [k: string]: [number, number] } = {
                         ArrowLeft: [-20, 0],
                         ArrowRight: [20, 0],
@@ -1104,6 +1195,11 @@ export function FlowCanvas({
                             : t("START", "START")}
                     </span>
                   </button>
+                  {testMode && (
+                    <span className="canvas-test-badge">
+                      {simulationStatus(simulation.frame.nodes[n.id], lang)}
+                    </span>
+                  )}
                   <CanvasCardContent
                     path={n.path}
                     kind={n.kind}
@@ -1112,9 +1208,9 @@ export function FlowCanvas({
                     summary={summary}
                     branches={branches.length}
                     lang={lang}
-                    onSelect={onSelect}
+                    onSelect={selectCard}
                   />
-                  {n.path && (
+                  {n.path && !testMode && (
                     <button
                       type="button"
                       className="canvas-delete"
@@ -1145,6 +1241,7 @@ export function FlowCanvas({
                         <button
                           type="button"
                           className="canvas-port in"
+                          disabled={testMode}
                           data-input-node={n.id}
                           aria-label={
                             t("Koble til: ", "Connect to: ") +
@@ -1158,6 +1255,7 @@ export function FlowCanvas({
                       <button
                         type="button"
                         className="canvas-port out"
+                        disabled={testMode}
                         aria-label={
                           t("Start kobling fra: ", "Connect from: ") +
                           (row?.alias || summary.title)
@@ -1250,12 +1348,17 @@ export function FlowCanvas({
       <footer className="studio-footer">
         <span>
           {nodes.length} {t("kort", "cards")} <i />{" "}
-          {t(
-            "Dra for å flytte · trykk for å redigere",
-            "Drag to move · select to edit",
-          )}
+          {testMode
+            ? t(
+                "Velg et kort for å se teststeget",
+                "Select a card to inspect its test step",
+              )
+            : t(
+                "Dra for å flytte · trykk for å redigere",
+                "Drag to move · select to edit",
+              )}
         </span>
-        <details className="studio-help">
+        <details className="studio-help" hidden={testMode}>
           <summary>
             <HelpCircle size={15} />
             {t("Slik bruker du lerretet", "Canvas help")}
@@ -1277,10 +1380,15 @@ export function FlowCanvas({
           </div>
         </details>
         <small>
-          {t(
-            "Plasseringer er midlertidige. Lagre for å ta i bruk endringer i stegene.",
-            "Positions are temporary. Save to apply changes to the steps.",
-          )}
+          {testMode
+            ? t(
+                "Testverdier og kjørelogg er midlertidige og blir ikke lagret.",
+                "Test values and trace are temporary and are not saved.",
+              )
+            : t(
+                "Plasseringer er midlertidige. Lagre for å ta i bruk endringer i stegene.",
+                "Positions are temporary. Save to apply changes to the steps.",
+              )}
         </small>
       </footer>
     </section>

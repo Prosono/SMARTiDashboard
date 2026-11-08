@@ -116,6 +116,7 @@ export function Automations({
     config: Config;
   } | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [flow, setFlow] = useState(true);
   const [guided, setGuided] = useState(false);
   const [guideReady, setGuideReady] = useState(false);
@@ -312,6 +313,7 @@ export function Automations({
           onSubmit={(e) => {
             e.preventDefault();
             if (
+              testing ||
               !usable ||
               (guided && !guideReady) ||
               e.currentTarget.querySelector("dialog[open]") ||
@@ -417,6 +419,7 @@ export function Automations({
           )}
           {!advanced && !guided && flow && (
             <AutomationFlow
+              onTestingChange={setTesting}
               config={c}
               home={home}
               lang={lang}
@@ -561,6 +564,7 @@ export function Automations({
               <button
                 className="primary compact"
                 disabled={
+                  testing ||
                   w.busy ||
                   !usable ||
                   (guided && !guideReady) ||

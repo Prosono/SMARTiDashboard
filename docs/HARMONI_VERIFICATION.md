@@ -1,3 +1,88 @@
+# Local virtual flow testing — release 1.36.128
+
+The automation editor has a **Test mode** entry that opens the free canvas with a
+separate simulation panel. It captures a copy of the draft and home values when
+opened; polling does not overwrite virtual inputs. Users choose a trigger, edit
+before/after states and referenced attributes, provide a scenario date/time and
+sunrise/sunset test times, and optionally supply held-state duration. Shared device
+artwork and localized on/off choices remain in use. Neither scenario nor trace is
+persisted. Leaving test mode clears them; native configuration is unchanged.
+
+Playback supports run/replay, pause/resume, one event at a time, immediate result,
+speed selection, reset and optional following of the current card. The virtual
+clock skips delays rather than waiting in wall time. A log shows the played trace,
+nested native step paths and virtual state changes. Selecting a card/log entry
+seeks within the simulation. Log rendering initially keeps the latest 80 events,
+with an explicit way to reveal older events. Phone controls are compact so the
+scenario has usable scrolling space.
+
+Completed/failed/skipped/assumed steps have distinct labels. Active incoming
+connections have a moving dash only while playing; completed routes stay marked
+and unvisited routes remain subdued. Reduced-motion users get static routes.
+Playback pauses when the browser tab becomes hidden. Existing routing is cached;
+playing a trace does not rebuild geometry. Pending device artwork stays opaque.
+
+Execution model and limits:
+
+- The pure frontend engine has no API/action bus, network calls, wall-clock waits
+  or template execution. Ordinary state/attribute transitions and numeric threshold
+  crossings can trigger it; numeric comparisons are exclusive. Literal holds
+  advance virtual time. Time triggers use the scenario clock. Sun and external
+  events are explicitly injected at that test time; sun times are user-provided
+  test values, not calculated astronomical events.
+- Supported literal requirements include state, numeric, time/weekday, sun and
+  trigger ID, with nested AND/OR/NOT. Native sequences, if/then/else, first-match
+  choose/default, bounded repetition, delays and parallel branches are evaluated.
+  The clock merges parallel waits chronologically and joins at the latest finish.
+  A condition halts only its own sequence; Stop propagates out, while already-started
+  parallel branches finish. Parallel results are explicitly one possible order.
+- A whitelist models common light/switch/fan/climate/cover/lock/media/helper
+  commands by changing copied values only. Thermostat targets do not invent a new
+  measured temperature or HVAC activity. Unsupported fields, expressions, actions
+  or integration-specific behavior block with an explanation. Where appropriate,
+  an explicit manual outcome is stored per native step path and marked as assumed;
+  an assumed action has no invented state changes. Assumptions can be cleared.
+  Startup templates/blueprints requiring hub runtime are not bypassed this way.
+- This is a single virtual run, not an HA runtime emulator or live trace. It does
+  not exercise device latency, physical heating/motion, HA queues, service errors,
+  integration responses or other automations. Future wait events/templates require
+  manual handling. Test guards bound iterations (50), parallel fan-out (64 per
+  group/256 queued tasks), trace size, nesting and durations. Runtime config is
+  never rewritten to match those test limits.
+- Editing/connection/deletion gestures in the canvas are disabled during tests.
+  The form submission guard and save buttons block native saves until testing is
+  exited. Existing backend permissions and real-run confirmations remain intact.
+
+The control-flow semantics were checked against primary documentation for
+[building blocks](https://www.home-assistant.io/docs/automation/building-blocks/),
+[condition scope](https://www.home-assistant.io/building-blocks/condition/),
+[Stop](https://www.home-assistant.io/building-blocks/stop/) and
+[parallel execution](https://www.home-assistant.io/building-blocks/parallel/).
+This reference does not imply complete runtime compatibility.
+
+Validation on 8 November 2026:
+
+- Frontend lint, production build, scoped browser-test TypeScript, formatting and
+  whitespace checks passed. **334 unit tests in 51 files** passed, including
+  **24 new simulation cases** covering immutable copies, zero values, threshold
+  crossing, virtual time, branches, joins, Stop/condition scope, assumptions,
+  unsupported behavior and bounded work. Existing Vite chunk-size warning remains.
+- **16 distinct Chromium browser cases** passed against the exact final package;
+  two existing desktop-specific cases are intentionally skipped on phone. Six
+  new phone/desktop simulation cases cover editable values, trigger mismatch,
+  failed conditions, playback/pause, automatic following, reduced motion,
+  active-wire animation, manual assumptions, disabled save buttons, blocked form
+  submission and restoration of editing. They observe **zero API writes** during
+  testing and compare the stored native config exactly with its initial value.
+- Existing palette dragging, connections, full-screen save, native-config round
+  trips, device artwork, zoom, empty states and the 100-card interaction benchmark
+  remain covered. Input/trace screenshots were inspected on phone and desktop in
+  light/dark themes. No live home, physical device or actual automation was run.
+- Native Safari and physical low-end devices were not exercised. No live hub
+  installation or Marketplace changes were made.
+- Deterministic package and all **299 runtime member hashes** verified.
+  SHA-256: `20180161affd99e2710a7a1d1f989bd58730ca053efc258762f9617c55f13d99`.
+
 # Vivid flow cards, smooth connections and editing performance — release 1.36.127
 
 The free automation canvas uses clear RGB role colors: red/pink events, blue

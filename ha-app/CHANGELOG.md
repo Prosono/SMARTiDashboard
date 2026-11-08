@@ -1,3 +1,10 @@
+## 1.36.128
+- Ny «Testmodus» i automasjonseditoren: velg hendelse, endre virtuelle før-/etterverdier og attributter, og test mot en egen dato, klokke og soltider. Vanlige av/på-tilstander vises med forståelige navn og enhetsbilder.
+- Spill av, pause, gå ett steg, vis hele resultatet eller kjør på nytt. Kjørte kort og forbindelser markeres underveis; aktiv forbindelse animeres. Arbeidsflaten kan følge det aktive kortet, og kjøreloggen viser forløp og virtuelle verdiendringer.
+- Lokal simulering av vanlige hendelser, vilkår, enhetshandlinger, valg, løkker, ventetid og parallelle grener. Ventetid flytter den virtuelle klokken uten å vente i virkeligheten. Parallelle forløp er én mulig rekkefølge.
+- Maler og handlinger som ikke kan beregnes lokalt stopper med en forklaring. Der det passer kan du angi et tydelig merket, manuelt testresultat; det tolkes ikke som en virkelig enhetsendring. Oppstartsuttrykk og blueprints som krever huben simuleres ikke.
+- Testen sender ingen enhetskommandoer og lagrer ikke scenario eller kjørelogg. Lagring av automasjonen er sperret mens testmodus er åpen. Redusert bevegelse respekteres, avspillingen pauses i skjulte faner, og løkker/parallelle grener har testgrenser.
+
 ## 1.36.127
 - Automasjonseditoren har fått klare RGB-farger: rødt/rosa for hendelser, blått for vilkår og grønt for handlinger. Kortoverskrifter, tilkoblingspunkter og forbindelser bruker samme fargesystem i lyst og mørkt tema. Et roligere fargevalg er fortsatt tilgjengelig.
 - Forbindelser bruker sammenhengende, myke kurver og store avrundinger ved omveier. Kryss lager ikke lenger små hopp eller kantete linjer. Rutingen tar hensyn til kortenes faktiske høyde, også ved flytting og bakoverkoblinger.

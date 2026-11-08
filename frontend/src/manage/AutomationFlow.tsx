@@ -21,6 +21,7 @@ import {
   Zap,
   Filter,
   Play,
+  FlaskConical,
 } from "lucide-react";
 import { FlowCanvas } from "./FlowCanvas";
 import { FlowTree } from "./FlowTree";
@@ -49,6 +50,7 @@ export function AutomationFlow({
   onAdvanced,
   saveMessage = "",
   saving = false,
+  onTestingChange,
 }: {
   config: Config;
   home: Home;
@@ -57,9 +59,15 @@ export function AutomationFlow({
   onAdvanced: () => void;
   saveMessage?: string;
   saving?: boolean;
+  onTestingChange?: (value: boolean) => void;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [expanded, setExpanded] = useState(() => window.innerWidth >= 1000);
+  const [testMode, setTestMode] = useState(false);
+  useEffect(() => {
+    onTestingChange?.(testMode);
+    return () => onTestingChange?.(false);
+  }, [testMode, onTestingChange]);
   const [view, setView] = useState<"canvas" | "structure">("structure");
   const [selected, setSelected] = useState<FlowPath | null>(null);
   const [trail, setTrail] = useState<FlowPath[]>([]);
@@ -236,7 +244,10 @@ export function AutomationFlow({
           <button
             type="button"
             aria-pressed={view === "structure"}
-            onClick={() => setView("structure")}
+            onClick={() => {
+              setTestMode(false);
+              setView("structure");
+            }}
           >
             <ListTree size={18} />
             {t("Steg for steg", "Step by step")}
@@ -250,9 +261,25 @@ export function AutomationFlow({
             {t("Fri arbeidsflate", "Free canvas")}
           </button>
         </div>
+        <button
+          type="button"
+          className="flow-test-toggle"
+          aria-pressed={testMode}
+          disabled={!!selected || !!adding || saving}
+          onClick={() => {
+            setView("canvas");
+            setTestMode((v) => !v);
+          }}
+        >
+          <FlaskConical size={18} />
+          {testMode
+            ? t("Avslutt test", "Exit test")
+            : t("Testmodus", "Test mode")}
+        </button>
         {view === "canvas" && expanded ? (
           <input
             className="flow-workspace-name"
+            readOnly={testMode}
             required
             aria-label={t("Navn på flyten", "Flow name")}
             value={c.alias || ""}
@@ -281,7 +308,7 @@ export function AutomationFlow({
               <button
                 type="button"
                 className="primary"
-                disabled={saving || !!selected || !!adding}
+                disabled={saving || !!selected || !!adding || testMode}
                 onClick={(e) =>
                   e.currentTarget
                     .closest("form")
@@ -306,6 +333,7 @@ export function AutomationFlow({
       >
         {view === "canvas" && (
           <FlowCanvas
+            testMode={testMode}
             selected={selected}
             config={c}
             home={home}
@@ -795,7 +823,7 @@ export function AutomationFlow({
             )[c.mode || "single"]
           }
         </p>
-        <button type="button" onClick={onAdvanced}>
+        <button type="button" disabled={testMode} onClick={onAdvanced}>
           {t("Vis hele konfigurasjonen", "Show full configuration")}
         </button>
       </details>
