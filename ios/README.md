@@ -490,5 +490,23 @@ swiftc -module-cache-path /tmp/smarti-swift-cache \
 /tmp/smarti-phone-webkit-tests
 ```
 
-This is a prepared native app update, **not signed, uploaded to TestFlight or
-installed on a phone**. Updating the HA app alone cannot deliver this change.
+### Build 18 — signed upload, 8 November 2026
+
+The user authorized internal TestFlight distribution. Signed Release archive
+succeeded using existing local signing resources, without
+`-allowProvisioningUpdates`. Automatic approval review rejected the command with
+that flag because it could create/change Apple provisioning resources; the
+successful archive/upload did not use it.
+
+Archive: `/private/tmp/SMARTiHome-build18-local-profiles.xcarchive`.
+Bundle ID: `dev.smarti.home`, Apple Team: `3T2Y4G6HVQ`, version **0.1.0 (18)**.
+Strict signature verification passed. The existing internal-only export options
+were copied to a temporary plist with `destination=upload`; the checked-in export
+plist remains unchanged. Xcode reported **Upload succeeded / EXPORT SUCCEEDED**,
+and the delivery log confirms build number 18. Apple began processing the upload.
+
+**Internal group assignment and Ready to Test/Testing status are not yet
+confirmed.** Firefox is open on App Store Connect's sign-in page; completing the
+existing `SMARTi intern test` group distribution requires the user's login.
+No public App Store release or installation on a physical phone was performed.
+Updating the HA app alone cannot deliver this native change.
