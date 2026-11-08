@@ -490,7 +490,7 @@ swiftc -module-cache-path /tmp/smarti-swift-cache \
 /tmp/smarti-phone-webkit-tests
 ```
 
-### Build 18 — signed upload, 8 November 2026
+### Build 18 — TestFlight distribution, 8 November 2026
 
 The user authorized internal TestFlight distribution. Signed Release archive
 succeeded using existing local signing resources, without
@@ -505,8 +505,10 @@ were copied to a temporary plist with `destination=upload`; the checked-in expor
 plist remains unchanged. Xcode reported **Upload succeeded / EXPORT SUCCEEDED**,
 and the delivery log confirms build number 18. Apple began processing the upload.
 
-**Internal group assignment and Ready to Test/Testing status are not yet
-confirmed.** Firefox is open on App Store Connect's sign-in page; completing the
-existing `SMARTi intern test` group distribution requires the user's login.
+App Store Connect completed processing and showed **Ready to Test**. Build 18
+was assigned to the existing **SMARTi intern test** group and confirmed
+**Testing** on 8 November 2026. App Store Connect build ID:
+`4cc25e38-4b7e-4797-810d-0bfc5935306e`.
+Verification screenshot: `/private/tmp/smarti-build18-testflight-testing.png`.
 No public App Store release or installation on a physical phone was performed.
 Updating the HA app alone cannot deliver this native change.
