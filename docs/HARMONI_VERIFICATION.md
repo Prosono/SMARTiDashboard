@@ -1,3 +1,32 @@
+# Sidebar contrast and automation icon — release 1.36.130
+
+Harmoni's dark desktop/tablet sidebar now uses locally scoped foreground and
+hover tokens from the existing media palette. Previously alternate palettes
+overrode the sidebar background with a dark gradient while Harmoni inherited the
+light page's dark text. Navigation labels/icons, brand, menu toggle and account
+footer now remain readable independently of the page theme. Active navigation
+keeps its existing palette accent and tint. The override applies above 760 px;
+the mobile bar retains its surface-based light/dark colors. Other page surfaces,
+palette backgrounds, routes and navigation permissions are unchanged.
+
+The automation destination now uses Lucide's Waypoints icon (connected nodes),
+matching the menu's existing size and stroke conventions.
+
+Validation on 8 November 2026:
+
+- Frontend lint, production build, formatting and whitespace checks passed.
+  Existing Vite chunk-size warning remains. No application logic was changed.
+- In an isolated Chromium demo, **90 combinations** of nine palettes, both
+  themes and widths 390, 760, 761, 1024 and 1440 px were checked. Resting sidebar
+  text reached at least **4.50:1** against its surfaces/gradient endpoints.
+  Desktop, tablet and mobile SMARTi Sort screenshots were inspected in both
+  themes. The mobile bar retains dark text on its light surface.
+- Both existing desktop/mobile sidebar navigation and collapse-persistence
+  browser cases passed. No live home or physical device actions were performed.
+  Native Safari and physical devices were not tested.
+- Deterministic package and all **299 runtime member hashes** verified.
+  SHA-256: `1abc7a5ea1a0ef60eb00f74abc588c066a57b985728d0e94dada29b0289abdf2`.
+
 # Relative electricity-price colors — release 1.36.129
 
 The full electricity-price chart uses green, amber, orange and red columns for

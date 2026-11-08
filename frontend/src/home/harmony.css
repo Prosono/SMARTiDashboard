@@ -57,27 +57,27 @@ html[data-home-style="harmony"] {
   }
   .sidebar {
     background: var(--surface);
-    color: var(--text);
+    color: var(--sidebar-text, var(--text));
     border-right: 1px solid var(--harmony-border);
     .brand,
     .nav-item,
     .sidebar-bottom {
-      color: var(--text);
+      color: var(--sidebar-text, var(--text));
     }
     .sidebar-label,
     .nav-item,
     .sidebar-bottom small {
-      color: var(--muted);
+      color: var(--sidebar-muted, var(--muted));
     }
     .sidebar-toggle {
-      color: var(--muted);
+      color: var(--sidebar-muted, var(--muted));
     }
     .nav-item {
       border-radius: 13px;
     }
     .nav-item:hover {
-      background: var(--soft);
-      color: var(--text);
+      background: var(--sidebar-hover, var(--soft));
+      color: var(--sidebar-text, var(--text));
     }
     .nav-item.active {
       background: var(--tint);
@@ -92,7 +92,15 @@ html[data-home-style="harmony"] {
     }
     .mode-label,
     .theme-toggle {
-      color: var(--muted);
+      color: var(--sidebar-muted, var(--muted));
+    }
+  }
+  /* Alternate palettes keep a dark desktop sidebar independently of page mode. */
+  @media (min-width: 761px) {
+    &[data-palette]:not([data-palette="smarti"]) .sidebar {
+      --sidebar-text: var(--on-media);
+      --sidebar-muted: var(--media-muted);
+      --sidebar-hover: color-mix(in srgb, var(--on-media) 10%, transparent);
     }
   }
   .topbar {

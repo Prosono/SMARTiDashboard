@@ -1,3 +1,7 @@
+## 1.36.130
+- Rettet kontrasten i Harmoni-sidebaren når lyst tema kombineres med SMARTi Sort eller andre paletter med mørk sidemeny. Menytekst, ikoner, logo og brukerfelt bruker nå lyse forgrunnsfarger på den mørke flaten. Mobilmenyen beholder sine egne temafarger.
+- Automasjoner har fått et tydeligere ikon med sammenkoblede noder i hovedmenyen.
+
 ## 1.36.129
 - Strømprisgrafen viser nå periodene i tydelig grønt, gult, oransje og rødt etter relativt prisnivå. I dag og i morgen bruker samme skala når begge døgn er tilgjengelige, slik at samme pris får samme farge.
 - Negative og null spotpriser vises grønt. Jevne positive priser får et nøytralt nivå; svært små forskjeller under visningspresisjonen fremheves ikke som store pristopper.
