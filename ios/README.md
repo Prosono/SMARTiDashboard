@@ -427,3 +427,68 @@ Archive: `/tmp/SMARTiHome-build17.xcarchive`.
 Added to «SMARTi intern test» and confirmed **Testing** on 25 October 2026.
 App Store Connect build ID: `f07c9483-332d-4c20-8882-8a6af2dd8cd6`.
 Verification screenshot: `/tmp/smarti-build17-testflight.png`.
+
+### Prepared build 18 — native startup JavaScript alert, 8 November 2026
+
+The reported symptom is a native SMARTi alert with an OK button while the home
+itself continues working. Automatic phone synchronization previously ran on app
+activation without waiting for the home document to finish loading. Its uncaught
+session-fetch/JSON rejection escaped through `callAsyncJavaScript`, and the catch
+assigned WebKit's generic `localizedDescription` to `phone.error` (the native
+alert). A local, nonpersistent macOS WebKit harness reproduces error code 4 from
+the previous probe with a mocked network failure. No incident log was retrieved
+from the user's physical phone, so this reproduces a matching failure path rather
+than proving the precise network/navigation event on that phone.
+
+Automatic synchronization now waits for a completed, approved home document and
+keeps one running check with coalesced pending signals. Navigation, process
+recovery and logout invalidate document-scoped results and cancel queued retries.
+The read-only session probe handles HTTP/network/JSON failures as unavailable,
+with a 12-second timeout and at most two timed retries (after 1 and 3 seconds).
+Unavailable data cannot trigger clearing/re-pairing credentials. A definitive
+signed-out response remains distinct. Pairing invitation results are also checked
+against the current document before using them. Timed recovery is limited to
+read-only probes, and is not added around pairing/registration writes.
+
+WebKit errors from a stale/cancelled check are ignored; current probe failures
+are deferred. Other connection-bridge errors use actionable wording referring to
+phone settings rather than exposing raw JavaScript diagnostics. Local OSLog
+entries contain only stage/error codes, never session data, tokens, URLs or
+JavaScript exception details. Existing authentication, explicit logout, exact home
+origin restrictions and backend authorization are retained.
+
+Validation:
+
+- Standalone `HomePhoneSyncTests`, `WebRecoveryBudgetTests` and
+  `NotificationHomeTests` pass. They cover activation before readiness,
+  overlapping signals, a new document at the same host, abandoned checks,
+  bounded retries and recovery after success, ambiguous session identities and
+  existing home/account scoping.
+- `HomePhoneSessionWebKitTests` reproduces the old rejection and verifies seven
+  non-throwing outcomes: offline, valid identity, signed out, server unavailable,
+  invalid JSON, invalid identity and request timeout. Fetch is mocked throughout;
+  no real home or credentials are used.
+- Unsigned Debug iOS Simulator build and unsigned Release iOS archive succeed.
+  Archive: `/private/tmp/SMARTiHome-startup-build18.xcarchive`; app version
+  **0.1.0 (18)**. Existing HubDiscovery actor-conformance and AppIntents metadata
+  warnings remain. CoreSimulator's runtime/service mismatch prevented
+  running the full iPhone app; physical-device cold start and resume remain to
+  verify after distribution.
+- Project/plist and whitespace checks pass. HA app payload freshness still
+  verifies; this fix does not modify or increment the hub release.
+
+Example standalone checks (run the WebKit harness on macOS):
+
+```sh
+swiftc -module-cache-path /tmp/smarti-swift-cache \
+  ios/SMARTiHome/HomePhoneSync.swift ios/Tests/HomePhoneSyncTests.swift \
+  -o /tmp/smarti-phone-sync-tests
+/tmp/smarti-phone-sync-tests
+swiftc -module-cache-path /tmp/smarti-swift-cache \
+  ios/SMARTiHome/HomePhoneSync.swift ios/Tests/HomePhoneSessionWebKitTests.swift \
+  -o /tmp/smarti-phone-webkit-tests
+/tmp/smarti-phone-webkit-tests
+```
+
+This is a prepared native app update, **not signed, uploaded to TestFlight or
+installed on a phone**. Updating the HA app alone cannot deliver this change.

@@ -3,6 +3,7 @@ import WebKit
 import VisionKit
 import AVFoundation
 import UserNotifications
+import OSLog
 
 @main struct SMARTiHomeApp: App {
     @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var pushDelegate
@@ -299,6 +300,7 @@ struct PhoneSettingsView: View {
     func signOut() {
         guard !signingOut else { return }
         signingOut = true
+        invalidatePhoneSync()
         UserDefaults.standard.set(true, forKey: Self.logoutPendingKey)
         UserDefaults.standard.removeObject(forKey: Self.savedHomeKey)
         pendingSetupDevice = nil
@@ -367,8 +369,12 @@ struct PhoneSettingsView: View {
     func retry() {
         guard !signingOut else { return }
         failure = nil
+        invalidatePhoneSync()
         // Load the last approved main-frame URL with GET. Never replay a form POST.
         webView.load(URLRequest(url: lastPage))
+    }
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        invalidatePhoneSync()
     }
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         guard !signingOut else { return }
@@ -381,9 +387,11 @@ struct PhoneSettingsView: View {
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard !signingOut, let url = webView.url, MobileClient.isHome(url) else { return }
+        phoneSync.navigationFinished()
         NotificationCenter.default.post(name: Notification.Name("SMARTiAuthenticated"), object: nil)
     }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        invalidatePhoneSync()
         if recovery.allowAutomaticRecovery(at: ProcessInfo.processInfo.systemUptime) {
             retry()
         } else {
@@ -399,6 +407,7 @@ struct PhoneSettingsView: View {
     private func navigationFailed(_ error: Error) {
         let error = error as NSError
         guard !(error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled) else { return }
+        invalidatePhoneSync()
         failure = "Kunne ikke laste hjemmet. Kontroller internettforbindelsen og prøv igjen."
     }
     override init() {
@@ -465,47 +474,101 @@ struct PhoneSettingsView: View {
         }
     }
 
-    private var synchronizingPhone = false
+    private var phoneSync = HomePhoneSync()
+    private var phoneSyncRetry: Task<Void, Never>?
+    private let phoneSyncLog = Logger(subsystem: "dev.smarti.home", category: "PhoneSync")
+
+    private func invalidatePhoneSync() {
+        phoneSync.navigationStarted()
+        phoneSyncRetry?.cancel()
+        phoneSyncRetry = nil
+    }
+
+    private func currentPhoneSync(_ token: UUID, host: String?) -> Bool {
+        guard !signingOut, !webView.isLoading, phoneSync.isCurrent(token),
+              let url = webView.url, MobileClient.isHome(url) else { return false }
+        return url.host == host
+    }
+
+    private func schedulePhoneSync(_ phone: PhoneModel, after delay: Double) {
+        let document = phoneSync.document
+        phoneSyncRetry?.cancel()
+        phoneSyncRetry = Task { @MainActor [weak self, weak phone] in
+            do { try await Task.sleep(for: .seconds(delay)) } catch { return }
+            guard let self, let phone, self.phoneSync.isCurrent(document), !Task.isCancelled else { return }
+            self.phoneSyncRetry = nil
+            await self.synchronizePhone(phone)
+        }
+    }
 
     // Resolve the web user before touching native credentials; a network failure is
     // not evidence of a different user and must not destroy a working registration.
     func synchronizePhone(_ phone: PhoneModel) async {
-        guard !synchronizingPhone, !signingOut,
-              let url = webView.url, MobileClient.isHome(url) else { return }
-        synchronizingPhone = true
-        defer { synchronizingPhone = false }
+        guard !signingOut, !webView.isLoading,
+              let url = webView.url, MobileClient.isHome(url),
+              let document = phoneSync.begin() else { return }
+        phoneSyncRetry?.cancel()
+        phoneSyncRetry = nil
+        var unavailable = false
+        var probingSession = true
+        defer {
+            if let delay = phoneSync.finish(document, unavailable: unavailable) {
+                schedulePhoneSync(phone, after: delay)
+            }
+        }
         do {
-            let result = try await webView.callAsyncJavaScript("""
-                const r = await fetch('/api/session', {credentials:'same-origin', cache:'no-store'});
-                if (!r.ok) return null;
-                return (await r.json()).id;
-                """, arguments: [:], in: nil, contentWorld: .page)
-            guard !signingOut, webView.url?.host == url.host, let user = result as? NSNumber else { return }
+            let result = try await webView.callAsyncJavaScript(HomePhoneSession.probe,
+                arguments: [:], in: nil, contentWorld: .page)
+            guard currentPhoneSync(document, host: url.host) else { return }
+            let user: Int
+            switch HomePhoneSession(result) {
+            case .signedOut: return
+            case .unavailable:
+                unavailable = true
+                phoneSyncLog.notice("Session check deferred during home startup")
+                return
+            case .authenticated(let id): user = id
+            }
+            probingSession = false
             var matches = false
             if let credentials = CredentialStore.load(), credentials.origin.host == url.host {
                 do {
                     let data = try await MobileClient.shared.send("session", method: "GET")
                     let mobile = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-                    matches = mobile?["id"] as? NSNumber == user
+                    matches = mobile?["id"] as? Int == user
                 } catch PhoneError.unauthorized {
                     matches = false
                 }
             }
-            guard !signingOut, webView.url?.host == url.host else { return }
+            guard currentPhoneSync(document, host: url.host) else { return }
             if !matches {
                 phone.resetConnectionState()
                 await MobileClient.shared.forget()
-                guard !signingOut, webView.url?.host == url.host else { return }
+                guard currentPhoneSync(document, host: url.host) else { return }
                 try await pair()
             }
+            guard currentPhoneSync(document, host: url.host) else { return }
             try await phone.register()
         } catch {
-            phone.error = error.localizedDescription
+            // Navigation may replace even the same home's document while JS is awaiting fetch.
+            guard currentPhoneSync(document, host: url.host), !(error is CancellationError) else { return }
+            let native = error as NSError
+            if probingSession && native.domain == WKError.errorDomain {
+                unavailable = true
+                phoneSyncLog.notice("Session bridge deferred; WebKit code \(native.code, privacy: .public)")
+            } else if native.domain == WKError.errorDomain {
+                phoneSyncLog.error("Phone connection bridge failed; WebKit code \(native.code, privacy: .public)")
+                phone.error = "Kunne ikke kontrollere telefonens tilkobling. Prøv igjen under Telefoninnstillinger."
+            } else {
+                phone.error = error.localizedDescription
+            }
         }
     }
 
     func pair() async throws {
-        guard let url = webView.url, MobileClient.isHome(url),
+        let document = phoneSync.document
+        guard !signingOut, !webView.isLoading, phoneSync.isCurrent(document),
+              let url = webView.url, MobileClient.isHome(url),
               let origin = URL(string: "https://" + (url.host ?? "")) else {
             throw PhoneError.message("Åpne et hjem og logg inn først.")
         }
@@ -518,7 +581,7 @@ struct PhoneSettingsView: View {
             if (!response.ok) throw new Error('Oppdater huben og prøv igjen.');
             return await response.json();
             """, arguments: [:], in: nil, contentWorld: .page)
-        guard webView.url?.host == origin.host, let invitation = result as? [String: Any],
+        guard currentPhoneSync(document, host: origin.host), let invitation = result as? [String: Any],
               let installation = invitation["installation_id"] as? String,
               let code = invitation["code"] as? String else { throw PhoneError.message("Tilkoblingen ble avbrutt. Prøv igjen.") }
         try await MobileClient.shared.pair(origin: origin, installationID: installation, code: code, name: UIDevice.current.name)
