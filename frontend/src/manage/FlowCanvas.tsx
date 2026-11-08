@@ -2,8 +2,9 @@ import { FlowDeviceLibrary } from "./FlowDeviceLibrary";
 import { flowLibraryIcon } from "./flowLibraryIcon";
 import { FlowArtwork } from "./FlowArtwork";
 import { flowLibrary } from "./flowLibrary";
-import { routeWire, wirePath, smoothWirePath } from "./flowRouting";
+import { createWireRouter } from "./flowRouting";
 import {
+  memo,
   useEffect,
   useId,
   useLayoutEffect,
@@ -79,7 +80,10 @@ export function FlowCanvas({
     [config, lang],
   );
   // Editing a temperature or name changes card content, not routing geometry.
-  const graphKey = JSON.stringify(graphDefinition);
+  const graphKey = useMemo(
+    () => JSON.stringify(graphDefinition),
+    [graphDefinition],
+  );
   const graph = useMemo(() => graphDefinition, [graphKey]);
   const paletteDrag = useRef<{
     kind: FlowKey;
@@ -157,9 +161,16 @@ export function FlowCanvas({
   const pending = useMemo(
     () =>
       linkFrom && linkTarget
-        ? planConnection(config, linkFrom, linkTarget, connectionMode, lang)
+        ? planConnection(
+            config,
+            linkFrom,
+            linkTarget,
+            connectionMode,
+            lang,
+            graph,
+          )
         : null,
-    [config, linkFrom, linkTarget, connectionMode, lang],
+    [config, linkFrom, linkTarget, connectionMode, lang, graph],
   );
   const connectableIds = useMemo(
     () =>
@@ -168,8 +179,14 @@ export function FlowCanvas({
           ? graph.nodes
               .filter(
                 (n) =>
-                  planConnection(config, linkFrom, n.id, connectionMode, lang)
-                    .ok,
+                  planConnection(
+                    config,
+                    linkFrom,
+                    n.id,
+                    connectionMode,
+                    lang,
+                    graph,
+                  ).ok,
               )
               .map((n) => n.id)
           : [],
@@ -274,41 +291,16 @@ export function FlowCanvas({
       nodes.map((n) => ({ ...n, width: 260, height: heights[n.id] || 150 })),
     [nodes, heights],
   );
+  const routeScene = useMemo(() => createWireRouter(), []);
   const routes = useMemo(() => {
-    const byId = new Map(boxes.map((n) => [n.id, n]));
-    const branches = new Map<string, number>();
-    const earlier: ReturnType<typeof routeWire>[] = [];
-    return graph.edges.map((e) => {
-      const branch = branches.get(e.from) || 0;
-      branches.set(e.from, branch + 1);
-      const source = byId.get(e.from)!,
-        target = byId.get(e.to)!;
-      const points = routeWire(source, target, boxes, branch);
-      const smooth = smoothWirePath(points, boxes, earlier);
-      const path = smooth || wirePath(points, earlier);
-      const segment = points
-        .slice(1)
-        .map((p, j) => ({
-          a: points[j],
-          b: p,
-          length: Math.hypot(p.x - points[j].x, p.y - points[j].y),
-        }))
-        .sort((a, b) => b.length - a.length)[0];
-      const midpoint = smooth
-        ? {
-            x: (points[0].x + points.at(-1)!.x) / 2,
-            y: (points[0].y + points.at(-1)!.y) / 2,
-          }
-        : segment
-          ? {
-              x: (segment.a.x + segment.b.x) / 2,
-              y: (segment.a.y + segment.b.y) / 2,
-            }
-          : { x: 0, y: 0 };
-      earlier.push(points);
-      return { edge: e, branch, points, path, midpoint, kind: source.kind };
-    });
-  }, [graph, boxes]);
+    const routed = routeScene(boxes, graph.edges);
+    const kinds = new Map(boxes.map((n) => [n.id, n.kind]));
+    return graph.edges.map((edge, i) => ({
+      edge,
+      ...routed[i],
+      kind: kinds.get(edge.from),
+    }));
+  }, [graph, boxes, routeScene]);
   const presentations = useMemo(
     () =>
       new Map(
@@ -470,174 +462,175 @@ export function FlowCanvas({
             {t("Enheter", "Devices")}
           </button>
         </div>
-        {libraryTab === "devices" ? (
-          <FlowDeviceLibrary
-            disabled={!canAdd}
-            home={home}
-            lang={lang}
-            canDrop={(x, y) => {
-              const r = viewport.current?.getBoundingClientRect();
-              return (
-                !!r &&
-                x >= r.left &&
-                x <= r.right &&
-                y >= r.top &&
-                y <= r.bottom
-              );
-            }}
-            onCreate={(kind, row, point) => {
-              const r = plane.current?.getBoundingClientRect();
-              if (point && r)
-                move(
-                  JSON.stringify([kind, (config[kind] || []).length]),
-                  (point.x - r.left) / zoom,
-                  (point.y - r.top) / zoom,
+        {showLibrary &&
+          (libraryTab === "devices" ? (
+            <FlowDeviceLibrary
+              disabled={!canAdd}
+              home={home}
+              lang={lang}
+              canDrop={(x, y) => {
+                const r = viewport.current?.getBoundingClientRect();
+                return (
+                  !!r &&
+                  x >= r.left &&
+                  x <= r.right &&
+                  y >= r.top &&
+                  y <= r.bottom
                 );
-              onAddRow(kind, row);
-            }}
-          />
-        ) : (
-          <>
-            <input
-              className="canvas-library-search"
-              aria-label={t("Søk i byggesteiner", "Search building blocks")}
-              placeholder={t(
-                "Søk etter lys, bevegelse …",
-                "Search lights, motion …",
-              )}
-              value={librarySearch}
-              onChange={(e) => setLibrarySearch(e.target.value)}
+              }}
+              onCreate={(kind, row, point) => {
+                const r = plane.current?.getBoundingClientRect();
+                if (point && r)
+                  move(
+                    JSON.stringify([kind, (config[kind] || []).length]),
+                    (point.x - r.left) / zoom,
+                    (point.y - r.top) / zoom,
+                  );
+                onAddRow(kind, row);
+              }}
             />
-            <div
-              className="canvas-library-filter"
-              role="group"
-              aria-label={t("Type byggestein", "Building block type")}
-            >
-              {(["all", "triggers", "conditions", "actions"] as const).map(
-                (k) => (
+          ) : (
+            <>
+              <input
+                className="canvas-library-search"
+                aria-label={t("Søk i byggesteiner", "Search building blocks")}
+                placeholder={t(
+                  "Søk etter lys, bevegelse …",
+                  "Search lights, motion …",
+                )}
+                value={librarySearch}
+                onChange={(e) => setLibrarySearch(e.target.value)}
+              />
+              <div
+                className="canvas-library-filter"
+                role="group"
+                aria-label={t("Type byggestein", "Building block type")}
+              >
+                {(["all", "triggers", "conditions", "actions"] as const).map(
+                  (k) => (
+                    <button
+                      type="button"
+                      key={k}
+                      aria-pressed={libraryKind === k}
+                      onClick={() => setLibraryKind(k)}
+                    >
+                      {k === "all"
+                        ? t("Alle", "All")
+                        : k === "triggers"
+                          ? t("Når", "When")
+                          : k === "conditions"
+                            ? t("Hvis", "If")
+                            : t("Gjør", "Do")}
+                    </button>
+                  ),
+                )}
+              </div>
+              <div className="canvas-library-list">
+                {libraryItems.map(({ k, preset, label, hint, Icon }) => (
                   <button
                     type="button"
-                    key={k}
-                    aria-pressed={libraryKind === k}
-                    onClick={() => setLibraryKind(k)}
-                  >
-                    {k === "all"
-                      ? t("Alle", "All")
-                      : k === "triggers"
-                        ? t("Når", "When")
-                        : k === "conditions"
-                          ? t("Hvis", "If")
-                          : t("Gjør", "Do")}
-                  </button>
-                ),
-              )}
-            </div>
-            <div className="canvas-library-list">
-              {libraryItems.map(({ k, preset, label, hint, Icon }) => (
-                <button
-                  type="button"
-                  key={k + (preset || "")}
-                  className={`canvas-palette-card library-${k} ${preset ? "is-preset" : "is-category"}`}
-                  draggable={false}
-                  aria-label={
-                    preset
-                      ? label
-                      : k === "triggers"
-                        ? t("Legg til hendelse", "Add event")
-                        : k === "conditions"
-                          ? t("Legg til krav", "Add requirement")
-                          : t("Legg til handling", "Add action")
-                  }
-                  title={
-                    hint ||
-                    t(
-                      "Dra til lerretet, eller trykk for å velge kort",
-                      "Drag onto the canvas, or click to choose a card",
-                    )
-                  }
-                  onPointerDown={(e) => {
-                    if (e.button !== 0) return;
-                    skipPaletteClick.current = false;
-                    paletteDrag.current = {
-                      kind: k,
-                      x: e.clientX,
-                      y: e.clientY,
-                      moved: false,
-                    };
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                  }}
-                  onPointerMove={(e) => {
-                    const d = paletteDrag.current;
-                    if (!d) return;
-                    if (!(e.buttons & 1)) {
+                    key={k + (preset || "")}
+                    className={`canvas-palette-card library-${k} ${preset ? "is-preset" : "is-category"}`}
+                    draggable={false}
+                    aria-label={
+                      preset
+                        ? label
+                        : k === "triggers"
+                          ? t("Legg til hendelse", "Add event")
+                          : k === "conditions"
+                            ? t("Legg til krav", "Add requirement")
+                            : t("Legg til handling", "Add action")
+                    }
+                    title={
+                      hint ||
+                      t(
+                        "Dra til lerretet, eller trykk for å velge kort",
+                        "Drag onto the canvas, or click to choose a card",
+                      )
+                    }
+                    onPointerDown={(e) => {
+                      if (e.button !== 0) return;
+                      skipPaletteClick.current = false;
+                      paletteDrag.current = {
+                        kind: k,
+                        x: e.clientX,
+                        y: e.clientY,
+                        moved: false,
+                      };
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                    }}
+                    onPointerMove={(e) => {
+                      const d = paletteDrag.current;
+                      if (!d) return;
+                      if (!(e.buttons & 1)) {
+                        paletteDrag.current = null;
+                        setDragPreview(null);
+                        return;
+                      }
+                      if (
+                        !d.moved &&
+                        Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8
+                      )
+                        return;
+                      d.moved = true;
+                      skipPaletteClick.current = true;
+                      setDragPreview({ kind: k, x: e.clientX, y: e.clientY });
+                    }}
+                    onPointerUp={(e) => {
+                      const d = paletteDrag.current;
                       paletteDrag.current = null;
                       setDragPreview(null);
-                      return;
-                    }
-                    if (
-                      !d.moved &&
-                      Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8
-                    )
-                      return;
-                    d.moved = true;
-                    skipPaletteClick.current = true;
-                    setDragPreview({ kind: k, x: e.clientX, y: e.clientY });
-                  }}
-                  onPointerUp={(e) => {
-                    const d = paletteDrag.current;
-                    paletteDrag.current = null;
-                    setDragPreview(null);
-                    if (!d?.moved) return;
-                    const bounds = viewport.current?.getBoundingClientRect(),
-                      canvas = plane.current?.getBoundingClientRect();
-                    if (
-                      bounds &&
-                      canvas &&
-                      e.clientX >= bounds.left &&
-                      e.clientX <= bounds.right &&
-                      e.clientY >= bounds.top &&
-                      e.clientY <= bounds.bottom
-                    ) {
-                      move(
-                        JSON.stringify([k, (config[k] || []).length]),
-                        (e.clientX - canvas.left) / zoom,
-                        (e.clientY - canvas.top) / zoom,
-                      );
+                      if (!d?.moved) return;
+                      const bounds = viewport.current?.getBoundingClientRect(),
+                        canvas = plane.current?.getBoundingClientRect();
+                      if (
+                        bounds &&
+                        canvas &&
+                        e.clientX >= bounds.left &&
+                        e.clientX <= bounds.right &&
+                        e.clientY >= bounds.top &&
+                        e.clientY <= bounds.bottom
+                      ) {
+                        move(
+                          JSON.stringify([k, (config[k] || []).length]),
+                          (e.clientX - canvas.left) / zoom,
+                          (e.clientY - canvas.top) / zoom,
+                        );
+                        onAdd(k, preset);
+                      }
+                    }}
+                    onPointerCancel={() => {
+                      paletteDrag.current = null;
+                      setDragPreview(null);
+                      skipPaletteClick.current = true;
+                    }}
+                    onLostPointerCapture={() => {
+                      paletteDrag.current = null;
+                      setDragPreview(null);
+                    }}
+                    onClick={() => {
+                      if (skipPaletteClick.current) {
+                        skipPaletteClick.current = false;
+                        return;
+                      }
                       onAdd(k, preset);
-                    }
-                  }}
-                  onPointerCancel={() => {
-                    paletteDrag.current = null;
-                    setDragPreview(null);
-                    skipPaletteClick.current = true;
-                  }}
-                  onLostPointerCapture={() => {
-                    paletteDrag.current = null;
-                    setDragPreview(null);
-                  }}
-                  onClick={() => {
-                    if (skipPaletteClick.current) {
-                      skipPaletteClick.current = false;
-                      return;
-                    }
-                    onAdd(k, preset);
-                  }}
-                >
-                  <Icon size={20} aria-hidden="true" />
-                  <span>{label}</span>
-                </button>
-              ))}
-              {!libraryItems.some((item) => item.preset) && (
-                <p className="muted">
-                  {t(
-                    "Ingen forslag passer søket.",
-                    "No suggestions match your search.",
-                  )}
-                </p>
-              )}
-            </div>
-          </>
-        )}
+                    }}
+                  >
+                    <Icon size={20} aria-hidden="true" />
+                    <span>{label}</span>
+                  </button>
+                ))}
+                {!libraryItems.some((item) => item.preset) && (
+                  <p className="muted">
+                    {t(
+                      "Ingen forslag passer søket.",
+                      "No suggestions match your search.",
+                    )}
+                  </p>
+                )}
+              </div>
+            </>
+          ))}
       </div>
 
       <div className="canvas-toolbar">
@@ -946,28 +939,28 @@ export function FlowCanvas({
                     <path d="M0,0 L7,3.5 L0,7" fill="context-stroke" />
                   </marker>
                 </defs>
-                {routes.map(
-                  ({ edge: e, branch, points, path, midpoint, kind }) => {
-                    if (!points.length) return null;
-                    return (
-                      <g
-                        key={`${e.from}-${e.to}`}
-                        className={`canvas-route branch-${branch % 4} from-${kind}`}
-                      >
-                        <path
-                          d={path}
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          markerEnd="url(#flow-tip)"
-                        />
-                        <text x={midpoint.x + 8} y={midpoint.y - 10}>
-                          {e.label}
-                        </text>
-                      </g>
-                    );
-                  },
-                )}
+                {routes.map(({ edge: e, points, path, midpoint, kind }) => {
+                  if (!points.length) return null;
+                  return (
+                    <g
+                      key={`${e.from}-${e.to}`}
+                      className={`canvas-route from-${kind}`}
+                    >
+                      <path className="canvas-wire-halo" d={path} fill="none" />
+                      <path
+                        className="canvas-wire-line"
+                        d={path}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        markerEnd="url(#flow-tip)"
+                      />
+                      <text x={midpoint.x + 8} y={midpoint.y - 10}>
+                        {e.label}
+                      </text>
+                    </g>
+                  );
+                })}
               </svg>
             )}
             {linkFrom &&
@@ -1009,7 +1002,11 @@ export function FlowCanvas({
                       : undefined
                   }
                   key={n.id}
-                  style={{ left: n.x, top: n.y }}
+                  style={{
+                    left: 0,
+                    top: 0,
+                    transform: `translate(${n.x}px, ${n.y}px)`,
+                  }}
                   onPointerDown={(e) => {
                     if (
                       e.button !== 0 ||
@@ -1107,40 +1104,16 @@ export function FlowCanvas({
                             : t("START", "START")}
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    className="canvas-node-content"
-                    disabled={!n.path}
-                    onClick={() => n.path && onSelect(n.path)}
-                  >
-                    <span className="canvas-card-icon">
-                      <FlowArtwork
-                        row={row}
-                        kind={n.kind === "gate" ? "triggers" : n.kind}
-                        home={home}
-                        size={40}
-                      />
-                    </span>
-                    <strong>{summary.title}</strong>
-                    <span>{summary.detail}</span>
-                    {branches.length > 0 && (
-                      <small>
-                        <GitBranch size={14} />
-                        {t("Åpne delflyt", "Open subflow")} · {branches.length}{" "}
-                        {t("deler", "parts")}
-                      </small>
-                    )}
-                    {row?.enabled === false && (
-                      <small>
-                        {t("Deaktivert · hoppes over", "Disabled · skipped")}
-                      </small>
-                    )}
-                    {n.kind === "conditions" && (
-                      <small>
-                        {t("Nei → stopp dette løpet", "No → stop this run")}
-                      </small>
-                    )}
-                  </button>
+                  <CanvasCardContent
+                    path={n.path}
+                    kind={n.kind}
+                    row={row}
+                    home={home}
+                    summary={summary}
+                    branches={branches.length}
+                    lang={lang}
+                    onSelect={onSelect}
+                  />
                   {n.path && (
                     <button
                       type="button"
@@ -1313,3 +1286,56 @@ export function FlowCanvas({
     </section>
   );
 }
+
+const CanvasCardContent = memo(function CanvasCardContent({
+  path,
+  kind,
+  row,
+  home,
+  summary,
+  branches,
+  lang,
+  onSelect,
+}: {
+  path: FlowPath | null;
+  kind: FlowKey | "gate";
+  row: any;
+  home: Home;
+  summary: { title: string; detail: string };
+  branches: number;
+  lang: string;
+  onSelect: (path: FlowPath) => void;
+}) {
+  const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  return (
+    <button
+      type="button"
+      className="canvas-node-content"
+      disabled={!path}
+      onClick={() => path && onSelect(path)}
+    >
+      <span className="canvas-card-icon">
+        <FlowArtwork
+          row={row}
+          kind={kind === "gate" ? "triggers" : kind}
+          home={home}
+          size={40}
+        />
+      </span>
+      <strong>{summary.title}</strong>
+      <span>{summary.detail}</span>
+      {branches > 0 && (
+        <small>
+          <GitBranch size={14} />
+          {t("Åpne delflyt", "Open subflow")} · {branches} {t("deler", "parts")}
+        </small>
+      )}
+      {row?.enabled === false && (
+        <small>{t("Deaktivert · hoppes over", "Disabled · skipped")}</small>
+      )}
+      {kind === "conditions" && (
+        <small>{t("Nei → stopp dette løpet", "No → stop this run")}</small>
+      )}
+    </button>
+  );
+});

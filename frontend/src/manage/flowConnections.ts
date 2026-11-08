@@ -57,13 +57,13 @@ export function planConnection(
   to: string,
   mode: ConnectionMode,
   lang: string,
+  graph = canvasModel(config, lang),
 ): ConnectionPlan {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const fail = (nb: string, en: string): ConnectionPlan => ({
     ok: false,
     message: t(nb, en),
   });
-  const graph = canvasModel(config, lang);
   const source = graph.nodes.find((n) => n.id === from);
   const target = graph.nodes.find((n) => n.id === to);
   if (!source || !target)

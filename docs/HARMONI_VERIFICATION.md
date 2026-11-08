@@ -1,3 +1,59 @@
+# Vivid flow cards, smooth connections and editing performance — release 1.36.127
+
+The free automation canvas uses clear RGB role colors: red/pink events, blue
+conditions and green actions. Card headers, sockets and outgoing wires share
+that role; the quieter palette remains available. Small header labels retain
+contrasting foregrounds in both themes. The 44 px socket hit targets stay intact
+without painting over the wires. Device artwork remains opaque and shared.
+
+Connections prefer one cubic through clear space. Detours use generous,
+tangent-continuous rounded turns, with one stable return lane before falling back
+to obstacle routing. Straight sections no longer have artificial bows; crossings
+no longer switch the routing style or introduce little bridge humps. A paper-colored
+understroke separates crossings. Curve hull subdivision checks the actual curves
+against measured card bounds. Labels follow the rendered path. Tight/overlapping
+cards do not get a misleading connection drawn through their bodies.
+
+A cache per canvas reuses unaffected wires and invalidates moved/resized endpoints
+and wires near old/new/added/removed obstacles. Closed libraries are not mounted;
+card content is memoized, card movement uses transforms, and connection-target
+previews reuse the existing graph. Native HA configuration, explicit connection
+confirmation, scope validation, execution order and save behavior are retained.
+Positions are still temporary, as stated in the editor.
+
+Measurements on the same local host, 8 November 2026:
+
+- Identical 6-column/100-card routing workload, 12 movements of one card:
+  previous full routing median **57.1 ms**; incremental routing median **7.4 ms**.
+  1,145 of 1,188 route results were reused. Initial uncached routing was **53.5 ms**;
+  this change primarily improves repeated editing, not the first computation.
+- A 100-card native demo flow in Chromium with **4x CPU slowdown**, 30 alternating
+  keyboard moves: input to next observed DOM update median **28.4 → 18.8 ms**,
+  p95 **42.8 → 20.6 ms**. These are local synthetic interaction measurements,
+  not hardware-independent FPS or real-device performance guarantees.
+
+Validation:
+
+- Frontend lint, production build, scoped browser-test TypeScript, formatting and
+  whitespace checks passed. **310 unit tests in 50 files** passed, including
+  rendered curve clearance/tangents, short forward gaps, return paths, cache
+  invalidation and unchanged native connection planning. Existing Vite chunk-size
+  warning remains.
+- **10 distinct Chromium browser cases** passed against the exact extracted
+  release package. Two desktop-specific geometry/performance cases are explicitly
+  skipped in the phone project; existing mobile editing/device/zoom/empty-state
+  cases passed. Native-config round trips, released dragging, palette dragging,
+  disclosure, rejected unsafe parallel changes and saving remain covered.
+- The rearranged nine-card fixture has eight rendered paths, including two
+  backward links and converging triggers. Browser sampling of the actual SVG
+  paths found **zero card intersections**. RGB headers are checked in both themes.
+  Light/dark desktop and phone/tablet screenshots were inspected. View controls
+  and layout gestures caused no API writes; no automations/devices were run.
+- Native Safari, physical low-end phones and live HA/hardware were not exercised.
+  No live hub installation or Marketplace change was performed.
+- Deterministic package and all **299 runtime member hashes** verified.
+  SHA-256: `2b9ba6c496a1b1ae5913010683bd6aa813d5866fda707c610307a837f359e16c`.
+
 # Flow studio refinement — release 1.36.126
 
 The free automation canvas has been refined after reviewing Homey's public

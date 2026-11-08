@@ -1,3 +1,8 @@
+## 1.36.127
+- Automasjonseditoren har fått klare RGB-farger: rødt/rosa for hendelser, blått for vilkår og grønt for handlinger. Kortoverskrifter, tilkoblingspunkter og forbindelser bruker samme fargesystem i lyst og mørkt tema. Et roligere fargevalg er fortsatt tilgjengelig.
+- Forbindelser bruker sammenhengende, myke kurver og store avrundinger ved omveier. Kryss lager ikke lenger små hopp eller kantete linjer. Rutingen tar hensyn til kortenes faktiske høyde, også ved flytting og bakoverkoblinger.
+- Bedre respons i store flyter: uendrede forbindelser gjenbrukes, kortinnhold slipper unødvendig gjengivelse, og kortbiblioteket bygges når det åpnes. Flytting bruker transformasjoner, og valg av koblingsmål gjenbruker flytmodellen. Automatiseringens kjørerekkefølge og lagringsmåte beholdes.
+
 ## 1.36.126
 - Fri arbeidsflate i automasjonseditoren har fått et roligere uttrykk inspirert av Homey Advanced Flow: tydelige kort, enhetsbilder, diskret rutenett og mer ensartede forbindelser. Hendelser, krav og handlinger har egne, konsekvente aksentfarger.
 - «Legg til kort» åpner kortbiblioteket ved behov. Rutenett, linjer og farger er samlet under «Visningsvalg». Koblingsverktøyene vises når du starter en kobling; forslag må fortsatt bekreftes før de endrer utkastet.

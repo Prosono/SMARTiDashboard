@@ -1,21 +1,21 @@
 /* Flow studio: the plan is the focus; tools appear when they are needed. */
 .flow-designer {
-  --flow-event: #3569ba;
-  --flow-condition: #93621c;
-  --flow-action: #24836d;
+  --flow-event: #e80050;
+  --flow-condition: #2458ff;
+  --flow-action: #00a85b;
 }
 [data-theme="dark"] .flow-designer {
-  --flow-event: #8ab4f8;
-  --flow-condition: #e8bd71;
-  --flow-action: #82c9b2;
+  --flow-event: #ff2866;
+  --flow-condition: #377dff;
+  --flow-action: #00e986;
 }
 .flow-designer .flow-studio {
-  --flow-event: #3569ba;
-  --flow-condition: #93621c;
-  --flow-action: #24836d;
+  --flow-event: #e80050;
+  --flow-condition: #2458ff;
+  --flow-action: #00a85b;
   --studio-paper: color-mix(in srgb, var(--surface) 92%, var(--bg));
   --studio-grid: color-mix(in srgb, var(--text) 10%, transparent);
-  --studio-wire: #648cce;
+  --studio-wire: #2458ff;
   display: grid;
   grid-template-columns: 0 minmax(0, 1fr);
   grid-template-rows: auto auto auto minmax(450px, 68vh) auto auto;
@@ -28,10 +28,10 @@
   isolation: isolate;
 }
 [data-theme="dark"] .flow-designer .flow-studio {
-  --flow-event: #8ab4f8;
-  --flow-condition: #e8bd71;
-  --flow-action: #82c9b2;
-  --studio-wire: #8cace0;
+  --flow-event: #ff2866;
+  --flow-condition: #377dff;
+  --flow-action: #00e986;
+  --studio-wire: #377dff;
 }
 .flow-designer .flow-studio.palette-calm {
   --studio-wire: var(--muted);
@@ -257,6 +257,7 @@
     0 3px 5px #00000007,
     0 8px 22px #00000009;
   overflow: visible;
+  contain: layout style;
   transition:
     border-color 130ms ease,
     box-shadow 130ms ease;
@@ -277,8 +278,8 @@
   border-radius: 11px 11px 0 0;
   padding: 5px 38px 4px 13px;
   gap: 6px;
-  background: color-mix(in srgb, var(--node-color) 5%, var(--surface));
-  color: var(--node-color);
+  background: var(--node-color);
+  color: #fff;
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -286,7 +287,7 @@
 .flow-designer .flow-studio .canvas-drag > svg {
   width: 13px;
   height: 13px;
-  opacity: 0.65;
+  opacity: 1;
 }
 .flow-designer .flow-studio .canvas-node-content {
   min-height: 93px;
@@ -339,11 +340,47 @@
 .flow-designer .flow-studio .canvas-node[data-selected] .canvas-delete {
   visibility: visible;
 }
-.flow-designer .flow-studio .canvas-route {
-  color: var(--studio-wire);
+.flow-designer .flow-studio .canvas-route.from-triggers {
+  color: var(--flow-event);
+}
+.flow-designer .flow-studio .canvas-route.from-conditions {
+  color: var(--flow-condition);
+}
+.flow-designer .flow-studio .canvas-route.from-actions {
+  color: var(--flow-action);
+}
+.flow-designer .flow-studio.palette-calm .canvas-route {
+  color: var(--muted);
 }
 .flow-designer .flow-studio .canvas-route path {
-  stroke-width: 2.2px;
+  stroke-width: 2.8px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.flow-designer .flow-studio .canvas-route .canvas-wire-halo {
+  stroke: var(--studio-paper);
+  stroke-width: 7px;
+}
+.flow-designer .flow-studio .canvas-actions .canvas-drag {
+  background: #00e58a;
+  color: #002d1c;
+}
+.flow-designer .flow-studio .canvas-port {
+  --studio-wire: var(--node-color);
+}
+.flow-designer .flow-studio.palette-calm .canvas-drag {
+  background: color-mix(in srgb, var(--node-color) 8%, var(--surface));
+  color: var(--node-color);
+}
+.flow-designer .flow-studio.palette-calm {
+  --flow-event: #a84266;
+  --flow-condition: #526fa6;
+  --flow-action: #27836d;
+}
+[data-theme="dark"] .flow-designer .flow-studio.palette-calm {
+  --flow-event: #d797b0;
+  --flow-condition: #9bafd5;
+  --flow-action: #8ac9b9;
 }
 .flow-designer .flow-studio .canvas-route text {
   font-size: 10px;
@@ -351,7 +388,8 @@
 .flow-designer .flow-studio .canvas-port {
   border-color: var(--studio-wire);
   color: var(--studio-wire);
-  background: var(--surface);
+  /* Keep the 44px hit target without masking the wire around the small socket. */
+  background: transparent;
 }
 .flow-designer .flow-studio .canvas-node.is-connectable {
   border-color: var(--node-color);
@@ -616,4 +654,18 @@
   .flow-designer .flow-studio .canvas-node {
     transition: none;
   }
+}
+
+[data-theme="dark"] .flow-designer .flow-studio .canvas-triggers .canvas-drag {
+  background: #e80050;
+}
+[data-theme="dark"]
+  .flow-designer
+  .flow-studio
+  .canvas-conditions
+  .canvas-drag {
+  background: #2458ff;
+}
+[data-theme="dark"] .flow-designer .flow-studio.palette-calm .canvas-drag {
+  background: color-mix(in srgb, var(--node-color) 8%, var(--surface));
 }

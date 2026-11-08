@@ -1,4 +1,4 @@
-/** Orthogonal obstacle routing, rounded corners and bridges. Canvas units, not pixels. */
+/** Obstacle-aware, tangent-continuous connections in logical canvas units. */
 export type Point = { x: number; y: number };
 export type Box = Point & { id: string; width: number; height: number };
 export function blocked(a: Point, b: Point, boxes: Box[]) {
@@ -58,6 +58,29 @@ export function routeWire(
     const middle = [a, corner, b];
     if (!blocked(a, corner, obstacles) && !blocked(corner, b, obstacles))
       return simplifyRoute([start, ...middle, end]);
+  }
+  // A single generous return lane is more stable than an arbitrary staircase
+  // through equal-cost grid cells, especially when the target is to the left.
+  const lanes = [
+    ...new Set([
+      (a.y + b.y) / 2,
+      ...obstacles.flatMap((r) => [r.y - 8, r.y + r.height + 8]),
+    ]),
+  ].sort(
+    (x, y) =>
+      Math.abs(x - a.y) +
+      Math.abs(x - b.y) -
+      (Math.abs(y - a.y) + Math.abs(y - b.y)),
+  );
+  for (const y of lanes) {
+    const left = { x: a.x, y },
+      right = { x: b.x, y };
+    if (
+      !blocked(a, left, obstacles) &&
+      !blocked(left, right, obstacles) &&
+      !blocked(right, b, obstacles)
+    )
+      return simplifyRoute([start, a, left, right, b, end]);
   }
   const xs = [
     ...new Set([
@@ -166,144 +189,233 @@ function simplifyRoute(points: Point[]): Point[] {
   );
 }
 
-export function wirePath(points: Point[], earlier: Point[][]): string {
-  if (points.length < 2) return "";
-  let d = `M${points[0].x} ${points[0].y}`;
-  const towards = (a: Point, b: Point, n: number): Point => {
-    const l = Math.hypot(b.x - a.x, b.y - a.y);
-    return { x: a.x + ((b.x - a.x) * n) / l, y: a.y + ((b.y - a.y) * n) / l };
+type Cubic = [Point, Point, Point, Point];
+type Bounds = { left: number; top: number; right: number; bottom: number };
+export type WireRoute = {
+  path: string;
+  points: Point[];
+  midpoint: Point;
+  bounds: Bounds;
+};
+const half = (a: Point, b: Point): Point => ({
+  x: (a.x + b.x) / 2,
+  y: (a.y + b.y) / 2,
+});
+const boundsOf = (points: Point[]): Bounds => ({
+  left: Math.min(...points.map((p) => p.x)),
+  top: Math.min(...points.map((p) => p.y)),
+  right: Math.max(...points.map((p) => p.x)),
+  bottom: Math.max(...points.map((p) => p.y)),
+});
+const intersects = (a: Bounds, b: Bounds) =>
+  a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+const boxBounds = (r: Box): Bounds => ({
+  left: r.x,
+  top: r.y,
+  right: r.x + r.width,
+  bottom: r.y + r.height,
+});
+const inside = (p: Point, r: Bounds) =>
+  p.x > r.left && p.x < r.right && p.y > r.top && p.y < r.bottom;
+
+function split([a, b, c, d]: Cubic): [Cubic, Cubic] {
+  const ab = half(a, b),
+    bc = half(b, c),
+    cd = half(c, d);
+  const abc = half(ab, bc),
+    bcd = half(bc, cd),
+    mid = half(abc, bcd);
+  return [
+    [a, ab, abc, mid],
+    [mid, bcd, cd, d],
+  ];
+}
+
+// Reject empty control hulls first, then subdivide only near a card. This is
+// conservative at subpixel precision and avoids 199 * every-card point probes.
+function hitsCard(curve: Cubic, rect: Bounds, depth = 0): boolean {
+  if (!intersects(boundsOf(curve), rect)) return false;
+  if (inside(curve[0], rect) || inside(curve[3], rect)) return true;
+  if (depth === 12) return true;
+  const [a, b] = split(curve);
+  return hitsCard(a, rect, depth + 1) || hitsCard(b, rect, depth + 1);
+}
+function clear(curves: Cubic[], boxes: Box[]) {
+  const bounds = boundsOf(curves.flat());
+  const nearby = boxes.map(boxBounds).filter((r) => intersects(bounds, r));
+  return curves.every((c) => nearby.every((r) => !hitsCard(c, r)));
+}
+function sweepingCurve(a: Point, b: Point): Cubic {
+  const dx = b.x - a.x;
+  // Short forward gaps must not overshoot into the next card.
+  const reach =
+    dx > 0 ? Math.min(220, dx * 0.5) : Math.max(64, Math.min(220, -dx * 0.5));
+  return [a, { x: a.x + reach, y: a.y }, { x: b.x - reach, y: b.y }, b];
+}
+const towards = (a: Point, b: Point, n: number): Point => {
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
+  return {
+    x: a.x + ((b.x - a.x) * n) / length,
+    y: a.y + ((b.y - a.y) * n) / length,
   };
+};
+function roundedCurves(points: Point[]): Cubic[] {
+  const curves: Cubic[] = [];
   let pen = points[0];
-  // A small bow keeps even aligned connections curved, inside routing clearance.
-  const curveTo = (end: Point) => {
-    const dx = end.x - pen.x,
-      dy = end.y - pen.y,
-      len = Math.hypot(dx, dy);
-    if (!len) return;
-    const bow = Math.min(5, len / 8),
-      nx = (-dy / len) * bow,
-      ny = (dx / len) * bow;
-    d += ` C${pen.x + dx / 3 + nx} ${pen.y + dy / 3 + ny} ${pen.x + (dx * 2) / 3 + nx} ${pen.y + (dy * 2) / 3 + ny} ${end.x} ${end.y}`;
+  const line = (end: Point) => {
+    if (pen.x === end.x && pen.y === end.y) return;
+    curves.push([
+      pen,
+      towards(pen, end, Math.hypot(end.x - pen.x, end.y - pen.y) / 3),
+      towards(end, pen, Math.hypot(end.x - pen.x, end.y - pen.y) / 3),
+      end,
+    ]);
     pen = end;
   };
-  let cursor = points[0];
   for (let i = 1; i < points.length; i++) {
     const p = points[i],
       next = points[i + 1];
-    const r = next
+    const radius = next
       ? Math.min(
-          36,
-          Math.hypot(p.x - cursor.x, p.y - cursor.y) / 2,
+          96,
+          Math.hypot(p.x - points[i - 1].x, p.y - points[i - 1].y) / 2,
           Math.hypot(next.x - p.x, next.y - p.y) / 2,
         )
       : 0;
-    const finish = r ? towards(p, cursor, r) : p;
-    if (cursor.y === finish.y) {
-      const crossings = earlier.flatMap((line) =>
-        line.slice(1).flatMap((q, j) => {
-          const v = line[j];
-          return v.x === q.x &&
-            cursor.y > Math.min(v.y, q.y) + 8 &&
-            cursor.y < Math.max(v.y, q.y) - 8 &&
-            v.x > Math.min(cursor.x, finish.x) + 10 &&
-            v.x < Math.max(cursor.x, finish.x) - 10
-            ? [v.x]
-            : [];
-        }),
-      );
-      const direction = Math.sign(finish.x - cursor.x);
-      let last = cursor.x;
-      for (const x of [...new Set(crossings)].sort(
-        (a, b) => (a - b) * direction,
-      )) {
-        if (Math.abs(x - last) < 18) continue;
-        curveTo({ x: x - 7 * direction, y: cursor.y });
-        d += ` Q${x} ${cursor.y - 14} ${x + 7 * direction} ${cursor.y}`;
-        pen = { x: x + 7 * direction, y: cursor.y };
-        last = x;
-      }
+    if (!radius) {
+      line(p);
+      continue;
     }
-    if (cursor.x === finish.x) {
-      const crossings = earlier.flatMap((line) =>
-        line.slice(1).flatMap((q, j) => {
-          const v = line[j];
-          return v.y === q.y &&
-            cursor.x > Math.min(v.x, q.x) + 8 &&
-            cursor.x < Math.max(v.x, q.x) - 8 &&
-            v.y > Math.min(cursor.y, finish.y) + 10 &&
-            v.y < Math.max(cursor.y, finish.y) - 10
-            ? [v.y]
-            : [];
-        }),
-      );
-      const direction = Math.sign(finish.y - cursor.y);
-      let last = cursor.y;
-      for (const y of [...new Set(crossings)].sort(
-        (a, b) => (a - b) * direction,
-      )) {
-        if (Math.abs(y - last) < 18) continue;
-        curveTo({ x: cursor.x, y: y - 7 * direction });
-        d += ` Q${cursor.x + 14} ${y} ${cursor.x} ${y + 7 * direction}`;
-        pen = { x: cursor.x, y: y + 7 * direction };
-        last = y;
-      }
-    }
-    curveTo(finish);
-    if (r) {
-      const after = towards(p, next, r);
-      d += ` Q${p.x} ${p.y} ${after.x} ${after.y}`;
-      cursor = after;
-      pen = after;
-    } else cursor = p;
+    const before = towards(p, points[i - 1], radius),
+      after = towards(p, next, radius);
+    line(before);
+    // Cubic quarter turns have matching tangents at both joins. No artificial
+    // bows on straight sections or little crossing humps that kink the wire.
+    curves.push([
+      before,
+      towards(before, p, radius * 0.55228475),
+      towards(after, p, radius * 0.55228475),
+      after,
+    ]);
+    pen = after;
   }
-  return d;
+  return curves;
 }
-
-/** Prefer a single flowing Bezier when its full curve clears every card. */
+function pathOf(curves: Cubic[]): string {
+  if (!curves.length) return "";
+  const n = (v: number) => Math.round(v * 100) / 100;
+  return (
+    `M${n(curves[0][0].x)} ${n(curves[0][0].y)}` +
+    curves
+      .map(
+        ([, b, c, d]) =>
+          ` C${n(b.x)} ${n(b.y)} ${n(c.x)} ${n(c.y)} ${n(d.x)} ${n(d.y)}`,
+      )
+      .join("")
+  );
+}
+export function wirePath(points: Point[], _earlier: Point[][] = []): string {
+  return pathOf(roundedCurves(points));
+}
+/** Crossing wires do not force a switch to a different routing style. */
 export function smoothWirePath(
   points: Point[],
   boxes: Box[],
-  earlier: Point[][] = [],
+  _earlier: Point[][] = [],
 ): string | null {
   if (points.length < 2) return null;
-  const a = points[0],
-    b = points[points.length - 1];
-  // Retain the bridge-aware router wherever another connection could cross.
-  if (
-    earlier.some((line) =>
-      line.some(
-        (p) =>
-          p.x > Math.min(a.x, b.x) &&
-          p.x < Math.max(a.x, b.x) &&
-          p.y >= Math.min(a.y, b.y) - 24 &&
-          p.y <= Math.max(a.y, b.y) + 24,
-      ),
-    )
-  )
-    return null;
-  const reach = Math.max(60, Math.abs(b.x - a.x) * 0.48);
-  const aligned = Math.abs(b.y - a.y) < 2;
-  const c = { x: a.x + reach, y: a.y - (aligned ? 24 : 0) };
-  const d = { x: b.x - reach, y: b.y - (aligned ? 24 : 0) };
-  for (let i = 1; i < 200; i++) {
-    const t = i / 200,
-      u = 1 - t;
-    const x =
-      u * u * u * a.x +
-      3 * u * u * t * c.x +
-      3 * u * t * t * d.x +
-      t * t * t * b.x;
-    const y =
-      u * u * u * a.y +
-      3 * u * u * t * c.y +
-      3 * u * t * t * d.y +
-      t * t * t * b.y;
-    if (
-      boxes.some(
-        (r) => x > r.x && x < r.x + r.width && y > r.y && y < r.y + r.height,
-      )
-    )
-      return null;
+  const curve = sweepingCurve(points[0], points[points.length - 1]);
+  return clear([curve], boxes) ? pathOf([curve]) : null;
+}
+export function routeConnection(
+  source: Box,
+  target: Box,
+  boxes: Box[],
+  lane = 0,
+): WireRoute {
+  const start = { x: source.x + source.width, y: source.y + 65 },
+    end = { x: target.x, y: target.y + 65 };
+  const direct = sweepingCurve(start, end);
+  let points = [start, end],
+    curves = [direct];
+  if (!clear(curves, boxes)) {
+    points = routeWire(source, target, boxes, lane);
+    curves = roundedCurves(points);
+    // The padded orthogonal route leaves space for the rounded corners. If a
+    // very tight arrangement cannot clear, retain its safe straight segments.
+    if (curves.length && !clear(curves, boxes))
+      curves = points.slice(1).map((p, i) => [points[i], points[i], p, p]);
   }
-  return `M${a.x} ${a.y} C${c.x} ${c.y} ${d.x} ${d.y} ${b.x} ${b.y}`;
+  const traces = curves.flatMap((curve, index) => {
+    let parts = [curve];
+    for (let i = 0; i < 3; i++) parts = parts.flatMap(split);
+    return [...(index ? [] : [curve[0]]), ...parts.map((p) => p[3])];
+  });
+  let length = 0;
+  const lengths = traces.slice(1).map((p, i) => {
+    length += Math.hypot(p.x - traces[i].x, p.y - traces[i].y);
+    return length;
+  });
+  const middle = lengths.findIndex((v) => v >= length / 2);
+  const midpoint =
+    middle >= 0 ? half(traces[middle], traces[middle + 1]) : start;
+  return {
+    path: pathOf(curves),
+    points: traces,
+    midpoint,
+    bounds: boundsOf(curves.flat()),
+  };
+}
+
+/** One cache per canvas. Invalidate endpoints and wires near old/new obstacles,
+ * including added/removed/resized cards; unrelated wires keep their identity. */
+export function createWireRouter() {
+  let previous = new Map<string, Box>();
+  let cache = new Map<string, { route: WireRoute; lane: number }>();
+  return (boxes: Box[], edges: { from: string; to: string }[]): WireRoute[] => {
+    const byId = new Map(boxes.map((b) => [b.id, b]));
+    const changed: Bounds[] = [];
+    const changedIds = new Set<string>();
+    for (const id of new Set([...previous.keys(), ...byId.keys()])) {
+      const a = previous.get(id),
+        b = byId.get(id);
+      if (
+        !a ||
+        !b ||
+        a.x !== b.x ||
+        a.y !== b.y ||
+        a.width !== b.width ||
+        a.height !== b.height
+      ) {
+        changedIds.add(id);
+        if (a) changed.push(boxBounds(a));
+        if (b) changed.push(boxBounds(b));
+      }
+    }
+    const next = new Map<string, { route: WireRoute; lane: number }>();
+    const lanes = new Map<string, number>();
+    const result = edges.map((e) => {
+      const key = JSON.stringify([e.from, e.to]);
+      const lane = lanes.get(e.from) || 0;
+      lanes.set(e.from, lane + 1);
+      const cached = cache.get(key);
+      const source = byId.get(e.from)!,
+        target = byId.get(e.to)!;
+      const reusable =
+        cached &&
+        cached.lane === lane &&
+        cached.route.path &&
+        !changedIds.has(e.from) &&
+        !changedIds.has(e.to) &&
+        !changed.some((b) => intersects(b, cached.route.bounds));
+      const route = reusable
+        ? cached.route
+        : routeConnection(source, target, boxes, lane);
+      next.set(key, { route, lane });
+      return route;
+    });
+    previous = byId;
+    cache = next;
+    return result;
+  };
 }

@@ -233,7 +233,7 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   expect(parseInt(zoom)).toBeGreaterThanOrEqual(20);
   expect(parseInt(zoom)).toBeLessThanOrEqual(100);
   await expect(page.locator(".canvas-node").first()).toBeVisible();
-  await expect(page.locator(".canvas-route path")).toHaveCount(4);
+  await expect(page.locator(".canvas-route .canvas-wire-line")).toHaveCount(4);
   await page.locator(".flow-workspace").screenshot({
     path: `../artifacts/${test.info().project.name}-flow-canvas.png`,
     animations: "disabled",
@@ -351,7 +351,9 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   const added = page.locator(".canvas-actions").last();
   await expect(added).toBeVisible();
   expect(
-    await added.evaluate((el) => parseFloat((el as HTMLElement).style.left)),
+    await added.evaluate(
+      (el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41,
+    ),
   ).toBe(
     Math.max(
       10,
@@ -380,8 +382,8 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
       .click();
     await expect(page.locator(".canvas-actions")).toHaveCount(4);
     const moving = page.locator(".canvas-actions").last();
-    const before = await moving.evaluate((el) =>
-      parseFloat((el as HTMLElement).style.left),
+    const before = await moving.evaluate(
+      (el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41,
     );
     const handle = moving.locator(".canvas-drag");
     await handle.scrollIntoViewIfNeeded();
@@ -392,15 +394,17 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
     await page.mouse.up();
     await expect
       .poll(() =>
-        moving.evaluate((el) => parseFloat((el as HTMLElement).style.left)),
+        moving.evaluate(
+          (el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41,
+        ),
       )
       .toBeGreaterThan(before + 40);
     const releasedLeft = await moving.evaluate(
-      (el) => (el as HTMLElement).style.left,
+      (el) => (el as HTMLElement).style.transform,
     );
     await page.mouse.move(rect!.x + 150, rect!.y + 70, { steps: 8 });
     await expect
-      .poll(() => moving.evaluate((el) => (el as HTMLElement).style.left))
+      .poll(() => moving.evaluate((el) => (el as HTMLElement).style.transform))
       .toBe(releasedLeft);
     await moving.locator(".canvas-node-content").click();
     await expect(page.locator(".flow-step-panel")).toBeVisible();

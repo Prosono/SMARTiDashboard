@@ -22,6 +22,18 @@ const fixture = () => ({
   variables: { level: 120 },
 });
 describe("real canvas connections", () => {
+  it("reuses the current graph for target previews without changing any plan", () => {
+    const config = fixture(),
+      before = structuredClone(config);
+    const graph = canvasModel(config, "nb");
+    for (const source of graph.nodes)
+      for (const target of graph.nodes)
+        for (const mode of ["sequence", "parallel"] as const)
+          expect(
+            planConnection(config, source.id, target.id, mode, "nb", graph),
+          ).toEqual(planConnection(config, source.id, target.id, mode, "nb"));
+    expect(config).toEqual(before);
+  });
   it("reconnects sequence in either direction without dropping settings or creating a loop", () => {
     for (const [from, to, order] of [
       [0, 2, [0, 2, 1]],
