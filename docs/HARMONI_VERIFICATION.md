@@ -1,3 +1,47 @@
+# Flow studio refinement — release 1.36.126
+
+The free automation canvas has been refined after reviewing Homey's public
+[Advanced Flow presentation](https://homey.app/en-us/features/advanced-flow/),
+its visual card/connection examples and the
+[Flow card model](https://apps.developer.homey.app/the-basics/flow).
+The design adopts clearer hierarchy, restrained paper cards, compact role accents,
+smooth readable connectors and tools shown in context. SMARTi retains its own
+branding, shared device artwork and native HA execution model; no Homey assets,
+runtime, arbitrary graph semantics or simulated execution indicators are added.
+
+The card library is collapsed initially and can be opened from Add card. Search,
+suggestions, device-first creation and dragging remain available. Grid, lines and
+palette controls live in View options, with outside-click/Escape handling.
+Connection mode controls appear after selecting an output. Existing proposed
+connection validation and explicit confirmation are retained, including rejection
+of unsafe parallel scope changes. Card selection stays visible while editing a
+nested step. The inspector has flatter form sections; step-by-step editing remains.
+
+Zoom buttons preserve the visible midpoint; reset returns to 100%. Fit flow uses
+measured card bounds. Expanded editing exposes the name field directly, with
+required-name validation retained. Empty canvases offer an event-guide entry.
+Help is available on demand. The always-visible footer states that card positions
+are temporary; no layout persistence is claimed or added by this change.
+
+Validation on 8 November 2026:
+
+- Frontend lint, production build, scoped browser-test TypeScript, formatting and
+  whitespace checks passed. **302 frontend unit tests in 50 files** passed,
+  including flow narratives, routing, connection scope and performance checks.
+  The existing Vite chunk-size warning remains.
+- **8 distinct Chromium browser cases** passed against the exact extracted
+  package. They cover nested native-config round trips, validation/discard,
+  device artwork and capability-based creation, palette dragging, released
+  card dragging, full-screen save, toolbar disclosure, anchored zoom, a rejected
+  dynamic parallel proposal, selected-card emphasis, name editing, empty-canvas
+  entry and reduced motion. Display/preview controls cause no API writes or runs.
+- Phone/tablet/desktop screenshots at 320, 390, 820, 1440 and 1600 px were
+  inspected in both themes, including the docked inspector and empty canvas.
+  Native Safari and live HA/hardware were not exercised. No real devices or
+  automations were run, and no hub installation or Marketplace change occurred.
+- Deterministic packaging and all **299 runtime member hashes** were verified.
+  SHA-256: `8e5fca88c55a2e8367cafe82373bab30c52a22b3559b488a6cc305c1bac34e02`.
+
 # History within Reports and insights — release 1.36.125
 
 The standalone History navigation item has moved into Reports and insights. Its

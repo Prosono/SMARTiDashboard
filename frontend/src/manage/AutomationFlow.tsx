@@ -37,6 +37,7 @@ import { flowLibrary, newFlowStep } from "./flowLibrary";
 import { SettingsDialog } from "../home/SettingsDialog";
 import type { Home } from "../types";
 import "./flowDesign.css";
+import "./flowStudio.css";
 export type FlowKey = FlowKind;
 export const flowSummary = flowNarrative;
 type Config = Record<string, any>;
@@ -170,7 +171,7 @@ export function AutomationFlow({
         <label>
           {t("Navn på rutinen", "Routine name")}
           <input
-            required
+            required={view !== "canvas" || !expanded}
             aria-label={t("Navn", "Name")}
             value={c.alias || ""}
             maxLength={200}
@@ -249,9 +250,21 @@ export function AutomationFlow({
             {t("Fri arbeidsflate", "Free canvas")}
           </button>
         </div>
-        <span className="flow-workspace-title">
-          {c.alias || t("Ny automasjon", "New automation")}
-        </span>
+        {view === "canvas" && expanded ? (
+          <input
+            className="flow-workspace-name"
+            required
+            aria-label={t("Navn på flyten", "Flow name")}
+            value={c.alias || ""}
+            maxLength={200}
+            placeholder={t("Ny automasjon", "New automation")}
+            onChange={(e) => patch({ alias: e.target.value })}
+          />
+        ) : (
+          <span className="flow-workspace-title">
+            {c.alias || t("Ny automasjon", "New automation")}
+          </span>
+        )}
         {view === "canvas" && (
           <div className="flow-focus-actions">
             <button
@@ -293,6 +306,7 @@ export function AutomationFlow({
       >
         {view === "canvas" && (
           <FlowCanvas
+            selected={selected}
             config={c}
             home={home}
             lang={lang}

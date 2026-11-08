@@ -1,3 +1,9 @@
+## 1.36.126
+- Fri arbeidsflate i automasjonseditoren har fått et roligere uttrykk inspirert av Homey Advanced Flow: tydelige kort, enhetsbilder, diskret rutenett og mer ensartede forbindelser. Hendelser, krav og handlinger har egne, konsekvente aksentfarger.
+- «Legg til kort» åpner kortbiblioteket ved behov. Rutenett, linjer og farger er samlet under «Visningsvalg». Koblingsverktøyene vises når du starter en kobling; forslag må fortsatt bekreftes før de endrer utkastet.
+- Zoom beholder midtpunktet du ser på, kan tilbakestilles til 100 %, og «Vis hele flyten» bruker kortenes faktiske utstrekning. Valgte kort markeres også mens du redigerer en delflyt.
+- Flytnavnet kan endres direkte i utvidet visning. Kortpanelet er ryddet, og tomme lerreter har et tydelig valg for å legge til første hendelse. Steg-for-steg-visningen og støtte for mobil beholdes. Visningsvalg og kortflytting kjører eller lagrer ikke automasjoner; plasseringer er fortsatt midlertidige.
+
 ## 1.36.125
 - Historikk er samlet under «Rapporter og innsikt» i en egen fane, sammen med Hjemmerapport, Energirapport og Huslogg. Det separate Historikk-valget i hovedmenyen er fjernet.
 - Historikk beholder kildevalg, rom-/typefilter, periodevalg, interaktive grafer og CSV-eksport. Fanene tilpasses mobil i to rader, og kan styres med tastatur. Historikk i enhetsdetaljer beholdes.

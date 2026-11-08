@@ -147,6 +147,9 @@ test("device first flow uses names, attributes and available actions", async ({
     .getByRole("button", { name: "Fri arbeidsflate", exact: true })
     .click();
   await page
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
+  await page
     .getByRole("group", { name: "Bibliotek" })
     .getByRole("button", { name: "Enheter", exact: true })
     .click();

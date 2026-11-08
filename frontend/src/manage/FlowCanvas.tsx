@@ -3,7 +3,14 @@ import { flowLibraryIcon } from "./flowLibraryIcon";
 import { FlowArtwork } from "./FlowArtwork";
 import { flowLibrary } from "./flowLibrary";
 import { routeWire, wirePath, smoothWirePath } from "./flowRouting";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   GripHorizontal,
   Minus,
@@ -20,6 +27,8 @@ import {
   Link2,
   Palette,
   Scan,
+  SlidersHorizontal,
+  HelpCircle,
 } from "lucide-react";
 import type { Home } from "../types";
 import { planConnection, type ConnectionMode } from "./flowConnections";
@@ -37,6 +46,7 @@ export function FlowCanvas({
   canAdd = true,
   onRemove,
   onConnect,
+  selected,
 }: {
   config: Record<string, any>;
   home: Home;
@@ -47,8 +57,23 @@ export function FlowCanvas({
   onAddRow: (k: FlowKey, row: Record<string, any>) => void;
   onRemove: (p: FlowPath) => void;
   onConnect: (patch: Record<string, any>) => void;
+  selected: FlowPath | null;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const libraryId = useId();
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const options = useRef<HTMLDivElement>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!showOptions) return;
+    const close = (event: PointerEvent) => {
+      if (!options.current?.contains(event.target as Node))
+        setShowOptions(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [showOptions]);
   const graphDefinition = useMemo(
     () => canvasModel(config, lang),
     [config, lang],
@@ -186,6 +211,31 @@ export function FlowCanvas({
     top: number;
   } | null>(null);
   const viewport = useRef<HTMLDivElement>(null);
+  const zoomAnchor = useRef<{
+    x: number;
+    y: number;
+    left: number;
+    top: number;
+  } | null>(null);
+  function zoomTo(value: number) {
+    const el = viewport.current;
+    const next = Math.max(0.2, Math.min(1.4, Math.round(value * 100) / 100));
+    if (!el || next === zoom) return;
+    zoomAnchor.current = {
+      x: (el.scrollLeft + el.clientWidth / 2) / zoom,
+      y: (el.scrollTop + el.clientHeight / 2) / zoom,
+      left: el.clientWidth / 2,
+      top: el.clientHeight / 2,
+    };
+    setZoom(next);
+  }
+  useLayoutEffect(() => {
+    const point = zoomAnchor.current;
+    if (!point || !viewport.current) return;
+    viewport.current.scrollLeft = point.x * zoom - point.left;
+    viewport.current.scrollTop = point.y * zoom - point.top;
+    zoomAnchor.current = null;
+  }, [zoom]);
   const drag = useRef<{
     id: string;
     x: number;
@@ -331,26 +381,44 @@ export function FlowCanvas({
   }, []);
   function fitFlow() {
     const el = viewport.current;
-    if (!el) return;
-    const right = Math.max(...nodes.map((n) => n.x + 300));
-    const bottom = Math.max(...nodes.map((n) => n.y + 240));
-    setZoom(
-      Math.max(
-        0.2,
-        Math.min(1, el.clientWidth / right, el.clientHeight / bottom),
+    if (!el || !boxes.length) return;
+    const left = Math.min(...boxes.map((n) => n.x)) - 32;
+    const top = Math.min(...boxes.map((n) => n.y)) - 40;
+    const right = Math.max(...boxes.map((n) => n.x + n.width)) + 32;
+    const bottom = Math.max(...boxes.map((n) => n.y + n.height)) + 40;
+    const anchor = {
+      x: (left + right) / 2,
+      y: (top + bottom) / 2,
+      left: el.clientWidth / 2,
+      top: el.clientHeight / 2,
+    };
+    const next = Math.max(
+      0.2,
+      Math.min(
+        1,
+        el.clientWidth / (right - left),
+        el.clientHeight / (bottom - top),
       ),
     );
-    el.scrollTo({ top: 0, left: 0 });
+    if (next === zoom) {
+      el.scrollLeft = anchor.x * zoom - anchor.left;
+      el.scrollTop = anchor.y * zoom - anchor.top;
+    } else {
+      zoomAnchor.current = anchor;
+      setZoom(next);
+    }
   }
   return (
     <section
-      className={"flow-workspace palette-" + palette}
+      className={`flow-workspace flow-studio palette-${palette}${showLibrary ? " library-open" : ""}${linkFrom ? " is-linking" : ""}`}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           paletteDrag.current = null;
           setDragPreview(null);
           skipPaletteClick.current = true;
           cancelConnection();
+          if (showOptions) options.current?.querySelector("button")?.focus();
+          setShowOptions(false);
           e.stopPropagation();
         }
       }}
@@ -366,16 +434,22 @@ export function FlowCanvas({
           {paletteLabel(dragPreview.kind)}
         </div>
       )}
-      <p className="canvas-palette-hint">
-        {t(
-          "Dra et kort til lerretet, eller trykk for å velge.",
-          "Drag a card onto the canvas, or click to choose.",
-        )}
-      </p>
-      <div className="canvas-add">
-        <strong className="canvas-library-heading">
-          {t("Byggesteiner", "Building blocks")}
-        </strong>
+      <div className="canvas-add" id={libraryId} hidden={!showLibrary}>
+        <div className="studio-library-heading">
+          <strong className="canvas-library-heading">
+            {t("Byggesteiner", "Building blocks")}
+          </strong>
+          <button
+            type="button"
+            aria-label={t("Lukk kortbibliotek", "Close card library")}
+            onClick={() => {
+              setShowLibrary(false);
+              addButton.current?.focus();
+            }}
+          >
+            <X size={17} />
+          </button>
+        </div>
         <div
           className="canvas-library-filter"
           role="group"
@@ -567,6 +641,17 @@ export function FlowCanvas({
       </div>
 
       <div className="canvas-toolbar">
+        <button
+          type="button"
+          className="studio-add-button"
+          ref={addButton}
+          aria-expanded={showLibrary}
+          aria-controls={libraryId}
+          onClick={() => setShowLibrary((v) => !v)}
+        >
+          <Plus size={18} />
+          {t("Legg til kort", "Add card")}
+        </button>
         <div className="canvas-legend">
           <span>
             <Zap size={15} />
@@ -586,54 +671,27 @@ export function FlowCanvas({
             <Scan size={17} />
             {t("Vis hele flyten", "Fit flow")}
           </button>
-          <label className="canvas-palette">
-            <Palette size={17} />
-            <select
-              aria-label={t("Farger", "Colors")}
-              value={palette}
-              onChange={(e) => setPalette(e.target.value)}
-            >
-              <option value="vivid">{t("RGB-farger", "RGB colors")}</option>
-              <option value="calm">{t("Rolige farger", "Calm colors")}</option>
-            </select>
-          </label>
-          <button
-            type="button"
-            aria-pressed={showGrid}
-            onClick={() => setShowGrid((v) => !v)}
-          >
-            <Grid2X2 size={17} />
-            {t("Rutenett", "Grid")}
-          </button>
-          <button
-            type="button"
-            aria-pressed={showLines}
-            onClick={() => {
-              setShowLines((v) => !v);
-              cancelConnection();
-            }}
-          >
-            <Cable size={17} />
-            {t("Linjer", "Lines")}
-          </button>
           <button
             type="button"
             aria-label={t("Zoom ut", "Zoom out")}
             disabled={zoom <= 0.2}
-            onClick={() =>
-              setZoom((v) => Math.max(0.2, Math.round((v - 0.1) * 10) / 10))
-            }
+            onClick={() => zoomTo(zoom - 0.1)}
           >
             <Minus size={17} />
           </button>
-          <output>{Math.round(zoom * 100)}%</output>
+          <button
+            type="button"
+            className="studio-zoom-reset"
+            aria-label={t("Tilbakestill zoom til 100 %", "Reset zoom to 100 %")}
+            onClick={() => zoomTo(1)}
+          >
+            <output>{Math.round(zoom * 100)}%</output>
+          </button>
           <button
             type="button"
             aria-label={t("Zoom inn", "Zoom in")}
             disabled={zoom >= 1.4}
-            onClick={() =>
-              setZoom((v) => Math.min(1.4, Math.round((v + 0.1) * 10) / 10))
-            }
+            onClick={() => zoomTo(zoom + 0.1)}
           >
             <Plus size={17} />
           </button>
@@ -641,6 +699,7 @@ export function FlowCanvas({
             type="button"
             onClick={() => {
               setPositions({});
+              zoomAnchor.current = null;
               setZoom(1);
               viewport.current?.scrollTo({ top: 0, left: 0 });
             }}
@@ -648,9 +707,64 @@ export function FlowCanvas({
             <LocateFixed size={17} />
             {t("Rydd opp", "Arrange")}
           </button>
+          <div className="studio-options" ref={options}>
+            <button
+              type="button"
+              aria-label={t("Visningsvalg", "View options")}
+              title={t("Visningsvalg", "View options")}
+              aria-expanded={showOptions}
+              onClick={() => setShowOptions((v) => !v)}
+            >
+              <SlidersHorizontal size={18} />
+            </button>
+            {showOptions && (
+              <div
+                className="studio-options-panel"
+                role="group"
+                aria-label={t("Visningsvalg", "View options")}
+              >
+                <strong>{t("Arbeidsflaten", "Canvas")}</strong>
+                <button
+                  type="button"
+                  aria-pressed={showGrid}
+                  aria-label={t("Rutenett", "Grid")}
+                  onClick={() => setShowGrid((v) => !v)}
+                >
+                  <Grid2X2 size={17} />
+                  {t("Rutenett", "Grid")}
+                  <span>{showGrid ? t("På", "On") : t("Av", "Off")}</span>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={showLines}
+                  aria-label={t("Linjer", "Lines")}
+                  onClick={() => {
+                    setShowLines((v) => !v);
+                    cancelConnection();
+                  }}
+                >
+                  <Cable size={17} />
+                  {t("Linjer", "Lines")}
+                  <span>{showLines ? t("På", "On") : t("Av", "Off")}</span>
+                </button>
+                <label>
+                  <Palette size={17} />
+                  <span>{t("Farger", "Colors")}</span>
+                  <select
+                    aria-label={t("Farger", "Colors")}
+                    value={palette}
+                    onChange={(e) => setPalette(e.target.value)}
+                  >
+                    <option value="vivid">{t("Tydelige", "Vivid")}</option>
+                    <option value="calm">{t("Rolige", "Calm")}</option>
+                  </select>
+                </label>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      <div className="canvas-connection-tools">
+      <div className="canvas-connection-tools" hidden={!linkFrom}>
         <Link2 size={18} />
         <span>{t("Koble kort", "Connect cards")}</span>
         <div role="group" aria-label={t("Koblingstype", "Connection type")}>
@@ -753,7 +867,9 @@ export function FlowCanvas({
         onPointerDown={(e) => {
           if (
             e.button !== 0 ||
-            (e.target as HTMLElement).closest(".canvas-node")
+            (e.target as HTMLElement).closest(
+              ".canvas-node, button, a, summary",
+            )
           )
             return;
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -783,6 +899,28 @@ export function FlowCanvas({
         tabIndex={0}
         aria-label={t("Rullbar flyt", "Scrollable flow")}
       >
+        {!nodes.length && (
+          <div className="studio-empty">
+            <span>
+              <Zap size={25} />
+            </span>
+            <h3>{t("Hva skal starte flyten?", "What starts this flow?")}</h3>
+            <p>
+              {t(
+                "Begynn med en hendelse. Legg til krav og handlinger når du trenger dem.",
+                "Start with an event. Add conditions and actions as you need them.",
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => onAdd("triggers")}
+              disabled={!canAdd}
+            >
+              <Plus size={18} />
+              {t("Legg til hendelse", "Add event")}
+            </button>
+          </div>
+        )}
         <div style={{ width: width * zoom, height: height * zoom }}>
           <div
             ref={plane}
@@ -861,6 +999,15 @@ export function FlowCanvas({
                     (connectableIds.has(n.id) ? " is-connectable" : "")
                   }
                   data-node-id={n.id}
+                  data-disabled={row?.enabled === false ? "true" : undefined}
+                  data-selected={
+                    n.path &&
+                    selected &&
+                    JSON.stringify(n.path) ===
+                      JSON.stringify(selected.slice(0, n.path.length))
+                      ? "true"
+                      : undefined
+                  }
                   key={n.id}
                   style={{ left: n.x, top: n.y }}
                   onPointerDown={(e) => {
@@ -971,6 +1118,7 @@ export function FlowCanvas({
                         row={row}
                         kind={n.kind === "gate" ? "triggers" : n.kind}
                         home={home}
+                        size={40}
                       />
                     </span>
                     <strong>{summary.title}</strong>
@@ -1038,7 +1186,7 @@ export function FlowCanvas({
                         type="button"
                         className="canvas-port out"
                         aria-label={
-                          t("Koble fra: ", "Connect from: ") +
+                          t("Start kobling fra: ", "Connect from: ") +
                           (row?.alias || summary.title)
                         }
                         aria-pressed={linkFrom === n.id}
@@ -1126,12 +1274,42 @@ export function FlowCanvas({
           )}
         </p>
       )}
-      <small className="canvas-help">
-        {t(
-          "Kortplasseringer lagres ikke. Flytting er visuelt; bekreftede koblinger endrer kjøringen når du lagrer. Forgreninger med egne krav redigeres i delflyten.",
-          "Card positions are not saved. Moving is visual; confirmed connections change execution when saved. Edit conditional branches inside the subflow.",
-        )}
-      </small>
+      <footer className="studio-footer">
+        <span>
+          {nodes.length} {t("kort", "cards")} <i />{" "}
+          {t(
+            "Dra for å flytte · trykk for å redigere",
+            "Drag to move · select to edit",
+          )}
+        </span>
+        <details className="studio-help">
+          <summary>
+            <HelpCircle size={15} />
+            {t("Slik bruker du lerretet", "Canvas help")}
+          </summary>
+          <div>
+            <strong>{t("Bygg med kort", "Build with cards")}</strong>
+            <p>
+              {t(
+                "Legg til kort fra byggesteiner eller enheter. Dra mellom punktene for å foreslå en kobling, og bekreft endringen. Krav og forgreninger tilpasses i kortet.",
+                "Add cards from building blocks or devices. Drag between ports to propose a connection, then confirm the change. Edit conditions and branches inside the card.",
+              )}
+            </p>
+            <p>
+              {t(
+                "Flytt arbeidsflaten ved å dra i et tomt område. Bruk + og − for zoom, eller Vis hele flyten for å finne tilbake. Esc avbryter en kobling.",
+                "Drag empty space to pan. Use + and − to zoom, or Fit flow to find your cards. Esc cancels a connection.",
+              )}
+            </p>
+          </div>
+        </details>
+        <small>
+          {t(
+            "Plasseringer er midlertidige. Lagre for å ta i bruk endringer i stegene.",
+            "Positions are temporary. Save to apply changes to the steps.",
+          )}
+        </small>
+      </footer>
     </section>
   );
 }

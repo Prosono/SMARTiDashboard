@@ -282,6 +282,9 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   await expect(
     page.getByRole("region", { name: "Arbeidsflate for automasjon" }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Legg til kort", exact: true })
+    .click();
   const librarySearch = page.getByRole("textbox", {
     name: "Søk i byggesteiner",
     exact: true,
