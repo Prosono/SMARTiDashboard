@@ -1,3 +1,33 @@
+# Shared device destination tabs — release 1.36.131
+
+Devices reuses the existing `connections-tabs` styling from Extensions and
+Updates. The shared selected-state rule accepts both tab selection and the
+existing pressed filter-button semantics. Devices retains its five views and
+protocol logos, with 20 px artwork height matching the other icons. The old
+filled radio-color button overrides were removed. Selected colors now follow
+the page palette and theme; the shared separator and focus ring remain.
+
+Phone controls wrap, retain at least 44 px touch targets and use compact 13 px
+labels. The advanced radio action stays separate and retains its permissions.
+Device data, commands, grouping, scene editing, tab state and backend access are
+unchanged. The native iPhone build is unchanged; this is a hub/frontend update.
+
+Validation on 9 November 2026:
+
+- Frontend lint, production build, formatting and whitespace checks passed.
+  Existing Vite chunk-size warning remains. No new tests were added for this
+  visual-only change.
+- Six existing desktop/mobile browser cases pass for Extensions, group editing,
+  scene creation and protocol inventory/removal/setup using the isolated demo
+  and mocked operations. No real home or physical devices were accessed.
+- All five device views were selected successfully. Computed selected colors,
+  borders, radius, minimum height and typography match Updates at 1440, 768, 390
+  and 320 px in light/dark themes. Phone spacing is compact for five controls.
+  All eight views fit without document overflow; final desktop/phone screenshots
+  were inspected. Native Safari and physical devices were not exercised.
+- Deterministic package and all **299 runtime member hashes** verified.
+  SHA-256: `82eee090b7a8efbe2c7aa767d12f96b72891dd07b53f9b7f29457dc48998cbdc`.
+
 # Sidebar contrast and automation icon — release 1.36.130
 
 Harmoni's dark desktop/tablet sidebar now uses locally scoped foreground and

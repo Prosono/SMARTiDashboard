@@ -1,3 +1,7 @@
+## 1.36.131
+- Fanene på Enheter bruker nå samme stil som Oppdateringer og Utvidelser: diskret bakgrunn og kant rundt valgt fane, farger fra valgt tema og en felles skillelinje under fanene. Zigbee- og Z-Wave-logoene beholdes i samme høyde som de øvrige ikonene.
+- Fanene tilpasses små skjermer med kompakt tekst og linjebryting, uten å skjule noen av enhetsvisningene.
+
 ## 1.36.130
 - Rettet kontrasten i Harmoni-sidebaren når lyst tema kombineres med SMARTi Sort eller andre paletter med mørk sidemeny. Menytekst, ikoner, logo og brukerfelt bruker nå lyse forgrunnsfarger på den mørke flaten. Mobilmenyen beholder sine egne temafarger.
 - Automasjoner har fått et tydeligere ikon med sammenkoblede noder i hovedmenyen.

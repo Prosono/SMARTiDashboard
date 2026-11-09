@@ -5,28 +5,12 @@
 [data-protocol="zwave_js"] {
   --radio-accent: #216ba9;
 }
-.protocol-navigation {
-  display: flex;
+.connections-tabs.protocol-navigation {
   flex-wrap: wrap;
-  gap: 8px;
-  border: 0;
-  margin-bottom: 22px;
 }
-.protocol-navigation > button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  border-radius: 11px;
-  background: var(--soft);
-  padding: 13px 22px;
-  min-height: 46px;
-  border: 1px solid transparent;
-}
-.protocol-navigation > button.selected {
-  background: var(--radio-accent);
-  color: #fff;
-  border-color: transparent;
+.connections-tabs.protocol-navigation > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .protocol-navigation > button:last-of-type:not([aria-pressed]) {
   margin-left: auto;
@@ -231,7 +215,9 @@
   color: var(--radio-accent);
   border-radius: 14px;
 }
-.protocol-devices .protocol-device-icon :is(.device-picture, .device-product-art) {
+.protocol-devices
+  .protocol-device-icon
+  :is(.device-picture, .device-product-art) {
   width: 48px;
   height: 56px;
   object-fit: contain;
@@ -284,10 +270,10 @@
   }
 }
 @media (max-width: 600px) {
-  .protocol-navigation > button {
-    flex: 1;
-    padding: 12px 8px;
-    font-size: 12px;
+  .connections-tabs.protocol-navigation > button {
+    flex-grow: 1;
+    padding-inline: 10px;
+    font-size: 13px;
   }
   .protocol-navigation > button:last-of-type:not([aria-pressed]) {
     flex-basis: 100%;
@@ -342,7 +328,9 @@
   .protocol-devices .protocol-device-icon {
     padding: 6px;
   }
-  .protocol-devices .protocol-device-icon :is(.device-picture, .device-product-art) {
+  .protocol-devices
+    .protocol-device-icon
+    :is(.device-picture, .device-product-art) {
     width: 40px;
     height: 46px;
   }
@@ -358,14 +346,6 @@
   .protocol-devices .protocol-row {
     transition: none;
   }
-}
-.tabs.protocol-navigation > button.selected {
-  background: var(--radio-accent);
-  color: #fff;
-}
-.tabs.protocol-navigation > button {
-  min-height: 46px;
-  border-radius: 11px;
 }
 .protocol-devices .protocol-toolbar select {
   max-width: 210px;
@@ -392,9 +372,9 @@
   padding: 12px;
 }
 .protocol-tab-logo {
-  width: 46px;
-  height: 26px;
-  padding: 3px;
+  width: 40px;
+  height: 20px;
+  padding: 2px;
 }
 .controller-protocol-logo {
   width: 72px;
@@ -406,10 +386,6 @@
     width: 120px;
     height: 58px;
     padding: 8px;
-  }
-  .protocol-tab-logo {
-    width: 32px;
-    height: 22px;
   }
   .protocol-devices .controller-protocol-logo {
     width: 40px;

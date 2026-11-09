@@ -1241,7 +1241,7 @@ function Dashboard({
             )}
             {page === "devices" && (
               <div
-                className="tabs protocol-navigation"
+                className="connections-tabs protocol-navigation"
                 data-protocol={protocol}
                 aria-label={lang === "nb" ? "Protokoller" : "Protocols"}
               >
@@ -1259,11 +1259,11 @@ function Dashboard({
                     onClick={() => setProtocol(id)}
                   >
                     {id === "groups" ? (
-                      <Layers size={18} />
+                      <Layers size={20} />
                     ) : id === "scenes" ? (
-                      <Clapperboard size={18} />
+                      <Clapperboard size={20} />
                     ) : id === "all" ? (
-                      <LayoutGrid size={17} />
+                      <LayoutGrid size={20} />
                     ) : (
                       <ProtocolLogo
                         provider={id}
