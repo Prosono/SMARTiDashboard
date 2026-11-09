@@ -5,7 +5,7 @@ import { AutomationIcon, AutomationTrigger } from "./AutomationDetails";
 import "./automations.css";
 import { homeAsset } from "../home/HomeOverview";
 import { AutomationFlow } from "./AutomationFlow";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Workflow,
@@ -23,8 +23,12 @@ import {
   Zap,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
+  ListChecks,
+  Waypoints,
 } from "lucide-react";
 import { AutomationGuide } from "./AutomationGuide";
+import { SettingsDialog } from "../home/SettingsDialog";
 import { api } from "../api";
 import type { Home, Control } from "../types";
 import { Feedback, LoadError, useWork, words } from "./shared";
@@ -119,6 +123,9 @@ export function Automations({
   const [testing, setTesting] = useState(false);
   const [flow, setFlow] = useState(true);
   const [guided, setGuided] = useState(false);
+  const [creationOpen, setCreationOpen] = useState(false);
+  const creationId = useId();
+  const [startInCanvas, setStartInCanvas] = useState(false);
   const [guideReady, setGuideReady] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [raw, setRaw] = useState("");
@@ -266,6 +273,31 @@ export function Automations({
       </section>
     );
   }
+  function create(mode: "simple" | "canvas") {
+    setCreationOpen(false);
+    setEditing({
+      id: null,
+      revision: "",
+      config: {
+        alias: "",
+        description: "",
+        triggers: [],
+        conditions: [],
+        actions: [],
+        mode: "single",
+      },
+    });
+    setAdvanced(false);
+    setFlow(true);
+    setGuided(mode === "simple");
+    setStartInCanvas(mode === "canvas");
+    setGuideReady(false);
+    setFormValidity({});
+    setConfirm(null);
+    setTesting(false);
+    setDirty(true);
+    w.setMessage("");
+  }
   async function edit(a: Automation) {
     if (!a.id) return;
     setFormValidity({});
@@ -281,6 +313,7 @@ export function Automations({
       setRaw(JSON.stringify(v.config, null, 2));
       setAdvanced(!!v.config.use_blueprint);
       setGuided(false);
+      setStartInCanvas(false);
       setFlow(true);
       setGuideReady(false);
       setConfirm(null);
@@ -419,6 +452,7 @@ export function Automations({
           )}
           {!advanced && !guided && flow && (
             <AutomationFlow
+              startInCanvas={startInCanvas}
               onTestingChange={setTesting}
               config={c}
               home={home}
@@ -651,31 +685,68 @@ export function Automations({
           </div>
           <button
             className="primary compact"
-            onClick={() => {
-              setEditing({
-                id: null,
-                revision: "",
-                config: {
-                  alias: "",
-                  description: "",
-                  triggers: [],
-                  conditions: [],
-                  actions: [],
-                  mode: "single",
-                },
-              });
-              setAdvanced(false);
-              setDirty(true);
-              setGuided(true);
-              setGuideReady(false);
-              setConfirm(null);
-            }}
+            onClick={() => setCreationOpen(true)}
           >
             <Plus size={18} />
             {t("Ny automasjon", "New automation")}
           </button>
         </div>
       </div>
+      {creationOpen && (
+        <SettingsDialog
+          title={t("Ny automasjon", "New automation")}
+          lang={lang}
+          compact
+          onClose={() => setCreationOpen(false)}
+        >
+          <p className="automation-create-intro">
+            {t(
+              "Hvordan vil du lage automasjonen?",
+              "How would you like to create it?",
+            )}
+          </p>
+          <div className="automation-create-options">
+            {[
+              {
+                mode: "simple" as const,
+                Icon: ListChecks,
+                label: t("Enkel automasjon", "Simple automation"),
+                hint: t(
+                  "Velg hva som skal skje, steg for steg.",
+                  "Choose what should happen, step by step.",
+                ),
+              },
+              {
+                mode: "canvas" as const,
+                Icon: Waypoints,
+                label: t("Avansert", "Advanced"),
+                hint: t(
+                  "Bygg en Flow med kort og koblinger på en fri arbeidsflate.",
+                  "Build a Flow with cards and connections on a free canvas.",
+                ),
+              },
+            ].map(({ mode, Icon, label, hint }) => (
+              <button
+                key={mode}
+                type="button"
+                className="automation-create-option"
+                aria-label={label}
+                aria-describedby={`${creationId}-${mode}-hint`}
+                onClick={() => create(mode)}
+              >
+                <span className="automation-create-icon">
+                  <Icon size={24} aria-hidden="true" />
+                </span>
+                <span>
+                  <strong>{label}</strong>
+                  <span id={`${creationId}-${mode}-hint`}>{hint}</span>
+                </span>
+                <ChevronRight size={20} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </SettingsDialog>
+      )}
       <Feedback message={w.message} />
       <div className="automation-banner">
         <img src={homeAsset("home-living")} alt="" />

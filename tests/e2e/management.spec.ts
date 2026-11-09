@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await expect(page.locator(".home-welcome h1")).toBeVisible();
+  await expect(page.locator(".home-overview")).toBeVisible();
 });
 test("rooms create, rename, assign and remove without deleting devices", async ({
   page,
@@ -65,12 +65,16 @@ test("automations create visually and preserve advanced configuration on edit", 
   await page
     .getByRole("button", { name: "Ny automasjon", exact: true })
     .click();
-  const name = "Testrutine " + test.info().project.name;
+  await page
+    .getByRole("dialog", { name: "Ny automasjon", exact: true })
+    .getByRole("button", { name: "Enkel automasjon", exact: true })
+    .click();
+  const name = "Testrutine " + test.info().project.name + " " + Date.now();
   await expect(
     page.getByRole("button", { name: "Velg handling", exact: true }),
   ).toBeDisabled();
   await page.getByRole("button", { name: /På et tidspunkt/ }).click();
-  await page.getByLabel("Klokkeslett", { exact: true }).fill("19:30");
+  await page.getByLabel(/^Klokkeslett/).fill("19:30");
   await page
     .getByRole("button", { name: "Velg handling", exact: true })
     .click();
@@ -107,28 +111,33 @@ test("automations create visually and preserve advanced configuration on edit", 
     .getByRole("button", { name: "Lagre automasjon", exact: true })
     .click();
   const row = page
-    .locator(".system-row")
+    .locator(".automation-item")
     .filter({ has: page.getByRole("heading", { name, exact: true }) });
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await expect(
     page.getByLabel("Automasjonsflyt", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: /Rediger Når 1/ }).click();
-  await page.getByLabel("Klokkeslett", { exact: true }).fill("21:00:00");
   await page
-    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .getByRole("button", {
+      name: "Rediger steg: På et bestemt tidspunkt",
+      exact: true,
+    })
+    .click();
+  await page.getByLabel(/^Klokkeslett/).fill("21:00:00");
+  await page
+    .getByRole("button", { name: "Ferdig med steget", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Vanlig editor", exact: true })
     .click();
-  await expect(page.getByLabel("Klokkeslett", { exact: true })).toHaveValue(
+  await expect(page.getByLabel(/^Klokkeslett/)).toHaveValue(
     "21:00:00",
   );
   await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await page.screenshot({
     path: `../artifacts/${test.info().project.name}-automation-flow.png`,
@@ -224,8 +233,14 @@ test("guided sensor transitions and sunset survive review without running device
   await page
     .getByRole("button", { name: "Ny automasjon", exact: true })
     .click();
+  await page
+    .getByRole("dialog", { name: "Ny automasjon", exact: true })
+    .getByRole("button", { name: "Enkel automasjon", exact: true })
+    .click();
   await page.getByRole("button", { name: /Når noe skjer hjemme/ }).click();
-  await page.getByRole("button", { name: "Velg sensor", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Velg enhet eller sensor", exact: true })
+    .click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: /Ytterdør/ })
@@ -260,7 +275,7 @@ test("guided sensor transitions and sunset survive review without running device
   await page
     .getByRole("button", { name: "Se over rutinen", exact: true })
     .click();
-  await expect(page.locator(".routine-review")).toContainText("Ytterdør åpnes");
+  await expect(page.locator(".routine-review")).toContainText("Ytterdør blir åpen");
   await expect(page.locator(".routine-review")).toContainText(
     "slå av Pendellampe",
   );
@@ -284,7 +299,7 @@ test("guided sensor transitions and sunset survive review without running device
     .getByRole("button", { name: "Flere muligheter", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
@@ -312,15 +327,19 @@ test("flow cards add conditions and actions, reorder and preserve drafts across 
     .getByRole("button", { name: "Ny automasjon", exact: true })
     .click();
   await page
+    .getByRole("dialog", { name: "Ny automasjon", exact: true })
+    .getByRole("button", { name: "Enkel automasjon", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "Flere muligheter", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await page.getByRole("button", { name: "Legg til når", exact: true }).click();
   await page.getByRole("button", { name: "Klokkeslett", exact: true }).click();
   await page
-    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .getByRole("button", { name: "Ferdig med steget", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Legg til og hvis", exact: true })
@@ -338,7 +357,7 @@ test("flow cards add conditions and actions, reorder and preserve drafts across 
     .getByRole("combobox", { name: "Er", exact: true })
     .selectOption("off");
   await page
-    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .getByRole("button", { name: "Ferdig med steget", exact: true })
     .click();
   await expect(page.locator(".flow-conditions")).toContainText("Er lukket");
   for (const action of ["Slå på lys", "Slå av lys"]) {
@@ -349,13 +368,13 @@ test("flow cards add conditions and actions, reorder and preserve drafts across 
     await page.getByRole("button", { name: "Mål", exact: true }).click();
     await dialog.getByRole("button", { name: /Pendellampe/ }).click();
     await page
-      .getByRole("button", { name: "Ferdig med kortet", exact: true })
+      .getByRole("button", { name: "Ferdig med steget", exact: true })
       .click();
   }
   await page.getByRole("button", { name: /Rediger Så gjør 2/ }).click();
   await page.getByRole("button", { name: "Flytt opp", exact: true }).click();
   await page
-    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .getByRole("button", { name: "Ferdig med steget", exact: true })
     .click();
   await expect(page.locator(".flow-actions .flow-card").first()).toContainText(
     "Slå av",
@@ -365,7 +384,7 @@ test("flow cards add conditions and actions, reorder and preserve drafts across 
     .click();
   await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
@@ -384,7 +403,7 @@ test("flow cards add conditions and actions, reorder and preserve drafts across 
   ]);
   await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await page.getByRole("button", { name: /Rediger Så gjør 2/ }).click();
   await page.getByRole("button", { name: "Fjern blokk", exact: true }).click();
@@ -411,10 +430,14 @@ test("advanced branches render recursively and deep edits round trip unchanged s
     .getByRole("button", { name: "Ny automasjon", exact: true })
     .click();
   await page
+    .getByRole("dialog", { name: "Ny automasjon", exact: true })
+    .getByRole("button", { name: "Enkel automasjon", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "Flere muligheter", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
@@ -486,7 +509,7 @@ test("advanced branches render recursively and deep edits round trip unchanged s
   await field.fill(JSON.stringify(config));
   await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await expect(
     page.getByText(
@@ -528,7 +551,7 @@ test("advanced branches render recursively and deep edits round trip unchanged s
     .click();
   await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Avansert redigering (JSON)", exact: true })
@@ -538,7 +561,7 @@ test("advanced branches render recursively and deep edits round trip unchanged s
   expect(JSON.parse(await field.inputValue())).toEqual(expected);
   await page.getByRole("button", { name: "Flytvisning", exact: true }).click();
   await page
-    .getByRole("button", { name: "Strukturliste", exact: true })
+    .getByRole("button", { name: "Steg for steg", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Lagre automasjon", exact: true })
@@ -661,6 +684,10 @@ test("canvas moves cards with keyboard and pointer without changing automation l
     .getByRole("button", { name: "Ny automasjon", exact: true })
     .click();
   await page
+    .getByRole("dialog", { name: "Ny automasjon", exact: true })
+    .getByRole("button", { name: "Enkel automasjon", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "Flere muligheter", exact: true })
     .click();
   await expect(
@@ -671,7 +698,7 @@ test("canvas moves cards with keyboard and pointer without changing automation l
     .click();
   await page.getByRole("button", { name: "Klokkeslett", exact: true }).click();
   await page
-    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .getByRole("button", { name: "Ferdig med steget", exact: true })
     .click();
   const handle = page.getByRole("button", { name: /Flytt kort: Klokken/ });
   await handle.focus();
@@ -728,7 +755,7 @@ test("canvas moves cards with keyboard and pointer without changing automation l
     .click();
   await page.getByRole("button", { name: "Klokkeslett", exact: true }).click();
   await page
-    .getByRole("button", { name: "Ferdig med kortet", exact: true })
+    .getByRole("button", { name: "Ferdig med steget", exact: true })
     .click();
   page.once("dialog", (dialog) => dialog.accept());
   await page
@@ -762,6 +789,10 @@ test("canvas connects by dragging or keyboard and saves native sequence and para
   await page.getByRole("button", { name: "Automasjoner", exact: true }).click();
   await page
     .getByRole("button", { name: "Ny automasjon", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Ny automasjon", exact: true })
+    .getByRole("button", { name: "Enkel automasjon", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Flere muligheter", exact: true })

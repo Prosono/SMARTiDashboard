@@ -1,3 +1,44 @@
+# Automation creation method — release 1.36.132
+
+New automation opens a compact, native top-layer dialog with two choices:
+**Enkel automasjon / Simple automation** enters the existing guide, while
+**Avansert / Advanced** mounts the free Flow canvas already expanded, on phones
+as well as desktops. The choice has short descriptions and shared theme tokens.
+Escape/close restores focus to the opener without starting a dirty draft.
+
+Choosing a method creates only local empty draft state. New drafts clear editor
+validity, confirmation and testing state. Existing automation editing retains its
+step-by-step starting view; JSON editing remains a separate existing tool. The
+guided path, explicit-save requirement, native configuration and discard guard
+are preserved. This does not change the account's experience mode, permissions,
+backend endpoints, automation execution or the native iPhone app.
+
+Validation on 9 November 2026:
+
+- Frontend lint, production build, new browser-test TypeScript, production/new
+  test formatting and whitespace checks passed. **339 unit tests in 52 files**
+  passed. Existing Vite chunk-size warning remains.
+- Six new desktop/phone cases cover Norwegian/English choices, accessible
+  descriptions, Escape/focus restoration, direct guide/expanded canvas entry,
+  fresh drafts and confirming/cancelling discard. They observe zero API writes
+  while choosing, opening and discarding drafts.
+- Four existing Flow studio cases pass, covering the unchanged editing path,
+  zoom/tool controls and the empty-canvas starting point. Creation entry points
+  in the legacy management tests were updated, together with stale editor labels
+  and their pre-banner-removal loading selector.
+- Four existing guide/management cases also pass, covering visual creation and
+  saving, sensor/sun transitions and preserving advanced native configuration
+  through subsequent edits. **14 distinct browser cases** passed across the
+  main and targeted follow-up runs. Legacy editor selectors were refreshed to
+  the current accessible names; no production change was needed for those
+  earlier selector failures.
+- Choice screenshots were inspected on phone and desktop in light/dark themes;
+  theme transitions are disabled only for screenshots. The actual Flow canvas
+  was also checked on both surfaces. No live home, real device command or actual
+  home automation was run. Native Safari/physical-device checks remain pending.
+- Deterministic package and all **299 runtime member hashes** verified.
+  SHA-256: `4ed66c798560d4b5d552eab2d11f12089d9874ffe918d462c17658b5cb3b25e1`.
+
 # Shared device destination tabs — release 1.36.131
 
 Devices reuses the existing `connections-tabs` styling from Extensions and

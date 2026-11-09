@@ -2,6 +2,53 @@
   display: grid;
   gap: 20px;
 }
+.automation-create-intro {
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.automation-create-options {
+  display: grid;
+  gap: 12px;
+}
+.automation-create-option {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 14px;
+  min-height: 104px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+.automation-create-option:hover,
+.automation-create-option:focus-visible {
+  background: var(--tint);
+  border-color: var(--accent);
+}
+.automation-create-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--accent);
+}
+.automation-create-option strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+}
+.automation-create-option > span > span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .automation-overview .page-heading {
   margin: 0;
 }

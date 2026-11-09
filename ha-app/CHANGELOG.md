@@ -1,3 +1,7 @@
+## 1.36.132
+- «Ny automasjon» gir nå valget mellom Enkel automasjon og Avansert. Enkel automasjon åpner veilederen direkte; Avansert åpner den frie Flow-arbeidsflaten i utvidet visning på både mobil og desktop.
+- Valget kan lukkes uten å lage et utkast. Å åpne en editor lagrer eller kjører ingenting; eksisterende lagring og beskyttelse av ulagrede endringer beholdes.
+
 ## 1.36.131
 - Fanene på Enheter bruker nå samme stil som Oppdateringer og Utvidelser: diskret bakgrunn og kant rundt valgt fane, farger fra valgt tema og en felles skillelinje under fanene. Zigbee- og Z-Wave-logoene beholdes i samme høyde som de øvrige ikonene.
 - Fanene tilpasses små skjermer med kompakt tekst og linjebryting, uten å skjule noen av enhetsvisningene.

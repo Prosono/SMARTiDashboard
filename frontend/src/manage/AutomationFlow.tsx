@@ -51,6 +51,7 @@ export function AutomationFlow({
   saveMessage = "",
   saving = false,
   onTestingChange,
+  startInCanvas = false,
 }: {
   config: Config;
   home: Home;
@@ -60,15 +61,20 @@ export function AutomationFlow({
   saveMessage?: string;
   saving?: boolean;
   onTestingChange?: (value: boolean) => void;
+  startInCanvas?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
-  const [expanded, setExpanded] = useState(() => window.innerWidth >= 1000);
+  const [expanded, setExpanded] = useState(
+    () => startInCanvas || window.innerWidth >= 1000,
+  );
   const [testMode, setTestMode] = useState(false);
   useEffect(() => {
     onTestingChange?.(testMode);
     return () => onTestingChange?.(false);
   }, [testMode, onTestingChange]);
-  const [view, setView] = useState<"canvas" | "structure">("structure");
+  const [view, setView] = useState<"canvas" | "structure">(
+    startInCanvas ? "canvas" : "structure",
+  );
   const [selected, setSelected] = useState<FlowPath | null>(null);
   const [trail, setTrail] = useState<FlowPath[]>([]);
   const [adding, setAdding] = useState<{
