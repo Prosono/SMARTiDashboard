@@ -63,9 +63,15 @@ test("history sources, dates, chart inspection, house log and mobile logout", as
     .getByRole("button", { name: "Rapporter og innsikt", exact: true })
     .click();
   await expect(page.locator(".report-tabs").getByRole("tab")).toHaveCount(4);
-  await page.getByRole("tab", { name: "Historikk", exact: true }).click();
+  await page
+    .getByRole("tab", { name: "Grafer og historikk", exact: true })
+    .click();
   await expect(
-    page.getByRole("heading", { name: "Historikk", exact: true, level: 2 }),
+    page.getByRole("heading", {
+      name: "Grafer og historikk",
+      exact: true,
+      level: 2,
+    }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Hva vil du se historikken til?" }),

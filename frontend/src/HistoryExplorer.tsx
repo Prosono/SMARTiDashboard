@@ -5,25 +5,19 @@ import {
   ChevronRight,
   RefreshCw,
   Search,
-  History,
+  ChartNoAxesCombined,
+  ScrollText,
   ListFilter,
   Download,
 } from "lucide-react";
 import { api } from "./api";
 import { HistoryChart, type HistoryData } from "./ControlHistory";
-import { controlState } from "./controlState";
+import { HouseLogTimeline } from "./HouseLogTimeline";
+import type { HouseLogEntry } from "./houseLogModel";
 import type { Control, Home } from "./types";
 import "./historyExplorer.css";
 
-type Entry = {
-  when: string;
-  name: string | null;
-  entity_id: string | null;
-  state: string | null;
-  message: string | null;
-  context_name: string | null;
-  context_entity_id: string | null;
-};
+export type HistorySelection = { entityId: string; start: string; end: string };
 type Series = HistoryData & { entity_id: string; truncated: boolean };
 const localDate = (date: Date) =>
   new Date(date.getTime() - date.getTimezoneOffset() * 60000)
@@ -33,20 +27,28 @@ export function HistoryExplorer({
   home,
   lang,
   activity,
+  initial,
+  onInspect,
 }: {
   home: Home;
   lang: string;
   activity: boolean;
+  initial?: HistorySelection;
+  onInspect?: (selection: HistorySelection) => void;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
-  const [selected, select] = useState<string[]>([]);
+  const [selected, select] = useState<string[]>(() =>
+    initial ? [initial.entityId] : [],
+  );
   const [search, setSearch] = useState("");
   const [area, setArea] = useState("");
   const [domain, setDomain] = useState("");
-  const [sources, showSources] = useState(() => window.innerWidth > 900);
+  const [sources, showSources] = useState(
+    () => !activity && window.innerWidth > 900,
+  );
   const [range, setRange] = useState(() => ({
-    start: new Date(Date.now() - 86400000).toISOString(),
-    end: new Date().toISOString(),
+    start: initial?.start || new Date(Date.now() - 86400000).toISOString(),
+    end: initial?.end || new Date().toISOString(),
   }));
   const [draft, setDraft] = useState(() => ({
     start: localDate(new Date(range.start)),
@@ -66,7 +68,7 @@ export function HistoryExplorer({
   const events = useQuery({
     queryKey: ["house-log", range, selected],
     queryFn: () =>
-      api<{ entries: Entry[]; truncated: boolean }>(
+      api<{ entries: HouseLogEntry[]; truncated: boolean }>(
         `history/activity?${params}`,
       ),
     enabled: activity,
@@ -151,22 +153,71 @@ export function HistoryExplorer({
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+  const rangeForm = (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        changeRange(new Date(draft.start), new Date(draft.end));
+      }}
+    >
+      <label>
+        {t("Fra", "From")}
+        <input
+          type="datetime-local"
+          value={draft.start}
+          onChange={(e) => setDraft({ ...draft, start: e.target.value })}
+          required
+        />
+      </label>
+      <label>
+        {t("Til", "To")}
+        <input
+          type="datetime-local"
+          value={draft.end}
+          onChange={(e) => setDraft({ ...draft, end: e.target.value })}
+          required
+        />
+      </label>
+      <button type="submit">{t("Vis", "Show")}</button>
+    </form>
+  );
+  const locale = lang === "en" ? "en-GB" : "nb-NO";
+  const rangeLabel = [range.start, range.end]
+    .map((value) =>
+      new Date(value).toLocaleString(locale, {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    )
+    .join(" – ");
   return (
-    <section className="history-explorer">
+    <section
+      className="history-explorer"
+      data-view={activity ? "log" : "history"}
+    >
       <header className="history-heading">
         <div>
           <h2>
-            {activity ? t("Huslogg", "Activity") : t("Historikk", "History")}
+            {activity ? (
+              <ScrollText size={26} aria-hidden="true" />
+            ) : (
+              <ChartNoAxesCombined size={26} aria-hidden="true" />
+            )}
+            {activity
+              ? t("Huslogg", "Activity log")
+              : t("Grafer og historikk", "Charts and history")}
           </h2>
           <p>
             {activity
               ? t(
-                  "Se hva som har skjedd i hjemmet ditt.",
-                  "See what happened in your home.",
+                  "Hva skjedde, og når? Se registrerte hendelser og opphav når det er kjent.",
+                  "What happened, and when? See recorded events and their source when known.",
                 )
               : t(
-                  "Utforsk målinger og tilstander over tid.",
-                  "Explore measurements and states over time.",
+                  "Hvordan har verdiene endret seg? Sammenlign målinger og tilstander i grafer.",
+                  "How have values changed? Compare measurements and states in charts.",
                 )}
           </p>
         </div>
@@ -174,10 +225,15 @@ export function HistoryExplorer({
           onClick={() => showSources(!sources)}
           aria-expanded={sources}
           aria-controls="history-sources"
+          aria-label={`${activity ? t("Avgrens enheter", "Limit devices") : t("Kilder", "Sources")}${selected.length ? ` (${selected.length})` : ""}`}
         >
           <ListFilter size={18} />
-          {t("Kilder", "Sources")}
-          {selected.length > 0 && ` (${selected.length})`}
+          <span>
+            {activity
+              ? t("Avgrens enheter", "Limit devices")
+              : t("Kilder", "Sources")}
+            {selected.length > 0 && ` (${selected.length})`}
+          </span>
         </button>
       </header>
       <div className="history-period">
@@ -185,6 +241,13 @@ export function HistoryExplorer({
           {[1, 24, 168].map((hours) => (
             <button
               key={hours}
+              aria-pressed={
+                Math.abs(
+                  Date.parse(range.end) -
+                    Date.parse(range.start) -
+                    hours * 3600000,
+                ) < 2000
+              }
               onClick={() =>
                 changeRange(new Date(Date.now() - hours * 3600000), new Date())
               }
@@ -196,6 +259,17 @@ export function HistoryExplorer({
                   : t("7 dager", "7 days")}
             </button>
           ))}
+        </div>
+        {activity ? (
+          <details className="house-log-dates">
+            <summary>{t("Velg datoer", "Choose dates")}</summary>
+            {rangeForm}
+          </details>
+        ) : (
+          rangeForm
+        )}
+        <div className="history-period-nav">
+          {" "}
           <button
             onClick={() => shift(-1)}
             aria-label={t("Forrige tidsrom", "Previous period")}
@@ -210,32 +284,6 @@ export function HistoryExplorer({
             <ChevronRight size={20} />
           </button>
         </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            changeRange(new Date(draft.start), new Date(draft.end));
-          }}
-        >
-          <label>
-            {t("Fra", "From")}
-            <input
-              type="datetime-local"
-              value={draft.start}
-              onChange={(e) => setDraft({ ...draft, start: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            {t("Til", "To")}
-            <input
-              type="datetime-local"
-              value={draft.end}
-              onChange={(e) => setDraft({ ...draft, end: e.target.value })}
-              required
-            />
-          </label>
-          <button type="submit">{t("Vis", "Show")}</button>
-        </form>
         <button
           onClick={() => void query.refetch()}
           disabled={(!activity && !selected.length) || query.isFetching}
@@ -244,6 +292,7 @@ export function HistoryExplorer({
           <RefreshCw size={18} />
         </button>
       </div>
+      <p className="history-range-label">{rangeLabel}</p>
       {error && <p role="alert">{error}</p>}
       <div className="history-layout" data-sources={sources}>
         {sources && (
@@ -259,7 +308,9 @@ export function HistoryExplorer({
               />
             </label>
             <label>
-              {t("Rom", "Area")}
+              {activity
+                ? t("Finn kilder i rom", "Find sources in area")
+                : t("Rom", "Area")}
               <select value={area} onChange={(e) => setArea(e.target.value)}>
                 <option value="">{t("Alle rom", "All areas")}</option>
                 {home.areas.map((a) => (
@@ -270,7 +321,7 @@ export function HistoryExplorer({
               </select>
             </label>
             <label>
-              {t("Type", "Type")}
+              {activity ? t("Kildetype", "Source type") : t("Type", "Type")}
               <select
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
@@ -340,7 +391,7 @@ export function HistoryExplorer({
         <div className="history-results" aria-busy={query.isFetching}>
           {!activity && !selected.length ? (
             <div className="history-empty">
-              <History size={40} />
+              <ChartNoAxesCombined size={40} aria-hidden="true" />
               <h2>
                 {t(
                   "Hva vil du se historikken til?",
@@ -349,8 +400,8 @@ export function HistoryExplorer({
               </h2>
               <p>
                 {t(
-                  "Velg en eller flere enheter under Kilder.",
-                  "Select one or more entities under Sources.",
+                  "Velg enheter under Kilder for å sammenligne utvikling og laste ned målingene. Enkelthendelser finner du i Huslogg.",
+                  "Select sources to compare trends and download readings. Find individual events in Activity log.",
                 )}
               </p>
               <button onClick={() => showSources(true)}>
@@ -359,15 +410,22 @@ export function HistoryExplorer({
             </div>
           ) : query.isPending ? (
             <p role="status">
-              {t("Henter historikken …", "Loading history …")}
+              {activity
+                ? t("Henter hendelser …", "Loading events …")
+                : t("Henter historikken …", "Loading history …")}
             </p>
           ) : query.isError ? (
             <div role="alert">
               <p>
-                {t(
-                  "Kunne ikke hente historikken fra hjemmesentralen.",
-                  "Could not load history from the controller.",
-                )}
+                {activity
+                  ? t(
+                      "Kunne ikke hente husloggen fra hjemmesentralen.",
+                      "Could not load activity from the controller.",
+                    )
+                  : t(
+                      "Kunne ikke hente historikken fra hjemmesentralen.",
+                      "Could not load history from the controller.",
+                    )}
               </p>
               <button onClick={() => void query.refetch()}>
                 {t("Prøv igjen", "Retry")}
@@ -383,64 +441,17 @@ export function HistoryExplorer({
                   )}
                 </p>
               )}
-              {!events.data?.entries.length ? (
-                <div className="history-empty">
-                  <h2>
-                    {t(
-                      "Ingen hendelser i dette tidsrommet",
-                      "No activity in this period",
-                    )}
-                  </h2>
-                  <p>
-                    {t(
-                      "Prøv et annet tidsrom eller andre kilder. Husloggen viser hendelser som er lagret i HA.",
-                      "Try another period or selection. Activity shows events recorded by HA.",
-                    )}
-                  </p>
-                </div>
-              ) : (
-                <ol className="house-log">
-                  {events.data.entries.map((e, i) => {
-                    const c = controls.find((c) => c.entity_id === e.entity_id);
-                    return (
-                      <li key={`${e.when}-${i}`}>
-                        <time dateTime={e.when}>
-                          {new Date(e.when).toLocaleString(
-                            lang === "en" ? "en-GB" : "nb-NO",
-                            {
-                              day: "2-digit",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              second: "2-digit",
-                            },
-                          )}
-                        </time>
-                        <div>
-                          <strong>
-                            {e.name ||
-                              c?.name ||
-                              e.entity_id ||
-                              t("Hjemmet", "Home")}
-                          </strong>
-                          <p>
-                            {e.message ||
-                              (c && e.state !== null
-                                ? controlState(c, e.state, lang)
-                                : e.state) ||
-                              t("Aktivitet registrert", "Activity recorded")}
-                          </p>
-                          {e.context_name && (
-                            <small>
-                              {t("Utløst av", "Triggered by")} {e.context_name}
-                            </small>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-              )}
+              <HouseLogTimeline
+                entries={events.data?.entries || []}
+                home={home}
+                controls={controls}
+                lang={lang}
+                onInspect={
+                  onInspect
+                    ? (entityId) => onInspect({ entityId, ...range })
+                    : undefined
+                }
+              />
             </>
           ) : (
             <>

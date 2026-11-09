@@ -2405,7 +2405,9 @@ test("numeric history keeps real gaps and supports keyboard and pointer or touch
   await page
     .getByRole("button", { name: "Rapporter og innsikt", exact: true })
     .click();
-  await page.getByRole("tab", { name: "Historikk", exact: true }).click();
+  await page
+    .getByRole("tab", { name: "Grafer og historikk", exact: true })
+    .click();
   if (!(await page.locator("#history-sources").isVisible()))
     await page.getByRole("button", { name: "Velg kilder" }).click();
   await page.getByRole("checkbox", { name: /Temperatur i stuen/ }).check();

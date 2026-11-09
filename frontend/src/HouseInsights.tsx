@@ -5,7 +5,7 @@ import {
   ArrowUpRight,
   CalendarDays,
   FileText,
-  History,
+  ChartNoAxesCombined,
   Info,
   Lightbulb,
   Printer,
@@ -23,7 +23,7 @@ import {
   type HouseStatistics,
 } from "./HouseReportStatistics";
 import { ReportLoading } from "./ReportLoading";
-import { HistoryExplorer } from "./HistoryExplorer";
+import { HistoryExplorer, type HistorySelection } from "./HistoryExplorer";
 import { EnergyReport } from "./home/EnergyReport";
 import { EnergyHistoryChart } from "./home/EnergyHistoryChart";
 import type { Dashboard } from "./home/EnergyPlatform";
@@ -68,6 +68,7 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const fmt = (value: unknown, digits = 1) => reportNumber(value, lang, digits);
   const [tab, setTab] = useState("report");
+  const [historyFocus, setHistoryFocus] = useState<HistorySelection>();
   const [from, setFrom] = useState(local(new Date(Date.now() - 7 * 86400000)));
   const [to, setTo] = useState(local(new Date()));
   const [period, setPeriod] = useState<{
@@ -145,17 +146,14 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
     },
     {
       id: "history",
-      label: t("Historikk", "History"),
-      hint: t(
-        "Målinger og tilstander over tid",
-        "Measurements and states over time",
-      ),
-      Icon: History,
+      label: t("Grafer og historikk", "Charts and history"),
+      hint: t("Utvikling og sammenligning", "Trends and comparisons"),
+      Icon: ChartNoAxesCombined,
     },
     {
       id: "log",
-      label: t("Huslogg", "Activity"),
-      hint: t("Utforsk hendelser i detalj", "Explore individual events"),
+      label: t("Huslogg", "Activity log"),
+      hint: t("Hva skjedde, og når?", "What happened, and when?"),
       Icon: ScrollText,
     },
   ];
@@ -283,6 +281,12 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
             home={home}
             lang={lang}
             activity={tab === "log"}
+            initial={tab === "history" ? historyFocus : undefined}
+            onInspect={(selection) => {
+              setHistoryFocus(selection);
+              setTab("history");
+              document.getElementById("house-tab-history")?.focus();
+            }}
           />
         ) : tab === "energy" ? (
           <EnergyReport lang={lang} initialPeriod={energyPeriod} />

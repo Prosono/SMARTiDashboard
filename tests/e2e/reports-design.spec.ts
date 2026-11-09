@@ -453,14 +453,18 @@ test("English report navigation is keyboard accessible and invalid periods never
   await page.getByRole("tab", { name: "Energy report", exact: true }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(
-    page.getByRole("tab", { name: "History", exact: true }),
+    page.getByRole("tab", { name: "Charts and history", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await expect(
-    page.getByRole("heading", { name: "History", exact: true, level: 2 }),
+    page.getByRole("heading", {
+      name: "Charts and history",
+      exact: true,
+      level: 2,
+    }),
   ).toBeVisible();
   await page.keyboard.press("End");
   await expect(
-    page.getByRole("heading", { name: "Activity", exact: true }),
+    page.getByRole("heading", { name: "Activity log", exact: true }),
   ).toBeVisible();
   expect(writes).toHaveLength(0);
 });

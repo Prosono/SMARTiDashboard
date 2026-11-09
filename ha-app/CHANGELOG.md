@@ -1,3 +1,8 @@
+## 1.36.133
+- Tydeligere skille mellom Huslogg og «Grafer og historikk». Huslogg viser registrerte enkelthendelser i en tidslinje, gruppert etter dato, med enhetsbilder og registrert opphav når det finnes.
+- Søk i hendelser og filtrer på rom eller hendelsestype. Lange lister viser 50 hendelser om gangen; begrensninger i hentet historikk opplyses fortsatt. Mobilen har et kompakt tidsvalg.
+- Åpne grafen til en enhet direkte fra en hendelse, med samme tidsrom. Grafsiden beholder kildevalg, sammenligning og CSV-eksport. Ingen endring i lagring eller enhetsstyring.
+
 ## 1.36.132
 - «Ny automasjon» gir nå valget mellom Enkel automasjon og Avansert. Enkel automasjon åpner veilederen direkte; Avansert åpner den frie Flow-arbeidsflaten i utvidet visning på både mobil og desktop.
 - Valget kan lukkes uten å lage et utkast. Å åpne en editor lagrer eller kjører ingenting; eksisterende lagring og beskyttelse av ulagrede endringer beholdes.

@@ -1,3 +1,45 @@
+# Activity timeline and chart history — release 1.36.133
+
+Huslogg / Activity log now answers what happened and when: newest-first events,
+local date groups, shared device artwork, recorded messages/states and a source
+only when supplied by the controller. Local search includes messages, translated
+states, names, IDs and recorded sources. Room and category filters operate on the
+loaded entries. The list renders 50 events at a time and retains the existing
+1,000-event truncation notice; unknown/removed sources remain readable. Categories
+describe the event subject, never infer an automation execution from its context.
+
+Grafer og historikk / Charts and history retains source selection, chart
+inspection, comparison and safe CSV export. An event's chart action selects that
+known entity, retains the exact requested time range, switches tabs and restores
+keyboard focus to the selected tab. The log starts without a source sidebar;
+optional source restriction remains available. Phones have compact period
+presets, date selection and icon controls with accessible names.
+
+The backend endpoints, permissions, retention, 31-day period and 12-source limits
+are unchanged. Filters search the fetched subset rather than claiming exhaustive
+home totals. This release changes no real device command or automation execution.
+
+Validation on 9 November 2026:
+
+- Frontend lint, production build, new browser-test TypeScript, changed-source
+  formatting and whitespace checks passed. **344 unit tests in 53 files** passed,
+  including sorting without deduplication, source search, room/category filters,
+  native messages and Oslo calendar grouping through the repeated DST hour.
+- **5 backend history tests** passed. Existing Starlette/httpx deprecation and
+  Vite chunk-size warnings remain.
+- **20 distinct desktop/phone browser cases** passed across the main and scoped
+  follow-up runs. These cover actual event filtering/empty states, local
+  pagination without refetching, truncation, invalid periods, exact entity/time
+  chart handoff, focus restoration, CSV, keyboard chart inspection, report
+  failures/empty data, printing and English keyboard tab navigation.
+- Phone/desktop screenshots inspected in light/dark themes; transitions disabled
+  only for visual captures. The 320px phone check finds no horizontal overflow.
+  Browser tests use the isolated demo and mocked history; handoff/filter tests
+  observe no history writes or device commands. Physical iPhone/Safari validation
+  remains pending. No live hub was updated by these tests.
+- Deterministic package and all **299 runtime member hashes** verified.
+  SHA-256: `c0566493c861c4b981df4bd0292707202c9ac3eadfe9daa47a46067513fd5c14`.
+
 # Automation creation method — release 1.36.132
 
 New automation opens a compact, native top-layer dialog with two choices:
