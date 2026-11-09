@@ -1,6 +1,6 @@
 import { UpdateProgress } from "./UpdateProgress";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../api";
 import { words } from "./shared";
 import { SettingsDialog } from "../home/SettingsDialog";
@@ -22,6 +22,7 @@ export function SelfUpdate({
   active?: boolean;
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
+  const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["manage", "self-update"],
     queryFn: () => api<Version>("manage/apps/self-update/check", "POST", {}),
@@ -30,6 +31,10 @@ export function SelfUpdate({
     refetchOnMount: "always",
     refetchOnWindowFocus: "always",
   });
+  useEffect(() => {
+    if (q.data)
+      void qc.invalidateQueries({ queryKey: ["manage", "self-update-status"] });
+  }, [q.data, qc]);
   const [confirm, setConfirm] = useState(false),
     [busy, setBusy] = useState(false),
     [backup, setBackup] = useState(true),

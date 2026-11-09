@@ -60,7 +60,9 @@ test("integrations and apps share one responsive destination, with apps only in 
     nav.getByRole("button", { name: "Apper", exact: true }),
   ).toHaveCount(0);
   await nav.getByRole("button", { name: "Utvidelser", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Utvidelser");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Utvidelser",
+  );
   const integrationTab = page.getByRole("tab", {
     name: "Integrasjoner",
     exact: true,
@@ -68,13 +70,16 @@ test("integrations and apps share one responsive destination, with apps only in 
   const appsTab = page.getByRole("tab", { name: "Apper", exact: true });
   await expect(integrationTab).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".integration-card")).toContainText("Philips Hue");
-  expect(appReads).toBe(0);
+  // The advanced administrator menu checks the shared inventory for updates.
+  await expect.poll(() => appReads).toBeGreaterThan(0);
   await integrationTab.focus();
   await integrationTab.press("End");
   await expect(appsTab).toBeFocused();
   await expect(appsTab).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".app-card")).toContainText("MQTT broker");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Utvidelser");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Utvidelser",
+  );
   for (const theme of ["light", "dark"]) {
     await page.evaluate((theme) => {
       document.documentElement.dataset.theme = theme;

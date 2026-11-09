@@ -179,7 +179,8 @@ test("updates have dedicated SMARTi, extension and advanced-only app tabs and ar
   await data.open();
   const appsTab = page.getByRole("tab", { name: "Apper", exact: true });
   await expect(appsTab).toBeVisible();
-  expect(data.appReads()).toBe(0);
+  // Advanced mode checks the shared app inventory for the menu's update count.
+  await expect.poll(data.appReads).toBeGreaterThan(0);
   await page.getByRole("tab", { name: "SMARTi", exact: true }).focus();
   await page.keyboard.press("End");
   await expect(appsTab).toBeFocused();

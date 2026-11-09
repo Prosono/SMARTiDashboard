@@ -128,6 +128,7 @@ import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
 import { HouseInsights } from "./HouseInsights";
+import { useUpdateCount } from "./manage/useUpdateCount";
 import { ProtocolDevices } from "./ProtocolDevices";
 import { DeviceSetup } from "./DeviceSetup";
 import { readPreference, writePreference } from "./preferences";
@@ -231,6 +232,10 @@ function App() {
     refetchInterval: 30000,
   });
   const mode = experience.data?.mode || "advanced";
+  const availableUpdates = useUpdateCount(
+    session?.role === "admin",
+    experience.data?.mode === "advanced",
+  );
   const sidebarKey = `smarti-sidebar:${session?.name || "guest"}`;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   useLayoutEffect(() => {
@@ -506,16 +511,23 @@ function App() {
                     <Icon size={21} />
                     <span>{t[p]}</span>
                     {(p === "devices" && discoveryCount > 0) ||
-                    (p === "integrations" && attentionCount > 0) ? (
+                    (p === "integrations" && attentionCount > 0) ||
+                    (p === "updates" && availableUpdates > 0) ? (
                       <span
                         className="nav-discovery-count"
                         aria-label={
                           p === "devices"
                             ? `${discoveryCount} ${lang === "en" ? "new devices" : "nye enheter"}`
-                            : `${attentionCount} ${lang === "en" ? "integrations need attention" : "integrasjoner trenger oppmerksomhet"}`
+                            : p === "updates"
+                              ? `${availableUpdates} ${lang === "en" ? "updates available" : "oppdateringer tilgjengelig"}`
+                              : `${attentionCount} ${lang === "en" ? "integrations need attention" : "integrasjoner trenger oppmerksomhet"}`
                         }
                       >
-                        {p === "devices" ? discoveryCount : attentionCount}
+                        {p === "devices"
+                          ? discoveryCount
+                          : p === "updates"
+                            ? availableUpdates
+                            : attentionCount}
                       </span>
                     ) : (
                       page === p && <span className="nav-dot" />

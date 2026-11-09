@@ -2,8 +2,8 @@ import { DiscoveredDevices } from "./DiscoveredDevices";
 import { IntegrationLogo } from "./IntegrationLogo";
 import { IntegrationSetup } from "./IntegrationSetup";
 import { IntegrationDevice } from "./IntegrationDevice";
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Download,
   Plug,
@@ -18,6 +18,16 @@ import {
 import { smartiName, integrationName } from "../branding";
 import { api, ApiError } from "../api";
 import { Feedback, LoadError, useWork, words } from "./shared";
+import { SettingsDialog } from "../home/SettingsDialog";
+import {
+  canStartUpdate,
+  runUpdateBatch,
+  updateCategory,
+  type Update,
+  type InstallAttempt,
+  type InstallStatus,
+  type BatchResult,
+} from "./updateModel";
 type Integration = {
   entry_id: string;
   title: string;
@@ -32,24 +42,28 @@ type Integration = {
     area: string | null;
   }[];
 };
-type Update = {
-  category?: "smarti" | "extensions" | "apps";
-  entity_id: string;
-  name: string;
-  smarti: boolean;
-  installed_version: string | null;
-  latest_version: string | null;
-  state: string;
-  in_progress: boolean;
-  percentage: number | null;
-  pending: boolean;
-  can_install: boolean;
-  can_backup: boolean;
-  summary: string;
-};
-type InstallStatus =
-  "accepted" | "completed" | "unconfirmed" | "failed" | "simulated";
-type InstallAttempt = { name: string; version: string; status: InstallStatus };
+async function requestInstall(
+  item: Update,
+  backup: boolean,
+): Promise<InstallStatus> {
+  try {
+    const result = await api<{ status: InstallStatus }>(
+      `manage/updates/${encodeURIComponent(item.entity_id)}/install`,
+      "POST",
+      { version: item.latest_version, backup },
+    );
+    return ["accepted", "completed", "failed", "simulated"].includes(
+      result.status,
+    )
+      ? result.status
+      : "unconfirmed";
+  } catch (error) {
+    if (error instanceof ApiError && error.status >= 400 && error.status < 500)
+      throw error;
+    // Never replay an installation after a lost reply; follow the actual state.
+    return "unconfirmed";
+  }
+}
 export function Integrations({
   lang,
   embedded = false,
@@ -427,6 +441,80 @@ export function UpdateList({
   const [backup, setBackup] = useState(false);
   const w = useWork(lang);
   const [attempts, setAttempts] = useState<Record<string, InstallAttempt>>({});
+  const [batchConfirm, setBatchConfirm] = useState<Update[] | null>(null);
+  const [batchBackup, setBatchBackup] = useState(true);
+  const batchController = useRef<AbortController | null>(null);
+  const [batch, setBatch] = useState<{
+    running: boolean;
+    total: number;
+    index: number;
+    name: string;
+    outcome?: BatchResult;
+  } | null>(null);
+  const qc = useQueryClient();
+  useEffect(() => () => batchController.current?.abort(), []);
+  function record(item: Update, status: InstallAttempt["status"]) {
+    setAttempts((previous) => ({
+      ...previous,
+      [item.entity_id]: {
+        name: smartiName(item.name),
+        version: item.latest_version!,
+        status,
+      },
+    }));
+  }
+  async function installAll() {
+    if (!batchConfirm?.length || batchController.current || w.busy) return;
+    const items = batchConfirm;
+    const controller = new AbortController();
+    batchController.current = controller;
+    setBatchConfirm(null);
+    select(null);
+    setBatch({ running: true, total: items.length, index: 0, name: "" });
+    const outcome = await runUpdateBatch(items, {
+      signal: controller.signal,
+      load: async () => (await q.refetch({ throwOnError: true })).data || [],
+      install: async (item) => {
+        try {
+          return await requestInstall(item, batchBackup && item.can_backup);
+        } catch {
+          return "failed";
+        }
+      },
+      progress: (index, item) =>
+        setBatch(
+          (previous) =>
+            previous && {
+              ...previous,
+              index: index + 1,
+              name: smartiName(item.name),
+            },
+        ),
+      result: record,
+      wait: () =>
+        new Promise<void>((resolve, reject) => {
+          const signal = controller.signal;
+          if (signal.aborted) {
+            reject(signal.reason);
+            return;
+          }
+          const cancel = () => {
+            clearTimeout(timer);
+            reject(signal.reason);
+          };
+          const timer = setTimeout(() => {
+            signal.removeEventListener("abort", cancel);
+            resolve();
+          }, 4000);
+          signal.addEventListener("abort", cancel, { once: true });
+        }),
+    });
+    batchController.current = null;
+    setBatch(
+      (previous) => previous && { ...previous, running: false, outcome },
+    );
+    void qc.invalidateQueries({ queryKey: ["manage"] });
+  }
   useEffect(() => {
     setAttempts((previous) => {
       let next = previous;
@@ -444,14 +532,125 @@ export function UpdateList({
       }
       return next;
     });
-  }, [q.data]);
+  }, [q.data, attempts]);
   const available = q.data?.filter(
     (u) =>
-      (u.category || (u.smarti ? "smarti" : "extensions")) === category &&
+      updateCategory(u) === category &&
       ((u.state === "on" && u.can_install) || u.in_progress || u.pending),
   );
+  const ready =
+    available?.filter((u) => canStartUpdate(u, attempts[u.entity_id])) || [];
+  const busy = w.busy || !!batch?.running;
   return (
     <section className="update-list" data-category={category}>
+      {category === "extensions" && q.data && !q.isError && (
+        <div className="update-bulk-toolbar">
+          <p>
+            {ready.length} {t("klare for oppdatering", "ready to update")}
+          </p>
+          <button
+            type="button"
+            className="primary compact"
+            disabled={busy || !ready.length}
+            onClick={() => {
+              select(null);
+              setBatchBackup(true);
+              setBatchConfirm([...ready]);
+            }}
+          >
+            <Download size={18} aria-hidden="true" />
+            {t("Oppdater alle", "Update all")}
+          </button>
+        </div>
+      )}
+      {batch && (
+        <div className="update-batch-status" role="status">
+          <div>
+            <strong>
+              {batch.running
+                ? `${t("Oppdaterer", "Updating")} ${batch.index} / ${batch.total}${batch.name ? ` · ${batch.name}` : ""}`
+                : batch.outcome === "done"
+                  ? t("Køen er ferdig behandlet", "Update queue processed")
+                  : batch.outcome === "stopped"
+                    ? t("Køen er stoppet", "Queue stopped")
+                    : t("Køen er satt på pause", "Queue paused")}
+            </strong>
+            <p>
+              {batch.running
+                ? t(
+                    "Neste utvidelse starter når den forrige er bekreftet oppdatert.",
+                    "The next extension starts once the previous update is confirmed.",
+                  )
+                : batch.outcome === "done"
+                  ? t(
+                      "Se resultatet for hver utvidelse nedenfor.",
+                      "See each extension's result below.",
+                    )
+                  : t(
+                      "Resterende oppdateringer er ikke startet. En pågående oppdatering fortsetter; kontroller status før et nytt forsøk.",
+                      "Remaining updates have not started. An update already in progress continues; check its status before retrying.",
+                    )}
+            </p>
+          </div>
+          {batch.running && (
+            <button
+              type="button"
+              onClick={() => batchController.current?.abort()}
+            >
+              {t("Stopp køen", "Stop queue")}
+            </button>
+          )}
+        </div>
+      )}
+      {batchConfirm && (
+        <SettingsDialog
+          lang={lang}
+          title={t("Oppdater alle utvidelsene?", "Update all extensions?")}
+          onClose={() => setBatchConfirm(null)}
+        >
+          <p>
+            {t(
+              "Disse utvidelsene oppdateres én om gangen. Hvis du forlater siden, stoppes køen. En oppdatering som har startet, fortsetter.",
+              "These extensions update one at a time. Leaving this page stops the queue. An update that has started continues.",
+            )}
+          </p>
+          <ul className="update-bulk-selection">
+            {batchConfirm.map((item) => (
+              <li key={item.entity_id}>
+                <strong>{smartiName(item.name)}</strong>
+                <span>
+                  {item.installed_version || "—"} → {item.latest_version}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {batchConfirm.some((item) => item.can_backup) && (
+            <label className="check-label">
+              <input
+                type="checkbox"
+                checked={batchBackup}
+                onChange={(event) => setBatchBackup(event.target.checked)}
+              />
+              {t(
+                "Ta sikkerhetskopi der utvidelsen støtter det",
+                "Back up where supported",
+              )}
+            </label>
+          )}
+          <div className="connections-app-actions">
+            <button
+              type="button"
+              className="primary compact"
+              onClick={() => void installAll()}
+            >
+              {t("Bekreft oppdatering av alle", "Confirm update all")}
+            </button>
+            <button type="button" onClick={() => setBatchConfirm(null)}>
+              {t("Avbryt", "Cancel")}
+            </button>
+          </div>
+        </SettingsDialog>
+      )}
       {category === "smarti" && (
         <h2>{t("Systemoppdateringer", "System updates")}</h2>
       )}
@@ -484,32 +683,37 @@ export function UpdateList({
                 <div>
                   <strong>{attempt.name}</strong>
                   <p>
-                    {done
-                      ? `${t("Oppdatert til", "Updated to")} ${attempt.version}`
-                      : failed
-                        ? t(
-                            "Oppdateringen ble avvist av Home Assistant. Kontroller loggen før et nytt forsøk.",
-                            "Home Assistant rejected the update. Check its log before retrying.",
-                          )
-                        : simulated
+                    {attempt.status === "skipped"
+                      ? t(
+                          "Hoppet over: versjonen eller oppdateringsstatusen er endret. Kontroller den nye statusen.",
+                          "Skipped: the version or update status changed. Check the new status.",
+                        )
+                      : done
+                        ? `${t("Oppdatert til", "Updated to")} ${attempt.version}`
+                        : failed
                           ? t(
-                              "Simulert i demohjemmet. Ingen programvare ble installert.",
-                              "Simulated in the demo home. No software was installed.",
+                              "Oppdateringen ble avvist av Home Assistant. Kontroller loggen før et nytt forsøk.",
+                              "Home Assistant rejected the update. Check its log before retrying.",
                             )
-                          : running
-                            ? t("Installerer …", "Installing …") +
-                              (current.percentage != null
-                                ? ` ${current.percentage} %`
-                                : "")
-                            : attempt.status === "unconfirmed"
-                              ? t(
-                                  "Venter på bekreftelse fra Home Assistant. Oppdateringen kan fortsatt pågå.",
-                                  "Awaiting confirmation from Home Assistant. The update may still be running.",
-                                )
-                              : t(
-                                  "Installasjon forespurt. Venter på oppdatert status.",
-                                  "Installation requested. Waiting for updated status.",
-                                )}
+                          : simulated
+                            ? t(
+                                "Simulert i demohjemmet. Ingen programvare ble installert.",
+                                "Simulated in the demo home. No software was installed.",
+                              )
+                            : running
+                              ? t("Installerer …", "Installing …") +
+                                (current.percentage != null
+                                  ? ` ${current.percentage} %`
+                                  : "")
+                              : attempt.status === "unconfirmed"
+                                ? t(
+                                    "Venter på bekreftelse fra Home Assistant. Oppdateringen kan fortsatt pågå.",
+                                    "Awaiting confirmation from Home Assistant. The update may still be running.",
+                                  )
+                                : t(
+                                    "Installasjon forespurt. Venter på oppdatert status.",
+                                    "Installation requested. Waiting for updated status.",
+                                  )}
                   </p>
                 </div>
               </div>
@@ -556,18 +760,7 @@ export function UpdateList({
             </div>
             <button
               className="primary compact"
-              disabled={
-                w.busy ||
-                !u.can_install ||
-                u.state !== "on" ||
-                u.in_progress ||
-                u.pending ||
-                ["accepted", "unconfirmed"].includes(
-                  attempts[u.entity_id]?.status,
-                ) ||
-                (attempts[u.entity_id]?.status === "completed" &&
-                  attempts[u.entity_id]?.version === u.latest_version)
-              }
+              disabled={busy || !canStartUpdate(u, attempts[u.entity_id])}
               onClick={() => {
                 select(u);
                 setBackup(u.can_backup);
@@ -608,44 +801,12 @@ export function UpdateList({
                 )}
                 <button
                   className="primary compact"
-                  disabled={w.busy}
+                  disabled={busy}
                   onClick={() =>
                     void w.run(
                       async () => {
-                        let status: InstallStatus = "unconfirmed";
-                        try {
-                          const result = await api<{ status: InstallStatus }>(
-                            `manage/updates/${encodeURIComponent(u.entity_id)}/install`,
-                            "POST",
-                            { version: selected.latest_version, backup },
-                          );
-                          if (
-                            [
-                              "accepted",
-                              "completed",
-                              "failed",
-                              "simulated",
-                            ].includes(result.status)
-                          )
-                            status = result.status;
-                        } catch (error) {
-                          if (
-                            error instanceof ApiError &&
-                            error.status >= 400 &&
-                            error.status < 500
-                          )
-                            throw error;
-                          // A lost reply is not an installation failure. Poll
-                          // real update state instead of repeating the write.
-                        }
-                        setAttempts((previous) => ({
-                          ...previous,
-                          [u.entity_id]: {
-                            name: smartiName(u.name),
-                            version: selected.latest_version!,
-                            status,
-                          },
-                        }));
+                        const status = await requestInstall(selected, backup);
+                        record(selected, status);
                       },
                       () => select(null),
                     )

@@ -1,3 +1,52 @@
+# Bulk extension updates and navigation count — release 1.36.134
+
+Oppdateringer → Utvidelser has an Oppdater alle / Update all action. The shared
+settings dialog lists the frozen version-specific selection and offers backups
+where supported. Each extension is rechecked immediately before installation;
+changed versions, unavailable targets and work already in progress are skipped.
+The existing protected per-entity install endpoint remains the only write path.
+
+The local queue starts one extension at a time, waiting for observed installed
+version/state after an accepted or uncertain reply. It never retries a write.
+Rejections, failed status reads and a ten-minute confirmation timeout stop the
+remaining queue. Stop queue and leaving the Updates page prevent later writes;
+software already installing continues. Results distinguish confirmed completion,
+uncertainty, rejection, skipped entries and demo simulation. Single installs keep
+the originally confirmed version and now also reconcile an already-arrived
+completion state after a later lost reply.
+
+The Updates menu uses the existing red discovery-count styling on desktop,
+collapsed sidebar and phones. Read-only checks share existing query caches and
+run about once a minute while the app is visible. The count includes approved,
+actionable system/extension updates plus the separate SMARTi app status. Advanced
+administrators additionally include installed app updates from the protected
+inventory, avoiding duplicate app update entities and self-app mirrors. Normal
+and simple modes never fetch the app inventory for this count; residents never
+fetch any update inventory. Errors omit the failed source's stale count. The
+existing app UI, backend permissions and platform-release approval gates remain.
+
+Validation on 9 November 2026:
+
+- Frontend lint, production build, changed browser-test TypeScript, formatting
+  and whitespace checks passed. **350 unit tests in 54 files** passed, including
+  deduplication, eligibility, exact version consent, sequential completion,
+  cancellation, failed reads, unavailable states, timeout and no resend.
+- **52 backend management, app and approval tests** passed. No backend change.
+  Existing Vite chunk-size and Starlette/httpx deprecation warnings remain.
+- **36 distinct desktop/phone browser cases** passed across the main and scoped
+  follow-up runs. New cases cover confirmation/cancel/focus, backup capability,
+  counts/mode changes/zero state, resident access, lost reply/stop, version changes,
+  page exit, sequential state confirmation and late-reply completion. Existing
+  single-update, SMARTi update, update-tab, app-action and Connections cases pass.
+  Prior no-prefetch assertions were updated only for advanced admin mode.
+- Phone/desktop screenshots inspected in both themes, plus the collapsed sidebar
+  and a 320px-wide confirmation. Theme transitions disabled only for captures.
+  All install requests in browser tests were intercepted; the server was an
+  isolated demo. No real software/device/home update was triggered. Physical
+  iPhone/Safari and real controller installation remain unverified.
+- Deterministic package and all **299 runtime member hashes** verified.
+  SHA-256: `b02cc6cd895f2077630669b8b4c24974360cce69e8aa73f0e375cce12e33f6b8`.
+
 # Activity timeline and chart history — release 1.36.133
 
 Huslogg / Activity log now answers what happened and when: newest-first events,
