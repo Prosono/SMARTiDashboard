@@ -109,6 +109,58 @@ async def test_existing_integrations_are_not_replaced_even_when_unavailable(tmp_
     assert not ha.posts
 
 
+@pytest.mark.asyncio
+async def test_factory_clone_recovers_ignored_mqtt_using_running_mosquitto(tmp_path):
+    class CloneSupervisor(Supervisor):
+        async def request(self, method, path):
+            if path == "/addons/core_mosquitto/info":
+                return {"slug": "core_mosquitto", "state": "started"}
+            return await super().request(method, path)
+
+    class CloneHA(HA):
+        async def request(self, command):
+            if command == "config_entries/flow/progress":
+                return []
+            return await super().request(command)
+
+        async def rest(self, method, path, data=None):
+            if method == "DELETE":
+                assert path == "config/config_entries/entry/ignored-mqtt"
+                self.entries.pop(0)
+                return {"require_restart": False}
+            self.posts.append(data)
+            if path == "config/config_entries/flow" and data == {
+                "handler": "mqtt",
+                "show_advanced_options": False,
+            }:
+                return {
+                    "type": "menu",
+                    "step_id": "user",
+                    "flow_id": "mosquitto",
+                    "menu_options": ["addon", "broker"],
+                }
+            assert path == "config/config_entries/flow/mosquitto" and data == {"next_step_id": "addon"}
+            self.entries.append({"domain": "mqtt", "source": "user"})
+            return {"type": "create_entry"}
+
+    ha, pairing = CloneHA(), Pairing()
+    ignored = {"domain": "mqtt", "source": "ignore", "entry_id": "ignored-mqtt"}
+    ha.entries = [ignored, {"domain": "zwave_js"}]
+    pairing.ready = True
+    recovery = RadioRecovery(None, ha, Store(tmp_path / "test.sqlite"), pairing, CloneSupervisor())
+
+    with pytest.raises(HAError, match="mqtt_discovery_ignored"):
+        await recovery.ensure("reset-one")
+    assert ignored in ha.entries and not ha.posts
+
+    await recovery.ensure("reset-one", factory_image=True)
+    assert ignored not in ha.entries
+    assert sum(e["domain"] == "mqtt" for e in ha.entries) == 1
+    posts = list(ha.posts)
+    await recovery.ensure("reset-one", factory_image=True)
+    assert ha.posts == posts
+
+
 @pytest.fixture(autouse=True)
 def no_wait(monkeypatch):
     async def sleep(_):

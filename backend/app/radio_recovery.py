@@ -10,6 +10,7 @@ from .ha import HAError
 from .system_operations import Supervisor
 
 PREFIX = "config/config_entries/flow"
+MOSQUITTO = "core_mosquitto"
 
 
 class RadioRecovery:
@@ -17,7 +18,7 @@ class RadioRecovery:
         self.ha, self.store, self.setup = ha, store, setup
         self.supervisor = supervisor or Supervisor(settings)
 
-    async def ensure(self, reset_id):
+    async def ensure(self, reset_id, *, factory_image=False):
         key = "reset_radios:" + reset_id
         if self.store.get(key) == "ready":
             return
@@ -28,23 +29,9 @@ class RadioRecovery:
             raise HAError("radio_apps_missing_or_ambiguous")
         entries = await self.ha.request("config_entries/get")
         domains = {e["domain"] for e in entries}
-        # Supervisor discovery supplies current broker credentials. Never reuse a deleted user's password.
-        if "mqtt" not in domains and not self.setup.frontend:
-            flows = await self.ha.request("config_entries/flow/progress")
-            candidates = [
-                f
-                for f in flows
-                if f.get("handler") == "mqtt" and f.get("context", {}).get("source") == "hassio"
-            ]
-            if len(candidates) != 1:
-                raise HAError("mqtt_discovery_unavailable")
-            path = PREFIX + "/" + quote(candidates[0]["flow_id"], safe="")
-            flow = await self.ha.rest("GET", path)
-            if flow.get("step_id") != "hassio_confirm" or flow.get("type") != "form":
-                raise HAError("mqtt_confirmation_required")
-            result = await self.ha.rest("POST", path, {})
-            if result.get("type") != "create_entry":
-                raise HAError("mqtt_connection_unconfirmed")
+        mqtt = [e for e in entries if e["domain"] == "mqtt"]
+        if not self.setup.frontend and all(e.get("source") == "ignore" for e in mqtt):
+            await self.connect_mqtt(mqtt, factory_image=factory_image)
         if "zwave_js" not in domains:
             slug = zwave[0]["slug"]
             if not re.fullmatch(r"[a-z0-9_]+", slug):
@@ -95,3 +82,40 @@ class RadioRecovery:
             if attempt < 14:
                 await asyncio.sleep(2)
         raise HAError("radio_connections_not_ready")
+
+    async def connect_mqtt(self, ignored, *, factory_image):
+        # Ignored discovery entries may have been saved on the master before cloning.
+        if ignored and (not factory_image or len(ignored) != 1):
+            raise HAError("mqtt_discovery_ignored")
+        flows = [] if ignored else await self.ha.request("config_entries/flow/progress")
+        candidates = [
+            f for f in flows if f.get("handler") == "mqtt" and f.get("context", {}).get("source") == "hassio"
+        ]
+        if len(candidates) == 1:
+            path = PREFIX + "/" + quote(candidates[0]["flow_id"], safe="")
+            flow = await self.ha.rest("GET", path)
+            if flow.get("step_id") != "hassio_confirm" or flow.get("type") != "form":
+                raise HAError("mqtt_confirmation_required")
+            result = await self.ha.rest("POST", path, {})
+        elif factory_image and not candidates:
+            # Core can obtain current discovery credentials from Supervisor even
+            # if it never started an automatic flow while discovery was ignored.
+            broker = await self.supervisor.request("GET", f"/addons/{MOSQUITTO}/info")
+            if broker.get("slug") != MOSQUITTO or broker.get("state") != "started":
+                raise HAError("mqtt_discovery_unavailable")
+            if ignored:
+                entry_id = quote(ignored[0]["entry_id"], safe="")
+                await self.ha.rest("DELETE", f"config/config_entries/entry/{entry_id}")
+            flow = await self.ha.rest("POST", PREFIX, {"handler": "mqtt", "show_advanced_options": False})
+            if (
+                flow.get("type") != "menu"
+                or flow.get("step_id") != "user"
+                or "addon" not in (flow.get("menu_options") or ())
+            ):
+                raise HAError("mqtt_confirmation_required")
+            path = PREFIX + "/" + quote(flow["flow_id"], safe="")
+            result = await self.ha.rest("POST", path, {"next_step_id": "addon"})
+        else:
+            raise HAError("mqtt_discovery_unavailable")
+        if result.get("type") != "create_entry":
+            raise HAError("mqtt_connection_unconfirmed")

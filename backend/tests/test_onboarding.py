@@ -325,7 +325,7 @@ async def test_reset_onboarding_waits_for_radios_before_user_and_completion(tmp_
     class Radios:
         ready = False
 
-        async def ensure(self, reset_id):
+        async def ensure(self, reset_id, *, factory_image=False):
             assert reset_id == "reset-test"
             if not self.ready:
                 raise HAError("radio_connections_not_ready")

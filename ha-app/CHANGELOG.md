@@ -1,3 +1,6 @@
+## 1.36.140
+- Førstegangsoppsett av en SSD-kopi kobler Home Assistant til den lokale Mosquitto-brokeren når masteren har lagret MQTT-oppdagelsen som ignorert.
+
 ## 1.36.139
 - iPhone-appen kan koble seg til hjemmet automatisk igjen når RESTORE WIPE har gjort den gamle telefonregistreringen ugyldig.
 

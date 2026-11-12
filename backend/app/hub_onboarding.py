@@ -210,14 +210,20 @@ class HubOnboarding:
             if plan["mode"] == "reset":
                 await stage("resetting", reset)
 
-            if full.state() and self.radios:
-                await stage("radios", lambda: self.radios.ensure(full.state()["id"]))
-            if full.state() and full.state().get("factory_image"):
+            reset_state = full.state()
+            if reset_state and self.radios:
+                await stage(
+                    "radios",
+                    lambda: self.radios.ensure(
+                        reset_state["id"], factory_image=bool(reset_state.get("factory_image"))
+                    ),
+                )
+            if reset_state and reset_state.get("factory_image"):
 
                 async def rotate_keys():
                     if not self.zwave_keys:
                         raise HAError("zwave_keys_unavailable")
-                    await self.zwave_keys.ensure(full.state())
+                    await self.zwave_keys.ensure(reset_state)
 
                 await stage("zwave_keys", rotate_keys)
 
