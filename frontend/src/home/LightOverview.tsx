@@ -1,56 +1,30 @@
-import { useContext } from "react";
-import { HeaderAppearance } from "./HomeAppearance";
 import { HomeDeviceGrid } from "./HomeDeviceGrid";
 import { MetricDetails } from "./MetricDetails";
-import { lightIcon } from "../LightAppearance";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
-import { SettingsDialog } from "./SettingsDialog";
-import { RoomArtwork } from "../rooms/RoomArtwork";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
-import { useState, type ReactNode, type CSSProperties } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Lightbulb,
-  Search,
-  Power,
-  Sun,
-  Sparkles,
-  ChevronRight,
-  House,
-} from "lucide-react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Lightbulb, Search, Power, Sun, Sparkles, House } from "lucide-react";
 import { api } from "../api";
 import type { Control, Home } from "../types";
-import { LightColor } from "../LightColor";
 import { usable } from "./homeModel";
-import { homeAsset, roomMood, type HomePreferences } from "./HomeOverview";
+import { homeAsset } from "./HomeOverview";
 import "./lightOverview.css";
 
 export function LightOverview({
   home,
   offline,
   lang,
-  openRoom,
   scenes,
-  renderControls,
 }: {
   home: Home;
   offline: boolean;
   lang: string;
-  openRoom?: (id: string) => void;
   scenes?: () => void;
-  renderControls?: (controls: Control[]) => ReactNode;
 }) {
-  const [opened, open] = useState<string | null>(null);
-  const selected = home.controls.find((c) => c.entity_id === opened);
   const toolbar = useToolbarDisclosure();
-  const harmony = useContext(HeaderAppearance);
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
-  const prefs = useQuery({
-    queryKey: ["home-preferences"],
-    queryFn: () => api<HomePreferences>("home/preferences"),
-  });
-  const [expandedRooms, setExpandedRooms] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [room, setRoom] = useState<string | null>(null);
@@ -124,18 +98,6 @@ export function LightOverview({
       await Promise.all(
         targets.slice(i, i + 4).map((c) => send(c, "turn_off")),
       );
-  }
-  async function toggleRoom(items: Control[]) {
-    const action = items.some((c) => usable(c) && c.state === "on")
-      ? "turn_off"
-      : "turn_on";
-    const targets = items.filter(
-      (c) =>
-        usable(c) && c.capabilities.some((cap) => cap.actions.includes(action)),
-    );
-    setMessage("");
-    for (let i = 0; i < targets.length; i += 4)
-      await Promise.all(targets.slice(i, i + 4).map((c) => send(c, action)));
   }
   const visible = rooms
     .filter((a) => room === null || a.area_id === room)
@@ -299,268 +261,17 @@ export function LightOverview({
           </span>
         </button>
       </div>
-      {summary}
-      {harmony ? (
-        <HomeDeviceGrid
-          page="lights"
-          controls={lights}
-          home={home}
-          offline={offline}
-          lang={lang}
-          visible={
-            new Set(visible.flatMap((a) => a.items.map((c) => c.entity_id)))
-          }
-        />
-      ) : (
-        <>
-          <div className="lighting-section-heading">
-            <h2>{t("Belysning i rommene", "Lighting by room")}</h2>
-            {scenes && (
-              <button onClick={scenes}>
-                <Sparkles size={18} />
-                {t("Stemningsmodus", "Scenes")}
-                <ChevronRight size={18} />
-              </button>
-            )}
-          </div>
-          {message && <p role="status">{message}</p>}
-          <div className="lighting-grid">
-            {visible.map((a) => {
-              const mood = roomMood(a.name);
-              const allItems = rooms.find(
-                (r) => r.area_id === a.area_id,
-              )!.items;
-              const roomOn = allItems.some(
-                (c) => usable(c) && c.state === "on",
-              );
-              const roomAction = roomOn ? "turn_off" : "turn_on";
-              const expanded = expandedRooms.includes(a.area_id);
-              const displayed = expanded ? a.items : a.items.slice(0, 3);
-              const photo = prefs.data?.images[a.area_id]
-                ? new URL(
-                    `api/home/room-image/${encodeURIComponent(a.area_id)}?v=${prefs.dataUpdatedAt}`,
-                    document.baseURI,
-                  ).href
-                : homeAsset(mood.photo || "home-living");
-              return (
-                <article className="lighting-room" key={a.area_id}>
-                  <header>
-                    <RoomArtwork src={photo} alt="" loading="lazy" />
-                    <div>
-                      <h2>{a.name}</h2>
-                      <small>
-                        {a.items.length} {t("lys", "lights")}
-                      </small>
-                    </div>
-                    <button
-                      className="lighting-switch lighting-room-switch"
-                      role="switch"
-                      aria-checked={roomOn}
-                      aria-label={`${t("Alle lys i", "All lights in")} ${a.name}`}
-                      disabled={
-                        offline ||
-                        !home.connected ||
-                        allItems.some((c) => pending.includes(c.entity_id)) ||
-                        !allItems.some(
-                          (c) =>
-                            usable(c) &&
-                            c.capabilities.some((cap) =>
-                              cap.actions.includes(roomAction),
-                            ),
-                        )
-                      }
-                      onClick={() => void toggleRoom(allItems)}
-                    >
-                      <span />
-                    </button>
-                  </header>
-                  <div className="lighting-devices">
-                    {displayed.map((c) => (
-                      <LightTile
-                        key={c.entity_id}
-                        c={c}
-                        lang={lang}
-                        blocked={
-                          offline ||
-                          !home.connected ||
-                          !usable(c) ||
-                          pending.includes(c.entity_id)
-                        }
-                        busy={pending.includes(c.entity_id)}
-                        send={send}
-                        onOpen={
-                          renderControls ? () => open(c.entity_id) : undefined
-                        }
-                      />
-                    ))}
-                  </div>
-                  <footer className="lighting-room-footer">
-                    {a.items.length > 3 ? (
-                      <button
-                        aria-expanded={expanded}
-                        onClick={() =>
-                          setExpandedRooms((current) =>
-                            expanded
-                              ? current.filter((id) => id !== a.area_id)
-                              : [...current, a.area_id],
-                          )
-                        }
-                      >
-                        {expanded
-                          ? t("Vis færre lys", "Show fewer lights")
-                          : `${t("Vis alle", "Show all")} ${a.items.length} ${t("lys", "lights")}`}
-                        <ChevronRight size={17} />
-                      </button>
-                    ) : openRoom && a.area_id ? (
-                      <button onClick={() => openRoom(a.area_id)}>
-                        {t("Åpne rom", "Open room")}
-                        <ChevronRight size={17} />
-                      </button>
-                    ) : null}
-                  </footer>
-                </article>
-              );
-            })}
-          </div>
-          {!visible.length && (
-            <p className="lighting-empty">
-              {lights.length
-                ? t(
-                    "Ingen lys passer med valgene dine.",
-                    "No lights match your filters.",
-                  )
-                : t(
-                    "Legg til lys og knytt dem til et rom for å komme i gang.",
-                    "Add lights and assign them to a room to get started.",
-                  )}
-            </p>
-          )}
-        </>
-      )}
-      {selected && renderControls && (
-        <SettingsDialog
-          title={selected.name}
-          lang={lang}
-          onClose={() => open(null)}
-        >
-          {renderControls([selected])}
-        </SettingsDialog>
-      )}
-    </section>
-  );
-}
-function LightTile({
-  c,
-  lang,
-  blocked,
-  busy,
-  send,
-  onOpen,
-}: {
-  c: Control;
-  lang: string;
-  blocked: boolean;
-  busy: boolean;
-  onOpen?: () => void;
-  send: (
-    c: Control,
-    action: string,
-    value?: number | number[],
-  ) => Promise<void>;
-}) {
-  const on = c.state === "on" && usable(c),
-    actions = c.capabilities.flatMap((cap) => cap.actions);
-  const measured =
-    on && typeof c.attributes.brightness === "number"
-      ? Math.round((c.attributes.brightness / 255) * 100)
-      : 0;
-  const [draft, setDraft] = useState<number | null>(null);
-  const value = draft ?? measured;
-  const Icon = lightIcon(c);
-  return (
-    <div className="lighting-tile" data-on={on} aria-busy={busy}>
-      <div className="lighting-tile-top">
-        <Icon size={22} />
-        <strong>
-          {onOpen ? (
-            <button
-              className="device-open-detail"
-              onClick={onOpen}
-              aria-label={`${lang === "en" ? "Open" : "Åpne"} ${c.name}`}
-            >
-              {c.name}
-              <ChevronRight size={14} />
-            </button>
-          ) : (
-            c.name
-          )}
-        </strong>
-        <button
-          className="lighting-switch"
-          role="switch"
-          aria-checked={on}
-          aria-label={c.name}
-          disabled={blocked || !actions.includes(on ? "turn_off" : "turn_on")}
-          onClick={() => void send(c, on ? "turn_off" : "turn_on")}
-        >
-          <span />
-        </button>
-      </div>
-      {actions.includes("set_brightness") && (
-        <div className="lighting-dimmer">
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            aria-label={`${c.name} ${lang === "en" ? "brightness" : "lysstyrke"}`}
-            value={value}
-            disabled={blocked}
-            style={{ "--level": `${value}%` } as CSSProperties}
-            onChange={(e) => setDraft(Number(e.target.value))}
-            onPointerUp={(e) => {
-              void send(c, "set_brightness", Number(e.currentTarget.value));
-              setDraft(null);
-            }}
-            onKeyUp={(e) => {
-              if (
-                [
-                  "ArrowLeft",
-                  "ArrowRight",
-                  "ArrowUp",
-                  "ArrowDown",
-                  "Home",
-                  "End",
-                  "PageUp",
-                  "PageDown",
-                ].includes(e.key)
-              ) {
-                void send(c, "set_brightness", Number(e.currentTarget.value));
-                setDraft(null);
-              }
-            }}
-          />
-          <output>
-            {!usable(c)
-              ? "—"
-              : on || draft !== null
-                ? `${value}%`
-                : lang === "en"
-                  ? "Off"
-                  : "Av"}
-          </output>
-        </div>
-      )}
-      <LightColor
-        compact
-        c={c}
+      {message && <p role="status">{message}</p>}
+      <HomeDeviceGrid
+        page="lights"
+        controls={lights}
+        home={home}
+        offline={offline}
         lang={lang}
-        disabled={blocked}
-        change={(action, value) => void send(c, action, value)}
+        visible={
+          new Set(visible.flatMap((a) => a.items.map((c) => c.entity_id)))
+        }
       />
-      {!usable(c) && (
-        <small>{lang === "en" ? "Unavailable" : "Utilgjengelig"}</small>
-      )}
-    </div>
+    </section>
   );
 }

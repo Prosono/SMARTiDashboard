@@ -1,3 +1,33 @@
+# Harmoni as the only layout — release 1.36.135
+
+The document starts in Harmoni. The former local style key is no longer read or
+written, so new installations and browsers with an old Classic or Living
+selection enter Harmoni directly. Settings no longer shows the layout selector
+or preview. The retired render paths for Home, its categories, and Rooms and the
+Living-only favorites component and stylesheet were removed.
+
+Theme, palette, language, background preferences, and the Simple, Normal and
+Advanced modes remain available. Room, favorite, and dashboard storage are
+unchanged, including the independent phone and desktop/tablet layouts. No
+backend data migration or configuration changes are required.
+
+Validation on 12 November 2026:
+
+- Production build, frontend lint, changed browser-test TypeScript, formatting
+  and whitespace checks passed. **350 unit tests in 54 files** passed.
+- **88 distinct browser cases** passed across scoped runs (44 desktop, 44 phone),
+  including fresh/legacy layout entry, preferences and favorites, theme and
+  palettes, Simple mode, artwork, category search, room controls, separate
+  dashboard layouts, layout editing and conflict protection. Final-package
+  migration and category saving passed in both projects with a fresh demo.
+- Five older cases reproduced their failures against the published 1.36.134
+  bundle: the phone tab name, three single-column expectations for the two-column
+  phone grid, and the More portrait's SVG-only selector. These are not new
+  regressions. Other stale style selectors and mobile assertions in the targeted
+  suites were updated to the retained Harmoni controls.
+- Deterministic payload and all **299 runtime file hashes** verified.
+  SHA-256: `a722424b9d2027774d0927e9a5161c0a3b8782226083d1b9b5e233d2de2ed835`.
+
 # Bulk extension updates and navigation count — release 1.36.134
 
 Oppdateringer → Utvidelser has an Oppdater alle / Update all action. The shared

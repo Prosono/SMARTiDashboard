@@ -3,8 +3,7 @@ import { CardIcon, CardTitle } from "./CardPresentation";
 import { mediaIcon } from "../MediaIcons";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { MetricDetails, MetricDeviceRenderer } from "./MetricDetails";
-import { CategoryHeading, HomeBannerless } from "./CategoryIntro";
-import { HeaderAppearance } from "./HomeAppearance";
+import { CategoryHeading } from "./CategoryIntro";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import { allViews } from "../access";
 import { useContext, useEffect, useState } from "react";
@@ -26,7 +25,6 @@ import {
   CirclePlay,
   Search,
   LayoutGrid,
-  List,
   Layers,
   Sparkles,
 } from "lucide-react";
@@ -389,9 +387,6 @@ export function Multimedia({
   const [room, setRoom] = useState("all");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [layout, setLayout] = useState("cards");
-  const [showAll, setShowAll] = useState(false);
-  useEffect(() => setShowAll(false), [room, search, filter]);
   const [scenes, showScenes] = useState(false);
   const prefs = useQuery({
     queryKey: ["home-preferences"],
@@ -428,8 +423,6 @@ export function Multimedia({
           roomMood(home.areas.find((a) => a.area_id === c.area_id)?.name || "")
             .photo || "home-living",
         );
-  const harmony = useContext(HeaderAppearance);
-  const bannerless = useContext(HomeBannerless);
   const summary = (
     <div className="media-summary-metrics">
       {[
@@ -556,24 +549,6 @@ export function Multimedia({
             )}
           </select>
         </label>
-        <div className="lighting-state media-view-switch">
-          <button
-            aria-label={t("Kort", "Cards")}
-            aria-pressed={layout === "cards"}
-            onClick={() => setLayout("cards")}
-          >
-            <LayoutGrid size={16} />
-            {t("Kort", "Cards")}
-          </button>
-          <button
-            aria-label={t("Liste", "List")}
-            aria-pressed={layout === "list"}
-            onClick={() => setLayout("list")}
-          >
-            <List size={16} />
-            {t("Liste", "List")}
-          </button>
-        </div>
         <div className="climate-tabs media-filter-row">
           <nav aria-label={t("Multimediafilter", "Multimedia filters")}>
             {[
@@ -610,85 +585,28 @@ export function Multimedia({
           </button>
         </div>
       </div>
-      {!harmony && !bannerless && summary}
-      {harmony ? (
-        <HomeGrid
-          page="media"
-          home={home}
-          offline={offline}
-          lang={lang}
-          cards={players.slice(0, 290).map((c) => ({
-            id: `device:${c.entity_id}`,
-            entityId: c.entity_id,
-            title: c.name,
-            hidden: !shown.some((item) => item.id === c.id),
-            content: (
-              <MediaCard
-                c={c}
-                home={home}
-                lang={lang}
-                offline={offline}
-                photo={photo(c)}
-              />
-            ),
-          }))}
-        />
-      ) : (
-        <>
-          <div
-            className={`media-player-grid ${layout === "list" ? "is-list" : ""}`}
-          >
-            {(showAll || layout === "list" ? shown : shown.slice(0, 6)).map(
-              (c) => (
-                <MediaCard
-                  key={c.id}
-                  c={c}
-                  home={home}
-                  lang={lang}
-                  offline={offline}
-                  photo={photo(c)}
-                />
-              ),
-            )}
-          </div>
-          {!shown.length && (
-            <div className="media-empty">
-              <AudioLines size={40} />
-              <h2>
-                {players.length
-                  ? t("Ingen spillere i dette utvalget", "No matching players")
-                  : t("Gi hjemmet en lydside.", "Give your home a soundtrack.")}
-              </h2>
-              <p>
-                {players.length
-                  ? t(
-                      "Prøv et annet rom eller filter.",
-                      "Try a different room or filter.",
-                    )
-                  : t(
-                      "Legg til høyttalere og TV-er under Integrasjoner. De vises automatisk her.",
-                      "Add speakers and TVs under Integrations. They appear here automatically.",
-                    )}
-              </p>
-            </div>
-          )}
-          {shown.length > 6 && layout !== "list" && (
-            <button
-              className="media-show-all"
-              aria-expanded={showAll}
-              onClick={() => setShowAll(!showAll)}
-            >
-              <List size={20} />
-              {showAll
-                ? t("Vis færre", "Show fewer")
-                : t(
-                    `Vis alle ${shown.length} spillere`,
-                    `Show all ${shown.length} players`,
-                  )}
-            </button>
-          )}
-        </>
-      )}
+
+      <HomeGrid
+        page="media"
+        home={home}
+        offline={offline}
+        lang={lang}
+        cards={players.slice(0, 290).map((c) => ({
+          id: `device:${c.entity_id}`,
+          entityId: c.entity_id,
+          title: c.name,
+          hidden: !shown.some((item) => item.id === c.id),
+          content: (
+            <MediaCard
+              c={c}
+              home={home}
+              lang={lang}
+              offline={offline}
+              photo={photo(c)}
+            />
+          ),
+        }))}
+      />
       {scenes && (
         <SettingsDialog
           title={t("Scener", "Scenes")}

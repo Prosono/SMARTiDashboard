@@ -1,3 +1,7 @@
+## 1.36.135
+- SMARTi Harmoni er det eneste oppsettet. Tidligere valg av Klassisk eller Living åpner nå Harmoni automatisk, og oppsettvelgeren er fjernet.
+- Favoritter, rom, tema, fargepaletter og lagrede Harmoni-dashbord for mobil og større skjermer beholdes. Enkel, normal og avansert modus er fortsatt tilgjengelig.
+
 ## 1.36.134
 - «Oppdater alle» under Oppdateringer → Utvidelser viser hvilke versjoner som skal oppdateres, med bekreftelse og valg av sikkerhetskopi der det støttes. Køen sjekker status på nytt og behandler én utvidelse om gangen, med mulighet for å stoppe resten.
 - Oppdateringer har fått samme røde menyteller som Enheter og Utvidelser. Telleren viser tilgjengelige SMARTi- og utvidelsesoppdateringer, samt apper i avansert modus. SMARTi og appenes oppdateringsenheter telles ikke dobbelt.

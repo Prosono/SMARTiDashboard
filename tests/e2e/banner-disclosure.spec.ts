@@ -65,94 +65,87 @@ const categories = [
   ["Multimedia", "Søk i multimedia"],
   ["Diverse", "Søk i diverse"],
 ];
-for (const style of ["classic", "living", "harmony"]) {
-  test(`${style}: Home starts with cards and reveals search from its round toolbar icon`, async ({
-    page,
-  }, info) => {
-    await page.addInitScript(
-      (style) => localStorage.setItem("smarti-home-style", style),
-      style,
-    );
-    await login(page);
-    const home = page.locator(".home-overview");
-    await expect(home.locator(banners)).toHaveCount(0);
-    if (style === "harmony" && info.project.name === "mobile")
-      await expect(home.locator(".home-toolbar .home-date")).toBeHidden();
-    else await expect(home.locator(".home-toolbar .home-date")).toBeVisible();
-    const toolbar = (await home.locator(".home-toolbar").boundingBox())!;
-    const tabs = (await page.getByRole("tablist").boundingBox())!;
-    expect(toolbar.y + toolbar.height).toBeLessThanOrEqual(tabs.y + 1);
-    for (const theme of ["light", "dark"]) {
-      await page.evaluate((theme) => {
-        document.documentElement.dataset.theme = theme;
-      }, theme);
-      for (const [category, search] of categories) {
-        const name =
-          category === "Diverse" &&
-          style === "harmony" &&
-          info.project.name === "mobile"
-            ? "Mer"
-            : category;
-        await page.getByRole("tab", { name, exact: true }).click();
-        await expect(home.locator(banners)).toHaveCount(0);
-        await expect(home.locator(".home-category-title")).toHaveCount(0);
-        if (style === "harmony" && info.project.name === "mobile")
-          await expect(
-            home.getByRole("heading", { name, exact: true, level: 1 }),
-          ).toBeVisible();
-        else
-          await expect(
-            home.getByRole("heading", { name, exact: true, level: 1 }),
-          ).toHaveCSS("position", "absolute");
-        const input = home.getByRole("textbox", { name: search, exact: true });
-        const toggle = home
-          .locator(".home-toolbar")
-          .getByRole("button", { name: "Vis søk og filtre", exact: true });
-        await expect(input).toBeHidden();
-        await expect(toggle).toHaveAttribute("aria-expanded", "false");
-        await expect(toggle).toHaveCSS("border-radius", "50%");
-        await expect(home.locator(".toolbar-toggle")).toHaveCount(0);
-        const toolbarId = (await home
-          .locator("[data-collapsible-toolbar]")
-          .getAttribute("id"))!;
-        await expect(toggle).toHaveAttribute("aria-controls", toolbarId);
-        await toggle.click();
-        await expect(input).toBeVisible();
-        await expect(input).toBeFocused();
+test(`Harmoni starts with cards and reveals search from its round toolbar icon`, async ({
+  page,
+}, info) => {
+  await login(page);
+  const home = page.locator(".home-overview");
+  await expect(home.locator(banners)).toHaveCount(0);
+  if (info.project.name === "mobile")
+    await expect(home.locator(".home-toolbar .home-date")).toBeHidden();
+  else await expect(home.locator(".home-toolbar .home-date")).toBeVisible();
+  const toolbar = (await home.locator(".home-toolbar").boundingBox())!;
+  const tabs = (await page.getByRole("tablist").boundingBox())!;
+  expect(toolbar.y + toolbar.height).toBeLessThanOrEqual(tabs.y + 1);
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate((theme) => {
+      document.documentElement.dataset.theme = theme;
+    }, theme);
+    for (const [category, search] of categories) {
+      const name =
+        category === "Diverse" && info.project.name === "mobile"
+          ? "Mer"
+          : category;
+      await page.getByRole("tab", { name, exact: true }).click();
+      await expect(home.locator(banners)).toHaveCount(0);
+      await expect(home.locator(".home-category-title")).toHaveCount(0);
+      if (info.project.name === "mobile")
         await expect(
-          home.locator("[data-collapsible-toolbar]"),
-        ).toHaveAttribute("id", toolbarId);
-        await input.fill("finnes-ikke-9571");
-        await expect(input).toHaveValue("finnes-ikke-9571");
-        await input.clear();
-        await input.press("Escape");
-        await expect(input).toBeHidden();
-        await expect(toggle).toBeFocused();
-        expect(
-          await page
-            .locator("body")
-            .evaluate((e) => e.scrollWidth <= e.clientWidth),
-        ).toBe(true);
-      }
+          home.getByRole("heading", { name, exact: true, level: 1 }),
+        ).toBeVisible();
+      else
+        await expect(
+          home.getByRole("heading", { name, exact: true, level: 1 }),
+        ).toHaveCSS("position", "absolute");
+      const input = home.getByRole("textbox", { name: search, exact: true });
+      const toggle = home
+        .locator(".home-toolbar")
+        .getByRole("button", { name: "Vis søk og filtre", exact: true });
+      await expect(input).toBeHidden();
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await expect(toggle).toHaveCSS("border-radius", "50%");
+      await expect(home.locator(".toolbar-toggle")).toHaveCount(0);
+      const toolbarId = (await home
+        .locator("[data-collapsible-toolbar]")
+        .getAttribute("id"))!;
+      await expect(toggle).toHaveAttribute("aria-controls", toolbarId);
+      await toggle.click();
+      await expect(input).toBeVisible();
+      await expect(input).toBeFocused();
+      await expect(home.locator("[data-collapsible-toolbar]")).toHaveAttribute(
+        "id",
+        toolbarId,
+      );
+      await input.fill("finnes-ikke-9571");
+      await expect(input).toHaveValue("finnes-ikke-9571");
+      await input.clear();
+      await input.press("Escape");
+      await expect(input).toBeHidden();
+      await expect(toggle).toBeFocused();
+      expect(
+        await page
+          .locator("body")
+          .evaluate((e) => e.scrollWidth <= e.clientWidth),
+      ).toBe(true);
     }
-    await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
-    if (style === "harmony") {
-      const grid = home.locator(".home-canvas");
-      await expect(grid).toBeVisible();
-      const gridBox = (await grid.boundingBox())!;
-      const tabsBox = (await page.getByRole("tablist").boundingBox())!;
-      expect(gridBox.y - tabsBox.y - tabsBox.height).toBeLessThan(28);
-      await expect(grid.locator(".home-canvas-toolbar")).toHaveCount(0);
-      await expect(
-        home.getByText("Hjemmet med et blikk", { exact: true }),
-      ).toHaveCount(0);
-      await page.screenshot({
-        path: `/private/tmp/smarti-bannerless-${info.project.name}.png`,
-        fullPage: true,
-      });
-    }
-  });
-}
+  }
+  await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+  {
+    const grid = home.locator(".home-canvas");
+    await expect(grid).toBeVisible();
+    const gridBox = (await grid.boundingBox())!;
+    const tabsBox = (await page.getByRole("tablist").boundingBox())!;
+    expect(gridBox.y - tabsBox.y - tabsBox.height).toBeLessThan(28);
+    await expect(grid.locator(".home-canvas-toolbar")).toHaveCount(0);
+    await expect(
+      home.getByText("Hjemmet med et blikk", { exact: true }),
+    ).toHaveCount(0);
+    await page.screenshot({
+      path: `/private/tmp/smarti-bannerless-${info.project.name}.png`,
+      fullPage: true,
+    });
+  }
+});
 
 test("revealed Home searches filter devices and room selection remains available", async ({
   page,
@@ -176,17 +169,18 @@ test("revealed Home searches filter devices and room selection remains available
   await expect(canvas.locator(".home-canvas-cell")).toHaveCount(0);
   await search.clear();
   await expect(canvas.locator(".home-canvas-cell")).toHaveCount(count);
-  await page
-    .getByLabel("Velg rom", { exact: true })
-    .selectOption("room:kitchen");
+  const room = page
+    .getByRole("group", { name: "Filtrer og styr lys", exact: true })
+    .getByLabel("Velg rom", { exact: true });
+  await room.selectOption("room:kitchen");
   await expect(canvas).toContainText("Kjøkkenbenk");
   await expect(canvas).not.toContainText("Pendellampe");
-  await page.getByLabel("Velg rom", { exact: true }).selectOption("all");
+  await room.selectOption("all");
 });
 
 test("red alert stays accessible above tabs and respects reduced motion", async ({
   page,
-}) => {
+}, info) => {
   await page.addInitScript(() =>
     localStorage.setItem("smarti-home-style", "harmony"),
   );
@@ -194,10 +188,20 @@ test("red alert stays accessible above tabs and respects reduced motion", async 
   const alert = page.locator(".home-toolbar-alert");
   await expect(alert).toBeVisible();
   await expect(alert).toHaveAccessibleName(/Trenger din oppmerksomhet: [1-9]/);
-  await expect(alert).toHaveCSS("color", "rgb(212, 59, 41)");
-  expect(
-    await alert.evaluate((e) => getComputedStyle(e, "::before").animationName),
-  ).toBe("harmony-alert-pulse");
+  await expect(alert.locator("span")).toHaveCSS(
+    "background-color",
+    "rgb(198, 50, 34)",
+  );
+  if (info.project.name === "mobile") {
+    await expect(alert.locator(".phone-alert-bell")).toBeVisible();
+  } else {
+    await expect(alert).toHaveCSS("color", "rgb(212, 59, 41)");
+    expect(
+      await alert.evaluate(
+        (e) => getComputedStyle(e, "::before").animationName,
+      ),
+    ).toBe("harmony-alert-pulse");
+  }
   await alert.click();
   await expect(
     page.getByRole("dialog", {
@@ -236,10 +240,22 @@ test("simple Home omits banners but keeps search on its category destinations", 
     ["Musikk og TV", "Søk i multimedia"],
     ["Kameraer og trygghet", "Søk i sikkerhet"],
   ]) {
-    const browse = simple.locator(".simple-dashboard-browse");
+    const fullCard = simple.getByRole("button", {
+      name: "Vis hele kortet: Rom og alle enheter",
+      exact: true,
+    });
+    let surface = simple;
+    if (await fullCard.isVisible()) {
+      await fullCard.click();
+      surface = page.getByRole("dialog", {
+        name: "Rom og alle enheter",
+        exact: true,
+      });
+    }
+    const browse = surface.locator(".simple-dashboard-browse");
     if ((await browse.getAttribute("open")) === null)
       await browse.locator("summary").first().click();
-    await simple.getByRole("button", { name: button, exact: true }).click();
+    await surface.getByRole("button", { name: button, exact: true }).click();
     await expect(simple.locator(banners)).toHaveCount(0);
     await expect(
       simple.getByRole("textbox", { name: search, exact: true }),

@@ -330,7 +330,12 @@ test("offline homes and non-admins cannot open mode creation", async ({
 test("regular scene creation keeps its name, device and review steps", async ({
   page,
 }) => {
-  await setup(page, "night", "classic");
+  await setup(page);
+  await page
+    .getByRole("navigation", { name: "Hovedmeny", exact: true })
+    .getByRole("button", { name: "Enheter", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Scener", exact: true }).click();
   const seen = writes(page);
   await page.getByRole("button", { name: "Lag scene", exact: true }).click();
   const scene = page.getByRole("dialog", {

@@ -11,7 +11,6 @@ import {
   HomePageToolButtons,
   useHomePageTools,
 } from "./HomePageTools";
-import { LivingFavorites } from "./LivingFavorites";
 import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
 import { SecurityOverview } from "./SecurityOverview";
@@ -24,10 +23,8 @@ export function SimpleHome({
   offline,
   renderControls,
   admin = false,
-  homeStyle = "classic",
 }: {
   admin?: boolean;
-  homeStyle?: string;
   home: Home;
   lang: string;
   offline: boolean;
@@ -157,12 +154,7 @@ export function SimpleHome({
               {en ? "← Back to my home" : "← Tilbake til hjemmet"}
             </button>
             {view === "misc" ? (
-              <Miscellaneous
-                home={home}
-                lang={lang}
-                offline={offline}
-                renderControls={renderControls}
-              />
+              <Miscellaneous home={home} lang={lang} offline={offline} />
             ) : view === "media" ? (
               <Multimedia
                 home={home}
@@ -183,7 +175,7 @@ export function SimpleHome({
       </HomePageTools.Provider>
     );
   const browse = (
-    <details className="simple-dashboard-browse" open={homeStyle === "harmony"}>
+    <details className="simple-dashboard-browse" open={true}>
       <summary>{en ? "Rooms and all devices" : "Rom og alle enheter"}</summary>
       {room === "welcome" && !search && (
         <section className="simple-room-section">
@@ -319,16 +311,7 @@ export function SimpleHome({
         >
           <h1 className="home-page-title">{home.home_name}</h1>
           {toolbar}
-          {homeStyle !== "harmony" &&
-            home.controls.some((c) => c.domain === "person") &&
-            (!home.permissions || home.permissions.includes("people.view")) && (
-              <Presence
-                home={home}
-                offline={offline}
-                lang={lang}
-                admin={admin}
-              />
-            )}
+
           {offline && (
             <p role="status">
               {en
@@ -337,90 +320,67 @@ export function SimpleHome({
             </p>
           )}
           {alertDialog}
-          {homeStyle === "living" &&
-            controls.some((c) => home.favorites.includes(c.entity_id)) && (
-              <section className="living-simple-favorites">
-                <header className="living-section-heading">
-                  <h2>{en ? "Favorites" : "Favoritter"}</h2>
-                </header>
-                <LivingFavorites
-                  controls={controls
-                    .filter((c) => home.favorites.includes(c.entity_id))
-                    .slice(0, 12)}
-                  home={home}
-                  lang={lang}
-                  offline={offline}
-                />
-              </section>
-            )}
+
           <SimpleDashboard
             home={home}
             lang={lang}
             offline={offline}
-            renderCards={
-              homeStyle === "harmony"
-                ? (cards) => (
-                    <HomeGrid
-                      page="overview_simple"
-                      home={home}
-                      offline={offline}
-                      lang={lang}
-                      cards={[
-                        ...cards,
-                        ...(!home.permissions ||
-                        home.permissions.includes("people.view")
-                          ? [
-                              {
-                                id: "people",
-                                title: en ? "Who's home" : "Hvem er hjemme",
-                                content: (
-                                  <Presence
-                                    home={home}
-                                    lang={lang}
-                                    offline={offline}
-                                    admin={admin}
-                                  />
-                                ),
-                              },
-                            ]
-                          : []),
-                        ...deviceGridCards({
-                          controls: controls.filter((c) =>
-                            [
-                              "light",
-                              "switch",
-                              "input_boolean",
-                              "fan",
-                              "cover",
-                              "lock",
-                            ].includes(c.domain),
-                          ),
-                          home,
-                          offline,
-                          lang,
-                        }).map((card) => ({
-                          ...card,
-                          defaultHidden: !home.favorites.some(
-                            (id) => `device:${id}` === card.id,
-                          ),
-                        })),
+            renderCards={(cards) => (
+              <HomeGrid
+                page="overview_simple"
+                home={home}
+                offline={offline}
+                lang={lang}
+                cards={[
+                  ...cards,
+                  ...(!home.permissions ||
+                  home.permissions.includes("people.view")
+                    ? [
                         {
-                          id: "browse",
-                          title: en
-                            ? "Rooms and all devices"
-                            : "Rom og alle enheter",
-                          content: browse,
-                          w: 3,
-                          h: 3,
+                          id: "people",
+                          title: en ? "Who's home" : "Hvem er hjemme",
+                          content: (
+                            <Presence
+                              home={home}
+                              lang={lang}
+                              offline={offline}
+                              admin={admin}
+                            />
+                          ),
                         },
-                      ]}
-                    />
-                  )
-                : undefined
-            }
+                      ]
+                    : []),
+                  ...deviceGridCards({
+                    controls: controls.filter((c) =>
+                      [
+                        "light",
+                        "switch",
+                        "input_boolean",
+                        "fan",
+                        "cover",
+                        "lock",
+                      ].includes(c.domain),
+                    ),
+                    home,
+                    offline,
+                    lang,
+                  }).map((card) => ({
+                    ...card,
+                    defaultHidden: !home.favorites.some(
+                      (id) => `device:${id}` === card.id,
+                    ),
+                  })),
+                  {
+                    id: "browse",
+                    title: en ? "Rooms and all devices" : "Rom og alle enheter",
+                    content: browse,
+                    w: 3,
+                    h: 3,
+                  },
+                ]}
+              />
+            )}
           />
-
-          {homeStyle !== "harmony" && browse}
         </section>
       </HomeBannerless.Provider>
     </HomePageTools.Provider>

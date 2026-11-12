@@ -25,10 +25,7 @@ import {
 import { SimpleHome } from "./home/SimpleHome";
 import { HarmonyDevices } from "./home/HarmonyDevices";
 import { DeviceArtwork } from "./home/DeviceArtwork";
-import {
-  HeaderAppearance,
-  HomeBackgroundSettings,
-} from "./home/HomeAppearance";
+import { HomeBackgroundSettings } from "./home/HomeAppearance";
 import { liveConnection } from "./liveConnection";
 import { StartupScreen } from "./StartupScreen";
 import { HomeLaunchError, prepareStartupSession } from "./startupSession";
@@ -170,17 +167,6 @@ function App() {
   const [theme, setTheme] = useState(() =>
     readPreference("smarti-theme", "light", ["light", "dark"]),
   );
-  const [homeStyle, setHomeStyle] = useState(() =>
-    readPreference("smarti-home-style", "classic", [
-      "classic",
-      "living",
-      "harmony",
-    ]),
-  );
-  useEffect(() => {
-    document.documentElement.dataset.homeStyle = homeStyle;
-    writePreference("smarti-home-style", homeStyle);
-  }, [homeStyle]);
   const [palette, setPalette] = useState(() =>
     readPreference(
       "smarti-palette",
@@ -553,26 +539,22 @@ function App() {
           </div>
         </aside>
         <div className="workspace">
-          <HeaderAppearance.Provider value={homeStyle === "harmony"}>
-            <Dashboard
-              home={home}
-              t={t}
-              session={session}
-              page={page}
-              setPage={navigate}
-              guard={guard}
-              onDirty={setDirty}
-              palette={palette}
-              setPalette={setPalette}
-              theme={theme}
-              setTheme={setTheme}
-              homeStyle={homeStyle}
-              setHomeStyle={setHomeStyle}
-              lang={lang}
-              language={language}
-              logout={logout}
-            />
-          </HeaderAppearance.Provider>
+          <Dashboard
+            home={home}
+            t={t}
+            session={session}
+            page={page}
+            setPage={navigate}
+            guard={guard}
+            onDirty={setDirty}
+            palette={palette}
+            setPalette={setPalette}
+            theme={theme}
+            setTheme={setTheme}
+            lang={lang}
+            language={language}
+            logout={logout}
+          />
         </div>
       </div>
     </Experience.Provider>
@@ -816,8 +798,6 @@ function Dashboard({
   onDirty,
   theme,
   setTheme,
-  homeStyle,
-  setHomeStyle,
   lang,
   language,
   logout,
@@ -833,8 +813,6 @@ function Dashboard({
   onDirty: (value: boolean) => void;
   theme: string;
   setTheme: (s: string) => void;
-  homeStyle: string;
-  setHomeStyle: (s: string) => void;
   lang: string;
   language: (s: string) => void;
   logout: () => void;
@@ -941,7 +919,7 @@ function Dashboard({
   const roomName = (id: string | null) =>
     h.areas.find((a) => a.area_id === id)?.name || t.unassigned;
   function cards(controls: Control[]) {
-    if (homeStyle === "harmony" && ["home", "rooms"].includes(page))
+    if (["home", "rooms"].includes(page))
       return (
         <HarmonyDevices
           controls={controls}
@@ -1097,37 +1075,8 @@ function Dashboard({
             </span>
           </div>
         )}
-        {mode !== "simple" &&
-          homeStyle !== "harmony" &&
-          page === "rooms" &&
-          !roomEditing &&
-          !adding && (
-            <nav
-              className="tabs room-switcher"
-              aria-label={lang === "en" ? "Choose room" : "Velg rom"}
-            >
-              <button
-                className={room === null ? "selected" : ""}
-                aria-pressed={room === null}
-                onClick={() => setRoom(null)}
-              >
-                {t.allRooms}
-              </button>
-              {rooms.map((a) => (
-                <button
-                  key={a.area_id}
-                  className={room === a.area_id ? "selected" : ""}
-                  aria-pressed={room === a.area_id}
-                  onClick={() => setRoom(a.area_id)}
-                >
-                  {a.name}
-                </button>
-              ))}
-            </nav>
-          )}
         {mode === "simple" && ["home", "rooms"].includes(page) ? (
           <SimpleHome
-            homeStyle={homeStyle}
             admin={session.role === "admin"}
             home={h}
             lang={lang}
@@ -1151,7 +1100,6 @@ function Dashboard({
           />
         ) : page === "home" ? (
           <HomeOverview
-            homeStyle={homeStyle}
             home={h}
             offline={offline}
             lang={lang}
@@ -1170,7 +1118,6 @@ function Dashboard({
               setProtocol("all");
               setPage("devices");
             }}
-            add={() => setAdding(true)}
           />
         ) : page === "rooms" && room !== null ? (
           <RoomView
@@ -1183,12 +1130,10 @@ function Dashboard({
             admin={session.role === "admin"}
             renderControls={cards}
             add={() => setAdding(true)}
-            harmony={homeStyle === "harmony"}
             selectRoom={setRoom}
           />
         ) : page === "rooms" && room === null ? (
           <RoomsOverview
-            harmony={homeStyle === "harmony"}
             home={h}
             lang={lang}
             offline={offline}
@@ -1351,24 +1296,10 @@ function Dashboard({
                   </select>
                 </div>
                 {filter !== "light" ? null : (
-                  <LightOverview
-                    renderControls={cards}
-                    home={h}
-                    offline={offline}
-                    lang={lang}
-                    openRoom={(id) => {
-                      setPage("rooms");
-                      setRoom(id);
-                    }}
-                  />
+                  <LightOverview home={h} offline={offline} lang={lang} />
                 )}
                 {filter === "climate" && (
-                  <ClimateOverview
-                    home={h}
-                    offline={offline}
-                    lang={lang}
-                    renderControls={cards}
-                  />
+                  <ClimateOverview home={h} offline={offline} lang={lang} />
                 )}
                 {!["light", "climate"].includes(filter) &&
                   (regular.length ? (
@@ -1571,60 +1502,6 @@ function Dashboard({
                         <option value="dark">{t.dark}</option>
                       </select>
                     </label>
-                    <label>
-                      {lang === "en" ? "Home style" : "Stil for Hjem"}
-                      <select
-                        value={homeStyle}
-                        onChange={(e) => setHomeStyle(e.target.value)}
-                      >
-                        <option value="classic">
-                          {lang === "en" ? "Classic" : "Klassisk"}
-                        </option>
-                        <option value="living">SMARTi Living</option>
-                        <option value="harmony">SMARTi Harmoni</option>
-                      </select>
-                    </label>
-                    <p className="note">
-                      {lang === "en"
-                        ? "Choose the layout for Home on this device. Works with your selected theme and colors."
-                        : "Velg utseendet på Hjem på denne enheten. Stilen følger valgt tema og farger."}
-                    </p>
-                    <div className="home-style-preview" data-style={homeStyle}>
-                      <div
-                        className="home-style-preview-art"
-                        aria-hidden="true"
-                      >
-                        <i />
-                        <i />
-                        <i />
-                        <i />
-                      </div>
-                      <div>
-                        <strong>
-                          {homeStyle === "harmony"
-                            ? "SMARTi Harmoni"
-                            : homeStyle === "living"
-                              ? "SMARTi Living"
-                              : lang === "en"
-                                ? "Classic"
-                                : "Klassisk"}
-                        </strong>
-                        <p>
-                          {homeStyle === "harmony"
-                            ? lang === "en"
-                              ? "A calm overview. Thoughtful controls for every device, with room for your everyday life."
-                              : "En rolig oversikt. Egne kontroller for hver enhet, med plass til hverdagen din."
-                            : lang === "en"
-                              ? "Your existing Home layout, with all your personal choices."
-                              : "Ditt kjente Hjem-oppsett, med alle dine personlige valg."}
-                        </p>
-                        <small>
-                          {lang === "en"
-                            ? "Saved on this device · Your favorites and rooms are kept"
-                            : "Lagres på denne enheten · Favoritter og rom beholdes"}
-                        </small>
-                      </div>
-                    </div>
                     <HomeBackgroundSettings lang={lang} />
                     <BackgroundMotionSetting lang={lang} />
                     <PalettePicker

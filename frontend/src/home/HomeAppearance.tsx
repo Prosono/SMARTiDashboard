@@ -1,10 +1,9 @@
-import { createContext, useContext, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ImagePlus, LoaderCircle, Trash2, Upload } from "lucide-react";
 import { api } from "../api";
 import "./homeAppearance.css";
 
-export const HeaderAppearance = createContext(false);
 export type HomeAppearance = {
   background:
     | "auto"
@@ -20,11 +19,10 @@ export type HomeAppearance = {
 };
 const photo = (name: string) =>
   new URL(`home/home-${name}.webp`, document.baseURI).href;
-function useAppearance(enabled = true) {
+function useAppearance() {
   return useQuery({
     queryKey: ["home-appearance"],
     queryFn: () => api<HomeAppearance>("home/appearance"),
-    enabled,
     staleTime: 300000,
     retry: false,
   });
@@ -41,14 +39,13 @@ function imageSource(pref: HomeAppearance | undefined, fallback: string) {
     : fallback;
 }
 
-/** Only Harmoni opts into photo headers. A failed decorative image leaves a readable solid backdrop. */
+/** A failed decorative image leaves a readable solid backdrop. */
 export function HomeHeaderImage({ fallback }: { fallback: string }) {
-  const enabled = useContext(HeaderAppearance);
-  const appearance = useAppearance(enabled);
+  const appearance = useAppearance();
   const [loaded, setLoaded] = useState("");
   const [failed, setFailed] = useState("");
   const src = imageSource(appearance.data, fallback);
-  if (!enabled || !src || src === failed) return null;
+  if (!src || src === failed) return null;
   return (
     <img
       className="home-header-photo"

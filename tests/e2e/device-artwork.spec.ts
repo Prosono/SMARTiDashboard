@@ -404,81 +404,76 @@ test("missing shared images fall back to the same semantic artwork and configure
   expect(mutations).toEqual([]);
 });
 
-test("compact portraits never extend into room labels, titles or favorite buttons in either home style", async ({
+test("compact portraits never extend into room labels, titles or favorite buttons in Harmoni", async ({
   page,
 }) => {
   test.setTimeout(60000);
   const mutations = await setup(page);
   for (const width of [320, 390, 700, 834, 1024, 1440, 1920]) {
     await page.setViewportSize({ width, height: 1000 });
-    for (const style of ["harmony", "classic"])
-      for (const theme of ["light", "dark"]) {
-        await page.evaluate(
-          ({ style, theme }) => {
-            document.documentElement.dataset.homeStyle = style;
-            document.documentElement.dataset.theme = theme;
-          },
-          { style, theme },
-        );
-        for (const kind of [
-          "pendant",
-          "bulb",
-          "floor",
-          "desk",
-          "ceiling",
-          "spot",
-          "outdoor",
-        ]) {
-          const card = page.locator(`[data-entity="light.${kind}"]`);
-          await card.scrollIntoViewIfNeeded();
-          await expect(
-            card.locator(".light-color-control > button"),
-          ).toBeVisible();
-          const image = card.locator(".device-product-art img");
-          await expect
-            .poll(() =>
-              image.evaluate((img: HTMLImageElement) => img.naturalWidth),
-            )
-            .toBeGreaterThan(0);
-          const geometry = await card.evaluate((card) => {
-            const bounds = (selector: string) =>
-              card.querySelector(selector)!.getBoundingClientRect();
-            const art = bounds(".equipment-art"),
-              image = bounds(".equipment-art img"),
-              box = bounds(".device-product-art"),
-              title = bounds(".device-title"),
-              star = bounds(".star");
-            return {
-              fits: [art, image].every(
-                (r) =>
-                  r.top >= box.top - 0.5 &&
-                  r.bottom <= box.bottom + 0.5 &&
-                  r.left >= box.left - 0.5 &&
-                  r.right <= box.right + 0.5,
-              ),
-              clearOfText: art.bottom <= title.top,
-              clearOfStar: art.right <= star.left,
-              glow: getComputedStyle(
-                card.querySelector(".equipment-art")!,
-                "::before",
-              ).content,
-            };
-          });
-          expect(
-            geometry.fits,
-            `${width}/${style}/${theme}/${kind}: portrait containment`,
-          ).toBe(true);
-          expect(
-            geometry.clearOfText,
-            `${width}/${style}/${theme}/${kind}: room/title overlap`,
-          ).toBe(true);
-          expect(
-            geometry.clearOfStar,
-            `${width}/${style}/${theme}/${kind}: favorite overlap`,
-          ).toBe(true);
-          expect(geometry.glow).toBe("none");
-        }
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate((theme) => {
+        document.documentElement.dataset.theme = theme;
+      }, theme);
+      for (const kind of [
+        "pendant",
+        "bulb",
+        "floor",
+        "desk",
+        "ceiling",
+        "spot",
+        "outdoor",
+      ]) {
+        const card = page.locator(`[data-entity="light.${kind}"]`);
+        await card.scrollIntoViewIfNeeded();
+        await expect(
+          card.locator(".light-color-control > button"),
+        ).toBeVisible();
+        const image = card.locator(".device-product-art img");
+        await expect
+          .poll(() =>
+            image.evaluate((img: HTMLImageElement) => img.naturalWidth),
+          )
+          .toBeGreaterThan(0);
+        const geometry = await card.evaluate((card) => {
+          const bounds = (selector: string) =>
+            card.querySelector(selector)!.getBoundingClientRect();
+          const art = bounds(".equipment-art"),
+            image = bounds(".equipment-art img"),
+            box = bounds(".device-product-art"),
+            title = bounds(".device-title"),
+            star = bounds(".star");
+          return {
+            fits: [art, image].every(
+              (r) =>
+                r.top >= box.top - 0.5 &&
+                r.bottom <= box.bottom + 0.5 &&
+                r.left >= box.left - 0.5 &&
+                r.right <= box.right + 0.5,
+            ),
+            clearOfText: art.bottom <= title.top,
+            clearOfStar: art.right <= star.left,
+            glow: getComputedStyle(
+              card.querySelector(".equipment-art")!,
+              "::before",
+            ).content,
+          };
+        });
+        expect(
+          geometry.fits,
+          `${width}/${theme}/${kind}: portrait containment`,
+        ).toBe(true);
+        expect(
+          geometry.clearOfText,
+          `${width}/${theme}/${kind}: room/title overlap`,
+        ).toBe(true);
+        expect(
+          geometry.clearOfStar,
+          `${width}/${theme}/${kind}: favorite overlap`,
+        ).toBe(true);
+        expect(geometry.glow).toBe("none");
       }
+    }
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.evaluate(

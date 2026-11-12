@@ -1,9 +1,8 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { HeaderAppearance, HomeHeaderImage } from "./HomeAppearance";
+import { HomeHeaderImage } from "./HomeAppearance";
 import "./categoryIntro.css";
 
-const InCategoryHeader = createContext(false);
 /** Scoped to Home: device-management pages keep their existing headers. */
 export const HomeBannerless = createContext(false);
 
@@ -23,7 +22,6 @@ export function CategoryHeading({
   image?: string;
   summary?: ReactNode;
 }) {
-  const harmony = useContext(HeaderAppearance);
   const bannerless = useContext(HomeBannerless);
   if (bannerless)
     return (
@@ -49,12 +47,10 @@ export function CategoryHeading({
           image || new URL("home/home-living.webp", document.baseURI).href
         }
       />
-      {harmony && summary ? (
+      {summary ? (
         <>
           <div className="category-heading-main">{heading}</div>
-          <InCategoryHeader.Provider value={true}>
-            {summary}
-          </InCategoryHeader.Provider>
+          {summary}
         </>
       ) : (
         heading
@@ -77,12 +73,8 @@ export function CategorySummary({
   alert?: boolean;
   children: ReactNode;
 }) {
-  const harmony = useContext(HeaderAppearance);
-  const inHeader = useContext(InCategoryHeader);
   const bannerless = useContext(HomeBannerless);
   if (bannerless) return null;
-  // Harmoni renders the same summary in its photo header; Classic/Living retain their existing layout.
-  if (harmony && !inHeader) return null;
   return (
     <section className="category-summary" data-alert={alert}>
       <img src={image} alt="" />

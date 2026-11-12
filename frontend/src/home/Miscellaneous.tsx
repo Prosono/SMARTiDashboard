@@ -1,15 +1,11 @@
-import { useContext } from "react";
-import { HeaderAppearance } from "./HomeAppearance";
 import { HomeDeviceGrid } from "./HomeDeviceGrid";
 import { MetricDetails } from "./MetricDetails";
 import { CategoryHeading, CategorySummary } from "./CategoryIntro";
 import { RobotVacuumIcon } from "./RobotVacuumIcon";
-import { MiscDeviceCard } from "./MiscDeviceCard";
 import { homeAsset } from "./HomeOverview";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { LayoutGrid, Blinds, Plug, Search } from "lucide-react";
 import type { Control, Home } from "../types";
-import { VacuumCard } from "./Cleaning";
 import { ToolbarToggle, useToolbarDisclosure } from "./ToolbarToggle";
 import "./cleaning.css";
 import "./miscellaneous.css";
@@ -48,11 +44,9 @@ export function Miscellaneous({
   home: Home;
   lang: string;
   offline: boolean;
-  renderControls: (c: Control[]) => ReactNode;
 }) {
   const en = lang === "en";
   const toolbar = useToolbarDisclosure();
-  const harmony = useContext(HeaderAppearance);
   const [search, setSearch] = useState("");
   const [room, setRoom] = useState("all");
   const groups = [
@@ -194,67 +188,16 @@ export function Miscellaneous({
           <option value="none">{en ? "No room" : "Uten rom"}</option>
         </select>
       </div>
-      {summary}
-      {harmony ? (
-        <HomeDeviceGrid
-          page="misc"
-          controls={home.controls.filter((c) => !!miscellaneousKind(c))}
-          home={home}
-          offline={offline}
-          lang={lang}
-          visible={
-            new Set(groups.flatMap((g) => g.controls.map((c) => c.entity_id)))
-          }
-        />
-      ) : (
-        <>
-          {groups.map(({ id, Icon, name, controls }) => (
-            <section
-              className="miscellaneous-section"
-              key={id}
-              aria-label={name}
-            >
-              <header>
-                <Icon size={23} />
-                <h2>{name}</h2>
-                <span>{controls.length}</span>
-              </header>
-              {id === "cleaning" ? (
-                <div className="cleaning-grid">
-                  {controls.map((c) => (
-                    <VacuumCard
-                      key={c.id}
-                      c={c}
-                      home={home}
-                      lang={lang}
-                      offline={offline}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="misc-device-grid">
-                  {controls.map((c) => (
-                    <MiscDeviceCard
-                      key={c.id}
-                      c={c}
-                      home={home}
-                      lang={lang}
-                      offline={offline}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-          ))}
-          {!groups.length && (
-            <p role="status">
-              {en
-                ? "No devices match your choices."
-                : "Ingen enheter passer med valgene dine."}
-            </p>
-          )}
-        </>
-      )}
+      <HomeDeviceGrid
+        page="misc"
+        controls={home.controls.filter((c) => !!miscellaneousKind(c))}
+        home={home}
+        offline={offline}
+        lang={lang}
+        visible={
+          new Set(groups.flatMap((g) => g.controls.map((c) => c.entity_id)))
+        }
+      />
     </section>
   );
 }

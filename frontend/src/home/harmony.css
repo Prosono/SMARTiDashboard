@@ -317,14 +317,8 @@ html[data-home-style="harmony"] {
     top: 2px;
     right: 334px;
   }
-  .home-section-heading,
-  .living-section-heading {
+  .home-section-heading {
     margin-bottom: 14px;
-  }
-  .living-section-heading p {
-    margin-top: 4px;
-    color: var(--muted);
-    font-size: 13px;
   }
   .home-favorites {
     margin-bottom: 32px;
@@ -973,9 +967,6 @@ html[data-home-style="harmony"] {
   .simple-home-dashboard .simple-welcome h1 {
     font-size: clamp(30px, 4vw, 40px);
     letter-spacing: -0.04em;
-  }
-  .living-simple-favorites {
-    margin-bottom: 30px;
   }
 
   /* Type-specific controls share one accessible card shell. */
@@ -1690,73 +1681,5 @@ html[data-home-style="harmony"] {
       transition: none !important;
       animation: none !important;
     }
-  }
-}
-/* Appearance chooser belongs to Settings and is available before selecting the style. */
-.home-style-preview {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 20px;
-  margin: 20px 0;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--soft);
-}
-.home-style-preview p {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 4px 0 8px;
-}
-.home-style-preview small {
-  color: var(--muted);
-  font-size: 11px;
-}
-.home-style-preview-art {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  gap: 6px;
-  width: 106px;
-  flex: 0 0 106px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--bg);
-}
-.home-style-preview-art i {
-  height: 34px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--surface);
-}
-.home-style-preview[data-style="harmony"]
-  .home-style-preview-art
-  i:nth-child(1) {
-  background: color-mix(in srgb, #65ab7d 15%, var(--surface));
-}
-.home-style-preview[data-style="harmony"]
-  .home-style-preview-art
-  i:nth-child(2) {
-  background: color-mix(in srgb, #e89e82 16%, var(--surface));
-}
-.home-style-preview[data-style="harmony"]
-  .home-style-preview-art
-  i:nth-child(3) {
-  background: var(--tint);
-}
-@media (max-width: 550px) {
-  .home-style-preview {
-    align-items: flex-start;
-    gap: 12px;
-    padding: 16px;
-  }
-  .home-style-preview-art {
-    width: 72px;
-    flex-basis: 72px;
-    gap: 4px;
-    padding: 5px;
-  }
-  .home-style-preview-art i {
-    height: 25px;
   }
 }

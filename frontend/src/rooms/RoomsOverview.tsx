@@ -8,7 +8,6 @@ import {
   Thermometer,
   Droplets,
   ChevronRight,
-  Settings2,
   DoorOpen,
   LayoutGrid,
 } from "lucide-react";
@@ -27,14 +26,12 @@ export function RoomsOverview({
   offline,
   openRoom,
   manage,
-  harmony = false,
 }: {
   home: Home;
   lang: string;
   offline: boolean;
   openRoom: (id: string) => void;
   manage?: () => void;
-  harmony?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [search, setSearch] = useState("");
@@ -111,49 +108,22 @@ export function RoomsOverview({
       ? "—"
       : `${n.toLocaleString(lang === "en" ? "en-GB" : "nb-NO", { maximumFractionDigits: 1 })}${unit}`;
   return (
-    <section
-      className="rooms-overview"
-      data-harmoni-rooms={harmony || undefined}
-    >
-      {harmony ? (
-        <RoomPageHeader
-          title={t("Rom", "Rooms")}
-          homeName={home.home_name}
-          lang={lang}
-          manage={manage}
-          searchOpen={searchOpen}
-          searchId={searchId}
-          searchButton={searchButton}
-          toggleSearch={() => {
-            setSearchOpen(!searchOpen);
-            if (searchOpen) setSearch("");
-          }}
-        />
-      ) : (
-        <header className="rooms-overview-heading">
-          <div>
-            <h1>{t("Rom", "Rooms")}</h1>
-            <p>
-              {t(
-                "Et lite overblikk. Hele hjemmet ditt.",
-                "A quick overview of your whole home.",
-              )}
-            </p>
-          </div>
-          {manage && (
-            <button onClick={manage}>
-              <Settings2 size={18} />
-              {t("Administrer rom", "Manage rooms")}
-            </button>
-          )}
-        </header>
-      )}
+    <section className="rooms-overview" data-harmoni-rooms={true}>
+      <RoomPageHeader
+        title={t("Rom", "Rooms")}
+        homeName={home.home_name}
+        lang={lang}
+        manage={manage}
+        searchOpen={searchOpen}
+        searchId={searchId}
+        searchButton={searchButton}
+        toggleSearch={() => {
+          setSearchOpen(!searchOpen);
+          if (searchOpen) setSearch("");
+        }}
+      />
       <div className="rooms-overview-toolbar">
-        <label
-          id={searchId}
-          hidden={harmony && !searchOpen}
-          className="room-search-field"
-        >
+        <label id={searchId} hidden={!searchOpen} className="room-search-field">
           <Search size={18} />
           <input
             ref={searchInput}
@@ -162,7 +132,7 @@ export function RoomsOverview({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
-              if (harmony && e.key === "Escape") {
+              if (e.key === "Escape") {
                 setSearch("");
                 setSearchOpen(false);
                 searchButton.current?.focus();
@@ -171,7 +141,7 @@ export function RoomsOverview({
           />
         </label>
         <span>
-          {harmony && <LayoutGrid size={16} aria-hidden="true" />}
+          <LayoutGrid size={16} aria-hidden="true" />
           {home.areas.length} {t("rom", "rooms")}
           <i /> <Lightbulb size={16} />
           {offline ? "—" : rooms.reduce((sum, a) => sum + a.on, 0)}{" "}
@@ -199,7 +169,7 @@ export function RoomsOverview({
           return (
             <button
               className="room-summary-card"
-              data-card-tone={harmony ? "neutral" : undefined}
+              data-card-tone="neutral"
               key={a.area_id}
               onClick={() => openRoom(a.area_id)}
             >
@@ -216,32 +186,28 @@ export function RoomsOverview({
                 <span className="room-summary-icon">
                   <Icon size={21} />
                 </span>
-                {harmony && (
-                  <span
-                    className="room-summary-photo-state"
-                    data-warning={offline || a.unavailable > 0}
-                  >
-                    <i />
-                    {offline
-                      ? t("Frakoblet", "Disconnected")
-                      : a.unavailable
-                        ? `${a.unavailable} ${t("å sjekke", "to check")}`
-                        : a.items.length
-                          ? t("Tilgjengelig", "Available")
-                          : t("Tomt rom", "Empty room")}
-                  </span>
-                )}
+                <span
+                  className="room-summary-photo-state"
+                  data-warning={offline || a.unavailable > 0}
+                >
+                  <i />
+                  {offline
+                    ? t("Frakoblet", "Disconnected")
+                    : a.unavailable
+                      ? `${a.unavailable} ${t("å sjekke", "to check")}`
+                      : a.items.length
+                        ? t("Tilgjengelig", "Available")
+                        : t("Tomt rom", "Empty room")}
+                </span>
               </div>
               <header>
                 <div>
                   <h2>{a.name}</h2>
                   <small>
                     {a.items.length}{" "}
-                    {harmony
-                      ? a.items.length === 1
-                        ? t("enhet", "device")
-                        : t("enheter", "devices")
-                      : t("kontroller", "controls")}
+                    {a.items.length === 1
+                      ? t("enhet", "device")
+                      : t("enheter", "devices")}
                   </small>
                 </div>
                 <ChevronRight size={18} />

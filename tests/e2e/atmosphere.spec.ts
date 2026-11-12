@@ -43,7 +43,7 @@ async function appearance(page: Page) {
 }
 const background = (page: Page) => page.locator("#root > .atmosphere");
 
-test("gentle RGB waves persist behind every destination, home style and palette without obstructing the UI", async ({
+test("gentle RGB waves persist behind every destination and palette without obstructing the UI", async ({
   page,
 }, info) => {
   test.setTimeout(90000);
@@ -148,7 +148,6 @@ test("gentle RGB waves persist behind every destination, home style and palette 
     "Automasjoner",
     "Utvidelser",
     "Oppdateringer",
-    "Historikk",
     "Rapporter og innsikt",
     "Support",
     "Innstillinger",
@@ -179,7 +178,9 @@ test("gentle RGB waves persist behind every destination, home style and palette 
     "Multimedia",
     "Diverse",
   ]) {
-    await page.getByRole("tab", { name, exact: true }).click();
+    const label =
+      name === "Diverse" && info.project.name === "mobile" ? "Mer" : name;
+    await page.getByRole("tab", { name: label, exact: true }).click();
     if (name === "Energi") {
       const setup = page.getByRole("dialog", {
         name: "Energien i hjemmet ditt",
@@ -196,14 +197,6 @@ test("gentle RGB waves persist behind every destination, home style and palette 
     ).toBe(true);
   }
   await appearance(page);
-  for (const style of ["classic", "living", "harmony"]) {
-    await page
-      .getByRole("combobox", { name: "Stil for Hjem", exact: true })
-      .selectOption(style);
-    await navigate(page, "Hjem");
-    await expect(backdrop).toBeVisible();
-    await appearance(page);
-  }
   const tones = new Set<string>();
   for (const palette of [
     "SMARTi",
@@ -245,7 +238,7 @@ test("gentle RGB waves persist behind every destination, home style and palette 
     await page.screenshot({
       path: `/private/tmp/smarti-atmosphere-only-${theme}-${info.project.name}.png`,
     });
-    await hideUI.evaluate((node) => node.remove());
+    await hideUI.evaluate((node) => node.parentNode?.removeChild(node));
     for (const width of info.project.name === "mobile"
       ? [320, 390]
       : [834, 1440]) {

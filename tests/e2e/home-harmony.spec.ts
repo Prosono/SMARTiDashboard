@@ -202,7 +202,7 @@ async function richHome(
   );
 }
 
-test("Harmoni is selectable and persisted without changing home preferences; both original styles remain", async ({
+test("Harmoni is the only layout for fresh and legacy browsers, preserving home preferences", async ({
   page,
 }, info) => {
   await richHome(page);
@@ -213,15 +213,10 @@ test("Harmoni is selectable and persisted without changing home preferences; bot
   const favorites = (await (await page.request.get("/api/home")).json())
     .favorites;
   await appearance(page);
-  await expect(page.getByLabel("Stil for Hjem").locator("option")).toHaveText([
-    "Klassisk",
-    "SMARTi Living",
-    "SMARTi Harmoni",
-  ]);
-  await page.getByLabel("Stil for Hjem").selectOption("harmony");
-  await expect(page.locator(".home-style-preview")).toContainText(
-    "SMARTi Harmoni",
-  );
+  await expect(
+    page.getByRole("combobox", { name: "Stil for Hjem", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator(".home-style-preview")).toHaveCount(0);
   await navigate(page, "Hjem");
   await expect(page.locator("html")).toHaveAttribute(
     "data-home-style",
@@ -241,15 +236,22 @@ test("Harmoni is selectable and persisted without changing home preferences; bot
     "data-home-style",
     "harmony",
   );
-  for (const style of ["classic", "living", "harmony"]) {
-    await appearance(page);
-    await page.getByLabel("Stil for Hjem").selectOption(style);
-    await navigate(page, "Hjem");
-    await expect(page.locator("html")).toHaveAttribute(
-      "data-home-style",
+  for (const style of ["classic", "living"]) {
+    await page.evaluate(
+      (style) => localStorage.setItem("smarti-home-style", style),
       style,
     );
-    await expect(page.locator(".home-overview")).toBeVisible();
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute(
+      "data-home-style",
+      "harmony",
+    );
+    await expect(
+      page.locator(".home-overview .home-canvas").first(),
+    ).toBeVisible();
+    await expect(
+      page.locator(".living-favorites-grid, .home-welcome"),
+    ).toHaveCount(0);
   }
   expect(
     await (await page.request.get("/api/home/preferences")).json(),
@@ -910,6 +912,8 @@ test("each category can remove and add cards, retain failed edits and protect co
   page,
 }) => {
   test.setTimeout(60000);
+  // This case inspects the desktop layout endpoint on both browser projects.
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.addInitScript(() =>
     localStorage.setItem("smarti-home-style", "harmony"),
   );
