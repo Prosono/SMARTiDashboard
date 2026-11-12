@@ -1,3 +1,6 @@
+## 1.36.136
+- Fabrikktilbakestilling støtter HTTP-format 3.1 i Home Assistant Core 2026.11. Den sjekker formatet før Core stoppes.
+
 ## 1.36.135
 - SMARTi Harmoni er det eneste oppsettet. Tidligere valg av Klassisk eller Living åpner nå Harmoni automatisk, og oppsettvelgeren er fjernet.
 - Favoritter, rom, tema, fargepaletter og lagrede Harmoni-dashbord for mobil og større skjermer beholdes. Enkel, normal og avansert modus er fortsatt tilgjengelig.

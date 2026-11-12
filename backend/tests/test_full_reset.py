@@ -5,15 +5,14 @@ from uuid import uuid4
 
 import httpx
 import pytest
-from cryptography.hazmat.primitives.asymmetric import x25519
-from test_ha_auth_reset import fixture_documents
-from test_onboarding import HEARTBEAT, PLAN, factory, ready_and_claim
-
 from app.config import Settings
 from app.full_reset import ISOLATED_CONFIG, NORMAL_CONFIG, FullReset
 from app.ha_auth_reset import AuthResetError
 from app.reset_credentials import public_key, seal, unseal
 from app.storage import Store
+from cryptography.hazmat.primitives.asymmetric import x25519
+from test_ha_auth_reset import fixture_documents
+from test_onboarding import HEARTBEAT, PLAN, factory, ready_and_claim
 
 
 def test_reset_credentials_bound_to_hub_and_generation():
@@ -537,17 +536,24 @@ async def test_interrupted_owner_creation_resumes_only_proven_empty_storage(
 
 
 @pytest.mark.asyncio
-async def test_reset_keeps_8123_and_reimports_http_at_every_access_transition(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("core_version", "schema", "ssl_profile"),
+    [("2026.10.2", (2, 2), "modern"), ("2026.11.1", (3, 1), "intermediate_v6")],
+)
+async def test_reset_keeps_8123_and_reimports_http_at_every_access_transition(
+    tmp_path, monkeypatch, core_version, schema, ssl_profile
+):
     """Model HA's one-time YAML import: an existing store overrides new YAML."""
     import yaml
 
     reset, _, supervisor = setup_reset(tmp_path)
+    supervisor.info["version"] = core_version
     storage = reset.root / ".storage" / "http"
     storage.write_text(
         json.dumps(
             {
-                "version": 2,
-                "minor_version": 2,
+                "version": schema[0],
+                "minor_version": schema[1],
                 "key": "http",
                 "data": {"stable": {"server_port": 80}, "pending": None, "yaml_migration_done": True},
             }
@@ -560,9 +566,11 @@ async def test_reset_keeps_8123_and_reimports_http_at_every_access_transition(tm
         if path == "/core/start":
             if storage.exists():
                 document = json.loads(storage.read_text())
+                assert (document["version"], document["minor_version"]) == schema
                 assert document["data"]["pending"] is None
                 assert document["data"]["yaml_migration_done"] is True
                 config = document["data"]["stable"]
+                assert config["ssl_profile"] == ssl_profile
             else:
                 config = yaml.load(
                     (reset.root / "configuration.yaml").read_text(), Loader=yaml.BaseLoader
@@ -597,6 +605,23 @@ async def test_reset_keeps_8123_and_reimports_http_at_every_access_transition(tm
         None,
     ]
     assert reset.state()["phase"] == "completed"
+
+
+@pytest.mark.asyncio
+async def test_reset_checks_http_schema_before_cloud_begin_or_core_stop(tmp_path):
+    reset, _, supervisor = setup_reset(tmp_path)
+    supervisor.info["version"] = "2026.11.1"
+    http_store = reset.root / ".storage" / "http"
+    original = '{"version": 4, "minor_version": 1}'
+    http_store.write_text(original)
+
+    with pytest.raises(AuthResetError, match="ha_http_storage_unsupported"):
+        await reset.execute()
+
+    assert supervisor.calls == [("GET", "/core/info", None)]
+    reset.cloud.assert_not_awaited()
+    assert reset.state() is None
+    assert http_store.read_text() == original
 
 
 @pytest.mark.asyncio

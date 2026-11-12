@@ -30,6 +30,8 @@ from .system_operations import Supervisor
 BASE_CONFIG = "default_config:\nautomation: !include automations.yaml\nscript: !include scripts.yaml\nscene: !include scenes.yaml\n"
 NORMAL_CONFIG = BASE_CONFIG + "http:\n  server_port: 8123\n"
 ISOLATED_CONFIG = BASE_CONFIG + "http:\n  server_host: [127.0.0.1, 172.30.32.1]\n  server_port: 8123\n"
+HTTP_STORE_2026_10 = (2, 2)
+HTTP_STORE_2026_11 = (3, 1)
 
 
 class FullReset:
@@ -88,6 +90,7 @@ class FullReset:
         info = await self.supervisor.request("GET", "/core/info")
         if info.get("port") != 8123 or info.get("ssl") or info.get("ip_address") != "172.30.32.1":
             raise AuthResetError("standard_ha_http_required")
+        self.inspect_http_storage(info)
         capability = await self.cloud("capabilities")
         self.production_allowed = bool(capability.get("production_allowed"))
         if capability.get("version", 0) < 2:
@@ -227,35 +230,46 @@ class FullReset:
         os.replace(pending, path)
         _sync_directory(path.parent)
 
-    async def configure_reset_http(self, content):
-        """Install reset-owned HTTP settings offline, without a timed trial.
-
-        HA 2026.10 imports YAML as pending, falling back to port 80 after five
-        minutes. Seed its stable store while Core is stopped instead. Older
-        versions continue to read the explicit YAML configuration.
-        """
-        await self.assert_stopped()
-        storage = self.root / ".storage"
-        http_store = storage / "http"
-        if storage.is_symlink() or http_store.is_symlink():
+    def inspect_http_storage(self, info):
+        http_store = self.root / ".storage" / "http"
+        if http_store.parent.is_symlink() or http_store.is_symlink():
             raise AuthResetError("ha_storage_symlink")
-        info = await self.supervisor.request("GET", "/core/info")
         try:
-            version = tuple(int(part) for part in info["version"].split(".")[:2])
+            year, month = (int(part) for part in info["version"].split(".")[:2])
         except (KeyError, ValueError, AttributeError):
             raise AuthResetError("ha_http_version_unknown") from None
+        if (year, month) < (2026, 10):
+            return None
+        schema = HTTP_STORE_2026_11 if (year, month) >= (2026, 11) else HTTP_STORE_2026_10
         if http_store.exists():
-            existing = json.loads(http_store.read_text())
-            if version >= (2026, 10) and (existing.get("version") != 2 or existing.get("minor_version") != 2):
+            try:
+                existing = json.loads(http_store.read_text())
+            except ValueError:
+                raise AuthResetError("ha_http_storage_unsupported") from None
+            # Core 2026.11 can migrate 2.2 from a previous installation.
+            supported = (HTTP_STORE_2026_10, schema)
+            if (
+                not isinstance(existing, dict)
+                or (existing.get("version"), existing.get("minor_version")) not in supported
+            ):
                 raise AuthResetError("ha_http_storage_unsupported")
+        return schema
+
+    async def configure_reset_http(self, content):
+        """Seed the stable HTTP configuration offline to avoid a timed YAML trial."""
+        await self.assert_stopped()
+        info = await self.supervisor.request("GET", "/core/info")
+        schema = self.inspect_http_storage(info)
+        storage = self.root / ".storage"
+        http_store = storage / "http"
         self.replace(self.root / "configuration.yaml", content)
-        if version >= (2026, 10):
+        if schema:
             stable = {
                 "server_port": 8123,
                 "cors_allowed_origins": ["https://cast.home-assistant.io"],
                 "ip_ban_enabled": True,
                 "login_attempts_threshold": -1,
-                "ssl_profile": "modern",
+                "ssl_profile": "intermediate_v6" if schema == HTTP_STORE_2026_11 else "modern",
                 "use_x_frame_options": True,
                 "created_at": datetime.now(UTC).isoformat(),
                 "error": None,
@@ -267,8 +281,8 @@ class FullReset:
                 http_store,
                 json.dumps(
                     {
-                        "version": 2,
-                        "minor_version": 2,
+                        "version": schema[0],
+                        "minor_version": schema[1],
                         "key": "http",
                         "data": {"stable": stable, "pending": None, "yaml_migration_done": True},
                     }

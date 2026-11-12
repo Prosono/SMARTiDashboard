@@ -21,6 +21,7 @@ RESET_BLOCKERS = {
     "ha_auth_schema_unsupported",
     "ha_system_password_account_unsupported",
     "standard_ha_http_required",
+    "ha_http_storage_unsupported",
     "cloud_reset_update_required",
     "reset_app_boot_unavailable",
 }
@@ -222,7 +223,9 @@ class HomeResetProvider:
         elif kind == "local":
             with self.store.connect() as db:
                 for table in ["energy_intervals", "energy_configs", "energy_prices", "energy_tariffs"]:
-                    if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone():
+                    if db.execute(
+                        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+                    ).fetchone():
                         db.execute("DELETE FROM " + table)
                 db.execute("DELETE FROM settings WHERE key LIKE 'energy_%'")
                 for table in ["favorites", "dashboards", "notification_inbox"]:

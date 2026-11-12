@@ -153,6 +153,7 @@ async def main():
                 class DockerSupervisor:
                     def __init__(self):
                         self.info = {
+                            "version": (config / ".HA_VERSION").read_text().strip(),
                             "boot": True,
                             "watchdog": True,
                             "port": 8123,

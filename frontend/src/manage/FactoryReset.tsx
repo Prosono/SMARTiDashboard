@@ -78,6 +78,10 @@ export function FactoryReset({ lang }: { lang: string }) {
       "HAs nettverksoppsett avviker fra det tilbakestillingen støtter. Kontakt support.",
       "HA networking differs from the supported reset configuration.",
     ),
+    ha_http_storage_unsupported: t(
+      "SMARTi støtter ikke formatet Home Assistant bruker til å lagre HTTP-innstillingene. Tilbakestilling kan ikke startes.",
+      "SMARTi does not support the format Home Assistant uses to store HTTP settings. The reset cannot start.",
+    ),
     reset_recovery_required: t(
       "En tidligere tilbakestilling må fullføres eller kontrolleres av support før en ny kan startes.",
       "A previous reset needs recovery before another can start.",
