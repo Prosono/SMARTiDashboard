@@ -29,6 +29,7 @@ import { HomeBackgroundSettings } from "./home/HomeAppearance";
 import { liveConnection } from "./liveConnection";
 import { StartupScreen } from "./StartupScreen";
 import { HomeLaunchError, prepareStartupSession } from "./startupSession";
+import { remoteHome } from "./remoteConsole";
 import { RoomsOverview } from "./rooms/RoomsOverview";
 import { ClimateOverview } from "./home/ClimateOverview";
 import { LightOverview } from "./home/LightOverview";
@@ -579,6 +580,7 @@ function Login({
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const first = setup.data && !setup.data.configured;
+  const portalSignIn = !first && remoteHome();
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const values = Object.fromEntries(new FormData(e.currentTarget));
@@ -657,15 +659,36 @@ function Login({
           <h2>
             {first
               ? t.firstTitle
-              : lang === "nb"
-                ? "Logg inn på SMARTi"
-                : "Sign in to SMARTi"}
+              : portalSignIn
+                ? t.remoteLoginTitle
+                : lang === "nb"
+                  ? "Logg inn på SMARTi"
+                  : "Sign in to SMARTi"}
           </h2>
-          <p>{first ? t.firstHint : t.loginHint}</p>
+          <p>
+            {first
+              ? t.firstHint
+              : portalSignIn
+                ? t.remoteLoginHint
+                : t.loginHint}
+          </p>
+          {portalSignIn && (
+            <a
+              href="https://home.smarti.dev/"
+              className="login-portal-link"
+              target="_top"
+            >
+              {t.remoteLoginLink}
+              <ArrowUpRight size={18} aria-hidden="true" />
+            </a>
+          )}
           {setup.isError ? (
             <p role="alert">{t.loadError}</p>
           ) : (
             <form onSubmit={submit}>
+              {portalSignIn && (
+                <p className="login-local-hint">{t.localLoginHint}</p>
+              )}
               {first && (
                 <>
                   <label>

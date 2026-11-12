@@ -1,3 +1,6 @@
+## 1.36.137
+- Innloggingssiden på en hub som åpnes uten en aktiv økt via fjernaksess, har nå en direkte lenke til Mine hjem for innlogging med SMARTi-konto.
+
 ## 1.36.136
 - Fabrikktilbakestilling støtter HTTP-format 3.1 i Home Assistant Core 2026.11. Den sjekker formatet før Core stoppes.
 

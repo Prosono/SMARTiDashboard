@@ -33,6 +33,22 @@
 .login .login-inner>.eyebrow {color:#ff8a20;font-size:12px}
 .login .login-inner h2 {color:#f7f6f0;font-size:clamp(27px,2.3vw,34px);line-height:1.2;margin:16px 0}
 .login .login-inner>p {color:#c7ccc5;font-size:16px;margin:0 0 28px}
+.login .login-portal-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 52px;
+  margin-bottom: 24px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #ff7900;
+  color: #21180f;
+  font-weight: 600;
+  text-decoration: none;
+}
+.login .login-portal-link:hover {background:#ff942e}
+.login .login-local-hint {color:#c7ccc5;margin:0 0 16px}
 .login .login-inner label {color:#f0f1ea;font-size:14px;margin-bottom:20px}
 .login .login-inner input {background:#ffffff06;color:#faf9f4;border:1px solid #59605a;min-height:50px;border-radius:8px;font-size:16px}
 .login .login-inner input::placeholder {color:#b7bdb6;opacity:1}
