@@ -200,6 +200,45 @@ async def test_full_reset_erases_users_history_config_keeps_apps_and_requires_ow
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("production", [False, True])
+async def test_restore_wipe_enables_radio_boot_and_watchdog_before_erasure(tmp_path, monkeypatch, production):
+    reset, _, supervisor = setup_reset(tmp_path)
+    reset.cloud.return_value = {"version": 4, "production_allowed": True}
+    monkeypatch.setattr("asyncio.open_connection", AsyncMock(side_effect=ConnectionRefusedError))
+    settings = {
+        "45df7312_zigbee2mqtt": {"boot": "manual", "watchdog": False},
+        "a0d7b954_zwavejs2mqtt": {"boot": "auto", "watchdog": False},
+        "core_zwave_js": {"boot": "manual", "watchdog": False},
+    }
+    original_request = supervisor.request
+
+    async def request(method, path, data=None):
+        if path == "/addons":
+            return {"addons": [{"slug": slug} for slug in settings]}
+        if path.startswith("/addons/"):
+            _, _, slug, action = path.split("/")
+            if slug in settings:
+                if action == "options":
+                    assert method == "POST"
+                    assert (reset.root / "home-assistant_v2.db").exists()
+                    assert not any(call_path == "/core/stop" for _, call_path, _ in supervisor.calls)
+                    settings[slug].update(data)
+                return dict(settings[slug])
+        return await original_request(method, path, data)
+
+    supervisor.request = request
+    await reset.execute(ownership="release_owner", production=production)
+
+    assert settings["45df7312_zigbee2mqtt"] == {
+        "boot": "auto" if production else "manual",
+        "watchdog": production,
+    }
+    assert settings["a0d7b954_zwavejs2mqtt"] == {"boot": "auto", "watchdog": production}
+    assert settings["core_zwave_js"] == {"boot": "manual", "watchdog": False}
+    assert reset.state()["phase"] == "awaiting_reboot"
+
+
+@pytest.mark.asyncio
 async def test_cloud_failure_changes_no_customer_files(tmp_path):
     reset, store, supervisor = setup_reset(tmp_path)
 

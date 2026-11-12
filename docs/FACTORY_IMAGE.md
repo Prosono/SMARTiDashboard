@@ -7,7 +7,8 @@ Fra 1.35.85 er anbefalt produksjonsflyt:
 2. I hubens reset-dialog velger du **Klargjør for ny eier**, bekrefter advarslene
    og skriver **RESTORE WIPE** i stedet for RESET HUB. Produksjonshjelpen vises bare
    når sentral administrasjon har gitt akkurat denne huben tilgang.
-3. Huben kjører full reset og OS-omstart. Etter omstart bekreftes frigivelse i skyen,
+3. SMARTi bekrefter automatisk oppstart og watchdog for installert Zigbee2MQTT og
+   Z-Wave JS UI før full reset og OS-omstart. Etter omstart bekreftes frigivelse i skyen,
    Supervisor-options tømmes for fjernidentitet/bootstrap, og SMARTis lokale data,
    sertifikater, identitet og gamle reset-journaler fjernes. En produksjonsmarkør beholdes.
 4. Når huben igjen er tilgjengelig for lokalt søk, er produksjonsmodus aktiv.

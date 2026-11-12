@@ -325,6 +325,24 @@ class FullReset:
             raise AuthResetError("reset_backup_deletion_unconfirmed")
         return len(slugs)
 
+    async def configure_production_radio_startup(self):
+        apps = (await self.supervisor.request("GET", "/addons"))["addons"]
+        slugs = []
+        for suffix in ("_zigbee2mqtt", "_zwavejs2mqtt"):
+            matching = [app["slug"] for app in apps if app["slug"].endswith(suffix)]
+            if len(matching) > 1 or any(not re.fullmatch(r"[a-z0-9_]+", slug) for slug in matching):
+                raise AuthResetError("reset_radio_startup_unavailable")
+            slugs.extend(matching)
+
+        for slug in slugs:
+            path = f"/addons/{slug}"
+            info = await self.supervisor.request("GET", path + "/info")
+            if info.get("boot") != "auto" or info.get("watchdog") is not True:
+                await self.supervisor.request("POST", path + "/options", {"boot": "auto", "watchdog": True})
+                info = await self.supervisor.request("GET", path + "/info")
+                if info.get("boot") != "auto" or info.get("watchdog") is not True:
+                    raise AuthResetError("reset_radio_startup_unavailable")
+
     async def execute(self, report=None, ownership="keep_owner", production=False, delete_backups=False):
         try:
             return await self._execute(report, ownership, production, delete_backups)
@@ -343,6 +361,9 @@ class FullReset:
             raise AuthResetError("cloud_reset_update_required")
         if production and (not self.production_allowed or ownership != "release_owner"):
             raise AuthResetError("production_access_required")
+        if production:
+            # Confirm the radio apps will start after reboot before committing the wipe.
+            await self.configure_production_radio_startup()
         reset_id = str(uuid.uuid4())
         private = x25519.X25519PrivateKey.generate()
         if self.key_path.exists():

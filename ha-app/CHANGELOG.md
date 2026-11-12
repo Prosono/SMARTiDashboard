@@ -1,3 +1,6 @@
+## 1.36.138
+- RESTORE WIPE aktiverer automatisk oppstart og watchdog for installert Zigbee2MQTT og Z-Wave JS UI før huben tilbakestilles.
+
 ## 1.36.137
 - Innloggingssiden på en hub som åpnes uten en aktiv økt via fjernaksess, har nå en direkte lenke til Mine hjem for innlogging med SMARTi-konto.
 
