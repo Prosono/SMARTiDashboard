@@ -99,7 +99,9 @@ class MobileAuth:
 
     def refresh(self, installation_id, token):
         if installation_id != self.installation_id:
-            raise HTTPException(403, "wrong_installation")
+            # A reset invalidates the stored phone credentials. The client uses
+            # 401 to discard them and pair again through its signed-in web session.
+            raise HTTPException(401, "mobile_authentication_required")
         now = time.time()
         result = None
         with self.store.connect() as db:

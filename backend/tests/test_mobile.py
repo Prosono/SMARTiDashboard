@@ -107,6 +107,20 @@ def test_refresh_rotation_reuse_revokes_family(pilot):
     assert phone.get("/api/mobile/v1/home").status_code == 401
 
 
+def test_refresh_for_previous_installation_requires_pairing(pilot):
+    _, browser, phone = pilot
+    tokens, invitation = pair(browser, phone)
+    body = {
+        "installation_id": "00000000-0000-0000-0000-000000000000",
+        "refresh_token": tokens["refresh_token"],
+    }
+    response = phone.post("/api/mobile/v1/refresh", json=body)
+    assert response.status_code == 401
+    assert response.json() == {"detail": "mobile_authentication_required"}
+    body["installation_id"] = invitation["installation_id"]
+    assert phone.post("/api/mobile/v1/refresh", json=body).status_code == 200
+
+
 def test_native_boundary_does_not_accept_web_sessions(pilot):
     _, browser, phone = pilot
     assert phone.get("/api/home").status_code == 404

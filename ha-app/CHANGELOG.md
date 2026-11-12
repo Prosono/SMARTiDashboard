@@ -1,3 +1,6 @@
+## 1.36.139
+- iPhone-appen kan koble seg til hjemmet automatisk igjen når RESTORE WIPE har gjort den gamle telefonregistreringen ugyldig.
+
 ## 1.36.138
 - RESTORE WIPE aktiverer automatisk oppstart og watchdog for installert Zigbee2MQTT og Z-Wave JS UI før huben tilbakestilles.
 
