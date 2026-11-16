@@ -1,6 +1,10 @@
 import { AppConfiguration } from "./AppConfiguration";
-import { AppInterface } from "./AppInterface";
-import { useState } from "react";
+import {
+  AppInterface,
+  AppInterfacePage,
+  useRemoteAppInterface,
+} from "./AppInterface";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AppWindow,
@@ -127,6 +131,20 @@ export function Apps({
   const [selected, select] = useState<AppItem | null>(null),
     [config, setConfig] = useState(false),
     [repositories, setRepositories] = useState(false);
+  const [interfaceView, setInterfaceView] = useState<{
+    app: AppItem;
+    localPath: string | null;
+  } | null>(null);
+  const remoteInterface = useRemoteAppInterface();
+  const returnFocus = useRef<string | null>(null);
+  useEffect(() => {
+    if (interfaceView || !returnFocus.current) return;
+    document
+      .getElementById(`app-title-${returnFocus.current}`)
+      ?.closest("button")
+      ?.focus();
+    returnFocus.current = null;
+  }, [interfaceView]);
   const [confirm, setConfirm] = useState<{
     app: AppItem;
     action: Action;
@@ -221,6 +239,25 @@ export function Apps({
       (operation.action === "update" &&
         apps.data?.some((app) => app.slug === operation.slug)),
   );
+  if (interfaceView) {
+    const { app, localPath } = interfaceView;
+    return (
+      <AppInterfacePage
+        slug={app.slug}
+        name={smartiName(app.name)}
+        lang={lang}
+        localPath={localPath}
+        remoteSource={remoteInterface.data}
+        pending={remoteInterface.isPending}
+        onReload={() => remoteInterface.mutate(app.slug)}
+        onBack={() => {
+          returnFocus.current = app.slug;
+          remoteInterface.reset();
+          setInterfaceView(null);
+        }}
+      />
+    );
+  }
   return (
     <section className="apps-page management-page">
       {!embedded && (
@@ -512,7 +549,16 @@ export function Apps({
                 </p>
               )}
               {selected.installed && (
-                <AppInterface key={selected.slug} slug={selected.slug} name={smartiName(selected.name)} lang={lang} />
+                <AppInterface
+                  key={selected.slug}
+                  slug={selected.slug}
+                  lang={lang}
+                  onOpen={(localPath) => {
+                    setInterfaceView({ app: selected, localPath });
+                    select(null);
+                    if (!localPath) remoteInterface.mutate(selected.slug);
+                  }}
+                />
               )}
               <div className="app-actions">
                 {(selected.installed

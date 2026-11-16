@@ -111,6 +111,33 @@ def test_app_interface_uses_supervisor_details_without_returning_an_ingress_toke
     assert client.get(path).json()["kind"] is None
 
 
+def test_local_app_interface_exposes_the_valid_ingress_entry(client, supervisor):  # noqa: F811
+    from types import SimpleNamespace
+
+    from app.apps import apps_router
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    _, info, _ = supervisor
+    local = FastAPI()
+    local.include_router(
+        apps_router(
+            client.app.state.management,
+            lambda: {"id": 1},
+            SimpleNamespace(mode="live", ingress=True),
+            local_ingress=True,
+        )
+    )
+    path = "/api/manage/apps/core_test/interface"
+    info.update(state="started", ingress=True, ingress_url="/api/hassio_ingress/test-token/panel/")
+    with TestClient(local) as local_client:
+        assert local_client.get(path).json()["ingress_path"] == info["ingress_url"]
+        assert "ingress_path" not in client.get(path).json()
+        for unsafe in ("//example.com/app", "/api/hassio_ingress/test-token/../../api/"):
+            info["ingress_url"] = unsafe
+            assert "ingress_path" not in local_client.get(path).json()
+
+
 def test_install_idempotence_jobs_and_unconfirmed_response(client, supervisor):  # noqa: F811
     calls, _, state = supervisor
     request = body()

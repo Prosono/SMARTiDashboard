@@ -55,7 +55,7 @@ class Repository(BaseModel):
         return value
 
 
-def apps_router(m, admin, settings, *, launch_console=None):
+def apps_router(m, admin, settings, *, launch_console=None, local_ingress=False):
     router = APIRouter(prefix="/api/manage/apps", dependencies=[Depends(admin)])
     supervisor = Supervisor(settings)
     lock = asyncio.Lock()
@@ -231,11 +231,20 @@ def apps_router(m, admin, settings, *, launch_console=None):
         direct = isinstance(webui, str) and re.fullmatch(
             r"https?://\[HOST\](?::[0-9]{1,5})?(?:[/?#][^\s\\]*)?", webui
         )
-        return {
+        result = {
             "kind": "ingress" if info.get("ingress") else "direct" if direct else None,
             "state": info.get("state"),
             "address": webui if direct and not info.get("ingress") else None,
         }
+        if local_ingress and result["kind"] == "ingress" and info.get("state") == "started":
+            path = info.get("ingress_url")
+            if (
+                isinstance(path, str)
+                and re.fullmatch(r"/api/hassio_ingress/[A-Za-z0-9_-]+/[A-Za-z0-9._~/-]*", path)
+                and not {".", ".."}.intersection(path.split("/"))
+            ):
+                result["ingress_path"] = path
+        return result
 
     @router.post("/{slug}/interface")
     async def open_interface(slug: str, request: Request, current=Depends(admin)):

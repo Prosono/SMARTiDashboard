@@ -1,3 +1,7 @@
+## 1.36.142
+- Appgrensesnitt vises direkte under Utvidelser → Apper, i en større flate tilpasset mobil og desktop. Last inn appen på nytt fra verktøylinjen, eller gå tilbake til samme appkort.
+- Lokale Ingress-apper viser selve grensesnittet direkte. Ved fjernaksess åpnes appen i samme flate via Home Assistant.
+
 ## 1.36.141
 - Søk etter integrasjoner fra Home Assistant Marketplace under Utvidelser → Markedsplass. Fanen viser installerte integrasjoner og lenker til prosjektene. Krever Home Assistant 2026.11 eller nyere.
 - Åpne webgrensesnittet til installerte apper fra Utvidelser → Apper. Ingress-grensesnitt kan også åpnes via fjernaksess.

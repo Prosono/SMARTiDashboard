@@ -420,7 +420,13 @@ def create_app(
     app.include_router(factory_reset_router(store, auth, admin, reset))
     app.include_router(system_operations_router(management, admin, settings))
     app.include_router(
-        apps_router(management, admin, console_settings or settings, launch_console=launch_console)
+        apps_router(
+            management,
+            admin,
+            console_settings or settings,
+            launch_console=launch_console,
+            local_ingress=settings.ingress and not mobile_only,
+        )
     )
     app.include_router(accounts_router(management, admin, user))
     app.include_router(integration_setup_router(management, admin))

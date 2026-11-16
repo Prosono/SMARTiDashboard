@@ -62,32 +62,91 @@
   border-color: var(--orange);
   background: var(--soft);
 }
-.app-interface-access, .app-interface-tools {
+.app-interface-access {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 14px;
 }
-.app-interface-access > :is(a, button), .app-interface-tools > button {
+.app-interface-access > :is(a, button) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
 }
 .app-interface-access > a { color: var(--accent); font-weight: 600; }
-.app-interface-tools > p { margin: 0; }
-.dashboard-settings-dialog:has(> .dashboard-settings-content > .app-interface-viewer) {
-  width: min(1380px, calc(100vw - 24px));
-  max-height: 94dvh;
+.connections-page:has(.app-interface-page) > .page-heading {
+  display: none;
 }
-.app-interface-viewer iframe {
+.connections-page:has(.app-interface-page) > .connections-tabs {
+  margin-bottom: 12px;
+}
+main:has(.app-interface-page) {
+  max-width: none;
+  padding-inline: clamp(12px, 2.2vw, 32px);
+  padding-bottom: 20px;
+}
+.app-interface-page {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.app-interface-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.app-interface-header h1 {
+  font-size: clamp(17px, 2vw, 22px);
+  font-weight: 600;
+  letter-spacing: -.025em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-interface-tools {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.app-interface-header button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 10px;
+  color: var(--text);
+}
+.app-interface-header button:hover:not(:disabled) { background: var(--soft); }
+.app-interface-content {
+  display: grid;
+  place-items: center;
+  height: max(380px, calc(100dvh - 233px));
+  overflow: hidden;
+  border-radius: 0 0 15px 15px;
+}
+.app-interface-content iframe {
   display: block;
   width: 100%;
-  height: 65dvh;
-  margin-top: 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
+  height: 100%;
+  border: 0;
+}
+.app-interface-error {
+  max-width: 27rem;
+  padding: 20px;
+  text-align: center;
+}
+.app-interface-error button { min-height: 44px; margin-top: 12px; }
+@media (max-width: 760px) {
+  .app-interface-header { padding-inline: 4px; gap: 5px; }
+  .app-interface-content {
+    height: max(350px, calc(100dvh - 310px - env(safe-area-inset-bottom)));
+  }
 }
 .app-card-top {
   display: flex;

@@ -5,6 +5,8 @@ test("integrations and apps share one responsive destination, with apps only in 
 }, info) => {
   let mode = "advanced",
     appReads = 0;
+  const ingressPath = "/api/hassio_ingress/app-test/panel/";
+  let panelLoads = 0;
   await page.route("**/api/home/experience", (route) => {
     if (route.request().method() === "PUT")
       mode = route.request().postDataJSON().mode;
@@ -68,13 +70,25 @@ test("integrations and apps share one responsive destination, with apps only in 
   );
   await page.route("**/api/manage/apps/core_mqtt/interface", (route) =>
     route.fulfill({
-      json: { kind: "ingress", state: "started", address: null },
+      json: {
+        kind: "ingress",
+        state: "started",
+        address: null,
+        ingress_path: ingressPath,
+      },
     }),
   );
+  await page.route(`**${ingressPath}`, (route) => {
+    panelLoads++;
+    return route.fulfill({
+      contentType: "text/html",
+      body: `<h1>MQTT test panel</h1><p>Connection ${panelLoads}</p><button onclick="this.textContent='Connected'">Connect</button>`,
+    });
+  });
   await page.route("**/app/core_mqtt", (route) =>
     route.fulfill({
       contentType: "text/html",
-      body: "<h1>MQTT test panel</h1>",
+      body: "<h1>Home Assistant app panel</h1>",
     }),
   );
   await page.route("**/api/manage/apps/repositories", (route) =>
@@ -168,30 +182,39 @@ test("integrations and apps share one responsive destination, with apps only in 
     document.head.prepend(base);
     history.replaceState(null, "", "/api/hassio_ingress/test/");
   });
-  await page.locator(".app-card").filter({ hasText: "MQTT broker" }).click();
+  const mobile = info.project.name === "mobile";
+  await page.setViewportSize(
+    mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+  );
+  const card = page.locator(".app-card").filter({ hasText: "MQTT broker" });
+  await card.click();
   await page.getByRole("button", { name: "Åpne appgrensesnitt" }).click();
-  const viewer = page.getByRole("dialog", {
-    name: "Appgrensesnitt · MQTT broker",
-  });
+  const viewer = page.getByRole("region", { name: "MQTT broker" });
   await expect(
-    viewer
-      .frameLocator("iframe")
-      .getByRole("heading", { name: "MQTT test panel" }),
-  ).toBeVisible();
-  await viewer.getByRole("button", { name: "Last inn på nytt" }).click();
-  await expect(
-    viewer
-      .frameLocator("iframe")
-      .getByRole("heading", { name: "MQTT test panel" }),
-  ).toBeVisible();
-  await viewer.getByRole("button", { name: "Lukk innstillinger" }).click();
-  await expect(
-    page.getByRole("button", { name: "Åpne appgrensesnitt" }),
+    viewer.getByRole("heading", { name: "MQTT broker" }),
   ).toBeFocused();
-  await page
-    .getByRole("dialog", { name: "MQTT broker", exact: true })
-    .getByRole("button", { name: "Lukk innstillinger" })
-    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(nav).toBeVisible();
+  await expect(appsTab).toHaveAttribute("aria-selected", "true");
+  await expect(viewer.locator("iframe")).toHaveAttribute("src", ingressPath);
+  const frame = viewer.frameLocator("iframe");
+  await frame.getByRole("button", { name: "Connect" }).click();
+  await expect(frame.getByRole("button", { name: "Connected" })).toBeVisible();
+  const size = await viewer.locator("iframe").boundingBox();
+  expect(size?.width).toBeGreaterThan(mobile ? 350 : 1000);
+  expect(size?.height).toBeGreaterThan(500);
+  await page.screenshot({
+    path: `/tmp/smarti-inline-app-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  await viewer.getByRole("button", { name: "Last inn på nytt" }).click();
+  await expect(frame.getByText("Connection 2")).toBeVisible();
+  await viewer.getByRole("button", { name: "Vis via Home Assistant" }).click();
+  await expect(
+    frame.getByRole("heading", { name: "Home Assistant app panel" }),
+  ).toBeVisible();
+  await viewer.getByRole("button", { name: "Tilbake til apper" }).click();
+  await expect(card).toBeFocused();
   await page.evaluate(() => history.replaceState(null, "", "/"));
   await appsTab.press("Home");
   await expect(integrationTab).toBeFocused();
