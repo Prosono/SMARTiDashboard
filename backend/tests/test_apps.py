@@ -77,6 +77,7 @@ def test_inventory_and_self_protection(client, supervisor):  # noqa: F811
         for action in ["install", "start", "stop", "restart", "update", "uninstall"]:
             assert client.post(f"/api/manage/apps/{slug}/actions", json=body(slug, action)).status_code == 404
         assert client.get(f"/api/manage/apps/{slug}/configuration").status_code == 404
+        assert client.get(f"/api/manage/apps/{slug}/interface").status_code == 404
         assert (
             client.put(
                 f"/api/manage/apps/{slug}/configuration",
@@ -93,6 +94,21 @@ def test_inventory_and_self_protection(client, supervisor):  # noqa: F811
     assert not any(c[0] == "POST" for c in calls)
     state["own"] = None
     assert client.post("/api/manage/apps/core_test/actions", json=body()).status_code == 503
+
+
+def test_app_interface_uses_supervisor_details_without_returning_an_ingress_token(client, supervisor):  # noqa: F811
+    _, info, _ = supervisor
+    path = "/api/manage/apps/core_test/interface"
+    info.update(state="started", ingress=True, ingress_url="/api/hassio_ingress/private")
+    assert client.get(path).json() == {"kind": "ingress", "state": "started", "address": None}
+    info.update(ingress=False, webui="http://[HOST]:1234/dashboard")
+    assert client.get(path).json() == {
+        "kind": "direct",
+        "state": "started",
+        "address": "http://[HOST]:1234/dashboard",
+    }
+    info["webui"] = "https://[HOST]@other.example/dashboard"
+    assert client.get(path).json()["kind"] is None
 
 
 def test_install_idempotence_jobs_and_unconfirmed_response(client, supervisor):  # noqa: F811

@@ -62,6 +62,13 @@
     flex: 1;
     padding-inline: 12px;
   }
+  .connections-page .connections-tabs button {
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: 0.82rem;
+  }
   .connections-page .apps-toolbar > nav {
     flex-basis: 100%;
   }

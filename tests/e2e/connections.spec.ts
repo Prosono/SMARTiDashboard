@@ -46,6 +46,37 @@ test("integrations and apps share one responsive destination, with apps only in 
   await page.route("**/api/manage/apps/operations", (route) =>
     route.fulfill({ json: [] }),
   );
+  await page.route("**/api/manage/marketplace", (route) =>
+    route.fulfill({
+      json: [
+        {
+          full_name: "vendor/air-sensors",
+          name: "Air Sensors",
+          description: "Inneklima",
+          topics: ["co2"],
+          installed: true,
+          installed_version: "1.2",
+        },
+        {
+          full_name: "vendor/solar-monitor",
+          name: "Solar Monitor",
+          description: "Solcelleproduksjon",
+          installed: false,
+        },
+      ],
+    }),
+  );
+  await page.route("**/api/manage/apps/core_mqtt/interface", (route) =>
+    route.fulfill({
+      json: { kind: "ingress", state: "started", address: null },
+    }),
+  );
+  await page.route("**/app/core_mqtt", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<h1>MQTT test panel</h1>",
+    }),
+  );
   await page.route("**/api/manage/apps/repositories", (route) =>
     route.fulfill({ json: [] }),
   );
@@ -68,12 +99,38 @@ test("integrations and apps share one responsive destination, with apps only in 
     exact: true,
   });
   const appsTab = page.getByRole("tab", { name: "Apper", exact: true });
+  const marketplaceTab = page.getByRole("tab", {
+    name: "Markedsplass",
+    exact: true,
+  });
   await expect(integrationTab).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".integration-card")).toContainText("Philips Hue");
   // The advanced administrator menu checks the shared inventory for updates.
   await expect.poll(() => appReads).toBeGreaterThan(0);
   await integrationTab.focus();
-  await integrationTab.press("End");
+  await integrationTab.press("ArrowRight");
+  await expect(marketplaceTab).toBeFocused();
+  await expect(marketplaceTab).toHaveAttribute("aria-selected", "true");
+  await expect(
+    page.getByRole("link", { name: "Air Sensors på GitHub" }),
+  ).toHaveAttribute("href", "https://github.com/vendor/air-sensors");
+  const search = page.getByRole("searchbox", { name: "Søk i markedsplassen" });
+  await search.fill("co2 inneklima");
+  await expect(
+    page.getByRole("link", { name: "Air Sensors på GitHub" }),
+  ).toContainText("Installert · 1.2");
+  await expect(
+    page.getByRole("link", { name: "Solar Monitor på GitHub" }),
+  ).toHaveCount(0);
+  await search.fill("ingen-kamp");
+  await expect(page.getByText("Ingen treff.", { exact: false })).toBeVisible();
+  await search.clear();
+  await page.screenshot({
+    path: `/tmp/smarti-marketplace-${info.project.name}.png`,
+    animations: "disabled",
+  });
+  await marketplaceTab.focus();
+  await marketplaceTab.press("End");
   await expect(appsTab).toBeFocused();
   await expect(appsTab).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".app-card")).toContainText("MQTT broker");
@@ -104,6 +161,38 @@ test("integrations and apps share one responsive destination, with apps only in 
   await page
     .getByRole("button", { name: "Lukk innstillinger", exact: true })
     .click();
+  // The test server is standalone; keep its API root while representing an HA ingress page.
+  await page.evaluate(() => {
+    const base = document.createElement("base");
+    base.href = window.location.origin + "/";
+    document.head.prepend(base);
+    history.replaceState(null, "", "/api/hassio_ingress/test/");
+  });
+  await page.locator(".app-card").filter({ hasText: "MQTT broker" }).click();
+  await page.getByRole("button", { name: "Åpne appgrensesnitt" }).click();
+  const viewer = page.getByRole("dialog", {
+    name: "Appgrensesnitt · MQTT broker",
+  });
+  await expect(
+    viewer
+      .frameLocator("iframe")
+      .getByRole("heading", { name: "MQTT test panel" }),
+  ).toBeVisible();
+  await viewer.getByRole("button", { name: "Last inn på nytt" }).click();
+  await expect(
+    viewer
+      .frameLocator("iframe")
+      .getByRole("heading", { name: "MQTT test panel" }),
+  ).toBeVisible();
+  await viewer.getByRole("button", { name: "Lukk innstillinger" }).click();
+  await expect(
+    page.getByRole("button", { name: "Åpne appgrensesnitt" }),
+  ).toBeFocused();
+  await page
+    .getByRole("dialog", { name: "MQTT broker", exact: true })
+    .getByRole("button", { name: "Lukk innstillinger" })
+    .click();
+  await page.evaluate(() => history.replaceState(null, "", "/"));
   await appsTab.press("Home");
   await expect(integrationTab).toBeFocused();
   await expect(page.locator(".integration-card")).toBeVisible();
@@ -116,6 +205,7 @@ test("integrations and apps share one responsive destination, with apps only in 
   await nav.getByRole("button", { name: "Utvidelser", exact: true }).click();
   await expect(page.locator(".integration-card")).toBeVisible();
   await expect(appsTab).toHaveCount(0);
+  await expect(marketplaceTab).toBeVisible();
   await expect(page.locator(".apps-page")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Appkilder", exact: true }),

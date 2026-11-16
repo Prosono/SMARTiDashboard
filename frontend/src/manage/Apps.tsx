@@ -1,4 +1,5 @@
 import { AppConfiguration } from "./AppConfiguration";
+import { AppInterface } from "./AppInterface";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -509,6 +510,9 @@ export function Apps({
                     "This app is managed by an integration and cannot be uninstalled here.",
                   )}
                 </p>
+              )}
+              {selected.installed && (
+                <AppInterface key={selected.slug} slug={selected.slug} name={smartiName(selected.name)} lang={lang} />
               )}
               <div className="app-actions">
                 {(selected.installed

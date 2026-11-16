@@ -11,7 +11,11 @@ export async function openRemoteConsole(slug?: string) {
     "POST",
     slug ? { slug } : {},
   );
-  const url = new URL(result.url);
+  return consoleAddress(result.url);
+}
+
+export function consoleAddress(address: string) {
+  const url = new URL(address);
   if (
     !remoteHome() ||
     url.origin !== `https://ha-${window.location.hostname}` ||

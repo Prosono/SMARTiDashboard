@@ -1,0 +1,113 @@
+.marketplace-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--muted);
+}
+.marketplace-search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.marketplace-search > svg {
+  flex: none;
+}
+.marketplace-search > input {
+  flex: 1;
+  min-width: 0;
+  min-height: 50px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+.marketplace-search > input:focus-visible {
+  outline: none;
+}
+.marketplace-count {
+  color: var(--muted);
+  margin: 16px 0 10px;
+}
+.marketplace-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 295px), 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.marketplace-list > li {
+  min-width: 0;
+}
+.marketplace-list a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  min-height: 100%;
+  padding: clamp(12px, 2vw, 19px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+.marketplace-list a:hover {
+  border-color: var(--accent);
+}
+.marketplace-list a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.marketplace-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: var(--soft);
+  color: var(--accent);
+}
+.marketplace-icon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.marketplace-summary {
+  overflow-wrap: anywhere;
+}
+.marketplace-summary h3 {
+  margin: 0;
+  font-size: 1.07rem;
+  line-height: 1.25;
+}
+.marketplace-summary p {
+  margin: 3px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.marketplace-summary .marketplace-description {
+  margin-top: 8px;
+  color: var(--text);
+}
+.marketplace-installed {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+.marketplace-link {
+  color: var(--muted);
+  margin-top: 2px;
+}
+.marketplace-more {
+  min-height: 44px;
+  margin-top: 16px;
+}

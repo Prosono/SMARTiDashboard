@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field, field_validator
 
 from .ha import HAError
@@ -55,7 +55,7 @@ class Repository(BaseModel):
         return value
 
 
-def apps_router(m, admin, settings):
+def apps_router(m, admin, settings, *, launch_console=None):
     router = APIRouter(prefix="/api/manage/apps", dependencies=[Depends(admin)])
     supervisor = Supervisor(settings)
     lock = asyncio.Lock()
@@ -223,6 +223,28 @@ def apps_router(m, admin, settings):
         result = await supervisor.request("GET", "/store/repositories")
         result = result if isinstance(result, list) else result.get("repositories", [])
         return [{k: r.get(k) for k in ["slug", "name", "source", "maintainer"]} for r in result]
+
+    @router.get("/{slug}/interface")
+    async def interface_info(slug: str):
+        info = await target(slug)
+        webui = info.get("webui")
+        direct = isinstance(webui, str) and re.fullmatch(
+            r"https?://\[HOST\](?::[0-9]{1,5})?(?:[/?#][^\s\\]*)?", webui
+        )
+        return {
+            "kind": "ingress" if info.get("ingress") else "direct" if direct else None,
+            "state": info.get("state"),
+            "address": webui if direct and not info.get("ingress") else None,
+        }
+
+    @router.post("/{slug}/interface")
+    async def open_interface(slug: str, request: Request, current=Depends(admin)):
+        if launch_console is None:
+            raise HTTPException(503, "console_unavailable")
+        info = await target(slug)
+        if not info.get("ingress") or info.get("state") != "started":
+            raise HTTPException(404, "app_interface_unavailable")
+        return await launch_console(request, current, f"/app/{slug}")
 
     @router.post("/repositories")
     async def add_repository(body: Repository):

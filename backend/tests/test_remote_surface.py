@@ -138,7 +138,14 @@ def test_remote_console_handoff_is_admin_and_csrf_protected(tmp_path, monkeypatc
     async def addon_info(self, method, path, data=None):
         assert method == "GET"
         assert path.startswith("/addons/") and path.endswith("/info")
-        return {"ingress": True, "state": "started"}
+        slug = path.split("/")[2]
+        if slug == "self":
+            return {"slug": "renamed_smarti_app"}
+        return {
+            "slug": slug,
+            "ingress": slug != "headless",
+            "state": "stopped" if slug == "stopped" else "started",
+        }
 
     monkeypatch.setattr(Supervisor, "request", addon_info)
     console = TestClient(
@@ -152,11 +159,21 @@ def test_remote_console_handoff_is_admin_and_csrf_protected(tmp_path, monkeypatc
         assert opened.status_code == 200
         assert opened.json()["path"] == "/app/" + slug
     assert remote.post(endpoint, json={"slug": "other_app"}).status_code == 404
+    app_interface = "/api/manage/apps/core_dashboard/interface"
+    assert remote.post(app_interface, json={}, headers={"X-CSRF-Token": "invalid"}).status_code == 403
+    assert remote.post(app_interface, json={}, headers={"Origin": "https://evil.example"}).status_code == 403
+    launch = remote.post(app_interface, json={})
+    assert launch.status_code == 200
+    ticket = urlsplit(launch.json()["url"]).fragment
+    assert console.post("/_smarti/session", json={"ticket": ticket}).json()["path"] == "/app/core_dashboard"
+    for slug in ("headless", "stopped", "renamed_smarti_app"):
+        assert remote.post(f"/api/manage/apps/{slug}/interface", json={}).status_code == 404
     page = remote.get("/healthz")
     assert app.state.console.origin in page.headers["content-security-policy"]
     with app.state.store.connect() as db:
         db.execute("UPDATE users SET role='user'")
     assert remote.post(endpoint, json={}).status_code == 403
+    assert remote.post(app_interface, json={}).status_code == 403
 
 
 def test_remote_system_uses_hub_metadata_and_remote_status_is_read_only(tmp_path, monkeypatch):

@@ -1,3 +1,7 @@
+## 1.36.141
+- Søk etter integrasjoner fra Home Assistant Marketplace under Utvidelser → Markedsplass. Fanen viser installerte integrasjoner og lenker til prosjektene. Krever Home Assistant 2026.11 eller nyere.
+- Åpne webgrensesnittet til installerte apper fra Utvidelser → Apper. Ingress-grensesnitt kan også åpnes via fjernaksess.
+
 ## 1.36.140
 - Førstegangsoppsett av en SSD-kopi kobler Home Assistant til den lokale Mosquitto-brokeren når masteren har lagret MQTT-oppdagelsen som ignorert.
 

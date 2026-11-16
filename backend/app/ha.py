@@ -22,7 +22,9 @@ REGISTRY_EVENTS = {"area_registry_updated", "device_registry_updated", "entity_r
 
 
 class HAError(Exception):
-    pass
+    def __init__(self, message, *, code=None):
+        super().__init__(message)
+        self.code = code
 
 
 class HomeAssistant:
@@ -184,7 +186,9 @@ class HomeAssistant:
                     if msg.get("success"):
                         future.set_result(msg.get("result"))
                     else:
-                        future.set_exception(HAError("ha_request_rejected"))
+                        error = msg.get("error")
+                        code = error.get("code") if isinstance(error, dict) else None
+                        future.set_exception(HAError("ha_request_rejected", code=code))
             elif msg.get("type") == "event":
                 event = msg["event"]
                 callback = self.callbacks.get(msg.get("id"))

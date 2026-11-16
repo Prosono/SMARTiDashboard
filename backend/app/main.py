@@ -32,6 +32,7 @@ from .home_extras import extras_router
 from .home_overview import home_router
 from .integration_setup import integration_setup_router
 from .management import Management, management_router
+from .marketplace import marketplace_router
 from .mobile import MobileAuth
 from .models import Command
 from .origins import OriginPolicy
@@ -387,6 +388,15 @@ def create_app(
             raise HTTPException(403, "admin_required")
         return current
 
+    async def launch_console(request, current, path):
+        console = getattr(app.state, "console", None)
+        if console is None:
+            raise HTTPException(503, "console_unavailable")
+        if current.get("customer"):
+            console.customer_validator = customer.console_admin
+            return {"url": await console.launch_customer(request.cookies.get(customer_cookie), path)}
+        return {"url": console.launch(request.cookies.get(session_cookie), path)}
+
     if support:
         install_support_access(app, support)
     app.include_router(access_router(store, admin))
@@ -409,9 +419,12 @@ def create_app(
     )
     app.include_router(factory_reset_router(store, auth, admin, reset))
     app.include_router(system_operations_router(management, admin, settings))
-    app.include_router(apps_router(management, admin, console_settings or settings))
+    app.include_router(
+        apps_router(management, admin, console_settings or settings, launch_console=launch_console)
+    )
     app.include_router(accounts_router(management, admin, user))
     app.include_router(integration_setup_router(management, admin))
+    app.include_router(marketplace_router(management, admin))
     app.include_router(home_router(store, user, ha, settings))
     app.include_router(sky_router(store, user, ha, settings))
     app.include_router(extras_router(store, user, ha, settings))
@@ -509,10 +522,7 @@ def create_app(
                 raise HTTPException(404, "app_not_available")
             # HA owns ingress session creation and renewal through its app panel.
             path = "/app/" + slug
-        if current.get("customer"):
-            console.customer_validator = customer.console_admin
-            return {"url": await console.launch_customer(request.cookies.get(customer_cookie), path)}
-        return {"url": console.launch(request.cookies.get(session_cookie), path)}
+        return await launch_console(request, current, path)
 
     @app.get("/api/session")
     async def session(current=Depends(user)):
