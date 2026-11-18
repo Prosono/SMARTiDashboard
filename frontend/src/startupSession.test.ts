@@ -1,6 +1,10 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { api } from "./api";
-import { HomeLaunchError, prepareStartupSession } from "./startupSession";
+import {
+  accountLaunchLanguage,
+  HomeLaunchError,
+  prepareStartupSession,
+} from "./startupSession";
 
 vi.mock("./api", () => ({ api: vi.fn() }));
 const account = { name: "resident", role: "user", csrf: "csrf" };
@@ -8,6 +12,21 @@ const location = (pathname = "/", hash = "") => ({ pathname, hash });
 const history = () => ({ replaceState: vi.fn() });
 beforeEach(() => {
   vi.mocked(api).mockReset();
+});
+
+it("uses a supported language hint only while opening a home from the portal", () => {
+  expect(
+    accountLaunchLanguage({ pathname: "/_account", search: "?lang=en" }),
+  ).toBe("en");
+  expect(
+    accountLaunchLanguage({ pathname: "/_account", search: "?lang=nb" }),
+  ).toBe("nb");
+  expect(
+    accountLaunchLanguage({ pathname: "/_account", search: "?lang=other" }),
+  ).toBeUndefined();
+  expect(
+    accountLaunchLanguage({ pathname: "/", search: "?lang=en" }),
+  ).toBeUndefined();
 });
 
 it("normal startup reads the session without touching the address or redeeming a ticket", async () => {

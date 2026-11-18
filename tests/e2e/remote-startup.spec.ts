@@ -139,6 +139,28 @@ for (const theme of ["light", "dark"]) {
   });
 }
 
+test("a first launch from English setup stays in English during redemption and on the dashboard", async ({
+  page,
+  baseURL,
+}) => {
+  await authorize(page, baseURL!);
+  await page.addInitScript(() => localStorage.setItem("smarti-language", "nb"));
+  const access = gate();
+  await page.route("**/api/customer-access/redeem", async (route) => {
+    await access.wait;
+    await route.fulfill({ json: { ready: true } });
+  });
+  await page.route("**/api/home/language", (route) =>
+    route.fulfill({ json: { language: "en" } }),
+  );
+  await page.goto("/_account?lang=en#" + "x".repeat(48));
+  await expect(page.locator(".startup-screen")).toHaveText("Loading your home …");
+  expect(page.url()).toBe(new URL("/", baseURL!).href);
+  access.release();
+  await expect(page.locator(".home-overview")).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+});
+
 test("a failed opening never replays the ticket, loads the dashboard or falls through to an existing login", async ({
   page,
   baseURL,

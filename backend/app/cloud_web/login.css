@@ -31,6 +31,29 @@
 .home-page .welcome-form h2{color:#f7f6f0;font-size:clamp(27px,2.3vw,34px);line-height:1.2;margin:0 0 16px}
 .home-page .welcome-form>p:not(.eyebrow){color:#c7ccc5;font-size:16px;margin:0 0 28px}
 .home-page .welcome-form label{color:#f0f1ea;font-size:14px;margin-bottom:20px}
+.home-page .welcome-form .auth-language {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  margin:0 0 12px;
+}
+.auth-language select {
+  min-height:44px;
+  width:auto;
+  margin:0;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:6px 12px;
+  background:var(--surface);
+  color:var(--ink);
+  font:inherit;
+}
+.auth-language select:focus-visible { outline:2px solid #ff8a20; outline-offset:2px; }
+html[data-portal-theme] .auth-tabs button[aria-selected="true"] {
+  background:var(--accent);
+  color:#121212;
+}
 .home-page .welcome-form input{background:#ffffff06;color:#faf9f4;border:1px solid #59605a;min-height:50px;border-radius:8px;font-size:15px}
 .home-page .welcome-form input::placeholder{color:#b7bdb6;opacity:1}
 .home-page .welcome-form input:focus{border-color:#ff8a20}
@@ -49,6 +72,7 @@
 .home-page:has(#auth:not([hidden])) .site-footer{width:calc(100% - 128px);max-width:1312px;padding:24px 0;margin:auto;border-color:#92978b;color:#e1e3d9;letter-spacing:0;font-size:13px}
 .home-page:has(#auth:not([hidden])) .site-footer>span{font-size:0}
 .home-page:has(#auth:not([hidden])) .site-footer>span:after{content:"Ditt hjem. Din hverdag. SMARTi.";font-size:13px}
+html[lang=en] .home-page:has(#auth:not([hidden])) .site-footer>span:after{content:"Your home. Your day. SMARTi."}
 .home-page:has(#auth:not([hidden])) #message:not(:empty){background:#fff1e3;color:#713710;border-color:#edc9a7}
 @media(max-width:1100px){
  .home-page:has(#auth:not([hidden])) .masthead{flex-direction:row;align-items:center;gap:12px}

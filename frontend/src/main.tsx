@@ -44,7 +44,11 @@ import { DeviceArtwork } from "./home/DeviceArtwork";
 import { HomeBackgroundSettings } from "./home/HomeAppearance";
 import { liveConnection } from "./liveConnection";
 import { StartupScreen } from "./StartupScreen";
-import { HomeLaunchError, prepareStartupSession } from "./startupSession";
+import {
+  accountLaunchLanguage,
+  HomeLaunchError,
+  prepareStartupSession,
+} from "./startupSession";
 import { remoteHome } from "./remoteConsole";
 import { RoomsOverview } from "./rooms/RoomsOverview";
 import { ClimateOverview } from "./home/ClimateOverview";
@@ -154,6 +158,7 @@ import {
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } },
 });
+const launchLanguage = accountLaunchLanguage();
 const startupSession = prepareStartupSession();
 const icons = {
   home: House,
@@ -179,7 +184,7 @@ function Logo() {
 }
 function App() {
   const [guestLang, language] = useState(() =>
-    readPreference("smarti-language", "nb", ["nb", "en"]),
+    launchLanguage ?? readPreference("smarti-language", "nb", ["nb", "en"]),
   );
   const [theme, setTheme] = useState(() =>
     readPreference("smarti-theme", "light", ["light", "dark"]),
@@ -224,7 +229,7 @@ function App() {
     queryFn: () => api<{ language: string }>("home/language"),
     enabled: !!session,
   });
-  const lang = session ? userLanguage.data?.language || "nb" : guestLang;
+  const lang = (session && userLanguage.data?.language) || guestLang;
   const t = lang === "en" ? en : nb;
   const experience = useExperiencePreference(!!session);
   // Fetch alongside preferences and keep the same startup screen until both settle.

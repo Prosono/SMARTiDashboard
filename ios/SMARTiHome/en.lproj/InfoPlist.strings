@@ -1,0 +1,5 @@
+"NSCameraUsageDescription" = "Scan the hub’s QR code or take a profile photo when you choose to.";
+"NSLocalNetworkUsageDescription" = "Find your SMARTi Hub on the same network so you can set up your home.";
+"NSLocationWhenInUseUsageDescription" = "When you choose to share your location, SMARTi uses it to show who is at home.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "Share your location while SMARTi is closed so your home can update presence and run the routines you chose.";
+"NSPhotoLibraryUsageDescription" = "Choose a photo for your SMARTi profile.";

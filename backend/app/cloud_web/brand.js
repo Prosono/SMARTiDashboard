@@ -1,10 +1,14 @@
+function smartiBrandText(nb, en) {
+  return window.smartiAuthLanguage?.text(nb, en) ?? nb;
+}
+
 // Shared navigation and footer; all links remain ordinary, accessible navigation.
 (() => {
   const path = location.pathname;
   // Keep the administration destinations in the same order on every staff page.
   if (path === '/admin' || path.startsWith('/admin/')) {
     document.body.classList.add('staff-page');
-    const fleetStyle=document.createElement('link');fleetStyle.rel='stylesheet';fleetStyle.href='/assets/fleet.css?v=5';document.head.append(fleetStyle);
+    const fleetStyle=document.createElement('link');fleetStyle.rel='stylesheet';fleetStyle.href='/assets/fleet.css?v=7';document.head.append(fleetStyle);
     const about=document.createElement('a');about.href='https://www.smarti.no/';about.textContent='Om SMARTi ↗';about.className='sidebar-about';document.querySelector('.masthead').append(about);
     const brandLabel = document.querySelector('.masthead > a span');
     if (brandLabel) brandLabel.textContent = 'Administrasjon';
@@ -30,7 +34,9 @@
       }
     }
   }
-  const publicLink=document.createElement('a');publicLink.href='https://www.smarti.no/';publicLink.textContent='Om oss';publicLink.className='public-about';document.querySelector('.masthead nav')?.append(publicLink);
+  const publicLink=document.createElement('a');publicLink.href='https://www.smarti.no/';publicLink.className='public-about';document.querySelector('.masthead nav')?.append(publicLink);
+  const applyPublicLink=()=>{publicLink.textContent=smartiBrandText('Om oss','About us');};
+  applyPublicLink();document.addEventListener('smarti-auth-language',applyPublicLink);
   for (const link of document.querySelectorAll('.masthead nav a')) {
     if (link.getAttribute('href') === path) link.setAttribute('aria-current', 'page');
   }
@@ -41,7 +47,8 @@
     text.textContent = 'SMART LIVING, SIMPLIFIED.';
     const link = document.createElement('a');
     link.href = 'https://www.smarti.no/';
-    link.textContent = 'Om SMARTi ↗';
+    const applyFooter=()=>{link.textContent=smartiBrandText('Om SMARTi ↗','About SMARTi ↗');};
+    applyFooter();document.addEventListener('smarti-auth-language',applyFooter);
     footer.append(text, link);
     document.body.append(footer);
   }
@@ -56,15 +63,17 @@ for (const input of document.querySelectorAll('input[type=password]')) {
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'password-toggle';
-  toggle.textContent = 'Vis';
-  toggle.setAttribute('aria-label', 'Vis passord');
-  toggle.setAttribute('aria-pressed', 'false');
+  function applyVisibility() {
+    const visible = input.type === 'text';
+    toggle.textContent = visible ? smartiBrandText('Skjul', 'Hide') : smartiBrandText('Vis', 'Show');
+    toggle.setAttribute('aria-label', visible ? smartiBrandText('Skjul passord', 'Hide password') : smartiBrandText('Vis passord', 'Show password'));
+    toggle.setAttribute('aria-pressed', String(visible));
+  }
+  applyVisibility();
+  document.addEventListener('smarti-auth-language', applyVisibility);
   toggle.addEventListener('click', () => {
-    const reveal = input.type === 'password';
-    input.type = reveal ? 'text' : 'password';
-    toggle.textContent = reveal ? 'Skjul' : 'Vis';
-    toggle.setAttribute('aria-label', reveal ? 'Skjul passord' : 'Vis passord');
-    toggle.setAttribute('aria-pressed', String(reveal));
+    input.type = input.type === 'password' ? 'text' : 'password';
+    applyVisibility();
   });
   field.append(toggle);
 }
@@ -75,14 +84,28 @@ if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)
   document.body.classList.add('customer-portal');
   const nav=document.querySelector('.masthead nav');
   const accountLink=nav.querySelector('a[href="/account"]');
-  if(!accountLink){const link=document.createElement('a');link.href='/account';link.textContent='Min konto';nav.insertBefore(link,nav.querySelector('a[href="/support"]'));}
+  if(!accountLink){
+    const link=document.createElement('a');link.href='/account';nav.insertBefore(link,nav.querySelector('a[href="/support"]'));
+    const applyAccountLink=()=>{link.textContent=smartiBrandText('Min konto','My account');};
+    applyAccountLink();document.addEventListener('smarti-auth-language',applyAccountLink);
+  }
   const priceLink=nav.querySelector('a[href="/support/prices"]');if(priceLink)priceLink.remove();
-  const about=document.createElement('a');about.href='https://www.smarti.no/';about.textContent='Om SMARTi ↗';about.className='sidebar-about';document.querySelector('.masthead').append(about);
+  const about=document.createElement('a');about.href='https://www.smarti.no/';about.className='sidebar-about';document.querySelector('.masthead').append(about);
+  const applyAbout=()=>{about.textContent=smartiBrandText('Om SMARTi ↗','About SMARTi ↗');};
+  applyAbout();document.addEventListener('smarti-auth-language',applyAbout);
   if(location.pathname==='/account'){
     const fields=document.querySelector('.profile-fields');
     const photo=fields.querySelector('.photo-picker');fields.prepend(photo);
-    const groups=[['Kontaktinformasjon',['full_name','email','phone']],['Adresse',['address','postal_code','city','country']]];
-    for(const [title,names] of groups){const section=document.createElement('section');section.className='profile-section';const heading=document.createElement('h2');heading.textContent=title;const controls=document.createElement('div');controls.className='profile-controls';for(const name of names)controls.append(fields.querySelector(`[name="${name}"]`).closest('label'));section.append(heading,controls);fields.append(section);}
+    const groups=[['Kontaktinformasjon','Contact information',['full_name','email','phone']],['Adresse','Address',['address','postal_code','city','country']]];
+    for(const [nb,en,names] of groups){
+      const section=document.createElement('section');section.className='profile-section';
+      const heading=document.createElement('h2');
+      const setHeading=()=>{heading.textContent=smartiBrandText(nb,en);};
+      setHeading();document.addEventListener('smarti-auth-language',setHeading);
+      const controls=document.createElement('div');controls.className='profile-controls';
+      for(const name of names)controls.append(fields.querySelector(`[name="${name}"]`).closest('label'));
+      section.append(heading,controls);fields.append(section);
+    }
     fields.querySelectorAll('.two').forEach(n=>{if(!n.children.length)n.remove()});
   }
   if(location.pathname==='/support'){
@@ -91,7 +114,14 @@ if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)
     toolbar.append(document.getElementById('filter').closest('label'));
     const count=document.createElement('span');count.id='case-count';count.className='case-count';toolbar.append(count);
     const service=document.createElement('a');service.href='/support/prices';service.className='service-link';
-    const title=document.createElement('strong');title.textContent='Tjenester og priser';const text=document.createElement('span');text.textContent='Se hva vi kan hjelpe deg med.';const arrow=document.createElement('span');arrow.textContent='Se priser →';service.append(title,text,arrow);document.querySelector('main').append(service);
+    const title=document.createElement('strong'),description=document.createElement('span'),arrow=document.createElement('span');
+    const applyService=()=>{
+      title.textContent=smartiBrandText('Tjenester og priser','Services and pricing');
+      description.textContent=smartiBrandText('Se hva vi kan hjelpe deg med.','See what we can help with.');
+      arrow.textContent=smartiBrandText('Se priser →','View pricing →');
+    };
+    applyService();document.addEventListener('smarti-auth-language',applyService);
+    service.append(title,description,arrow);document.querySelector('main').append(service);
   }
 }
 
@@ -107,10 +137,11 @@ if (['/', '/account', '/support', '/support/prices'].includes(location.pathname)
   button.onclick=()=>{theme=theme==='dark'?'light':'dark';apply();try{localStorage.setItem(themeKey,theme);}catch{}};
   function apply(){
     document.documentElement.dataset.portalTheme=theme;
-    const label=theme==='dark'?'Bytt til lyst tema':'Bytt til mørkt tema';
+    const label=theme==='dark'?smartiBrandText('Bytt til lyst tema','Switch to light theme'):smartiBrandText('Bytt til mørkt tema','Switch to dark theme');
     button.setAttribute('aria-label',label);button.title=label;symbol.textContent=theme==='dark'?'☀':'☾';
   }
   apply();document.querySelector('.masthead')?.append(selector);
+  document.addEventListener('smarti-auth-language',apply);
   window.addEventListener('storage',e=>{if(e.key===themeKey&&['light','dark'].includes(e.newValue)){theme=e.newValue;apply();}});
 })();
 

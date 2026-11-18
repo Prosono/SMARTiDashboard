@@ -4,6 +4,8 @@ import hashlib
 import hmac
 import io
 import json
+import os
+import re
 import secrets
 import sqlite3
 import time
@@ -18,9 +20,11 @@ import qrcode
 import qrcode.image.svg
 from fastapi import BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StrictBool, model_validator
 
 from .cloud_enrollment import install_enrollment
+
+IOS_STORE_URL = "https://apps.apple.com/app/id6824492352"
 
 
 def digest(value):
@@ -39,6 +43,10 @@ class Inspection(BaseModel):
     zwave: bool
     network: bool
     clean: bool
+
+
+class FulfillmentUpdate(BaseModel):
+    checked: StrictBool
 
 
 class Heartbeat(BaseModel):
@@ -75,6 +83,7 @@ class Plan(BaseModel):
     country: str = Field(default="NO", pattern=r"^[A-Z]{2}$")
     rooms: list[Room] = Field(default_factory=list, max_length=80)
     experience: Literal["simple", "normal", "advanced"] = "normal"
+    language: Literal["nb", "en"] = "nb"
     password: str = Field(default="", max_length=128, repr=False)
     password_repeat: str = Field(default="", max_length=128, repr=False)
     confirmation: str = ""
@@ -129,6 +138,11 @@ def install_onboarding(
           payload TEXT NOT NULL, status TEXT NOT NULL, step TEXT NOT NULL, error TEXT NOT NULL DEFAULT '',
           created REAL NOT NULL, updated REAL NOT NULL);
         """)
+        c.execute("BEGIN IMMEDIATE")
+        columns = {row["name"] for row in c.execute("PRAGMA table_info(factory_hubs)")}
+        for step in ("label_printed", "sent_to_customer"):
+            if step not in columns:
+                c.execute(f"ALTER TABLE factory_hubs ADD COLUMN {step} INTEGER NOT NULL DEFAULT 0")
 
     from .cloud_factory_reset import install_factory_reset
 
@@ -208,6 +222,37 @@ def install_onboarding(
             }
         }
 
+    ios_store_ready = os.getenv("SMARTI_APP_STORE_READY") == "true"
+    android_package = os.getenv("SMARTI_GOOGLE_PLAY_PACKAGE", "").strip()
+    android_fingerprint = os.getenv("SMARTI_GOOGLE_PLAY_SIGNING_SHA256", "").strip().upper()
+    android_store_ready = bool(
+        re.fullmatch(r"(?:[A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*", android_package)
+        and re.fullmatch(r"(?:[0-9A-F]{2}:){31}[0-9A-F]{2}", android_fingerprint)
+    )
+
+    @app.get("/api/activation/app-download")
+    def app_download(platform: Literal["ios", "android"]):
+        if platform == "ios" and ios_store_ready:
+            return {"url": IOS_STORE_URL}
+        if platform == "android" and android_store_ready:
+            return {"url": f"https://play.google.com/store/apps/details?id={android_package}"}
+        return {"url": None}
+
+    @app.get("/.well-known/assetlinks.json")
+    def android_association():
+        if not android_store_ready:
+            raise HTTPException(404, "android_app_unavailable")
+        return [
+            {
+                "relation": ["delegate_permission/common.handle_all_urls"],
+                "target": {
+                    "namespace": "android_app",
+                    "package_name": android_package,
+                    "sha256_cert_fingerprints": [android_fingerprint],
+                },
+            }
+        ]
+
     def deletion_block(c, home, owner):
         if owner is not None or c.execute("SELECT 1 FROM home_members WHERE home=?", (home,)).fetchone():
             return "hub_still_linked"
@@ -277,6 +322,8 @@ def install_onboarding(
                 }
             for row in c.execute("SELECT * FROM factory_hubs ORDER BY created DESC"):
                 item = view(row)
+                item["label_printed"] = bool(row["label_printed"])
+                item["sent_to_customer"] = bool(row["sent_to_customer"])
                 item["versions"] = versions.get(row["home"], {})
                 owner = c.execute("SELECT owner FROM homes WHERE id=?", (row["home"],)).fetchone()[0]
                 item["linked"] = owner is not None
@@ -310,6 +357,29 @@ def install_onboarding(
 
                 result.append(item)
             return result
+
+    @app.put("/api/admin/hubs/{home}/fulfillment/{step}")
+    def update_fulfillment(
+        home: str,
+        step: Literal["label_printed", "sent_to_customer"],
+        body: FulfillmentUpdate,
+        s=Depends(admin),
+    ):
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            row = c.execute(f"SELECT {step} FROM factory_hubs WHERE home=?", (home,)).fetchone()
+            if row is None:
+                raise HTTPException(404, "hub_not_found")
+            if bool(row[step]) != body.checked:
+                c.execute(f"UPDATE factory_hubs SET {step}=? WHERE home=?", (body.checked, home))
+                action = {
+                    ("label_printed", True): "factory_label_printed",
+                    ("label_printed", False): "factory_label_unmarked",
+                    ("sent_to_customer", True): "factory_sent_to_customer",
+                    ("sent_to_customer", False): "factory_shipment_unmarked",
+                }[step, body.checked]
+                audit(c, s["account"], action, home)
+        return {"checked": body.checked}
 
     @app.post("/api/admin/hubs/serial")
     def generate_serial(s=Depends(admin)):
@@ -399,14 +469,18 @@ def install_onboarding(
         }
 
     @app.get("/api/admin/hubs/{home}/label")
-    def print_label(home: str, s=Depends(admin)):
+    def print_label(home: str, format: Literal["svg", "matrix"] = "svg", s=Depends(admin)):
         with db() as c:
             row = c.execute("SELECT * FROM factory_hubs WHERE home=?", (home,)).fetchone()
             if not row:
                 raise HTTPException(404, "hub_not_found")
         url = origin + "/activate#" + home + "." + qr_secret(row)
+        qr = qrcode.QRCode(border=4)
+        qr.add_data(url)
+        if format == "matrix":
+            return {"matrix": qr.get_matrix()}
         buf = io.BytesIO()
-        qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage).save(buf)
+        qr.make_image(image_factory=qrcode.image.svg.SvgPathImage).save(buf)
         return Response(buf.getvalue(), media_type="image/svg+xml")
 
     @app.post("/api/admin/hubs/{home}/ready")
@@ -677,7 +751,10 @@ def install_onboarding(
                     and old.get("password_hash") == payload["password_hash"]
                     else seal(reset["public_key"], reset["id"], payload["username"], body.password)
                 )
-            if current and json.loads(current["payload"]) == payload:
+            previous = json.loads(current["payload"]) if current else {}
+            if current:
+                previous.setdefault("language", "nb")
+            if current and previous == payload:
                 if current["status"] == "failed":
                     c.execute("UPDATE onboarding_plans SET status='queued',error='' WHERE home=?", (home,))
                 return {"id": current["id"]}
@@ -688,7 +765,10 @@ def install_onboarding(
                 raise HTTPException(409, "existing_users")
             if body.mode == "existing" and not users:
                 raise HTTPException(409, "no_existing_user")
-            if body.mode == "reset" and body.confirmation != "SLETT BRUKERE OG HISTORIKK":
+            if body.mode == "reset" and body.confirmation not in {
+                "SLETT BRUKERE OG HISTORIKK",
+                "DELETE USERS AND HISTORY",
+            }:
                 raise HTTPException(422, "reset_confirmation_required")
             job = uuid.uuid4().hex
             now = time.time()

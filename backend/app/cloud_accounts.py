@@ -150,7 +150,7 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             (recipient, subject, body, time.time()),
         )
 
-    def verification(c, account):
+    def verification(c, account, *, english=False):
         p = c.execute("SELECT * FROM customer_profiles WHERE account=?", (account,)).fetchone()
         if not p or p["verified"]:
             return
@@ -160,16 +160,21 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             "INSERT INTO customer_tokens VALUES(?,?,?,?,?,?)",
             (digest(token), account, "verify", None, p["email"], time.time() + 86400 * 10),
         )
-        queue(
-            c,
-            p["email"],
-            "Bekreft e-postadressen din hos SMARTi",
-            "Velkommen hjem! Bekreft e-postadressen din her:\n"
-            + origin
-            + "/account#verify="
-            + token
-            + "\nBekreft e-posten før du legger til en hub. Har du ikke opprettet kontoen, kan du se bort fra denne meldingen.",
+        subject, intro, note = (
+            (
+                "Verify your SMARTi email address",
+                "Welcome home! Verify your email address here:",
+                "Verify your email before adding a hub. If you didn’t create this account, you can ignore this email.",
+            )
+            if english
+            else (
+                "Bekreft e-postadressen din hos SMARTi",
+                "Velkommen hjem! Bekreft e-postadressen din her:",
+                "Bekreft e-posten før du legger til en hub. Har du ikke opprettet kontoen, kan du se bort fra denne meldingen.",
+            )
         )
+        link = f"{origin}/account{'?lang=en' if english else ''}#verify={token}"
+        queue(c, p["email"], subject, f"{intro}\n{link}\n{note}")
 
     def completed(c, account):
         changed = c.execute(
@@ -226,7 +231,7 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             }
 
     @app.put("/api/customer/profile")
-    def save(body: Profile, background: BackgroundTasks, s=Depends(session)):
+    def save(body: Profile, request: Request, background: BackgroundTasks, s=Depends(session)):
         with db() as c:
             existing = c.execute(
                 "SELECT email FROM customer_profiles WHERE account=?", (s["account"],)
@@ -262,15 +267,15 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             except sqlite3.IntegrityError:
                 raise HTTPException(409, "email_unavailable") from None
             if not existing:
-                verification(c, s["account"])
+                verification(c, s["account"], english=request.headers.get("x-smarti-language") == "en")
                 background.add_task(deliver)
         return {"saved": True}
 
     @app.post("/api/customer/verification")
-    def resend(background: BackgroundTasks, s=Depends(session)):
+    def resend(request: Request, background: BackgroundTasks, s=Depends(session)):
         throttle("verify:" + s["account"])
         with db() as c:
-            verification(c, s["account"])
+            verification(c, s["account"], english=request.headers.get("x-smarti-language") == "en")
         background.add_task(deliver)
         return {"queued": True}
 
@@ -324,16 +329,22 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
                     "INSERT INTO customer_tokens VALUES(?,?,?,?,?,?)",
                     (digest(token), p["account"], "password_reset", None, body.email, time.time() + 1800),
                 )
-                queue(
-                    c,
-                    body.email,
-                    "Velg nytt SMARTi-passord",
-                    "Velg nytt passord innen 30 minutter: "
-                    + origin
-                    + "/forgot-password#token="
-                    + token
-                    + "\nHvis du ikke ba om dette, kan du ignorere meldingen. Passordet til hubene dine endres ikke.",
+                english = request.headers.get("x-smarti-language") == "en"
+                subject, intro, note = (
+                    (
+                        "Reset your SMARTi password",
+                        "Use this link within 30 minutes to reset your password:",
+                        "If you didn’t request this, you can ignore this email. Your hub passwords stay the same.",
+                    )
+                    if english
+                    else (
+                        "Velg nytt SMARTi-passord",
+                        "Velg nytt passord innen 30 minutter:",
+                        "Hvis du ikke ba om dette, kan du ignorere meldingen. Passordet til hubene dine endres ikke.",
+                    )
                 )
+                link = f"{origin}/forgot-password{'?lang=en' if english else ''}#token={token}"
+                queue(c, body.email, subject, f"{intro} {link}\n{note}")
         background.add_task(deliver)
         return {"queued": True}
 
@@ -370,7 +381,9 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
             raise HTTPException(404, "home_not_found")
 
     @app.post("/api/customer/homes/{home}/invitations")
-    def invite(home: str, body: Invitation, background: BackgroundTasks, s=Depends(session)):
+    def invite(
+        home: str, body: Invitation, request: Request, background: BackgroundTasks, s=Depends(session)
+    ):
         throttle("invite:" + s["account"])
         with db() as c:
             owner(c, home, s["account"])
@@ -383,17 +396,24 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
                 "INSERT INTO customer_tokens VALUES(?,?,?,?,?,?)",
                 (digest(token), s["account"], "invite", home, body.email, time.time() + 86400 * 7),
             )
-            queue(
-                c,
-                body.email,
-                "Du er invitert til et SMARTi-hjem",
-                ("Hei " + body.name.strip() + "!\n\n" if body.name.strip() else "")
-                + "Opprett din egen konto eller logg inn for å bli med i hjemmet. Invitasjonen gir vanlig brukertilgang, ikke administratorrettigheter.\n"
-                + origin
-                + "/account#invite="
-                + token
-                + "\nLenken gjelder i sju dager.",
+            english = request.headers.get("x-smarti-language") == "en"
+            subject, intro, expiry = (
+                (
+                    "You’re invited to a SMARTi home",
+                    "Create your own account or sign in to join the home. The invitation gives you standard access.",
+                    "The link is valid for seven days.",
+                )
+                if english
+                else (
+                    "Du er invitert til et SMARTi-hjem",
+                    "Opprett din egen konto eller logg inn for å bli med i hjemmet. Invitasjonen gir vanlig brukertilgang, ikke administratorrettigheter.",
+                    "Lenken gjelder i sju dager.",
+                )
             )
+            name = body.name.strip()
+            greeting = f"{'Hi' if english else 'Hei'} {name}!\n\n" if name else ""
+            link = f"{origin}/account{'?lang=en' if english else ''}#invite={token}"
+            queue(c, body.email, subject, f"{greeting}{intro}\n{link}\n{expiry}")
         background.add_task(deliver)
         return {"queued": True}
 
@@ -463,7 +483,7 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
         raise HTTPException(404, "home_not_found")
 
     @app.post("/api/customer/homes/{home}/open")
-    def open_home(home: str, s=Depends(session)):
+    def open_home(home: str, request: Request, s=Depends(session)):
         with db() as c:
             permission(c, home, s["account"])
             token = secrets.token_urlsafe(48)
@@ -472,7 +492,9 @@ def install_accounts(app, db, session, home_auth, throttle, origin):
                 "INSERT INTO customer_tokens VALUES(?,?,?,?,?,?)",
                 (digest(token), s["account"], "signin", home, None, time.time() + 60),
             )
-        return {"url": "https://" + home + ".home.smarti.dev/_account#" + token}
+        language = request.headers.get("x-smarti-language")
+        locale_query = f"?lang={language}" if language in {"nb", "en"} else ""
+        return {"url": f"https://{home}.home.smarti.dev/_account{locale_query}#{token}"}
 
     @app.post("/api/hubs/{home}/customer/redeem")
     def redeem(home: str, body: Token, request: Request):

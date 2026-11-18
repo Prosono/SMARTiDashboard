@@ -18,7 +18,7 @@ import OSLog
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .overlay {
                         if home.failure != nil {
-                            HomeUnavailableView(retry: { home.retry() }, chooseHome: { home.openPortal() })
+                            HomeUnavailableView(language: home.setupLanguage, retry: { home.retry() }, chooseHome: { home.openPortal() })
                                 .background(Color(red: 0.96, green: 0.98, blue: 0.99).ignoresSafeArea())
                         }
                     }
@@ -58,6 +58,7 @@ import OSLog
 
 /// Native and bundled: this screen must remain usable without a network connection.
 struct HomeUnavailableView: View {
+    let language: SetupLanguage
     var retry: () -> Void
     var chooseHome: () -> Void
     private let ink = Color(red: 0.04, green: 0.10, blue: 0.23)
@@ -78,22 +79,22 @@ struct HomeUnavailableView: View {
                         .frame(height: min(260, geometry.size.height * 0.32))
                         .accessibilityHidden(true)
                     VStack(spacing: 18) {
-                        Text("Kunne ikke laste\nhjemmet")
+                        Text(language.text("Kunne ikke laste\nhjemmet", "Couldn’t load\nyour home"))
                             .font(.system(.largeTitle, design: .default, weight: .bold))
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
-                        Text("Prøv igjen om et øyeblikk,\neller velg et annet hjem.")
+                        Text(language.text("Prøv igjen om et øyeblikk,\neller velg et annet hjem.", "Try again in a moment,\nor choose another home."))
                             .font(.title3).foregroundStyle(Color(red: 0.34, green: 0.39, blue: 0.46))
                             .fixedSize(horizontal: false, vertical: true)
                     }.multilineTextAlignment(.center).padding(.top, 24)
                     VStack(spacing: 12) {
                         Button(action: retry) {
-                            Label("Prøv igjen", systemImage: "arrow.clockwise")
+                            Label(language.text("Prøv igjen", "Try again"), systemImage: "arrow.clockwise")
                                 .frame(maxWidth: .infinity, minHeight: 58)
                                 .foregroundStyle(.white).background(orange, in: RoundedRectangle(cornerRadius: 18))
                         }
                         Button(action: chooseHome) {
-                            Label("Velg et annet hjem", systemImage: "house")
+                            Label(language.text("Velg et annet hjem", "Choose another home"), systemImage: "house")
                                 .frame(maxWidth: .infinity, minHeight: 58)
                                 .background(.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 18))
                                 .overlay(RoundedRectangle(cornerRadius: 18).stroke(ink.opacity(0.18), lineWidth: 1))
@@ -222,6 +223,15 @@ struct PhoneSettingsView: View {
     }
 }
 
+enum SetupLanguage: String {
+    case norwegian = "nb"
+    case english = "en"
+
+    func text(_ norwegian: String, _ english: String) -> String {
+        self == .english ? english : norwegian
+    }
+}
+
 @MainActor final class HomeBrowser: NSObject, ObservableObject, WKNavigationDelegate, WKScriptMessageHandler {
     let webView: WKWebView
     @Published var failure: String?
@@ -229,6 +239,10 @@ struct PhoneSettingsView: View {
     @Published var showScanner = false
     @Published var showDiscovery = false
     @Published var scanError: String?
+    private static let setupLanguageKey = "smarti.setupLanguage"
+    @Published private(set) var setupLanguage = SetupLanguage(
+        rawValue: UserDefaults.standard.string(forKey: HomeBrowser.setupLanguageKey) ?? ""
+    ) ?? .norwegian
     private var pendingSetupDevice: String?
     private var scanAfterDiscovery = false
 
@@ -236,7 +250,10 @@ struct PhoneSettingsView: View {
         scanError = nil
         Task {
             let granted = await AVCaptureDevice.requestAccess(for: .video)
-            scanError = granted ? nil : "Kameratilgang er ikke tillatt. Tillat kamera i iPhone-innstillinger, eller skriv inn koden."
+            scanError = granted ? nil : setupLanguage.text(
+                "Kameratilgang er ikke tillatt. Tillat kamera i iPhone-innstillinger, eller skriv inn koden.",
+                "Allow camera access in iPhone Settings, or enter the code from the label."
+            )
             showScanner = true
         }
     }
@@ -270,7 +287,12 @@ struct PhoneSettingsView: View {
     }
 
     func openSetup() {
-        lastPage = URL(string: "https://home.smarti.dev/activate" + (selectedSetupDevice.map { "?device=" + $0 } ?? ""))!
+        var destination = URLComponents(string: "https://home.smarti.dev/activate")!
+        destination.queryItems = [URLQueryItem(name: "manual", value: "1")]
+        if let device = selectedSetupDevice {
+            destination.queryItems?.append(URLQueryItem(name: "device", value: device))
+        }
+        lastPage = destination.url!
         retry()
     }
     @discardableResult func openActivation(_ value: String, forSelectedHub: Bool = false) -> Bool {
@@ -290,7 +312,7 @@ struct PhoneSettingsView: View {
 
     func openPortal() {
         pendingSetupDevice = nil
-        lastPage = URL(string: "https://home.smarti.dev/")!
+        lastPage = Self.portalURL
         retry()
     }
     private static let logoutPendingKey = "smarti.logoutPending"
@@ -304,7 +326,7 @@ struct PhoneSettingsView: View {
         UserDefaults.standard.set(true, forKey: Self.logoutPendingKey)
         UserDefaults.standard.removeObject(forKey: Self.savedHomeKey)
         pendingSetupDevice = nil
-        lastPage = URL(string: "https://home.smarti.dev/")!
+        lastPage = Self.portalURL
         webView.stopLoading()
         showPhoneSettings = false
         NotificationInbox.shared.clear()
@@ -346,10 +368,19 @@ struct PhoneSettingsView: View {
         }
 
         if message.name == "smartiOnboarding", message.frameInfo.isMainFrame,
-           message.frameInfo.request.url?.host == "home.smarti.dev", webView.url?.host == "home.smarti.dev",
-           ["scan", "discover"].contains(message.body as? String ?? "") {
-            if message.body as? String == "discover" { pendingSetupDevice = nil; showDiscovery = true; return }
-            requestScanner()
+           let url = message.frameInfo.request.url, url.scheme == "https",
+           url.host == "home.smarti.dev", url.port == nil, webView.url?.host == "home.smarti.dev" {
+            if let body = message.body as? [String: String],
+               let value = body["language"], let language = SetupLanguage(rawValue: value),
+               language != setupLanguage {
+                setupLanguage = language
+                UserDefaults.standard.set(value, forKey: Self.setupLanguageKey)
+            } else if message.body as? String == "discover" {
+                pendingSetupDevice = nil
+                showDiscovery = true
+            } else if message.body as? String == "scan" {
+                requestScanner()
+            }
             return
         }
         guard message.name == "smartiPhoneSettings", message.frameInfo.isMainFrame,
@@ -363,7 +394,8 @@ struct PhoneSettingsView: View {
         }
     }
     private static let savedHomeKey = "smarti.lastSelectedHome"
-    private var lastPage = URL(string: "https://home.smarti.dev/welcome")!
+    private static let portalURL = URL(string: "https://home.smarti.dev/")!
+    private var lastPage = HomeBrowser.portalURL
     private var recovery = WebRecoveryBudget()
 
     func retry() {
@@ -522,7 +554,7 @@ struct PhoneSettingsView: View {
             guard currentPhoneSync(document, host: url.host) else { return }
             let user: Int
             switch HomePhoneSession(result) {
-            case .signedOut: return
+            case .demo, .signedOut: return
             case .unavailable:
                 unavailable = true
                 phoneSyncLog.notice("Session check deferred during home startup")
@@ -604,22 +636,45 @@ struct HubScanner: View {
     @ObservedObject var home: HomeBrowser
     @Environment(\.dismiss) private var dismiss
     var body: some View {
+        let language = home.setupLanguage
         NavigationStack {
             VStack(spacing: 18) {
-                Text("Skann QR-koden under SMARTi-huben").font(.headline).padding()
+                Text(language.text("Skann QR-koden under SMARTi-huben", "Scan the QR code on the underside of the SMARTi Hub")).font(.headline).padding()
                 if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
                     HubCameraScanner(found: { value in
                         if home.openActivation(value, forSelectedHub: true) { dismiss() }
-                        else { home.scanError = "Dette er ikke en SMARTi-hubetikett. Prøv koden under huben." }
-                    }, failed: { home.scanError = $0 })
+                        else { home.scanError = language.text("Dette er ikke en SMARTi-hubetikett. Prøv koden under huben.", "This isn’t a SMARTi hub label. Try the code on the underside of the hub.") }
+                    }, failed: { home.scanError = $0.message(in: language) })
                 } else {
                     Image(systemName: "qrcode.viewfinder").font(.system(size: 64))
-                    Text("Kameraet er ikke tilgjengelig. Tillat kameratilgang i iPhone-innstillinger, eller skriv inn lenken fra etiketten.").padding()
+                    Text(language.text(
+                        "Kameraet er ikke tilgjengelig. Tillat kameratilgang i iPhone-innstillinger, eller skriv inn lenken fra etiketten.",
+                        "The camera is unavailable. Allow camera access in iPhone Settings, or enter the link from the label."
+                    )).padding()
                 }
                 if let error = home.scanError { Text(error).foregroundStyle(.red).padding() }
-                Button("Skriv inn koden i stedet") { dismiss(); home.openSetup() }.padding()
-            }.navigationTitle("Legg til hjem")
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Avbryt") { dismiss() } } }
+                Button(language.text("Skriv inn koden i stedet", "Enter the code instead")) { dismiss(); home.openSetup() }.padding()
+            }.navigationTitle(language.text("Legg til hjem", "Add a home"))
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button(language.text("Avbryt", "Cancel")) { dismiss() } } }
+        }
+    }
+}
+
+enum HubScanFailure {
+    case start, unavailable
+
+    func message(in language: SetupLanguage) -> String {
+        switch self {
+        case .start:
+            language.text(
+                "Kameraet kunne ikke starte. Lukk skanneren og prøv igjen, eller skriv inn koden.",
+                "Couldn’t start the camera. Close the scanner and try again, or enter the code."
+            )
+        case .unavailable:
+            language.text(
+                "Skanneren er ikke tilgjengelig nå. Prøv igjen, eller skriv inn koden fra etiketten.",
+                "The scanner is unavailable. Try again, or enter the code from the label."
+            )
         }
     }
 }
@@ -627,7 +682,7 @@ struct HubScanner: View {
 // Start only once UIKit has presented the camera; failures must never disappear silently.
 final class HubScannerController: UIViewController {
     let scanner = DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.qr])], qualityLevel: .balanced, recognizesMultipleItems: false, isGuidanceEnabled: true, isHighlightingEnabled: true)
-    var failed: ((String) -> Void)?
+    var failed: ((HubScanFailure) -> Void)?
     override func viewDidLoad() {
         super.viewDidLoad()
         addChild(scanner)
@@ -639,7 +694,7 @@ final class HubScannerController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         do { try scanner.startScanning() }
-        catch { failed?("Kameraet kunne ikke starte. Lukk skanneren og prøv igjen, eller skriv inn koden.") }
+        catch { failed?(.start) }
     }
     override func viewWillDisappear(_ animated: Bool) {
         scanner.stopScanning()
@@ -649,7 +704,7 @@ final class HubScannerController: UIViewController {
 
 struct HubCameraScanner: UIViewControllerRepresentable {
     let found: (String) -> Void
-    let failed: (String) -> Void
+    let failed: (HubScanFailure) -> Void
     func makeCoordinator() -> Coordinator { Coordinator(found: found, failed: failed) }
     func makeUIViewController(context: Context) -> HubScannerController {
         let controller = HubScannerController()
@@ -662,10 +717,10 @@ struct HubCameraScanner: UIViewControllerRepresentable {
     class Coordinator: NSObject, DataScannerViewControllerDelegate {
         let found: (String) -> Void
         private var lastValue: String?
-        let failed: (String) -> Void
-        init(found: @escaping (String) -> Void, failed: @escaping (String) -> Void) { self.found = found; self.failed = failed }
+        let failed: (HubScanFailure) -> Void
+        init(found: @escaping (String) -> Void, failed: @escaping (HubScanFailure) -> Void) { self.found = found; self.failed = failed }
         func dataScanner(_ scanner: DataScannerViewController, becameUnavailableWithError error: DataScannerViewController.ScanningUnavailable) {
-            failed("Skanneren er ikke tilgjengelig nå. Prøv igjen, eller skriv inn koden fra etiketten.")
+            failed(.unavailable)
         }
         func dataScanner(_ scanner: DataScannerViewController, didAdd addedItems: [RecognizedItem], allItems: [RecognizedItem]) {
             for item in addedItems {
@@ -686,9 +741,35 @@ struct DiscoveredHub: Identifiable {
     let serial: String
 }
 
+enum HubDiscoveryStatus {
+    case searching, noResults, unavailable, found
+
+    func message(in language: SetupLanguage) -> String {
+        switch self {
+        case .searching:
+            language.text("Søker etter huber på lokalnettet …", "Searching for hubs on your network…")
+        case .noResults:
+            language.text(
+                "Ingen hub funnet ennå. Kontroller strøm, nettverkskabel og at telefonen er på samme nettverk. Gjestenett kan blokkere søket.",
+                "No hubs found yet. Check power, the Ethernet cable, and that your phone is on the same network. Guest networks may block discovery."
+            )
+        case .unavailable:
+            language.text(
+                "Lokalt søk er ikke tilgjengelig. Tillat Lokalnettverk under Innstillinger → SMARTi, eller bruk QR-koden.",
+                "Network discovery is unavailable. Allow Local Network access in iPhone Settings → SMARTi, or use the QR code."
+            )
+        case .found:
+            language.text(
+                "Velg huben din. Vi kontrollerer identiteten og ber om aktiveringskoden fra esken.",
+                "Choose your hub. We’ll verify it and ask for the activation code from the box."
+            )
+        }
+    }
+}
+
 @MainActor final class HubDiscovery: NSObject, ObservableObject, NetServiceBrowserDelegate, NetServiceDelegate {
     @Published var hubs: [DiscoveredHub] = []
-    @Published var hint = "Søker etter huber på lokalnettet …"
+    @Published private(set) var status = HubDiscoveryStatus.searching
     private let browser = NetServiceBrowser()
     private var services: [NetService] = []
     private var found: [String: DiscoveredHub] = [:]
@@ -696,13 +777,13 @@ struct DiscoveredHub: Identifiable {
 
     func start() {
         stop()
-        hint = "Søker etter huber på lokalnettet …"
+        status = .searching
         browser.delegate = self
         browser.searchForServices(ofType: "_smarti-setup._tcp.", inDomain: "local.")
         timeout = Task { [weak self] in
             try? await Task.sleep(for: .seconds(12))
-            guard !Task.isCancelled, let self, self.hubs.isEmpty else { return }
-            self.hint = "Ingen hub funnet ennå. Kontroller strøm, nettverkskabel og at telefonen er på samme nettverk. Gjestenett kan blokkere søket."
+            guard !Task.isCancelled, let self, self.hubs.isEmpty, self.status != .unavailable else { return }
+            self.status = .noResults
         }
     }
     func stop() {
@@ -724,7 +805,7 @@ struct DiscoveredHub: Identifiable {
         refresh()
     }
     func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
-        hint = "Lokalt søk er ikke tilgjengelig. Tillat Lokalnettverk under Innstillinger → SMARTi, eller bruk QR-koden."
+        status = .unavailable
     }
     func netService(_ sender: NetService, didUpdateTXTRecord data: Data) {
         let record = NetService.dictionary(fromTXTRecord: data)
@@ -739,7 +820,8 @@ struct DiscoveredHub: Identifiable {
     }
     private func refresh() {
         hubs = Dictionary(found.values.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest }).values.sorted { $0.id < $1.id }
-        if !hubs.isEmpty { hint = "Velg huben din. Vi kontrollerer identiteten og ber om aktiveringskoden fra esken." }
+        if !hubs.isEmpty { status = .found }
+        else if status == .found { status = .noResults }
     }
 }
 
@@ -748,14 +830,18 @@ struct HubDiscoveryView: View {
     @StateObject private var discovery = HubDiscovery()
     @Environment(\.dismiss) private var dismiss
     var body: some View {
+        let language = home.setupLanguage
         NavigationStack {
             List {
                 Section {
-                    Label("Et hjem begynner her", systemImage: "wifi.router").font(.title2.bold())
-                    Text("Koble huben til strøm og nettverkskabel. Bruk samme lokalnett på iPhone.")
-                    Text(discovery.hint).foregroundStyle(.secondary).accessibilityIdentifier("discovery-status")
+                    Label(language.text("Et hjem begynner her", "Connect your hub"), systemImage: "wifi.router").font(.title2.bold())
+                    Text(language.text(
+                        "Koble huben til strøm og nettverkskabel. Bruk samme lokalnett på iPhone.",
+                        "Connect your hub to power and Ethernet. Connect your iPhone to the same network."
+                    ))
+                    Text(discovery.status.message(in: language)).foregroundStyle(.secondary).accessibilityIdentifier("discovery-status")
                 }
-                Section("Huber på nettverket") {
+                Section(language.text("Huber på nettverket", "Hubs on your network")) {
                     ForEach(discovery.hubs) { hub in
                         Button { home.openDiscoveredHub(hub) } label: {
                             HStack {
@@ -763,22 +849,27 @@ struct HubDiscoveryView: View {
                                 VStack(alignment: .leading) {
                                     Text(hub.model.isEmpty ? "SMARTi Hub" : hub.model).font(.headline)
                                     Text(hub.serial.isEmpty ? String(hub.id.suffix(8)) : hub.serial).font(.caption)
-                                    Text("Klar for oppsett").font(.caption).foregroundStyle(.secondary)
+                                    Text(language.text("Klar for oppsett", "Ready to set up")).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer(); Image(systemName: "chevron.right")
                             }.padding(.vertical, 8)
                         }
                     }
-                    if discovery.hubs.isEmpty { ProgressView("Leter etter huber …") }
+                    if discovery.status == .searching {
+                        ProgressView(language.text("Leter etter huber …", "Looking for hubs…"))
+                    }
                 }
                 Section {
-                    Button("Søk på nytt") { discovery.start() }
-                    Button("Bruk QR-kode eller skriv inn kode") { dismiss(); home.openSetup() }
-                    Button("Åpne iPhone-innstillinger") { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) }
-                    Text("En ny hub vises automatisk når SMARTi er startet. Ingen forhåndskonfigurasjon er nødvendig. Internett kreves for å fullføre oppsettet.").font(.footnote).foregroundStyle(.secondary)
+                    Button(language.text("Søk på nytt", "Search again")) { discovery.start() }
+                    Button(language.text("Bruk QR-kode eller skriv inn kode", "Use a QR code or enter the code")) { dismiss(); home.openSetup() }
+                    Button(language.text("Åpne iPhone-innstillinger", "Open iPhone Settings")) { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) }
+                    Text(language.text(
+                        "En ny hub vises automatisk når SMARTi er startet. Ingen forhåndskonfigurasjon er nødvendig. Internett kreves for å fullføre oppsettet.",
+                        "Your hub appears when SMARTi has started. An internet connection is required to finish setup."
+                    )).font(.footnote).foregroundStyle(.secondary)
                 }
-            }.navigationTitle("Finn SMARTi-huben")
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Lukk") { dismiss() } } }
+            }.navigationTitle(language.text("Finn SMARTi-huben", "Find your SMARTi Hub"))
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button(language.text("Lukk", "Close")) { dismiss() } } }
                 .onAppear { discovery.start() }.onDisappear { discovery.stop() }
         }
     }

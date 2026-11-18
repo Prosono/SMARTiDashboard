@@ -99,7 +99,8 @@ def test_single_use_home_bound_signin_and_member_revoke(tmp_path):
     ready_and_claim(staff, owner, hub, home, activation)
     assert owner.post(f"/api/customer/homes/{home}/open").status_code == 409
     finish(owner, hub, home)
-    link = owner.post(f"/api/customer/homes/{home}/open").json()["url"]
+    link = owner.post(f"/api/customer/homes/{home}/open", headers={"X-SMARTi-Language": "en"}).json()["url"]
+    assert urlparse(link).query == "lang=en"
     token = urlparse(link).fragment
     response = hub.post(f"/api/hubs/{home}/customer/redeem", json={"token": token})
     assert response.status_code == 200
@@ -149,7 +150,13 @@ def test_complete_registration_atomic_and_profile_private(tmp_path):
         "terms_accepted": True,
         "terms_version": "2026-10-22",
     }
-    assert client.post("/api/register", json=body).status_code == 200
+    assert client.post("/api/register", json=body, headers={"X-SMARTi-Language": "en"}).status_code == 200
+    with sqlite3.connect(path) as c:
+        subject, message = c.execute(
+            "SELECT subject,body FROM mail_outbox WHERE recipient=?", (PROFILE["email"],)
+        ).fetchone()
+    assert subject == "Verify your SMARTi email address"
+    assert "/account?lang=en#verify=" in message
     assert client.get("/api/customer/profile").status_code == 401
     csrf = client.post("/api/login", json=body).json()["csrf"]
     client.headers["X-CSRF-Token"] = csrf

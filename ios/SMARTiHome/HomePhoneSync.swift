@@ -46,10 +46,11 @@ struct HomePhoneSync {
 }
 
 enum HomePhoneSession: Equatable {
-    case authenticated(Int), signedOut, unavailable
+    case authenticated(Int), demo, signedOut, unavailable
 
     init(_ result: Any?) {
         guard let result = result as? [String: Any] else { self = .unavailable; return }
+        if result["status"] as? String == "demo" { self = .demo; return }
         if result["status"] as? String == "signed_out" { self = .signedOut; return }
         guard result["status"] as? String == "ready",
               let number = result["user"] as? NSNumber,
@@ -70,8 +71,13 @@ enum HomePhoneSession: Equatable {
             if (response.status === 401) return {status: 'signed_out'};
             if (!response.ok) return {status: 'unavailable'};
             const session = await response.json();
-            return Number.isSafeInteger(session.id) && session.id > 0
-                ? {status: 'ready', user: session.id} : {status: 'unavailable'};
+            if (!Number.isSafeInteger(session.id) || session.id <= 0) return {status: 'unavailable'};
+            const setup = await fetch('/api/bootstrap', {
+                credentials: 'same-origin', cache: 'no-store', signal: controller.signal
+            });
+            if (!setup.ok) return {status: 'unavailable'};
+            if ((await setup.json()).mode === 'demo') return {status: 'demo'};
+            return {status: 'ready', user: session.id};
         } catch {
             return {status: 'unavailable'};
         } finally {

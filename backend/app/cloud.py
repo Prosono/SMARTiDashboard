@@ -258,7 +258,9 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
                     "INSERT INTO customer_consents VALUES(?,?,?,?,?)",
                     (account_id, TERMS_VERSION, time.time(), int(body.marketing_opt_in), time.time()),
                 )
-                app.state.queue_verification(c, account_id)
+                app.state.queue_verification(
+                    c, account_id, english=request.headers.get("x-smarti-language") == "en"
+                )
             except sqlite3.IntegrityError:
                 raise HTTPException(409, "account_not_created") from None
         background.add_task(app.state.deliver_customer_mail)
@@ -570,6 +572,10 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     @app.get("/")
     def index():
         return FileResponse(static / "index.html")
+
+    @app.get("/privacy")
+    def privacy_policy():
+        return FileResponse(static / "privacy.html")
 
     return app
 

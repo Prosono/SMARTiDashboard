@@ -1,19 +1,54 @@
 <!doctype html>
-<html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>SMARTi · Mine hjem</title><script src="/assets/appearance.js?v=2"></script><link rel="stylesheet" href="/assets/admin.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/brand.css"><link rel="stylesheet" href="/assets/workspace.css?v=3"><link rel="stylesheet" href="/assets/theme.css?v=9"><link rel="stylesheet" href="/assets/login.css"><link rel="stylesheet" href="/assets/homes.css?v=3"></head>
-<body class="home-page"><a class="skip-link" href="#main">Hopp til innhold</a>
-<header class="masthead"><a href="/" aria-label="SMARTi – Mine hjem">SMARTi</a><nav aria-label="Hovedmeny"><a href="/" aria-current="page">Mine hjem</a><a href="/account">Min konto</a><a href="/support">Support</a></nav></header>
+<html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title data-auth-en="SMARTi · Sign in">SMARTi · Mine hjem</title><script src="/assets/appearance.js?v=2"></script><link rel="stylesheet" href="/assets/admin.css"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/brand.css"><link rel="stylesheet" href="/assets/workspace.css?v=4"><link rel="stylesheet" href="/assets/theme.css?v=9"><link rel="stylesheet" href="/assets/login.css?v=2"><link rel="stylesheet" href="/assets/homes.css?v=3"></head>
+<body class="home-page"><a class="skip-link" href="#main" data-auth-en="Skip to content">Hopp til innhold</a>
+<header class="masthead"><a href="/" aria-label="SMARTi – Mine hjem" data-auth-label-en="SMARTi – Sign in">SMARTi</a><nav aria-label="Hovedmeny" data-auth-label-en="Main menu"><a href="/" aria-current="page" data-auth-en="My homes">Mine hjem</a><a href="/account" data-auth-en="My account">Min konto</a><a href="/support">Support</a></nav></header>
 <main id="main">
-<p id="session-loading" role="status" aria-live="polite">Henter hjemmene dine …</p>
-<button id="session-retry" hidden>Prøv igjen</button>
+<p id="session-loading" role="status" aria-live="polite" data-auth-en="Loading your homes …">Henter hjemmene dine …</p>
+<button id="session-retry" data-auth-en="Try again" hidden>Prøv igjen</button>
 <noscript>Slå på JavaScript i nettleseren for å åpne SMARTi.</noscript>
 <section id="auth" class="welcome-layout" hidden>
-<div class="welcome-story"><p class="eyebrow">SMART LIVING, SIMPLIFIED.</p><h1>Et hjem som<br>spiller på lag.</h1><p>Hjemmet ditt, samlet på ett sted.<br>Også når du er et annet sted.</p><img src="/assets/smarti-logo.png" alt="" class="welcome-mark"><div class="story-foot">Ditt hjem. Din hverdag. SMARTi.</div></div>
-<div class="welcome-form"><div class="auth-tabs" role="tablist" aria-label="Kom i gang"><button type="button" role="tab" id="login-tab" aria-selected="true" aria-controls="login-panel">Logg inn</button><button type="button" role="tab" id="setup-tab" aria-selected="false" aria-controls="setup-panel" tabindex="-1">Nytt hjem</button></div><div id="login-panel" role="tabpanel" aria-labelledby="login-tab"><p class="eyebrow">VELKOMMEN HJEM</p><h2>Logg inn på SMARTi</h2><p>Bruk kontoen du koblet hjemmet ditt til.</p><form id="login"><label>E-post eller brukernavn<input name="username" autocomplete="username" required minlength="3" placeholder="Din e-post eller ditt brukernavn"></label><label>Passord<input name="password" type="password" placeholder="Skriv inn passord" autocomplete="current-password" required maxlength="256"></label><button class="primary">Logg inn →</button><a href="/account?create=1" class="signup-link">Opprett en konto</a><a href="/forgot-password">Glemt passord?</a></form></div><aside id="setup-panel" role="tabpanel" aria-labelledby="setup-tab" class="new-customer" hidden><h3>Ditt første SMARTi-hjem?</h3><p>Opprett en konto og bekreft e-posten din. Deretter finner vi huben og gjør hjemmet klart.</p><a href="/account?create=1">Opprett konto <span aria-hidden="true">↗</span></a></aside></div>
+<div class="welcome-story">
+  <p class="eyebrow">SMART LIVING, SIMPLIFIED.</p>
+  <h1 data-auth-en="A home that works together.">Et hjem som spiller på lag.</h1>
+  <p><span data-auth-en="Your home, all in one place.">Hjemmet ditt, samlet på ett sted.</span><br><span data-auth-en="Even when you’re away.">Også når du er et annet sted.</span></p>
+  <img src="/assets/smarti-logo.png" alt="" class="welcome-mark">
+  <div class="story-foot" data-auth-en="Your home. Your day. SMARTi.">Ditt hjem. Din hverdag. SMARTi.</div>
+</div>
+<div class="welcome-form">
+  <label class="auth-language" for="portal-language">
+    <span data-auth-en="Language">Språk</span>
+    <select id="portal-language" autocomplete="off">
+      <option value="nb" lang="nb">Norsk</option>
+      <option value="en" lang="en">English</option>
+    </select>
+  </label>
+  <div class="auth-tabs" role="tablist" aria-label="Kom i gang" data-auth-label-en="Get started">
+    <button type="button" role="tab" id="login-tab" aria-selected="true" aria-controls="login-panel" data-auth-en="Sign in">Logg inn</button>
+    <button type="button" role="tab" id="setup-tab" aria-selected="false" aria-controls="setup-panel" tabindex="-1" data-auth-en="New home">Nytt hjem</button>
+  </div>
+  <div id="login-panel" role="tabpanel" aria-labelledby="login-tab">
+    <p class="eyebrow" data-auth-en="WELCOME HOME">VELKOMMEN HJEM</p>
+    <h2 data-auth-en="Sign in to SMARTi">Logg inn på SMARTi</h2>
+    <p data-auth-en="Use the account you linked to your home.">Bruk kontoen du koblet hjemmet ditt til.</p>
+    <form id="login">
+      <label><span data-auth-en="Email or username">E-post eller brukernavn</span><input name="username" autocomplete="username" required minlength="3" placeholder="Din e-post eller ditt brukernavn" data-auth-placeholder-en="Your email or username"></label>
+      <label><span id="portal-password-label" data-auth-en="Password">Passord</span><input name="password" type="password" aria-labelledby="portal-password-label" placeholder="Skriv inn passord" data-auth-placeholder-en="Enter your password" autocomplete="current-password" required maxlength="256"></label>
+      <button class="primary"><span data-auth-en="Sign in">Logg inn</span> <span aria-hidden="true">→</span></button>
+      <a href="/account?create=1" class="signup-link" data-auth-en="Create an account">Opprett en konto</a>
+      <a href="/forgot-password" data-auth-en="Forgot your password?">Glemt passord?</a>
+    </form>
+  </div>
+  <aside id="setup-panel" role="tabpanel" aria-labelledby="setup-tab" class="new-customer" hidden>
+    <h3 data-auth-en="Your first SMARTi home?">Ditt første SMARTi-hjem?</h3>
+    <p data-auth-en="Create an account and verify your email. Then we’ll find your hub and help you set up your home.">Opprett en konto og bekreft e-posten din. Deretter finner vi huben og gjør hjemmet klart.</p>
+    <a href="/account?create=1"><span data-auth-en="Create an account">Opprett konto</span> <span aria-hidden="true">↗</span></a>
+  </aside>
+</div>
 </section>
 <section id="account" hidden>
-<div class="heading home-heading"><div><p class="eyebrow">DITT SMARTi</p><h1>Velkommen hjem.</h1><p>Åpne hjemmet ditt, eller få hjelp til det du trenger.</p></div></div>
-<div class="home-workspace"><section class="homes-column"><div class="section-heading"><h2>Mine hjem</h2><span id="home-count"></span></div><div id="homes" aria-label="Dine hjem"></div>
+<div class="heading home-heading"><div><p class="eyebrow" data-auth-en="YOUR SMARTi">DITT SMARTi</p><h1 data-auth-en="Welcome home.">Velkommen hjem.</h1><p data-auth-en="Open your home or get help when you need it.">Åpne hjemmet ditt, eller få hjelp til det du trenger.</p></div></div>
+<div class="home-workspace"><section class="homes-column"><div class="section-heading"><h2 data-auth-en="My homes">Mine hjem</h2><span id="home-count"></span></div><div id="homes" aria-label="Dine hjem" data-auth-label-en="Your homes"></div>
 </section></div>
-<div class="account-footer"><a id="admin-link" href="/admin" hidden>Administrasjon →</a><button id="logout" class="text-button">Logg ut</button></div>
+<div class="account-footer"><a id="admin-link" href="/admin" hidden><span data-auth-en="Administration">Administrasjon</span> <span aria-hidden="true">→</span></a><button id="logout" class="text-button" data-auth-en="Sign out">Logg ut</button></div>
 </section><p id="message" role="status" aria-live="polite"></p>
-</main><footer class="site-footer"><span>SMART LIVING, SIMPLIFIED.</span><a href="https://www.smarti.no/">Om SMARTi ↗</a></footer><script src="/assets/members.js"></script><script src="/assets/app.js?v=9"></script><script src="/assets/brand.js?v=7"></script></body></html>
+</main><footer class="site-footer"><span>SMART LIVING, SIMPLIFIED.</span><a href="/privacy" lang="en">Privacy policy</a><a href="https://www.smarti.no/"><span data-auth-en="About SMARTi">Om SMARTi</span> <span aria-hidden="true">↗</span></a></footer><script src="/assets/auth-language.js?v=2"></script><script src="/assets/members.js?v=2"></script><script src="/assets/app.js?v=12"></script><script src="/assets/brand.js?v=12"></script></body></html>

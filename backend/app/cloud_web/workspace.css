@@ -6,6 +6,7 @@ body:where([data-customer-portal] *):not(:has(.welcome-layout:not([hidden]))) .m
 body:where([data-customer-portal] *):not(:has(.welcome-layout:not([hidden]))) .masthead>a>span{display:none}
 body:where([data-customer-portal] *):not(:has(.welcome-layout:not([hidden]))) .masthead nav{display:flex;flex-direction:column;width:100%;gap:10px}
 body:where([data-customer-portal] *):not(:has(.welcome-layout:not([hidden]))) .masthead nav:before{content:'MENY';color:var(--muted);font-size:11px;letter-spacing:.1em;padding:0 16px 10px}
+html[lang=en] body:where([data-customer-portal] *) .masthead nav:before{content:'MENU'}
 body:where([data-customer-portal] *):not(:has(.welcome-layout:not([hidden]))) .masthead nav a{color:var(--ink);justify-content:flex-start;min-height:52px;padding:14px 16px;gap:16px;font-size:15px}
 body:where([data-customer-portal] *):not(:has(.welcome-layout:not([hidden]))) .masthead nav a[aria-current=page]{background:color-mix(in srgb,var(--accent) 9%,transparent);box-shadow:inset 3px 0 var(--accent);color:var(--accent-ink)}
 body:where([data-customer-portal] *):not(:has(.welcome-layout:not([hidden]))) .masthead nav a:hover{background:color-mix(in srgb,var(--accent) 6%,var(--surface))}

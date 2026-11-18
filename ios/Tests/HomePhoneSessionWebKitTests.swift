@@ -37,7 +37,9 @@ import WebKit
                 }
                 let cases: [(String, HomePhoneSession)] = [
                     (rejectedFetch, .unavailable),
-                    ("const fetch = async () => ({ok:true,status:200,json:async()=>({id:42})});", .authenticated(42)),
+                    ("const fetch = async path => ({ok:true,status:200,json:async()=>path === '/api/session' ? {id:42} : {mode:'live'}});", .authenticated(42)),
+                    ("const fetch = async path => ({ok:true,status:200,json:async()=>path === '/api/session' ? {id:42} : {mode:'demo'}});", .demo),
+                    ("const fetch = async path => ({ok:path === '/api/session',json:async()=>({id:42})});", .unavailable),
                     ("const fetch = async () => ({ok:false,status:401});", .signedOut),
                     ("const fetch = async () => ({ok:false,status:503});", .unavailable),
                     ("const fetch = async () => ({ok:true,status:200,json:async()=>{throw new SyntaxError('invalid JSON')}});", .unavailable),
@@ -54,7 +56,7 @@ import WebKit
                         arguments: [:], in: nil, contentWorld: .page)
                     precondition(HomePhoneSession(result) == expected)
                 }
-                print("All seven startup probe scenarios resolve safely in WebKit")
+                print("All \(cases.count) startup probe scenarios resolve safely in WebKit")
                 finished = true
             } catch {
                 fatalError("Unexpected bridge failure: \((error as NSError).domain) / \((error as NSError).code)")

@@ -5,14 +5,13 @@ import sqlite3
 
 import httpx
 import pytest
-from fastapi.testclient import TestClient
-from test_cloud import ORIGIN, SECRET, account
-
 from app.cloud import create_cloud
 from app.config import Settings
 from app.ha import HAError
 from app.hub_onboarding import HubOnboarding
 from app.storage import Store
+from fastapi.testclient import TestClient
+from test_cloud import ORIGIN, SECRET, account
 
 PASSWORD = "hub-password-only-2026"
 CHECKS = dict.fromkeys(["ha", "zigbee", "zwave", "network", "clean"], True)
@@ -67,12 +66,86 @@ def ready_and_claim(staff, owner, hub, home, activation):
     assert r.status_code == 200, r.text
 
 
+def test_fulfillment_migrates_existing_hubs_and_persists_independent_status(tmp_path):
+    path, app, staff, owner, _, _, home, _, _ = factory(tmp_path)
+    with sqlite3.connect(path) as connection:
+        connection.execute("ALTER TABLE factory_hubs DROP COLUMN label_printed")
+        connection.execute("ALTER TABLE factory_hubs DROP COLUMN sent_to_customer")
+    create_cloud(path, SECRET)
+
+    hub_url = f"/api/admin/hubs/{home}"
+    printed = hub_url + "/fulfillment/label_printed"
+    shipped = hub_url + "/fulfillment/sent_to_customer"
+    inventory_url = "/api/admin/hubs"
+    initial = staff.get(inventory_url).json()[0]
+    assert initial["label_printed"] is initial["sent_to_customer"] is False
+    label = staff.get(hub_url + "/label").content
+    assert owner.put(printed, json={"checked": True}).status_code == 403
+    assert staff.put(printed, json={"checked": True}, headers={"X-CSRF-Token": "wrong"}).status_code == 403
+    assert staff.put(printed, json={"checked": "true"}).status_code == 422
+    anonymous = TestClient(app, base_url=ORIGIN)
+    assert anonymous.put(shipped, json={"checked": True}).status_code == 401
+    assert staff.put(printed, json={"checked": True}).json() == {"checked": True}
+    assert staff.put(shipped, json={"checked": True}).json() == {"checked": True}
+    assert staff.put(printed, json={"checked": False}).json() == {"checked": False}
+
+    restarted = TestClient(create_cloud(path, SECRET), base_url=ORIGIN, cookies=staff.cookies)
+    saved = restarted.get(inventory_url).json()[0]
+    assert saved["label_printed"] is False
+    assert saved["sent_to_customer"] is True
+    assert restarted.get(hub_url + "/label").content == label
+
+
+def test_qr_app_download_waits_for_store_configuration(tmp_path, monkeypatch):
+    for name in ("SMARTI_APP_STORE_READY", "SMARTI_GOOGLE_PLAY_PACKAGE", "SMARTI_GOOGLE_PLAY_SIGNING_SHA256"):
+        monkeypatch.delenv(name, raising=False)
+    with TestClient(create_cloud(tmp_path / "before-launch.sqlite", SECRET), base_url=ORIGIN) as client:
+        for platform in ("ios", "android"):
+            assert client.get("/api/activation/app-download", params={"platform": platform}).json() == {
+                "url": None
+            }
+        assert client.get("/.well-known/assetlinks.json").status_code == 404
+        apple = client.get("/.well-known/apple-app-site-association").json()
+        assert apple["applinks"]["details"][0]["components"] == [{"/": "/activate"}]
+
+    package = "dev.example.hub"
+    fingerprint = ":".join(["A1"] * 32)
+    monkeypatch.setenv("SMARTI_APP_STORE_READY", "true")
+    monkeypatch.setenv("SMARTI_GOOGLE_PLAY_PACKAGE", package)
+    monkeypatch.setenv("SMARTI_GOOGLE_PLAY_SIGNING_SHA256", fingerprint.lower())
+    with TestClient(create_cloud(tmp_path / "after-launch.sqlite", SECRET), base_url=ORIGIN) as client:
+        ios = client.get("/api/activation/app-download", params={"platform": "ios"})
+        assert ios.json() == {"url": "https://apps.apple.com/app/id6824492352"}
+        assert ios.headers["referrer-policy"] == "no-referrer"
+        android = client.get("/api/activation/app-download", params={"platform": "android"})
+        assert android.json() == {"url": "https://play.google.com/store/apps/details?id=" + package}
+        association = client.get("/.well-known/assetlinks.json")
+        assert association.status_code == 200
+        assert association.json()[0]["target"] == {
+            "namespace": "android_app",
+            "package_name": package,
+            "sha256_cert_fingerprints": [fingerprint],
+        }
+
+
 def test_factory_label_readiness_and_activation_isolation(tmp_path):
     path, app, staff, owner, other, hub, home, activation, kit = factory(tmp_path)
     anonymous = TestClient(app, base_url=ORIGIN)
     assert anonymous.get("/api/admin/hubs").status_code == 401
     assert owner.get("/api/admin/hubs").status_code == 403
     assert staff.get(f"/api/admin/hubs/{home}/label").headers["content-type"].startswith("image/svg+xml")
+    label_matrix = f"/api/admin/hubs/{home}/label?format=matrix"
+    assert anonymous.get(label_matrix).status_code == 401
+    assert owner.get(label_matrix).status_code == 403
+    matrix = staff.get(label_matrix).json()["matrix"]
+    assert all(len(row) == len(matrix) for row in matrix)
+    assert not any(
+        dark
+        for y, row in enumerate(matrix)
+        for x, dark in enumerate(row)
+        if min(x, y, len(matrix) - 1 - x, len(matrix) - 1 - y) < 4
+    )
+    assert matrix[4][4] is True
     inventory = staff.get("/api/admin/hubs").text
     assert kit["remote_credential"] not in inventory and kit["activation_pin"] not in inventory
     assert staff.post(f"/api/admin/hubs/{home}/ready", json=CHECKS).status_code == 409
@@ -198,11 +271,12 @@ async def test_worker_resumes_without_duplicate_rooms_and_reset_replay(tmp_path)
     await worker.tick()
     assert staff.post(f"/api/admin/hubs/{home}/ready", json=CHECKS).status_code == 200
     assert owner.post(f"/api/activation/{home}/claim", json=activation).status_code == 200
-    r = owner.post(f"/api/onboarding/{home}", json=PLAN)
+    english_plan = PLAN | {"language": "en"}
+    r = owner.post(f"/api/onboarding/{home}", json=english_plan)
     assert r.status_code == 200, r.text
     await worker.tick()
     assert owner.get(f"/api/onboarding/{home}").json()["plan"]["status"] == "failed"
-    owner.post(f"/api/onboarding/{home}", json=PLAN)
+    assert owner.post(f"/api/onboarding/{home}", json=english_plan).json()["id"] == r.json()["id"]
     await worker.tick()
     await worker.tick()
     assert len(ha.floors) == 2 and len(ha.areas) == 2
@@ -210,8 +284,9 @@ async def test_worker_resumes_without_duplicate_rooms_and_reset_replay(tmp_path)
     with store.connect() as c:
         assert c.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 1
     assert json.loads(store.get("experience:1")) == {"mode": "simple"}
+    assert json.loads(store.get("language:1")) == {"language": "en"}
     assert owner.get(f"/api/onboarding/{home}").json()["plan"]["status"] == "completed"
-    reset = PLAN | {"mode": "reset", "confirmation": "SLETT BRUKERE OG HISTORIKK"}
+    reset = english_plan | {"mode": "reset", "confirmation": "DELETE USERS AND HISTORY"}
     assert owner.post(f"/api/onboarding/{home}", json=reset).status_code == 200
     await worker.tick()
     await worker.tick()
@@ -343,9 +418,8 @@ async def test_reset_onboarding_waits_for_radios_before_user_and_completion(tmp_
 
 
 def test_country_validation_and_legacy_default():
-    from pydantic import ValidationError
-
     from app.cloud_onboarding import Plan
+    from pydantic import ValidationError
 
     assert Plan(**PLAN).country == "SE"
     assert Plan(**{k: v for k, v in PLAN.items() if k != "country"}).country == "NO"
@@ -464,13 +538,14 @@ def test_home_photo_is_private_owner_managed_and_removed_with_hub(tmp_path):
 
 def test_inventory_includes_installed_versions_per_hub(tmp_path):
     _, _, staff, owner, _, hub, home, _, _ = factory(tmp_path)
-    assert staff.get('/api/admin/hubs').json()[0]['versions'] == {}
-    response = hub.post(f'/api/hubs/{home}/update-candidates', json={
-        'releases': [], 'installed': [{'component': 'os', 'version': '17.0'}]
-    })
+    assert staff.get("/api/admin/hubs").json()[0]["versions"] == {}
+    response = hub.post(
+        f"/api/hubs/{home}/update-candidates",
+        json={"releases": [], "installed": [{"component": "os", "version": "17.0"}]},
+    )
     assert response.status_code == 200
-    item = staff.get('/api/admin/hubs').json()[0]
-    assert item['id'] == home
-    assert item['versions']['os']['version'] == '17.0'
-    assert item['versions']['os']['reported'] > 0
-    assert owner.get('/api/admin/hubs').status_code == 403
+    item = staff.get("/api/admin/hubs").json()[0]
+    assert item["id"] == home
+    assert item["versions"]["os"]["version"] == "17.0"
+    assert item["versions"]["os"]["reported"] > 0
+    assert owner.get("/api/admin/hubs").status_code == 403

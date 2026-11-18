@@ -308,6 +308,13 @@ class HubOnboarding:
                     )
                     c.execute(
                         "INSERT OR REPLACE INTO settings VALUES(?,?)",
+                        (
+                            "language:" + str(row.lastrowid),
+                            json.dumps({"language": "en" if plan.get("language") == "en" else "nb"}),
+                        ),
+                    )
+                    c.execute(
+                        "INSERT OR REPLACE INTO settings VALUES(?,?)",
                         (key, json.dumps(sorted(done | {"user"}))),
                     )
 

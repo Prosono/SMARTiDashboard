@@ -1,3 +1,7 @@
+## 1.36.144
+- Språkvalget følger førstegangsoppsettet fra hubsøk og QR-kode til e-postbekreftelse, oppsettsveiviser og første åpning av hjemmet.
+- Nye hjem lagrer valgt språk for administratoren. Framdrift, innlastingen av hjemmet og feilmeldinger vises på valgt språk.
+
 ## 1.36.143
 - Enhetsvinduer har tydelig navn, bilde, status og de viktigste kontrollene samlet øverst. På telefon åpnes de nedenfra. På nettbrett og desktop åpnes de som sentrerte dialoger.
 - Lys, termostater og andre enheter får tydeligere kontroller, med historikk og enhetsinnstillinger samlet der de er tilgjengelige.

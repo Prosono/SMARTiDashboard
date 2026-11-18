@@ -3,6 +3,14 @@ import type { Session } from "./types";
 
 export class HomeLaunchError extends Error {}
 
+export function accountLaunchLanguage(
+  location: Pick<Location, "pathname" | "search"> = window.location,
+) {
+  if (!location.pathname.endsWith("/_account")) return undefined;
+  const language = new URLSearchParams(location.search).get("lang");
+  return language === "nb" || language === "en" ? language : undefined;
+}
+
 /** Capture once per document, before React effects or any session requests run. */
 export function prepareStartupSession(
   location: Pick<Location, "pathname" | "hash"> = window.location,

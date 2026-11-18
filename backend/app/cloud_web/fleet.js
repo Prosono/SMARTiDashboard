@@ -8,6 +8,191 @@ window.fleet = (() => {
  const bytes=value=>{if(value==null)return '—';const units=['B','kB','MB','GB','TB'];let i=0;while(value>=1000&&i<4){value/=1000;i++;}return new Intl.NumberFormat('nb-NO',{maximumFractionDigits:1}).format(value)+' '+units[i];};
  const total=r=>(r.to_hub||0)+(r.from_hub||0);
  const category=h=>['preparing','ready'].includes(h.phase)?'ready':h.online?'active':'inactive';
+ function fulfillment(h){
+  const group=node('fieldset',undefined,'hub-fulfillment');
+  group.setAttribute('aria-label','Levering for '+h.serial);
+  for(const [step,title] of [['label_printed','Etikett skrevet ut'],['sent_to_customer','Sendt til kunde']]){
+   const label=node('label'),checkbox=node('input'),status=node('small',undefined,'hub-fulfillment-status');
+   checkbox.type='checkbox';
+   checkbox.checked=h[step]===true;
+   status.setAttribute('role','status');
+   checkbox.onchange=async()=>{
+    checkbox.disabled=true;
+    status.textContent='Lagrer …';
+    try{
+     const result=await apiRequest('admin/hubs/'+encodeURIComponent(h.id)+'/fulfillment/'+step,'PUT',{checked:checkbox.checked},'Statusen kunne ikke lagres.');
+     h[step]=result.checked;
+     checkbox.checked=result.checked;
+     status.textContent='Lagret';
+    }catch(error){
+     checkbox.checked=h[step]===true;
+     status.textContent='Lagring kunne ikke bekreftes. Oppdater listen eller prøv igjen.';
+    }finally{
+     checkbox.disabled=false;
+    }
+   };
+   label.append(checkbox,node('span',title));
+   group.append(label,status);
+  }
+  return group;
+ }
+ async function labelImage(path){
+  const image=new Image();
+  image.src=path;
+  await image.decode();
+  return image;
+ }
+ function drawLabelSymbol(ctx,path,x,y,size){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.scale(size/24,size/24);
+  ctx.strokeStyle='#000';
+  ctx.lineWidth=2;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+  ctx.stroke(new Path2D(path));
+  ctx.restore();
+ }
+ function drawLabel(canvas,matrix,serial,logo,weee){
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#fff';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#000';
+  ctx.textAlign='center';
+
+  // The printable area leaves 2 mm clear on the sides of the 50 mm stock.
+  const serialWidth=canvas.width-48;
+  ctx.font='bold 26px Arial, sans-serif';
+  let lines=[serial];
+  if(ctx.measureText(serial).width>serialWidth){
+   const middle=Math.ceil(serial.length/2);
+   const separator=serial.lastIndexOf('-',middle)+1;
+   const split=separator>=middle-5?separator:middle;
+   lines=[serial.slice(0,split),serial.slice(split)];
+  }
+  const imageHeight=lines.length===1?304:267;
+  const size=Math.floor((imageHeight-15)/matrix.length);
+  const qrWidth=size*matrix.length;
+  const qrX=canvas.width-24-qrWidth,qrY=Math.floor((imageHeight-qrWidth)/2);
+  matrix.forEach((row,y)=>row.forEach((dark,x)=>{
+   if(dark)ctx.fillRect(qrX+x*size,qrY+y*size,size,size);
+  }));
+  const margin=24;
+  const brandTop=Math.round(imageHeight/2)-108;
+  const mark=node('canvas');
+  mark.width=59;
+  mark.height=51;
+  const markCtx=mark.getContext('2d');
+  // Crop the transparent padding in the bundled SMARTi symbol.
+  markCtx.drawImage(logo,50,63,400,343,0,0,mark.width,mark.height);
+  markCtx.globalCompositeOperation='source-in';
+  markCtx.fillStyle='#000';
+  markCtx.fillRect(0,0,mark.width,mark.height);
+  ctx.drawImage(mark,margin,brandTop);
+
+  const brandTextX=margin+mark.width+10;
+  ctx.textAlign='left';
+  ctx.textBaseline='alphabetic';
+  ctx.font='bold 49px "Bai Jamjuree", Arial, sans-serif';
+  ctx.fillText('SMARTi',brandTextX,brandTop+43,qrX-brandTextX-12);
+  ctx.font='bold 24px Arial, sans-serif';
+  ctx.fillText('Designed in Norway',margin,brandTop+83,qrX-margin-12);
+  const symbolHeight=62;
+  const symbolTop=brandTop+104;
+  ctx.drawImage(weee,margin,symbolTop+52,symbolHeight*weee.naturalWidth/weee.naturalHeight,symbolHeight);
+  // Lucide Plug and Recycle, matching the symbols used elsewhere in SMARTi.
+  drawLabelSymbol(ctx,'M12 22v-5 M9 8V2 M15 8V2 M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z',margin+4,symbolTop,36);
+  const recyclePath=[
+   'M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5',
+   'M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12',
+   'M14 16l-3 3 3 3 M8.293 13.596 7.196 9.5 3.1 10.598',
+   'M9.344 5.811l1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843',
+   'M13.378 9.633l4.096 1.098 1.097-4.096',
+  ].join(' ');
+  drawLabelSymbol(ctx,recyclePath,margin+63,symbolTop+53,40);
+  ctx.font='bold 19px Arial, sans-serif';
+  ctx.fillText('POWER',margin+52,symbolTop+25);
+  ctx.font='bold 16px Arial, sans-serif';
+  ctx.fillText('EE recycling',margin+58,symbolTop+113);
+
+  ctx.textAlign='center';
+  ctx.textBaseline='alphabetic';
+  const preferredSize=lines.length===1?52:32;
+  ctx.font='bold '+preferredSize+'px Arial, sans-serif';
+  const widest=Math.max(...lines.map(line=>ctx.measureText(line).width));
+  ctx.font='bold '+Math.floor(preferredSize*Math.min(1,serialWidth/widest))+'px Arial, sans-serif';
+  lines.forEach((line,i)=>ctx.fillText(line,canvas.width/2,336-(lines.length-1-i)*34));
+ }
+ async function openLabel(h){
+  const dialog=node('dialog',undefined,'hub-detail label-print-dialog');
+  dialog.id='hub-label-print';
+  dialog.setAttribute('aria-labelledby','label-print-title');
+  const header=node('header',undefined,'hub-detail-header'),title=node('h2','Skriv ut etikett');
+  title.id='label-print-title';
+  const close=node('button','Lukk');close.type='button';close.onclick=()=>dialog.close();
+  header.append(title,close);
+  const body=node('div',undefined,'label-print-body');
+  const canvas=node('canvas',undefined,'label-print-image');
+  // 50 × 30 mm at 300 dpi, rounded to whole printer dots.
+  canvas.width=591;canvas.height=354;canvas.hidden=true;
+  canvas.setAttribute('role','img');
+  canvas.setAttribute('aria-label','SMARTi-etikett med QR-kode, serienummer '+h.serial+', Designed in Norway, strømtilkobling og EE-gjenvinning');
+  const status=node('p','Laster etikett …');status.setAttribute('role','status');
+  const actions=node('div',undefined,'label-print-actions');
+  const print=node('button','Skriv ut'),download=node('button','Last ned PNG');
+  print.type=download.type='button';
+  print.disabled=download.disabled=true;
+  print.onclick=()=>window.print();
+  download.onclick=()=>{
+   const link=node('a');
+   link.href=canvas.toDataURL('image/png');
+   link.download=h.serial+'-50x30mm.png';
+   link.click();
+  };
+  actions.append(print,download);
+  body.append(canvas,status,node('p','NIIMBOT B21 Pro · 50 × 30 mm. Skriv ut i faktisk størrelse (100 %), eller importer PNG i NIIMBOT-appen på en etikett i samme størrelse.'),actions);
+  dialog.append(header,body);
+  const printStyle=node('link');
+  printStyle.rel='stylesheet';
+  printStyle.href='/assets/label-print.css';
+  printStyle.media='print';
+  const printReady=new Promise(resolve=>{
+   printStyle.onload=()=>resolve(true);
+   printStyle.onerror=()=>resolve(false);
+  });
+  document.head.append(printStyle);
+  document.body.append(dialog);
+  dialog.addEventListener('close',()=>{
+   printStyle.remove();
+   dialog.remove();
+  },{once:true});
+  dialog.showModal();
+  try{
+   const [{matrix},logo,weee]=await Promise.all([
+    apiRequest('admin/hubs/'+encodeURIComponent(h.id)+'/label?format=matrix'),
+    labelImage('/assets/smarti-logo.png'),
+    labelImage('/assets/label-weee.svg'),
+    document.fonts.load('700 49px "Bai Jamjuree"').catch(()=>[]),
+   ]);
+   drawLabel(canvas,matrix,h.serial,logo,weee);
+   canvas.hidden=false;
+   status.hidden=true;
+   download.disabled=false;
+   if(await printReady)print.disabled=false;
+   else{
+    status.hidden=false;
+    status.textContent='Utskriftsmalen kunne ikke lastes. Last ned PNG for å skrive ut.';
+   }
+  }catch{
+   status.textContent='Etiketten kunne ikke lastes. Lukk og prøv igjen.';
+  }
+ }
+ function printButton(h){
+  const button=node('button','Skriv ut etikett');
+  button.type='button';
+  button.onclick=()=>openLabel(h);
+  return button;
+ }
  function chart(rows,compact=false){
   const wrap=node('div',undefined,compact?'traffic-bars mini':'traffic-bars');
   const max=Math.max(1,...rows.map(total));
@@ -70,7 +255,7 @@ window.fleet = (() => {
   qr.onerror=()=>{qr.hidden=true;label.append(node('p','QR-koden kunne ikke lastes. Lukk og åpne detaljene for å prøve igjen.'));};
   label.append(node('strong','SMARTi'),qr,node('p',h.serial),node('small','Skann med SMARTi-appen'));
   const qrSection=node('section',undefined,'hub-detail-qr');qrSection.append(label);
-  const print=node('button','Skriv ut etikett');print.type='button';print.onclick=()=>{document.querySelectorAll('.printing').forEach(n=>n.classList.remove('printing'));label.classList.add('printing');window.print();};qrSection.append(print,node('p','QR-koden tilhører denne huben. Del etiketten bare med den som skal sette den opp.'));
+  qrSection.append(printButton(h),node('p','QR-koden tilhører denne huben. Del etiketten bare med den som skal sette den opp.'));
   const info=node('section',undefined,'hub-detail-info'),dl=node('dl');
   const date=v=>v?new Date(v*1000).toLocaleString('nb-NO'):'Ikke registrert';
   const state={preparing:'Under klargjøring',ready:'Klar for levering',activated:'Aktivert',claimed:'Knyttet til konto'};
@@ -106,7 +291,7 @@ window.fleet = (() => {
   $('traffic-note').textContent=measured?`${report.stale?'Målingen er forsinket. ':''}Målt fra ${new Date(report.started*1000).toLocaleDateString('nb-NO')}. Oppdatert ${new Date(report.updated*1000).toLocaleTimeString('nb-NO')}. Dager følger UTC.`:'Ingen estimerte tall vises.';
   for(const b of document.querySelectorAll('[data-fleet-filter]')){const key=b.dataset.fleetFilter;b.setAttribute('aria-pressed',String(key===filter));b.querySelector('span').textContent=key==='all'?hubs.length:hubs.filter(h=>category(h)===key).length;}
  }
- return {bytes,chart,openDetails,versions,
+ return {bytes,chart,openDetails,versions,fulfillment,printButton,
   mapItems(items){mapItems=items;drawMap();},
   async load(api,items){apiRequest=api;hubs=items;try{report=await api('admin/traffic?days='+$('traffic-period').value);}catch{report=null;}updateSummary();},
   select(items){return items.filter(h=>(filter==='all'||category(h)===filter)&&[h.serial,h.model,h.hardware].join(' ').toLocaleLowerCase('nb').includes(query)).sort((a,b)=>order==='serial'?a.serial.localeCompare(b.serial,'nb',{numeric:true}):(order==='oldest'?1:-1)*((a.created||0)-(b.created||0)));},

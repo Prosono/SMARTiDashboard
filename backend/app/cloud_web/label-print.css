@@ -1,0 +1,48 @@
+@page {
+  size: 50mm 30mm;
+  margin: 0;
+}
+
+html, body {
+  width: 50mm;
+  height: 30mm;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+}
+
+body > :not(#hub-label-print),
+#hub-label-print header,
+#hub-label-print .label-print-body > :not(canvas),
+#hub-label-print::backdrop {
+  display: none !important;
+}
+
+#hub-label-print[open] {
+  display: block;
+  position: static;
+  width: 50mm;
+  height: 30mm;
+  max-width: none;
+  max-height: none;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+}
+
+#hub-label-print .label-print-body {
+  display: block;
+  padding: 0;
+}
+
+#hub-label-print canvas {
+  display: block;
+  width: 50mm;
+  height: 30mm;
+  border: 0;
+  border-radius: 0;
+}
