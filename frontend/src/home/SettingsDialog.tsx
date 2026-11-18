@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { X } from "lucide-react";
+import { createPortal } from "react-dom";
 import "./settingsDialog.css";
 
 export const InSettingsDialog = createContext(false);
@@ -16,6 +17,7 @@ export function SettingsDialog({
   lang,
   busy = false,
   compact = false,
+  presentation = "settings",
   onClose,
   children,
 }: {
@@ -23,6 +25,7 @@ export function SettingsDialog({
   lang: string;
   busy?: boolean;
   compact?: boolean;
+  presentation?: "settings" | "device";
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -37,13 +40,14 @@ export function SettingsDialog({
       dialog.close();
       document.body.style.overflow = overflow;
     };
-  }, []);
-  return (
+  }, [presentation]);
+  const dialog = (
     <dialog
       ref={ref}
       className="dashboard-settings-dialog"
       data-compact={compact || undefined}
-      aria-label={title}
+      data-presentation={presentation === "device" ? presentation : undefined}
+      aria-labelledby={heading}
       aria-busy={busy}
       tabIndex={-1}
       onKeyDown={(event) => {
@@ -92,14 +96,22 @@ export function SettingsDialog({
     >
       <header className="dashboard-settings-heading">
         <div>
-          <span>SMARTi</span>
+          {presentation === "settings" && <span>SMARTi</span>}
           <h2 id={heading}>{title}</h2>
         </div>
         <button
           type="button"
           disabled={busy}
           onClick={onClose}
-          aria-label={lang === "en" ? "Close settings" : "Lukk innstillinger"}
+          aria-label={
+            presentation === "device"
+              ? lang === "en"
+                ? "Close device details"
+                : "Lukk enhetsdetaljer"
+              : lang === "en"
+                ? "Close settings"
+                : "Lukk innstillinger"
+          }
         >
           <X size={21} aria-hidden="true" />
         </button>
@@ -111,4 +123,7 @@ export function SettingsDialog({
       </div>
     </dialog>
   );
+  return presentation === "device"
+    ? createPortal(dialog, document.body)
+    : dialog;
 }

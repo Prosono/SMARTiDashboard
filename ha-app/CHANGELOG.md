@@ -1,3 +1,7 @@
+## 1.36.143
+- Enhetsvinduer har tydelig navn, bilde, status og de viktigste kontrollene samlet øverst. På telefon åpnes de nedenfra. På nettbrett og desktop åpnes de som sentrerte dialoger.
+- Lys, termostater og andre enheter får tydeligere kontroller, med historikk og enhetsinnstillinger samlet der de er tilgjengelige.
+
 ## 1.36.142
 - Appgrensesnitt vises direkte under Utvidelser → Apper, i en større flate tilpasset mobil og desktop. Last inn appen på nytt fra verktøylinjen, eller gå tilbake til samme appkort.
 - Lokale Ingress-apper viser selve grensesnittet direkte. Ved fjernaksess åpnes appen i samme flate via Home Assistant.

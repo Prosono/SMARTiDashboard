@@ -43,6 +43,7 @@ export function Thermostat({
   change,
   changeMode,
   compact = false,
+  inDialog = false,
 }: {
   c: Control;
   lang: string;
@@ -50,6 +51,7 @@ export function Thermostat({
   change: (value: number) => void;
   changeMode: (mode: string) => void;
   compact?: boolean;
+  inDialog?: boolean;
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
@@ -123,6 +125,7 @@ export function Thermostat({
       className="thermostat"
       data-tone={tone}
       data-compact={compact || undefined}
+      data-dialog={inDialog || undefined}
     >
       {!compact && (
         <div className="thermostat-mode">
@@ -170,7 +173,7 @@ export function Thermostat({
         )}
       <div className="thermostat-setting">
         <div className="thermostat-dial">
-          {!compact && (
+          {!compact && !inDialog && (
             <svg viewBox="0 0 240 145" aria-hidden="true">
               <path
                 className="thermostat-track"
@@ -197,7 +200,7 @@ export function Thermostat({
           )}
           <div className="thermostat-target">
             <span>
-              {compact
+              {compact || inDialog
                 ? t("Ønsket temperatur", "Target temperature")
                 : t("Ønsket", "Target")}
             </span>

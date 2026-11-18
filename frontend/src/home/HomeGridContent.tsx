@@ -1,4 +1,5 @@
 import {
+  useContext,
   useLayoutEffect,
   useEffect,
   useRef,
@@ -9,10 +10,15 @@ import {
 import { Maximize2 } from "lucide-react";
 import { SettingsDialog } from "./SettingsDialog";
 import type { CardConfig } from "./homeGridModel";
-import { cardImageURL, photoImages } from "./CardPresentation";
+import {
+  CardPresentation,
+  cardImageURL,
+  photoImages,
+} from "./CardPresentation";
 import type { CardTone } from "./cardToneModel";
 import { MobileCardTile, type MobileCardProps } from "./MobileCardTile";
 import { CardLivePreview } from "./CardLivePreview";
+import { MetricDeviceRenderer } from "./MetricDetails";
 
 /** Cards never scroll internally. Unusually dense/small cards offer the full view. */
 export function HomeGridContent({
@@ -40,6 +46,20 @@ export function HomeGridContent({
   const content = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState(false);
   const [expanded, expand] = useState(false);
+  const renderDevice = useContext(MetricDeviceRenderer);
+  const active =
+    expanded &&
+    mobile &&
+    (!config ||
+      (["auto", "compact"].includes(config.type) && config.sources.length <= 1))
+      ? mobile.home.controls.find(
+          (control) => control.entity_id === mobile.card.entityId,
+        )
+      : undefined;
+  const device =
+    active && !["camera", "calendar", "weather"].includes(active.domain)
+      ? active
+      : undefined;
 
   useLayoutEffect(() => {
     if (mobile) return;
@@ -118,15 +138,26 @@ export function HomeGridContent({
         </div>
       )}
       {expanded && (
-        <SettingsDialog title={title} lang={lang} onClose={() => expand(false)}>
-          <div
-            className="home-canvas-expanded"
-            data-card-tone={tone}
-            data-mobile-dialog={!!mobile || undefined}
-            style={lightStyle}
-          >
-            {children}
-          </div>
+        <SettingsDialog
+          title={device && renderDevice ? device.name : title}
+          presentation={device && renderDevice ? "device" : "settings"}
+          lang={lang}
+          onClose={() => expand(false)}
+        >
+          {device && renderDevice ? (
+            <CardPresentation.Provider value={config || {}}>
+              {renderDevice(device)}
+            </CardPresentation.Provider>
+          ) : (
+            <div
+              className="home-canvas-expanded"
+              data-card-tone={tone}
+              data-mobile-dialog={!!mobile || undefined}
+              style={lightStyle}
+            >
+              {children}
+            </div>
+          )}
         </SettingsDialog>
       )}
     </>

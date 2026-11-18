@@ -41,7 +41,7 @@ function SensorCard({
         open={() => open(true)}
       />
       {opened && render && (
-        <SettingsDialog title={c.name} lang={lang} onClose={() => open(false)}>
+        <SettingsDialog title={c.name} presentation="device" lang={lang} onClose={() => open(false)}>
           {render(c)}
         </SettingsDialog>
       )}

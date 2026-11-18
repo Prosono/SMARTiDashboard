@@ -386,6 +386,7 @@ export function SecurityOverview({
               ? details[0].name
               : t("Sikkerhetskontroller", "Security controls")
           }
+          presentation={details.length === 1 ? "device" : "settings"}
           lang={lang}
           onClose={() => open(null)}
         >

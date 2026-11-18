@@ -323,6 +323,7 @@ export function SimpleDashboard({
           {active && render && (
             <SettingsDialog
               title={active.name}
+              presentation="device"
               lang={lang}
               onClose={() => setSelected(null)}
             >
@@ -334,6 +335,7 @@ export function SimpleDashboard({
       {!panel && active && render && (
         <SettingsDialog
           title={active.name}
+          presentation="device"
           lang={lang}
           onClose={() => setSelected(null)}
         >

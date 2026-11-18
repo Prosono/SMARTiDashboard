@@ -357,6 +357,7 @@ export function MediaCard({
       {opened && renderDevice && (
         <SettingsDialog
           title={c.name}
+          presentation="device"
           lang={lang}
           onClose={() => setOpened(false)}
         >

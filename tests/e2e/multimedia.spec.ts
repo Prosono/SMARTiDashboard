@@ -148,7 +148,9 @@ test("multimedia filters players and sends supported playback commands", async (
   ).toBeEnabled();
   await expect(
     detail.getByRole("button", { name: "Skjul enhet", exact: true }),
-  ).toBeVisible();
+  ).not.toBeVisible();
+  await detail.getByText("Enhetsinnstillinger", { exact: true }).click();
+  await expect(detail.getByRole("button", { name: "Skjul enhet", exact: true })).toBeVisible();
   await detail
     .getByRole("button", { name: "Tilpass mediaspiller", exact: true })
     .click();
@@ -190,7 +192,7 @@ test("multimedia filters players and sends supported playback commands", async (
     .getByRole("button", { name: "Lukk innstillinger", exact: true })
     .click();
   await detail
-    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .getByRole("button", { name: "Lukk enhetsdetaljer", exact: true })
     .click();
 
   await page

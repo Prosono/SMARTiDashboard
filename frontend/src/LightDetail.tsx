@@ -1,17 +1,11 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
-import { Star, History, Info, ChevronRight } from "lucide-react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { History, Info, ChevronRight, Settings2 } from "lucide-react";
 import type { Control, Home } from "./types";
-import { lightIcon, LightAppearance } from "./LightAppearance";
+import { LightAppearance } from "./LightAppearance";
 import { LightColor } from "./LightColor";
 import { HideControl } from "./ControlVisibility";
 import { ControlHistory } from "./ControlHistory";
-import { SettingsDialog } from "./home/SettingsDialog";
+import { DeviceDetailOverview } from "./DeviceDetailOverview";
 import "./lightDetail.css";
 
 export function LightDetail({
@@ -53,13 +47,6 @@ export function LightDetail({
   const color = c.capabilities.some((v) =>
     v.actions.some((a) => ["set_rgb_color", "set_color_temp"].includes(a)),
   );
-  const Icon = lightIcon(c);
-  const root = useRef<HTMLElement>(null);
-  useLayoutEffect(() => {
-    const dialog = root.current?.closest("dialog");
-    dialog?.classList.add("light-detail-dialog");
-    return () => dialog?.classList.remove("light-detail-dialog");
-  }, []);
   useEffect(
     () =>
       setLevel(Math.round((Number(c.attributes.brightness || 0) / 255) * 100)),
@@ -70,35 +57,15 @@ export function LightDetail({
     void command("set_brightness", value);
   };
   return (
-    <article className="light-detail" ref={root}>
-      <header className="light-detail-identity">
-        <span className="light-detail-icon">
-          <Icon size={44} />
-        </span>
-        <div>
-          <h3>{c.name}</h3>
-          <p>
-            {room}
-            <span
-              className="light-detail-connection"
-              data-connected={available}
-            >
-              <i />
-              {available
-                ? t("Tilkoblet", "Connected")
-                : t("Utilgjengelig", "Unavailable")}
-            </span>
-          </p>
-        </div>
-        <button
-          className="light-detail-favorite"
-          aria-label={`${t("Favoritt", "Favorite")}: ${c.name}`}
-          aria-pressed={home.favorites.includes(c.entity_id)}
-          onClick={() => void favorite()}
-        >
-          <Star size={23} />
-        </button>
-      </header>
+    <article className="light-detail" data-state={c.state}>
+      <DeviceDetailOverview
+        control={c}
+        room={room}
+        offline={offline}
+        lang={lang}
+        favorite={home.favorites.includes(c.entity_id)}
+        onFavorite={favorite}
+      />
       <section
         className="light-detail-primary"
         aria-label={t("Lysstyring", "Light controls")}
@@ -194,17 +161,30 @@ export function LightDetail({
           />
         </div>
       )}
-      <div className="light-detail-actions">
-        <button onClick={() => setHistory(true)}>
-          <History size={23} />
-          {t("Historikk", "History")}
-          <ChevronRight size={18} />
-        </button>
-        {admin && <LightAppearance c={c} lang={lang} disabled={offline} />}
-      </div>
+      <button
+        className="control-history-toggle"
+        aria-expanded={history}
+        onClick={() => setHistory(!history)}
+      >
+        <History size={18} aria-hidden="true" />
+        {t("Historikk", "History")}
+        <ChevronRight size={16} aria-hidden="true" />
+      </button>
+      {history && <ControlHistory control={c} home={home} lang={lang} />}
+      {admin && (
+        <details className="device-options">
+          <summary className="control-history-toggle">
+            <Settings2 size={18} aria-hidden="true" />
+            {t("Enhetsinnstillinger", "Device settings")}
+            <ChevronRight size={16} aria-hidden="true" />
+          </summary>
+          <LightAppearance c={c} lang={lang} disabled={offline} />
+          <HideControl c={c} lang={lang} disabled={offline} />
+        </details>
+      )}
       <div className="light-detail-secondary">
-        {admin && <HideControl c={c} lang={lang} disabled={offline} />}
         <button
+          className="control-history-toggle"
           aria-expanded={technical}
           onClick={() => setTechnical(!technical)}
         >
@@ -223,21 +203,6 @@ export function LightDetail({
           </dl>
         )}
       </div>
-      <small className="light-detail-updated">
-        {t("Sist oppdatert", "Last updated")}{" "}
-        {c.updated_at
-          ? new Date(c.updated_at).toLocaleString(en ? "en-GB" : "nb-NO")
-          : "—"}
-      </small>
-      {history && (
-        <SettingsDialog
-          title={`${t("Historikk", "History")} · ${c.name}`}
-          lang={lang}
-          onClose={() => setHistory(false)}
-        >
-          <ControlHistory control={c} home={home} lang={lang} />
-        </SettingsDialog>
-      )}
     </article>
   );
 }

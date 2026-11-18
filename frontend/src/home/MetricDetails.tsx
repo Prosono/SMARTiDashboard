@@ -152,6 +152,7 @@ export function MetricDetails({
             {selected && renderDevice && (
               <SettingsDialog
                 title={selected.name}
+                presentation="device"
                 lang={lang}
                 onClose={() => select(null)}
               >

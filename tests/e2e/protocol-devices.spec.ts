@@ -172,14 +172,14 @@ test("protocol inventory, confirmed removal and add wizard", async ({
   ).toBe(true);
   await page.getByRole("button", { name: "Stuelampe Se detaljer" }).click();
   const dialog = page.getByRole("dialog");
-  await expect(
-    dialog.getByRole("heading", { name: "Om enheten" }),
-  ).toBeVisible();
-  await expect(dialog.getByText("1.2.3")).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Stuelampe", level: 2 })).toBeVisible();
+  await expect(dialog.getByText("1.2.3")).not.toBeVisible();
   await dialog.getByRole("button", { name: "Slå på", exact: true }).click();
   await expect(
     dialog.getByRole("button", { name: "Slå av", exact: true }),
   ).toBeEnabled();
+  await dialog.getByText("Om enheten", { exact: true }).click();
+  await expect(dialog.getByText("1.2.3")).toBeVisible();
   await page.screenshot({
     path: `../artifacts/${test.info().project.name}-device-dialog.png`,
     animations: "disabled",

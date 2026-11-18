@@ -792,6 +792,7 @@ export function HarmonyDevices({
       {active && render && (
         <SettingsDialog
           title={active.name}
+          presentation="device"
           lang={lang}
           onClose={() => select(null)}
         >

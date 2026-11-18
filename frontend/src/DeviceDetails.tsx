@@ -2,13 +2,14 @@ import { LightColor } from "./LightColor";
 import { controlState } from "./controlState";
 import { ProtocolLogo } from "./ProtocolLogo";
 import { Thermostat } from "./Thermostat";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, Radio } from "lucide-react";
+import { ChevronRight, Info, Radio } from "lucide-react";
 import { api } from "./api";
 import type { Control } from "./types";
 import { DeviceArtwork } from "./home/DeviceArtwork";
 import { primaryDeviceControl } from "./home/deviceAppearance";
+import { SettingsDialog } from "./home/SettingsDialog";
 
 export function DevicePicture({
   url,
@@ -107,7 +108,6 @@ export function DeviceDetails({
   remove: () => void;
 }) {
   const no = lang !== "en";
-  const dialog = useRef<HTMLDialogElement>(null);
   const qc = useQueryClient();
   const [imageBusy, setImageBusy] = useState(false);
   const [error, setError] = useState("");
@@ -120,9 +120,6 @@ export function DeviceDetails({
     refetchInterval: 5000,
     retry: false,
   });
-  useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
   const d = detail.data;
   async function image(file?: File) {
     if (
@@ -200,146 +197,144 @@ export function DeviceDetails({
       ]
     : [];
   return (
-    <dialog
-      className="device-dialog"
-      ref={dialog}
+    <SettingsDialog
+      title={d?.name || name}
+      lang={lang}
+      presentation="device"
       onClose={close}
-      aria-labelledby="device-dialog-title"
     >
-      <div className="device-dialog-header">
-        <span className="eyebrow">
-          {provider === "zigbee2mqtt" ? "Zigbee" : "Z-Wave"}
-        </span>
-        <button
-          autoFocus
-          aria-label={no ? "Lukk detaljer" : "Close details"}
-          onClick={() => dialog.current?.close()}
-        >
-          <X />
-        </button>
-      </div>
-      <div className="device-dialog-title">
-        <div className="device-dialog-picture">
-          <DevicePicture
-            url={d?.image_url}
-            name={name}
-            protocol={d?.controller ? provider : undefined}
-            customImage={d?.custom_image}
-            control={d && primaryDeviceControl(d.controls)}
-            available={
-              !detail.isError &&
-              d?.network_status === "ready" &&
-              d.status !== "offline"
-            }
-          />
-        </div>
-        <div>
-          <h2 id="device-dialog-title">{d?.name || name}</h2>
-          <p>
-            {d?.description ||
-              [d?.manufacturer, d?.model].filter(Boolean).join(" · ")}
-          </p>
-        </div>
-      </div>
-      {detail.isPending && (
-        <p role="status">{no ? "Henter enhetsdata …" : "Loading device …"}</p>
-      )}
-      {(detail.isError || d?.network_status === "unavailable") && (
-        <p role="alert">
-          {no
-            ? "Enhetsdata er utilgjengelige eller utdaterte. Styring er deaktivert til forbindelsen er tilbake."
-            : "Device data is unavailable or stale. Controls are disabled until the connection returns."}
-        </p>
-      )}
-      {error && <p role="alert">{error}</p>}
-      {d && (
-        <>
-          <h3>{no ? "Styring og måleverdier" : "Controls and readings"}</h3>
-          {!d.controls.length && (
+      <article className="protocol-device-detail">
+        <div className="device-dialog-title">
+          <div className="device-dialog-picture">
+            <DevicePicture
+              url={d?.image_url}
+              name={name}
+              protocol={d?.controller ? provider : undefined}
+              customImage={d?.custom_image}
+              control={d && primaryDeviceControl(d.controls)}
+              available={
+                !detail.isError &&
+                d?.network_status === "ready" &&
+                d.status !== "offline"
+              }
+            />
+          </div>
+          <div>
+            <span className="protocol-device-type">
+              {provider === "zigbee2mqtt" ? "Zigbee" : "Z-Wave"}
+            </span>
             <p>
-              {no
-                ? "Ingen tilgjengelige kontroller fra SMARTi for denne enheten ennå."
-                : "SMARTi has no available controls for this device yet."}
+              {d?.description ||
+                [d?.manufacturer, d?.model].filter(Boolean).join(" · ")}
             </p>
-          )}
-          <div className="device-detail-controls">
-            {d.controls.map((c) => (
-              <DeviceControl
-                key={c.entity_id}
-                c={c}
-                no={no}
-                disabled={
-                  detail.isError ||
-                  d.network_status !== "ready" ||
-                  (c.domain === "automation" && !admin)
-                }
-                refresh={() => {
-                  void detail.refetch();
-                  void qc.invalidateQueries({ queryKey: ["home"] });
-                }}
-              />
-            ))}
           </div>
-          <h3>{no ? "Om enheten" : "About this device"}</h3>
-          <dl className="device-facts">
-            {fields
-              .filter(([, value]) => value != null && value !== "")
-              .map(([key, value]) => (
-                <div key={String(key)}>
-                  <dt>{key}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-          </dl>
-          <div className="device-dialog-actions">
-            <button
-              disabled={detail.isFetching}
-              onClick={() => void detail.refetch()}
-            >
-              {no ? "Oppdater enhetsdata" : "Refresh device data"}
-            </button>
-            {admin && d.removable && (
-              <button
-                disabled={detail.isError || d.network_status !== "ready"}
-                onClick={() => {
-                  dialog.current?.close();
-                  remove();
-                }}
-              >
-                {no ? "Slett enhet …" : "Remove device …"}
-              </button>
-            )}
-          </div>
-          {admin && (
-            <details className="device-image-settings">
-              <summary>
-                {no ? "Endre enhetsbilde" : "Change device image"}
-              </summary>
+        </div>
+        {detail.isPending && (
+          <p role="status">{no ? "Henter enhetsdata …" : "Loading device …"}</p>
+        )}
+        {(detail.isError || d?.network_status === "unavailable") && (
+          <p role="alert">
+            {no
+              ? "Enhetsdata er utilgjengelige eller utdaterte. Styring er deaktivert til forbindelsen er tilbake."
+              : "Device data is unavailable or stale. Controls are disabled until the connection returns."}
+          </p>
+        )}
+        {error && <p role="alert">{error}</p>}
+        {d && (
+          <>
+            <h3>{no ? "Styring og måleverdier" : "Controls and readings"}</h3>
+            {!d.controls.length && (
               <p>
                 {no
-                  ? "Last opp et produktbilde (PNG, JPEG eller WebP, maks 600 kB). Bildet lagres i SMARTi."
-                  : "Upload a product image (PNG, JPEG or WebP, max 600 kB). The image is saved in SMARTi."}
+                  ? "Ingen tilgjengelige kontroller fra SMARTi for denne enheten ennå."
+                  : "SMARTi has no available controls for this device yet."}
               </p>
-              <input
-                aria-label={no ? "Velg enhetsbilde" : "Choose device image"}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                disabled={imageBusy}
-                onChange={(e) => {
-                  if (e.target.files?.[0]) void image(e.target.files[0]);
-                  e.target.value = "";
-                }}
-              />
-              {d.custom_image && (
-                <button disabled={imageBusy} onClick={() => void image()}>
-                  {no ? "Fjern eget bilde" : "Remove custom image"}
+            )}
+            <div className="device-detail-controls">
+              {d.controls.map((c) => (
+                <DeviceControl
+                  key={c.entity_id}
+                  c={c}
+                  no={no}
+                  disabled={
+                    detail.isError ||
+                    d.network_status !== "ready" ||
+                    (c.domain === "automation" && !admin)
+                  }
+                  refresh={() => {
+                    void detail.refetch();
+                    void qc.invalidateQueries({ queryKey: ["home"] });
+                  }}
+                />
+              ))}
+            </div>
+            <details className="device-options">
+              <summary className="control-history-toggle">
+                <Info size={18} aria-hidden="true" />
+                {no ? "Om enheten" : "About this device"}
+                <ChevronRight size={16} aria-hidden="true" />
+              </summary>
+              <dl className="device-facts">
+                {fields
+                  .filter(([, value]) => value != null && value !== "")
+                  .map(([key, value]) => (
+                    <div key={String(key)}>
+                      <dt>{key}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+              </dl>
+              <div className="device-dialog-actions">
+                <button
+                  disabled={detail.isFetching}
+                  onClick={() => void detail.refetch()}
+                >
+                  {no ? "Oppdater enhetsdata" : "Refresh device data"}
                 </button>
+                {admin && d.removable && (
+                  <button
+                    disabled={detail.isError || d.network_status !== "ready"}
+                    onClick={() => {
+                      close();
+                      remove();
+                    }}
+                  >
+                    {no ? "Slett enhet …" : "Remove device …"}
+                  </button>
+                )}
+              </div>
+              {admin && (
+                <details className="device-image-settings">
+                  <summary>
+                    {no ? "Endre enhetsbilde" : "Change device image"}
+                  </summary>
+                  <p>
+                    {no
+                      ? "Last opp et produktbilde (PNG, JPEG eller WebP, maks 600 kB). Bildet lagres i SMARTi."
+                      : "Upload a product image (PNG, JPEG or WebP, max 600 kB). The image is saved in SMARTi."}
+                  </p>
+                  <input
+                    aria-label={no ? "Velg enhetsbilde" : "Choose device image"}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    disabled={imageBusy}
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) void image(e.target.files[0]);
+                      e.target.value = "";
+                    }}
+                  />
+                  {d.custom_image && (
+                    <button disabled={imageBusy} onClick={() => void image()}>
+                      {no ? "Fjern eget bilde" : "Remove custom image"}
+                    </button>
+                  )}
+                </details>
               )}
             </details>
-          )}
-        </>
-      )}
-    </dialog>
+          </>
+        )}
+      </article>
+    </SettingsDialog>
   );
 }
 export function DeviceControl({

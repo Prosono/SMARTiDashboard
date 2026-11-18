@@ -208,6 +208,7 @@ function SummaryCard({
       {selected && render && (
         <SettingsDialog
           title={selected.name}
+          presentation="device"
           lang={lang}
           onClose={() => select(null)}
         >

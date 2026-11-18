@@ -18,6 +18,7 @@ import { api } from "../api";
 import type { Control, Home } from "../types";
 import { useExperience } from "../Experience";
 import { SettingsDialog } from "./SettingsDialog";
+import { DeviceArtwork } from "./DeviceArtwork";
 import "./cleaning.css";
 const states: Record<string, [string, string]> = {
   cleaning: ["Rengjør", "Cleaning"],
@@ -233,11 +234,27 @@ export function VacuumCard({
       {details && (
         <SettingsDialog
           title={c.name}
+          presentation="device"
           lang={lang}
           onClose={() => setDetails(false)}
           compact
         >
-          <p className="vacuum-dialog-status">{status}</p>
+          <div className="device-detail-overview">
+            <div className="device-detail-portrait">
+              <DeviceArtwork c={c} available={!offline} />
+            </div>
+            <div className="device-detail-identity">
+              <strong className="vacuum-dialog-status">{status}</strong>
+              {battery !== null && (
+                <span className="device-detail-battery">
+                  <Battery size={18} aria-hidden="true" />
+                  <span className="sr-only">{en ? "Battery" : "Batteri"} </span>
+                  {battery} %
+                  {(offline || c.availability !== "available") && (en ? " · last reported" : " · sist meldt")}
+                </span>
+              )}
+            </div>
+          </div>
           {controls}
           {c.state === "error" && (
             <p role="alert">

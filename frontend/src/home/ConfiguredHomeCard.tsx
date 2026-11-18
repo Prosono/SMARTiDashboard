@@ -92,7 +92,7 @@ function StatusCard({
         )}
       </button>
       {opened && c && render && (
-        <SettingsDialog title={title} lang={lang} onClose={() => open(false)}>
+        <SettingsDialog title={c.name} presentation="device" lang={lang} onClose={() => open(false)}>
           {c.domain === "camera" ? (
             <CameraCard c={c} lang={lang} offline={offline} />
           ) : (

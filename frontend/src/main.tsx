@@ -1,11 +1,27 @@
 import { LightDetail } from "./LightDetail";
+import { DeviceDetailOverview } from "./DeviceDetailOverview";
 import { MetricDeviceRenderer } from "./home/MetricDetails";
 import { MediaCard } from "./home/Multimedia";
 import { useAvailabilityGrace } from "./useAvailabilityGrace";
 import { HideControl, HiddenControls } from "./ControlVisibility";
 import { LightAppearance } from "./LightAppearance";
 import "./manage/settingsOverview.css";
-import { Database, Network, Server, Code, Palette } from "lucide-react";
+import {
+  Database,
+  Network,
+  Server,
+  Code,
+  Palette,
+  Settings2,
+  Power,
+  Lock,
+  LockOpen,
+  ArrowUp,
+  ArrowDown,
+  Square,
+  Play,
+  Info,
+} from "lucide-react";
 import { PhoneSettings } from "./PhoneSettings";
 import { Scenes } from "./home/Scenes";
 import { PagedControls } from "./PagedControls";
@@ -998,24 +1014,18 @@ function Dashboard({
   return (
     <MetricDeviceRenderer.Provider
       value={(c) =>
-        c.domain === "vacuum" || c.domain === "media_player" ? (
+        c.domain === "vacuum" ? (
           <>
-            {c.domain === "vacuum" ? (
-              <VacuumCard c={c} home={h} lang={lang} offline={offline} />
-            ) : (
-              <MediaCard
-                c={c}
-                home={h}
-                lang={lang}
-                offline={offline}
-                photo={homeAsset("home-multimedia")}
-              />
-            )}
+            <VacuumCard c={c} home={h} lang={lang} offline={offline} />
             {session.role === "admin" && (
-              <HideControl c={c} lang={lang} disabled={offline} />
-            )}
-            {session.role === "admin" && c.domain === "media_player" && (
-              <LightAppearance c={c} lang={lang} disabled={offline} />
+              <details className="device-options">
+                <summary className="control-history-toggle">
+                  <Settings2 size={18} aria-hidden="true" />
+                  {lang === "en" ? "Device settings" : "Enhetsinnstillinger"}
+                  <ChevronRight size={16} aria-hidden="true" />
+                </summary>
+                <HideControl c={c} lang={lang} disabled={offline} />
+              </details>
             )}
           </>
         ) : (
@@ -1566,6 +1576,16 @@ function Empty({ t, add }: { t: Text; add: () => void }) {
     </div>
   );
 }
+const deviceActions = {
+  activate: [Play, "Aktiver", "Activate"],
+  lock: [Lock, "Lås", "Lock"],
+  unlock: [LockOpen, "Lås opp", "Unlock"],
+  open_cover: [ArrowUp, "Åpne", "Open"],
+  close_cover: [ArrowDown, "Lukk", "Close"],
+  stop_cover: [Square, "Stopp", "Stop"],
+} as const;
+type DeviceAction = keyof typeof deviceActions;
+
 function Device({
   c,
   t,
@@ -1616,36 +1636,35 @@ function Device({
   const device = h.devices.find((v) => v.id === c.device_id);
   const power = c.capabilities.some((v) => v.kind === "power");
   const dim = c.capabilities.find((v) => v.kind === "brightness");
-  async function command(action: string, value?: number | number[] | string) {
-    const actionNames: Record<string, string> =
-      document.documentElement.lang === "en"
-        ? {
-            activate: "Activate",
-            lock: "Lock",
-            unlock: "Unlock",
-            open_cover: "Open",
-            close_cover: "Close",
-          }
-        : {
-            activate: "Aktiver",
-            lock: "Lås",
-            unlock: "Lås opp",
-            open_cover: "Åpne",
-            close_cover: "Lukk",
-          };
-    const confirmed = [
-      "activate",
-      "lock",
-      "unlock",
-      "open_cover",
-      "close_cover",
-    ].includes(action);
+  const actions = [
+    ...new Set(c.capabilities.flatMap((capability) => capability.actions)),
+  ].filter((action): action is DeviceAction =>
+    Object.hasOwn(deviceActions, action),
+  );
+  const actionLabel = (action: DeviceAction) =>
+    deviceActions[action][t === en ? 2 : 1];
+  const [confirmAction, setConfirmAction] = useState<DeviceAction | null>(null);
+  async function command(
+    action: string,
+    value?: number | number[] | string,
+    approved = false,
+  ) {
+    if (!can || busy) return;
+    const confirmed =
+      Object.hasOwn(deviceActions, action) && action !== "stop_cover";
     if (
       confirmed &&
-      !(action === "activate" && c.domain === "scene") &&
-      !window.confirm(`${c.name}: ${actionNames[action]}?`)
-    )
-      return;
+      !approved &&
+      !(action === "activate" && c.domain === "scene")
+    ) {
+      const requested = action as DeviceAction;
+      if (inDialog) {
+        setConfirmAction(requested);
+        return;
+      }
+      if (!window.confirm(`${c.name}: ${actionLabel(requested)}?`)) return;
+    }
+    setConfirmAction(null);
     setBusy(true);
     setMessage("");
     setFailed(false);
@@ -1663,6 +1682,7 @@ function Device({
               : { value }),
         },
       );
+      if (result.status === "failed") throw new Error("command_failed");
       setMessage(
         result.status === "simulated"
           ? t.simulated
@@ -1689,7 +1709,7 @@ function Device({
   }
   if (inDialog && c.domain === "media_player")
     return (
-      <>
+      <div className="device-media-detail">
         <MediaCard
           c={c}
           home={h}
@@ -1698,7 +1718,12 @@ function Device({
           photo={homeAsset("home-multimedia")}
         />
         {admin && (
-          <>
+          <details className="device-options">
+            <summary className="control-history-toggle">
+              <Settings2 size={18} aria-hidden="true" />
+              {t === en ? "Device settings" : "Enhetsinnstillinger"}
+              <ChevronRight size={16} aria-hidden="true" />
+            </summary>
             <LightAppearance
               c={c}
               lang={t === en ? "en" : "nb"}
@@ -1709,9 +1734,9 @@ function Device({
               lang={t === en ? "en" : "nb"}
               disabled={offline}
             />
-          </>
+          </details>
         )}
-      </>
+      </div>
     );
   if (inDialog && c.domain === "light")
     return (
@@ -1746,80 +1771,55 @@ function Device({
       data-state={c.state}
       data-entity={c.entity_id}
     >
-      <div className="device-top">
-        <span className="device-icon">
-          <DeviceArtwork c={c} available={can} />
-        </span>
-        <button
-          className={
-            "icon-button star " +
-            (h.favorites.includes(c.entity_id) ? "starred" : "")
-          }
-          aria-label={`${t.favorite}: ${c.name}`}
-          aria-pressed={h.favorites.includes(c.entity_id)}
-          onClick={favorite}
-        >
-          <Star size={17} />
-        </button>
-      </div>
-      <div className="device-title">
-        <span>{roomName}</span>
-        <h3>
-          {inDialog ? (
-            c.name
-          ) : (
-            <button
-              className="device-open-detail"
-              onClick={() => expand(true)}
-              aria-label={`${t === en ? "Open" : "Åpne"} ${c.name}`}
-            >
-              {c.name}
-              <ChevronRight size={16} />
-            </button>
-          )}
-        </h3>
-      </div>
-      {inDialog && (
-        <div className="control-detail-meta">
-          <span>
-            {offline
-              ? t === en
-                ? "Connection lost"
-                : "Mistet forbindelsen"
-              : c.availability === "available"
-                ? t === en
-                  ? "Connected"
-                  : "Tilkoblet"
-                : t === en
-                  ? "Unavailable"
-                  : "Utilgjengelig"}
-          </span>
-          {battery && (
-            <span>
-              {t.battery}:{" "}
-              {controlState(
-                battery,
-                battery.state,
-                document.documentElement.lang,
-              )}
-              {battery.availability === "available" ? "%" : ""}
+      {inDialog ? (
+        <DeviceDetailOverview
+          control={c}
+          room={roomName}
+          offline={offline}
+          lang={t === en ? "en" : "nb"}
+          battery={battery}
+          favorite={h.favorites.includes(c.entity_id)}
+          onFavorite={favorite}
+        />
+      ) : (
+        <>
+          <div className="device-top">
+            <span className="device-icon">
+              <DeviceArtwork c={c} available={can} />
             </span>
-          )}
-        </div>
-      )}
-      {inDialog && c.updated_at && (
-        <small className="control-updated">
-          {t.lastUpdate}:{" "}
-          {new Date(c.updated_at).toLocaleString(
-            document.documentElement.lang === "en" ? "en-GB" : "nb-NO",
-          )}
-        </small>
+            <button
+              className={
+                "icon-button star " +
+                (h.favorites.includes(c.entity_id) ? "starred" : "")
+              }
+              aria-label={`${t.favorite}: ${c.name}`}
+              aria-pressed={h.favorites.includes(c.entity_id)}
+              onClick={favorite}
+            >
+              <Star size={17} />
+            </button>
+          </div>
+          <div className="device-title">
+            <span>{roomName}</span>
+            <h3>
+              <button
+                className="device-open-detail"
+                onClick={() => expand(true)}
+                aria-label={`${t === en ? "Open" : "Åpne"} ${c.name}`}
+              >
+                {c.name}
+                <ChevronRight size={16} />
+              </button>
+            </h3>
+          </div>
+        </>
       )}
       <div className="device-value">
         {c.domain === "climate" ? (
           <Thermostat
             c={{ ...c, availability: offline ? "unavailable" : c.availability }}
             lang={document.documentElement.lang}
+            inDialog={inDialog}
             disabled={!can || busy}
             change={(value) => void command("set_temperature", value)}
             changeMode={(mode) => void command("set_hvac_mode", mode)}
@@ -1834,14 +1834,21 @@ function Device({
         )}
         {power && (
           <button
-            className={mode === "simple" ? "simple-power" : "toggle"}
+            className={
+              inDialog
+                ? "device-detail-power"
+                : mode === "simple"
+                  ? "simple-power"
+                  : "toggle"
+            }
             role="switch"
             aria-checked={c.state === "on"}
             aria-label={`${c.name}: ${c.state === "on" ? t.off : t.on}`}
             disabled={!can || busy}
             onClick={() => command(c.state === "on" ? "turn_off" : "turn_on")}
           >
-            {mode === "simple" ? (
+            {inDialog && <Power size={19} aria-hidden="true" />}
+            {inDialog || mode === "simple" ? (
               document.documentElement.lang === "en" ? (
                 c.state === "on" ? (
                   "Turn off"
@@ -1859,58 +1866,40 @@ function Device({
           </button>
         )}
       </div>
-      {c.capabilities.some((v) =>
-        v.actions.some((a) =>
-          [
-            "activate",
-            "lock",
-            "unlock",
-            "open_cover",
-            "close_cover",
-            "stop_cover",
-          ].includes(a),
-        ),
-      ) && (
+      {actions.length > 0 && (
         <div className="home-device-actions">
-          {c.capabilities
-            .flatMap((v) => v.actions)
-            .filter((a) =>
-              [
-                "activate",
-                "lock",
-                "unlock",
-                "open_cover",
-                "close_cover",
-                "stop_cover",
-              ].includes(a),
-            )
-            .map((action) => (
+          {actions.map((action) => {
+            const [ActionIcon] = deviceActions[action];
+            return (
               <button
                 key={action}
                 disabled={!can || busy}
-                onClick={() => command(action)}
+                onClick={() => void command(action)}
               >
-                {
-                  (document.documentElement.lang === "en"
-                    ? {
-                        activate: "Activate",
-                        lock: "Lock",
-                        unlock: "Unlock",
-                        open_cover: "Open",
-                        close_cover: "Close",
-                        stop_cover: "Stop",
-                      }
-                    : {
-                        activate: "Aktiver",
-                        lock: "Lås",
-                        unlock: "Lås opp",
-                        open_cover: "Åpne",
-                        close_cover: "Lukk",
-                        stop_cover: "Stopp",
-                      })[action as "activate"]
-                }
+                {inDialog && <ActionIcon size={18} aria-hidden="true" />}
+                {actionLabel(action)}
               </button>
-            ))}
+            );
+          })}
+        </div>
+      )}
+      {confirmAction && (
+        <div className="device-action-confirm">
+          <p role="status">
+            {actionLabel(confirmAction)} · {c.name}?
+          </p>
+          <div>
+            <button onClick={() => setConfirmAction(null)}>
+              {t === en ? "Cancel" : "Avbryt"}
+            </button>
+            <button
+              className="primary"
+              disabled={!can || busy}
+              onClick={() => void command(confirmAction, undefined, true)}
+            >
+              {t === en ? "Confirm" : "Bekreft"}
+            </button>
+          </div>
         </div>
       )}
       {c.domain === "light" && (
@@ -1968,6 +1957,14 @@ function Device({
         </label>
       )}
 
+      {(busy || message) && (
+        <p
+          className={"command-message " + (failed ? "form-error" : "")}
+          role="status"
+        >
+          {busy ? t.pending : message}
+        </p>
+      )}
       {inDialog && (
         <>
           <button
@@ -1989,14 +1986,14 @@ function Device({
         </>
       )}
       {inDialog && admin && (
-        <HideControl c={c} lang={t === en ? "en" : "nb"} disabled={offline} />
-      )}
-      {inDialog && admin && c.domain === "light" && (
-        <LightAppearance
-          c={c}
-          lang={t === en ? "en" : "nb"}
-          disabled={offline}
-        />
+        <details className="device-options">
+          <summary className="control-history-toggle">
+            <Settings2 size={18} aria-hidden="true" />
+            {t === en ? "Device settings" : "Enhetsinnstillinger"}
+            <ChevronRight size={16} aria-hidden="true" />
+          </summary>
+          <HideControl c={c} lang={t === en ? "en" : "nb"} disabled={offline} />
+        </details>
       )}
       {mode !== "simple" && (
         <button
@@ -2004,6 +2001,7 @@ function Device({
           aria-expanded={details}
           onClick={() => showDetails(!details)}
         >
+          {inDialog && <Info size={18} aria-hidden="true" />}
           {t.details}
           <ChevronRight size={14} />
         </button>
@@ -2050,17 +2048,10 @@ function Device({
           <dd>{t.unknown}</dd>
         </dl>
       )}
-      {(busy || message) && (
-        <p
-          className={"command-message " + (failed ? "form-error" : "")}
-          role="status"
-        >
-          {busy ? t.pending : message}
-        </p>
-      )}
       {expanded && !inDialog && (
         <SettingsDialog
           title={c.name}
+          presentation="device"
           lang={document.documentElement.lang}
           onClose={() => expand(false)}
         >
