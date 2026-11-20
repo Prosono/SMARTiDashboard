@@ -355,7 +355,7 @@ test("one energy canvas contains 3D, monthly capacity, tariff, hourly extremes a
   await expect(
     page.getByRole("tab", { name: "Historikk og strømpriser", exact: true }),
   ).toHaveCount(0);
-  await expect(grid.locator(".home-canvas-cell")).toHaveCount(10);
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(9);
   const flow = grid.locator('[data-card="energy:flow"]');
   await expect(flow).toHaveCSS("grid-column-end", "span 2");
   await expect(flow.locator(".energy-scene")).toBeVisible({ timeout: 20000 });
@@ -440,16 +440,17 @@ test("history filters do not change today's summaries or remount the energy hous
   await expect(grid.locator('[data-card="energy:history"]')).toContainText(
     "42,3 kWh",
   );
-  await expect(grid.locator('[data-card="energy:today"]')).toContainText(
-    "18,4",
-  );
+  const summary = page.getByRole("region", {
+    name: "Forbruk og kostnad i dag",
+  });
+  await expect(summary).toContainText("18,4 kWh");
+  await expect(summary).toContainText(/24,60\s*kr/);
+  await expect(grid.locator('[data-card="energy:today"]')).toHaveCount(0);
+  await expect(grid.locator('[data-card="energy:today-cost"]')).toHaveCount(0);
   await expect(grid.locator('[data-card="energy:capacity"]')).toContainText(
     "2–5 kW",
   );
   await expect(canvas).toHaveAttribute("data-retained", "yes");
-  await grid
-    .locator('[data-card="energy:today"] .energy-summary-reading')
-    .click();
   await expect(
     page.getByRole("button", { name: "Uke", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
@@ -461,6 +462,41 @@ test("history filters do not change today's summaries or remount the energy hous
   await expect(page.getByRole("dialog")).toBeVisible();
 });
 
+test("today's usage and cost remain visible with a customized mobile layout", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 860 });
+  const state = await setup(page);
+  state.layouts.energy_control = {
+    revision: 1,
+    items: [{ id: "energy:history", x: 0, y: 0, w: 2, h: 3 }],
+  };
+  Object.assign(state.dashboard.totals.today, { available_kwh: 0, cost: -4.2 });
+  await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  const summary = page.getByRole("region", {
+    name: "Forbruk og kostnad i dag",
+  });
+  await expect(summary.locator("dd strong")).toHaveText([
+    "0 kWh",
+    /[−-]4,20\s*kr/,
+  ]);
+  const grid = page.locator('.home-canvas[data-page="energy_control"]');
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(1);
+
+  Object.assign(state.dashboard.totals.today, {
+    available_kwh: null,
+    cost: null,
+  });
+  await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  await expect(summary.locator("dd strong")).toHaveText(["—", "—"]);
+  await expect(summary).toContainText("Venter på målinger og priser");
+  expect(
+    await summary.evaluate((node) => node.scrollWidth - node.clientWidth),
+  ).toBeLessThanOrEqual(1);
+});
+
 test("the unified layout saves sizes, removals and additions without changing energy setup", async ({
   page,
 }) => {
@@ -468,7 +504,7 @@ test("the unified layout saves sizes, removals and additions without changing en
   await page.setViewportSize({ width: 1440, height: 1000 });
   const state = await setup(page);
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
-  await expect(grid.locator(".home-canvas-cell")).toHaveCount(10);
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(9);
   await edit(page);
   const flow = grid.locator('[data-card="energy:flow"]');
   await flow.getByRole("combobox", { name: /bredde/ }).selectOption("3");

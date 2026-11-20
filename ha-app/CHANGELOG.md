@@ -1,3 +1,7 @@
+## 1.36.149
+- PowerGuard har en enkel visning med rund effektmåler og målt effekt per enhet, og en avansert visning med historikk og hendelser. Visningsvalget huskes i nettleseren.
+- Kortet Forbruk og kostnad i dag viser kjøpt strøm i kWh og estimert kostnad i kroner for avsluttede timer. Kortet er synlig også med et tilpasset energioppsett.
+
 ## 1.36.148
 - PowerGuard bruker enhetens effektmåler når den finnes. Effekten rett før pause lagres og brukes til å vurdere om enheten får plass under kapasitetstrinnet. Uten måler kan du fortsatt oppgi effekt selv.
 - Se målt effekt, anslått timesnitt og effektgrense for siste time eller i dag. Utvid innsikten for å se bekreftede pauser og gjeninnkoblinger.

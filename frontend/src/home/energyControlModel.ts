@@ -79,8 +79,6 @@ export const energyControlDefaults = [
   "capacity",
   "tariff",
   "spot",
-  "today",
-  "today-cost",
   "history",
   "consumers",
   "price-hours",

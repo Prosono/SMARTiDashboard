@@ -67,6 +67,56 @@
   gap: 4px;
 }
 
+.power-guard-view {
+  flex: none;
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--pg-line);
+  border-radius: 13px;
+  background: var(--pg-neutral);
+}
+
+.ep .power-guard-view button {
+  min-width: 0;
+  min-height: 39px;
+  padding: 5px clamp(9px, 1.25cqi, 14px);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.ep .power-guard-view button[aria-pressed="true"] {
+  color: var(--pg-orange);
+  background: var(--pg-paper);
+  border-color: var(--pg-line);
+}
+
+@container power-guard (max-width: 619px) {
+  .power-guard-header {
+    flex-wrap: wrap;
+  }
+
+  .power-guard-identity {
+    flex: 1 1 0;
+  }
+
+  .power-guard-view {
+    order: 1;
+    flex: 1 0 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-block-start: 4px;
+  }
+
+  .ep .power-guard-view button {
+    min-height: 44px;
+  }
+}
+
 .power-guard-icon,
 .power-guard-load-icon {
   flex: none;
@@ -212,6 +262,144 @@
     color-mix(in srgb, var(--pg-warm), var(--pg-paper) 35%),
     var(--pg-warm)
   );
+}
+
+.power-guard-monitor.power-guard-simple {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: start;
+  gap: clamp(10px, 1.3cqi, 16px);
+}
+
+.power-guard-simple .power-guard-stats {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: clamp(10px, 1.4cqi, 18px);
+  border-top: 1px solid var(--pg-line);
+  text-align: center;
+}
+
+.power-guard-simple .power-guard-stats > div:first-child {
+  padding-inline-start: 5px;
+  border-inline-start: 0;
+}
+
+.power-guard-gauge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 340px);
+  aspect-ratio: 1 / 0.86;
+  isolation: isolate;
+  --power-guard-angle: 0deg;
+  --pg-stroke: clamp(15px, 5.8cqi, 25px);
+  --pg-arc-ink: var(--pg-progress);
+}
+
+.power-guard-gauge[data-over="true"] {
+  --pg-arc-ink: #d67132;
+}
+
+[data-theme="dark"] .power-guard-gauge[data-over="true"] {
+  --pg-arc-ink: #f6ad65;
+}
+
+.power-guard-gauge-arc {
+  position: absolute;
+  inset: 0 0 auto;
+  aspect-ratio: 1;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.power-guard-gauge-arc::before,
+.power-guard-gauge-arc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.power-guard-gauge-arc::before {
+  border-radius: 50%;
+  background: conic-gradient(
+    from 225deg,
+    var(--pg-arc-ink) var(--power-guard-angle),
+    var(--pg-progress-track) var(--power-guard-angle) 270deg,
+    transparent 270deg
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--pg-stroke)),
+    #000 calc(100% - var(--pg-stroke) + 1px)
+  );
+}
+
+@supports (width: calc(sin(45deg) * 1px)) {
+  .power-guard-gauge-arc::after {
+    --pg-cap-radius: calc(var(--pg-stroke) / 2);
+    --pg-arc-radius: calc(50% - var(--pg-cap-radius));
+    --pg-corner: calc(var(--pg-arc-radius) * sin(45deg));
+    --pg-tip: calc(225deg + var(--power-guard-angle));
+    --pg-cap-stop: calc(var(--pg-cap-radius) - 0.65px);
+    --pg-start-cap: var(--pg-progress-track);
+    --pg-tip-cap: transparent;
+    background:
+      radial-gradient(
+        circle at calc(50% + var(--pg-arc-radius) * sin(var(--pg-tip)))
+          calc(50% - var(--pg-arc-radius) * cos(var(--pg-tip))),
+        var(--pg-tip-cap) var(--pg-cap-stop),
+        transparent var(--pg-cap-radius)
+      ),
+      radial-gradient(
+        circle at calc(50% - var(--pg-corner)) calc(50% + var(--pg-corner)),
+        var(--pg-start-cap) var(--pg-cap-stop),
+        transparent var(--pg-cap-radius)
+      ),
+      radial-gradient(
+        circle at calc(50% + var(--pg-corner)) calc(50% + var(--pg-corner)),
+        var(--pg-progress-track) var(--pg-cap-stop),
+        transparent var(--pg-cap-radius)
+      );
+  }
+
+  .power-guard-gauge[data-filled="true"] .power-guard-gauge-arc::after {
+    --pg-start-cap: var(--pg-arc-ink);
+    --pg-tip-cap: var(--pg-arc-ink);
+  }
+}
+
+.power-guard-gauge-reading {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  width: 78%;
+  padding-top: 12%;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.power-guard-gauge-reading strong {
+  max-width: 100%;
+  font-size: clamp(2.7rem, 20cqi, 4.8rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.07em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.power-guard-gauge-reading > span,
+.ep .power-guard-gauge-reading small {
+  color: var(--muted);
+  font-size: clamp(0.76rem, 3.8cqi, 1rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.ep .power-guard-gauge-reading small {
+  margin-top: clamp(4px, 1.3cqi, 14px);
+  font-size: clamp(0.74rem, 1.4cqi, 0.9rem);
 }
 
 .power-guard-reading {
@@ -1251,6 +1439,10 @@
   .power-guard-content {
     grid-template-columns: minmax(0, 1.52fr) minmax(0, 1fr);
     align-items: start;
+  }
+
+  .power-guard[data-view="simple"] .power-guard-content {
+    grid-template-columns: minmax(228px, 0.8fr) minmax(0, 1.62fr);
   }
 
   .power-guard-header-actions {

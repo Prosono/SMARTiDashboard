@@ -25,6 +25,7 @@ import { PowerGuard, powerGuardQueryKey } from "./PowerGuard";
 import "./energyPlatform.css";
 import { EnergyPriceChart } from "./EnergyPriceChart";
 import { EnergySensorPicker } from "./EnergySensorPicker";
+import { EnergyTodayOverview } from "./EnergyTodayOverview";
 
 import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
 import type { Home } from "../types";
@@ -111,6 +112,7 @@ export type Dashboard = {
       cost?: number | string | null;
       cost_note?: string;
       complete: boolean;
+      coverage?: number;
     }
   >;
   forecast?: { value: number | string; method: string } | null;
@@ -1182,6 +1184,13 @@ export function EnergyPlatform({
               </button>
             )}
           </header>
+          <EnergyTodayOverview
+            today={liveData?.totals?.today}
+            estimated={!!liveData?.history_estimated}
+            stale={offline || todayDashboard.isError}
+            loading={todayDashboard.isLoading}
+            lang={lang}
+          />
           <PowerGuard
             admin={admin}
             lang={lang}

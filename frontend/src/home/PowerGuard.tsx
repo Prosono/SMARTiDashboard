@@ -1,4 +1,11 @@
-import { type FormEvent, useEffect, useId, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
@@ -28,6 +35,7 @@ import "./powerGuard.css";
 
 type Load = { id: string; watts: number | null; power_entity?: string | null };
 type Policy = { enabled: boolean; limit_kw: number | null; devices: Load[] };
+type View = "simple" | "advanced";
 type PowerGuardData = {
   can_edit?: boolean;
   configured_meter: boolean;
@@ -47,6 +55,7 @@ type PowerGuardData = {
 };
 
 const path = "home/energy/power-guard";
+const viewPreference = "smarti-power-guard-view";
 export const powerGuardQueryKey = ["power-guard"] as const;
 const maxWatts = 50_000;
 const maxLoads = 20;
@@ -118,6 +127,15 @@ function linkedMeter(load: Load, device: PowerGuardDevice | undefined) {
   return device?.power_meters?.find(({ id }) => id === meterId) ?? null;
 }
 
+function preferredView(): View {
+  try {
+    if (localStorage.getItem(viewPreference) === "advanced") return "advanced";
+  } catch {
+    // Storage can be unavailable in an embedded or private browser session.
+  }
+  return "simple";
+}
+
 export function PowerGuard({
   admin,
   lang,
@@ -133,6 +151,7 @@ export function PowerGuard({
   const t = (nb: string, en: string) => (english ? en : nb);
   const id = useId();
   const cache = useQueryClient();
+  const [view, setView] = useState(preferredView);
   const [open, setOpen] = useState(true);
   const [adding, setAdding] = useState(false);
   const [focusLoad, setFocusLoad] = useState<string | null>(null);
@@ -180,8 +199,9 @@ export function PowerGuard({
   const data = query.data;
   const mayConfigure = admin && data?.can_edit !== false;
   const config = data?.config;
+  const advanced = view === "advanced";
   const hour = usePowerGuardHistoryHour(
-    offline || !open || !config,
+    offline || !advanced || !open || !config,
     config?.enabled,
   );
   const draft = editing?.draft ?? config;
@@ -246,6 +266,7 @@ export function PowerGuard({
   const withinLimit =
     margin != null && !over && (state === "monitoring" || state === "paused");
   const portion = projected != null && target ? projected / target : null;
+  const fill = Math.min(1, Math.max(0, portion ?? 0));
   const onCount = (draft?.devices ?? []).filter(
     ({ id }) => devices.get(id)?.state === "on" && !paused.has(id),
   ).length;
@@ -313,9 +334,42 @@ export function PowerGuard({
           ? t("Nær grensen", "Near the limit")
           : stateLabel;
   const enabledLabel = config?.enabled ? t("Aktiv", "Active") : t("Av", "Off");
+  const marginLabel =
+    over && margin !== 0
+      ? t("Over grensen", "Over limit")
+      : t("Margin", "Headroom");
+  const marginValue = kw(margin == null ? null : Math.abs(margin));
+  const powerNow = kw(online ? status?.power_kw : null);
+  const impact = (
+    <span
+      className="power-guard-impact"
+      data-tone={over ? "attention" : tone}
+      role="status"
+    >
+      {withinLimit ? (
+        <Check size={16} aria-hidden="true" />
+      ) : over || tone === "attention" ? (
+        <CircleAlert size={16} aria-hidden="true" />
+      ) : null}
+      {impactText}
+    </span>
+  );
+
+  function chooseView(next: View) {
+    setView(next);
+    try {
+      localStorage.setItem(viewPreference, next);
+    } catch {
+      // The current view still works for this session.
+    }
+  }
 
   return (
-    <section className="power-guard" aria-labelledby={`${id}-heading`}>
+    <section
+      className="power-guard"
+      data-view={view}
+      aria-labelledby={`${id}-heading`}
+    >
       <header className="power-guard-header">
         <div className="power-guard-identity">
           <span className="power-guard-icon" aria-hidden="true">
@@ -326,6 +380,28 @@ export function PowerGuard({
             <p>{t("Automatisk lastbalansering", "Automatic load balancing")}</p>
           </div>
         </div>
+        {open && data && (
+          <div
+            className="power-guard-view"
+            role="group"
+            aria-label={t("PowerGuard-visning", "PowerGuard view")}
+          >
+            <button
+              type="button"
+              aria-pressed={!advanced}
+              onClick={() => chooseView("simple")}
+            >
+              {t("Enkel", "Simple")}
+            </button>
+            <button
+              type="button"
+              aria-pressed={advanced}
+              onClick={() => chooseView("advanced")}
+            >
+              {t("Avansert", "Advanced")}
+            </button>
+          </div>
+        )}
         <div className="power-guard-header-actions">
           {online && config?.enabled && formattedTime && (
             <small className="power-guard-updated">
@@ -407,67 +483,95 @@ export function PowerGuard({
           <form className="power-guard-form" onSubmit={savePolicy}>
             <div className="power-guard-content">
               <div className="power-guard-overview">
-                <div className="power-guard-monitor">
-                  <div className="power-guard-reading">
-                    <span>
-                      {t("Anslått timesnitt", "Estimated hourly average")}
-                    </span>
-                    <strong>
-                      {projected == null ? "—" : number.format(projected)}{" "}
-                      {projected != null && <small>kW</small>}
-                    </strong>
-                  </div>
-                  <dl className="power-guard-stats">
-                    <div>
-                      <dt>{t("Effekt nå", "Power now")}</dt>
-                      <dd>{kw(online ? status?.power_kw : null)}</dd>
+                {advanced ? (
+                  <div className="power-guard-monitor">
+                    <div className="power-guard-reading">
+                      <span>
+                        {t("Anslått timesnitt", "Estimated hourly average")}
+                      </span>
+                      <strong>
+                        {projected == null ? "—" : number.format(projected)}{" "}
+                        {projected != null && <small>kW</small>}
+                      </strong>
                     </div>
-                    <div>
-                      <dt>{t("Grense", "Limit")}</dt>
-                      <dd>{kw(target)}</dd>
-                    </div>
-                    <div>
-                      <dt>
-                        {over && margin !== 0
-                          ? t("Over grensen", "Over limit")
-                          : t("Margin", "Headroom")}
-                      </dt>
-                      <dd>{kw(margin == null ? null : Math.abs(margin))}</dd>
-                    </div>
-                  </dl>
-                  <div className="power-guard-progress">
-                    <span
-                      className="power-guard-progress-track"
-                      aria-hidden="true"
-                      data-over={over}
-                    >
+                    <dl className="power-guard-stats">
+                      <div>
+                        <dt>{t("Effekt nå", "Power now")}</dt>
+                        <dd>{powerNow}</dd>
+                      </div>
+                      <div>
+                        <dt>{t("Grense", "Limit")}</dt>
+                        <dd>{kw(target)}</dd>
+                      </div>
+                      <div>
+                        <dt>{marginLabel}</dt>
+                        <dd>{marginValue}</dd>
+                      </div>
+                    </dl>
+                    <div className="power-guard-progress">
                       <span
-                        style={{
-                          width: `${Math.min(1, Math.max(0, portion ?? 0)) * 100}%`,
-                        }}
-                      />
-                    </span>
-                    {portion != null && (
-                      <small>
-                        {percent.format(portion)}{" "}
-                        {t("av timesmålet", "of the hourly target")}
-                      </small>
-                    )}
-                    <span
-                      className="power-guard-impact"
-                      data-tone={over ? "attention" : tone}
-                      role="status"
-                    >
-                      {withinLimit ? (
-                        <Check size={16} aria-hidden="true" />
-                      ) : over || tone === "attention" ? (
-                        <CircleAlert size={16} aria-hidden="true" />
-                      ) : null}
-                      {impactText}
-                    </span>
+                        className="power-guard-progress-track"
+                        aria-hidden="true"
+                        data-over={over}
+                      >
+                        <span style={{ width: `${fill * 100}%` }} />
+                      </span>
+                      {portion != null && (
+                        <small>
+                          {percent.format(portion)}{" "}
+                          {t("av timesmålet", "of the hourly target")}
+                        </small>
+                      )}
+                      {impact}
+                    </div>
                   </div>
-                </div>
-                {open && (
+                ) : (
+                  <div className="power-guard-monitor power-guard-simple">
+                    <div
+                      className="power-guard-gauge"
+                      data-filled={fill > 0}
+                      data-over={over}
+                      style={
+                        {
+                          "--power-guard-angle": `${fill * 270}deg`,
+                        } as CSSProperties
+                      }
+                    >
+                      <div
+                        className="power-guard-gauge-arc"
+                        aria-hidden="true"
+                      />
+                      <div className="power-guard-gauge-reading">
+                        <strong>
+                          {projected == null ? "—" : number.format(projected)}
+                        </strong>
+                        <span>
+                          {t(
+                            "kW anslått timesnitt",
+                            "kW estimated hourly average",
+                          )}
+                        </span>
+                        {target != null && (
+                          <small>
+                            {t("av", "of")} {kw(target)}
+                          </small>
+                        )}
+                      </div>
+                    </div>
+                    {impact}
+                    <dl className="power-guard-stats">
+                      <div>
+                        <dt>{t("Effekt nå", "Power now")}</dt>
+                        <dd>{powerNow}</dd>
+                      </div>
+                      <div>
+                        <dt>{marginLabel}</dt>
+                        <dd>{marginValue}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                )}
+                {open && advanced && (
                   <PowerGuardHistory
                     lang={lang}
                     offline={offline}
@@ -647,12 +751,15 @@ export function PowerGuard({
                             <div className="power-guard-load-meta">
                               {(meter || beforePause != null) && (
                                 <div className="power-guard-load-reading">
-                                  {meter && matchedMeter && online && (
-                                    <PowerGuardLoadTrend
-                                      id={load.id}
-                                      history={hour.data}
-                                    />
-                                  )}
+                                  {advanced &&
+                                    meter &&
+                                    matchedMeter &&
+                                    online && (
+                                      <PowerGuardLoadTrend
+                                        id={load.id}
+                                        history={hour.data}
+                                      />
+                                    )}
                                   {meter && (
                                     <span>
                                       <small>

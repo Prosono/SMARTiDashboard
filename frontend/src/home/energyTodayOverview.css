@@ -1,0 +1,113 @@
+.energy-today-overview {
+  margin-block-end: 14px;
+  padding: clamp(12px, 1.8vw, 20px);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: linear-gradient(
+    112deg,
+    var(--card-color, var(--surface)),
+    var(--card-depth, var(--surface))
+  );
+  container: energy-today / inline-size;
+}
+
+.energy-today-layout {
+  display: grid;
+  grid-template-columns: minmax(188px, 0.85fr) minmax(0, 1.65fr);
+  align-items: center;
+  gap: 12px clamp(10px, 2vw, 26px);
+}
+
+.energy-today-layout > header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.energy-today-overview svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.energy-today-layout > header h3 {
+  margin: 0;
+  line-height: 1.18;
+  font-size: 1.05rem;
+}
+
+.ep .energy-today-layout > header p {
+  margin: 3px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.3;
+}
+
+.energy-today-overview dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(7px, 1.4vw, 18px);
+  margin: 0;
+}
+
+.energy-today-overview dl > div {
+  min-width: 0;
+  padding-inline-start: clamp(7px, 1.5vw, 18px);
+  border-inline-start: 1px solid var(--line);
+}
+
+.energy-today-overview dt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.energy-today-overview dd {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 0;
+}
+
+.energy-today-overview dd strong {
+  font-size: clamp(1.24rem, 3cqi, 1.9rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.026em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.energy-today-overview dd span {
+  font-size: 0.64em;
+  font-weight: 600;
+}
+
+.ep .energy-today-overview small,
+.ep .energy-today-overview > .energy-today-stale {
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.24;
+}
+
+.ep .energy-today-overview > .energy-today-stale {
+  margin: 10px 0 0;
+}
+
+@container energy-today (max-width: 540px) {
+  .energy-today-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .energy-today-overview dl > div:first-child {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+}
+
+@container energy-today (max-width: 266px) {
+  .energy-today-overview dt > svg {
+    display: none;
+  }
+}
