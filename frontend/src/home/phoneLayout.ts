@@ -19,6 +19,7 @@ export const phoneEnergyPrimary = new Set([
   "energy:tariff",
   "energy:history",
   "energy:capacity",
+  "energy:consumers",
 ]);
 export type PhoneSize = { w: number; h: number; order?: number };
 

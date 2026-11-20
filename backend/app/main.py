@@ -452,7 +452,7 @@ def create_app(
     app.include_router(vehicle_router(store, user, ha))
     app.include_router(camera_router(ha, user, settings))
     app.include_router(scenes_router(ha, store, user, settings))
-    app.include_router(energy_router(ha, store, user, settings))
+    app.include_router(energy_router(ha, store, user, settings, energy_platform.repo))
     app.include_router(power_guard_router(power_guard, user, admin))
     app.include_router(platform_router(energy_platform, user, admin))
     app.include_router(energy_flow_router(store, user, ha, settings))

@@ -15,6 +15,11 @@ import {
   Info,
 } from "lucide-react";
 import { api } from "../api";
+import {
+  DeviceEnergyConsumption,
+  deviceEnergyConsumptionQueryKey,
+  PhoneDeviceEnergyConsumption,
+} from "./DeviceEnergyConsumption";
 import { SettingsDialog } from "./SettingsDialog";
 import { PowerGuard, powerGuardQueryKey } from "./PowerGuard";
 import "./energyPlatform.css";
@@ -409,6 +414,9 @@ export function EnergyPlatform({
         "Kunne ikke hente alle kildene nå. Lagret historikk er fortsatt tilgjengelig.",
       );
     } finally {
+      await cache.invalidateQueries({
+        queryKey: deviceEnergyConsumptionQueryKey,
+      });
       setBusy(false);
     }
   }
@@ -906,18 +914,37 @@ export function EnergyPlatform({
         <EnergyModule
           id="energy:consumers"
           summary={{
-            reading: "Se målere",
-            detail: "Effekt og forbruk per enhet",
+            reading: lang === "en" ? "View usage" : "Se forbruk",
+            detail: lang === "en" ? "Energy per device" : "Energi per enhet",
             icon: "energy",
           }}
-          title="Forbruk per enhet"
+          title={lang === "en" ? "Usage by device" : "Forbruk per enhet"}
           w={2}
           h={3}
-          defaultHidden={
-            !setup.data.config.meters.some((m) => m.role !== "grid") &&
-            !data?.power_consumers?.length
-          }
+          phoneSize={{ w: 2, h: 2, order: 5 }}
+          phoneContent={(open) => (
+            <PhoneDeviceEnergyConsumption
+              lang={lang}
+              offline={offline}
+              onOpen={open}
+            />
+          )}
         >
+          <DeviceEnergyConsumption lang={lang} offline={offline} />
+        </EnergyModule>
+        <EnergyModule
+          id="energy:meters"
+          summary={{
+            reading: "Åpne målere",
+            detail: "Målere og kjøretøy",
+            icon: "energy",
+          }}
+          title="Målere og kjøretøy"
+          w={3}
+          h={3}
+          defaultHidden
+        >
+          {historyExtras}
           {data?.power_consumers?.map((m) => (
             <div className="ep-consumer" key={m.entity}>
               <span>
@@ -957,20 +984,6 @@ export function EnergyPlatform({
                 </strong>
               </div>
             ))}
-        </EnergyModule>
-        <EnergyModule
-          id="energy:meters"
-          summary={{
-            reading: "Åpne målere",
-            detail: "Målere og kjøretøy",
-            icon: "energy",
-          }}
-          title="Målere og kjøretøy"
-          w={3}
-          h={3}
-          defaultHidden
-        >
-          {historyExtras}
         </EnergyModule>
       </EnergyModuleGroup>
     );

@@ -1,22 +1,31 @@
-import { type CSSProperties, type FormEvent, useId, useState } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUp,
-  CarFront,
   Check,
   ChevronDown,
   CircleAlert,
-  Droplet,
   GripVertical,
   Plug,
   Plus,
   Shield,
   SlidersHorizontal,
-  Thermometer,
   X,
 } from "lucide-react";
 import { ApiError, api } from "../api";
+import {
+  PowerGuardDevicePicker,
+  powerGuardDeviceIcon,
+  type PowerGuardDevice,
+} from "./PowerGuardDevicePicker";
 import "./powerGuard.css";
 
 type Load = { id: string; watts: number };
@@ -30,13 +39,7 @@ type PowerGuardData = {
   meter: { id: string; name: string } | null;
   company: string | null;
   tiers: { label: string; limit_kw: number }[];
-  devices: {
-    id: string;
-    name: string;
-    room: string | null;
-    kind: "switch" | "climate";
-    state: string;
-  }[];
+  devices: PowerGuardDevice[];
   config: Policy;
   status: {
     state: string;
@@ -126,11 +129,17 @@ export function PowerGuard({
   const cache = useQueryClient();
   const [open, setOpen] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [candidate, setCandidate] = useState("");
+  const [focusLoad, setFocusLoad] = useState<string | null>(null);
+  const newLoadField = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState<{ from: string; over: string } | null>(null);
   const [editing, setEditing] = useState<{ base: Policy; draft: Draft } | null>(
     null,
   );
+  useEffect(() => {
+    if (!focusLoad) return;
+    newLoadField.current?.focus();
+    setFocusLoad(null);
+  }, [focusLoad]);
   const query = useQuery({
     queryKey: powerGuardQueryKey,
     queryFn: ({ signal }) =>
@@ -459,7 +468,7 @@ export function PowerGuard({
                         const details = [rank, device?.room]
                           .filter(Boolean)
                           .join(" · ");
-                        const Icon = loadIcon(device);
+                        const Icon = powerGuardDeviceIcon(device);
                         return (
                           <li
                             key={load.id}
@@ -539,6 +548,11 @@ export function PowerGuard({
                                 <span>{t("Maks effekt", "Max power")}</span>
                                 <span className="power-guard-watts-field">
                                   <input
+                                    ref={
+                                      focusLoad === load.id
+                                        ? newLoadField
+                                        : undefined
+                                    }
                                     type="number"
                                     inputMode="decimal"
                                     lang={locale}
@@ -654,77 +668,18 @@ export function PowerGuard({
                 )}
                 {mayConfigure &&
                   selectable.length > 0 &&
-                  draft.devices.length < maxLoads &&
-                  (adding ? (
-                    <div className="power-guard-add">
-                      <label htmlFor={`${id}-device`}>
-                        {t("Velg enhet", "Select a device")}
-                      </label>
-                      <select
-                        id={`${id}-device`}
-                        disabled={!canEdit}
-                        value={candidate}
-                        autoFocus
-                        onChange={(event) => setCandidate(event.target.value)}
-                      >
-                        <option value="">
-                          {t(
-                            "Velg bryter eller termostat…",
-                            "Select a switch or thermostat…",
-                          )}
-                        </option>
-                        {selectable.map(({ id, name, room, kind }) => (
-                          <option key={id} value={id}>
-                            {name}
-                            {room
-                              ? ` · ${room}`
-                              : kind === "climate"
-                                ? ` · ${t("Termostat", "Thermostat")}`
-                                : ""}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        disabled={
-                          !canEdit ||
-                          !selectable.some(({ id }) => id === candidate)
-                        }
-                        onClick={() => {
-                          edit({
-                            devices: [
-                              ...draft.devices,
-                              { id: candidate, watts: null },
-                            ],
-                          });
-                          setCandidate("");
-                          setAdding(false);
-                        }}
-                      >
-                        {t("Legg til", "Add")}
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t(
-                          "Lukk enhetsvelger",
-                          "Close device selector",
-                        )}
-                        onClick={() => setAdding(false)}
-                      >
-                        <X size={17} aria-hidden="true" />
-                      </button>
-                    </div>
-                  ) : (
+                  draft.devices.length < maxLoads && (
                     <button
                       type="button"
                       className="power-guard-add-button"
+                      aria-haspopup="dialog"
                       disabled={!canEdit}
                       onClick={() => setAdding(true)}
                     >
                       <Plus size={20} aria-hidden="true" />
                       {t("Legg til enhet", "Add a device")}
                     </button>
-                  ))}
+                  )}
                 {mayConfigure && !data.devices.length && (
                   <p className="power-guard-note">
                     {t(
@@ -924,7 +879,6 @@ export function PowerGuard({
                       disabled={save.isPending}
                       onClick={() => {
                         setEditing(null);
-                        setCandidate("");
                         setAdding(false);
                         save.reset();
                       }}
@@ -949,14 +903,27 @@ export function PowerGuard({
           </form>
         )}
       </div>
+      {adding && draft && mayConfigure && (
+        <PowerGuardDevicePicker
+          lang={lang}
+          devices={selectable}
+          remainingSlots={maxLoads - draft.devices.length}
+          disabled={!canEdit}
+          onClose={() => setAdding(false)}
+          onAdd={(ids) => {
+            if (!canEdit || draft.devices.length + ids.length > maxLoads)
+              return;
+            edit({
+              devices: [
+                ...draft.devices,
+                ...ids.map((id) => ({ id, watts: null })),
+              ],
+            });
+            setAdding(false);
+            setFocusLoad(ids[0]);
+          }}
+        />
+      )}
     </section>
   );
-}
-
-function loadIcon(device: PowerGuardData["devices"][number] | undefined) {
-  const name = device?.name.toLowerCase() ?? "";
-  if (/(elbil|charger|car charging|easee|zaptec|wallbox)/.test(name))
-    return CarFront;
-  if (/(bereder|water heater|hot water)/.test(name)) return Droplet;
-  return device?.kind === "climate" ? Thermometer : Plug;
 }

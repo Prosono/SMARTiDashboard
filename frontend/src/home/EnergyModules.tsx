@@ -25,6 +25,7 @@ const moduleIcons: Record<string, LucideIcon> = {
   "energy:today": BarChart3,
   "energy:consumption": BarChart3,
   "energy:history": BarChart3,
+  "energy:consumers": BarChart3,
   "energy:cost": Coins,
   "energy:today-cost": Coins,
   "energy:breakdown": Coins,

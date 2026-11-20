@@ -1,0 +1,316 @@
+.device-energy,
+.device-energy-preview {
+  --device-energy-fill: var(--card-series-1, var(--accent));
+  --device-energy-track: color-mix(
+    in srgb,
+    var(--device-energy-fill) 13%,
+    transparent
+  );
+  --device-energy-paper: color-mix(in srgb, var(--surface) 82%, transparent);
+  min-width: 0;
+}
+
+.device-energy {
+  container-type: inline-size;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.device-energy-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.device-energy-period {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  box-sizing: border-box;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--device-energy-track);
+}
+
+.device-energy .device-energy-period button {
+  min-height: 37px;
+  padding: 3px 11px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.device-energy .device-energy-period button[aria-pressed="true"] {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.device-energy-range,
+.device-energy .device-energy-notice {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.device-energy .device-energy-notice {
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--device-energy-track);
+}
+
+.device-energy-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.device-energy-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 14px;
+  align-items: start;
+  padding: 0 0 2px;
+}
+
+.device-energy-row[data-missing] {
+  padding-block: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.device-energy-name,
+.device-energy-value {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  line-height: 1.2;
+}
+
+.device-energy-name strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.device-energy-name span,
+.device-energy-value > span {
+  color: var(--muted);
+  font-size: 0.79rem;
+  overflow-wrap: anywhere;
+}
+
+.device-energy-value {
+  align-self: start;
+  text-align: end;
+}
+
+.device-energy-value strong,
+.device-energy-preview-list strong {
+  font-size: 1.02rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.device-energy-value strong span,
+.device-energy-preview-list strong span {
+  color: var(--muted);
+  font-size: 0.72em;
+  font-weight: 600;
+}
+
+.device-energy-value .device-energy-partial {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.device-energy-bar {
+  grid-column: 1 / -1;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--device-energy-track);
+}
+
+.device-energy-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--device-energy-fill), var(--accent));
+}
+
+.device-energy .device-energy-more,
+.device-energy .device-energy-retry {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  min-height: 42px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--device-energy-paper);
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.device-energy-more[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.device-energy-empty {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: start;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--device-energy-paper);
+  border: 1px solid var(--line);
+}
+
+.device-energy-empty > svg,
+.device-energy-preview-heading > svg,
+.device-energy-preview-action > svg {
+  color: var(--accent);
+  flex: none;
+}
+
+.device-energy-empty p {
+  margin: 3px 0 0;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.device-energy-empty .device-energy-retry {
+  grid-column: 2;
+}
+
+.ep button.device-energy-preview,
+button.device-energy-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: clamp(10px, 4cqi, 16px);
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+}
+
+.device-energy-preview:focus-visible,
+.device-energy button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.device-energy-preview:focus-visible {
+  outline-offset: -4px;
+}
+
+.device-energy-preview-heading,
+.device-energy-preview-action {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.device-energy-preview-heading strong {
+  font-size: 0.99rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.device-energy-preview-range,
+.device-energy-preview-empty {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.device-energy-preview-list {
+  align-self: center;
+  display: grid;
+  min-width: 0;
+}
+
+.device-energy-preview-list > span {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+  line-height: 1.15;
+}
+
+.device-energy-preview-list > span > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-energy-preview-action {
+  justify-self: end;
+  align-self: end;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+@container (max-width: 285px) {
+  .device-energy-period {
+    width: 100%;
+  }
+
+  .device-energy .device-energy-period button {
+    padding-inline: 4px;
+  }
+
+  .device-energy-row {
+    column-gap: 8px;
+  }
+}
+
+@media (pointer: coarse) {
+  .device-energy .device-energy-period button {
+    min-height: 42px;
+  }
+}
+
+@media (hover: hover) {
+  .device-energy .device-energy-period button:hover,
+  .device-energy .device-energy-more:hover,
+  .device-energy .device-energy-retry:hover {
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  .device-energy-preview:hover .device-energy-preview-action {
+    text-decoration: underline;
+  }
+}

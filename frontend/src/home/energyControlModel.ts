@@ -82,6 +82,7 @@ export const energyControlDefaults = [
   "today",
   "today-cost",
   "history",
+  "consumers",
   "price-hours",
   "prices",
   "solar",

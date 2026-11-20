@@ -1,3 +1,7 @@
+## 1.36.147
+- Søk etter enheter eller rom i PowerGuard, filtrer på enhetstype og legg til flere enheter samtidig.
+- Forbruk per enhet under Energi viser målte kWh for de siste 24 timene, 7 dagene eller 30 dagene, med datadekning for ufullstendige målinger.
+
 ## 1.36.146
 - PowerGuard har ny effektmåler med anslått timesnitt, valgt grense og margin. Prioritetslisten viser enhetenes status og hvilken enhet som pauses først. På mobil kan prioriteten endres med piltastene. Hovedmåler og kapasitetstrinn er samlet nederst.
 
