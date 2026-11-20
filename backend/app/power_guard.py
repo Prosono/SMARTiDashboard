@@ -5,8 +5,9 @@ import logging
 import math
 import re
 import sqlite3
+from collections import Counter, defaultdict
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -20,15 +21,19 @@ from .energy_flow import power_reading
 from .energy_tariffs import D, tariff
 from .ha import HAError
 from .power_guard_control import GuardLoad, PowerGuardController
+from .power_guard_history import PowerGuardHistory
 
 LOG = logging.getLogger(__name__)
 OSLO = ZoneInfo("Europe/Oslo")
 STORE_KEY = "energy_power_guard"
 MAX_AGE_SECONDS = 45
+DEVICE_MAX_AGE_SECONDS = 90
+DEVICE_METER_RETRY_SECONDS = 30
 POLL_SECONDS = 5
 STATUS_WRITE_SECONDS = 15
 CONFIRM_SECONDS = 30
 RETRY_SECONDS = 300
+REBOUND_WINDOW_SECONDS = 300
 HVAC_MIN_PAUSE_SECONDS = 180
 HVAC_MODES = {"heat", "cool", "heat_cool", "auto", "dry", "fan_only"}
 Direction = Literal["turn_on", "turn_off"]
@@ -37,7 +42,8 @@ Direction = Literal["turn_on", "turn_off"]
 class ManagedLoad(BaseModel):
     model_config = {"extra": "forbid"}
     id: str = Field(min_length=1, max_length=200)
-    watts: int = Field(ge=1, le=50000, strict=True)
+    watts: int | None = Field(default=None, ge=1, le=50000, strict=True)
+    power_entity: str | None = Field(default=None, max_length=200, pattern=r"^sensor\.[a-z0-9_]+$")
 
 
 class PowerGuardConfig(BaseModel):
@@ -64,6 +70,9 @@ class Pause(BaseModel):
     last_changed: str
     resume_state: str
     at: float
+    measured_watts: float | None = None
+    fallback_watts: int | None = None
+    restore_after: float = 0
 
 
 class Pending(BaseModel):
@@ -74,12 +83,15 @@ class Pending(BaseModel):
     expected: str
     context: str
     at: float
+    measured_watts: float | None = None
+    fallback_watts: int | None = None
 
 
 class LastAction(BaseModel):
     id: str
     command: Direction
     at: datetime
+    watts: float | None = None
 
 
 class Runtime(BaseModel):
@@ -90,6 +102,7 @@ class Runtime(BaseModel):
     last_action: LastAction | None = None
     paused: dict[str, Pause] = Field(default_factory=dict)
     blocked_until: dict[str, float] = Field(default_factory=dict)
+    recent_restores: dict[str, float] = Field(default_factory=dict)
     pending: Pending | None = None
 
 
@@ -162,6 +175,47 @@ def meter_candidate(control):
     )
 
 
+def device_meter_options(controls, loads, main_entity):
+    """Auto-link only a one-to-one load and meter on a registered HA device."""
+    grouped = defaultdict(list)
+    for control in controls:
+        if (
+            control.device_id
+            and control.entity_id != main_entity
+            and meter_candidate(control)
+            and control.attributes.get("device_class") in {None, "power"}
+        ):
+            grouped[control.device_id].append(control)
+    load_counts = Counter(control.device_id for control in loads.values())
+    return {
+        key: (
+            meters,
+            meters[0] if len(meters) == 1 and load_counts[load.device_id] == 1 else None,
+        )
+        for key, load in loads.items()
+        if (meters := sorted(grouped.get(load.device_id, ()), key=lambda meter: meter.name.casefold()))
+    }
+
+
+def assigned_meter(options, load=None):
+    meters, automatic = options
+    if load and load.power_entity:
+        return next((meter for meter in meters if meter.entity_id == load.power_entity), None)
+    return automatic
+
+
+def describe_meter(meter):
+    return {"id": meter.entity_id, "name": meter.name}
+
+
+def current_device_watts(meter, states, connected, now):
+    watts, _, stamp = power_reading(meter, states, connected, now, DEVICE_MAX_AGE_SECONDS)
+    if watts is not None and math.isfinite(watts) and watts >= 0:
+        if (datetime.fromisoformat(stamp) - now).total_seconds() <= 5:
+            return watts
+    return None
+
+
 def read_record(db):
     row = db.execute("SELECT value FROM settings WHERE key=?", (STORE_KEY,)).fetchone()
     return Record.model_validate_json(row[0]) if row else Record()
@@ -174,6 +228,7 @@ class PowerGuard:
         self.repo = repo
         self.settings = settings
         self.resetting = resetting
+        self.history = PowerGuardHistory(store, STORE_KEY)
         self.engine = PowerGuardController()
         self.engine_key = None
         self.last_meter_stamp = None
@@ -192,24 +247,26 @@ class PowerGuard:
         binding = self.binding(now)
         controls = self.ha.controls()
         loads = {control.id: control for control in controls if eligible(control)}
+        options = device_meter_options(controls, loads, binding.entity if binding else None)
         if binding is None:
-            return None, None, [], None, loads
+            return None, None, [], None, loads, options
         meter = next((control for control in controls if control.entity_id == binding.entity), None)
         company, tiers = capacity_tiers(
             binding.company, binding.segment, now.astimezone(OSLO).date(), self.repo.tariff(binding.company)
         )
-        return binding, meter if meter_candidate(meter) else None, tiers, company, loads
+        return binding, meter if meter_candidate(meter) else None, tiers, company, loads, options
 
     def view(self, current, now=None):
         now = now or datetime.now(UTC)
-        binding, meter, tiers, company, loads = self.inventory(now)
+        binding, meter, tiers, company, loads, options = self.inventory(now)
         record = self.record()
-        return self.response(record, current, binding, meter, tiers, company, loads)
+        return self.response(record, current, now, binding, meter, tiers, company, loads, options)
 
-    def response(self, record, current, binding, meter, tiers, company, loads):
+    def response(self, record, current, now, binding, meter, tiers, company, loads, options):
         areas = getattr(self.ha, "areas", {})
         can_edit = current["role"] == "admin" and not current.get("support")
         allowed = {key: control for key, control in loads.items() if visible(current, control)}
+        configured = {load.id: load for load in record.config.devices}
         unseen = {load.id for load in record.config.devices} - loads.keys() if can_edit else set()
         visible_ids = set(allowed) | unseen
         runtime = record.runtime
@@ -221,6 +278,35 @@ class PowerGuard:
             state = "settings_changed"
         elif record.config.enabled and not any(tier["limit_kw"] == record.config.limit_kw for tier in tiers):
             state = "waiting_tariff"
+        devices = []
+        for key, control in allowed.items():
+            candidates, automatic = options.get(key, ((), None))
+            selected = assigned_meter((candidates, automatic), configured.get(key))
+            pause = runtime.paused.get(key)
+            if selected and not visible(current, selected):
+                selected = None
+            devices.append(
+                {
+                    "id": key,
+                    "name": control.name,
+                    "room": areas.get(control.area_id, {}).get("name"),
+                    "kind": control.domain,
+                    "state": load_state(control),
+                    "power_meter": describe_meter(selected) if selected else None,
+                    "power_meters": [
+                        describe_meter(meter) for meter in candidates if visible(current, meter)
+                    ],
+                    "automatic_power_meter_id": (
+                        automatic.entity_id if automatic and visible(current, automatic) else None
+                    ),
+                    "power_watts": (
+                        current_device_watts(selected, self.ha.states, self.ha.connected, now)
+                        if self.settings.mode != "demo"
+                        else None
+                    ),
+                    "paused_watts": pause.measured_watts if pause else None,
+                }
+            )
         return {
             "configured_meter": meter is not None,
             "meter": {"id": meter.id, "name": meter.name} if meter else None,
@@ -228,16 +314,7 @@ class PowerGuard:
             "can_edit": can_edit,
             "tiers": tiers,
             "devices": sorted(
-                [
-                    {
-                        "id": control.id,
-                        "name": control.name,
-                        "room": areas.get(control.area_id, {}).get("name"),
-                        "kind": control.domain,
-                        "state": load_state(control),
-                    }
-                    for control in allowed.values()
-                ],
+                devices,
                 key=lambda item: (item["room"] or "", item["name"].casefold(), item["id"]),
             ),
             "config": record.config.model_copy(
@@ -263,14 +340,29 @@ class PowerGuard:
         if config.enabled and self.resetting():
             raise HTTPException(409, "power_guard_reset_in_progress")
         now = datetime.now(UTC)
-        binding, meter, tiers, company, loads = self.inventory(now)
+        binding, meter, tiers, company, loads, options = self.inventory(now)
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             previous = read_record(db)
-            known = {load.id for load in previous.config.devices}
+            known = {load.id: load for load in previous.config.devices}
             ids = {load.id for load in config.devices}
-            if ids - loads.keys() - known:
+            if ids - loads.keys() - known.keys():
                 raise HTTPException(422, "power_guard_invalid_devices")
+            used_meters = set()
+            for load in config.devices:
+                selected = assigned_meter(options.get(load.id, ((), None)), load)
+                previous_load = known.get(load.id)
+                retained_binding = (
+                    previous_load
+                    and previous_load.power_entity == load.power_entity
+                    and (load.watts is not None or previous_load.watts is None)
+                )
+                if not selected and (load.power_entity or load.watts is None) and not retained_binding:
+                    raise HTTPException(422, "power_guard_device_meter_required")
+                if selected:
+                    if selected.entity_id in used_meters:
+                        raise HTTPException(422, "power_guard_duplicate_device_meter")
+                    used_meters.add(selected.entity_id)
             if config.enabled:
                 if not meter:
                     raise HTTPException(422, "power_guard_meter_required")
@@ -279,7 +371,7 @@ class PowerGuard:
                 if not ids.intersection(loads):
                     raise HTTPException(422, "power_guard_devices_required")
             if previous.config == config and previous.binding == binding:
-                return self.response(previous, current, binding, meter, tiers, company, loads)
+                return self.response(previous, current, now, binding, meter, tiers, company, loads, options)
 
             last_action = previous.runtime.last_action
             old_runtime = previous.runtime
@@ -293,19 +385,26 @@ class PowerGuard:
                 runtime.blocked_until = {
                     key: until for key, until in old_runtime.blocked_until.items() if key in ids
                 }
+                runtime.recent_restores = {
+                    key: at for key, at in old_runtime.recent_restores.items() if key in ids
+                }
                 if old_runtime.pending and old_runtime.pending.id in ids:
                     runtime.pending = old_runtime.pending
             record = Record(revision=uuid4().hex, config=config, binding=binding, runtime=runtime)
             db.execute("INSERT OR REPLACE INTO settings VALUES (?,?)", (STORE_KEY, record.model_dump_json()))
-        return self.response(record, current, binding, meter, tiers, company, loads)
+        return self.response(record, current, now, binding, meter, tiers, company, loads, options)
 
     def persist(self, record):
         """The remote/web writer can supersede a decision without being rolled back by this worker."""
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            if read_record(db).revision != record.revision:
+            before = read_record(db)
+            if before.revision != record.revision:
                 return False
             db.execute("UPDATE settings SET value=? WHERE key=?", (record.model_dump_json(), STORE_KEY))
+            action = record.runtime.last_action
+            if action and action != before.runtime.last_action:
+                self.history.action(db, action.id, action.command, action.at, action.watts)
             return True
 
     def publish(self, record, now, state, power=None, projected=None, *, changed=False):
@@ -322,7 +421,7 @@ class PowerGuard:
             runtime.updated_at = now
             self.persist(record)
 
-    async def read_meter(self, meter, now):
+    async def read_meter(self, meter, now, *, device=False):
         if not self.ha.connected or not re.fullmatch(r"sensor\.[a-z0-9_]+", meter.entity_id):
             return None, "meter_unavailable", None
         try:
@@ -346,9 +445,15 @@ class PowerGuard:
                 "attributes": attrs,
             }
         )
-        watts, status, _ = power_reading(
-            control, {meter.entity_id: raw}, self.ha.connected, now, MAX_AGE_SECONDS
-        )
+        states = {meter.entity_id: raw}
+        if device:
+            watts = (
+                current_device_watts(control, states, self.ha.connected, now)
+                if attrs.get("device_class") in {None, "power"}
+                else None
+            )
+            return watts, "monitoring" if watts is not None else "meter_unavailable", stamp.timestamp()
+        watts, status, _ = power_reading(control, states, self.ha.connected, now, MAX_AGE_SECONDS)
         if watts is None or not math.isfinite(watts):
             return None, "stale_meter" if status == "stale" else "meter_unavailable", None
         return max(0, watts), "monitoring", stamp.timestamp()
@@ -371,16 +476,35 @@ class PowerGuard:
                 and state_stamp(raw) >= pending.at - 1
             )
             if confirmed:
+                measured_watts = pending.measured_watts
                 if pending.command == "turn_off":
+                    recent = runtime.recent_restores.pop(pending.id, None)
+                    # A quick second overload can indicate startup demand higher than the
+                    # captured running demand. Delay another attempt until a new tariff hour.
+                    restore_after = (
+                        max(
+                            timestamp + REBOUND_WINDOW_SECONDS,
+                            (now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)).timestamp(),
+                        )
+                        if recent is not None and 0 <= timestamp - recent < REBOUND_WINDOW_SECONDS
+                        else 0
+                    )
                     runtime.paused[pending.id] = Pause(
                         entity=pending.entity,
                         last_changed=raw["last_changed"],
                         resume_state=pending.previous,
                         at=timestamp,
+                        measured_watts=measured_watts,
+                        fallback_watts=pending.fallback_watts,
+                        restore_after=restore_after,
                     )
                 else:
-                    runtime.paused.pop(pending.id, None)
-                runtime.last_action = LastAction(id=pending.id, command=pending.command, at=now)
+                    restored = runtime.paused.pop(pending.id, None)
+                    measured_watts = restored.measured_watts if restored else None
+                    runtime.recent_restores[pending.id] = timestamp
+                runtime.last_action = LastAction(
+                    id=pending.id, command=pending.command, at=now, watts=measured_watts
+                )
                 runtime.pending = None
                 self.engine.record_action(now)
                 changed = True
@@ -412,9 +536,14 @@ class PowerGuard:
         expired = [key for key, until in runtime.blocked_until.items() if until <= timestamp]
         for key in expired:
             del runtime.blocked_until[key]
-        return changed or bool(expired), status
+        expired_restores = [
+            key for key, at in runtime.recent_restores.items() if timestamp - at >= REBOUND_WINDOW_SECONDS
+        ]
+        for key in expired_restores:
+            del runtime.recent_restores[key]
+        return changed or bool(expired or expired_restores), status
 
-    async def issue(self, record, load, action, now):
+    async def issue(self, record, load, action, now, power_meter, fallback_watts):
         runtime = record.runtime
         pause = runtime.paused.get(action.id)
         state = load_state(load)
@@ -427,6 +556,23 @@ class PowerGuard:
             return "settling"
         if self.binding(now) != record.binding:
             return "settings_changed"
+
+        measured_watts = None
+        if action.command == "turn_off" and power_meter:
+            epoch = getattr(self.ha, "epoch", 0)
+            measured_watts, _, _ = await self.read_meter(power_meter, now, device=True)
+            if (
+                not self.ha.connected
+                or getattr(self.ha, "epoch", 0) != epoch
+                or self.resetting()
+                or self.record().revision != record.revision
+            ):
+                return "settling"
+            if self.binding(now) != record.binding:
+                return "settings_changed"
+        if action.command == "turn_off" and measured_watts is None and fallback_watts is None:
+            runtime.blocked_until[action.id] = now.timestamp() + DEVICE_METER_RETRY_SECONDS
+            return "load_meter_unavailable"
 
         raw = self.ha.states.get(load.entity_id, {})
         if raw.get("state") != load.state or not isinstance(raw.get("last_changed"), str):
@@ -457,6 +603,8 @@ class PowerGuard:
             context=context,
             expected=expected_state,
             previous=previous,
+            measured_watts=measured_watts,
+            fallback_watts=fallback_watts,
         )
         return "command_pending"
 
@@ -466,11 +614,12 @@ class PowerGuard:
 
     async def tick(self, now=None):
         clock = now or datetime.now(UTC)
+        self.history.prune(clock)
         record = self.record()
         if self.settings.mode == "demo" or not record.config.enabled:
             self.clear_measurements()
             return
-        binding, meter, tiers, _, loads = self.inventory(clock)
+        binding, meter, tiers, _, _, _ = self.inventory(clock)
         if self.resetting():
             state = "reset_in_progress"
         elif binding != record.binding:
@@ -500,27 +649,47 @@ class PowerGuard:
         if not self.ha.connected or getattr(self.ha, "epoch", 0) != engine_key[1]:
             watts, reading_status = None, "meter_unavailable"
         # HA state may have changed while the REST measurement was in flight.
-        eligible_ids = {load.id for load in record.config.devices}
-        loads = {
-            control.id: control
-            for control in self.ha.controls()
-            if control.id in eligible_ids and eligible(control)
-        }
+        controls = self.ha.controls()
+        loads = {control.id: control for control in controls if eligible(control)}
+        options = device_meter_options(controls, loads, meter.entity_id)
         changed, pending_status = self.reconcile(runtime, loads, clock)
         timestamp = clock.timestamp()
         candidates = []
+        meters = {}
+        device_watts = {}
         for load in record.config.devices:
             control = loads.get(load.id)
             pause = runtime.paused.get(load.id)
+            power_meter = assigned_meter(options.get(load.id, ((), None)), load)
+            meters[load.id] = (power_meter, load.watts)
+            if power_meter:
+                device_watts[load.id] = current_device_watts(
+                    power_meter, self.ha.states, self.ha.connected, clock
+                )
+            estimate = load.watts
+            if pause:
+                if pause.measured_watts is not None:
+                    estimate = pause.measured_watts
+                elif estimate is None:
+                    estimate = pause.fallback_watts
             state = load_state(control)
-            if load.id in runtime.blocked_until or (
-                pause
-                and control
-                and control.domain == "climate"
-                and timestamp - pause.at < HVAC_MIN_PAUSE_SECONDS
+            if (
+                load.id in runtime.blocked_until
+                or (
+                    pause
+                    and (
+                        timestamp < pause.restore_after
+                        or (
+                            control
+                            and control.domain == "climate"
+                            and timestamp - pause.at < HVAC_MIN_PAUSE_SECONDS
+                        )
+                    )
+                )
+                or (state == "on" and power_meter is None and estimate is None)
             ):
                 state = "unavailable"
-            candidates.append(GuardLoad(id=load.id, watts=load.watts, state=state, paused=pause is not None))
+            candidates.append(GuardLoad(id=load.id, watts=estimate, state=state, paused=pause is not None))
         if watts is None:
             self.engine.evaluate(
                 clock, meter=meter.entity_id, watts=None, limit_kw=record.config.limit_kw, loads=candidates
@@ -547,7 +716,9 @@ class PowerGuard:
             if runtime.last_action and meter_stamp <= runtime.last_action.at.timestamp():
                 status = "settling"
             else:
-                status = await self.issue(record, loads[sample.action.id], sample.action, clock)
+                status = await self.issue(
+                    record, loads[sample.action.id], sample.action, clock, *meters[sample.action.id]
+                )
                 changed = True
         else:
             status = sample.state
@@ -556,6 +727,16 @@ class PowerGuard:
             self.publish(record, clock, status, changed=changed)
             return
         self.publish(record, clock, status, sample.power_kw, sample.projected_kw, changed=changed)
+        if not self.resetting() and self.binding(clock) == record.binding:
+            self.history.sample(
+                record.revision,
+                meter_stamp,
+                sample.power_kw,
+                sample.projected_kw,
+                record.config.limit_kw,
+                device_watts,
+                meter_entity=meter.entity_id,
+            )
 
     async def run(self):
         if self.settings.mode == "demo":

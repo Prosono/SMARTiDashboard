@@ -10,8 +10,8 @@
   --pg-line: color-mix(in srgb, var(--line), #caa48d 16%);
   --pg-warm: #fcf0e7;
   --pg-orange: #a4461a;
-  --pg-dial: #e78858;
-  --pg-dial-track: #e4ddd9;
+  --pg-progress: #e78858;
+  --pg-progress-track: #e4ddd9;
   --pg-green: #116431;
   --pg-green-bg: #dcf3e4;
   --pg-green-track: #1b8744;
@@ -29,8 +29,8 @@
   --pg-line: color-mix(in srgb, var(--line), #ad7e63 22%);
   --pg-warm: color-mix(in srgb, var(--pg-paper) 78%, #75452c);
   --pg-orange: #ffc39c;
-  --pg-dial: #ef996e;
-  --pg-dial-track: color-mix(in srgb, var(--text) 18%, var(--pg-warm));
+  --pg-progress: #ef996e;
+  --pg-progress-track: color-mix(in srgb, var(--text) 18%, var(--pg-warm));
   --pg-green: #aaebbc;
   --pg-green-bg: #244234;
   --pg-green-track: #208048;
@@ -193,137 +193,95 @@
   min-width: 0;
 }
 
+.power-guard-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: clamp(12px, 1.5cqi, 20px);
+  container: power-guard-overview / inline-size;
+}
+
 .power-guard-monitor {
   display: grid;
-  align-content: start;
-  justify-items: center;
-  gap: clamp(10px, 1.3cqi, 16px);
-  padding: clamp(14px, 2.1cqi, 26px);
+  gap: clamp(12px, 2.1cqi, 20px);
+  padding: clamp(14px, 3.3cqi, 26px);
   border-radius: 18px;
   background: var(--pg-warm);
   background-image: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--pg-warm), var(--pg-paper) 24%),
+    135deg,
+    color-mix(in srgb, var(--pg-warm), var(--pg-paper) 35%),
     var(--pg-warm)
   );
 }
 
-.power-guard-gauge {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: min(100%, 340px);
-  aspect-ratio: 1 / 0.86;
-  isolation: isolate;
-  --power-guard-angle: 0deg;
-  --pg-stroke: clamp(15px, 2.1cqi, 27px);
-  --pg-arc-ink: var(--pg-dial);
-}
-
-.power-guard-gauge[data-over="true"] {
-  --pg-arc-ink: #d67132;
-}
-
-[data-theme="dark"] .power-guard-gauge[data-over="true"] {
-  --pg-arc-ink: #f6ad65;
-}
-
-.power-guard-gauge-arc {
-  position: absolute;
-  inset: 0 0 auto;
-  aspect-ratio: 1;
-  z-index: -1;
-  pointer-events: none;
-}
-
-.power-guard-gauge-arc::before,
-.power-guard-gauge-arc::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-}
-
-.power-guard-gauge-arc::before {
-  border-radius: 50%;
-  background: conic-gradient(
-    from 225deg,
-    var(--pg-arc-ink) var(--power-guard-angle),
-    var(--pg-dial-track) var(--power-guard-angle) 270deg,
-    transparent 270deg
-  );
-  mask: radial-gradient(
-    farthest-side,
-    transparent calc(100% - var(--pg-stroke)),
-    #000 calc(100% - var(--pg-stroke) + 1px)
-  );
-}
-
-@supports (width: calc(sin(45deg) * 1px)) {
-  .power-guard-gauge-arc::after {
-    --pg-cap-radius: calc(var(--pg-stroke) / 2);
-    --pg-arc-radius: calc(50% - var(--pg-cap-radius));
-    --pg-corner: calc(var(--pg-arc-radius) * sin(45deg));
-    --pg-tip: calc(225deg + var(--power-guard-angle));
-    --pg-cap-stop: calc(var(--pg-cap-radius) - 0.65px);
-    --pg-start-cap: var(--pg-dial-track);
-    --pg-tip-cap: transparent;
-    background:
-      radial-gradient(
-        circle at calc(50% + var(--pg-arc-radius) * sin(var(--pg-tip)))
-          calc(50% - var(--pg-arc-radius) * cos(var(--pg-tip))),
-        var(--pg-tip-cap) var(--pg-cap-stop),
-        transparent var(--pg-cap-radius)
-      ),
-      radial-gradient(
-        circle at calc(50% - var(--pg-corner)) calc(50% + var(--pg-corner)),
-        var(--pg-start-cap) var(--pg-cap-stop),
-        transparent var(--pg-cap-radius)
-      ),
-      radial-gradient(
-        circle at calc(50% + var(--pg-corner)) calc(50% + var(--pg-corner)),
-        var(--pg-dial-track) var(--pg-cap-stop),
-        transparent var(--pg-cap-radius)
-      );
-  }
-
-  .power-guard-gauge[data-filled="true"] .power-guard-gauge-arc::after {
-    --pg-start-cap: var(--pg-arc-ink);
-    --pg-tip-cap: var(--pg-arc-ink);
-  }
-}
-
 .power-guard-reading {
   display: grid;
-  justify-items: center;
-  gap: 5px;
-  width: 78%;
-  padding-top: 12%;
-  text-align: center;
-  line-height: 1.2;
+  gap: 6px;
+  min-width: 0;
+}
+
+.power-guard-reading > span {
+  font-size: clamp(1rem, 3.2cqi, 1.48rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.022em;
 }
 
 .power-guard-reading strong {
-  max-width: 100%;
-  font-size: clamp(2.7rem, 6.8cqi, 5.4rem);
+  font-size: clamp(2.7rem, 8.8cqi, 5.25rem);
   font-weight: 700;
-  line-height: 0.98;
-  letter-spacing: -0.07em;
+  line-height: 1;
+  letter-spacing: -0.065em;
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
 }
 
-.power-guard-reading > span,
 .ep .power-guard-reading small {
+  color: inherit;
+  font-size: 0.68em;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.power-guard-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 11px;
+}
+
+.power-guard-progress-track {
+  display: block;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--pg-progress-track);
+}
+
+.power-guard-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--pg-progress);
+}
+
+.power-guard-progress-track[data-over="true"] > span {
+  background: var(--pg-orange);
+}
+
+.ep .power-guard-progress > small,
+.ep .power-guard-updated {
   color: var(--muted);
-  font-size: clamp(0.76rem, 1.55cqi, 1rem);
-  font-weight: 600;
-  line-height: 1.2;
-  text-wrap: balance;
+  font-size: 0.76rem;
+  white-space: nowrap;
 }
 
-.ep .power-guard-reading small {
-  margin-top: clamp(4px, 1.3cqi, 14px);
-  font-size: clamp(0.74rem, 1.4cqi, 0.9rem);
+.power-guard-progress .power-guard-impact {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.power-guard-updated {
+  display: none;
 }
 
 .power-guard-header-status,
@@ -365,12 +323,19 @@
 
 .power-guard-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: 100%;
+  gap: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
-  padding-top: clamp(10px, 1.4cqi, 18px);
-  border-top: 1px solid var(--pg-line);
-  text-align: center;
+  min-width: 0;
+}
+
+.power-guard-stats > div {
+  min-width: 0;
+  padding-inline: clamp(5px, 2cqi, 14px);
+}
+
+.power-guard-stats > div:first-child {
+  padding-inline-start: 0;
 }
 
 .power-guard-stats > div + div {
@@ -379,23 +344,64 @@
 
 .power-guard-stats dt {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: clamp(0.72rem, 1.9cqi, 0.95rem);
   font-weight: 600;
 }
 
 .power-guard-stats dd {
-  margin: 3px 4px 0;
-  font-size: clamp(1.12rem, 2.5cqi, 1.83rem);
+  margin: 4px 0 0;
+  font-size: clamp(1rem, 3.05cqi, 1.74rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  line-height: 1.12;
-  overflow-wrap: anywhere;
+  line-height: 1.1;
 }
 
-.power-guard-monitor-meta {
-  color: var(--muted);
-  font-size: 0.77rem;
-  text-align: center;
+.power-guard-loads {
+  container: power-guard-loads / inline-size;
+  align-self: start;
+  padding: clamp(10px, 1.45cqi, 17px);
+  border: 1px solid var(--pg-line);
+  border-radius: 18px;
+}
+
+.power-guard-load-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  justify-content: space-between;
+}
+
+.power-guard-counts {
+  display: flex;
+  gap: 4px;
+}
+
+.power-guard-counts .power-guard-device-state {
+  font-size: 0.74rem;
+  min-width: 0;
+}
+
+@container power-guard-overview (min-width: 585px) {
+  .power-guard-monitor {
+    grid-template-columns: minmax(0, 0.91fr) minmax(0, 1.26fr);
+    align-items: center;
+  }
+
+  .power-guard-stats > div:first-child {
+    border-inline-start: 1px solid var(--pg-line);
+    padding-inline-start: 14px;
+  }
+
+  .power-guard-progress {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .power-guard-progress .power-guard-impact {
+    grid-column: auto;
+    justify-self: end;
+  }
 }
 
 .power-guard-loads h4,
@@ -428,7 +434,7 @@
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   grid-template-areas:
     "position icon device state"
-    "watts watts watts watts";
+    "meta meta meta meta";
   align-items: center;
   gap: 8px;
   padding: 10px;
@@ -529,14 +535,63 @@
   white-space: nowrap;
 }
 
-.power-guard-watts {
-  grid-area: watts;
+.power-guard-load-meta {
+  grid-area: meta;
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.power-guard-load-reading {
+  flex: 1 1 120px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 6px 10px;
+}
+
+.power-guard-load-reading > span {
   display: grid;
-  gap: 3px;
-  width: min(100%, 124px);
+  gap: 2px;
+}
+
+.ep .power-guard-load-reading small {
   color: var(--muted);
-  font-size: 0.77rem;
+  font-size: 0.71rem;
+  line-height: 1.1;
+}
+
+.power-guard-load-reading strong {
+  font-size: 0.98rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.17;
+}
+
+.power-guard-load-meter,
+.power-guard-watts {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.75rem;
   font-weight: 600;
+}
+
+.power-guard-load-meter {
+  flex: 1 1 100px;
+  align-self: center;
+}
+
+.power-guard-load-meter strong {
+  color: var(--text);
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.power-guard-watts {
+  flex: 0 1 107px;
 }
 
 .power-guard-watts-field {
@@ -581,15 +636,45 @@
 }
 
 .power-guard-order {
-  grid-area: watts;
-  align-self: end;
+  grid-column: 1 / -1;
   justify-self: end;
   display: flex;
   gap: 2px;
 }
 
-.power-guard-load:has(.power-guard-order) .power-guard-watts {
-  width: min(124px, calc(100% - 3 * var(--pg-order-size) - 12px));
+@container power-guard-loads (max-width: 409px) {
+  .power-guard-load:not(
+      :has(.power-guard-load-reading, .power-guard-load-meter)
+    )
+    .power-guard-order {
+    grid-area: meta;
+    align-self: end;
+  }
+
+  .power-guard-load:has(.power-guard-order):not(
+      :has(.power-guard-load-reading, .power-guard-load-meter)
+    )
+    .power-guard-load-meta {
+    padding-inline-end: calc(3 * var(--pg-order-size) + 9px);
+  }
+}
+
+@container power-guard-loads (max-width: 290px) {
+  .power-guard-load-reading {
+    flex-basis: 100%;
+  }
+
+  .power-guard-load-reading .pg-load-trend {
+    width: 48px;
+  }
+
+  .power-guard-load-meter {
+    flex-basis: 80px;
+  }
+
+  .power-guard-watts {
+    flex-basis: 78px;
+  }
 }
 
 .ep .power-guard-order button {
@@ -1137,12 +1222,19 @@
     justify-self: end;
   }
 
+  .ep .power-guard-updated {
+    display: block;
+    margin-inline-end: 7px;
+  }
+}
+
+@container power-guard-loads (min-width: 410px) {
   .power-guard-load {
-    --pg-order-size: 32px;
-    grid-template-columns:
-      auto auto minmax(96px, 1fr) minmax(80px, 100px)
-      minmax(55px, auto) auto;
-    grid-template-areas: "position icon device watts state order";
+    --pg-order-size: 28px;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "position icon device state order"
+      "meta meta meta meta meta";
   }
 
   .power-guard-order {
@@ -1150,23 +1242,15 @@
     align-self: center;
   }
 
-  .power-guard-load:has(.power-guard-order) .power-guard-watts {
-    width: 100%;
-  }
-
   .ep .power-guard-order button {
-    min-height: 38px;
+    min-height: 35px;
   }
 }
 
 @container power-guard (min-width: 815px) {
   .power-guard-content {
-    grid-template-columns: minmax(228px, 0.8fr) minmax(0, 1.62fr);
-    align-items: stretch;
-  }
-
-  .power-guard-monitor {
-    align-content: center;
+    grid-template-columns: minmax(0, 1.52fr) minmax(0, 1fr);
+    align-items: start;
   }
 
   .power-guard-header-actions {

@@ -1,11 +1,4 @@
-import {
-  type CSSProperties,
-  type FormEvent,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
@@ -26,13 +19,15 @@ import {
   powerGuardDeviceIcon,
   type PowerGuardDevice,
 } from "./PowerGuardDevicePicker";
+import {
+  PowerGuardHistory,
+  PowerGuardLoadTrend,
+  usePowerGuardHistoryHour,
+} from "./PowerGuardHistory";
 import "./powerGuard.css";
 
-type Load = { id: string; watts: number };
+type Load = { id: string; watts: number | null; power_entity?: string | null };
 type Policy = { enabled: boolean; limit_kw: number | null; devices: Load[] };
-type Draft = Omit<Policy, "devices"> & {
-  devices: { id: string; watts: number | null }[];
-};
 type PowerGuardData = {
   can_edit?: boolean;
   configured_meter: boolean;
@@ -62,6 +57,10 @@ const stateLabels: Record<string, [string, string]> = {
   meter_unavailable: ["Måling utilgjengelig", "Reading unavailable"],
   warming_up: ["Samler målinger", "Collecting readings"],
   stale_meter: ["Målingen er utdatert", "Meter data is stale"],
+  load_meter_unavailable: [
+    "Venter på enhetsmåling",
+    "Waiting for device reading",
+  ],
   monitoring: ["Overvåker", "Monitoring"],
   over_target: ["Over målet", "Above target"],
   no_loads: ["Ingen enheter å pause", "No loads to pause"],
@@ -82,6 +81,7 @@ const attentionStates = new Set([
   "waiting_tariff",
   "stale_meter",
   "meter_unavailable",
+  "load_meter_unavailable",
   "unavailable",
   "command_failed",
   "limit_reached",
@@ -99,7 +99,7 @@ const activeStates = new Set([
   "settling",
 ]);
 
-function samePolicy(a: Draft, b: Policy) {
+function samePolicy(a: Policy, b: Policy) {
   return (
     a.enabled === b.enabled &&
     a.limit_kw === b.limit_kw &&
@@ -107,9 +107,15 @@ function samePolicy(a: Draft, b: Policy) {
     a.devices.every(
       (load, index) =>
         load.id === b.devices[index].id &&
-        load.watts === b.devices[index].watts,
+        load.watts === b.devices[index].watts &&
+        (load.power_entity ?? null) === (b.devices[index].power_entity ?? null),
     )
   );
+}
+
+function linkedMeter(load: Load, device: PowerGuardDevice | undefined) {
+  const meterId = load.power_entity ?? device?.automatic_power_meter_id;
+  return device?.power_meters?.find(({ id }) => id === meterId) ?? null;
 }
 
 export function PowerGuard({
@@ -132,9 +138,10 @@ export function PowerGuard({
   const [focusLoad, setFocusLoad] = useState<string | null>(null);
   const newLoadField = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState<{ from: string; over: string } | null>(null);
-  const [editing, setEditing] = useState<{ base: Policy; draft: Draft } | null>(
-    null,
-  );
+  const [editing, setEditing] = useState<{
+    base: Policy;
+    draft: Policy;
+  } | null>(null);
   useEffect(() => {
     if (!focusLoad) return;
     newLoadField.current?.focus();
@@ -173,6 +180,10 @@ export function PowerGuard({
   const data = query.data;
   const mayConfigure = admin && data?.can_edit !== false;
   const config = data?.config;
+  const hour = usePowerGuardHistoryHour(
+    offline || !open || !config,
+    config?.enabled,
+  );
   const draft = editing?.draft ?? config;
   const status = data?.status;
   const state = status?.state;
@@ -190,6 +201,10 @@ export function PowerGuard({
         ? "active"
         : "neutral";
   const locale = english ? "en-GB" : "nb-NO";
+  const percent = new Intl.NumberFormat(locale, {
+    style: "percent",
+    maximumFractionDigits: 1,
+  });
   const number = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 1,
     maximumFractionDigits: 2,
@@ -212,7 +227,11 @@ export function PowerGuard({
     data?.configured_meter &&
     tierExists(config?.limit_kw) &&
     !!config?.devices.length &&
-    config.devices.every(({ id }) => devices.has(id));
+    config.devices.every(
+      (load) =>
+        devices.has(load.id) &&
+        (load.watts != null || linkedMeter(load, devices.get(load.id))),
+    );
   const canToggle = !!config && (config.enabled || (!dirty && canEnable));
   const canEdit = mayConfigure && online && !save.isPending && !conflict;
   const needsLoad = !!(config?.enabled && !draft?.devices.length);
@@ -226,17 +245,21 @@ export function PowerGuard({
   const over = margin != null && margin <= 0;
   const withinLimit =
     margin != null && !over && (state === "monitoring" || state === "paused");
-  const angle =
-    margin == null || target == null || projected == null
-      ? 0
-      : Math.min(1, Math.max(0, projected / target)) * 270;
+  const portion = projected != null && target ? projected / target : null;
+  const onCount = (draft?.devices ?? []).filter(
+    ({ id }) => devices.get(id)?.state === "on" && !paused.has(id),
+  ).length;
   const time = status?.updated_at ? new Date(status.updated_at) : null;
   const formattedTime =
     time && Number.isFinite(time.getTime())
-      ? time.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
+      ? time.toLocaleTimeString(locale, {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Europe/Oslo",
+        })
       : null;
 
-  function edit(patch: Partial<Draft>) {
+  function edit(patch: Partial<Policy>) {
     if (!config) return;
     save.reset();
     setEditing((current) => ({
@@ -251,23 +274,32 @@ export function PowerGuard({
     next.splice(to, 0, load);
     edit({ devices: next });
   }
+  function editLoad(id: string, patch: Partial<Load>) {
+    if (!draft) return;
+    edit({
+      devices: draft.devices.map((load) =>
+        load.id === id ? { ...load, ...patch } : load,
+      ),
+    });
+  }
   function savePolicy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft || !config || !dirty || !canEdit || needsLoad) return;
-    const loads = draft.devices.flatMap(({ id, watts }) =>
-      watts != null &&
-      Number.isInteger(watts) &&
-      watts >= 1 &&
-      watts <= maxWatts
-        ? [{ id, watts }]
-        : [],
-    );
-    if (loads.length !== draft.devices.length) return;
+    if (
+      draft.devices.some((load) =>
+        load.watts == null
+          ? !linkedMeter(load, devices.get(load.id))
+          : !Number.isInteger(load.watts) ||
+            load.watts < 1 ||
+            load.watts > maxWatts,
+      )
+    )
+      return;
     save.mutate({
       policy: {
         enabled: config.enabled,
         limit_kw: draft.limit_kw,
-        devices: loads,
+        devices: draft.devices,
       },
     });
   }
@@ -295,6 +327,11 @@ export function PowerGuard({
           </div>
         </div>
         <div className="power-guard-header-actions">
+          {online && config?.enabled && formattedTime && (
+            <small className="power-guard-updated">
+              {t("Oppdatert", "Updated")} {formattedTime}
+            </small>
+          )}
           {mayConfigure && config ? (
             <button
               type="button"
@@ -369,60 +406,74 @@ export function PowerGuard({
         ) : (
           <form className="power-guard-form" onSubmit={savePolicy}>
             <div className="power-guard-content">
-              <div className="power-guard-monitor">
-                <div
-                  className="power-guard-gauge"
-                  data-filled={angle > 0}
-                  data-over={over}
-                  style={
-                    { "--power-guard-angle": `${angle}deg` } as CSSProperties
-                  }
-                >
-                  <div className="power-guard-gauge-arc" aria-hidden="true" />
+              <div className="power-guard-overview">
+                <div className="power-guard-monitor">
                   <div className="power-guard-reading">
-                    <strong>
-                      {projected == null ? "—" : number.format(projected)}
-                    </strong>
                     <span>
-                      {t("kW anslått timesnitt", "kW estimated hourly average")}
+                      {t("Anslått timesnitt", "Estimated hourly average")}
                     </span>
-                    {target != null && (
+                    <strong>
+                      {projected == null ? "—" : number.format(projected)}{" "}
+                      {projected != null && <small>kW</small>}
+                    </strong>
+                  </div>
+                  <dl className="power-guard-stats">
+                    <div>
+                      <dt>{t("Effekt nå", "Power now")}</dt>
+                      <dd>{kw(online ? status?.power_kw : null)}</dd>
+                    </div>
+                    <div>
+                      <dt>{t("Grense", "Limit")}</dt>
+                      <dd>{kw(target)}</dd>
+                    </div>
+                    <div>
+                      <dt>
+                        {over && margin !== 0
+                          ? t("Over grensen", "Over limit")
+                          : t("Margin", "Headroom")}
+                      </dt>
+                      <dd>{kw(margin == null ? null : Math.abs(margin))}</dd>
+                    </div>
+                  </dl>
+                  <div className="power-guard-progress">
+                    <span
+                      className="power-guard-progress-track"
+                      aria-hidden="true"
+                      data-over={over}
+                    >
+                      <span
+                        style={{
+                          width: `${Math.min(1, Math.max(0, portion ?? 0)) * 100}%`,
+                        }}
+                      />
+                    </span>
+                    {portion != null && (
                       <small>
-                        {t("av", "of")} {kw(target)}
+                        {percent.format(portion)}{" "}
+                        {t("av timesmålet", "of the hourly target")}
                       </small>
                     )}
+                    <span
+                      className="power-guard-impact"
+                      data-tone={over ? "attention" : tone}
+                      role="status"
+                    >
+                      {withinLimit ? (
+                        <Check size={16} aria-hidden="true" />
+                      ) : over || tone === "attention" ? (
+                        <CircleAlert size={16} aria-hidden="true" />
+                      ) : null}
+                      {impactText}
+                    </span>
                   </div>
                 </div>
-                <span
-                  className="power-guard-impact"
-                  data-tone={over ? "attention" : tone}
-                  role="status"
-                >
-                  {withinLimit ? (
-                    <Check size={16} aria-hidden="true" />
-                  ) : over || tone === "attention" ? (
-                    <CircleAlert size={16} aria-hidden="true" />
-                  ) : null}
-                  {impactText}
-                </span>
-                <dl className="power-guard-stats">
-                  <div>
-                    <dt>{t("Effekt nå", "Power now")}</dt>
-                    <dd>{kw(online ? status?.power_kw : null)}</dd>
-                  </div>
-                  <div>
-                    <dt>
-                      {over && margin !== 0
-                        ? t("Over grensen", "Over limit")
-                        : t("Margin", "Headroom")}
-                    </dt>
-                    <dd>{kw(margin == null ? null : Math.abs(margin))}</dd>
-                  </div>
-                </dl>
-                {online && config?.enabled && formattedTime && (
-                  <small className="power-guard-monitor-meta">
-                    {t("Status oppdatert", "Status updated")} {formattedTime}
-                  </small>
+                {open && (
+                  <PowerGuardHistory
+                    lang={lang}
+                    offline={offline}
+                    enabled={!!config?.enabled}
+                    hour={hour}
+                  />
                 )}
               </div>
 
@@ -430,9 +481,31 @@ export function PowerGuard({
                 className="power-guard-loads"
                 aria-labelledby={`${id}-loads`}
               >
-                <h4 id={`${id}-loads`}>
-                  {t("Enheter og prioritet", "Devices and priority")}
-                </h4>
+                <div className="power-guard-load-heading">
+                  <h4 id={`${id}-loads`}>
+                    {t("Enheter og prioritet", "Devices and priority")}
+                  </h4>
+                  {draft.devices.length > 0 && (
+                    <div className="power-guard-counts">
+                      <span
+                        className="power-guard-device-state"
+                        data-state="on"
+                      >
+                        {onCount} {t("på", "on")}
+                      </span>
+                      <span
+                        className="power-guard-device-state"
+                        data-state="paused"
+                      >
+                        {
+                          draft.devices.filter(({ id }) => paused.has(id))
+                            .length
+                        }{" "}
+                        {t("pauset", "paused")}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 {draft.devices.length > 0 ? (
                   <>
                     <p className="power-guard-note">
@@ -445,6 +518,28 @@ export function PowerGuard({
                       {draft.devices.map((load, index) => {
                         const device = devices.get(load.id);
                         const name = device?.name ?? load.id;
+                        const meter = linkedMeter(load, device);
+                        const meterOptions = device?.power_meters ?? [];
+                        const missingMeter = !!load.power_entity && !meter;
+                        const chooseMeter =
+                          mayConfigure &&
+                          (meterOptions.length > 1 ||
+                            missingMeter ||
+                            (meterOptions.length > 0 &&
+                              !device?.automatic_power_meter_id));
+                        const matchedMeter =
+                          meter?.id === device?.power_meter?.id;
+                        const measured =
+                          meter && matchedMeter && online
+                            ? device?.power_watts
+                            : null;
+                        const beforePause =
+                          online && paused.has(load.id)
+                            ? device?.paused_watts
+                            : null;
+                        const wattsLabel = meter
+                          ? t("Reserveeffekt", "Fallback power")
+                          : t("Maks effekt", "Max power");
                         const powerState = paused.has(load.id)
                           ? "paused"
                           : device?.state === "on" || device?.state === "off"
@@ -543,71 +638,141 @@ export function PowerGuard({
                                 </span>
                               )}
                             </div>
-                            {mayConfigure ? (
-                              <label className="power-guard-watts">
-                                <span>{t("Maks effekt", "Max power")}</span>
-                                <span className="power-guard-watts-field">
-                                  <input
-                                    ref={
-                                      focusLoad === load.id
-                                        ? newLoadField
-                                        : undefined
-                                    }
-                                    type="number"
-                                    inputMode="decimal"
-                                    lang={locale}
-                                    min={0.001}
-                                    max={maxWatts / 1000}
-                                    step={0.001}
-                                    required
-                                    disabled={!canEdit}
-                                    value={
-                                      load.watts == null
-                                        ? ""
-                                        : load.watts / 1000
-                                    }
-                                    aria-label={`${t("Maks effekt i kilowatt for", "Maximum kilowatts for")} ${name}`}
-                                    onChange={({ target }) =>
-                                      edit({
-                                        devices: draft.devices.map((current) =>
-                                          current.id === load.id
-                                            ? {
-                                                ...current,
-                                                watts: Number.isFinite(
-                                                  target.valueAsNumber,
-                                                )
-                                                  ? Math.round(
-                                                      target.valueAsNumber *
-                                                        1000,
-                                                    )
-                                                  : null,
-                                              }
-                                            : current,
-                                        ),
-                                      })
-                                    }
-                                  />
-                                  <small aria-hidden="true">kW</small>
-                                </span>
-                              </label>
-                            ) : (
-                              <div className="power-guard-watts">
-                                <span>{t("Maks effekt", "Max power")}</span>
-                                <strong>
-                                  {kw(
-                                    load.watts == null
-                                      ? null
-                                      : load.watts / 1000,
-                                  )}
-                                </strong>
-                              </div>
-                            )}
                             <span
                               className="power-guard-device-state"
                               data-state={powerState}
                             >
                               {loadState}
                             </span>
+                            <div className="power-guard-load-meta">
+                              {(meter || beforePause != null) && (
+                                <div className="power-guard-load-reading">
+                                  {meter && matchedMeter && online && (
+                                    <PowerGuardLoadTrend
+                                      id={load.id}
+                                      history={hour.data}
+                                    />
+                                  )}
+                                  {meter && (
+                                    <span>
+                                      <small>
+                                        {t("Målt nå", "Measured now")}
+                                      </small>
+                                      <strong>
+                                        {measured == null
+                                          ? "—"
+                                          : kw(measured / 1000)}
+                                      </strong>
+                                    </span>
+                                  )}
+                                  {beforePause != null && (
+                                    <span>
+                                      <small>
+                                        {t("Før pause", "Before pause")}
+                                      </small>
+                                      <strong>{kw(beforePause / 1000)}</strong>
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {chooseMeter ? (
+                                <label className="power-guard-load-meter">
+                                  <span>{t("Effektmåler", "Power meter")}</span>
+                                  <select
+                                    aria-label={`${t("Effektmåler for", "Power meter for")} ${name}`}
+                                    value={load.power_entity ?? ""}
+                                    disabled={!canEdit}
+                                    onChange={({ target }) =>
+                                      editLoad(load.id, {
+                                        power_entity: target.value || null,
+                                      })
+                                    }
+                                  >
+                                    <option value="">
+                                      {device?.automatic_power_meter_id
+                                        ? t("Automatisk", "Automatic")
+                                        : t(
+                                            "Manuelt anslag",
+                                            "Manual estimate",
+                                          )}
+                                    </option>
+                                    {missingMeter && (
+                                      <option
+                                        value={load.power_entity ?? ""}
+                                        disabled
+                                      >
+                                        {t(
+                                          "Tidligere måler utilgjengelig",
+                                          "Previous meter unavailable",
+                                        )}
+                                      </option>
+                                    )}
+                                    {meterOptions.map((option) => (
+                                      <option key={option.id} value={option.id}>
+                                        {option.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              ) : (
+                                meter && (
+                                  <div className="power-guard-load-meter">
+                                    <span>
+                                      {t("Effektmåler", "Power meter")}
+                                    </span>
+                                    <strong>{meter.name}</strong>
+                                  </div>
+                                )
+                              )}
+                              {mayConfigure ? (
+                                <label className="power-guard-watts">
+                                  <span>{wattsLabel}</span>
+                                  <span className="power-guard-watts-field">
+                                    <input
+                                      ref={
+                                        focusLoad === load.id
+                                          ? newLoadField
+                                          : undefined
+                                      }
+                                      type="number"
+                                      inputMode="decimal"
+                                      lang={locale}
+                                      min={0.001}
+                                      max={maxWatts / 1000}
+                                      step={0.001}
+                                      required={!meter}
+                                      disabled={!canEdit}
+                                      value={
+                                        load.watts == null
+                                          ? ""
+                                          : load.watts / 1000
+                                      }
+                                      placeholder={meter ? "—" : undefined}
+                                      aria-label={`${wattsLabel} ${t("i kilowatt for", "in kilowatts for")} ${name}`}
+                                      onChange={({ target }) =>
+                                        editLoad(load.id, {
+                                          watts: Number.isFinite(
+                                            target.valueAsNumber,
+                                          )
+                                            ? Math.round(
+                                                target.valueAsNumber * 1000,
+                                              )
+                                            : null,
+                                        })
+                                      }
+                                    />
+                                    <small aria-hidden="true">kW</small>
+                                  </span>
+                                </label>
+                              ) : (
+                                load.watts != null && (
+                                  <div className="power-guard-watts">
+                                    <span>{wattsLabel}</span>
+                                    <strong>{kw(load.watts / 1000)}</strong>
+                                  </div>
+                                )
+                              )}
+                            </div>
                             {mayConfigure && (
                               <div className="power-guard-order">
                                 <button
@@ -691,8 +856,8 @@ export function PowerGuard({
                 {mayConfigure && dirty && draft.devices.length > 0 && (
                   <p className="power-guard-note">
                     {t(
-                      "Velg enheter som tåler automatisk av og på. Oppgi høyeste forventede effekt.",
-                      "Choose devices that can safely switch off and on. Enter their maximum expected power.",
+                      "Velg enheter som tåler automatisk av og på. Oppgi høyeste forventede effekt for enheter uten måler.",
+                      "Choose devices that can safely switch off and on. Enter the maximum expected power for devices without a meter.",
                     )}
                   </p>
                 )}
@@ -774,10 +939,11 @@ export function PowerGuard({
               )}
               {save.isError && (
                 <p role="alert">
-                  {save.error instanceof ApiError && save.error.status === 409
+                  {save.error instanceof ApiError &&
+                  [409, 422].includes(save.error.status)
                     ? t(
-                        "Kontroller måleren, trinnet og enhetslisten før du prøver igjen.",
-                        "Check the meter, tier and device list before trying again.",
+                        "Kontroller hovedmåler, kapasitetstrinn og at hver enhet har egen måler eller oppgitt effekt.",
+                        "Check the main meter, capacity tier and whether each device has its own meter or an entered power value.",
                       )
                     : t(
                         "Kunne ikke lagre PowerGuard. Prøv igjen.",
@@ -920,7 +1086,10 @@ export function PowerGuard({
               ],
             });
             setAdding(false);
-            setFocusLoad(ids[0]);
+            setFocusLoad(
+              ids.find((id) => !devices.get(id)?.automatic_power_meter_id) ??
+                null,
+            );
           }}
         />
       )}

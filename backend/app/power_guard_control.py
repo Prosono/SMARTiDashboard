@@ -19,7 +19,7 @@ HOUR_SECONDS = HOUR.total_seconds()
 @dataclass(frozen=True)
 class GuardLoad:
     id: str
-    watts: float
+    watts: float | None
     state: str
     paused: bool = False
 
@@ -160,7 +160,7 @@ class PowerGuardController:
             return result("limit_reached")
 
         candidate = next((load for load in loads if load.paused and load.state == "off"), None)
-        if candidate is None:
+        if candidate is None or candidate.watts is None:
             self._restore_candidate = None
             return result("paused" if any(load.paused for load in loads) else "monitoring")
 

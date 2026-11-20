@@ -38,6 +38,7 @@ from .mobile import MobileAuth
 from .models import Command
 from .origins import OriginPolicy
 from .power_guard import PowerGuard, power_guard_router
+from .power_guard_history import power_guard_history_router
 from .remote_access import remote_router
 from .scenes import scenes_router
 from .session_policy import SESSION_COOKIE_SECONDS
@@ -454,6 +455,7 @@ def create_app(
     app.include_router(scenes_router(ha, store, user, settings))
     app.include_router(energy_router(ha, store, user, settings, energy_platform.repo))
     app.include_router(power_guard_router(power_guard, user, admin))
+    app.include_router(power_guard_history_router(power_guard, user))
     app.include_router(platform_router(energy_platform, user, admin))
     app.include_router(energy_flow_router(store, user, ha, settings))
 

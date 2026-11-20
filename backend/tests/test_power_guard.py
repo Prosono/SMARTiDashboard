@@ -63,8 +63,8 @@ class GuardHome(HomeAssistant):
         )
 
     async def rest(self, method, path, *args, **kwargs):
-        assert (method, path) == ("GET", "states/sensor.grid")
-        return self.states["sensor.grid"].copy()
+        assert method == "GET" and path.startswith("states/sensor.")
+        return self.states[path.removeprefix("states/")].copy()
 
     async def request(self, kind, *, domain, service, target, service_data=None, **kwargs):
         assert kind == "call_service"
@@ -315,3 +315,142 @@ async def test_power_guard_does_not_claim_a_device_without_matching_home_assista
     for seconds in range(80, 420, 5):
         await tick(guard, ha, seconds, 1000)
     assert ha.calls == [("switch.flexible_load", "turn_off")]
+
+
+MEASURED_LOAD = "switch.flexible_load"
+DEVICE_METER = "sensor.flexible_load_power"
+MEASURED_CONFIG = ENABLED | {"devices": [{"id": MEASURED_LOAD}]}
+
+
+def measure_device(ha, watts, *, unit="W", stamp=None, entity=DEVICE_METER):
+    ha.entities[MEASURED_LOAD] = {"device_id": "flexible"}
+    ha.entities[entity] = {"device_id": "flexible"}
+    ha.write_state(
+        entity,
+        watts,
+        attributes={"device_class": "power", "unit_of_measurement": unit},
+        stamp=stamp,
+    )
+
+
+def test_power_guard_only_automatically_links_a_unique_meter(tmp_path):
+    ha = GuardHome()
+    measure_device(ha, 1.2, unit="kW")
+    guard, _ = configured_service(tmp_path, ha=ha, config=MEASURED_CONFIG)
+    device = next(device for device in guard.view(ADMIN, START)["devices"] if device["id"] == MEASURED_LOAD)
+    assert device["automatic_power_meter_id"] == DEVICE_METER
+    assert device["power_meter"]["id"] == DEVICE_METER
+    assert device["power_watts"] == 1200
+
+    measure_device(ha, 700, entity="sensor.second_power")
+    updated = {"id": MEASURED_LOAD, "power_entity": "sensor.second_power"}
+    config = PowerGuardConfig.model_validate(MEASURED_CONFIG | {"devices": [updated]})
+    receipt = guard.configure(config, ADMIN)
+    device = next(device for device in receipt["devices"] if device["id"] == MEASURED_LOAD)
+    assert {meter["id"] for meter in device["power_meters"]} == {DEVICE_METER, "sensor.second_power"}
+    assert device["automatic_power_meter_id"] is None
+    assert device["power_meter"]["id"] == "sensor.second_power"
+
+
+async def test_power_guard_preserves_measured_watts_until_restore_after_restart(tmp_path):
+    ha = GuardHome()
+    measure_device(ha, 2200)
+    # The saved manual fallback is deliberately below the actual reading.
+    config = ENABLED | {"devices": [{"id": MEASURED_LOAD, "watts": 100}]}
+    guard, _ = configured_service(tmp_path, ha=ha, config=config)
+    for seconds in range(0, 75, 5):
+        await tick(guard, ha, seconds, 3800 if ha.calls else 6000)
+        if ha.calls:
+            measure_device(ha, 0)
+
+    assert ha.calls == [(MEASURED_LOAD, "turn_off")]
+    pause = guard.record().runtime.paused[MEASURED_LOAD]
+    assert pause.measured_watts == 2200
+    device = next(device for device in guard.view(ADMIN, ha.now)["devices"] if device["id"] == MEASURED_LOAD)
+    assert device["power_watts"] == 0
+    assert device["paused_watts"] == 2200
+    guard = PowerGuard(ha, guard.store, guard.repo, guard.settings)
+    for seconds in range(75, 300, 5):
+        await tick(guard, ha, seconds, 3800)
+    assert ha.calls == [(MEASURED_LOAD, "turn_off")]  # Measured 2.2 kW would breach the tier.
+
+    for seconds in range(300, 450, 5):
+        await tick(guard, ha, seconds, 1000)
+    assert ha.calls == [(MEASURED_LOAD, "turn_off"), (MEASURED_LOAD, "turn_on")]
+
+
+async def test_power_guard_waits_for_fresh_device_reading_without_fallback(tmp_path):
+    ha = GuardHome()
+    measure_device(ha, 1100, stamp=START - timedelta(minutes=10))
+    guard, _ = configured_service(tmp_path, ha=ha, config=MEASURED_CONFIG)
+    for seconds in range(0, 75, 5):
+        await tick(guard, ha, seconds, 6000)
+    assert not ha.calls
+
+    measure_device(ha, 1100)
+    for seconds in range(75, 110, 5):
+        await tick(guard, ha, seconds, 6000 if not ha.calls else 3800)
+    assert ha.calls == [(MEASURED_LOAD, "turn_off")]
+    assert guard.record().runtime.paused[MEASURED_LOAD].measured_watts == 1100
+
+
+async def test_power_guard_uses_manual_fallback_for_stale_device_meter(tmp_path):
+    ha = GuardHome()
+    measure_device(ha, 3200, stamp=START - timedelta(minutes=10))
+    config = ENABLED | {"devices": [{"id": MEASURED_LOAD, "watts": 1800}]}
+    guard, _ = configured_service(tmp_path, ha=ha, config=config)
+    for seconds in range(0, 65, 5):
+        await tick(guard, ha, seconds, 3800 if ha.calls else 6000)
+    assert ha.calls == [(MEASURED_LOAD, "turn_off")]
+    pause = guard.record().runtime.paused[MEASURED_LOAD]
+    assert pause.measured_watts is None
+    assert pause.fallback_watts == 1800
+
+
+async def test_power_guard_abandons_pre_pause_read_on_ha_reconnect(tmp_path, monkeypatch):
+    ha = GuardHome()
+    measure_device(ha, 1500)
+    guard, _ = configured_service(tmp_path, ha=ha, config=MEASURED_CONFIG)
+    original = ha.rest
+
+    async def reconnected(method, path, *args, **kwargs):
+        if path == f"states/{DEVICE_METER}":
+            ha.epoch += 1
+        return await original(method, path, *args, **kwargs)
+
+    monkeypatch.setattr(ha, "rest", reconnected)
+    for seconds in range(0, 70, 5):
+        await tick(guard, ha, seconds, 6000)
+    assert ha.epoch > 1
+    assert not ha.calls
+
+
+async def test_power_guard_cools_down_after_a_higher_restart_draw(tmp_path):
+    ha = GuardHome()
+    measure_device(ha, 200)
+    guard, _ = configured_service(tmp_path, ha=ha, config=MEASURED_CONFIG)
+    for seconds in range(0, 75, 5):
+        await tick(guard, ha, seconds, 3800 if ha.calls else 6000)
+        if ha.calls:
+            measure_device(ha, 0)
+    for seconds in range(75, 220, 5):
+        measure_device(ha, 900 if len(ha.calls) > 1 else 0)
+        await tick(guard, ha, seconds, 5300 if len(ha.calls) == 2 else 3600)
+    assert ha.calls == [
+        (MEASURED_LOAD, "turn_off"),
+        (MEASURED_LOAD, "turn_on"),
+        (MEASURED_LOAD, "turn_off"),
+    ]
+    paused = guard.record().runtime.paused[MEASURED_LOAD]
+    assert paused.measured_watts == 900
+    assert paused.restore_after == (START + timedelta(hours=1)).timestamp()
+
+    guard = PowerGuard(ha, guard.store, guard.repo, guard.settings)
+    for seconds in range(220, 550, 5):
+        await tick(guard, ha, seconds, 3600)
+    assert len(ha.calls) == 3  # A new controller instance also honors the original cooldown.
+
+    for seconds in range(3600, 3740, 5):
+        await tick(guard, ha, seconds, 3600)
+    assert ha.calls[-1] == (MEASURED_LOAD, "turn_on")
+    assert len(ha.calls) == 4

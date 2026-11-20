@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from .full_reset import FullReset
 from .ha import HAError
 from .ha_auth_reset import AuthResetError
+from .power_guard_history import clear_power_guard_history
 
 RESET_BLOCKERS = {
     "full_reset_requires_managed_hub",
@@ -222,6 +223,7 @@ class HomeResetProvider:
             return "unconfirmed", "history_purge_requested"
         elif kind == "local":
             with self.store.connect() as db:
+                clear_power_guard_history(db)
                 for table in ["energy_intervals", "energy_configs", "energy_prices", "energy_tariffs"]:
                     if db.execute(
                         "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)

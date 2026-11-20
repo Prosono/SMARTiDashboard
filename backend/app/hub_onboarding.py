@@ -18,6 +18,7 @@ from .full_reset import FullReset
 from .ha import HAError
 from .ha_auth_reset import AuthResetError
 from .power_guard import STORE_KEY as POWER_GUARD_SETTINGS
+from .power_guard_history import clear_power_guard_history
 from .remote_access import CLOUD_ORIGIN
 
 log = logging.getLogger(__name__)
@@ -175,6 +176,7 @@ class HubOnboarding:
                 # Stop new load commands as soon as the previous owner's reset starts.
                 with self.store.connect() as c:
                     c.execute("DELETE FROM settings WHERE key=?", (POWER_GUARD_SETTINGS,))
+                    clear_power_guard_history(c)
                 # Request history removal before deleting SMARTi users so a rejected HA call fails safely.
                 ids = await self.ha.request("recorder/list_statistic_ids")
                 if ids:

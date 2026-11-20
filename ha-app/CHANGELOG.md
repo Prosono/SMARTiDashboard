@@ -1,3 +1,7 @@
+## 1.36.148
+- PowerGuard bruker enhetens effektmåler når den finnes. Effekten rett før pause lagres og brukes til å vurdere om enheten får plass under kapasitetstrinnet. Uten måler kan du fortsatt oppgi effekt selv.
+- Se målt effekt, anslått timesnitt og effektgrense for siste time eller i dag. Utvid innsikten for å se bekreftede pauser og gjeninnkoblinger.
+
 ## 1.36.147
 - Søk etter enheter eller rom i PowerGuard, filtrer på enhetstype og legg til flere enheter samtidig.
 - Forbruk per enhet under Energi viser målte kWh for de siste 24 timene, 7 dagene eller 30 dagene, med datadekning for ufullstendige målinger.

@@ -23,6 +23,7 @@ from .ha_auth_reset import (
     create_first_owner,
     reset_documents,
 )
+from .power_guard_history import clear_power_guard_history
 from .remote_access import CLOUD_ORIGIN
 from .reset_credentials import public_key, unseal
 from .system_operations import Supervisor
@@ -461,6 +462,7 @@ class FullReset:
         _sync_directory(self.root)
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            clear_power_guard_history(db)
             for table in (
                 "energy_tariffs",
                 "energy_intervals",

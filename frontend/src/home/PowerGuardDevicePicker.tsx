@@ -10,12 +10,19 @@ import {
 } from "lucide-react";
 import { SettingsDialog } from "./SettingsDialog";
 
+export type PowerGuardMeter = { id: string; name: string };
+
 export type PowerGuardDevice = {
   id: string;
   name: string;
   room: string | null;
   kind: "switch" | "climate";
   state: string;
+  power_meter?: PowerGuardMeter | null;
+  power_meters?: PowerGuardMeter[];
+  automatic_power_meter_id?: string | null;
+  power_watts?: number | null;
+  paused_watts?: number | null;
 };
 
 export function powerGuardDeviceIcon(device: PowerGuardDevice | undefined) {
@@ -95,8 +102,8 @@ export function PowerGuardDevicePicker({
         <div className="power-guard-picker-tools">
           <p>
             {t(
-              "Velg enhetene PowerGuard kan sette på pause. Du angir maks effekt og prioritet etterpå.",
-              "Choose the devices PowerGuard can pause. Set maximum power and priority afterward.",
+              "Velg enhetene PowerGuard kan sette på pause. Du kan velge effektmåler eller oppgi effekten selv.",
+              "Choose the devices PowerGuard can pause. You can select a power meter or enter the power yourself.",
             )}
           </p>
           <label className="power-guard-picker-search">
@@ -165,7 +172,14 @@ export function PowerGuardDevicePicker({
                           </span>
                           <span className="power-guard-picker-device">
                             <strong>{device.name}</strong>
-                            <small>{typeLabels[device.kind]}</small>
+                            <small>
+                              {typeLabels[device.kind]}
+                              {device.automatic_power_meter_id
+                                ? ` · ${t("Effektmåler", "Power meter")}`
+                                : device.power_meters?.length
+                                  ? ` · ${t("Måler kan velges", "Meter available")}`
+                                  : ""}
+                            </small>
                           </span>
                           {!disabled && (
                             <small
