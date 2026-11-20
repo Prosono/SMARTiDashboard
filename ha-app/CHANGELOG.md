@@ -1,3 +1,6 @@
+## 1.36.145
+- PowerGuard under Energi bruker hovedmåleren og valgt kapasitetstrinn til å redusere forbrukstopper. Velg og prioriter brytere og termostater som kan pauses og kobles inn igjen automatisk. Funksjonen er av til du aktiverer den.
+
 ## 1.36.144
 - Språkvalget følger førstegangsoppsettet fra hubsøk og QR-kode til e-postbekreftelse, oppsettsveiviser og første åpning av hjemmet.
 - Nye hjem lagrer valgt språk for administratoren. Framdrift, innlastingen av hjemmet og feilmeldinger vises på valgt språk.

@@ -1,0 +1,383 @@
+.power-guard {
+  container-type: inline-size;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  margin-block: 14px;
+  --power-guard-warning: #955416;
+}
+
+[data-theme="dark"] .power-guard {
+  --power-guard-warning: #f2b876;
+}
+
+.ep .power-guard-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  justify-content: stretch;
+  text-align: start;
+  gap: 12px;
+  width: 100%;
+  min-height: 66px;
+  padding: 10px 14px;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+}
+
+.ep .power-guard-summary:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.power-guard-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.power-guard-name,
+.power-guard-device {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.power-guard-name strong {
+  font-size: 1.05rem;
+}
+
+.power-guard-name > span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.power-guard-status {
+  color: var(--muted);
+  text-align: end;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.power-guard-status[data-tone="active"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.power-guard-status[data-tone="attention"] {
+  color: var(--power-guard-warning);
+  font-weight: 600;
+}
+
+.power-guard-chevron {
+  color: var(--muted);
+  transition: transform 160ms ease;
+}
+
+.power-guard-summary[aria-expanded="true"] .power-guard-chevron {
+  transform: rotate(180deg);
+}
+
+.power-guard-body:not([hidden]) {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.power-guard-control,
+.power-guard-message,
+.power-guard-meter,
+.power-guard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.power-guard-control p,
+.power-guard-message p,
+.power-guard p.power-guard-note,
+.power-guard p.power-guard-error {
+  margin: 0;
+}
+
+.power-guard-control small,
+.power-guard-note,
+.power-guard-error {
+  font-size: 0.82rem;
+}
+
+.power-guard [role="alert"] {
+  color: var(--power-guard-warning);
+}
+
+.ep .power-guard-switch {
+  flex: none;
+  padding: 7px 9px 7px 12px;
+  border-radius: 999px;
+  background: var(--soft);
+}
+
+.power-guard-switch i {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 70%, var(--surface));
+}
+
+.power-guard-switch i::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: transform 160ms ease;
+}
+
+.power-guard-switch[aria-checked="true"] i {
+  background: var(--accent);
+}
+
+.power-guard-switch[aria-checked="true"] i::after {
+  transform: translateX(16px);
+}
+
+.power-guard-monitor {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--soft);
+}
+
+.power-guard-monitor dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.power-guard-monitor dt,
+.power-guard-meter {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.power-guard-monitor dd {
+  margin: 0;
+  font-size: clamp(1rem, 3.7cqi, 1.5rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.power-guard-meter {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  overflow-wrap: anywhere;
+}
+
+.power-guard-track {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.power-guard-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.power-guard-track[data-over="true"] i {
+  background: var(--power-guard-warning);
+}
+
+.power-guard-track > span {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.power-guard-form {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(0, 3fr);
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.power-guard-target {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.power-guard-target > label,
+.power-guard-add > label {
+  font-weight: 600;
+}
+
+.power-guard select {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+}
+
+.power-guard-loads > h3 {
+  margin: 0;
+}
+
+.power-guard-loads ol {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+}
+
+.power-guard-loads li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(82px, 110px) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.power-guard-priority {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  color: var(--accent);
+  background: var(--soft);
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+.power-guard-device > * {
+  overflow-wrap: anywhere;
+}
+
+.power-guard-loads [data-paused="true"] small {
+  color: var(--power-guard-warning);
+}
+
+.power-guard-watts {
+  display: grid;
+  gap: 2px;
+  font-size: 0.75rem;
+}
+
+.ep .power-guard-watts input {
+  width: 100%;
+  min-height: 44px;
+  padding-inline: 7px;
+  font-variant-numeric: tabular-nums;
+}
+
+.power-guard-order {
+  display: flex;
+  gap: 4px;
+}
+
+.ep .power-guard-order button {
+  width: 44px;
+  min-height: 44px;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.power-guard-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 4px 8px;
+  margin: 10px 0;
+}
+
+.power-guard-add > label,
+.power-guard-actions > p {
+  grid-column: 1 / -1;
+}
+
+.power-guard-actions {
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+
+.power-guard-actions > p {
+  margin: 0 auto 0 0;
+}
+
+.ep .power-guard-save {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--on-accent, var(--surface));
+  font-weight: 600;
+}
+
+@container (max-width: 660px) {
+  .power-guard-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (max-width: 410px) {
+  .ep .power-guard-summary {
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .power-guard-status {
+    max-width: 8.5ch;
+    overflow-wrap: anywhere;
+  }
+
+  .power-guard-icon {
+    width: 35px;
+    height: 35px;
+  }
+
+  .power-guard-loads li {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .power-guard-device {
+    grid-column: 2 / -1;
+  }
+
+  .power-guard-watts {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .power-guard-chevron,
+  .power-guard-switch i::after {
+    transition: none;
+  }
+}

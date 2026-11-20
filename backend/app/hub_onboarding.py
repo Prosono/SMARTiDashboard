@@ -17,6 +17,7 @@ from .factory_reset import archive_previous_reset
 from .full_reset import FullReset
 from .ha import HAError
 from .ha_auth_reset import AuthResetError
+from .power_guard import STORE_KEY as POWER_GUARD_SETTINGS
 from .remote_access import CLOUD_ORIGIN
 
 log = logging.getLogger(__name__)
@@ -171,6 +172,9 @@ class HubOnboarding:
 
             async def reset():
                 # Explicit owner reset. Radios, devices, automations and HA service accounts survive.
+                # Stop new load commands as soon as the previous owner's reset starts.
+                with self.store.connect() as c:
+                    c.execute("DELETE FROM settings WHERE key=?", (POWER_GUARD_SETTINGS,))
                 # Request history removal before deleting SMARTi users so a rejected HA call fails safely.
                 ids = await self.ha.request("recorder/list_statistic_ids")
                 if ids:

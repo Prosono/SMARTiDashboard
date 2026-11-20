@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { api } from "../api";
 import { SettingsDialog } from "./SettingsDialog";
+import { PowerGuard, powerGuardQueryKey } from "./PowerGuard";
 import "./energyPlatform.css";
 import { EnergyPriceChart } from "./EnergyPriceChart";
 import { EnergySensorPicker } from "./EnergySensorPicker";
@@ -1168,6 +1169,12 @@ export function EnergyPlatform({
               </button>
             )}
           </header>
+          <PowerGuard
+            admin={admin}
+            lang={lang}
+            offline={offline}
+            onSetup={() => setEditing(true)}
+          />
           {data?.history_estimated && (
             <p className="energy-control-note">
               <Info size={15} /> Forbruket er estimert fra effektmålinger.
@@ -1221,22 +1228,30 @@ export function EnergyPlatform({
           </p>
         </>
       ) : (
-        <div className="ep-start">
-          <Zap size={30} />
-          <div>
-            <h3>La oss bli kjent med energien din.</h3>
-            <p>
-              Velg nettselskap, strømavtale og måler. Du kan endre alt senere.
-            </p>
+        <>
+          <div className="ep-start">
+            <Zap size={30} />
+            <div>
+              <h3>La oss bli kjent med energien din.</h3>
+              <p>
+                Velg nettselskap, strømavtale og måler. Du kan endre alt senere.
+              </p>
+            </div>
+            {admin ? (
+              <button className="ep-primary" onClick={() => setEditing(true)}>
+                Sett opp energien <ArrowRight size={18} />
+              </button>
+            ) : (
+              <p>En administrator må sette opp energien først.</p>
+            )}
           </div>
-          {admin ? (
-            <button className="ep-primary" onClick={() => setEditing(true)}>
-              Sett opp energien <ArrowRight size={18} />
-            </button>
-          ) : (
-            <p>En administrator må sette opp energien først.</p>
-          )}
-        </div>
+          <PowerGuard
+            admin={admin}
+            lang={lang}
+            offline={offline}
+            onSetup={() => setEditing(true)}
+          />
+        </>
       )}
       {(editing ?? (admin && !setup.data?.config)) && setup.data && (
         <EnergyWizard
@@ -1263,6 +1278,7 @@ export function EnergyPlatform({
             void cache.invalidateQueries({
               queryKey: ["energy-flow-preferences"],
             });
+            void cache.invalidateQueries({ queryKey: powerGuardQueryKey });
             void refresh();
           }}
         />

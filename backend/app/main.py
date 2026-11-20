@@ -25,6 +25,7 @@ from .energy import energy_router
 from .energy_flow import energy_flow_router
 from .factory_reset import FactoryReset, factory_reset_router
 from .factory_reset_provider import HomeResetProvider
+from .full_reset import FullReset
 from .groups import groups_router
 from .ha import HAError, HomeAssistant
 from .history import history_router
@@ -36,6 +37,7 @@ from .marketplace import marketplace_router
 from .mobile import MobileAuth
 from .models import Command
 from .origins import OriginPolicy
+from .power_guard import PowerGuard, power_guard_router
 from .remote_access import remote_router
 from .scenes import scenes_router
 from .session_policy import SESSION_COOKIE_SECONDS
@@ -194,13 +196,17 @@ def create_app(
     setup = DeviceSetup(ha, settings, store)
     origins = OriginPolicy(settings)
     reset = FactoryReset(store, HomeResetProvider(ha, setup, console_settings or settings, store))
+    reset_coordinator = FullReset(settings, store)
+
+    def resetting():
+        full = reset_coordinator.state()
+        return reset.active() or bool(full and full["phase"] != "completed")
+
+    power_guard = PowerGuard(ha, store, energy_platform.repo, settings, resetting)
 
     @asynccontextmanager
     async def lifespan(app):
         reset.recover()
-        from .full_reset import FullReset
-
-        reset_coordinator = FullReset(settings, store)
         interrupted_reset = reset_coordinator.state()
         if interrupted_reset and interrupted_reset["phase"] in {"preparing", "erasing"}:
             interrupted_reset["phase"] = "failed"
@@ -210,6 +216,7 @@ def create_app(
         remote_task = None
         onboarding_task = None
         energy_task = None
+        power_guard_task = None
         releases_task = None
 
         def start_remote():
@@ -236,9 +243,14 @@ def create_app(
                 )
             if not mobile_only and not remote_surface:
                 energy_task = asyncio.create_task(energy_platform.run())
+                power_guard_task = asyncio.create_task(power_guard.run())
                 releases_task = asyncio.create_task(management.update_approval.run())
             yield
         finally:
+            if power_guard_task:
+                power_guard_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await power_guard_task
             if releases_task:
                 releases_task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
@@ -281,6 +293,7 @@ def create_app(
         )
 
     app.state.ha, app.state.auth, app.state.store = ha, auth, store
+    app.state.power_guard = power_guard
     app.state.remote = {"ready": False}
     app.state.mobile = mobile
     from .customer_access import COOKIE as customer_cookie
@@ -440,6 +453,7 @@ def create_app(
     app.include_router(camera_router(ha, user, settings))
     app.include_router(scenes_router(ha, store, user, settings))
     app.include_router(energy_router(ha, store, user, settings))
+    app.include_router(power_guard_router(power_guard, user, admin))
     app.include_router(platform_router(energy_platform, user, admin))
     app.include_router(energy_flow_router(store, user, ha, settings))
 
