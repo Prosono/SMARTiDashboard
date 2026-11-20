@@ -203,7 +203,7 @@ export function EnergyPlatform({
   offline?: boolean;
 }) {
   const cache = useQueryClient();
-  const [editing, setEditing] = useState<boolean | null>(null);
+  const [editing, setEditing] = useState<boolean | "meters" | null>(null);
   const setup = useQuery({
     queryKey: ["energy-platform-setup"],
     queryFn: () => api<Setup>("home/energy/platform/setup"),
@@ -1173,7 +1173,9 @@ export function EnergyPlatform({
             admin={admin}
             lang={lang}
             offline={offline}
-            onSetup={() => setEditing(true)}
+            onSetup={(section) =>
+              setEditing(section === "meter" ? "meters" : true)
+            }
           />
           {data?.history_estimated && (
             <p className="energy-control-note">
@@ -1267,6 +1269,7 @@ export function EnergyPlatform({
               : setup.data
           }
           lang={lang}
+          initialStep={editing === "meters" && setup.data.config ? 2 : 0}
           onClose={() => setEditing(false)}
           onSaved={() => {
             setEditing(false);
@@ -1290,11 +1293,13 @@ export function EnergyPlatform({
 function EnergyWizard({
   setup,
   lang,
+  initialStep,
   onClose,
   onSaved,
 }: {
   setup: Setup;
   lang: string;
+  initialStep: number;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -1325,7 +1330,7 @@ function EnergyWizard({
       ) as Config["equipment"],
       effective_from: dayString(new Date()),
     }),
-    [step, setStep] = useState(0),
+    [step, setStep] = useState(initialStep),
     [search, setSearch] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");

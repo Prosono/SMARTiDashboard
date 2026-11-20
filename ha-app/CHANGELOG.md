@@ -1,3 +1,6 @@
+## 1.36.146
+- PowerGuard har ny effektmåler med anslått timesnitt, valgt grense og margin. Prioritetslisten viser enhetenes status og hvilken enhet som pauses først. På mobil kan prioriteten endres med piltastene. Hovedmåler og kapasitetstrinn er samlet nederst.
+
 ## 1.36.145
 - PowerGuard under Energi bruker hovedmåleren og valgt kapasitetstrinn til å redusere forbrukstopper. Velg og prioriter brytere og termostater som kan pauses og kobles inn igjen automatisk. Funksjonen er av til du aktiverer den.
 
