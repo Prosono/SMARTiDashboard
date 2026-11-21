@@ -12,6 +12,7 @@ import httpx
 from fastapi import HTTPException
 
 from .certificate_hook import read_identity
+from .device_energy_sources import DEVICE_ENERGY_SOURCES_KEY
 from .factory_image import enrollment_bootstrap
 from .factory_reset import archive_previous_reset
 from .full_reset import FullReset
@@ -207,6 +208,7 @@ class HubOnboarding:
                     c.execute(
                         "DELETE FROM settings WHERE key LIKE 'access:%' OR key LIKE 'account_%' OR key LIKE 'experience:%' OR key LIKE 'language:%' OR key LIKE 'cloud_account:%' OR key LIKE 'customer_profile:%'"
                     )
+                    c.execute("DELETE FROM settings WHERE key=?", (DEVICE_ENERGY_SOURCES_KEY,))
                     # Commit deletion and reset checkpoint together; never delete the new owner on retry.
                     c.execute(
                         "INSERT OR REPLACE INTO settings VALUES(?,?)",

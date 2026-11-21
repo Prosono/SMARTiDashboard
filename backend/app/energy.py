@@ -11,6 +11,8 @@ from pydantic import BaseModel, Field
 from websockets.exceptions import ConnectionClosed
 
 from .access import visible
+from .device_energy_history import DeviceEnergyHistory
+from .device_energy_sources import device_energy_inventory, source_statistics
 from .ha import HAError
 
 PERIOD_HOURS = {"24h": 24, "7d": 168, "30d": 720}
@@ -18,19 +20,6 @@ CONSUMER_ROLES = {"consumer", "ev"}
 ENERGY_UNITS = {"Wh", "kWh"}
 APPLIANCE_DOMAINS = {"climate", "light", "media_player", "switch", "vacuum"}
 MAX_DEVICE_METERS = 60
-
-
-def source_statistics(value):
-    """Find energy dashboard sources across legacy and grouped grid configurations."""
-    if isinstance(value, dict):
-        for key, child in value.items():
-            if key.startswith("stat_") and isinstance(child, str):
-                yield child
-            else:
-                yield from source_statistics(child)
-    elif isinstance(value, list):
-        for child in value:
-            yield from source_statistics(child)
 
 
 def device_meters(controls, devices, areas, config, preferences):
@@ -158,8 +147,9 @@ def summarize(rows, start, end, energy):
     }
 
 
-def energy_router(ha, store, user, settings, repo=None):
+def energy_router(ha, store, user, settings, repo=None, *, platform=None):
     router = APIRouter(prefix="/api/home/energy")
+    device_history = DeviceEnergyHistory(ha, repo, platform)
 
     def meters():
         return {
@@ -292,5 +282,12 @@ def energy_router(ha, store, user, settings, repo=None):
             key=lambda device: (device["kwh"] is None, -(device["kwh"] or 0), device["name"].casefold()),
         )
         return result
+
+    @router.get("/device-consumption/history")
+    async def device_consumption_history(period: Literal["24h", "7d", "30d"] = "24h", current=Depends(user)):
+        inventory = await device_energy_inventory(ha, store, settings, repo, current)
+        return await device_history.read(
+            period, PERIOD_HOURS[period], inventory.selected, settings.mode == "demo"
+        )
 
     return router

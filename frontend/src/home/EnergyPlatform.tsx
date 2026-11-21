@@ -18,7 +18,7 @@ import { api } from "../api";
 import {
   DeviceEnergyConsumption,
   deviceEnergyConsumptionQueryKey,
-  PhoneDeviceEnergyConsumption,
+  deviceEnergySourcesQueryKey,
 } from "./DeviceEnergyConsumption";
 import { SettingsDialog } from "./SettingsDialog";
 import { PowerGuard, powerGuardQueryKey } from "./PowerGuard";
@@ -416,9 +416,10 @@ export function EnergyPlatform({
         "Kunne ikke hente alle kildene nå. Lagret historikk er fortsatt tilgjengelig.",
       );
     } finally {
-      await cache.invalidateQueries({
-        queryKey: deviceEnergyConsumptionQueryKey,
-      });
+      await Promise.all([
+        cache.invalidateQueries({ queryKey: deviceEnergyConsumptionQueryKey }),
+        cache.invalidateQueries({ queryKey: deviceEnergySourcesQueryKey }),
+      ]);
       setBusy(false);
     }
   }
@@ -914,27 +915,6 @@ export function EnergyPlatform({
           </EnergyModule>
         </EnergyModuleGroup>
         <EnergyModule
-          id="energy:consumers"
-          summary={{
-            reading: lang === "en" ? "View usage" : "Se forbruk",
-            detail: lang === "en" ? "Energy per device" : "Energi per enhet",
-            icon: "energy",
-          }}
-          title={lang === "en" ? "Usage by device" : "Forbruk per enhet"}
-          w={2}
-          h={3}
-          phoneSize={{ w: 2, h: 2, order: 5 }}
-          phoneContent={(open) => (
-            <PhoneDeviceEnergyConsumption
-              lang={lang}
-              offline={offline}
-              onOpen={open}
-            />
-          )}
-        >
-          <DeviceEnergyConsumption lang={lang} offline={offline} />
-        </EnergyModule>
-        <EnergyModule
           id="energy:meters"
           summary={{
             reading: "Åpne målere",
@@ -1191,6 +1171,7 @@ export function EnergyPlatform({
             loading={todayDashboard.isLoading}
             lang={lang}
           />
+          <DeviceEnergyConsumption lang={lang} offline={offline} />
           <PowerGuard
             admin={admin}
             lang={lang}
@@ -1269,6 +1250,7 @@ export function EnergyPlatform({
               <p>En administrator må sette opp energien først.</p>
             )}
           </div>
+          <DeviceEnergyConsumption lang={lang} offline={offline} />
           <PowerGuard
             admin={admin}
             lang={lang}

@@ -355,7 +355,7 @@ test("one energy canvas contains 3D, monthly capacity, tariff, hourly extremes a
   await expect(
     page.getByRole("tab", { name: "Historikk og strømpriser", exact: true }),
   ).toHaveCount(0);
-  await expect(grid.locator(".home-canvas-cell")).toHaveCount(9);
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(8);
   const flow = grid.locator('[data-card="energy:flow"]');
   await expect(flow).toHaveCSS("grid-column-end", "span 2");
   await expect(flow.locator(".energy-scene")).toBeVisible({ timeout: 20000 });
@@ -481,6 +481,9 @@ test("today's usage and cost remain visible with a customized mobile layout", as
     "0 kWh",
     /[−-]4,20\s*kr/,
   ]);
+  await expect(
+    page.getByRole("heading", { name: "Forbruk per enhet", exact: true }),
+  ).toBeVisible();
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
   await expect(grid.locator(".home-canvas-cell")).toHaveCount(1);
 
@@ -497,6 +500,130 @@ test("today's usage and cost remain visible with a customized mobile layout", as
   ).toBeLessThanOrEqual(1);
 });
 
+test("device energy tracks selected equipment independently of the canvas and PowerGuard", async ({
+  page,
+}) => {
+  const meters = [
+    {
+      id: "sensor.oven_energy",
+      name: "Varmeovn",
+      room: "Stue",
+      meter: "Forbruk",
+      kind: "energy",
+      unit: "kWh",
+      group: "oven",
+      automatic: true,
+    },
+    {
+      id: "sensor.fridge_power",
+      name: "Kjøleskap",
+      room: "Kjøkken",
+      meter: "Effekt",
+      kind: "power",
+      unit: "W",
+      group: "fridge",
+      automatic: false,
+    },
+  ];
+  let selected = [meters[0].id];
+  const writes: string[][] = [];
+  let powerGuardWrites = 0;
+  await page.route("**/api/home/energy/power-guard", (route) => {
+    if (route.request().method() === "PUT") powerGuardWrites++;
+    return route.continue();
+  });
+  await page.route("**/api/home/energy/device-sources", (route) => {
+    if (route.request().method() === "PUT") {
+      selected = route.request().postDataJSON().selected_ids;
+      writes.push(selected);
+    }
+    return route.fulfill({
+      json: {
+        sources: meters,
+        selected_ids: selected,
+        mode: writes.length ? "manual" : "automatic",
+        can_edit: true,
+      },
+    });
+  });
+  await page.route(
+    "**/api/home/energy/device-consumption/history?*",
+    (route) => {
+      const period = new URL(route.request().url()).searchParams.get("period");
+      const start = "2026-11-01T12:00:00Z";
+      const end = "2026-11-02T12:00:00Z";
+      const devices = meters
+        .filter(({ id }) => selected.includes(id))
+        .map((meter, index) => ({
+          id: meter.id,
+          name: meter.name,
+          room: meter.room,
+          kind: meter.kind === "power" ? "estimated" : "measured",
+          kwh: index === 0 ? 2 : 1.4,
+          cost: index === 0 ? 3.1 : 2.2,
+          coverage: 100,
+          cost_coverage: 100,
+          points: [
+            {
+              start,
+              end,
+              kwh: index === 0 ? 2 : 1.4,
+              cost: index === 0 ? 3.1 : 2.2,
+              coverage: 100,
+              cost_coverage: 100,
+            },
+          ],
+        }));
+      return route.fulfill({
+        json: { period, start, end, devices, currency: "NOK", demo: false },
+      });
+    },
+  );
+  const state = await setup(page);
+  state.layouts.energy_control = {
+    revision: 1,
+    items: [{ id: "energy:history", x: 0, y: 0, w: 2, h: 3 }],
+  };
+  await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  const deviceUsage = page.getByRole("region", {
+    name: "Forbruk per enhet",
+    exact: true,
+  });
+  await expect(deviceUsage).toContainText("Varmeovn");
+  await expect(deviceUsage).not.toContainText("Kjøleskap");
+  await deviceUsage.getByRole("button", { name: "Velg enheter" }).click();
+  const picker = page.getByRole("dialog", { name: "Velg enheter å følge" });
+  await picker.getByRole("searchbox").fill("Kjøkken");
+  await picker.getByRole("checkbox", { name: /Kjøleskap/ }).check();
+  await picker.getByRole("button", { name: "Lagre valg" }).click();
+  await expect
+    .poll(() => writes)
+    .toEqual([["sensor.oven_energy", "sensor.fridge_power"]]);
+  const fridge = deviceUsage.getByRole("button", { name: /Kjøleskap/ });
+  await expect(fridge).toContainText("1,4 kWh");
+  await expect(fridge).toContainText(/2,20\s*kr/);
+  await fridge.click();
+  await expect(fridge).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    deviceUsage.getByRole("group", { name: "Forbruk for Kjøleskap" }),
+  ).toBeVisible();
+  await deviceUsage
+    .getByRole("button", { name: "Kostnad", exact: true })
+    .click();
+  await expect(
+    deviceUsage.getByRole("group", { name: "Kostnad for Kjøleskap" }),
+  ).toBeVisible();
+  await page.reload();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  await expect(fridge).toBeVisible();
+  expect(state.layouts.energy_control.items?.map(({ id }) => id)).toEqual([
+    "energy:history",
+  ]);
+  expect(state.configWrites()).toBe(0);
+  expect(powerGuardWrites).toBe(0);
+});
+
 test("the unified layout saves sizes, removals and additions without changing energy setup", async ({
   page,
 }) => {
@@ -504,7 +631,7 @@ test("the unified layout saves sizes, removals and additions without changing en
   await page.setViewportSize({ width: 1440, height: 1000 });
   const state = await setup(page);
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
-  await expect(grid.locator(".home-canvas-cell")).toHaveCount(9);
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(8);
   await edit(page);
   const flow = grid.locator('[data-card="energy:flow"]');
   await flow.getByRole("combobox", { name: /bredde/ }).selectOption("3");

@@ -21,6 +21,7 @@ from .calendar import calendar_router
 from .camera_stream import camera_router
 from .config import Settings
 from .demo import Demo
+from .device_energy_sources import device_energy_sources_router
 from .energy import energy_router
 from .energy_flow import energy_flow_router
 from .factory_reset import FactoryReset, factory_reset_router
@@ -453,7 +454,10 @@ def create_app(
     app.include_router(vehicle_router(store, user, ha))
     app.include_router(camera_router(ha, user, settings))
     app.include_router(scenes_router(ha, store, user, settings))
-    app.include_router(energy_router(ha, store, user, settings, energy_platform.repo))
+    app.include_router(
+        energy_router(ha, store, user, settings, energy_platform.repo, platform=energy_platform)
+    )
+    app.include_router(device_energy_sources_router(ha, store, user, admin, settings, energy_platform.repo))
     app.include_router(power_guard_router(power_guard, user, admin))
     app.include_router(power_guard_history_router(power_guard, user))
     app.include_router(platform_router(energy_platform, user, admin))
