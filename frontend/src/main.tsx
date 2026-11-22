@@ -46,6 +46,8 @@ import {
 } from "./Experience";
 import { SimpleHome } from "./home/SimpleHome";
 import { HarmonyDevices } from "./home/HarmonyDevices";
+import { CardDeviceMetadata } from "./home/CardDeviceMetadata";
+import { deviceBattery } from "./home/deviceMetadata";
 import { DeviceArtwork } from "./home/DeviceArtwork";
 import { HomeBackgroundSettings } from "./home/HomeAppearance";
 import { liveConnection } from "./liveConnection";
@@ -1648,13 +1650,8 @@ function Device({
     c.availability === "available" &&
     !offline &&
     !(c.domain === "automation" && !admin);
-  const battery = c.device_id
-    ? h.controls.find(
-        (v) =>
-          v.device_id === c.device_id &&
-          v.attributes.device_class === "battery",
-      )
-    : undefined;
+  const lang = t === en ? "en" : "nb";
+  const battery = offline ? null : deviceBattery(c, h);
   const device = h.devices.find((v) => v.id === c.device_id);
   const power = c.capabilities.some((v) => v.kind === "power");
   const dim = c.capabilities.find((v) => v.kind === "brightness");
@@ -1796,10 +1793,10 @@ function Device({
       {inDialog ? (
         <DeviceDetailOverview
           control={c}
+          home={h}
           room={roomName}
           offline={offline}
-          lang={t === en ? "en" : "nb"}
-          battery={battery}
+          lang={lang}
           favorite={h.favorites.includes(c.entity_id)}
           onFavorite={favorite}
         />
@@ -1834,6 +1831,7 @@ function Device({
               </button>
             </h3>
           </div>
+          <CardDeviceMetadata control={c} home={h} lang={lang} available={can} />
         </>
       )}
       <div className="device-value">
@@ -2044,15 +2042,11 @@ function Device({
               </dd>
             </>
           )}
-          {battery && (
+          {battery !== null && (
             <>
               <dt>{t.battery}</dt>
               <dd>
-                {battery.availability === "available"
-                  ? `${battery.state}%`
-                  : battery.availability === "unknown"
-                    ? t.unknown
-                    : t.unavailable}
+                {battery.toLocaleString(lang, { maximumFractionDigits: 1 })} %
               </dd>
             </>
           )}

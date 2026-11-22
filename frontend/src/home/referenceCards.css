@@ -580,7 +580,7 @@ html[data-home-style="harmony"] {
     .media-player-card
     .media-art
     > div
-    > span {
+    > .media-room-name {
     font-size: 12px;
     margin-top: 7px;
   }
@@ -1232,7 +1232,7 @@ html[data-home-style="harmony"] {
     .media-player-card
     .media-art
     > div
-    > span {
+    > .media-room-name {
     font-size: 15px;
     font-weight: 600;
   }

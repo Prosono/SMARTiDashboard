@@ -1,4 +1,4 @@
-import { useState, type ElementType } from "react";
+import { useId, useState, type ElementType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
@@ -40,6 +40,7 @@ import {
   photoImages,
 } from "./CardPresentation";
 import { MobileCardArtwork } from "./MobileCardArtwork";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 import { ClockFace, useSky } from "./AmbientCard";
 import { clockDetails, clockZone, isAmbientType } from "./ambientModel";
 import { useWallTime } from "./useWallTime";
@@ -109,6 +110,7 @@ function Tile({
   poster?: string;
 }) {
   const [failed, setFailed] = useState("");
+  const metadataId = useId();
   const Icon =
     summary.icon === "climate"
       ? summary.climateTone === "cool"
@@ -118,6 +120,10 @@ function Tile({
           : Thermometer
       : icons.get(summary.icon) || Activity;
   const title = config?.title || card.title;
+  const sources = config?.sources.length ? config.sources : [card.entityId];
+  const device = sources.length === 1
+    ? home.controls.find((c) => c.entity_id === sources[0])
+    : undefined;
   const photo =
     config?.image &&
     (photoImages.has(config.image) ||
@@ -141,6 +147,7 @@ function Tile({
         type="button"
         className="mobile-card-tile"
         aria-label={`${lang === "en" ? "Open card" : "Åpne kort"}: ${title}. ${summary.reading}. ${summary.detail}`}
+        aria-describedby={device ? metadataId : undefined}
         aria-haspopup="dialog"
         onClick={onOpen}
         data-unavailable={summary.unavailable || undefined}
@@ -174,6 +181,16 @@ function Tile({
           <ChevronRight size={15} />
         </span>
         <strong className="mobile-card-title">{title}</strong>
+        {device && (
+          <CardDeviceMetadata
+            control={device}
+            home={home}
+            lang={lang}
+            visibleTitle={title}
+            available={!offline && home.connected && usable(device)}
+            id={metadataId}
+          />
+        )}
         <span className="mobile-card-reading">
           {analog ? (
             <ClockFace

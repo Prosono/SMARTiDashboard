@@ -343,13 +343,13 @@ export function RoomView({
           </span>
         </div>
       </div>
-      {!!model.alerts.length && (
+      {!!model.securityAlerts.length && (
         <div className="notice" role="status">
           <Shield size={20} />
           {offline
             ? t("Sikkerhetsstatus er ukjent.", "Security status is unknown.")
             : t("Se over sikkerhetsstatus: ", "Check security status: ")}
-          {!offline && model.alerts.map((c) => c.name).join(", ")}
+          {!offline && model.securityAlerts.map((c) => c.name).join(", ")}
         </div>
       )}
       {!!groups.length && (
@@ -458,6 +458,7 @@ export function RoomView({
                     <CameraCard
                       key={c.id}
                       c={c}
+                      home={home}
                       offline={offline}
                       lang={lang}
                     />

@@ -10,7 +10,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUp,
-  Battery,
   ChevronRight,
   House,
   LoaderCircle,
@@ -38,10 +37,10 @@ import { EquipmentArtwork } from "./EquipmentArtwork";
 import { DeviceArtwork } from "./DeviceArtwork";
 import { EquipmentColorControls } from "./EquipmentColorControls";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 import { cardTone } from "./cardToneModel";
 import { lightCardStyle } from "./lightCardModel";
 import {
-  deviceBattery,
   deviceReading,
   equipmentArt,
   finiteReading,
@@ -241,7 +240,6 @@ function HarmonyDevice({
   const volume = c.capabilities.find((cap) =>
     cap.actions.includes("set_volume"),
   );
-  const battery = deviceBattery(c, home);
   const position = finiteReading(c.attributes.current_position, 0, 100);
   const labels: Record<string, string> = {
     lock: t("Lås", "Lock"),
@@ -495,6 +493,7 @@ function HarmonyDevice({
             <strong>
               <CardTitle>{c.name}</CardTitle>
             </strong>
+            <CardDeviceMetadata control={c} home={home} lang={lang} available={available} />
             <small>
               {c.domain === "climate" ? t("Termostat", "Thermostat") : room}
             </small>
@@ -519,12 +518,6 @@ function HarmonyDevice({
                     ? t("Kjøler", "Cooling")
                     : state}
             </span>
-            {available && battery !== null && (
-              <small>
-                <Battery size={15} />
-                {battery}%
-              </small>
-            )}
           </div>
         )}
         {topSwitch && toggle()}
@@ -566,12 +559,6 @@ function HarmonyDevice({
               <span className="equipment-reading-caption">
                 <WifiOff size={14} />
                 {t("Ingen fersk status", "No current status")}
-              </span>
-            )}
-            {available && battery !== null && (
-              <span className="equipment-battery">
-                <Battery size={16} />
-                {t("Batteri", "Battery")} {battery}%
               </span>
             )}
             {updated &&

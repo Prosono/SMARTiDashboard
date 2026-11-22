@@ -298,7 +298,7 @@ export function SecurityOverview({
             entityId: c.entity_id,
             title: c.name,
             hidden: !matches(c) || !["all", "cameras"].includes(tab),
-            content: <CameraCard c={c} offline={offline} lang={lang} />,
+            content: <CameraCard c={c} home={home} offline={offline} lang={lang} />,
           })),
           ...deviceGridCards({
             controls: devices.slice(0, 190),

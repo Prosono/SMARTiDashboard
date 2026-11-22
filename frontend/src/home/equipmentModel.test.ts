@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Control, Home } from "../types";
+import { batteryReadings, deviceName, isLowBattery } from "./deviceMetadata";
 import {
   deviceBattery,
   deviceReading,
@@ -187,12 +188,8 @@ describe("equipment card data", () => {
       state: "82",
       attributes: { device_class: "battery", unit_of_measurement: "%" },
     });
-    expect(
-      deviceBattery(
-        control({ attributes: { battery_level: 0 } }),
-        home([sensor]),
-      ),
-    ).toBe(0);
+    const emptyBattery = control({ attributes: { battery_level: 0 } });
+    expect(deviceBattery(emptyBattery, home([emptyBattery, sensor]))).toBe(0);
     expect(deviceBattery(control(), home([sensor]))).toBe(82);
     expect(
       deviceBattery(control(), home([{ ...sensor, state: "unknown" }])),
@@ -222,5 +219,45 @@ describe("equipment card data", () => {
         }),
       ),
     ).toBe(false);
+  });
+
+  it("uses the registry name and valid battery diagnostics from the same device", () => {
+    const device = control();
+    const battery = control({
+      id: "sensor.device_battery",
+      entity_id: "sensor.device_battery",
+      domain: "sensor",
+      state: "0",
+      diagnostic: true,
+      updated_at: "2026-11-22T12:00:00Z",
+      attributes: { device_class: "battery", unit_of_measurement: "%" },
+    });
+    const snapshot = {
+      ...home([
+        device,
+        { ...battery, state: "99", updated_at: "2026-11-22T11:00:00Z" },
+        battery,
+        { ...battery, device_id: "other", availability: "unavailable" },
+        { ...battery, device_id: "invalid", state: "101" },
+      ]),
+      devices: [
+        {
+          id: "d1",
+          name: " Batterisensor ",
+          availability: "available",
+          area_id: "living",
+        },
+      ],
+    };
+    expect(deviceName(device, snapshot)).toBe("Batterisensor");
+    expect(deviceBattery(device, snapshot)).toBe(0);
+    expect([...batteryReadings(snapshot).values()]).toEqual([
+      expect.objectContaining({ level: 0, control: battery }),
+    ]);
+    const direct = control({ attributes: { battery_level: "19.5" } });
+    expect(deviceBattery(direct, home([direct]))).toBe(19.5);
+    expect(isLowBattery(19.5)).toBe(true);
+    expect(isLowBattery(20)).toBe(false);
+    expect(isLowBattery(null)).toBe(false);
   });
 });

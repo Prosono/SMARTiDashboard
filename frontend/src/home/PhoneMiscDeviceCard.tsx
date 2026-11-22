@@ -14,6 +14,7 @@ import { api } from "../api";
 import type { Control } from "../types";
 import { controlState } from "../controlState";
 import { CardIcon, CardTitle, cardImageURL } from "./CardPresentation";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 import { MobileCardArtwork } from "./MobileCardArtwork";
 import type { MobileCardProps } from "./MobileCardTile";
 import { usable } from "./homeModel";
@@ -58,8 +59,7 @@ export function PhoneMiscDeviceCard({
     : cover
       ? coverStates[c.state] || t("Ukjent", "Unknown")
       : controlState(c, c.state, lang);
-  const subtitle =
-    c.device_name && c.device_name !== c.name ? c.device_name : "";
+  const metadata = <CardDeviceMetadata control={c} home={home} lang={lang} available={available} />;
   const Icon = /eco|øko|energispar/i.test(c.name)
     ? Leaf
     : /borte|away/i.test(c.name)
@@ -116,7 +116,7 @@ export function PhoneMiscDeviceCard({
               <strong>
                 <CardTitle>{c.name}</CardTitle>
               </strong>
-              {subtitle && <small>{subtitle}</small>}
+              {metadata}
               <span className="phone-misc-state">{state}</span>
             </button>
             <button
@@ -191,7 +191,7 @@ export function PhoneMiscDeviceCard({
               <strong>
                 <CardTitle>{c.name}</CardTitle>
               </strong>
-              {subtitle && <small>{subtitle}</small>}
+              {metadata}
               <span className="phone-misc-toggle-state">
                 <i data-on={on} />
                 {state}

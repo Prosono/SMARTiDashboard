@@ -1,8 +1,9 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { Camera, Maximize, Play, Square, RefreshCw } from "lucide-react";
-import type { Control } from "../types";
+import type { Control, Home } from "../types";
 import { usable } from "./homeModel";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 import "./homeMedia.css";
 import { CardLivePreview } from "./CardLivePreview";
 import {
@@ -13,11 +14,13 @@ import {
 
 export function CameraCard({
   c,
+  home,
   offline,
   lang,
   compact = false,
 }: {
   c: Control;
+  home: Home;
   offline: boolean;
   lang: string;
   compact?: boolean;
@@ -137,6 +140,7 @@ export function CameraCard({
             <CardIcon optional fallback={Camera} size={20} />
             <CardTitle>{c.name}</CardTitle>
           </strong>
+          <CardDeviceMetadata control={c} home={home} lang={lang} available={available && home.connected} />
           <small>
             {t("Livevideo · noe forsinkelse", "Live video · some delay")}
           </small>

@@ -33,6 +33,7 @@ function SensorCard({
     <>
       <HomeMetric
         control={c}
+        home={home}
         kind={kind}
         enhanced
         deviceArtwork
@@ -61,7 +62,7 @@ export function HomeDeviceCard({
 }) {
   if (c.domain === "camera")
     return (
-      <CameraCard c={c} lang={lang} offline={offline || !home.connected} />
+      <CameraCard c={c} home={home} lang={lang} offline={offline || !home.connected} />
     );
   if (c.domain === "media_player")
     return (

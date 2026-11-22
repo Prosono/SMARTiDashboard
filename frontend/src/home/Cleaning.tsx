@@ -1,5 +1,7 @@
 import { RobotVacuumIcon } from "./RobotVacuumIcon";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
+import { deviceBattery } from "./deviceMetadata";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -61,25 +63,8 @@ export function VacuumCard({
     : states[c.availability === "available" ? c.state : c.availability]?.[
         en ? 1 : 0
       ] || c.state;
-  const batterySensor = c.device_id
-    ? home.controls.find(
-        (v) =>
-          v.device_id === c.device_id &&
-          v.domain === "sensor" &&
-          v.attributes.device_class === "battery" &&
-          v.availability === "available",
-      )
-    : undefined;
-  const rawBattery = c.attributes.battery_level ?? batterySensor?.state;
-  const battery =
-    rawBattery !== null &&
-    rawBattery !== undefined &&
-    rawBattery !== "" &&
-    Number.isFinite(Number(rawBattery)) &&
-    Number(rawBattery) >= 0 &&
-    Number(rawBattery) <= 100
-      ? Number(rawBattery)
-      : null;
+  const battery = deviceBattery(c, home);
+  const available = !offline && home.connected && c.availability === "available";
   const speeds = Array.isArray(c.attributes.fan_speed_list)
     ? c.attributes.fan_speed_list.filter(
         (v): v is string => typeof v === "string",
@@ -197,6 +182,7 @@ export function VacuumCard({
             <CardIcon fallback={RobotVacuumIcon} size={22} />
             <CardTitle>{c.name}</CardTitle>
           </h3>
+          <CardDeviceMetadata control={c} home={home} lang={lang} available={available} />
         </div>
         <button
           className="icon-button"
@@ -209,15 +195,10 @@ export function VacuumCard({
       </header>
       <div className="vacuum-status">
         <strong>{status}</strong>
-        {battery !== null && (
+        {battery !== null && !available && (
           <span>
             <Battery size={18} />
-            {battery}%
-            {offline || c.availability !== "available"
-              ? en
-                ? " · last reported"
-                : " · sist meldt"
-              : ""}
+            {battery}% {en ? "· last reported" : "· sist meldt"}
           </span>
         )}
       </div>

@@ -9,6 +9,7 @@ import type { HomeGridCard } from "./HomeGrid";
 import { HarmonyTrend } from "./HarmonyTrend";
 import { TemperatureValue } from "./TemperatureValue";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 import { DeviceArtwork } from "./DeviceArtwork";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Droplets, Thermometer, Zap } from "lucide-react";
@@ -100,6 +101,7 @@ function Chart({ points, label }: { points: Point[]; label: string }) {
 
 export function HomeMetric({
   control,
+  home,
   enhanced,
   kind,
   lang,
@@ -108,6 +110,7 @@ export function HomeMetric({
   deviceArtwork = false,
 }: {
   control: Control;
+  home: Home;
   enhanced: boolean;
   kind: MetricKind;
   lang: string;
@@ -258,6 +261,7 @@ export function HomeMetric({
             : ""}
         {control.name}
       </span>
+      <CardDeviceMetadata control={control} home={home} lang={lang} available={available} visibleTitle={control.name} />
       {valid &&
       enhanced &&
       kind === "energy" &&
@@ -387,6 +391,7 @@ export function HomeMetrics({
         <HomeMetric
           enhanced={enhanced}
           control={energy}
+          home={home}
           kind="energy"
           lang={lang}
           offline={offline || !home.connected}
@@ -397,6 +402,7 @@ export function HomeMetrics({
         <HomeMetric
           enhanced={enhanced}
           control={temp}
+          home={home}
           kind="temperature"
           lang={lang}
           offline={offline || !home.connected}
@@ -407,6 +413,7 @@ export function HomeMetrics({
         <HomeMetric
           enhanced={enhanced}
           control={humidity}
+          home={home}
           kind="humidity"
           lang={lang}
           offline={offline || !home.connected}

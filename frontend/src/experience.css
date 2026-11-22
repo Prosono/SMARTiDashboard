@@ -325,25 +325,6 @@
   outline: 3px solid var(--accent);
   outline-offset: 4px;
 }
-.simple-warning-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.simple-warning-list li {
-  display: flex;
-  gap: 14px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--line);
-}
-.simple-warning-list li > svg {
-  color: #c85b35;
-  flex-shrink: 0;
-}
-.simple-warning-list p {
-  margin: 4px 0;
-  color: var(--muted);
-}
 @media (max-width: 700px) {
   .simple-welcome:has(.simple-warning) {
     flex-wrap: wrap;

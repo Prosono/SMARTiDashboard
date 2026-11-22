@@ -1285,7 +1285,7 @@ test("equipment cards match their actual device type, color controls and linked 
   ).toContainText("Lukket");
   await expect(
     page.locator('[data-card="device:lock.equipment_lock"]'),
-  ).toContainText("82%");
+  ).toContainText("82 %");
   for (const theme of ["light", "dark"]) {
     await appearance(page);
     await page

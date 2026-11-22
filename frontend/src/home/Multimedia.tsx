@@ -1,5 +1,6 @@
 import { HomeGrid } from "./HomeGrid";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 import { mediaIcon } from "../MediaIcons";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { MetricDetails, MetricDeviceRenderer } from "./MetricDetails";
@@ -179,10 +180,17 @@ export function MediaCard({
                 </CardTitle>
               </strong>
             )}
-            <span>
+            <span className="media-room-name">
               {home.areas.find((a) => a.area_id === c.area_id)?.name ||
                 t("Uten rom", "Unassigned")}
             </span>
+            <CardDeviceMetadata
+              control={c}
+              home={home}
+              lang={lang}
+              available={!unavailable}
+              visibleTitle={overview ? t("Multimedia", "Media") : undefined}
+            />
           </div>
         </div>
         <div className="media-info-region">

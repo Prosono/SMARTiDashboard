@@ -1,5 +1,6 @@
 import type { Control, Home } from "../types";
 import { numeric, usable } from "./homeModel";
+export { deviceBattery } from "./deviceMetadata";
 
 export type EquipmentArt =
   | "pendant"
@@ -176,13 +177,6 @@ export function deviceReading(
   );
   // Multiple sources are ambiguous: do not silently pick a circuit, total or tariff.
   return candidates.length === 1 ? candidates[0] : undefined;
-}
-
-export function deviceBattery(c: Control, home: Home) {
-  const direct = finiteReading(c.attributes.battery_level, 0, 100);
-  if (direct !== null) return direct;
-  const sensor = deviceReading(c, home, "battery");
-  return sensor ? finiteReading(numeric(sensor), 0, 100) : null;
 }
 
 export function lightPercentage(c: Control) {

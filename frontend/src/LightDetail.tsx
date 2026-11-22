@@ -60,6 +60,7 @@ export function LightDetail({
     <article className="light-detail" data-state={c.state}>
       <DeviceDetailOverview
         control={c}
+        home={home}
         room={room}
         offline={offline}
         lang={lang}

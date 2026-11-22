@@ -167,30 +167,6 @@
   top: 22px;
   z-index: 2;
 }
-.home-alert-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 18px;
-}
-.home-alert-list li {
-  display: flex;
-  gap: 12px;
-  align-items: start;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--line);
-}
-.home-alert-list li > svg {
-  color: #c85b35;
-  flex: none;
-}
-.home-alert-list span {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-.home-alert-list small {
-  color: var(--muted);
-}
 @media (max-width: 767px) {
   .home-overview .home-welcome {
     grid-template-columns: minmax(0, 1fr);

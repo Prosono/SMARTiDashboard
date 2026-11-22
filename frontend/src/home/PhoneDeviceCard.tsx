@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Camera,
@@ -11,6 +11,7 @@ import { api } from "../api";
 import type { Control, Home } from "../types";
 import { controlState } from "../controlState";
 import { CardPresentation, CardTitle } from "./CardPresentation";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 import { MobileCardArtwork } from "./MobileCardArtwork";
 import type { MobileCardProps } from "./MobileCardTile";
 import { usable } from "./homeModel";
@@ -196,6 +197,7 @@ function PhoneLight({
       <button className="phone-device-name" onClick={onOpen}>
         <CardTitle>{c.name}</CardTitle>
       </button>
+      <CardDeviceMetadata control={c} home={home} lang={lang} available={available} />
       <div className="phone-light-reading">
         <span>
           {!available
@@ -275,6 +277,7 @@ export function PhoneDeviceCard({
   climatePage?: boolean;
 }) {
   const { home, config, card, offline, lang } = props;
+  const metadataId = useId();
   const c = home.controls.find(
     (c) => c.entity_id === (config?.sources[0] || card.entityId),
   );
@@ -315,9 +318,10 @@ export function PhoneDeviceCard({
         <article className="phone-camera">
           <header>
             <Camera size={22} />
-            <strong>
-              <CardTitle>{c.name}</CardTitle>
-            </strong>
+            <div className="phone-camera-title">
+              <strong><CardTitle>{c.name}</CardTitle></strong>
+              <CardDeviceMetadata control={c} home={home} lang={lang} available={available} />
+            </div>
             <span>{available ? (en ? "Inactive" : "Inaktiv") : state}</span>
           </header>
           <button
@@ -340,11 +344,13 @@ export function PhoneDeviceCard({
           data-unavailable={!available}
           onClick={onOpen}
           aria-label={`${c.name}: ${state}. ${en ? "View details" : "Se detaljer"}`}
+          aria-describedby={metadataId}
         >
           <MobileCardArtwork {...props} />
-          <strong>
-            <CardTitle>{c.name}</CardTitle>
-          </strong>
+          <span className="phone-security-title">
+            <strong><CardTitle>{c.name}</CardTitle></strong>
+            <CardDeviceMetadata control={c} home={home} lang={lang} available={available} id={metadataId} />
+          </span>
           <span className="phone-security-state">
             {alert ? <TriangleAlert size={19} /> : <i />}
             {state}

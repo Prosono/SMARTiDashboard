@@ -18,6 +18,7 @@ import { CameraCard } from "./HomeMedia";
 import { controlState } from "../controlState";
 import { isAmbientType } from "./ambientModel";
 import { AmbientCard } from "./AmbientCard";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 
 function StatusCard({
   config,
@@ -74,6 +75,7 @@ function StatusCard({
           </strong>
           <ChevronRight size={17} />
         </header>
+        {c && <CardDeviceMetadata control={c} home={home} lang={lang} available={available} />}
         <small>
           {home.areas.find((area) => area.area_id === c?.area_id)?.name ||
             (en ? "No room" : "Uten rom")}
@@ -94,7 +96,7 @@ function StatusCard({
       {opened && c && render && (
         <SettingsDialog title={c.name} presentation="device" lang={lang} onClose={() => open(false)}>
           {c.domain === "camera" ? (
-            <CameraCard c={c} lang={lang} offline={offline} />
+            <CameraCard c={c} home={home} lang={lang} offline={offline} />
           ) : (
             render(c)
           )}

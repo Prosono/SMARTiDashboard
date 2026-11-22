@@ -1,0 +1,50 @@
+.home-alert-note {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+.home-alert-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.home-alert-list li + li {
+  border-top: 1px solid var(--line);
+}
+.home-alert-list .home-alert-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 10px 8px;
+  color: var(--text);
+  text-align: left;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+.home-alert-list button.home-alert-item:hover {
+  background: var(--soft);
+}
+.home-alert-item > svg {
+  flex: none;
+}
+.home-alert-item .home-alert-icon {
+  color: #c85b35;
+}
+.home-alert-list [data-kind="battery"] .home-alert-icon {
+  color: var(--accent);
+}
+.home-alert-label {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.home-alert-label small {
+  color: var(--muted);
+}
+.home-alert-list + .home-customize {
+  margin-top: 12px;
+}

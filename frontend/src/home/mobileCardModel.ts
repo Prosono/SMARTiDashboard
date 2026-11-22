@@ -245,13 +245,9 @@ export function mobileCardSummary(
     };
   }
   if (c.domain === "vacuum") {
-    const battery = finite(a.battery_level);
     return {
       reading: state,
-      detail:
-        battery === null
-          ? room
-          : `${format(battery)} % ${t("batteri", "battery")}`,
+      detail: room,
       icon: "vacuum",
     };
   }

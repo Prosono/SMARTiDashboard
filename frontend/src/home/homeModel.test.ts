@@ -82,8 +82,84 @@ it("prioritizes smoke and unknown security ahead of ordinary openings", () => {
     ]),
   );
   expect(m.alerts).toHaveLength(2);
+  expect(m.alerts.map((alert) => alert.kind)).toEqual(["security", "security"]);
   expect(m.security[0].attributes.device_class).toBe("smoke");
   expect(m.cameras).toHaveLength(1);
+});
+it("adds one low battery warning per device and preserves separate safety alerts", () => {
+  const smoke = c(
+    "binary_sensor",
+    "on",
+    { device_class: "smoke" },
+    { device_id: "smoke-detector" },
+  );
+  const batterySensor = (device: string, state: string) =>
+    c(
+      "sensor",
+      state,
+      { device_class: "battery", unit_of_measurement: "%" },
+      {
+        device_id: device,
+        diagnostic: true,
+        entity_id: `sensor.${device}_battery`,
+      },
+    );
+  const lowFlag = c(
+    "binary_sensor",
+    "on",
+    { device_class: "battery" },
+    { device_id: "smoke-detector", diagnostic: true },
+  );
+  const m = overview(
+    home([
+      smoke,
+      batterySensor("smoke-detector", "0"),
+      lowFlag,
+      batterySensor("low-device", "19"),
+      batterySensor("normal-device", "20"),
+      batterySensor("unknown-device", "unavailable"),
+    ]),
+  );
+
+  expect(m.securityAlerts).toEqual([smoke]);
+  expect(m.alerts[0]).toEqual({ kind: "security", control: smoke });
+  expect(m.alerts.slice(1)).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        kind: "battery",
+        control: smoke,
+        level: 0,
+      }),
+      expect.objectContaining({
+        kind: "battery",
+        control: expect.objectContaining({ device_id: "low-device" }),
+        level: 19,
+      }),
+    ]),
+  );
+  expect(m.alerts).toHaveLength(3);
+});
+it("reports an active native battery alarm without assuming a percentage", () => {
+  const lock = c("lock", "locked", {}, { device_id: "lock" });
+  const batteryAlarm = c(
+    "binary_sensor",
+    "on",
+    { device_class: "battery" },
+    { device_id: "lock", diagnostic: true },
+  );
+  const lowAttribute = c("sensor", "10", { battery_low: true });
+  const unavailable = c(
+    "binary_sensor",
+    "on",
+    { device_class: "battery" },
+    { device_id: "unavailable", availability: "unavailable" },
+  );
+  expect(
+    overview(home([batteryAlarm, lock, lowAttribute, unavailable])).alerts,
+  ).toEqual([
+    { kind: "battery", control: lock, level: null },
+    { kind: "battery", control: lowAttribute, level: null },
+  ]);
 });
 it("indexes large homes without truncating discoverable controls", () => {
   const m = overview(

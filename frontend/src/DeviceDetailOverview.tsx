@@ -1,37 +1,28 @@
-import { Battery, MapPin, Star } from "lucide-react";
-import type { Control } from "./types";
+import { MapPin, Star } from "lucide-react";
+import type { Control, Home } from "./types";
+import { CardDeviceMetadata } from "./home/CardDeviceMetadata";
 import { DeviceArtwork } from "./home/DeviceArtwork";
-import { controlState } from "./controlState";
 
 export function DeviceDetailOverview({
   control,
+  home,
   room,
   offline,
   lang,
-  battery,
   favorite,
   onFavorite,
 }: {
   control: Control;
+  home: Home;
   room: string;
   offline: boolean;
   lang: string;
-  battery?: Control;
   favorite: boolean;
   onFavorite: () => void;
 }) {
   const en = lang === "en";
   const available = !offline && control.availability === "available";
   const updated = control.updated_at ? new Date(control.updated_at) : null;
-  const batteryState =
-    battery &&
-    controlState(
-      battery,
-      battery.availability === "available"
-        ? battery.state
-        : battery.availability,
-      lang,
-    );
 
   return (
     <header className="device-detail-overview" data-available={available}>
@@ -40,6 +31,12 @@ export function DeviceDetailOverview({
       </div>
       <div className="device-detail-identity">
         <h3>{control.name}</h3>
+        <CardDeviceMetadata
+          control={control}
+          home={home}
+          lang={lang}
+          available={!offline}
+        />
         <div className="device-detail-room">
           <MapPin size={15} aria-hidden="true" />
           {room}
@@ -58,24 +55,6 @@ export function DeviceDetailOverview({
                   ? "Unavailable"
                   : "Utilgjengelig"}
           </span>
-          {battery && (
-            <span className="device-detail-battery">
-              <Battery size={17} aria-hidden="true" />
-              <span
-                className={
-                  battery.availability === "available" ? "sr-only" : undefined
-                }
-              >
-                {en ? "Battery" : "Batteri"}
-                {battery.availability !== "available" ? ":" : " "}
-              </span>
-              {batteryState}
-              {battery.availability === "available" &&
-              !String(batteryState).includes("%")
-                ? " %"
-                : ""}
-            </span>
-          )}
         </div>
         {updated && Number.isFinite(updated.valueOf()) && (
           <small className="control-updated">

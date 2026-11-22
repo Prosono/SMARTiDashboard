@@ -13,6 +13,7 @@ import { api } from "../api";
 import type { Control } from "../types";
 import { mediaIcon } from "../MediaIcons";
 import { CardTitle, cardImageURL } from "./CardPresentation";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 import { MobileCardArtwork } from "./MobileCardArtwork";
 import type { MobileCardProps } from "./MobileCardTile";
 import { mediaArtworkKind, mediaDeviceArtwork } from "./mediaDeviceArtwork";
@@ -150,6 +151,7 @@ export function PhoneMediaCard({
           <strong>
             <CardTitle>{c.name}</CardTitle>
           </strong>
+          <CardDeviceMetadata control={c} home={home} lang={lang} available={available} />
           {!compact && !tv && (
             <small>
               {available &&

@@ -21,15 +21,14 @@ import {
   Bath,
   Trees,
   Car,
-  ChevronRight,
   MapPin,
   Play,
   Bell,
 } from "lucide-react";
 import { api } from "../api";
 import type { Home, Control } from "../types";
-import { entityState } from "../manage/entityWords";
 import { overview, usable } from "./homeModel";
+import { HomeAlertsDialog } from "./HomeAlerts";
 import { Energy } from "./EnergyOverview";
 import { EnergyPlatform } from "./EnergyPlatform";
 import { EnergyFlow } from "./EnergyFlow";
@@ -404,49 +403,21 @@ export function HomeOverview({
                 />
               )}
               {showAlerts && (
-                <SettingsDialog
-                  title={t("Trenger din oppmerksomhet", "Needs your attention")}
+                <HomeAlertsDialog
+                  alerts={model.alerts}
+                  home={h}
                   lang={lang}
-                  compact
+                  offline={offline}
                   onClose={() => setShowAlerts(false)}
-                >
-                  {offline && (
-                    <p>
-                      {t(
-                        "Forbindelsen er brutt. Dette er sist rapporterte status.",
-                        "Connection lost. These are the last reported states.",
-                      )}
-                    </p>
-                  )}
-                  <ul className="home-alert-list">
-                    {model.alerts.map((c) => (
-                      <li key={c.id}>
-                        <TriangleAlert size={20} />
-                        <span>
-                          <strong>{c.name}</strong>
-                          <small>
-                            {h.areas.find((a) => a.area_id === c.area_id)
-                              ?.name || t("Uten rom", "Unassigned")}{" "}
-                            ·{" "}
-                            {offline
-                              ? t("Sist rapportert", "Last reported")
-                              : entityState(c.entity_id, c.state, h, lang)}
-                          </small>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    className="home-customize"
-                    onClick={() => {
-                      setShowAlerts(false);
-                      setTab("security");
-                    }}
-                  >
-                    {t("Åpne sikkerhet", "Open security")}{" "}
-                    <ChevronRight size={17} />
-                  </button>
-                </SettingsDialog>
+                  onOpenSecurity={
+                    allowedTabs.includes("security")
+                      ? () => {
+                          setShowAlerts(false);
+                          changeTab("security");
+                        }
+                      : undefined
+                  }
+                />
               )}
               {message && (
                 <p className="notice" role="status">

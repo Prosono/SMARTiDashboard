@@ -4,7 +4,8 @@ import { SimpleDashboard } from "./SimpleDashboard";
 import { Presence } from "./People";
 import { RoomArtwork } from "../rooms/RoomArtwork";
 import { Miscellaneous, hasMiscellaneous } from "./Miscellaneous";
-import { SettingsDialog } from "./SettingsDialog";
+import { HomeAlertsDialog } from "./HomeAlerts";
+import { batteryAlerts } from "./homeModel";
 import { HomeBannerless } from "./CategoryIntro";
 import {
   HomePageTools,
@@ -14,7 +15,7 @@ import {
 import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
 import { SecurityOverview } from "./SecurityOverview";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { TriangleAlert, House, Search, Star } from "lucide-react";
 import type { Home, Control } from "../types";
 export function SimpleHome({
@@ -65,15 +66,21 @@ export function SimpleHome({
         Number(home.favorites.includes(a.entity_id)) ||
       Number(b.capabilities.length > 0) - Number(a.capabilities.length > 0),
   );
-  const alerts = controls.filter(
-    (c) =>
-      c.state === "triggered" ||
-      (c.domain === "binary_sensor" &&
-        ["smoke", "gas", "carbon_monoxide", "moisture"].includes(
-          String(c.attributes.device_class),
-        ) &&
-        c.state === "on"),
-  );
+  const lowBatteries = useMemo(() => batteryAlerts(home), [home]);
+  const alerts = [
+    ...controls
+      .filter(
+        (c) =>
+          c.state === "triggered" ||
+          (c.domain === "binary_sensor" &&
+            ["smoke", "gas", "carbon_monoxide", "moisture"].includes(
+              String(c.attributes.device_class),
+            ) &&
+            c.state === "on"),
+      )
+      .map((control) => ({ kind: "security" as const, control })),
+    ...lowBatteries,
+  ];
   const toolbar = (
     <div className="home-toolbar harmony-simple-location">
       <div className="home-location">
@@ -105,40 +112,13 @@ export function SimpleHome({
     </div>
   );
   const alertDialog = showAlerts && (
-    <SettingsDialog
-      title={en ? "Needs your attention" : "Trenger din oppmerksomhet"}
+    <HomeAlertsDialog
+      alerts={alerts}
+      home={home}
       lang={lang}
+      offline={offline}
       onClose={() => setShowAlerts(false)}
-      compact
-    >
-      {offline && (
-        <p>
-          {en
-            ? "Connection lost. These are the last reported alerts."
-            : "Forbindelsen er brutt. Dette er de sist rapporterte varslene."}
-        </p>
-      )}
-      {alerts.length ? (
-        <ul className="simple-warning-list">
-          {alerts.map((c) => (
-            <li key={c.id}>
-              <TriangleAlert size={22} aria-hidden="true" />
-              <div>
-                <strong>{c.name}</strong>
-                <p>{home.areas.find((a) => a.area_id === c.area_id)?.name}</p>
-                <span>{en ? "Alarm detected" : "Varsel registrert"}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>
-          {en
-            ? "No active alerts reported."
-            : "Ingen aktive varsler rapportert."}
-        </p>
-      )}
-    </SettingsDialog>
+    />
   );
   if (view !== "devices")
     return (

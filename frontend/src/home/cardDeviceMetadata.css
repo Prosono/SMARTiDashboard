@@ -1,0 +1,97 @@
+.card-device-metadata {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: color-mix(in srgb, currentColor 82%, transparent);
+}
+
+.card-device-metadata > .card-device-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-device-battery {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 3px;
+  padding: 2px 5px;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.card-device-battery[data-low] {
+  border-color: #f0884c;
+}
+
+.card-device-metadata-description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.mobile-card-tile .card-device-metadata {
+  flex: none;
+  font-size: clamp(10px, 6.8cqi, 12px);
+}
+
+html[data-home-style="harmony"] .mobile-card-tile:has(.card-device-metadata) {
+  gap: 3px;
+}
+
+html[data-home-style="harmony"]
+  .mobile-card-tile:has(.card-device-metadata)
+  :is(.mobile-card-title, .mobile-card-detail) {
+  -webkit-line-clamp: 1;
+}
+
+html[data-home-style="harmony"]
+  .mobile-card-tile:has(.card-device-metadata)
+  :is(.mobile-card-top, .mobile-card-product) {
+  min-height: 0;
+  height: clamp(32px, 24cqi, 46px);
+}
+
+.phone-camera-title {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.phone-security-title {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.phone-security[data-attention="true"] > .phone-security-title {
+  align-self: end;
+  grid-area: 1 / 2;
+}
+
+.phone-light:has(.card-device-metadata) .phone-product-open {
+  min-height: 45px;
+}
+
+.phone-light:has(.card-device-metadata) .mobile-card-product {
+  width: 65px;
+  height: 65px;
+}

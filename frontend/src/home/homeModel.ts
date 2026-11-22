@@ -1,4 +1,19 @@
 import type { Control, Home } from "../types";
+import {
+  batteryDeviceKey,
+  batteryReadings,
+  isLowBattery,
+} from "./deviceMetadata";
+
+export type DashboardAlert =
+  { kind: "security"; control: Control } | BatteryAlert;
+
+export type BatteryAlert = {
+  kind: "battery";
+  control: Control;
+  level: number | null;
+};
+
 export const usable = (c: Control) =>
   c.availability === "available" &&
   (c.domain === "scene"
@@ -18,6 +33,55 @@ export function temperature(c: Control): number | null {
     return null;
   return unit === "°F" ? ((raw - 32) * 5) / 9 : unit === "°C" ? raw : null;
 }
+
+function batteryWarningSensor(c: Control) {
+  return (
+    c.domain === "binary_sensor" &&
+    ["battery", "battery_low"].includes(String(c.attributes.device_class))
+  );
+}
+
+export function batteryAlerts(home: Home): BatteryAlert[] {
+  const warnings = new Map<string, BatteryAlert>();
+  for (const [key, { level, control }] of batteryReadings(home)) {
+    if (isLowBattery(level))
+      warnings.set(key, { kind: "battery", level, control });
+  }
+  for (const control of home.controls) {
+    if (!usable(control)) continue;
+    const flagged =
+      control.attributes.battery_low === true ||
+      (batteryWarningSensor(control) && control.state === "on");
+    if (!flagged) continue;
+    const key = batteryDeviceKey(control);
+    if (!warnings.has(key))
+      warnings.set(key, { kind: "battery", level: null, control });
+  }
+
+  if (!warnings.size) return [];
+
+  // Link to a primary control for the device when one is visible in this home.
+  const targets = new Map<string, Control>();
+  for (const control of home.controls) {
+    const key = batteryDeviceKey(control);
+    if (
+      !warnings.has(key) ||
+      control.diagnostic ||
+      ["battery", "battery_low", "battery_charging"].includes(
+        String(control.attributes.device_class),
+      )
+    )
+      continue;
+    const current = targets.get(key);
+    if (!current || (!usable(current) && usable(control)))
+      targets.set(key, control);
+  }
+  return Array.from(warnings, ([key, warning]) => ({
+    ...warning,
+    control: targets.get(key) ?? warning.control,
+  }));
+}
+
 export function overview(h: Home) {
   const controls = h.controls.filter(
     (c) => !c.diagnostic && !["automation", "person"].includes(c.domain),
@@ -95,6 +159,15 @@ export function overview(h: Home) {
         ? 1
         : 0;
   };
+  security.sort((a, b) => severity(b) - severity(a));
+  const securityAlerts = security.filter((c) => severity(c) >= 2);
+  const alerts: DashboardAlert[] = [
+    ...securityAlerts.map((control) => ({
+      kind: "security" as const,
+      control,
+    })),
+    ...batteryAlerts(h),
+  ];
   return {
     controls,
     byRoom,
@@ -102,8 +175,9 @@ export function overview(h: Home) {
       ? roomTemps.reduce((a, b) => a + b, 0) / roomTemps.length
       : null,
     temperatureRooms: roomTemps.length,
-    security: security.sort((a, b) => severity(b) - severity(a)),
-    alerts: security.filter((c) => severity(c) >= 2),
+    security,
+    securityAlerts,
+    alerts,
     open: security.filter((c) => severity(c) === 1),
     meters: controls.filter(
       (c) =>

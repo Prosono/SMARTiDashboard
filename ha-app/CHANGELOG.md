@@ -1,3 +1,7 @@
+## 1.36.153
+- Enhetskort viser navnet på den fysiske enheten og batterinivå når en måling er tilgjengelig.
+- Varsler på dashbordet viser ett batterivarsel per enhet under 20 % eller når Home Assistant melder lavt batteri.
+
 ## 1.36.152
 - Skjermsparer under Innstillinger viser klokke, dato og valgfritt vær og kalender. Velg når den skal starte, og forhåndsvis på enheten.
 - Hubkartet i adminportalen har tydeligere geografi og flere detaljer når du zoomer.

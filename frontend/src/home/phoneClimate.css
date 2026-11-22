@@ -174,7 +174,12 @@
       object-fit: contain;
       opacity: 1;
     }
-    .phone-climate-name > strong {
+    .phone-climate-name-text {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+    .phone-climate-name-text > strong {
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -375,15 +380,6 @@
       font-variant-numeric: tabular-nums;
       overflow-wrap: anywhere;
     }
-    .phone-climate-sensor > small {
-      color: var(--phone-muted);
-      font-size: 11px;
-      line-height: 1.2;
-      max-width: 100%;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    }
     .phone-climate-chevron {
       display: none;
     }
@@ -433,7 +429,7 @@
       grid-area: 1 / 2;
       font-size: 14px;
     }
-    .phone-climate-more .phone-climate-sensor > small {
+    .phone-climate-more .phone-climate-sensor > .card-device-metadata {
       grid-area: 2 / 2;
     }
     .phone-climate-more .phone-climate-reading {

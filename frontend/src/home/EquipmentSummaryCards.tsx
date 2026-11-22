@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 import {
   Battery,
+  BatteryLow,
   ChevronRight,
   Network,
   TriangleAlert,
@@ -10,9 +11,9 @@ import type { Control, Home } from "../types";
 import type { HomeGridCard } from "./HomeGrid";
 import { MetricDeviceRenderer } from "./MetricDetails";
 import { SettingsDialog } from "./SettingsDialog";
-import { finiteReading } from "./equipmentModel";
-import { numeric, overview, usable } from "./homeModel";
-import { controlState } from "../controlState";
+import { batteryReadings, deviceName, isLowBattery } from "./deviceMetadata";
+import { overview } from "./homeModel";
+import { alertStatus, alertTitle } from "./HomeAlerts";
 import { integrationName } from "../branding";
 import { CardIcon, CardTitle } from "./CardPresentation";
 
@@ -45,29 +46,11 @@ function SummaryCard({
         ? Battery
         : Network;
   const connected = !offline && home.connected;
-  const alerts = overview(home).alerts;
-  const batteries = home.controls
-    .flatMap((c) => {
-      if (
-        c.domain === "sensor" &&
-        c.attributes.device_class === "battery" &&
-        c.attributes.unit_of_measurement === "%"
-      ) {
-        const value = finiteReading(numeric(c), 0, 100);
-        return value !== null ? [{ c, value }] : [];
-      }
-      const value = finiteReading(c.attributes.battery_level, 0, 100);
-      const sensorExists =
-        c.device_id &&
-        home.controls.some(
-          (item) =>
-            item.device_id === c.device_id &&
-            item.domain === "sensor" &&
-            item.attributes.device_class === "battery",
-        );
-      return value !== null && usable(c) && !sensorExists ? [{ c, value }] : [];
-    })
-    .sort((a, b) => a.value - b.value);
+  const alerts = kind === "alerts" ? overview(home).alerts : [];
+  const batteries =
+    kind === "batteries" && connected
+      ? [...batteryReadings(home).values()].sort((a, b) => a.level - b.level)
+      : [];
   const sources = [
     ...new Set(
       home.controls.flatMap((c) => (c.integration ? [c.integration] : [])),
@@ -99,25 +82,25 @@ function SummaryCard({
             </p>
           )}
           <div className="equipment-summary-rows">
-            {alerts.slice(0, 3).map((c) => (
-              <button
-                key={c.id}
-                onClick={() => (render ? select(c) : openDevices())}
-              >
-                <TriangleAlert size={20} />
-                <span>
-                  <strong>{c.name}</strong>
-                  <small>
-                    {controlState(
-                      c,
-                      usable(c) ? c.state : c.availability,
-                      lang,
-                    )}
-                  </small>
-                </span>
-                <ChevronRight size={15} />
-              </button>
-            ))}
+            {alerts.slice(0, 3).map((alert) => {
+              const c = alert.control;
+              const Icon = alert.kind === "battery" ? BatteryLow : TriangleAlert;
+              return (
+                <button
+                  type="button"
+                  key={`${alert.kind}:${c.id}`}
+                  aria-haspopup={render ? "dialog" : undefined}
+                  onClick={() => (render ? select(c) : openDevices())}
+                >
+                  <Icon size={20} aria-hidden="true" />
+                  <span>
+                    <strong>{alertTitle(alert, home)}</strong>
+                    <small>{alertStatus(alert, lang)}</small>
+                  </span>
+                  <ChevronRight size={15} aria-hidden="true" />
+                </button>
+              );
+            })}
           </div>
           {!alerts.length && (
             <p className="equipment-summary-note">
@@ -130,27 +113,33 @@ function SummaryCard({
       ) : kind === "batteries" ? (
         <div className="equipment-summary-rows">
           {connected && batteries.length ? (
-            batteries.slice(0, 3).map(({ c, value }) => (
-              <button
-                key={c.id}
-                onClick={() => (render ? select(c) : openDevices())}
-              >
-                <Battery size={22} />
-                <span>
-                  <strong>
-                    {c.name}
-                    <b>{value} %</b>
-                  </strong>
-                  <progress
-                    className="equipment-battery-progress"
-                    max={100}
-                    value={value}
-                    data-low={value < 20}
-                    aria-label={`${c.name}: ${value} %`}
-                  />
-                </span>
-              </button>
-            ))
+            batteries.slice(0, 3).map(({ control: c, level }) => {
+              const name = deviceName(c, home) || c.name;
+              const value = level.toLocaleString(en ? "en-GB" : "nb-NO");
+              return (
+                <button
+                  type="button"
+                  key={c.id}
+                  aria-haspopup={render ? "dialog" : undefined}
+                  onClick={() => (render ? select(c) : openDevices())}
+                >
+                  <Battery size={22} aria-hidden="true" />
+                  <span>
+                    <strong>
+                      {name}
+                      <b>{value} %</b>
+                    </strong>
+                    <progress
+                      className="equipment-battery-progress"
+                      max={100}
+                      value={level}
+                      data-low={isLowBattery(level)}
+                      aria-label={`${name}: ${value} %`}
+                    />
+                  </span>
+                </button>
+              );
+            })
           ) : (
             <p className="equipment-summary-note">
               {t(

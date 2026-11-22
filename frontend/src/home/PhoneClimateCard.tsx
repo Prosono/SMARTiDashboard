@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
@@ -17,6 +17,7 @@ import { api } from "../api";
 import type { Control } from "../types";
 import { ThermostatModeIcon } from "../Thermostat";
 import { CardIcon, CardTitle } from "./CardPresentation";
+import { CardDeviceMetadata } from "./CardDeviceMetadata";
 import { MobileCardArtwork } from "./MobileCardArtwork";
 import type { MobileCardProps } from "./MobileCardTile";
 import { measurementParts, usable } from "./homeModel";
@@ -32,6 +33,7 @@ export function PhoneClimateCard({
   ...props
 }: MobileCardProps & { c: Control; onOpen: () => void }) {
   const { home, offline, lang, config } = props;
+  const metadataId = useId();
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const query = useQueryClient(),
     pending = useRef(false);
@@ -105,10 +107,6 @@ export function PhoneClimateCard({
       ? t("Frakoblet", "Disconnected")
       : t("Utilgjengelig", "Unavailable")
     : controlState(c, c.state, lang);
-  const subtitle =
-    c.device_name && c.device_name !== c.name
-      ? c.device_name
-      : String(c.attributes.smarti_device_model || "");
   async function adjust(direction: number) {
     if (pending.current || !available || !permitted || busy || !valid) return;
     const value = Number(
@@ -163,6 +161,7 @@ export function PhoneClimateCard({
             className="phone-climate-name"
             onClick={onOpen}
             aria-label={`${t("Detaljer", "Details")}: ${c.name}`}
+            aria-describedby={metadataId}
           >
             <span className="phone-climate-art" aria-hidden="true">
               {config?.icon !== "none" && (
@@ -170,9 +169,10 @@ export function PhoneClimateCard({
               )}
               <MobileCardArtwork {...props} />
             </span>
-            <strong>
-              <CardTitle>{c.name}</CardTitle>
-            </strong>
+            <span className="phone-climate-name-text">
+              <strong><CardTitle>{c.name}</CardTitle></strong>
+              <CardDeviceMetadata control={c} home={home} lang={lang} available={available} id={metadataId} />
+            </span>
           </button>
           {ac ? (
             <ChevronRight size={21} aria-hidden="true" />
@@ -271,6 +271,7 @@ export function PhoneClimateCard({
       data-unavailable={!available}
       onClick={onOpen}
       aria-label={`${c.name}: ${parts ? `${parts.value} ${parts.unit}` : state}. ${t("Detaljer", "Details")}`}
+      aria-describedby={metadataId}
     >
       <span className="phone-climate-sensor-icon">
         <MobileCardArtwork {...props} />
@@ -297,7 +298,14 @@ export function PhoneClimateCard({
       <span className="phone-climate-reading">
         {parts ? `${parts.value} ${parts.unit}` : state}
       </span>
-      {subtitle && <small>{subtitle}</small>}
+      <CardDeviceMetadata
+        control={c}
+        home={home}
+        lang={lang}
+        available={available}
+        fallbackName={typeof c.attributes.smarti_device_model === "string" ? c.attributes.smarti_device_model : undefined}
+        id={metadataId}
+      />
       <ChevronRight className="phone-climate-chevron" size={20} />
     </button>
   );
