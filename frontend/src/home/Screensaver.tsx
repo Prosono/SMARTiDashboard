@@ -6,6 +6,12 @@ import { SimpleAgenda } from "./SimpleDashboard";
 import { TemperatureValue } from "./TemperatureValue";
 import { WeatherArtwork, useWeatherNight } from "./WeatherArtwork";
 import { weatherLabel } from "./weatherPresentation";
+import {
+  photoTimingPreference,
+  ScreensaverGallerySettings,
+  ScreensaverPhotoSlideshow,
+  useScreensaverPhotoGallery,
+} from "./ScreensaverPhotoGallery";
 import "./screensaver.css";
 
 const delays = ["0", "1", "3", "5", "10", "15", "30"];
@@ -13,9 +19,10 @@ const keys = {
   delay: "smarti-screensaver-delay",
   weather: "smarti-screensaver-weather",
   calendar: "smarti-screensaver-calendar",
+  gallery: "smarti-screensaver-show-gallery",
 };
 
-export function useScreensaver(enabled: boolean) {
+export function useScreensaver(enabled: boolean, owner: string) {
   const [delay, setDelay] = useState(() =>
     readPreference(keys.delay, "0", delays),
   );
@@ -26,6 +33,17 @@ export function useScreensaver(enabled: boolean) {
     () => readPreference(keys.calendar, "off", ["on", "off"]) === "on",
   );
   const [active, setActive] = useState(false);
+  const [showGallery, setShowGallery] = useState(
+    () => readPreference(keys.gallery, "on", ["on", "off"]) === "on",
+  );
+  const [photoInterval, setPhotoInterval] = useState(() =>
+    readPreference(
+      photoTimingPreference.key,
+      photoTimingPreference.initial,
+      photoTimingPreference.allowed,
+    ),
+  );
+  const gallery = useScreensaverPhotoGallery(owner, enabled);
 
   useEffect(() => {
     if (!enabled || delay === "0" || active) return;
@@ -114,6 +132,9 @@ export function useScreensaver(enabled: boolean) {
     delay,
     weather,
     calendar,
+    gallery,
+    showGallery,
+    photoInterval,
     active: enabled && active,
     changeDelay(value: string) {
       setDelay(value);
@@ -126,6 +147,15 @@ export function useScreensaver(enabled: boolean) {
     changeCalendar(value: boolean) {
       setCalendar(value);
       writePreference(keys.calendar, value ? "on" : "off");
+    },
+    changePhotoInterval(value: string) {
+      if (!photoTimingPreference.allowed.includes(value)) return;
+      setPhotoInterval(value);
+      writePreference(photoTimingPreference.key, value);
+    },
+    changeGalleryVisibility(value: boolean) {
+      setShowGallery(value);
+      writePreference(keys.gallery, value ? "on" : "off");
     },
     preview() {
       setActive(true);
@@ -191,6 +221,14 @@ export function ScreensaverSettings({
           {en ? "Today's calendar" : "Dagens kalender"}
         </label>
       </fieldset>
+      <ScreensaverGallerySettings
+        gallery={state.gallery}
+        showGallery={state.showGallery}
+        onChangeVisibility={state.changeGalleryVisibility}
+        seconds={state.photoInterval}
+        onChangeSeconds={state.changePhotoInterval}
+        lang={lang}
+      />
       <button type="button" onClick={state.preview}>
         <Play size={17} aria-hidden="true" /> {en ? "Preview" : "Forhåndsvis"}
       </button>
@@ -270,10 +308,13 @@ export function Screensaver({
     availableWeather.find((item) => home.favorites.includes(item.entity_id)) ??
     availableWeather[0];
   const closeLabel = en ? "Close screensaver" : "Lukk skjermsparer";
+  const photos = state.showGallery ? state.gallery.photos : [];
   return (
     <dialog
       ref={dialog}
       className="home-screensaver"
+      data-photos={photos.length > 0 || undefined}
+      data-agenda={state.calendar || undefined}
       aria-label={en ? "Screensaver" : "Skjermsparer"}
       onClick={state.close}
       onCancel={(event) => {
@@ -281,6 +322,12 @@ export function Screensaver({
         state.close();
       }}
     >
+      {!!photos.length && (
+        <ScreensaverPhotoSlideshow
+          photos={photos}
+          seconds={state.photoInterval}
+        />
+      )}
       <button
         type="button"
         className="screensaver-close"

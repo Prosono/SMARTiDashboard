@@ -1,3 +1,7 @@
+## 1.36.155
+- Skjermspareren kan vise opptil 24 egne bilder med automatisk bildebytte og valg av visningstid. Bildene lagres lokalt på enheten.
+- Nye apparatbilder for vaskemaskin, tørketrommel, oppvaskmaskin og kjøl/frys vises på enhetskort og i energilisten når apparattypen gjenkjennes.
+
 ## 1.36.154
 - Enhetshistorikk henter hele valgt periode og støtter opptil 30 dager. Eldre målinger vises som timestatistikk når den finnes.
 - Forbruk per enhet viser produktbilder, blant annet for varmtvannsberedere og AC. Nye bilder for temperatursensor og ingen bevegelse vises på enhetskortene.

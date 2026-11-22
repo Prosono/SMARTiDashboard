@@ -8,6 +8,7 @@ import {
   equipmentPortrait,
   finiteReading,
   hasWaterHeaterHint,
+  householdApplianceArt,
   lightColor,
   lightPercentage,
   securityAttention,
@@ -171,6 +172,33 @@ describe("equipment card data", () => {
     expect(equipmentArt(control({ domain: "switch", name: "Panelovn" }))).toBe(
       "switch",
     );
+  });
+  it("selects individual appliance portraits from explicit names and reported metadata", () => {
+    for (const [identity, expected] of [
+      [
+        { name: "Vaskemaskinen", entity_id: "switch.outlet" },
+        "washing-machine",
+      ],
+      [
+        { name: "Stikkontakt", entity_id: "switch.torketrommel_stikk" },
+        "tumble-dryer",
+      ],
+      [
+        { name: "Washer and dryer", attributes: { icon: "mdi:dishwasher" } },
+        "dishwasher",
+      ],
+      [{ name: "Stikkontakt", device_name: "Kjøl og frys" }, "refrigerator"],
+      [{ name: "Kombinert vaskemaskin og tørketrommel" }, undefined],
+      [{ name: "Hair dryer and pressure washer" }, undefined],
+      [{ name: "Vaskerom / Kjøkken" }, undefined],
+      [{ name: "Fryserommet" }, undefined],
+    ] as const) {
+      const c = control({ domain: "switch", ...identity });
+      expect(householdApplianceArt(c)).toBe(expected);
+      const kind = equipmentArt(c);
+      expect(kind).toBe(expected ?? "switch");
+      if (expected) expect(equipmentPortrait(c, kind, true)).toBe(expected);
+    }
   });
   it("never turns missing, nonfinite, strings, or invalid measurements into readings", () => {
     for (const value of [null, undefined, NaN, Infinity, "42", true, -1, 101])

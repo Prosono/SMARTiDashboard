@@ -1,5 +1,5 @@
 import type { Control } from "../types";
-import { hasAirConditionerHint } from "./equipmentModel";
+import { hasAirConditionerHint, householdApplianceArt } from "./equipmentModel";
 
 export function monetarySensor(c: Control) {
   return (
@@ -52,7 +52,7 @@ export function sensorArtworkKind(c: Control): string | null {
     ["hPa", "ppm"].includes(unit)
   )
     return "environment";
-  return "data";
+  return householdApplianceArt(c) ?? "data";
 }
 
 export function sensorDeviceArtwork(c: Control): string | null {

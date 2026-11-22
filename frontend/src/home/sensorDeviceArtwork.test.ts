@@ -43,6 +43,10 @@ it("gives real and computed entities suitable categories without changing their 
       "air-conditioner",
     ],
     ["Stue AC Mode", {}, "air-conditioner"],
+    ["Vaskemaskin program", {}, "washing-machine"],
+    ["Tumble dryer cycle", {}, "tumble-dryer"],
+    ["Oppvaskmaskin status", {}, "dishwasher"],
+    ["Kjøleskap modus", {}, "refrigerator"],
     ["Roode Combined People Inside", {}, "presence"],
     ["Temperatur", { device_class: "temperature" }, "temperature-sensor"],
     ["Utetemperatur", { unit_of_measurement: "°C" }, "temperature-sensor"],
@@ -73,4 +77,9 @@ it("uses declared measurements before incidental names", () => {
   expect(
     sensorArtworkKind(control("AC kostnad", { unit_of_measurement: "kr/kWh" })),
   ).toBe("money");
+  expect(
+    sensorArtworkKind(
+      control("Kjøleskap effekt", { unit_of_measurement: "W" }),
+    ),
+  ).toBe("meter");
 });

@@ -3,6 +3,52 @@ import { numeric, usable } from "./homeModel";
 import { equipmentPortraitKinds } from "./equipmentAssets";
 export { deviceBattery } from "./deviceMetadata";
 
+const householdApplianceTypes = [
+  {
+    kind: "washing-machine",
+    names: [
+      "vaskemaskin",
+      "vaskemaskinen",
+      "washing machine",
+      "clothes washer",
+    ],
+    icons: ["mdi:washing-machine"],
+  },
+  {
+    kind: "tumble-dryer",
+    names: [
+      "tørketrommel",
+      "tørketrommelen",
+      "torketrommel",
+      "tumble dryer",
+      "clothes dryer",
+    ],
+    icons: ["mdi:tumble-dryer"],
+  },
+  {
+    kind: "dishwasher",
+    names: ["oppvaskmaskin", "oppvaskmaskinen", "dishwasher", "dish washer"],
+    icons: ["mdi:dishwasher"],
+  },
+  {
+    kind: "refrigerator",
+    names: [
+      "kjøleskap",
+      "kjøleskapet",
+      "kjoleskap",
+      "kjøl frys",
+      "kjøl og frys",
+      "fryser",
+      "fryseren",
+      "refrigerator",
+      "fridge",
+      "freezer",
+    ],
+    icons: ["mdi:fridge", "mdi:fridge-outline"],
+  },
+] as const;
+type HouseholdApplianceArt = (typeof householdApplianceTypes)[number]["kind"];
+
 export type EquipmentArt =
   | "pendant"
   | "bulb"
@@ -34,6 +80,7 @@ export type EquipmentArt =
   | "thermostat"
   | "air-conditioner"
   | "water-heater"
+  | HouseholdApplianceArt
   | "battery"
   | "generic";
 
@@ -53,6 +100,26 @@ function equipmentDescription(c: EquipmentIdentity) {
     .filter((value) => typeof value === "string")
     .join(" ")
     .replace(/[_-]/g, " ");
+}
+
+export function householdApplianceArt(c: EquipmentIdentity) {
+  const explicit = householdApplianceTypes.find(({ icons }) =>
+    icons.some((icon) => icon === c.attributes.icon),
+  );
+  if (explicit) return explicit.kind;
+  const words = ` ${equipmentDescription(c)
+    .normalize("NFC")
+    .toLocaleLowerCase("nb-NO")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()} `;
+  const matches = householdApplianceTypes.filter(({ names }) =>
+    names.some((name) => words.includes(` ${name} `)),
+  );
+  return matches.length === 1 ? matches[0].kind : undefined;
+}
+
+export function isHouseholdApplianceArt(kind: EquipmentArt) {
+  return householdApplianceTypes.some((appliance) => appliance.kind === kind);
 }
 
 export function hasAirConditionerHint(c: EquipmentIdentity) {
@@ -138,7 +205,9 @@ export function equipmentArt(c: Control): EquipmentArt {
   if (c.domain === "climate")
     return isAirConditioner(c) ? "air-conditioner" : "thermostat";
   if (c.domain === "fan") return "fan";
-  if (["switch", "input_boolean"].includes(c.domain))
+  if (["switch", "input_boolean"].includes(c.domain)) {
+    const appliance = householdApplianceArt(c);
+    if (appliance) return appliance;
     return /elbillad|ev[ _-]?(charg|lad)|\bevse\b|wallbox|ladestasjon/.test(
       [c.name, c.device_name, c.attributes.smarti_device_model]
         .filter((v) => typeof v === "string")
@@ -150,6 +219,7 @@ export function equipmentArt(c: Control): EquipmentArt {
           /stikk|socket|plug/.test(c.name.toLocaleLowerCase())
         ? "plug"
         : "switch";
+  }
   if (c.domain === "alarm_control_panel") return "alarm";
   if (c.domain === "sensor" && deviceClass === "battery") return "battery";
   if (c.domain === "binary_sensor")

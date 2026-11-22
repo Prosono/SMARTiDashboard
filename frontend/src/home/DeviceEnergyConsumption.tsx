@@ -18,6 +18,7 @@ import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
 import {
   hasAirConditionerHint,
   hasWaterHeaterHint,
+  householdApplianceArt,
   type EquipmentArt,
 } from "./equipmentModel";
 import "./deviceEnergyConsumption.css";
@@ -120,7 +121,7 @@ function usageArtwork(
     ? "water-heater"
     : hints.some(hasAirConditionerHint)
       ? "air-conditioner"
-      : undefined;
+      : hints.map(householdApplianceArt).find(Boolean);
   return { control: device ?? meter, equipmentKind };
 }
 

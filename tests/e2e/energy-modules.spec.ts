@@ -634,6 +634,14 @@ test("device energy rows show physical device artwork and a meter fallback", asy
     { id: "water-meter", name: "Varmtvannstank", group: "meter:water-meter" },
     { id: "ac-meter", name: "Kjøling", group: "device:ac-device" },
     { id: "other-meter", name: "Måler 4", group: "meter:other-meter" },
+    { id: "washing-meter", name: "Vaskemaskin", group: "meter:washing-meter" },
+    { id: "dryer-meter", name: "Tørk", group: "meter:dryer-meter" },
+    {
+      id: "dishwasher-meter",
+      name: "Kjøkkenmåler",
+      group: "device:dishwasher",
+    },
+    { id: "fridge-meter", name: "Kjøleskap", group: "meter:fridge-meter" },
   ];
   await page.route("**/api/home/energy/device-sources", (route) =>
     route.fulfill({
@@ -652,27 +660,25 @@ test("device energy rows show physical device artwork and a meter fallback", asy
       },
     }),
   );
-  await page.route(
-    "**/api/home/energy/device-consumption/history?*",
-    (route) =>
-      route.fulfill({
-        json: {
-          start: "2026-11-01T12:00:00Z",
-          end: "2026-11-02T12:00:00Z",
-          devices: devices.map((device) => ({
-            ...device,
-            room: null,
-            kind: "measured",
-            kwh: 2,
-            coverage: 100,
-            cost: 3.1,
-            cost_coverage: 100,
-            points: [],
-          })),
-        },
-      }),
+  await page.route("**/api/home/energy/device-consumption/history?*", (route) =>
+    route.fulfill({
+      json: {
+        start: "2026-11-01T12:00:00Z",
+        end: "2026-11-02T12:00:00Z",
+        devices: devices.map((device) => ({
+          ...device,
+          room: null,
+          kind: "measured",
+          kwh: 2,
+          coverage: 100,
+          cost: 3.1,
+          cost_coverage: 100,
+          points: [],
+        })),
+      },
+    }),
   );
-  await setup(page, false, false, undefined, [
+  const controls: Control[] = [
     {
       id: "air-control",
       entity_id: "climate.air_pump",
@@ -688,23 +694,55 @@ test("device energy rows show physical device artwork and a meter fallback", asy
       updated_at: null,
       integration: null,
     },
-  ]);
+  ];
+  controls.push(
+    {
+      ...controls[0],
+      id: "dryer-meter",
+      entity_id: "sensor.torketrommel_energy",
+      device_id: null,
+      name: "Effekt",
+      domain: "sensor",
+      state: "2",
+      attributes: { device_class: "energy", unit_of_measurement: "kWh" },
+    },
+    {
+      ...controls[0],
+      id: "dishwasher-control",
+      entity_id: "switch.dishwasher_relay",
+      device_id: "dishwasher",
+      name: "Stikkontakt",
+      domain: "switch",
+      state: "on",
+      attributes: { icon: "mdi:dishwasher" },
+    },
+  );
+  await setup(page, false, false, undefined, controls);
   const usage = page.getByRole("region", { name: "Forbruk per enhet" });
+  await usage.getByRole("button", { name: "Vis alle 7 enheter" }).click();
   for (const [name, asset] of [
     ["Varmtvannstank", "water-heater"],
     ["Kjøling", "air-conditioner"],
     ["Måler 4", "meter"],
+    ["Vaskemaskin", "washing-machine"],
+    ["Tørk", "tumble-dryer"],
+    ["Kjøkkenmåler", "dishwasher"],
+    ["Kjøleskap", "refrigerator"],
   ]) {
     const row = usage.getByRole("button", { name: new RegExp(name) });
     await row.scrollIntoViewIfNeeded();
     const picture = row.locator(`img[src$="/${asset}.webp"]`);
     await expect(picture).toBeVisible();
     await expect
-      .poll(() => picture.evaluate((node) => (node as HTMLImageElement).naturalWidth))
+      .poll(() =>
+        picture.evaluate((node) => (node as HTMLImageElement).naturalWidth),
+      )
       .toBeGreaterThan(0);
   }
   await expect(
-    usage.getByRole("button", { name: /Kjøling/ }).locator("[data-artwork-entity]"),
+    usage
+      .getByRole("button", { name: /Kjøling/ })
+      .locator("[data-artwork-entity]"),
   ).toHaveAttribute("data-artwork-entity", "climate.air_pump");
 });
 

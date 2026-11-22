@@ -5,6 +5,7 @@ import {
   equipmentArt,
   equipmentPortrait,
   finiteReading,
+  isHouseholdApplianceArt,
   lightColor,
   type EquipmentArt,
 } from "./equipmentModel";
@@ -57,7 +58,12 @@ export function EquipmentArtwork({
         />
       </div>
     );
-  const kind = art === "movement" && portrait !== "movement" ? "motion" : art;
+  const kind =
+    art === "movement" && portrait !== "movement"
+      ? "motion"
+      : isHouseholdApplianceArt(art)
+        ? "generic"
+        : art;
   return (
     <div
       className={`equipment-art art-${kind}`}
