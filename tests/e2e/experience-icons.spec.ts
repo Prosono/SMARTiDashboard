@@ -9,6 +9,12 @@ const settings = (page: Page) =>
   page
     .getByRole("navigation", { name: "Hovedmeny" })
     .getByRole("button", { name: "Innstillinger", exact: true });
+async function openAppearance(page: Page) {
+  await settings(page).click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+}
 async function setup(page: Page) {
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
@@ -16,7 +22,7 @@ async function setup(page: Page) {
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await settings(page).click();
+  await openAppearance(page);
 }
 
 test("mode illustrations stay legible, distinct and clear of text and selection marks across screen sizes", async ({
@@ -113,7 +119,7 @@ test("keyboard mode selection keeps the selected marker and focus visible and su
       "data-experience",
       mode,
     );
-    await settings(page).click();
+    await openAppearance(page);
     await expect(
       page.locator(`.experience-picker button[data-mode=${mode}]`),
     ).toHaveAttribute("aria-pressed", "true");

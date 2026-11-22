@@ -157,6 +157,9 @@ test("updates have dedicated SMARTi, extension and advanced-only app tabs and ar
     page.getByRole("heading", { name: "SMARTi-appen", exact: true }),
   ).toHaveCount(0);
   await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+  await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Enkel/ })
     .click();
@@ -172,6 +175,9 @@ test("updates have dedicated SMARTi, extension and advanced-only app tabs and ar
   ).toBeVisible();
   expect(data.appReads()).toBe(0);
   await data.settings();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
   await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Avansert/ })

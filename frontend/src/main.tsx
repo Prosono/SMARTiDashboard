@@ -5,14 +5,7 @@ import { MediaCard } from "./home/Multimedia";
 import { useAvailabilityGrace } from "./useAvailabilityGrace";
 import { HideControl, HiddenControls } from "./ControlVisibility";
 import { LightAppearance } from "./LightAppearance";
-import "./manage/settingsOverview.css";
 import {
-  Database,
-  Network,
-  Server,
-  Code,
-  Monitor,
-  Palette,
   Settings2,
   Power,
   Lock,
@@ -23,12 +16,7 @@ import {
   Play,
   Info,
 } from "lucide-react";
-import { PhoneSettings } from "./PhoneSettings";
-import {
-  Screensaver,
-  ScreensaverSettings,
-  useScreensaver,
-} from "./home/Screensaver";
+import { Screensaver, useScreensaver } from "./home/Screensaver";
 import { Scenes } from "./home/Scenes";
 import { PagedControls } from "./PagedControls";
 import { SensorValue } from "./SensorValue";
@@ -39,8 +27,6 @@ import "./controlDetail.css";
 import { VacuumCard } from "./home/Cleaning";
 import {
   Experience,
-  ExperiencePicker,
-  UserLanguagePicker,
   useExperience,
   useExperiencePreference,
 } from "./Experience";
@@ -49,7 +35,6 @@ import { HarmonyDevices } from "./home/HarmonyDevices";
 import { CardDeviceMetadata } from "./home/CardDeviceMetadata";
 import { deviceBattery } from "./home/deviceMetadata";
 import { DeviceArtwork } from "./home/DeviceArtwork";
-import { HomeBackgroundSettings } from "./home/HomeAppearance";
 import { liveConnection } from "./liveConnection";
 import { StartupScreen } from "./StartupScreen";
 import {
@@ -68,8 +53,7 @@ import { ProtocolLogo } from "./ProtocolLogo";
 import { RadioAdvanced } from "./RadioAdvanced";
 import { Connections } from "./manage/Connections";
 import { AccountAvatar } from "./manage/Accounts";
-import { Debugging } from "./manage/Debugging";
-import { HomeSettings } from "./manage/HomeSettings";
+import { SettingsPage, type SettingsSection } from "./manage/SettingsPage";
 import { Thermostat } from "./Thermostat";
 import React, {
   useContext,
@@ -107,12 +91,10 @@ import {
   Plug,
   Thermometer,
   History,
-  Activity,
   WifiOff,
   ChevronRight,
   Settings,
   LogOut,
-  Check,
   AlertCircle,
   LoaderCircle,
   Minus,
@@ -128,7 +110,7 @@ import "./manage/manage.css";
 import { Automations } from "./manage/Automations";
 import { RoomManager } from "./manage/Rooms";
 import { Updates } from "./manage/Updates";
-import { PalettePicker, palettes } from "./PalettePicker";
+import { palettes } from "./PalettePicker";
 import { RoomView } from "./rooms/RoomView";
 import "./palettes.css";
 import "./home/harmony.css";
@@ -158,11 +140,7 @@ import { useUpdateCount } from "./manage/useUpdateCount";
 import { ProtocolDevices } from "./ProtocolDevices";
 import { DeviceSetup } from "./DeviceSetup";
 import { readPreference, writePreference } from "./preferences";
-import {
-  Atmosphere,
-  AtmosphereProvider,
-  BackgroundMotionSetting,
-} from "./Atmosphere";
+import { Atmosphere, AtmosphereProvider } from "./Atmosphere";
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } },
 });
@@ -880,12 +858,15 @@ function Dashboard({
     provider: string;
   } | null>(null);
   const [roomEditing, setRoomEditing] = useState(false);
-  const [selectedSettings, setSettingsSection] = useState("household");
+  const [selectedSettings, setSettingsSection] =
+    useState<SettingsSection>("household");
   const canManageSettings = session.role === "admin" && mode !== "simple";
   const settingsSection =
     !canManageSettings && selectedSettings !== "screensaver"
       ? "appearance"
-      : selectedSettings;
+      : selectedSettings === "debugging" && mode !== "advanced"
+        ? "household"
+        : selectedSettings;
   const screensaver = useScreensaver(
     !!home.data,
     session.support ? "" : session.name,
@@ -1102,7 +1083,7 @@ function Dashboard({
           </span>
         </div>
       </header>
-      <main>
+      <main className={page === "more" ? "settings-main" : undefined}>
         {session.support && (
           <div className="support-session-banner" role="status">
             Godkjent fjernhjelp · Tilgang utløper{" "}
@@ -1419,162 +1400,24 @@ function Dashboard({
         ) : page === "updates" && session.role === "admin" ? (
           <Updates lang={lang} />
         ) : (
-          <section className="settings-overview">
-            <div className="page-heading settings-hero">
-              <span className="eyebrow">SMARTi</span>
-              <h1>{t.settings}</h1>
-              <p>
-                {lang === "en"
-                  ? "Make your home yours, and choose how SMARTi works for you."
-                  : "Tilpass hjemmet ditt, og hvordan SMARTi fungerer."}
-              </p>
-            </div>
-            <nav
-              className="management-tabs settings-sections"
-              aria-label={
-                lang === "en" ? "Settings sections" : "Innstillingskategorier"
-              }
-            >
-              {[
-                ...(canManageSettings
-                  ? [
-                      [
-                        "household",
-                        lang === "en" ? "Home and people" : "Hjem og personer",
-                      ],
-                      [
-                        "backups",
-                        lang === "en" ? "Backups" : "Sikkerhetskopiering",
-                      ],
-                      ["network", lang === "en" ? "Network" : "Nettverk"],
-                      ["system", "System"],
-                      ...(mode === "advanced"
-                        ? [["debugging", "Debugging"]]
-                        : []),
-                    ]
-                  : []),
-                [
-                  "appearance",
-                  lang === "en" ? "Theme and appearance" : "Tema og utseende",
-                ],
-                ["screensaver", lang === "en" ? "Screensaver" : "Skjermsparer"],
-              ].map(([key, label]) => (
-                <button
-                  key={key}
-                  className={settingsSection === key ? "selected" : ""}
-                  aria-current={settingsSection === key ? "page" : undefined}
-                  onClick={() => guard(() => setSettingsSection(key))}
-                >
-                  {key === "household" ? (
-                    <House size={19} />
-                  ) : key === "backups" ? (
-                    <Database size={19} />
-                  ) : key === "network" ? (
-                    <Network size={19} />
-                  ) : key === "system" ? (
-                    <Server size={19} />
-                  ) : key === "debugging" ? (
-                    <Code size={19} />
-                  ) : key === "screensaver" ? (
-                    <Monitor size={19} />
-                  ) : (
-                    <Palette size={19} />
-                  )}
-                  {label}
-                </button>
-              ))}
-            </nav>
-            {settingsSection !== "screensaver" && (
-              <>
-                <PhoneSettings lang={lang} />
-                <ExperiencePicker lang={lang} />
-              </>
-            )}
-            {settingsSection === "screensaver" ? (
-              <ScreensaverSettings state={screensaver} lang={lang} />
-            ) : mode === "advanced" &&
-              session.role === "admin" &&
-              settingsSection === "debugging" ? (
-              <Debugging lang={lang} />
-            ) : mode !== "simple" &&
-              session.role === "admin" &&
-              settingsSection !== "appearance" &&
-              settingsSection !== "debugging" ? (
-              <HomeSettings
-                advanced={mode === "advanced"}
-                key={settingsSection}
-                lang={lang}
-                home={h}
-                section={
-                  settingsSection as
-                    "household" | "backups" | "network" | "system"
-                }
-              />
-            ) : (
-              <>
-                <div className="settings-layout">
-                  {session.role !== "admin" && (
-                    <section className="settings-panel">
-                      <h2>
-                        <Activity size={21} />
-                        {t.status}
-                      </h2>
-                      <dl>
-                        <div>
-                          <dt>{t.process}</dt>
-                          <dd>
-                            <Check size={16} />
-                            {t.running}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>{t.ha}</dt>
-                          <dd>{h.connected ? t.connected : t.unknown}</dd>
-                        </div>
-                        <div>
-                          <dt>{t.version}</dt>
-                          <dd>{h.ha_version || "—"}</dd>
-                        </div>
-                      </dl>
-                      <p className="note">{t.radioHint}</p>
-                    </section>
-                  )}
-                  <section className="settings-panel">
-                    <h2>
-                      <Settings size={21} />
-                      {lang === "en"
-                        ? "Theme and appearance"
-                        : "Tema og utseende"}
-                    </h2>
-                    <label>
-                      {t.appearance}
-                      <select
-                        value={theme}
-                        onChange={(e) => setTheme(e.target.value)}
-                      >
-                        <option value="light">{t.light}</option>
-                        <option value="dark">{t.dark}</option>
-                      </select>
-                    </label>
-                    <HomeBackgroundSettings lang={lang} />
-                    <BackgroundMotionSetting lang={lang} />
-                    <PalettePicker
-                      value={palette}
-                      change={setPalette}
-                      lang={lang}
-                    />
-                    <UserLanguagePicker lang={lang} />
-                  </section>
-                </div>
-              </>
-            )}
-            <div className="settings-signout">
-              <button onClick={logout}>
-                <LogOut size={18} />
-                {t.logout}
-              </button>
-            </div>
-          </section>
+          <SettingsPage
+            section={settingsSection}
+            selectSection={(section) =>
+              guard(() => setSettingsSection(section))
+            }
+            canManage={canManageSettings}
+            advanced={mode === "advanced"}
+            viewer={session.role !== "admin"}
+            screensaver={screensaver}
+            home={h}
+            theme={theme}
+            setTheme={setTheme}
+            palette={palette}
+            setPalette={setPalette}
+            logout={logout}
+            lang={lang}
+            t={t}
+          />
         )}
       </main>
       <footer>

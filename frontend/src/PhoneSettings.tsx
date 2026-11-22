@@ -11,23 +11,43 @@ export function PhoneSettings({ lang }: { lang: string }) {
   const handler = (window as NativeWindow).webkit?.messageHandlers
     ?.smartiPhoneSettings;
   if (!handler) return null;
+  const en = lang === "en";
+  const actions = [
+    {
+      command: "open",
+      icon: Smartphone,
+      label: en ? "This iPhone" : "Denne iPhonen",
+    },
+    {
+      command: "inbox",
+      icon: Bell,
+      label: en ? "Notification centre" : "Varslingssenter",
+    },
+    {
+      command: "remote",
+      icon: UserRound,
+      label: en ? "Open My page" : "Åpne Min side",
+    },
+  ];
   return (
-    <div className="phone-settings-actions">
-    <button
-      className="phone-settings-button"
-      onClick={() => handler.postMessage("open")}
+    <div
+      className="phone-settings-actions"
+      role="group"
+      aria-label={en ? "iPhone shortcuts" : "Snarveier på iPhone"}
     >
-      <Smartphone size={20} aria-hidden="true" />
-      {lang === "en" ? "This iPhone" : "Denne iPhonen"}
-    </button>
-    <button className="phone-settings-button" onClick={() => handler.postMessage("inbox")}>
-      <Bell size={20} aria-hidden="true" />
-      {lang === "en" ? "Notification centre" : "Varslingssenter"}
-    </button>
-    <button className="phone-settings-button" onClick={() => handler.postMessage("remote")}>
-      <UserRound size={20} aria-hidden="true" />
-      {lang === "en" ? "Open My page" : "Åpne Min side"}
-    </button>
+      {actions.map(({ command, icon: Icon, label }) => (
+        <button
+          type="button"
+          key={command}
+          className="phone-settings-button"
+          aria-label={label}
+          title={label}
+          onClick={() => handler.postMessage(command)}
+        >
+          <Icon size={18} aria-hidden="true" />
+          <span>{label}</span>
+        </button>
+      ))}
     </div>
   );
 }

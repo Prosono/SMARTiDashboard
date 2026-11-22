@@ -3,22 +3,35 @@ import path from 'node:path';
 const now=Date.now()/1000;
 const system={demo:false,unavailable:[],history:[0,30,60].map((n,i)=>({time:now-60+n,cpu:10+i*5,memory:30+i,storage:24+i/10})),host:{hostname:'Hub',disk_total:64,disk_used:24.2,disk_free:39.8},core:{cpu_percent:20,memory_percent:32,memory_usage:536870912,memory_limit:2147483648},network:[{interface:'eth0',type:'ethernet',connected:true,primary:true,addresses:['192.168.1.20/24']}],backups:[]};
 test.beforeEach(async({page})=>{
+ await page.route('**/api/home/experience',route=>route.request().method()==='GET'
+   ?route.fulfill({json:{mode:'advanced'}})
+   :route.fallback());
  await page.route('**/api/manage/settings/**',async route=>{const url=route.request().url();if(url.endsWith('/zones'))return route.fulfill({json:[]});if(url.endsWith('/system'))return route.fulfill({json:system});if(url.endsWith('/home'))return route.fulfill({json:{location_name:'Mitt hjem',latitude:58,longitude:8,elevation:1,time_zone:'Europe/Oslo'}});if(url.endsWith('/people'))return route.fulfill({json:{people:[],trackers:[]}});return route.fallback();});
  await page.route('**/api/manage/accounts',r=>r.fulfill({json:[]}));
  await page.route('**/api/manage/accounts/pending',r=>r.fulfill({json:[]}));
  await page.goto('/');await page.getByLabel('Brukernavn',{exact:true}).fill('tester');await page.getByLabel('Passord',{exact:true}).fill('test-password-not-for-live');await page.getByRole('button',{name:'Logg inn',exact:true}).click();await page.getByRole('navigation').getByRole('button',{name:'Innstillinger',exact:true}).click();
 });
-test('system category contains charts without household or automation panels',async({page})=>{
- await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'System',exact:true}).click();
+test('system category contains charts and appearance controls stay in their category',async({page})=>{
+ if(test.info().project.name==='desktop')await page.setViewportSize({width:1920,height:1000});
+ const categories=page.getByRole('navigation',{name:'Innstillingskategorier'});
+ const modes=page.locator('.experience-picker button');
+ await categories.getByRole('button',{name:'System',exact:true}).click();
  await expect(page.locator('.system-graph')).toHaveCount(3);
- await expect(page.locator('.settings-hero')).toBeVisible();
- await expect(page.locator('.experience-picker button')).toHaveCount(3);
- if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Settings overflow');
+ await expect(page.getByRole('heading',{name:'Innstillinger',exact:true,level:1})).toBeVisible();
+ await expect(modes).toHaveCount(0);
+ expect(await page.getByRole('main').evaluate(main=>{
+   const workspace=main.closest('.workspace');
+   return workspace!==null&&Math.abs(main.getBoundingClientRect().width-workspace.clientWidth)<=1;
+ })).toBe(true);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  await page.screenshot({path:`test-results/settings-redesign-${test.info().project.name}.png`,fullPage:true});
  await page.locator('.system-graph').first().focus();await page.keyboard.press('ArrowLeft');await expect(page.locator('.system-graph output').first()).toContainText('%');
  await expect(page.locator('.settings-personal-grid')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Automasjoner',exact:true})).toHaveCount(0);
  await page.locator('.system-metrics').screenshot({path:`test-results/system-charts-${test.info().project.name}.png`});
+ await categories.getByRole('button',{name:'Tema og utseende',exact:true}).click();
+ await expect(modes).toHaveCount(3);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
 test('backup requires saved password and keeps activity after closing',async({page})=>{
  await page.getByRole('navigation',{name:'Innstillingskategorier'}).getByRole('button',{name:'Sikkerhetskopiering',exact:true}).click();

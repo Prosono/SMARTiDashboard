@@ -156,103 +156,104 @@ export function Backups({
     b.date.localeCompare(a.date),
   );
   return (
-    <section className="settings-panel backup-manager">
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">
-            {t("Ta vare på hjemmet", "Protect your home")}
-          </span>
-          <h2>
+    <div className="backup-layout">
+      <section className="settings-panel backup-manager">
+        <div className="section-heading">
+          <h3>
             <ShieldCheck size={22} />
-            {t("Sikkerhetskopiering", "Backups")}
-          </h2>
+            {t("Sikkerhetskopier", "Backup files")}
+          </h3>
+          <button
+            className="primary"
+            disabled={items === null}
+            onClick={() => open()}
+          >
+            <Plus size={18} />
+            {t("Ny sikkerhetskopi", "New backup")}
+          </button>
         </div>
-        <button disabled={items === null} onClick={() => open()}>
-          <Plus size={18} />
-          {t("Ny sikkerhetskopi", "New backup")}
-        </button>
-      </div>
-      <p className="muted">
-        {t(
-          "Lag en kopi på sentralen. Last den ned og oppbevar den et annet sted, sammen med passordet.",
-          "Create a copy on the controller. Download it and keep it elsewhere, together with its password.",
-        )}
-      </p>
-      {items === null ? (
-        <p>
+        <p className="muted">
           {t(
-            "Sikkerhetskopier er utilgjengelige. Kontroller forbindelsen til sentralen.",
-            "Backups unavailable. Check the controller connection.",
+            "Lag en kopi på sentralen. Last den ned og oppbevar den et annet sted, sammen med passordet.",
+            "Create a copy on the controller. Download it and keep it elsewhere, together with its password.",
           )}
         </p>
-      ) : sorted.length === 0 ? (
-        <div className="backup-empty">
-          <Archive />
-          <h3>{t("Start med en trygg kopi", "Start with a safe copy")}</h3>
+        {items === null ? (
           <p>
             {t(
-              "En full kopi tar med innstillinger, apper og data.",
-              "A full backup includes settings, apps and data.",
+              "Sikkerhetskopier er utilgjengelige. Kontroller forbindelsen til sentralen.",
+              "Backups unavailable. Check the controller connection.",
             )}
           </p>
-        </div>
-      ) : (
-        <>
-          <p className="backup-summary">
-            {t("Siste sikkerhetskopi", "Latest backup")}{" "}
-            <strong>
-              {new Date(sorted[0].date).toLocaleString(
-                lang === "en" ? "en-GB" : "nb-NO",
+        ) : sorted.length === 0 ? (
+          <div className="backup-empty">
+            <Archive />
+            <strong>{t("Ingen sikkerhetskopier ennå", "No backups yet")}</strong>
+            <p>
+              {t(
+                "En full kopi tar med innstillinger, apper og data.",
+                "A full backup includes settings, apps and data.",
               )}
-            </strong>
-          </p>
-          <div className="system-backups">
-            {sorted.map((b) => (
-              <article className="system-list-row" key={b.slug}>
-                <Archive size={20} />
-                <div className="backup-description">
-                  <strong>{smartiName(b.name)}</strong>
-                  <small>
-                    {new Date(b.date).toLocaleString(
-                      lang === "en" ? "en-GB" : "nb-NO",
-                    )}{" "}
-                    ·{" "}
-                    {b.size.toLocaleString(undefined, {
-                      maximumFractionDigits: 1,
-                    })}{" "}
-                    MB
-                  </small>
-                  <small>
-                    {b.type === "full"
-                      ? t("Full kopi", "Full backup")
-                      : t("Delvis kopi", "Partial backup")}{" "}
-                    ·{" "}
-                    {b.protected
-                      ? t("Passordbeskyttet", "Password protected")
-                      : t("Uten passord", "No password")}
-                  </small>
-                </div>
-                <div className="row-actions">
-                  <a
-                    className="backup-download"
-                    href={`api/manage/settings/backups/${encodeURIComponent(b.slug)}/download`}
-                    download
-                  >
-                    <Download size={16} />
-                    {t("Last ned", "Download")}
-                  </a>
-                  <button onClick={() => open(b)}>
-                    <RotateCcw size={16} />
-                    {t("Gjenopprett", "Restore")}
-                  </button>
-                </div>
-              </article>
-            ))}
+            </p>
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <p className="backup-summary">
+              {t("Siste sikkerhetskopi", "Latest backup")}{" "}
+              <strong>
+                {new Date(sorted[0].date).toLocaleString(
+                  lang === "en" ? "en-GB" : "nb-NO",
+                )}
+              </strong>
+            </p>
+            <div className="system-backups">
+              {sorted.map((b) => (
+                <article className="system-list-row" key={b.slug}>
+                  <Archive size={20} />
+                  <div className="backup-description">
+                    <strong>{smartiName(b.name)}</strong>
+                    <small>
+                      {new Date(b.date).toLocaleString(
+                        lang === "en" ? "en-GB" : "nb-NO",
+                      )}{" "}
+                      ·{" "}
+                      {b.size.toLocaleString(undefined, {
+                        maximumFractionDigits: 1,
+                      })}{" "}
+                      MB
+                    </small>
+                    <small>
+                      {b.type === "full"
+                        ? t("Full kopi", "Full backup")
+                        : t("Delvis kopi", "Partial backup")}{" "}
+                      ·{" "}
+                      {b.protected
+                        ? t("Passordbeskyttet", "Password protected")
+                        : t("Uten passord", "No password")}
+                    </small>
+                  </div>
+                  <div className="row-actions">
+                    <a
+                      className="backup-download"
+                      href={`api/manage/settings/backups/${encodeURIComponent(b.slug)}/download`}
+                      download
+                    >
+                      <Download size={16} />
+                      {t("Last ned", "Download")}
+                    </a>
+                    <button onClick={() => open(b)}>
+                      <RotateCcw size={16} />
+                      {t("Gjenopprett", "Restore")}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
       {!!activity.data?.length && (
-        <details className="backup-history" open>
+        <details className="settings-panel backup-history" open>
           <summary>{t("Siste aktivitet", "Recent activity")}</summary>
           {activity.data.map((item) => (
             <Activity key={item.request_id} item={item} lang={lang} />
@@ -260,7 +261,7 @@ export function Backups({
         </details>
       )}
       {activity.isError && (
-        <p role="alert">
+        <p className="backup-history-error" role="alert">
           {t("Kunne ikke hente aktivitet.", "Could not load activity.")}
         </p>
       )}
@@ -434,6 +435,6 @@ export function Backups({
           )}
         </SettingsDialog>
       )}
-    </section>
+    </div>
   );
 }

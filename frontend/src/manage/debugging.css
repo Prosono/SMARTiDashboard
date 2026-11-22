@@ -1,23 +1,31 @@
 .debugging-panel {
-  max-width: 900px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 1rem;
   border: 1px solid var(--line);
-  border-radius: 24px;
-  padding: clamp(22px, 4vw, 42px);
+  border-radius: 1rem;
+  padding: clamp(1rem, 2.5vw, 1.75rem);
   background: var(--surface);
 }
-.debugging-panel > .eyebrow {
+.debugging-intro h2 {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.65rem;
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  letter-spacing: -0.02em;
 }
-.debugging-panel h2 {
-  margin: 16px 0 12px;
-  font-size: clamp(25px, 3vw, 36px);
-  letter-spacing: -0.035em;
+.debugging-intro h2 svg {
+  color: var(--accent);
+  flex: none;
 }
-.debugging-panel p {
+.debugging-intro p,
+.debugging-note p {
+  max-width: 64ch;
+  margin: 0.5rem 0 0;
   color: var(--muted);
-  line-height: 1.65;
+  line-height: 1.55;
 }
 .debugging-panel button,
 .debugging-actions button,
@@ -30,10 +38,10 @@
 }
 .debugging-note {
   display: flex;
-  gap: 16px;
-  padding: 22px;
-  margin: 28px 0;
-  border-radius: 16px;
+  justify-self: stretch;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
   background: var(--soft);
 }
 .debugging-note > svg {
@@ -41,8 +49,22 @@
   color: var(--accent);
 }
 .debugging-note p {
-  margin: 6px 0 0;
   font-size: 14px;
+}
+.debugging-panel > button svg {
+  flex: none;
+}
+@container (min-width: 46rem) {
+  .debugging-panel {
+    grid-template-columns: minmax(0, 3fr) minmax(17rem, 2fr);
+    column-gap: 1.5rem;
+  }
+
+  .debugging-note {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+  }
 }
 .debugging-warning > svg {
   color: var(--accent);

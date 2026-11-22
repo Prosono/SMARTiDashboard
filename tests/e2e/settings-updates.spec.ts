@@ -62,6 +62,9 @@ test("updates page combines SMARTi app and platform updates and checks without i
     .getByRole("button", { name: "Innstillinger", exact: true })
     .first()
     .click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
   await page.getByRole("button", { name: /^Normal/ }).click();
   await page
     .getByRole("navigation", { name: "Hovedmeny" })
@@ -187,6 +190,9 @@ test("rejected update stops installation animation", async ({ page }) => {
   await page
     .getByRole("button", { name: "Innstillinger", exact: true })
     .first()
+    .click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
     .click();
   await page.getByRole("button", { name: /^Normal/ }).click();
   await page

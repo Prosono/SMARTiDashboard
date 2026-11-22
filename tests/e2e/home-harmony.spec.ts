@@ -18,7 +18,7 @@ async function login(page: Page) {
     (await (await page.request.get("/api/home/experience")).json()).mode ===
     "simple"
   ) {
-    await navigate(page, "Innstillinger");
+    await appearance(page);
     await page
       .locator('.experience-picker button[data-mode="advanced"]')
       .click();

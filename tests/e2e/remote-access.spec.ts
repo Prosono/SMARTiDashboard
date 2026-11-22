@@ -150,7 +150,8 @@ test("remote session shows a working connection even when account lookup fails",
   await expect(page.getByRole('button',{name:'Administrer fjerntilgang'})).toHaveCount(0);
   await expect(page.locator('.home-settings').getByRole('link',{name:'Åpne Min side'})).toBeVisible();
   await nav.getByRole('button',{name:'Nettverk',exact:true}).click();
-  await expect(page.getByText(/192.168.1.10/)).toBeVisible();
-  await expect(page.locator('.system-list-row').getByText('Tilkoblet',{exact:true})).toBeVisible();
-  await expect(page.locator('.system-list-row button')).toHaveCount(0);
+  const connection=page.getByRole('listitem').filter({hasText:'192.168.1.10'});
+  await expect(connection).toBeVisible();
+  await expect(connection.getByText('Tilkoblet',{exact:true})).toBeVisible();
+  await expect(connection.getByRole('button')).toHaveCount(0);
 });

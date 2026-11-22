@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { CalendarDays, Monitor, Play, X } from "lucide-react";
+import { CalendarDays, CloudSun, Monitor, Play, X } from "lucide-react";
 import { readPreference, writePreference } from "../preferences";
 import type { Control, Home } from "../types";
 import { SimpleAgenda } from "./SimpleDashboard";
@@ -229,65 +229,87 @@ export function ScreensaverSettings({
   const en = lang === "en";
   return (
     <section className="settings-panel screensaver-settings">
-      <h2>
-        <Monitor size={21} aria-hidden="true" />{" "}
-        {en ? "Screensaver" : "Skjermsparer"}
-      </h2>
-      <p>
-        {en
-          ? "Show the time and date when SMARTi is idle. These choices apply to this device."
-          : "Vis klokkeslett og dato når SMARTi står ubrukt. Valgene gjelder denne enheten."}
-      </p>
-      <label>
-        {en ? "Start after" : "Start etter"}
-        <select
-          value={state.delay}
-          onChange={(event) => state.changeDelay(event.target.value)}
+      <header className="screensaver-settings-header">
+        <div>
+          <h2>
+            <Monitor size={21} aria-hidden="true" />
+            {en ? "Screensaver" : "Skjermsparer"}
+          </h2>
+          <p>
+            {en
+              ? "Show the time and date when SMARTi is idle."
+              : "Vis klokkeslett og dato når SMARTi står ubrukt."}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="primary compact"
+          onClick={state.preview}
         >
-          {delays.map((value) => (
-            <option key={value} value={value}>
-              {value === "0" ? (en ? "Off" : "Av") : `${value} min`}
-            </option>
-          ))}
-        </select>
-      </label>
-      <fieldset>
-        <legend>
-          {en ? "Show on the screensaver" : "Vis på skjermspareren"}
-        </legend>
-        <label>
-          <input
-            type="checkbox"
-            checked={state.weather}
-            onChange={(event) => state.changeWeather(event.target.checked)}
+          <Play size={17} aria-hidden="true" /> {en ? "Preview" : "Forhåndsvis"}
+        </button>
+      </header>
+      <div
+        className="screensaver-settings-grid"
+        data-gallery={state.galleryAvailable || undefined}
+      >
+        <div className="screensaver-display-settings">
+          <h3>{en ? "This screen" : "Denne skjermen"}</h3>
+          <label className="screensaver-start-delay">
+            <span>{en ? "Start after" : "Start etter"}</span>
+            <select
+              value={state.delay}
+              onChange={(event) => state.changeDelay(event.target.value)}
+            >
+              {delays.map((value) => (
+                <option key={value} value={value}>
+                  {value === "0" ? (en ? "Off" : "Av") : `${value} min`}
+                </option>
+              ))}
+            </select>
+          </label>
+          <fieldset>
+            <legend>
+              {en ? "Show on the screensaver" : "Vis på skjermspareren"}
+            </legend>
+            <label>
+              <span>
+                <CloudSun size={18} aria-hidden="true" />{" "}
+                {en ? "Weather" : "Vær"}
+              </span>
+              <input
+                type="checkbox"
+                checked={state.weather}
+                onChange={(event) => state.changeWeather(event.target.checked)}
+              />
+            </label>
+            <label>
+              <span>
+                <CalendarDays size={18} aria-hidden="true" />{" "}
+                {en ? "Today's calendar" : "Dagens kalender"}
+              </span>
+              <input
+                type="checkbox"
+                checked={state.calendar}
+                onChange={(event) => state.changeCalendar(event.target.checked)}
+              />
+            </label>
+          </fieldset>
+        </div>
+        {state.galleryAvailable && (
+          <ScreensaverGallerySettings
+            gallery={state.gallery}
+            showGallery={state.showGallery}
+            onChangeVisibility={state.changeGalleryVisibility}
+            selectedIds={state.selectedIds}
+            onChangeSelection={state.changeSelection}
+            onShareLocal={state.shareLocalPhotos}
+            seconds={state.photoInterval}
+            onChangeSeconds={state.changePhotoInterval}
+            lang={lang}
           />
-          {en ? "Weather" : "Vær"}
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={state.calendar}
-            onChange={(event) => state.changeCalendar(event.target.checked)}
-          />
-          {en ? "Today's calendar" : "Dagens kalender"}
-        </label>
-      </fieldset>
-      {state.galleryAvailable && (
-        <ScreensaverGallerySettings
-          gallery={state.gallery}
-          showGallery={state.showGallery}
-          onChangeVisibility={state.changeGalleryVisibility}
-          selectedIds={state.selectedIds}
-          onChangeSelection={state.changeSelection}
-          onShareLocal={state.shareLocalPhotos}
-          seconds={state.photoInterval}
-          onChangeSeconds={state.changePhotoInterval}
-          lang={lang}
-        />
-      )}
-      <button type="button" onClick={state.preview}>
-        <Play size={17} aria-hidden="true" /> {en ? "Preview" : "Forhåndsvis"}
-      </button>
+        )}
+      </div>
     </section>
   );
 }

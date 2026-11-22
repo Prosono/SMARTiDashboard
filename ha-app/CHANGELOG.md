@@ -1,3 +1,7 @@
+## 1.36.157
+- Innstillinger har kompakt navigasjon og bruker hele bredden. Velg Enkel, Normal eller Avansert under Tema og utseende.
+- Sikkerhetskopiering, nettverk, systemstatus og skjermsparer har tydeligere oppsett. Skjermspareren kan forhåndsvises fra toppen av fanen.
+
 ## 1.36.156
 - Skjermspareren har et felles bildebibliotek på huben. Hver skjerm velger selv om galleriet skal vises og hvilke bilder den vil bruke.
 - Administratorer kan legge til fellesbilder og velge å dele bilder som var lagret lokalt på en skjerm.

@@ -116,12 +116,6 @@ export function HubStatus({
                 className={`metric-${level}`}
                 data-metric={key}
               >
-                <SystemGraph
-                  history={s?.history || []}
-                  metric={key}
-                  unit={key === "storage" ? "GB" : "%"}
-                  lang={lang}
-                />
                 <Icon className="metric-icon" />
                 <h3>{label}</h3>
                 <strong>{stale ? "—" : number(value, "%")}</strong>
@@ -136,6 +130,12 @@ export function HubStatus({
                         : t("Ukjent", "Unknown")}
                 </span>
                 <small>{detail}</small>
+                <SystemGraph
+                  history={s?.history || []}
+                  metric={key}
+                  unit={key === "storage" ? "GB" : "%"}
+                  lang={lang}
+                />
               </article>
             );
           })}
@@ -144,6 +144,12 @@ export function HubStatus({
           {t(
             "Grønt < 40 % · Oransje 40–70 % · Rødt > 70 %. Lagring viser brukt plass.",
             "Green < 40% · Orange 40–70% · Red > 70%. Storage shows used space.",
+          )}
+        </p>
+        <p className="metric-legend">
+          {t(
+            "Historikk samles mens statusvisningen er åpen og beholdes i inntil 24 timer.",
+            "History is collected while this view is open and retained for up to 24 hours.",
           )}
         </p>
       </div>

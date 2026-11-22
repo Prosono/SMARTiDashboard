@@ -50,6 +50,9 @@ async function updatePage(page: Page) {
     .getByRole("button", { name: "Innstillinger", exact: true })
     .first()
     .click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
   await page.getByRole("button", { name: /^Normal/ }).click();
   await page
     .getByRole("navigation", { name: "Hovedmeny" })

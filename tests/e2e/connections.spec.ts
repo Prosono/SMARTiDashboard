@@ -222,6 +222,9 @@ test("integrations and apps share one responsive destination, with apps only in 
   const beforeNormal = appReads;
   await nav.getByRole("button", { name: "Innstillinger", exact: true }).click();
   await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+  await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Normal/ })
     .click();
@@ -240,6 +243,9 @@ test("integrations and apps share one responsive destination, with apps only in 
   await expect(page.locator(".integration-card")).toBeVisible();
   expect(appReads).toBe(beforeNormal);
   await nav.getByRole("button", { name: "Innstillinger", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
   await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Enkel/ })

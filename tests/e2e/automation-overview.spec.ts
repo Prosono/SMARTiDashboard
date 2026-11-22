@@ -9,6 +9,9 @@ test("automation overview filters, layouts and editor", async ({ page }) => {
   const nav = page.getByRole("navigation", { name: "Hovedmeny" });
   await nav.getByRole("button", { name: "Innstillinger", exact: true }).click();
   await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+  await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Avansert/ })
     .click();

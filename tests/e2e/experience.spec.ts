@@ -185,6 +185,9 @@ test("personal experience modes simplify navigation and survive reload", async (
       .getByRole("navigation")
       .getByRole("button", { name: "Hjem", exact: true });
   await settings().click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
   await page.locator(".experience-picker").screenshot({
     path: `../artifacts/experience-picker-${test.info().project.name}.png`,
   });
@@ -300,6 +303,9 @@ test("personal experience modes simplify navigation and survive reload", async (
   });
   await settings().click();
   await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+  await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Normal/ })
     .click();
@@ -365,6 +371,9 @@ test("personal experience modes simplify navigation and survive reload", async (
     page.getByRole("button", { name: "Vis mer informasjon", exact: true }),
   ).toHaveCount(0);
   await settings().click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
   await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Avansert/ })

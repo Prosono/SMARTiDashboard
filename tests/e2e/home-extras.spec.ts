@@ -306,6 +306,9 @@ test("welcome contains presence and alerts in every experience mode", async ({
       .getByRole("button", { name: "Innstillinger", exact: true })
       .click();
     await page
+      .getByRole("button", { name: "Tema og utseende", exact: true })
+      .click();
+    await page
       .locator(".experience-picker")
       .getByRole("button", { name: new RegExp("^" + mode) })
       .click();

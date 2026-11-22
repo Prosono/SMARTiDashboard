@@ -112,6 +112,9 @@ test("device first flow uses names, attributes and available actions", async ({
   expect(result.ok()).toBeTruthy();
   await nav.getByRole("button", { name: "Innstillinger", exact: true }).click();
   await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+  await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Avansert/ })
     .click();

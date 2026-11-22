@@ -64,16 +64,18 @@ export function Debugging({ lang }: { lang: string }) {
   }
   return (
     <section className="debugging-panel">
-      <span className="eyebrow">
-        <Bug size={16} /> Debugging
-      </span>
-      <h2>{t("Under panseret på SMARTi", "Under the hood of SMARTi")}</h2>
-      <p>
-        {t(
-          "Åpne Home Assistant for avansert feilsøking og administrasjon. Dette er systemets originalgrensesnitt, med innstillinger som påvirker hele hjemmet.",
-          "Open Home Assistant for advanced troubleshooting and administration. This is the original system interface, with settings affecting the entire home.",
-        )}
-      </p>
+      <div className="debugging-intro">
+        <h2>
+          <Bug size={22} />
+          {t("Feilsøking i Home Assistant", "Troubleshooting in Home Assistant")}
+        </h2>
+        <p>
+          {t(
+            "Åpne Home Assistant for avansert feilsøking og administrasjon. Dette er systemets originalgrensesnitt, med innstillinger som påvirker hele hjemmet.",
+            "Open Home Assistant for advanced troubleshooting and administration. This is the original system interface, with settings affecting the entire home.",
+          )}
+        </p>
+      </div>
       <div className="debugging-note">
         <ShieldAlert size={24} />
         <div>

@@ -11,7 +11,7 @@ import { SystemActions } from "./SystemActions";
 import { type Sample } from "./SystemGraph";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Network, MapPin, Pencil } from "lucide-react";
+import { Network, MapPin, Pencil, RefreshCw } from "lucide-react";
 import { api } from "../api";
 import { SettingsDialog } from "../home/SettingsDialog";
 import { Presence } from "../home/People";
@@ -162,6 +162,7 @@ export function HomeSettings({
             } else void system.refetch();
           }}
         >
+          <RefreshCw size={16} />
           {t("Oppdater", "Refresh")}
         </button>
       </div>
@@ -181,20 +182,24 @@ export function HomeSettings({
                   name={location.data.location_name}
                   lang={lang}
                 />
-                <strong>{location.data.location_name}</strong>
-                <p>
-                  {location.data.latitude}, {location.data.longitude} ·{" "}
-                  {location.data.time_zone}
-                </p>
-                <button
-                  onClick={() => {
-                    setError("");
-                    setPlace({ ...location.data! });
-                  }}
-                >
-                  <Pencil size={17} />
-                  {t("Endre plassering", "Edit location")}
-                </button>
+                <div className="location-details">
+                  <div>
+                    <strong>{location.data.location_name}</strong>
+                    <p>
+                      {location.data.latitude}, {location.data.longitude} ·{" "}
+                      {location.data.time_zone}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setError("");
+                      setPlace({ ...location.data! });
+                    }}
+                  >
+                    <Pencil size={17} />
+                    {t("Endre plassering", "Edit location")}
+                  </button>
+                </div>
                 <Zones
                   latitude={location.data.latitude}
                   longitude={location.data.longitude}
@@ -243,8 +248,6 @@ export function HomeSettings({
           </Accounts>
         </div>
       )}
-      {section === "system" && <RemoteAccess lang={lang} />}
-
       {section !== "household" && system.isError && (
         <p role="alert">
           {t("Kunne ikke hente systemstatus.", "Could not load system status.")}
@@ -255,78 +258,91 @@ export function HomeSettings({
           {t("Henter systemstatus …", "Loading system status …")}
         </p>
       )}
-      {s && section !== "household" && (
+      {section === "system" && (
         <>
-          {section === "system" && (
-            <>
-              <HubStatus
-                system={s}
-                home={home}
-                lang={lang}
-                stale={system.isError}
-              />
-              <RestartCore lang={lang} demo={s.demo} />
-              {s.unavailable.length > 0 && (
-                <p className="note">
-                  {t(
-                    "Enkelte systemdata er utilgjengelige. Målinger, nettverk og sikkerhetskopier krever SMARTi-appen på en Supervisor-basert hjemmesentral. Demo viser ikke oppdiktede systemtall.",
-                    "Some system data is unavailable. Metrics, network and backups require the SMARTi app on a Supervisor-based controller. Demo does not invent system values.",
-                  )}
-                </p>
+          {s && (
+            <HubStatus
+              system={s}
+              home={home}
+              lang={lang}
+              stale={system.isError}
+            />
+          )}
+          {s && s.unavailable.length > 0 && (
+            <p className="note">
+              {t(
+                "Enkelte systemdata er utilgjengelige. Målinger, nettverk og sikkerhetskopier krever SMARTi-appen på en Supervisor-basert hjemmesentral. Demo viser ikke oppdiktede systemtall.",
+                "Some system data is unavailable. Metrics, network and backups require the SMARTi app on a Supervisor-based controller. Demo does not invent system values.",
               )}
-              <p className="muted">
+            </p>
+          )}
+          <div className="settings-system-utilities">
+            <RemoteAccess lang={lang} />
+            {s && <RestartCore lang={lang} demo={s.demo} />}
+          </div>
+          {advanced && (
+            <details className="settings-panel settings-advanced">
+              <summary>{t("Avanserte innstillinger", "Advanced settings")}</summary>
+              <p>
                 {t(
-                  "Historikk samles mens statusvisningen er åpen, og beholdes i inntil 24 timer. Pek på grafen for detaljer.",
-                  "History is collected while this view is open and retained for up to 24 hours. Point at a graph for details.",
+                  "Tilbakestilling og administrasjon av huben.",
+                  "Hub reset and administration.",
                 )}
               </p>
-            </>
+              <FactoryReset lang={lang} />
+            </details>
           )}
-          {section === "network" && (
-            <div className="settings-layout">
-              <section className="settings-panel">
-                <h3>
-                  <Network /> {t("Nettverk", "Network")}
-                </h3>
-                {s.network === null ? (
-                  <p>
-                    {t(
-                      "Kunne ikke hente nettverksdetaljer fra huben. Dette betyr ikke at nettverket er frakoblet.",
-                      "Could not retrieve network details from the hub. This does not mean the network is disconnected.",
-                    )}
-                  </p>
-                ) : (
-                  s.network.map((n) => (
-                    <div className="system-list-row" key={n.interface}>
-                      {!s.network_read_only && (
-                        <SystemActions lang={lang} network={n.interface} />
-                      )}
-                      <div>
-                        <strong>
-                          {n.interface}{" "}
-                          {n.primary
-                            ? "· " + t("Hovedforbindelse", "Primary")
-                            : ""}
-                        </strong>
-                        <small>
-                          {n.type} · {n.addresses.join(", ") || "—"}
-                        </small>
-                      </div>
-                      <span>
-                        {n.connected
-                          ? t("Tilkoblet", "Connected")
-                          : t("Frakoblet", "Disconnected")}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </section>
-            </div>
-          )}
-          {section === "backups" && <Backups items={s.backups} lang={lang} />}
         </>
       )}
-      {section === "system" && advanced && <details className="settings-advanced"><summary>{t("Avanserte innstillinger", "Advanced settings")}</summary><p>{t("Tilbakestilling og administrasjon av huben.", "Hub reset and administration.")}</p><FactoryReset lang={lang} /></details>}
+      {s && section === "network" && (
+        <section className="settings-panel network-panel">
+          <h3>
+            <Network /> {t("Nettverkstilkoblinger", "Network connections")}
+          </h3>
+          {s.network === null ? (
+            <p>
+              {t(
+                "Kunne ikke hente nettverksdetaljer fra huben. Dette betyr ikke at nettverket er frakoblet.",
+                "Could not retrieve network details from the hub. This does not mean the network is disconnected.",
+              )}
+            </p>
+          ) : s.network.length === 0 ? (
+            <p>
+              {t(
+                "Ingen nettverkstilkoblinger funnet.",
+                "No network connections found.",
+              )}
+            </p>
+          ) : (
+            <ul className="network-interfaces">
+              {s.network.map((n) => (
+                <li className="network-interface" key={n.interface}>
+                  <div className="network-interface-heading">
+                    <strong>{n.interface}</strong>
+                    <span
+                      className="network-connection"
+                      data-active={n.connected}
+                    >
+                      {n.connected
+                        ? t("Tilkoblet", "Connected")
+                        : t("Frakoblet", "Disconnected")}
+                    </span>
+                  </div>
+                  <small>
+                    {n.type}
+                    {n.primary && ` · ${t("Hovedforbindelse", "Primary")}`}
+                  </small>
+                  <p>{n.addresses.join(", ") || "—"}</p>
+                  {!s.network_read_only && (
+                    <SystemActions lang={lang} network={n.interface} />
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+      {s && section === "backups" && <Backups items={s.backups} lang={lang} />}
       {(place || person || remove) && (
         <SettingsDialog
           lang={lang}

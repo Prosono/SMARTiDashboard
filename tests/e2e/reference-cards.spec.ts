@@ -315,6 +315,9 @@ async function setup(page: Page) {
       .getByRole("button", { name: "Innstillinger", exact: true })
       .click();
     await page
+      .getByRole("button", { name: "Tema og utseende", exact: true })
+      .click();
+    await page
       .locator('.experience-picker button[data-mode="advanced"]')
       .click();
     await nav.getByRole("button", { name: "Hjem", exact: true }).click();

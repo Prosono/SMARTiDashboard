@@ -11,9 +11,18 @@ test("room icon persists, simple navigation omits Rooms, bottom menu follows sel
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   const nav = page.getByRole("navigation", { name: "Hovedmeny" });
   await nav.getByRole("button", {name:"Innstillinger",exact:true}).click();
-  await page.locator(".experience-picker").getByRole("button",{name:/^Avansert/}).click();
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+  await page
+    .locator(".experience-picker")
+    .getByRole("button", { name: /^Avansert/ })
+    .click();
   await nav.getByRole("button", { name: "Rom", exact: true }).click();
-  await page.getByRole("button", { name: "Stue", exact: true }).click();
+  await page
+    .getByRole("button")
+    .filter({ has: page.getByRole("heading", { name: "Stue", exact: true }) })
+    .click();
   await page
     .locator(".room-detail")
     .getByRole("button", { name: "Administrer rom", exact: true })
@@ -58,6 +67,9 @@ test("room icon persists, simple navigation omits Rooms, bottom menu follows sel
       }),
     )
     .toBeLessThan(2);
+  await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
   await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Enkel/ })

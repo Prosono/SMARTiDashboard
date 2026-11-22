@@ -82,11 +82,11 @@ export function ExperiencePicker({ lang }: { lang: string }) {
       className="experience-picker"
       aria-label={en ? "Experience level" : "Visningsnivå"}
     >
-      <h2>{en ? "SMARTi, your way" : "SMARTi, på din måte"}</h2>
+      <h2>{en ? "Experience level" : "Visningsnivå"}</h2>
       <p>
         {en
-          ? "Choose how much you want to see. Your permissions stay the same. You can switch back at any time."
-          : "Velg hvor mye du vil se. Tilgangene dine er de samme. Du kan alltid bytte tilbake."}
+          ? "Choose how much detail SMARTi shows."
+          : "Velg hvor detaljert SMARTi skal være."}
       </p>
       <div>
         {options.map((o) => (

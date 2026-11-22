@@ -1,18 +1,52 @@
 .screensaver-settings {
-  max-width: 680px;
+  --screensaver-divider: var(--settings-line, var(--line));
+  container: screensaver-settings / inline-size;
 }
 
-.screensaver-settings > p {
+.screensaver-settings-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
+  padding-block-end: clamp(16px, 2.4cqi, 24px);
+  border-bottom: 1px solid var(--screensaver-divider);
+}
+
+.screensaver-settings .screensaver-settings-header h2 {
+  margin: 0 0 5px;
+}
+
+.screensaver-settings-header h2 > svg {
+  color: var(--accent);
+  flex: none;
+}
+
+.screensaver-settings-header p {
   color: var(--muted);
-  margin: 0 0 20px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.screensaver-settings fieldset {
+.screensaver-settings-grid {
+  --screensaver-space: clamp(18px, 3cqi, 34px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--screensaver-space);
+  padding-block-start: var(--screensaver-space);
+}
+
+.screensaver-display-settings,
+.screensaver-gallery {
   min-width: 0;
-  margin: 20px 0;
-  padding: 12px 0 0;
-  border: 0;
-  border-top: 1px solid var(--settings-line);
+}
+
+.screensaver-display-settings h3,
+.screensaver-gallery h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
 }
 
 .screensaver-settings label {
@@ -23,42 +57,90 @@
   min-height: 44px;
 }
 
-.screensaver-settings fieldset label {
-  display: flex;
+.screensaver-start-delay {
+  grid-template-columns: minmax(0, 1fr) minmax(92px, max-content);
   align-items: center;
   gap: 12px;
+  margin-top: 8px;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--screensaver-divider);
+}
+
+.screensaver-display-settings fieldset {
+  min-width: 0;
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.screensaver-display-settings legend {
+  margin: 0 0 4px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.screensaver-display-settings fieldset label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   min-height: 44px;
+  padding-block: 6px;
+  border-bottom: 1px solid var(--screensaver-divider);
   cursor: pointer;
 }
 
-.screensaver-settings fieldset label + label {
+.screensaver-display-settings fieldset label + label {
   margin-top: 0;
 }
 
-.screensaver-settings fieldset input {
+.screensaver-display-settings fieldset label:last-child {
+  border-bottom: 0;
+}
+
+.screensaver-display-settings fieldset label > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.screensaver-display-settings fieldset label svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.screensaver-display-settings fieldset input {
+  flex: none;
   margin: 0;
   inline-size: 19px;
   block-size: 19px;
   accent-color: var(--accent);
 }
 
-.screensaver-settings > button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-}
-
 .screensaver-gallery {
-  border-top: 1px solid var(--settings-line);
-  margin-bottom: 20px;
-  padding-top: 17px;
+  border-block-start: 1px solid var(--screensaver-divider);
+  padding-block-start: var(--screensaver-space);
 }
 
-.screensaver-gallery h3 {
-  margin: 0 0 4px;
-  font-size: 17px;
-  font-weight: 600;
+@container screensaver-settings (min-width: 640px) {
+  .screensaver-settings-grid[data-gallery] {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.5fr);
+  }
+
+  .screensaver-gallery {
+    border-block-start: 0;
+    border-inline-start: 1px solid var(--screensaver-divider);
+    padding-block-start: 0;
+    padding-inline-start: var(--screensaver-space);
+  }
+}
+
+@container screensaver-settings (max-width: 340px) {
+  .screensaver-settings-header .primary {
+    width: 100%;
+  }
 }
 
 .screensaver-gallery p {

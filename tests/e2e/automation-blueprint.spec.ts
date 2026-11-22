@@ -104,6 +104,9 @@ test("blueprint preview is read-only and input edits retain the linked source", 
 
   await nav.getByRole("button", { name: "Innstillinger", exact: true }).click();
   await page
+    .getByRole("button", { name: "Tema og utseende", exact: true })
+    .click();
+  await page
     .locator(".experience-picker")
     .getByRole("button", { name: /^Avansert/ })
     .click();

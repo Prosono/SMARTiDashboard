@@ -182,6 +182,9 @@ async function setup(page: Page) {
   ) {
     await navigate(page, "Innstillinger");
     await page
+      .getByRole("button", { name: "Tema og utseende", exact: true })
+      .click();
+    await page
       .locator('.experience-picker button[data-mode="advanced"]')
       .click();
     await navigate(page, "Hjem");

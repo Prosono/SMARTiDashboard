@@ -62,6 +62,9 @@ test("welcome shows only weather in normal and advanced modes", async ({
       .getByRole("button", { name: "Innstillinger", exact: true })
       .click();
     await page
+      .getByRole("button", { name: "Tema og utseende", exact: true })
+      .click();
+    await page
       .locator(".experience-picker")
       .getByRole("button", { name: new RegExp("^" + mode) })
       .click();
