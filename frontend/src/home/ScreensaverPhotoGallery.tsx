@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronDown, ImagePlus, Images, Trash2, Upload } from "lucide-react";
 import {
   SCREENSAVER_GALLERY_LIMIT,
@@ -419,26 +419,37 @@ function GalleryConfirmation({
   );
 }
 
+type PhotoFrame = { id: string; index: number };
+
 function PhotoSlide({
   photo,
-  current,
+  index,
+  onReady,
 }: {
   photo: ScreensaverPhoto;
-  current: boolean;
+  index: number;
+  onReady?: (frame: PhotoFrame) => void;
 }) {
   const url = usePhotoUrl(photo.image);
-  const [ready, setReady] = useState(false);
+  const [loadedUrl, setLoadedUrl] = useState("");
   if (!url) return null;
   return (
-    <img
-      src={url}
-      alt=""
-      data-current={current || undefined}
-      data-ready={ready || undefined}
-      onLoad={() => setReady(true)}
-      decoding="async"
-      draggable={false}
-    />
+    <div className="screensaver-photo-slide">
+      <img
+        key={url}
+        src={url}
+        alt=""
+        data-current={!!onReady || undefined}
+        data-ready={loadedUrl === url || undefined}
+        data-motion={index % 4}
+        onLoad={() => {
+          setLoadedUrl(url);
+          onReady?.({ id: photo.id, index });
+        }}
+        decoding="async"
+        draggable={false}
+      />
+    </div>
   );
 }
 
@@ -449,18 +460,26 @@ export function ScreensaverPhotoSlideshow({
   photos: ScreensaverPhoto[];
   seconds: string;
 }) {
-  const [index, setIndex] = useState(0);
+  const stage = useRef<HTMLDivElement>(null);
+  const lastReady = useRef<PhotoFrame | null>(null);
+  const [{ index, previous }, setPlayback] = useState<{
+    index: number;
+    previous: PhotoFrame | null;
+  }>({ index: 0, previous: null });
   const count = photos.length;
   useEffect(() => {
-    if (count < 2) return;
     let timer: number | undefined;
     function schedule() {
       window.clearInterval(timer);
-      if (!document.hidden)
-        timer = window.setInterval(
-          () => setIndex((value) => value + 1),
-          Number(seconds) * 1_000,
-        );
+      stage.current?.toggleAttribute("data-paused", document.hidden);
+      if (document.hidden || count < 2) return;
+      timer = window.setInterval(
+        () => {
+          const previous = lastReady.current;
+          setPlayback(({ index }) => ({ index: index + 1, previous }));
+        },
+        Number(seconds) * 1_000,
+      );
     }
     schedule();
     document.addEventListener("visibilitychange", schedule);
@@ -471,13 +490,34 @@ export function ScreensaverPhotoSlideshow({
   }, [count, seconds]);
   if (!count) return null;
   const current = photos[index % count];
-  const previous = count > 1 && index > 0 ? photos[(index - 1) % count] : null;
+  const currentIndex = previous?.id === current.id ? previous.index : index;
+  const outgoing =
+    previous && previous.id !== current.id
+      ? photos.find(({ id }) => id === previous.id)
+      : undefined;
   return (
-    <div className="screensaver-photo-stage" aria-hidden="true">
-      {previous && (
-        <PhotoSlide key={previous.id} photo={previous} current={false} />
+    <div
+      ref={stage}
+      className="screensaver-photo-stage"
+      aria-hidden="true"
+      data-single={count === 1 || undefined}
+      style={{ "--screensaver-photo-duration": `${seconds}s` } as CSSProperties}
+    >
+      {previous && outgoing && (
+        <PhotoSlide
+          key={`${previous.index}:${outgoing.id}`}
+          photo={outgoing}
+          index={previous.index}
+        />
       )}
-      <PhotoSlide key={current.id} photo={current} current />
+      <PhotoSlide
+        key={`${currentIndex}:${current.id}`}
+        photo={current}
+        index={currentIndex}
+        onReady={(frame) => {
+          lastReady.current = frame;
+        }}
+      />
     </div>
   );
 }
