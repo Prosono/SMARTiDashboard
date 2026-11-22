@@ -89,6 +89,13 @@ export function MeasuredChart({
         ? { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }
         : { hour: "2-digit", minute: "2-digit" },
     );
+  const axisTime = (value: number) =>
+    end - start > 36 * 3600000
+      ? new Date(value).toLocaleDateString(en ? "en-GB" : "nb-NO", {
+          day: "numeric",
+          month: "short",
+        })
+      : time(value);
   const choose = (value: number) => {
     const nearest = stamps.reduce((a, b) =>
       Math.abs(a - value) <= Math.abs(b - value) ? a : b,
@@ -98,14 +105,19 @@ export function MeasuredChart({
   };
   const point = (svg: SVGSVGElement, clientX: number) => {
     const box = svg.getBoundingClientRect();
-    choose(
+    const inspected =
       start +
-        Math.max(
-          0,
-          Math.min(1, (((clientX - box.left) / box.width) * 480 - 8) / 464),
-        ) *
-          (end - start),
-    );
+      Math.max(
+        0,
+        Math.min(1, (((clientX - box.left) / box.width) * 480 - 8) / 464),
+      ) *
+        (end - start);
+    if (domain && (inspected < stamps[0] || inspected > stamps.at(-1)!)) {
+      select(inspected);
+      onInspect?.(inspected);
+    } else {
+      choose(inspected);
+    }
   };
   const chosen =
     selected !== null && selected >= start && selected <= end ? selected : null;
@@ -188,7 +200,11 @@ export function MeasuredChart({
                   const index =
                     chosen === null
                       ? stamps.length - 1
-                      : Math.max(0, stamps.indexOf(chosen));
+                      : chosen < stamps[0]
+                        ? -1
+                        : chosen > stamps.at(-1)!
+                          ? stamps.length
+                          : Math.max(0, stamps.indexOf(chosen));
                   choose(
                     stamps[
                       e.key === "Home"
@@ -358,11 +374,13 @@ export function MeasuredChart({
         )}
       </span>
       <span className="measured-chart-times" aria-hidden="true">
-        <span>{time(start)}</span>
+        <span>{axisTime(start)}</span>
         {end > start && (
           <>
-            {end - start > 3600000 && <span>{time((start + end) / 2)}</span>}
-            <span>{time(end)}</span>
+            {end - start > 3600000 && (
+              <span>{axisTime((start + end) / 2)}</span>
+            )}
+            <span>{axisTime(end)}</span>
           </>
         )}
       </span>

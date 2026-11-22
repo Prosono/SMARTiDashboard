@@ -40,15 +40,16 @@ export function sensorArtworkKind(c: Control): string | null {
   )
     return "presence";
   if (dc === "timestamp" || dc === "date") return "calendar";
+  if (dc === "temperature" || ["°C", "°F"].includes(unit))
+    return "temperature-sensor";
   if (
     [
-      "temperature",
       "humidity",
       "pressure",
       "carbon_dioxide",
       "volatile_organic_compounds",
     ].includes(dc) ||
-    ["°C", "°F", "hPa", "ppm"].includes(unit)
+    ["hPa", "ppm"].includes(unit)
   )
     return "environment";
   return "data";

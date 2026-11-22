@@ -1,5 +1,6 @@
 import type { Control, Home } from "../types";
 import { numeric, usable } from "./homeModel";
+import { equipmentPortraitKinds } from "./equipmentAssets";
 export { deviceBattery } from "./deviceMetadata";
 
 export type EquipmentArt =
@@ -32,25 +33,47 @@ export type EquipmentArt =
   | "fan"
   | "thermostat"
   | "air-conditioner"
+  | "water-heater"
   | "battery"
   | "generic";
 
-export function hasAirConditionerHint(c: Control) {
+type EquipmentIdentity = Pick<
+  Control,
+  "name" | "device_name" | "entity_id" | "attributes"
+>;
+
+function equipmentDescription(c: EquipmentIdentity) {
+  return [
+    c.name,
+    c.device_name,
+    c.entity_id,
+    c.attributes.device_class,
+    c.attributes.smarti_device_model,
+  ]
+    .filter((value) => typeof value === "string")
+    .join(" ")
+    .replace(/[_-]/g, " ");
+}
+
+export function hasAirConditionerHint(c: EquipmentIdentity) {
   return (
     /\b(ac|air[ _-]?con(?:ditioner)?|airconditioning)\b|varmepumpe|luft[ -]til[ -]luft/i.test(
-      [
-        c.name,
-        c.device_name,
-        c.entity_id,
-        c.attributes.device_class,
-        c.attributes.smarti_device_model,
-      ]
-        .filter((v) => typeof v === "string")
-        .join(" ")
-        .replace(/[_-]/g, " "),
+      equipmentDescription(c),
     ) || c.attributes.icon === "mdi:air-conditioner"
   );
 }
+
+export function hasWaterHeaterHint(c: EquipmentIdentity) {
+  return (
+    /\b(?:varmtvann(?:s?(?:bereder|tank))?|water\s*heater|hot\s*water(?:\s*(?:heater|tank|cylinder))?|dhw)\b/i.test(
+      equipmentDescription(c),
+    ) ||
+    ["mdi:water-boiler", "mdi:water-boiler-auto"].includes(
+      String(c.attributes.icon),
+    )
+  );
+}
+
 export function isAirConditioner(c: Control) {
   return c.domain === "climate" && hasAirConditionerHint(c);
 }
@@ -107,6 +130,11 @@ export function equipmentArt(c: Control): EquipmentArt {
       )[deviceClass] || "blind"
     );
   if (c.domain === "lock") return "lock";
+  if (
+    c.domain === "water_heater" ||
+    (c.domain === "switch" && hasWaterHeaterHint(c))
+  )
+    return "water-heater";
   if (c.domain === "climate")
     return isAirConditioner(c) ? "air-conditioner" : "thermostat";
   if (c.domain === "fan") return "fan";
@@ -142,6 +170,26 @@ export function equipmentArt(c: Control): EquipmentArt {
       )[deviceClass] || "contact"
     );
   return "generic";
+}
+
+export function equipmentPortrait(
+  c: Control,
+  kind: EquipmentArt,
+  available: boolean,
+) {
+  if (kind === "window") {
+    if (available && ["on", "open"].includes(c.state)) return "window-open";
+    if (available && ["off", "closed"].includes(c.state))
+      return "window-closed";
+    return null;
+  }
+  if (kind === "movement") {
+    if (!available || !usable(c)) return "motion";
+    if (c.state === "on") return "movement";
+    if (c.state === "off") return "movement-idle";
+    return "motion";
+  }
+  return equipmentPortraitKinds.has(kind) ? kind : null;
 }
 
 export function finiteReading(

@@ -317,6 +317,7 @@ html .dashboard-settings-dialog[data-presentation="device"][open]::backdrop {
   --history-color-1: #d59439;
   --history-color-2: #9975bb;
   --history-color-3: #459da9;
+  container-type: inline-size;
   margin-top: 20px;
 }
 .control-history-reading {
@@ -366,6 +367,16 @@ html .dashboard-settings-dialog[data-presentation="device"][open]::backdrop {
 .control-history-empty {
   padding: 24px 0;
   color: var(--muted);
+}
+.control-history-coverage {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.control-history-coverage p {
+  margin: 0;
 }
 @media (max-width: 480px) {
   .control-history-reading {

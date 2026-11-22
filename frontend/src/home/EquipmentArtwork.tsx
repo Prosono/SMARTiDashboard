@@ -1,9 +1,9 @@
 import { useContext, useId, useState, type CSSProperties } from "react";
 import { CardPresentation } from "./CardPresentation";
 import type { Control } from "../types";
-import { equipmentPortraitKinds } from "./equipmentAssets";
 import {
   equipmentArt,
+  equipmentPortrait,
   finiteReading,
   lightColor,
   type EquipmentArt,
@@ -22,7 +22,7 @@ export function EquipmentArtwork({
   compact?: boolean;
 }) {
   const appearance = useContext(CardPresentation);
-  const kind = override || equipmentArt(c),
+  const art = override || equipmentArt(c),
     id = useId().replaceAll(":", "");
   const [failed, fail] = useState("");
   const active =
@@ -32,16 +32,7 @@ export function EquipmentArtwork({
       (c.state === "closed" ? 0 : c.state === "open" ? 100 : null))
     : null;
   const level = (position ?? 50) / 100;
-  const portrait =
-    kind === "window"
-      ? available && ["on", "open"].includes(c.state)
-        ? "window-open"
-        : available && ["off", "closed"].includes(c.state)
-          ? "window-closed"
-          : null
-      : equipmentPortraitKinds.has(kind)
-        ? kind
-        : null;
+  const portrait = equipmentPortrait(c, art, available);
   const image = portrait
     ? new URL(`home/equipment/${portrait}.webp`, document.baseURI).href
     : null;
@@ -49,7 +40,7 @@ export function EquipmentArtwork({
   if (image && image !== failed)
     return (
       <div
-        className={`equipment-art art-${kind}`}
+        className={`equipment-art art-${art}`}
         data-lit={active}
         data-light={c.domain === "light" || undefined}
         data-compact={compact || undefined}
@@ -66,6 +57,7 @@ export function EquipmentArtwork({
         />
       </div>
     );
+  const kind = art === "movement" && portrait !== "movement" ? "motion" : art;
   return (
     <div
       className={`equipment-art art-${kind}`}

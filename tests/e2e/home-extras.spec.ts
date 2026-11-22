@@ -6,7 +6,9 @@ test.beforeEach(async ({ page }) => {
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await expect(page.locator(".home-welcome, .simple-welcome")).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Hovedmeny", exact: true }),
+  ).toBeVisible();
 });
 test("people filter and photos persist, tomorrow forecast is distinct", async ({
   page,
@@ -128,6 +130,10 @@ test("people filter and photos persist, tomorrow forecast is distinct", async ({
 test("integration device opens details, statistics and gap-preserving history", async ({
   page,
 }) => {
+  await page.route("**/api/home/experience", (route) =>
+    route.fulfill({ json: { mode: "advanced" } }),
+  );
+  await page.reload();
   const control = {
     id: "sensor.temp",
     entity_id: "sensor.temp",
@@ -174,28 +180,35 @@ test("integration device opens details, statistics and gap-preserving history", 
       },
     }),
   );
-  await page.route("**/api/manage/device/device-one/history?**", (r) =>
-    r.fulfill({
+  const requestedHours: string[] = [];
+  await page.route("**/api/manage/device/device-one/history?**", (r) => {
+    const query = new URL(r.request().url()).searchParams;
+    const hours = query.get("hours") || "24";
+    requestedHours.push(hours);
+    const end = Date.parse("2026-10-14T12:00:00Z");
+    const start = end - Number(hours) * 3_600_000;
+    return r.fulfill({
       json: {
         unit: "°C",
         minimum: 20,
         maximum: 23,
         samples: 3,
-        start: "2026-10-13T00:00:00Z",
-        end: "2026-10-14T00:00:00Z",
+        start: new Date(start).toISOString(),
+        end: new Date(end).toISOString(),
         points: [
-          { time: "2026-10-13T01:00:00Z", value: 20, state: "20" },
-          { time: "2026-10-13T02:00:00Z", value: null, state: "unknown" },
-          { time: "2026-10-13T03:00:00Z", value: 23, state: "23" },
+          { time: new Date(start).toISOString(), value: 20, state: "20" },
+          {
+            time: new Date((start + end) / 2).toISOString(),
+            value: null,
+            state: "unknown",
+          },
+          { time: new Date(end).toISOString(), value: 23, state: "23" },
         ],
       },
-    }),
-  );
+    });
+  });
   await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Innstillinger", exact: true })
-    .click();
-  await page
+    .getByRole("navigation", { name: "Hovedmeny", exact: true })
     .getByRole("button", { name: "Utvidelser", exact: true })
     .click();
   await page.getByRole("button", { name: "Utvid", exact: true }).click();
@@ -205,34 +218,39 @@ test("integration device opens details, statistics and gap-preserving history", 
   const dialog = page.getByRole("dialog", { name: "Multisensor", exact: true });
   await expect(dialog).toContainText("Testprodusent");
   await dialog.getByRole("button", { name: "Statistikk", exact: true }).click();
-  await expect(dialog).toContainText("23 °C");
-  await expect(dialog.locator("svg path").last()).toHaveAttribute("d", /M.*M/);
-  const chart = dialog.locator(".device-history-chart");
+  await expect(dialog.locator(".history-extremes")).toContainText("23 °C");
+  await expect(dialog.locator(".measured-chart-line")).toHaveCount(2);
+  const chart = dialog.locator(".measured-chart-stage > svg");
+  const readout = dialog.locator(".control-history-reading");
   await chart.scrollIntoViewIfNeeded();
   const bounds = (await chart.boundingBox())!;
-  const at = (hour: number) => ({
-    x: ((40 + (hour / 24) * 640) / 720) * bounds.width,
-    y: bounds.height / 2,
-  });
+  const endOfChart = { x: (472 / 480) * bounds.width, y: bounds.height / 2 };
   if (test.info().project.name === "mobile") {
-    await chart.tap({ position: at(3) });
+    await chart.tap({ position: endOfChart });
   } else {
-    await chart.hover({ position: at(3) });
+    await chart.hover({ position: endOfChart });
   }
-  await expect(dialog.locator(".history-readout")).toContainText("23 °C");
+  await expect(readout).toContainText("23 °C");
   await chart.focus();
   await chart.press("Home");
-  await expect(dialog.locator(".history-readout")).toContainText("20 °C");
+  await expect(readout).toContainText("20 °C");
   await chart.press("ArrowRight");
-  await expect(dialog.locator(".history-readout")).toContainText(
-    "Ingen måling",
-  );
+  await expect(readout).toContainText("Måling mangler");
   await chart.press("End");
-  await expect(dialog.locator(".history-readout")).toContainText("23 °C");
-  await dialog.getByLabel("Periode", { exact: true }).selectOption("168");
-  await expect(dialog.locator(".history-readout")).not.toContainText("23 °C");
+  await expect(readout).toContainText("23 °C");
+  const period = dialog.getByLabel("Periode", { exact: true });
+  await period.selectOption("168");
+  await expect.poll(() => requestedHours.at(-1)).toBe("168");
+  await expect(chart).toHaveAttribute("aria-label", /7\. okt.*14\. okt/);
+  await period.selectOption("720");
+  await expect.poll(() => requestedHours.at(-1)).toBe("720");
+  await expect(chart).toHaveAttribute("aria-label", /14\. sep.*14\. okt/);
+  await chart.press("Home");
+  await expect(readout).toContainText("20 °C");
   await dialog.getByText("Se registrerte verdier", { exact: false }).click();
-  await expect(dialog.locator("table")).toContainText("unknown");
+  await expect(
+    dialog.getByRole("cell", { name: "Ukjent", exact: true }),
+  ).toBeVisible();
   await page.screenshot({
     path: `../artifacts/${test.info().project.name}-integration-history.png`,
     fullPage: true,

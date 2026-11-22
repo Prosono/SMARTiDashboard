@@ -5,6 +5,12 @@ import { X, Box, ChartNoAxesCombined } from "lucide-react";
 import { api } from "../api";
 import { smartiName } from "../branding";
 import { DeviceControl } from "../DeviceDetails";
+import {
+  HistoryPeriodSelect,
+  HistoryResult,
+  type HistoryData,
+  type HistoryPeriodHours,
+} from "../ControlHistory";
 import type { Control } from "../types";
 import "../home/extras.css";
 type Detail = {
@@ -17,15 +23,6 @@ type Detail = {
   area: string | null;
   connected: boolean;
   controls: Control[];
-};
-type History = {
-  unit: string | null;
-  points: { time: string; value: number | null; state: string }[];
-  minimum: number | null;
-  maximum: number | null;
-  samples: number;
-  start: string;
-  end: string;
 };
 export function IntegrationDevice({
   id,
@@ -46,7 +43,7 @@ export function IntegrationDevice({
     retry: false,
   });
   const [chosen, choose] = useState(""),
-    [hours, setHours] = useState(24),
+    [hours, setHours] = useState<HistoryPeriodHours>("24"),
     [tab, setTab] = useState("overview");
   useEffect(() => {
     const opener = document.activeElement as HTMLElement;
@@ -64,60 +61,14 @@ export function IntegrationDevice({
   const history = useQuery({
     queryKey: ["integration-history", id, sensor?.entity_id, hours],
     queryFn: () =>
-      api<History>(
-        `manage/device/${encodeURIComponent(id)}/history?${new URLSearchParams({ entity_id: sensor!.entity_id, hours: String(hours) })}`,
+      api<HistoryData>(
+        `manage/device/${encodeURIComponent(id)}/history?${new URLSearchParams({ entity_id: sensor!.entity_id, hours })}`,
       ),
     enabled: tab === "history" && !!sensor && !!d?.connected,
     staleTime: 60000,
     retry: false,
   });
-  const data = history.data,
-    points = data?.points || [],
-    values = points.flatMap((p) => (p.value === null ? [] : [p.value]));
-  const lo = Math.min(...values),
-    hi = Math.max(...values),
-    start = Date.parse(data?.start || ""),
-    end = Date.parse(data?.end || "");
-  const [inspection, inspect] = useState<{
-    points: History["points"];
-    index: number;
-  } | null>(null);
-  const activeIndex = inspection?.points === points ? inspection.index : -1;
-  const active = points[activeIndex];
-  const activeX = active
-    ? 40 + ((Date.parse(active.time) - start) / (end - start || 1)) * 640
-    : 0;
-  function inspectAt(svg: SVGSVGElement, clientX: number, clientY: number) {
-    const matrix = svg.getScreenCTM();
-    if (!matrix || !points.length) return;
-    const x = new DOMPoint(clientX, clientY).matrixTransform(
-      matrix.inverse(),
-    ).x;
-    const time = start + ((x - 40) / 640) * (end - start);
-    let index = 0;
-    points.forEach((point, i) => {
-      if (
-        Math.abs(Date.parse(point.time) - time) <
-        Math.abs(Date.parse(points[index].time) - time)
-      )
-        index = i;
-    });
-    inspect({ points, index });
-  }
-  let move = true;
-  const path = points
-    .map((p) => {
-      if (p.value === null) {
-        move = true;
-        return "";
-      }
-      const x = 40 + ((Date.parse(p.time) - start) / (end - start || 1)) * 640,
-        y = 155 - ((p.value - lo) / (hi - lo || 1)) * 120;
-      const cmd = `${move ? "M" : "L"}${x},${y}`;
-      move = false;
-      return cmd;
-    })
-    .join(" ");
+  const data = history.data;
   const number = (n: number | null | undefined) =>
     n == null
       ? "—"
@@ -219,14 +170,13 @@ export function IntegrationDevice({
               )}
             </>
           ) : (
-            <section className="integration-history">
+            <section className="control-history integration-history">
               {sensor ? (
                 <>
-                  <div className="history-selectors">
+                  <div className="control-history-filters">
                     <label>
                       {t("Målepunkt", "Sensor")}
                       <select
-                        aria-label={t("Målepunkt", "Sensor")}
                         value={sensor.entity_id}
                         onChange={(e) => choose(e.target.value)}
                       >
@@ -237,24 +187,17 @@ export function IntegrationDevice({
                         ))}
                       </select>
                     </label>
-                    <label>
-                      {t("Periode", "Period")}
-                      <select
-                        aria-label={t("Periode", "Period")}
-                        value={hours}
-                        onChange={(e) => setHours(Number(e.target.value))}
-                      >
-                        <option value={24}>
-                          {t("Siste døgn", "Last 24 hours")}
-                        </option>
-                        <option value={168}>
-                          {t("Siste 7 dager", "Last 7 days")}
-                        </option>
-                      </select>
-                    </label>
+                    <HistoryPeriodSelect
+                      value={hours}
+                      onChange={setHours}
+                      lang={lang}
+                      label={t("Periode", "Period")}
+                    />
                   </div>
                   {history.isFetching && (
-                    <p>{t("Henter historikk…", "Loading history…")}</p>
+                    <p role="status">
+                      {t("Henter historikk…", "Loading history…")}
+                    </p>
                   )}
                   {history.isError && (
                     <p role="alert">
@@ -262,7 +205,7 @@ export function IntegrationDevice({
                         "Historikk kunne ikke hentes.",
                         "History could not be loaded.",
                       )}{" "}
-                      <button onClick={() => history.refetch()}>
+                      <button onClick={() => void history.refetch()}>
                         {t("Prøv igjen", "Retry")}
                       </button>
                     </p>
@@ -270,231 +213,76 @@ export function IntegrationDevice({
                   {d.connected &&
                     !history.isFetching &&
                     !history.isError &&
-                    data &&
-                    (values.length ? (
+                    data && (
                       <>
-                        <div className="history-extremes">
-                          <span>
-                            {t("Laveste måling", "Lowest reading")}
-                            <strong>
-                              {number(data.minimum)} {data.unit}
-                            </strong>
-                          </span>
-                          <span>
-                            {t("Høyeste måling", "Highest reading")}
-                            <strong>
-                              {number(data.maximum)} {data.unit}
-                            </strong>
-                          </span>
-                        </div>
-                        <div className="history-interactive">
-                          <div
-                            className="history-readout"
-                            aria-live="polite"
-                            aria-atomic="true"
-                          >
-                            {active ? (
-                              <>
-                                <time dateTime={active.time}>
-                                  {new Date(active.time).toLocaleString(
-                                    en ? "en-GB" : "nb-NO",
-                                  )}
-                                </time>
-                                <strong>
-                                  {active.value === null
-                                    ? t("Ingen måling", "No reading")
-                                    : `${number(active.value)} ${data.unit || ""}`}
-                                </strong>
-                              </>
-                            ) : (
-                              <span>
-                                {t(
-                                  "Pek eller trykk på grafen for å se en måling.",
-                                  "Point or tap on the chart to inspect a reading.",
-                                )}
-                              </span>
-                            )}
+                        {data.minimum !== null && data.maximum !== null && (
+                          <div className="history-extremes">
+                            <span>
+                              {t("Laveste måling", "Lowest reading")}
+                              <strong>
+                                {number(data.minimum)} {data.unit}
+                              </strong>
+                            </span>
+                            <span>
+                              {t("Høyeste måling", "Highest reading")}
+                              <strong>
+                                {number(data.maximum)} {data.unit}
+                              </strong>
+                            </span>
                           </div>
-                          <svg
-                            className="device-history-chart"
-                            tabIndex={0}
-                            onPointerMove={(e) =>
-                              inspectAt(e.currentTarget, e.clientX, e.clientY)
-                            }
-                            onPointerDown={(e) =>
-                              inspectAt(e.currentTarget, e.clientX, e.clientY)
-                            }
-                            onPointerLeave={(e) => {
-                              if (e.pointerType === "mouse") inspect(null);
-                            }}
-                            onFocus={() =>
-                              inspect((current) =>
-                                current?.points === points
-                                  ? current
-                                  : { points, index: 0 },
-                              )
-                            }
-                            onBlur={() => inspect(null)}
-                            onKeyDown={(e) => {
-                              if (
-                                ![
-                                  "ArrowLeft",
-                                  "ArrowRight",
-                                  "Home",
-                                  "End",
-                                ].includes(e.key)
-                              )
-                                return;
-                              e.preventDefault();
-                              const index =
-                                e.key === "Home"
-                                  ? 0
-                                  : e.key === "End"
-                                    ? points.length - 1
-                                    : Math.max(
-                                        0,
-                                        Math.min(
-                                          points.length - 1,
-                                          activeIndex +
-                                            (e.key === "ArrowRight" ? 1 : -1),
-                                        ),
-                                      );
-                              inspect({ points, index });
-                            }}
-                            viewBox="0 0 720 200"
-                            role="img"
-                            aria-label={t(
-                              "Målehistorikk med hull ved ukjente verdier",
-                              "Reading history with gaps for unknown values",
-                            )}
-                          >
-                            <text x="4" y="25">
-                              {number(hi)}
-                            </text>
-                            <text x="4" y="156">
-                              {number(lo)}
-                            </text>
-                            <path d="M40 165H690" className="history-axis" />
-                            <path d={path} />
-                            {points.map((p, i) =>
-                              p.value === null ? null : (
-                                <circle
-                                  key={i}
-                                  cx={
-                                    40 +
-                                    ((Date.parse(p.time) - start) /
-                                      (end - start || 1)) *
-                                      640
-                                  }
-                                  cy={
-                                    155 -
-                                    ((p.value - lo) / (hi - lo || 1)) * 120
-                                  }
-                                  r="2"
-                                >
-                                  <title>
-                                    {new Date(p.time).toLocaleString(
-                                      en ? "en-GB" : "nb-NO",
-                                    )}
-                                    : {p.value} {data.unit}
-                                  </title>
-                                </circle>
-                              ),
-                            )}
-                            {active && (
-                              <g
-                                className="history-inspection"
-                                aria-hidden="true"
-                              >
-                                <line
-                                  x1={activeX}
-                                  x2={activeX}
-                                  y1="20"
-                                  y2="165"
-                                />
-                                {active.value !== null && (
-                                  <circle
-                                    cx={activeX}
-                                    cy={
-                                      155 -
-                                      ((active.value - lo) / (hi - lo || 1)) *
-                                        120
-                                    }
-                                    r="5"
-                                  />
-                                )}
-                              </g>
-                            )}
-                            <text x="40" y="190">
-                              {new Date(start).toLocaleDateString()}
-                            </text>
-                            <text x="610" y="190">
-                              {new Date(end).toLocaleDateString()}
-                            </text>
-                          </svg>
-                        </div>
-                        <p>
-                          {t(
-                            "Registrerte målinger, ikke beregnet forbruk. Ukjente verdier gir hull i grafen.",
-                            "Recorded readings, not calculated consumption. Unknown values leave gaps in the chart.",
-                          )}
-                        </p>
-                      </>
-                    ) : (
-                      <p>
-                        {points.length
-                          ? t(
-                              "Tilstandshistorikk vises nedenfor.",
-                              "State history is shown below.",
-                            )
-                          : t(
-                              "Ingen registrert historikk i perioden. Målepunktet må være med i systemets historikk.",
-                              "No recorded history in this period. This sensor must be included in system history.",
-                            )}
-                      </p>
-                    ))}
-                  {!!points.length && d.connected && (
-                    <details>
-                      <summary>
-                        {t("Se registrerte verdier", "View recorded values")} (
-                        {data?.samples})
-                      </summary>
-                      <div className="history-table">
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>{t("Tid", "Time")}</th>
-                              <th>{t("Verdi", "Value")}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {points
-                              .slice()
-                              .reverse()
-                              .map((p, i) => (
-                                <tr key={i}>
-                                  <td>
-                                    {new Date(p.time).toLocaleString(
-                                      en ? "en-GB" : "nb-NO",
-                                    )}
-                                  </td>
-                                  <td>
-                                    {controlState(sensor, p.state, lang)}{" "}
-                                    {data?.unit}
-                                  </td>
-                                </tr>
-                              ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      <small>
-                        {t(
-                          "Opptil 300 punkter vises.",
-                          "Up to 300 points are shown.",
                         )}
-                      </small>
-                    </details>
-                  )}
+                        <HistoryResult
+                          key={`${sensor.entity_id}:${hours}`}
+                          data={data}
+                          control={sensor}
+                          lang={lang}
+                        />
+                        {!!data.points.length && (
+                          <details className="integration-history-values">
+                            <summary>
+                              {t(
+                                "Se registrerte verdier",
+                                "View recorded values",
+                              )}{" "}
+                              ({data.points.length})
+                            </summary>
+                            <div className="history-table">
+                              <table>
+                                <thead>
+                                  <tr>
+                                    <th>{t("Tid", "Time")}</th>
+                                    <th>{t("Verdi", "Value")}</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {data.points
+                                    .slice()
+                                    .reverse()
+                                    .map((p, i) => (
+                                      <tr key={i}>
+                                        <td>
+                                          {new Date(p.time).toLocaleString(
+                                            en ? "en-GB" : "nb-NO",
+                                          )}
+                                        </td>
+                                        <td>
+                                          {p.value === null
+                                            ? controlState(
+                                                sensor,
+                                                p.state,
+                                                lang,
+                                              )
+                                            : `${number(p.value)}${data.unit ? ` ${data.unit}` : ""}`}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </details>
+                        )}
+                      </>
+                    )}
                 </>
               ) : (
                 <p>

@@ -1,5 +1,98 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/home/experience", (route) =>
+    route.fulfill({ json: { mode: "advanced" } }),
+  );
+});
+
+test("device history reads the full selected period up to thirty days", async ({
+  page,
+}) => {
+  const end = new Date("2026-11-22T12:00:00Z");
+  const day = 24 * 3600000;
+  const startOf = (hours: number) => new Date(end.getTime() - hours * 3600000);
+  const dateLabel = (date: Date) =>
+    date.toLocaleDateString("nb-NO", { day: "numeric", month: "short" });
+  await page.route(
+    "**/api/controls/sensor.bedroom_temperature/history?*",
+    (route) => {
+      const hours = Number(
+        new URL(route.request().url()).searchParams.get("hours"),
+      );
+      const start = startOf(hours);
+      const first = hours === 720 ? new Date(start.getTime() + 4 * day) : start;
+      const point = (time: Date, value: number) => ({
+        time: time.toISOString(),
+        state: String(value),
+        value,
+      });
+      return route.fulfill({
+        json: {
+          start: start.toISOString(),
+          end: end.toISOString(),
+          coverage_start: first.toISOString(),
+          source: hours === 720 ? "mixed" : "recorder",
+          unit: "°C",
+          samples: 3,
+          minimum: 15,
+          maximum: 21,
+          points: [
+            point(first, 15),
+            point(new Date((first.getTime() + end.getTime()) / 2), 18),
+            point(end, 21),
+          ],
+        },
+      });
+    },
+  );
+  await page.goto("/");
+  await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
+  await page
+    .getByLabel("Passord", { exact: true })
+    .fill("test-password-not-for-live");
+  await page.getByRole("button", { name: "Logg inn", exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "Hovedmeny" })
+    .getByRole("button", { name: "Enheter", exact: true })
+    .click();
+  await page.locator(".device-toolbar select").selectOption("climate");
+  await page
+    .getByRole("button", { name: "Snittemperatur", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Åpne Temperatur", exact: true })
+    .click();
+
+  const history = page.getByRole("region", { name: "Enhetshistorikk" });
+  const period = history.getByRole("combobox", { name: "Tidsrom" });
+  const chart = history.getByRole("img", { name: /Målt spenn/ });
+  const axis = history.locator(".measured-chart-times span");
+  const reading = history.locator(".control-history-reading strong");
+
+  for (const hours of [168, 720]) {
+    const response = page.waitForResponse((response) =>
+      response.url().includes(`/history?hours=${hours}`),
+    );
+    await period.selectOption(String(hours));
+    expect((await response).ok()).toBe(true);
+    await expect(axis.first()).toHaveText(dateLabel(startOf(hours)));
+    await expect(axis.last()).toHaveText(dateLabel(end));
+    await chart.focus();
+    await page.keyboard.press("Home");
+    await expect(reading).toHaveText("15 °C");
+    await page.keyboard.press("End");
+    await expect(reading).toHaveText("21 °C");
+  }
+
+  await expect(history).toContainText("Historikk tilgjengelig fra");
+  await expect(history).toContainText(
+    "Eldre målinger vises som timestatistikk.",
+  );
+  await chart.hover({ position: { x: 10, y: 15 } });
+  await expect(reading).toHaveText("Måling mangler");
+});
+
 test("history sources, dates, chart inspection, house log and mobile logout", async ({
   page,
 }) => {

@@ -52,6 +52,7 @@ export function MobileCardArtwork({
       "switch",
       "input_boolean",
       "climate",
+      "water_heater",
       "lock",
       "cover",
       "binary_sensor",

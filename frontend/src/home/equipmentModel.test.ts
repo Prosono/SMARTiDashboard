@@ -5,7 +5,9 @@ import {
   deviceBattery,
   deviceReading,
   equipmentArt,
+  equipmentPortrait,
   finiteReading,
+  hasWaterHeaterHint,
   lightColor,
   lightPercentage,
   securityAttention,
@@ -127,6 +129,46 @@ describe("equipment card data", () => {
       ),
     ).toBe("smoke");
     expect(equipmentArt(control({ domain: "switch", name: "Takvarme" }))).toBe(
+      "switch",
+    );
+  });
+  it("selects motion artwork only from the sensor's confirmed state", () => {
+    const motion = control({
+      domain: "binary_sensor",
+      attributes: { device_class: "motion" },
+    });
+    const kind = equipmentArt(motion);
+    expect(equipmentPortrait(motion, kind, true)).toBe("movement");
+    expect(equipmentPortrait({ ...motion, state: "off" }, kind, true)).toBe(
+      "movement-idle",
+    );
+    expect(equipmentPortrait({ ...motion, state: "off" }, kind, false)).toBe(
+      "motion",
+    );
+    expect(equipmentPortrait({ ...motion, state: "unknown" }, kind, true)).toBe(
+      "motion",
+    );
+    expect(
+      equipmentPortrait({ ...motion, availability: "unavailable" }, kind, true),
+    ).toBe("motion");
+  });
+  it("recognizes water heater controls without replacing other switch artwork", () => {
+    expect(equipmentArt(control({ domain: "water_heater" }))).toBe(
+      "water-heater",
+    );
+    expect(
+      equipmentArt(
+        control({ domain: "switch", device_name: "Varmtvannstank" }),
+      ),
+    ).toBe("water-heater");
+    expect(
+      hasWaterHeaterHint({
+        name: "Hot water cylinder",
+        entity_id: "",
+        attributes: {},
+      }),
+    ).toBe(true);
+    expect(equipmentArt(control({ domain: "switch", name: "Panelovn" }))).toBe(
       "switch",
     );
   });

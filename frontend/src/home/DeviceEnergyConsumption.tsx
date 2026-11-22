@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -8,11 +8,18 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { api } from "../api";
+import type { Control } from "../types";
+import { DeviceArtwork } from "./DeviceArtwork";
 import {
   DeviceEnergyPicker,
   type DeviceEnergyMeter,
 } from "./DeviceEnergyPicker";
 import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
+import {
+  hasAirConditionerHint,
+  hasWaterHeaterHint,
+  type EquipmentArt,
+} from "./equipmentModel";
 import "./deviceEnergyConsumption.css";
 
 const periods = [
@@ -58,6 +65,64 @@ export const deviceEnergyConsumptionQueryKey = [
 export const deviceEnergySourcesQueryKey = ["energy-device-sources"] as const;
 const sourcesPath = "home/energy/device-sources";
 const selectionLimit = 60;
+const artworkDomains = [
+  "water_heater",
+  "climate",
+  "vacuum",
+  "media_player",
+  "light",
+  "fan",
+  "cover",
+  "lock",
+  "switch",
+  "input_boolean",
+  "binary_sensor",
+];
+
+type UsageArtwork = { control?: Control; equipmentKind?: EquipmentArt };
+
+function indexArtworkControls(controls: readonly Control[] | undefined) {
+  const meters = new Map<string, Control>();
+  const equipment = new Map<string, Control>();
+  for (const control of controls ?? []) {
+    meters.set(control.id, control);
+    if (!control.device_id || control.diagnostic) continue;
+    const priority = artworkDomains.indexOf(control.domain);
+    if (priority === -1) continue;
+    const current = equipment.get(control.device_id);
+    if (!current || priority < artworkDomains.indexOf(current.domain))
+      equipment.set(control.device_id, control);
+  }
+  return { meters, equipment };
+}
+
+function usageArtwork(
+  usage: Usage,
+  source: DeviceEnergyMeter | undefined,
+  controls: ReturnType<typeof indexArtworkControls>,
+): UsageArtwork {
+  const meter = controls.meters.get(usage.id);
+  const deviceId = source?.group.startsWith("device:")
+    ? source.group.slice("device:".length)
+    : meter?.device_id;
+  const device = deviceId ? controls.equipment.get(deviceId) : undefined;
+  const hints = [
+    {
+      name: usage.name,
+      device_name: source?.meter,
+      entity_id: meter?.entity_id ?? "",
+      attributes: meter?.attributes ?? {},
+    },
+    ...(meter ? [meter] : []),
+    ...(device ? [device] : []),
+  ];
+  const equipmentKind = hints.some(hasWaterHeaterHint)
+    ? "water-heater"
+    : hints.some(hasAirConditionerHint)
+      ? "air-conditioner"
+      : undefined;
+  return { control: device ?? meter, equipmentKind };
+}
 
 function localeFor(lang: string) {
   return lang === "en" ? "en-GB" : "nb-NO";
@@ -212,12 +277,16 @@ function DeviceHistory({
 
 function DeviceRow({
   usage,
+  artwork,
+  offline,
   lang,
   period,
   expanded,
   onToggle,
 }: {
   usage: Usage;
+  artwork: UsageArtwork;
+  offline: boolean;
   lang: string;
   period: Period;
   expanded: boolean;
@@ -240,10 +309,31 @@ function DeviceRow({
         aria-controls={expanded ? chartId : undefined}
         onClick={onToggle}
       >
-        <span className="device-energy-name">
-          <span className="sr-only">{t("Historikk for", "History for")} </span>
-          <strong>{usage.name}</strong>
-          {labels.length > 0 && <small>{labels.join(" · ")}</small>}
+        <span className="device-energy-identity">
+          <span className="device-energy-artwork" aria-hidden="true">
+            {artwork.control ? (
+              <DeviceArtwork
+                c={artwork.control}
+                equipmentKind={artwork.equipmentKind}
+                available={!offline}
+              />
+            ) : (
+              <img
+                src={`./home/equipment/${artwork.equipmentKind ?? "meter"}.webp`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+              />
+            )}
+          </span>
+          <span className="device-energy-name">
+            <span className="sr-only">
+              {t("Historikk for", "History for")}{" "}
+            </span>
+            <strong>{usage.name}</strong>
+            {labels.length > 0 && <small>{labels.join(" · ")}</small>}
+          </span>
         </span>
         <span className="device-energy-reading device-energy-usage">
           <span className="device-energy-label">{t("Forbruk", "Usage")} </span>
@@ -308,9 +398,11 @@ function DeviceRow({
 export function DeviceEnergyConsumption({
   lang,
   offline,
+  controls,
 }: {
   lang: string;
   offline: boolean;
+  controls?: readonly Control[];
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [period, setPeriod] = useState<Period>("24h");
@@ -319,6 +411,10 @@ export function DeviceEnergyConsumption({
   const [picking, setPicking] = useState(false);
   const id = useId();
   const cache = useQueryClient();
+  const artworkControls = useMemo(
+    () => indexArtworkControls(controls),
+    [controls],
+  );
   const sources = useQuery({
     queryKey: deviceEnergySourcesQueryKey,
     queryFn: ({ signal }) =>
@@ -362,6 +458,9 @@ export function DeviceEnergyConsumption({
   });
 
   const selected = sources.data ? new Set(sources.data.selected_ids) : null;
+  const sourceById = new Map(
+    sources.data?.sources.map((source) => [source.id, source]),
+  );
   const devices = (history.data?.devices ?? [])
     .filter((meter) => !selected || selected.has(meter.id))
     .sort(
@@ -503,6 +602,12 @@ export function DeviceEnergyConsumption({
               <DeviceRow
                 key={meter.id}
                 usage={meter}
+                artwork={usageArtwork(
+                  meter,
+                  sourceById.get(meter.id),
+                  artworkControls,
+                )}
+                offline={offline}
                 lang={lang}
                 period={period}
                 expanded={active === meter.id}

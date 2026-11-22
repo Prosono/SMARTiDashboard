@@ -1171,7 +1171,11 @@ export function EnergyPlatform({
             loading={todayDashboard.isLoading}
             lang={lang}
           />
-          <DeviceEnergyConsumption lang={lang} offline={offline} />
+          <DeviceEnergyConsumption
+            lang={lang}
+            offline={offline}
+            controls={home?.controls}
+          />
           <PowerGuard
             admin={admin}
             lang={lang}
@@ -1250,7 +1254,11 @@ export function EnergyPlatform({
               <p>En administrator må sette opp energien først.</p>
             )}
           </div>
-          <DeviceEnergyConsumption lang={lang} offline={offline} />
+          <DeviceEnergyConsumption
+            lang={lang}
+            offline={offline}
+            controls={home?.controls}
+          />
           <PowerGuard
             admin={admin}
             lang={lang}

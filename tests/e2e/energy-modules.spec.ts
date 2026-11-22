@@ -5,6 +5,7 @@ import {
 } from "../../frontend/node_modules/@playwright/test";
 import type { SummaryPrice } from "../../frontend/src/home/energySummaryModel";
 import type { SavedGrid } from "../../frontend/src/home/homeGridModel";
+import type { Control } from "../../frontend/src/types";
 
 const now = new Date("2026-11-02T12:00:00Z");
 async function setup(
@@ -12,6 +13,7 @@ async function setup(
   compact = false,
   chartsOnly = false,
   priceData?: { spot: SummaryPrice[]; tomorrow: SummaryPrice[] | null },
+  artworkControls: Control[] = [],
 ) {
   await page.addInitScript((compact) => {
     localStorage.setItem("smarti-home-style", "harmony");
@@ -242,6 +244,7 @@ async function setup(
         connected: true,
         controls: [
           ...home.controls,
+          ...artworkControls,
           {
             id: "sensor.power",
             entity_id: "sensor.power",
@@ -622,6 +625,87 @@ test("device energy tracks selected equipment independently of the canvas and Po
   ]);
   expect(state.configWrites()).toBe(0);
   expect(powerGuardWrites).toBe(0);
+});
+
+test("device energy rows show physical device artwork and a meter fallback", async ({
+  page,
+}) => {
+  const devices = [
+    { id: "water-meter", name: "Varmtvannstank", group: "meter:water-meter" },
+    { id: "ac-meter", name: "Kjøling", group: "device:ac-device" },
+    { id: "other-meter", name: "Måler 4", group: "meter:other-meter" },
+  ];
+  await page.route("**/api/home/energy/device-sources", (route) =>
+    route.fulfill({
+      json: {
+        selected_ids: devices.map(({ id }) => id),
+        mode: "automatic",
+        can_edit: true,
+        sources: devices.map((device) => ({
+          ...device,
+          room: null,
+          meter: "Forbruk",
+          kind: "energy",
+          unit: "kWh",
+          automatic: true,
+        })),
+      },
+    }),
+  );
+  await page.route(
+    "**/api/home/energy/device-consumption/history?*",
+    (route) =>
+      route.fulfill({
+        json: {
+          start: "2026-11-01T12:00:00Z",
+          end: "2026-11-02T12:00:00Z",
+          devices: devices.map((device) => ({
+            ...device,
+            room: null,
+            kind: "measured",
+            kwh: 2,
+            coverage: 100,
+            cost: 3.1,
+            cost_coverage: 100,
+            points: [],
+          })),
+        },
+      }),
+  );
+  await setup(page, false, false, undefined, [
+    {
+      id: "air-control",
+      entity_id: "climate.air_pump",
+      device_id: "ac-device",
+      area_id: null,
+      name: "AC Stue",
+      domain: "climate",
+      state: "cool",
+      attributes: {},
+      capabilities: [],
+      availability: "available",
+      diagnostic: false,
+      updated_at: null,
+      integration: null,
+    },
+  ]);
+  const usage = page.getByRole("region", { name: "Forbruk per enhet" });
+  for (const [name, asset] of [
+    ["Varmtvannstank", "water-heater"],
+    ["Kjøling", "air-conditioner"],
+    ["Måler 4", "meter"],
+  ]) {
+    const row = usage.getByRole("button", { name: new RegExp(name) });
+    await row.scrollIntoViewIfNeeded();
+    const picture = row.locator(`img[src$="/${asset}.webp"]`);
+    await expect(picture).toBeVisible();
+    await expect
+      .poll(() => picture.evaluate((node) => (node as HTMLImageElement).naturalWidth))
+      .toBeGreaterThan(0);
+  }
+  await expect(
+    usage.getByRole("button", { name: /Kjøling/ }).locator("[data-artwork-entity]"),
+  ).toHaveAttribute("data-artwork-entity", "climate.air_pump");
 });
 
 test("the unified layout saves sizes, removals and additions without changing energy setup", async ({

@@ -1,5 +1,5 @@
 import base64
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -93,8 +93,10 @@ def test_forecast_strip_is_bounded_sorted_and_preserves_missing_data():
     assert forecast_days([], "Europe/Oslo", now) == []
 
 
-@pytest.mark.parametrize("period", [None, "24", "168"])
+@pytest.mark.parametrize("period", [None, "6", "24", "168", "336", "720"])
 def test_live_forecast_and_device_history_contract(tmp_path, period):
+    now = datetime.now(UTC)
+
     class HA:
         connected = True
         devices = {"one": {"id": "one", "name": "Meter", "manufacturer": "Maker", "sw_version": "1"}}
@@ -118,9 +120,8 @@ def test_live_forecast_and_device_history_contract(tmp_path, period):
             assert "filter_entity_id=sensor.temp" in path
             return [
                 [
-                    {"state": "20", "last_changed": "2026-10-13T01:00:00Z"},
-                    {"state": "unknown", "last_changed": "2026-10-13T02:00:00Z"},
-                    {"state": "23", "last_changed": "2026-10-13T03:00:00Z"},
+                    {"state": state, "last_changed": (now - timedelta(minutes=30 - index)).isoformat()}
+                    for index, state in enumerate(["20", "unknown", "23"])
                 ]
             ]
 
@@ -138,7 +139,7 @@ def test_live_forecast_and_device_history_contract(tmp_path, period):
         assert response.status_code == 200, response.text
         history = response.json()
         duration = datetime.fromisoformat(history["end"]) - datetime.fromisoformat(history["start"])
-        assert abs(duration.total_seconds() - int(period or "24") * 3600) < 5
+        assert duration == timedelta(hours=int(period or "24"))
         assert history["minimum"] == 20 and history["maximum"] == 23
         assert history["points"][1]["value"] is None
         direct = c.get("/api/controls/sensor.temp/history?hours=6")
@@ -147,7 +148,8 @@ def test_live_forecast_and_device_history_contract(tmp_path, period):
         hour = c.get("/api/controls/sensor.temp/history?hours=1")
         assert hour.status_code == 200
         short = hour.json()
-        assert abs((datetime.fromisoformat(short["end"]) - datetime.fromisoformat(short["start"])).total_seconds() - 3600) < 5
+        short_duration = datetime.fromisoformat(short["end"]) - datetime.fromisoformat(short["start"])
+        assert short_duration == timedelta(hours=1)
         assert short["unit"] == "°C" and short["points"][1]["value"] is None
         assert c.get("/api/manage/device/one/history?entity_id=sensor.other").status_code == 404
         assert c.get("/api/manage/device/one/history?entity_id=sensor.temp&hours=999").status_code == 422
@@ -223,6 +225,8 @@ def test_profile_proxy_keeps_supervisor_prefix_and_credentials_server_side(tmp_p
 
 
 def test_entity_history_keeps_lock_states_without_device_registry(tmp_path):
+    now = datetime.now(UTC)
+
     class HA:
         connected = True
 
@@ -233,9 +237,8 @@ def test_entity_history_keeps_lock_states_without_device_registry(tmp_path):
             assert "filter_entity_id=lock.entry" in path
             return [
                 [
-                    {"state": "locked", "last_changed": "2026-10-18T00:00:00Z"},
-                    {"state": "unavailable", "last_changed": "2026-10-18T01:00:00Z"},
-                    {"state": "unlocked", "last_changed": "2026-10-18T02:00:00Z"},
+                    {"state": state, "last_changed": (now - timedelta(days=3 - index)).isoformat()}
+                    for index, state in enumerate(["locked", "unavailable", "unlocked"])
                 ]
             ]
 

@@ -2,7 +2,7 @@ import { useContext, useState, type ElementType } from "react";
 import type { Control } from "../types";
 import { CardIcon, CardPresentation, cardImageURL } from "./CardPresentation";
 import { EquipmentArtwork } from "./EquipmentArtwork";
-import { isAirConditioner } from "./equipmentModel";
+import { isAirConditioner, type EquipmentArt } from "./equipmentModel";
 import { mediaDeviceArtwork } from "./mediaDeviceArtwork";
 import { deviceAppearance } from "./deviceAppearance";
 import { sensorDeviceArtwork } from "./sensorDeviceArtwork";
@@ -13,11 +13,13 @@ export function DeviceArtwork({
   available = true,
   size,
   fallback,
+  equipmentKind,
 }: {
   c: Control;
   available?: boolean;
   size?: number;
   fallback?: ElementType;
+  equipmentKind?: EquipmentArt;
 }) {
   const { image } = useContext(CardPresentation);
   const [failed, setFailed] = useState<string[]>([]);
@@ -26,28 +28,32 @@ export function DeviceArtwork({
   const custom = image && image !== "auto";
   const url = custom
     ? cardImageURL(image)
-    : c.domain === "sensor"
-      ? sensorDeviceArtwork(c)
-      : c.domain === "media_player"
-        ? mediaDeviceArtwork(c)
-        : c.domain === "vacuum"
-          ? new URL("home/equipment/vacuum-dock.webp", document.baseURI).href
-          : c.domain === "calendar"
-            ? new URL("home/equipment/calendar.webp", document.baseURI).href
-            : null;
+    : equipmentKind
+      ? null
+      : c.domain === "sensor"
+        ? sensorDeviceArtwork(c)
+        : c.domain === "media_player"
+          ? mediaDeviceArtwork(c)
+          : c.domain === "vacuum"
+            ? new URL("home/equipment/vacuum-dock.webp", document.baseURI).href
+            : c.domain === "calendar"
+              ? new URL("home/equipment/calendar.webp", document.baseURI).href
+              : null;
   const equipment =
     !custom &&
-    [
-      "light",
-      "switch",
-      "input_boolean",
-      "climate",
-      "lock",
-      "cover",
-      "binary_sensor",
-      "fan",
-      "alarm_control_panel",
-    ].includes(c.domain);
+    (equipmentKind ||
+      [
+        "light",
+        "switch",
+        "input_boolean",
+        "climate",
+        "water_heater",
+        "lock",
+        "cover",
+        "binary_sensor",
+        "fan",
+        "alarm_control_panel",
+      ].includes(c.domain));
   return (
     <span
       className="device-product-art"
@@ -72,7 +78,10 @@ export function DeviceArtwork({
         <EquipmentArtwork
           c={c}
           compact
-          kind={isAirConditioner(c) ? "air-conditioner" : undefined}
+          kind={
+            equipmentKind ||
+            (isAirConditioner(c) ? "air-conditioner" : undefined)
+          }
           available={available && c.availability === "available"}
         />
       ) : (

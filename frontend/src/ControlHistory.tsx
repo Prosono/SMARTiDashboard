@@ -7,13 +7,54 @@ import type { Control, Home } from "./types";
 type Point = { time: string; value: number | null; state: string };
 export type HistoryData = {
   points: Point[];
-  unit?: string;
+  unit?: string | null;
   start: string;
   end: string;
   samples: number;
   minimum: number | null;
   maximum: number | null;
+  coverage_start?: string | null;
+  source?: "recorder" | "statistics" | "mixed";
 };
+
+export type HistoryPeriodHours = "6" | "24" | "168" | "336" | "720";
+
+const historyPeriods: [HistoryPeriodHours, string, string][] = [
+  ["6", "Siste 6 timer", "Last 6 hours"],
+  ["24", "Siste døgn", "Last 24 hours"],
+  ["168", "Siste 7 dager", "Last 7 days"],
+  ["336", "Siste 14 dager", "Last 14 days"],
+  ["720", "Siste 30 dager", "Last 30 days"],
+];
+
+export function HistoryPeriodSelect({
+  value,
+  onChange,
+  lang,
+  label = lang === "en" ? "Period" : "Tidsrom",
+}: {
+  value: HistoryPeriodHours;
+  onChange: (value: HistoryPeriodHours) => void;
+  lang: string;
+  label?: string;
+}) {
+  return (
+    <label>
+      {label}
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value as HistoryPeriodHours)}
+      >
+        {historyPeriods.map(([hours, nb, en]) => (
+          <option key={hours} value={hours}>
+            {lang === "en" ? en : nb}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 export function ControlHistory({
   control,
@@ -26,7 +67,7 @@ export function ControlHistory({
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [entity, select] = useState(control.entity_id);
-  const [hours, period] = useState("24");
+  const [hours, period] = useState<HistoryPeriodHours>("24");
   const choices = home.controls.filter(
     (c) =>
       c.entity_id === control.entity_id ||
@@ -61,18 +102,7 @@ export function ControlHistory({
             ))}
           </select>
         </label>
-        <label>
-          {t("Tidsrom", "Period")}
-          <select
-            aria-label={t("Tidsrom", "Period")}
-            value={hours}
-            onChange={(e) => period(e.target.value)}
-          >
-            <option value="6">{t("Siste 6 timer", "Last 6 hours")}</option>
-            <option value="24">{t("Siste døgn", "Last 24 hours")}</option>
-            <option value="168">{t("Siste 7 dager", "Last 7 days")}</option>
-          </select>
-        </label>
+        <HistoryPeriodSelect value={hours} onChange={period} lang={lang} />
       </div>
       {query.isPending ? (
         <p role="status">{t("Henter historikk …", "Loading history …")}</p>
@@ -83,41 +113,93 @@ export function ControlHistory({
             {t("Prøv igjen", "Retry")}
           </button>
         </p>
-      ) : query.data.points.length ? (
-        <HistoryChart
+      ) : (
+        <HistoryResult
           key={`${selected.entity_id}:${hours}`}
           data={query.data}
           control={selected}
           lang={lang}
         />
-      ) : (
-        <p className="control-history-empty">
-          {t(
-            "Ingen lagret historikk i dette tidsrommet. Enheten må ha historikk aktivert på hjemmesentralen.",
-            "No recorded history for this period. History must be enabled for the entity on the controller.",
-          )}
-        </p>
       )}
     </section>
   );
 }
-export function HistoryChart(props: {
+type HistoryProps = {
   data: HistoryData;
   control: Control;
   lang: string;
-}) {
-  return ["sensor", "number", "input_number", "counter"].includes(
-    props.control.domain,
-  ) &&
-    props.data.points.some(
-      (p) =>
-        Number.isFinite(Date.parse(p.time)) &&
-        p.value !== null &&
-        Number.isFinite(p.value),
-    ) ? (
-    <NumericHistoryChart {...props} />
+};
+
+export function HistoryResult({ data, control, lang }: HistoryProps) {
+  const english = lang === "en";
+  const first = Date.parse(data.coverage_start || "");
+  const startsLater = first > Date.parse(data.start);
+  return (
+    <>
+      {data.points.length ? (
+        <HistoryChart data={data} control={control} lang={lang} />
+      ) : (
+        <p className="control-history-empty">
+          {english
+            ? "No recorded history in this period."
+            : "Ingen lagret historikk i dette tidsrommet."}
+        </p>
+      )}
+      {(startsLater ||
+        data.source === "statistics" ||
+        data.source === "mixed") && (
+        <div className="control-history-coverage">
+          {startsLater && (
+            <p>
+              {english
+                ? "History available from"
+                : "Historikk tilgjengelig fra"}{" "}
+              <time dateTime={data.coverage_start!}>
+                {new Date(first).toLocaleString(english ? "en-GB" : "nb-NO", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </time>
+              .
+            </p>
+          )}
+          {data.source === "statistics" && (
+            <p>{english ? "Hourly statistics" : "Timestatistikk"}</p>
+          )}
+          {data.source === "mixed" && (
+            <p>
+              {english
+                ? "Older readings are shown as hourly statistics."
+                : "Eldre målinger vises som timestatistikk."}
+            </p>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+export function HistoryChart({ data, control, lang }: HistoryProps) {
+  const { start, end } = data;
+  const points = useMemo(() => {
+    const begin = Date.parse(start);
+    const finish = Date.parse(end);
+    return data.points
+      .map((point) => ({ point, time: Date.parse(point.time) }))
+      .filter(({ time }) => time >= begin && time <= finish)
+      .sort((a, b) => a.time - b.time)
+      .map(({ point }) => point);
+  }, [data.points, start, end]);
+  if (!points.length) return null;
+  const history = { ...data, points };
+  return ["sensor", "number", "input_number", "counter", "climate"].includes(
+    control.domain,
+  ) && points.some((p) => p.value !== null && Number.isFinite(p.value)) ? (
+    <NumericHistoryChart data={history} control={control} lang={lang} />
   ) : (
-    <StateHistoryChart {...props} />
+    <StateHistoryChart data={history} control={control} lang={lang} />
   );
 }
 
@@ -142,34 +224,26 @@ function NumericHistoryChart({
     ],
     [control.entity_id, control.name, data.points],
   );
-  const points = data.points.filter((p) => Number.isFinite(Date.parse(p.time)));
   const chosen =
-    points.find((p) => Date.parse(p.time) === stamp) || points.at(-1);
+    stamp === null
+      ? data.points.at(-1)
+      : data.points.find((p) => Date.parse(p.time) === stamp);
   const en = lang === "en",
     locale = en ? "en-GB" : "nb-NO";
-  if (
-    !chosen ||
-    !points.some((p) => p.value !== null && Number.isFinite(p.value))
-  )
-    return (
-      <p className="control-history-empty">
-        {en
-          ? "No numeric readings in this period."
-          : "Ingen numeriske målinger i dette tidsrommet."}
-      </p>
-    );
+  const shown =
+    chosen?.time ?? (stamp === null ? data.end : new Date(stamp).toISOString());
   return (
     <div className="control-history-chart control-history-numeric">
       <div className="control-history-reading" aria-live="polite">
         <strong>
-          {chosen.value !== null && Number.isFinite(chosen.value)
+          {chosen && chosen.value !== null && Number.isFinite(chosen.value)
             ? `${chosen.value.toLocaleString(locale, { maximumFractionDigits: 2 })} ${data.unit || ""}`
             : en
               ? "Reading missing"
               : "Måling mangler"}
         </strong>
-        <time>
-          {new Date(chosen.time).toLocaleString(locale, {
+        <time dateTime={shown}>
+          {new Date(shown).toLocaleString(locale, {
             day: "numeric",
             month: "short",
             hour: "2-digit",
@@ -193,220 +267,143 @@ function NumericHistoryChart({
       {data.samples > data.points.length && (
         <small>
           {en
-            ? "Aggregated view; some brief changes may be omitted."
-            : "Forenklet visning; enkelte korte endringer kan være utelatt."}
+            ? "Some brief changes may be omitted in this simplified view."
+            : "Den forenklede visningen kan utelate enkelte korte endringer."}
         </small>
       )}
     </div>
   );
 }
 
-function StateHistoryChart({
-  data,
-  control,
-  lang,
-}: {
-  data: HistoryData;
-  control: Control;
-  lang: string;
-}) {
-  const [index, inspect] = useState<number | null>(null);
-  const locale = lang === "en" ? "en-GB" : "nb-NO";
-  const points = data.points.filter((p) => Number.isFinite(Date.parse(p.time)));
-  if (!points.length) return null;
-  const numeric =
-    ["sensor", "number", "input_number", "counter"].includes(control.domain) &&
-    points.some((p) => p.value !== null);
-  const start = Date.parse(data.start),
-    end = Date.parse(data.end);
-  const x = (time: string) =>
+function StateHistoryChart({ data, control, lang }: HistoryProps) {
+  const [inspection, inspect] = useState<number | null>(null);
+  const en = lang === "en";
+  const locale = en ? "en-GB" : "nb-NO";
+  const { points } = data;
+  const stamps = useMemo(
+    () => points.map((point) => Date.parse(point.time)),
+    [points],
+  );
+  const start = Date.parse(data.start);
+  const end = Date.parse(data.end);
+  const selected = inspection ?? stamps[stamps.length - 1];
+  let index = stamps.length - 1;
+  while (index >= 0 && stamps[index] > selected) index--;
+  const chosen = points[index];
+  const x = (time: number) =>
     52 +
-    Math.max(
-      0,
-      Math.min(1, (Date.parse(time) - start) / Math.max(1, end - start)),
-    ) *
-      550;
-  const values = points.flatMap((p) => (p.value === null ? [] : [p.value]));
-  const low = Math.min(...values),
-    high = Math.max(...values);
-  const y = (value: number) => 155 - ((value - low) / (high - low || 1)) * 120;
-  const formatTime = (time: string) =>
-    new Date(time).toLocaleString(locale, {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  const format = (p: Point) =>
-    numeric && p.value !== null
-      ? `${p.value.toLocaleString(locale, { maximumFractionDigits: 2 })} ${data.unit || ""}`
-      : controlState(control, p.state, lang);
-  const chosen =
-    points[Math.min(index ?? points.length - 1, points.length - 1)];
-  const states = [...new Set(points.map((p) => p.state))];
+    Math.max(0, Math.min(1, (time - start) / Math.max(1, end - start))) * 550;
+  const formatTime = (time: number, full = false) =>
+    new Date(time).toLocaleString(
+      locale,
+      full
+        ? { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }
+        : end - start > 36 * 3600000
+          ? { day: "numeric", month: "short" }
+          : { hour: "2-digit", minute: "2-digit" },
+    );
+  const states = [...new Set(points.map((point) => point.state))];
   const color = (state: string) =>
     ["unknown", "unavailable"].includes(state)
       ? "var(--muted)"
       : ["off", "closed", "locked"].includes(state)
         ? "var(--accent)"
         : `var(--history-color-${states.indexOf(state) % 4})`;
-  const pointer = (el: SVGSVGElement, clientX: number) => {
-    const rect = el.getBoundingClientRect();
-    const time =
-      start +
-      Math.max(
-        0,
-        Math.min(1, (((clientX - rect.left) / rect.width) * 640 - 52) / 550),
-      ) *
-        (end - start);
-    if (numeric) {
-      let nearest = 0;
-      points.forEach((p, i) => {
-        if (
-          Math.abs(Date.parse(p.time) - time) <
-          Math.abs(Date.parse(points[nearest].time) - time)
-        )
-          nearest = i;
-      });
-      inspect(nearest);
-    } else {
-      let active = 0;
-      points.forEach((p, i) => {
-        if (Date.parse(p.time) <= time) active = i;
-      });
-      inspect(active);
-    }
-  };
-  let path = "",
-    drawing = false;
-  for (const p of points) {
-    if (p.value === null) {
-      drawing = false;
-      continue;
-    }
-    path += `${drawing ? "L" : "M"}${x(p.time)},${y(p.value)} `;
-    drawing = true;
+  function pointer(svg: SVGSVGElement, clientX: number) {
+    const rect = svg.getBoundingClientRect();
+    const progress = (((clientX - rect.left) / rect.width) * 640 - 52) / 550;
+    inspect(start + Math.max(0, Math.min(1, progress)) * (end - start));
   }
+
   return (
     <div className="control-history-chart">
       <div className="control-history-reading" aria-live="polite">
-        <strong>{format(chosen)}</strong>
-        <time>{formatTime(chosen.time)}</time>
+        <strong>
+          {chosen
+            ? controlState(control, chosen.state, lang)
+            : en
+              ? "No recorded state"
+              : "Ingen lagret status"}
+        </strong>
+        <time dateTime={new Date(selected).toISOString()}>
+          {formatTime(selected, true)}
+        </time>
       </div>
       <svg
         viewBox="0 0 640 215"
         role="img"
         tabIndex={0}
-        aria-label={
-          lang === "en"
-            ? "History chart. Use arrow keys to inspect readings."
-            : "Historikkgraf. Bruk piltastene for å lese verdier."
-        }
-        onPointerMove={(e) => pointer(e.currentTarget, e.clientX)}
-        onPointerDown={(e) => pointer(e.currentTarget, e.clientX)}
-        onKeyDown={(e) => {
-          if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
-            e.preventDefault();
-            inspect(
-              e.key === "Home"
-                ? 0
-                : e.key === "End"
-                  ? points.length - 1
-                  : Math.max(
-                      0,
-                      Math.min(
-                        points.length - 1,
-                        (index ?? points.length - 1) +
-                          (e.key === "ArrowLeft" ? -1 : 1),
-                      ),
+        aria-label={`${en ? "History chart" : "Historikkgraf"}. ${formatTime(start, true)}–${formatTime(end, true)}. ${en ? "Use arrow keys to inspect readings." : "Bruk piltastene for å lese verdier."}`}
+        onPointerMove={(event) => pointer(event.currentTarget, event.clientX)}
+        onPointerDown={(event) => pointer(event.currentTarget, event.clientX)}
+        onKeyDown={(event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
+            return;
+          event.preventDefault();
+          const next =
+            event.key === "Home"
+              ? 0
+              : event.key === "End"
+                ? points.length - 1
+                : Math.max(
+                    0,
+                    Math.min(
+                      points.length - 1,
+                      index + (event.key === "ArrowLeft" ? -1 : 1),
                     ),
-            );
-          }
+                  );
+          inspect(stamps[next]);
         }}
       >
-        {numeric ? (
-          <>
-            {[low, (low + high) / 2, high].map((v, i) => (
-              <g key={i}>
-                <line
-                  x1="52"
-                  x2="602"
-                  y1={y(v)}
-                  y2={y(v)}
-                  stroke="var(--line)"
-                />
-                <text x="46" y={y(v) + 4} textAnchor="end">
-                  {v.toLocaleString(locale, { maximumFractionDigits: 1 })}
-                </text>
-              </g>
-            ))}
-            <path d={path} fill="none" stroke="var(--accent)" strokeWidth="3" />
-            {points.map(
-              (p, i) =>
-                p.value !== null && (
-                  <circle
-                    key={i}
-                    cx={x(p.time)}
-                    cy={y(p.value)}
-                    r="2.5"
-                    fill="var(--accent)"
-                  />
-                ),
-            )}
-          </>
-        ) : (
-          <>
-            {points.map((p, i) => (
-              <rect
-                key={i}
-                x={x(p.time)}
-                y="65"
-                width={Math.max(
-                  1,
-                  x(points[i + 1]?.time || data.end) - x(p.time),
-                )}
-                height="70"
-                fill={color(p.state)}
-                opacity={index === null || index === i ? 0.85 : 0.35}
-              />
-            ))}
-          </>
-        )}
+        {points.map((point, i) => (
+          <rect
+            key={i}
+            x={x(stamps[i])}
+            y="65"
+            width={Math.max(1, x(stamps[i + 1] ?? end) - x(stamps[i]))}
+            height="70"
+            fill={color(point.state)}
+            opacity={inspection === null || i === index ? 0.85 : 0.35}
+          />
+        ))}
         <line
-          x1={x(chosen.time)}
-          x2={x(chosen.time)}
+          x1={x(selected)}
+          x2={x(selected)}
           y1="20"
           y2="172"
           stroke="var(--text)"
           strokeDasharray="4 4"
         />
         <text x="52" y="199">
-          {formatTime(data.start)}
+          {formatTime(start)}
         </text>
+        {end - start > 36 * 3600000 && (
+          <text x="327" y="199" textAnchor="middle">
+            {formatTime((start + end) / 2)}
+          </text>
+        )}
         <text x="602" y="199" textAnchor="end">
-          {formatTime(data.end)}
+          {formatTime(end)}
         </text>
       </svg>
-      {!numeric && (
-        <div className="control-history-legend">
-          {states.map((state) => (
-            <span key={state}>
-              <i style={{ background: color(state) }} />
-              {controlState(control, state, lang)}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="control-history-legend">
+        {states.map((state) => (
+          <span key={state}>
+            <i style={{ background: color(state) }} />
+            {controlState(control, state, lang)}
+          </span>
+        ))}
+      </div>
       <small>
-        {lang === "en"
-          ? "Point, tap or use arrow keys to inspect recorded values."
-          : "Pek, trykk eller bruk piltastene for å lese lagrede verdier."}
+        {en
+          ? "Point, tap or use arrow keys to inspect recorded states."
+          : "Pek, trykk eller bruk piltastene for å lese lagrede tilstander."}
       </small>
       {data.samples > points.length && (
         <small>
-          {lang === "en"
-            ? "Aggregated view; some brief changes may be omitted."
-            : "Forenklet visning; enkelte korte endringer kan være utelatt."}
+          {en
+            ? "Some brief changes may be omitted in this simplified view."
+            : "Den forenklede visningen kan utelate enkelte korte endringer."}
         </small>
       )}
     </div>

@@ -204,7 +204,9 @@ test("new images can be selected, saved and reloaded; missing images retain stat
     "src",
     /charger.webp$/,
   );
-  await page.route("**/home/equipment/movement.webp", (route) => route.abort());
+  await page.route("**/home/equipment/movement-idle.webp", (route) =>
+    route.abort(),
+  );
   await page.route("**/home/equipment/charger.webp", (route) => route.abort());
   // Use automatic art again to exercise the native image-failure fallback.
   data
@@ -219,7 +221,7 @@ test("new images can be selected, saved and reloaded; missing images retain stat
   await page.reload();
   const motion = page.locator('[data-card="custom:portrait_motion"]');
   await motion.scrollIntoViewIfNeeded();
-  await expect(motion.locator(".art-movement svg")).toBeVisible();
+  await expect(motion.locator(".art-motion svg")).toBeVisible();
   await cell.scrollIntoViewIfNeeded();
   await expect(cell.locator(".art-charger svg")).toBeVisible();
   expect(data.commands).toHaveLength(0);

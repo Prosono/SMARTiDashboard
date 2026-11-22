@@ -1,3 +1,7 @@
+## 1.36.154
+- Enhetshistorikk henter hele valgt periode og støtter opptil 30 dager. Eldre målinger vises som timestatistikk når den finnes.
+- Forbruk per enhet viser produktbilder, blant annet for varmtvannsberedere og AC. Nye bilder for temperatursensor og ingen bevegelse vises på enhetskortene.
+
 ## 1.36.153
 - Enhetskort viser navnet på den fysiske enheten og batterinivå når en måling er tilgjengelig.
 - Varsler på dashbordet viser ett batterivarsel per enhet under 20 % eller når Home Assistant melder lavt batteri.

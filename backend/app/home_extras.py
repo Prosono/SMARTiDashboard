@@ -6,14 +6,14 @@ import math
 import re
 import time
 from datetime import UTC, datetime, timedelta
-from typing import Literal
-from urllib.parse import quote, urlencode
+from urllib.parse import quote
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
+from .entity_history import HistoryHours, entity_history
 from .ha import HAError
 
 
@@ -264,16 +264,14 @@ def extras_router(store, user, ha, settings):
         }
 
     @router.get("/controls/{entity_id}/history")
-    async def control_history(entity_id: str, hours: Literal["1", "6", "24", "168"] = "24", current=Depends(user)):
+    async def control_history(entity_id: str, hours: HistoryHours = "24", current=Depends(user)):
         c = next((c for c in ha.controls() if c.entity_id == entity_id), None)
         if not c:
             raise HTTPException(404, "control_not_found")
-        return await read_history(c, hours)
+        return await entity_history(ha, c, hours, demo=settings.mode == "demo")
 
     @router.get("/manage/device/{id}/history")
-    async def device_history(
-        id: str, entity_id: str, hours: Literal["24", "168"] = "24", current=Depends(user)
-    ):
+    async def device_history(id: str, entity_id: str, hours: HistoryHours = "24", current=Depends(user)):
         device(id, current)
         c = next(
             (
@@ -285,71 +283,6 @@ def extras_router(store, user, ha, settings):
         )
         if not c:
             raise HTTPException(404, "sensor_not_found")
-        return await read_history(c, hours)
-
-    async def read_history(c, hours):
-        entity_id = c.entity_id
-        climate = c.domain == "climate"
-        if settings.mode != "demo" and not ha.connected:
-            raise HTTPException(503, "history_unavailable")
-        start = datetime.now(UTC) - timedelta(hours=int(hours))
-        if settings.mode == "demo":
-            rows = []
-        else:
-            try:
-                data = await ha.rest(
-                    "GET",
-                    "history/period/"
-                    + quote(start.isoformat(), safe="")
-                    + "?"
-                    + urlencode(
-                        {"filter_entity_id": entity_id, "significant_changes_only": "0"}
-                        if climate else
-                        {"filter_entity_id": entity_id, "no_attributes": "", "minimal_response": ""}
-                    ),
-                )
-                rows = data[0] if data else []
-            except (HAError, TimeoutError):
-                raise HTTPException(503, "history_unavailable") from None
-        points = []
-        for row in rows:
-            if not isinstance(row, dict):
-                continue
-            stamp = (
-                row.get("last_updated") or row.get("last_changed")
-                if climate else row.get("last_changed") or row.get("last_updated")
-            )
-            try:
-                datetime.fromisoformat(stamp)
-            except (TypeError, ValueError):
-                continue
-            try:
-                attributes = row.get("attributes")
-                attributes = attributes if isinstance(attributes, dict) else {}
-                value = attributes.get("current_temperature") if climate else row.get("state")
-                if isinstance(value, bool):
-                    raise ValueError("non_numeric_history_value")
-                v = float(value)
-                v = v if math.isfinite(v) else None
-                if climate and row.get("state") in {"unknown", "unavailable"}:
-                    v = None
-            except (ValueError, TypeError):
-                v = None
-            points.append({"time": stamp, "value": v, "state": str(row.get("state", "unknown"))[:80]})
-        values = [p["value"] for p in points if p["value"] is not None]
-        stride = max(1, math.ceil(len(points) / 300))
-        sampled = []
-        for i in range(0, len(points), stride):
-            bucket = points[i : i + stride]
-            sampled.append(next((p for p in bucket if p["value"] is None), bucket[-1]))
-        return {
-            "unit": c.attributes.get("temperature_unit") if climate else c.attributes.get("unit_of_measurement"),
-            "points": sampled,
-            "minimum": min(values) if values else None,
-            "maximum": max(values) if values else None,
-            "samples": len(points),
-            "start": start.isoformat(),
-            "end": datetime.now(UTC).isoformat(),
-        }
+        return await entity_history(ha, c, hours, demo=settings.mode == "demo")
 
     return router

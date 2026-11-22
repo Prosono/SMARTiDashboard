@@ -144,6 +144,7 @@ class CardConfig(BaseModel):
         "equipment-leak",
         "equipment-motion",
         "equipment-movement",
+        "equipment-movement-idle",
         "equipment-presence",
         "equipment-window-closed",
         "equipment-window-open",
@@ -161,6 +162,7 @@ class CardConfig(BaseModel):
         "equipment-desk",
         "equipment-thermostat",
         "equipment-air-conditioner",
+        "equipment-water-heater",
         "equipment-fan",
         "equipment-blind",
         "equipment-roller",
@@ -172,6 +174,7 @@ class CardConfig(BaseModel):
         "equipment-money",
         "equipment-backup",
         "equipment-environment",
+        "equipment-temperature-sensor",
         "equipment-data",
         "equipment-battery",
     ] = "auto"

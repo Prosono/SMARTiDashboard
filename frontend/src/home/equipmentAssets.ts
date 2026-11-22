@@ -7,6 +7,7 @@ export const equipmentAssets = [
     en: "Black PIR motion detector",
   },
   { kind: "movement", nb: "Bevegelse", en: "Movement" },
+  { kind: "movement-idle", nb: "Ingen bevegelse", en: "No motion" },
   { kind: "presence", nb: "Tilstedeværelse", en: "Presence" },
   { kind: "window-closed", nb: "Vindu · lukket", en: "Window · closed" },
   { kind: "window-open", nb: "Vindu · åpent", en: "Window · open" },
@@ -24,6 +25,7 @@ export const equipmentAssets = [
   { kind: "desk", nb: "Bordlampe", en: "Desk lamp" },
   { kind: "thermostat", nb: "Termostat", en: "Thermostat" },
   { kind: "air-conditioner", nb: "Varmepumpe / AC", en: "Heat pump / AC" },
+  { kind: "water-heater", nb: "Varmtvannsbereder", en: "Water heater" },
   { kind: "fan", nb: "Vifte", en: "Fan" },
   { kind: "blind", nb: "Persienne", en: "Venetian blind" },
   { kind: "roller", nb: "Rullegardin", en: "Roller blind" },
@@ -35,6 +37,11 @@ export const equipmentAssets = [
   { kind: "money", nb: "Kostnad og opptjening", en: "Cost and earnings" },
   { kind: "backup", nb: "Sikkerhetskopiering", en: "Backup" },
   { kind: "environment", nb: "Klimasensor", en: "Environmental sensor" },
+  {
+    kind: "temperature-sensor",
+    nb: "Temperatursensor",
+    en: "Temperature sensor",
+  },
   { kind: "data", nb: "Data og måleverdier", en: "Data and readings" },
   { kind: "battery", nb: "Batterier", en: "Batteries" },
 ] as const;
