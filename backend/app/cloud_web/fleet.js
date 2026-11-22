@@ -2,7 +2,7 @@
 window.fleet = (() => {
  let apiRequest=null;
  let hubs=[], report=null, filter='all', query='', order='newest';
- let map=null,markers=null,mapItems=[],mapLibrary=null,mapLand=null,mapSignature=null;
+ let map=null,markers=null,basemap=null,mapItems=[],mapLibrary=null,mapSignature=null;
  let showingWorld=true,fittingWorld=false;
  const worldBounds=[[-90,-180],[90,180]];
  const $=id=>document.getElementById(id);
@@ -236,15 +236,9 @@ window.fleet = (() => {
   }
   return mapLibrary;
  }
- function loadMapLand(){
-  if(!mapLand){
-   mapLand=fetch('/assets/world-land.geojson').then(async response=>{
-    if(!response.ok)throw Error('Kartbakgrunnen kunne ikke lastes.');
-    // Natural Earth 1:110m land polygons, public domain.
-    L.geoJSON(await response.json(),{interactive:false,className:'fleet-map-land'}).addTo(map);
-   }).catch(error=>{mapLand=null;throw error;});
-  }
-  return mapLand;
+ function setMapError(message){
+  $('map-error').textContent=message;
+  $('map-retry').hidden=!message;
  }
  function resizeWorld(){
   showingWorld=true;
@@ -265,7 +259,7 @@ window.fleet = (() => {
  }
  async function openMap(){
   if($('fleet-map-panel').hidden)return;
-  $('map-retry').hidden=true;
+  setMapError('');
   try{
    await loadMapLibrary();
    if($('fleet-map-panel').hidden)return;
@@ -273,6 +267,7 @@ window.fleet = (() => {
    if(initialize){
     map=L.map('fleet-map',{crs:L.CRS.EPSG4326,minZoom:-2,maxZoom:8,zoomSnap:.25,zoomDelta:.75,scrollWheelZoom:false,zoomControl:false,attributionControl:false});
     L.control.zoom({zoomInTitle:'Zoom inn',zoomOutTitle:'Zoom ut'}).addTo(map);
+    L.control.scale({imperial:false,maxWidth:110}).addTo(map);
     map.on('zoomstart',()=>{if(!fittingWorld)showingWorld=false;});
     map.on('dragstart autopanstart',()=>{showingWorld=false;});
     map.on('resize',event=>{if(showingWorld&&event.newSize.x&&event.newSize.y)resizeWorld();});
@@ -287,15 +282,14 @@ window.fleet = (() => {
     for(let latitude=-90;latitude<=90;latitude+=30){
      L.polyline([[latitude,-180],[latitude,180]],{interactive:false,className:'fleet-map-grid'}).addTo(map);
     }
+    basemap=window.createFleetBasemap(map,markers,setMapError);
    }
    drawMap();
    if(initialize)fitWorld();
    else map.invalidateSize();
-   await loadMapLand();
-   $('map-error').textContent='';
+   await basemap.load();
   }catch{
-   $('map-error').textContent=map?'Kartbakgrunnen kunne ikke lastes. Hubplasseringene vises fortsatt.':'Kartet kunne ikke lastes.';
-   $('map-retry').hidden=false;
+   setMapError(map?'Kartbakgrunnen kunne ikke lastes. Hubplasseringene vises fortsatt.':'Kartet kunne ikke lastes.');
   }
  }
  const mapStatus={active:'På nett',inactive:'Frakoblet',ready:'Klargjøring'};
@@ -359,6 +353,7 @@ window.fleet = (() => {
   }
   list.scrollTop=scrollTop;
   map.invalidateSize();
+  basemap?.drawLabels();
  }
  function versions(h){
   const section=node('section',undefined,'hub-versions');

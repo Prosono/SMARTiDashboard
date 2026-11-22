@@ -11,6 +11,7 @@ import {
   Network,
   Server,
   Code,
+  Monitor,
   Palette,
   Settings2,
   Power,
@@ -23,6 +24,11 @@ import {
   Info,
 } from "lucide-react";
 import { PhoneSettings } from "./PhoneSettings";
+import {
+  Screensaver,
+  ScreensaverSettings,
+  useScreensaver,
+} from "./home/Screensaver";
 import { Scenes } from "./home/Scenes";
 import { PagedControls } from "./PagedControls";
 import { SensorValue } from "./SensorValue";
@@ -872,7 +878,13 @@ function Dashboard({
     provider: string;
   } | null>(null);
   const [roomEditing, setRoomEditing] = useState(false);
-  const [settingsSection, setSettingsSection] = useState("household");
+  const [selectedSettings, setSettingsSection] = useState("household");
+  const canManageSettings = session.role === "admin" && mode !== "simple";
+  const settingsSection =
+    !canManageSettings && selectedSettings !== "screensaver"
+      ? "appearance"
+      : selectedSettings;
+  const screensaver = useScreensaver(!!home.data);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [protocol, setProtocol] = useState("all");
@@ -1410,8 +1422,6 @@ function Dashboard({
                   : "Tilpass hjemmet ditt, og hvordan SMARTi fungerer."}
               </p>
             </div>
-            <PhoneSettings lang={lang} />
-            <ExperiencePicker lang={lang} />
             <nav
               className="management-tabs settings-sections"
               aria-label={
@@ -1419,7 +1429,7 @@ function Dashboard({
               }
             >
               {[
-                ...(session.role === "admin" && mode !== "simple"
+                ...(canManageSettings
                   ? [
                       [
                         "household",
@@ -1440,23 +1450,12 @@ function Dashboard({
                   "appearance",
                   lang === "en" ? "Theme and appearance" : "Tema og utseende",
                 ],
+                ["screensaver", lang === "en" ? "Screensaver" : "Skjermsparer"],
               ].map(([key, label]) => (
                 <button
                   key={key}
-                  className={
-                    settingsSection === key ||
-                    ((session.role !== "admin" || mode === "simple") &&
-                      key === "appearance")
-                      ? "selected"
-                      : ""
-                  }
-                  aria-current={
-                    settingsSection === key ||
-                    ((session.role !== "admin" || mode === "simple") &&
-                      key === "appearance")
-                      ? "page"
-                      : undefined
-                  }
+                  className={settingsSection === key ? "selected" : ""}
+                  aria-current={settingsSection === key ? "page" : undefined}
                   onClick={() => guard(() => setSettingsSection(key))}
                 >
                   {key === "household" ? (
@@ -1469,6 +1468,8 @@ function Dashboard({
                     <Server size={19} />
                   ) : key === "debugging" ? (
                     <Code size={19} />
+                  ) : key === "screensaver" ? (
+                    <Monitor size={19} />
                   ) : (
                     <Palette size={19} />
                   )}
@@ -1476,9 +1477,17 @@ function Dashboard({
                 </button>
               ))}
             </nav>
-            {mode === "advanced" &&
-            session.role === "admin" &&
-            settingsSection === "debugging" ? (
+            {settingsSection !== "screensaver" && (
+              <>
+                <PhoneSettings lang={lang} />
+                <ExperiencePicker lang={lang} />
+              </>
+            )}
+            {settingsSection === "screensaver" ? (
+              <ScreensaverSettings state={screensaver} lang={lang} />
+            ) : mode === "advanced" &&
+              session.role === "admin" &&
+              settingsSection === "debugging" ? (
               <Debugging lang={lang} />
             ) : mode !== "simple" &&
               session.role === "admin" &&
@@ -1565,6 +1574,14 @@ function Dashboard({
         SMARTi <span>SMART LIVING, SIMPLIFIED.</span>
         <span>{h.mode === "demo" ? t.demo : t.live}</span>
       </footer>
+      {screensaver.active && (
+        <Screensaver
+          state={screensaver}
+          home={h}
+          offline={offline}
+          lang={lang}
+        />
+      )}
     </MetricDeviceRenderer.Provider>
   );
 }

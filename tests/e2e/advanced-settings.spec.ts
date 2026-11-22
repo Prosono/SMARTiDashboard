@@ -119,16 +119,16 @@ test('map edits are drafts and zones support create edit and confirmed delete',a
  await page.getByRole('button',{name:'Endre Kontoret'}).click();d=page.getByRole('dialog');await d.getByRole('button',{name:'Slett sone',exact:true}).click();expect(deletes).toBe(0);
  await expect(d).toContainText('Automasjoner som bruker denne sonen');await d.getByRole('button',{name:'Slett sone',exact:true}).click();await expect(d).toHaveCount(0);expect(deletes).toBe(1);
 });
-test('main destinations and five settings categories are separate',async({page})=>{
+test('main destinations and settings categories are separate',async({page})=>{
  const main=page.getByRole('navigation',{name:'Hovedmeny'});
- for(const name of ['Automasjoner','Integrasjoner','Oppdateringer']){
+ for(const name of ['Automasjoner','Utvidelser','Oppdateringer']){
    await main.getByRole('button',{name,exact:true}).click();
    await expect(main.getByRole('button',{name,exact:true})).toHaveAttribute('aria-current','page');
    await expect(page.getByRole('navigation',{name:'Innstillingskategorier'})).toHaveCount(0);
  }
  await main.getByRole('button',{name:'Innstillinger',exact:true}).click();
  const categories=page.getByRole('navigation',{name:'Innstillingskategorier'});
- await expect(categories.getByRole('button')).toHaveText(['Hjem og personer','Sikkerhetskopiering','Nettverk','System','Debugging','Tema og utseende']);
+ await expect(categories.getByRole('button')).toHaveText(['Hjem og personer','Sikkerhetskopiering','Nettverk','System','Debugging','Tema og utseende','Skjermsparer']);
  await categories.getByRole('button',{name:'Tema og utseende'}).click();
  await expect(page.locator('.home-settings')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Tema og utseende'})).toBeVisible();

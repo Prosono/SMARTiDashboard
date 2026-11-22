@@ -40,15 +40,45 @@ html[data-portal-theme] .staff-page .masthead nav a[aria-current=page]{backgroun
   --map-land:#f8f7f1;
   --map-coast:#adbebd;
   --map-grid:#cadadc;
+  --map-border:#aab6ac;
+  --map-lake:#c9dfe6;
+  --map-country-name:#586c67;
+  --map-city-name:#30484c;
   height:clamp(325px,38vw,430px);
   border:1px solid var(--line);
   border-radius:9px;
   isolation:isolate;
   background:var(--map-water)
 }
-html[data-portal-theme=dark] #fleet-map{--map-water:#1d272c;--map-land:#36464a;--map-coast:#52646a;--map-grid:#334247}
+html[data-portal-theme=dark] #fleet-map{
+  --map-water:#1d272c;--map-land:#36464a;--map-coast:#52646a;--map-grid:#334247;
+  --map-border:#657770;--map-lake:#263840;--map-country-name:#b2c2ba;--map-city-name:#d7e2e6
+}
 #fleet-map .fleet-map-grid{stroke:var(--map-grid);stroke-width:1;stroke-opacity:1}
+#fleet-map.fleet-map-detail .fleet-map-grid{opacity:.42}
 #fleet-map .fleet-map-land{fill:var(--map-land);fill-opacity:1;stroke:var(--map-coast);stroke-width:1;stroke-opacity:1}
+#fleet-map.fleet-map-detail .fleet-map-land{stroke:none}
+#fleet-map .fleet-map-water{fill:var(--map-lake);fill-opacity:1;stroke:var(--map-coast);stroke-width:.65;stroke-opacity:.85}
+#fleet-map .fleet-map-border,#fleet-map .fleet-map-border-disputed{stroke:var(--map-border);stroke-width:1;stroke-opacity:.95}
+#fleet-map .fleet-map-border-disputed{stroke-dasharray:3 3}
+#fleet-map .fleet-map-label-pane{z-index:550;pointer-events:none}
+#fleet-map .fleet-map-name span{
+  position:absolute;white-space:nowrap;
+  font:600 12px/1 'Bai Jamjuree',sans-serif;
+  text-shadow:1px 1px var(--map-land),-1px -1px var(--map-land),1px -1px var(--map-land),-1px 1px var(--map-land)
+}
+#fleet-map .fleet-map-name.country span{
+  transform:translate(-50%,-50%);font-size:10px;letter-spacing:.055em;text-transform:uppercase;color:var(--map-country-name)
+}
+#fleet-map .fleet-map-name.city span{transform:translateY(-50%);padding-left:7px;color:var(--map-city-name)}
+#fleet-map .fleet-map-name.city span::before{
+  content:'';position:absolute;left:-2px;top:50%;transform:translateY(-50%);
+  width:4px;height:4px;border-radius:50%;background:currentColor
+}
+#fleet-map .leaflet-control-scale-line{
+  padding:2px 5px;color:var(--ink);background:var(--surface);border-color:var(--muted);
+  text-shadow:none;font:600 11px/1.2 'Bai Jamjuree',sans-serif
+}
 .fleet-map-marker.active,.map-dot.active{--map-dot:#168557}
 .fleet-map-marker.inactive,.map-dot.inactive{--map-dot:#667681}
 .fleet-map-marker.ready,.map-dot.ready{--map-dot:#d45f0b}

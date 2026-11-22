@@ -17,7 +17,15 @@ import { CardIcon, CardTitle } from "./CardPresentation";
 import { CalendarArtwork } from "./CalendarArtwork";
 import "./simpleDashboard.css";
 
-function SimpleAgenda({ lang, offline }: { lang: string; offline: boolean }) {
+export function SimpleAgenda({
+  lang,
+  offline,
+  live = false,
+}: {
+  lang: string;
+  offline: boolean;
+  live?: boolean;
+}) {
   const en = lang === "en";
   const info = useQuery({
     queryKey: ["calendar"],
@@ -27,6 +35,7 @@ function SimpleAgenda({ lang, offline }: { lang: string; offline: boolean }) {
       ),
     enabled: !offline,
     staleTime: 60000,
+    refetchInterval: live ? 60000 : false,
   });
   const day = info.data?.today;
   const agenda = useQuery({
@@ -42,6 +51,7 @@ function SimpleAgenda({ lang, offline }: { lang: string; offline: boolean }) {
     enabled: !!day && !!info.data?.calendars.length && !offline,
     retry: false,
     staleTime: 60000,
+    refetchInterval: live ? 300000 : false,
   });
   const events = day ? (agenda.data?.days[day] ?? []) : [];
   if (offline)

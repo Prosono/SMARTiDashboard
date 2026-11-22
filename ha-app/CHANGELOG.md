@@ -1,3 +1,7 @@
+## 1.36.152
+- Skjermsparer under Innstillinger viser klokke, dato og valgfritt vær og kalender. Velg når den skal starte, og forhåndsvis på enheten.
+- Hubkartet i adminportalen har tydeligere geografi og flere detaljer når du zoomer.
+
 ## 1.36.151
 - Huben rapporterer den konfigurerte hjemmeposisjonen til hubkartet i SMARTi-administrasjonen.
 - Administratorer kan føre bestillingskommentarer på hver hub i portalen.
