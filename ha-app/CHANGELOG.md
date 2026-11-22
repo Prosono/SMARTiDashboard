@@ -1,3 +1,6 @@
+## 1.36.158
+- Innstillinger følger den samme sidebredden som resten av SMARTi. Temavelgeren og de øvrige kortene bruker plassen innenfor samme ramme.
+
 ## 1.36.157
 - Innstillinger har kompakt navigasjon og bruker hele bredden. Velg Enkel, Normal eller Avansert under Tema og utseende.
 - Sikkerhetskopiering, nettverk, systemstatus og skjermsparer har tydeligere oppsett. Skjermspareren kan forhåndsvises fra toppen av fanen.

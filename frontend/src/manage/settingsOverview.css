@@ -1,7 +1,3 @@
-.settings-main {
-  max-width: none;
-}
-
 .settings-overview {
   --settings-line: color-mix(in srgb, var(--text) 13%, transparent);
   --settings-inset: clamp(16px, 2.4cqi, 26px);

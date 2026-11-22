@@ -1083,7 +1083,7 @@ function Dashboard({
           </span>
         </div>
       </header>
-      <main className={page === "more" ? "settings-main" : undefined}>
+      <main>
         {session.support && (
           <div className="support-session-banner" role="status">
             Godkjent fjernhjelp · Tilgang utløper{" "}

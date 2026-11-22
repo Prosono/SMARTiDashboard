@@ -12,17 +12,25 @@ test.beforeEach(async({page})=>{
  await page.goto('/');await page.getByLabel('Brukernavn',{exact:true}).fill('tester');await page.getByLabel('Passord',{exact:true}).fill('test-password-not-for-live');await page.getByRole('button',{name:'Logg inn',exact:true}).click();await page.getByRole('navigation').getByRole('button',{name:'Innstillinger',exact:true}).click();
 });
 test('system category contains charts and appearance controls stay in their category',async({page})=>{
- if(test.info().project.name==='desktop')await page.setViewportSize({width:1920,height:1000});
+ const desktop=test.info().project.name==='desktop';
+ if(desktop)await page.setViewportSize({width:1920,height:1000});
+ const nav=page.getByRole('navigation',{name:'Hovedmeny'});
+ const main=page.getByRole('main');
+ const pageBounds=()=>main.evaluate(element=>{
+   const {left,width}=element.getBoundingClientRect();
+   return {left,width};
+ });
+ await nav.getByRole('button',{name:'Oppdateringer',exact:true}).click();
+ await expect(nav.getByRole('button',{name:'Oppdateringer',exact:true})).toHaveAttribute('aria-current','page');
+ const updates=await pageBounds();
+ await nav.getByRole('button',{name:'Innstillinger',exact:true}).click();
  const categories=page.getByRole('navigation',{name:'Innstillingskategorier'});
  const modes=page.locator('.experience-picker button');
  await categories.getByRole('button',{name:'System',exact:true}).click();
  await expect(page.locator('.system-graph')).toHaveCount(3);
  await expect(page.getByRole('heading',{name:'Innstillinger',exact:true,level:1})).toBeVisible();
  await expect(modes).toHaveCount(0);
- expect(await page.getByRole('main').evaluate(main=>{
-   const workspace=main.closest('.workspace');
-   return workspace!==null&&Math.abs(main.getBoundingClientRect().width-workspace.clientWidth)<=1;
- })).toBe(true);
+ expect(await pageBounds()).toEqual(updates);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  await page.screenshot({path:`test-results/settings-redesign-${test.info().project.name}.png`,fullPage:true});
  await page.locator('.system-graph').first().focus();await page.keyboard.press('ArrowLeft');await expect(page.locator('.system-graph output').first()).toContainText('%');
@@ -31,6 +39,34 @@ test('system category contains charts and appearance controls stay in their cate
  await page.locator('.system-metrics').screenshot({path:`test-results/system-charts-${test.info().project.name}.png`});
  await categories.getByRole('button',{name:'Tema og utseende',exact:true}).click();
  await expect(modes).toHaveCount(3);
+ const cards=await page.locator('.settings-appearance').evaluate(panel=>{
+   const bounds=(element:Element)=>{
+     const {left,right,top,bottom}=element.getBoundingClientRect();
+     return {left,right,top,bottom};
+   };
+   return {
+     page:bounds(panel.closest('.settings-overview')!),
+     grid:bounds(panel),
+     modes:bounds(panel.querySelector('.experience-picker')!),
+     theme:bounds(panel.querySelector('.settings-theme')!),
+     background:bounds(panel.querySelector('.settings-background')!),
+   };
+ });
+ expect(cards.grid.left).toBe(cards.page.left);
+ expect(cards.grid.right).toBeCloseTo(cards.page.right,1);
+ expect(cards.modes.left).toBe(cards.grid.left);
+ expect(cards.modes.right).toBeCloseTo(cards.grid.right,1);
+ expect(cards.theme.top).toBeGreaterThanOrEqual(cards.modes.bottom);
+ expect(cards.theme.left).toBe(cards.grid.left);
+ expect(cards.background.right).toBeCloseTo(cards.grid.right,1);
+ if(desktop){
+   expect(cards.theme.top).toBe(cards.background.top);
+   expect(cards.theme.right).toBeLessThan(cards.background.left);
+ }else{
+   expect(cards.theme.right).toBeCloseTo(cards.grid.right,1);
+   expect(cards.background.left).toBe(cards.grid.left);
+   expect(cards.background.top).toBeGreaterThanOrEqual(cards.theme.bottom);
+ }
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
 test('backup requires saved password and keeps activity after closing',async({page})=>{
