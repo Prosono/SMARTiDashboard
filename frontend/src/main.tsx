@@ -886,7 +886,12 @@ function Dashboard({
     !canManageSettings && selectedSettings !== "screensaver"
       ? "appearance"
       : selectedSettings;
-  const screensaver = useScreensaver(!!home.data, session.name);
+  const screensaver = useScreensaver(
+    !!home.data,
+    session.support ? "" : session.name,
+    session.role === "admin" && !session.support,
+    page === "more" && settingsSection === "screensaver",
+  );
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [protocol, setProtocol] = useState("all");

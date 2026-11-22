@@ -24,6 +24,7 @@ from .hub_location import HubLocation
 from .power_guard import STORE_KEY as POWER_GUARD_SETTINGS
 from .power_guard_history import clear_power_guard_history
 from .remote_access import CLOUD_ORIGIN
+from .screensaver_gallery import clear_screensaver_gallery
 
 log = logging.getLogger(__name__)
 
@@ -195,6 +196,7 @@ class HubOnboarding:
                 )
                 with self.store.connect() as c:
                     c.execute("BEGIN IMMEDIATE")
+                    clear_screensaver_gallery(c)
                     for table in [
                         "sessions",
                         "favorites",

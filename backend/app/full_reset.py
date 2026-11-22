@@ -26,6 +26,7 @@ from .ha_auth_reset import (
 from .power_guard_history import clear_power_guard_history
 from .remote_access import CLOUD_ORIGIN
 from .reset_credentials import public_key, unseal
+from .screensaver_gallery import clear_screensaver_gallery
 from .system_operations import Supervisor
 
 BASE_CONFIG = "default_config:\nautomation: !include automations.yaml\nscript: !include scripts.yaml\nscene: !include scenes.yaml\n"
@@ -463,6 +464,7 @@ class FullReset:
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             clear_power_guard_history(db)
+            clear_screensaver_gallery(db)
             for table in (
                 "energy_tariffs",
                 "energy_intervals",

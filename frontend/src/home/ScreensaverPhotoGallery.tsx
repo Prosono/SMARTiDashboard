@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ImagePlus, X } from "lucide-react";
+import { ChevronDown, ImagePlus, Images, Trash2, Upload } from "lucide-react";
 import {
   SCREENSAVER_GALLERY_LIMIT,
   SCREENSAVER_IMAGE_ACCEPT,
-  addScreensaverPhotos,
-  loadScreensaverPhotos,
-  removeScreensaverPhoto,
+  type ScreensaverGallery,
   type ScreensaverPhoto,
 } from "./screensaverGallery";
+import { SettingsDialog } from "./SettingsDialog";
 
-const emptyPhotos: ScreensaverPhoto[] = [];
-const photoKey = (owner: string) => ["screensaver-photos", owner];
 const photoIntervals = ["5", "10", "20", "30", "60"];
 export const photoTimingPreference = {
   key: "smarti-screensaver-photo-interval",
@@ -19,62 +15,20 @@ export const photoTimingPreference = {
   initial: "10",
 };
 
-type GalleryChange =
-  | { owner: string; kind: "add"; files: File[] }
-  | { owner: string; kind: "remove"; id: string };
+type Translate = (nb: string, en: string) => string;
+type GalleryAction =
+  | { kind: "share" }
+  | { kind: "remove" | "remove-local"; photo: ScreensaverPhoto };
 
-export function useScreensaverPhotoGallery(owner: string, enabled: boolean) {
-  const query = useQuery({
-    queryKey: photoKey(owner),
-    queryFn: () => loadScreensaverPhotos(owner),
-    enabled: enabled && !!owner,
-    retry: false,
-    staleTime: 30_000,
-  });
-  const client = useQueryClient();
-  const change = useMutation({
-    mutationFn: async (action: GalleryChange) => {
-      if (action.kind === "add")
-        return addScreensaverPhotos(action.owner, action.files);
-      return {
-        photos: await removeScreensaverPhoto(action.owner, action.id),
-        rejected: 0,
-        limitReached: false,
-      };
-    },
-    onMutate: (action) =>
-      client.cancelQueries({ queryKey: photoKey(action.owner) }),
-    onSuccess: (result, action) => {
-      client.setQueryData(photoKey(action.owner), result.photos);
-    },
-  });
-  const current = change.variables?.owner === owner;
-  return {
-    photos: enabled ? (query.data ?? emptyPhotos) : emptyPhotos,
-    loading: query.isPending,
-    unavailable: query.isError,
-    busy: current && change.isPending ? change.variables?.kind : undefined,
-    failed: current && change.isError,
-    result: current ? change.data : undefined,
-    add(files: File[]) {
-      if (!query.isSuccess || change.isPending || !files.length) return;
-      change.mutate({ kind: "add", owner, files });
-    },
-    remove(id: string) {
-      if (!query.isSuccess || change.isPending) return;
-      change.mutate({ kind: "remove", owner, id });
-    },
-  };
-}
-
-function usePhotoUrl(blob: Blob) {
-  const [url, setUrl] = useState("");
+function usePhotoUrl(source: string | Blob) {
+  const [objectUrl, setObjectUrl] = useState("");
   useEffect(() => {
-    const next = URL.createObjectURL(blob);
-    setUrl(next);
-    return () => URL.revokeObjectURL(next);
-  }, [blob]);
-  return url;
+    if (typeof source === "string") return;
+    const url = URL.createObjectURL(source);
+    setObjectUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [source]);
+  return typeof source === "string" ? source : objectUrl;
 }
 
 function PhotoThumbnail({ photo }: { photo: ScreensaverPhoto }) {
@@ -82,136 +36,207 @@ function PhotoThumbnail({ photo }: { photo: ScreensaverPhoto }) {
   return url && <img src={url} alt="" loading="lazy" decoding="async" />;
 }
 
+function SharedLibraryManager({
+  gallery,
+  confirm,
+  t,
+}: {
+  gallery: ScreensaverGallery;
+  confirm: (action: GalleryAction) => void;
+  t: Translate;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const photos = gallery.photos.filter((photo) => !photo.local);
+  const atLimit = gallery.sharedCount >= SCREENSAVER_GALLERY_LIMIT;
+  const busy = gallery.loading || gallery.unavailable || !!gallery.busy;
+  const addLabel = t("Legg til bilder", "Add photos");
+
+  return (
+    <details className="screensaver-library">
+      <summary>
+        <Images size={18} aria-hidden="true" />
+        <span>{t("Administrer fellesbibliotek", "Manage shared library")}</span>
+        <ChevronDown size={18} aria-hidden="true" />
+      </summary>
+      <div className="screensaver-library-content">
+        <header>
+          <p>
+            {t(
+              "Bildene i fellesbiblioteket kan brukes på alle skjermene i hjemmet.",
+              "Photos in the shared library can be used on any screen in the home.",
+            )}
+          </p>
+          <input
+            ref={input}
+            type="file"
+            multiple
+            accept={SCREENSAVER_IMAGE_ACCEPT}
+            aria-label={addLabel}
+            disabled={busy || atLimit}
+            hidden
+            onChange={(event) => {
+              gallery.add(Array.from(event.target.files || []));
+              event.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            disabled={busy || atLimit}
+            onClick={() => input.current?.click()}
+          >
+            <ImagePlus size={18} aria-hidden="true" /> {addLabel}
+          </button>
+        </header>
+        {!!photos.length && (
+          <ul className="screensaver-library-list" role="list">
+            {photos.map((photo) => (
+              <li key={photo.id}>
+                <div className="screensaver-photo-thumb">
+                  <PhotoThumbnail photo={photo} />
+                </div>
+                <span className="screensaver-photo-name" title={photo.name}>
+                  {photo.name}
+                </span>
+                <button
+                  type="button"
+                  className="screensaver-photo-delete"
+                  aria-label={t(
+                    `Slett ${photo.name} fra fellesbiblioteket`,
+                    `Delete ${photo.name} from the shared library`,
+                  )}
+                  disabled={busy}
+                  onClick={() => confirm({ kind: "remove", photo })}
+                >
+                  <Trash2 size={18} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {gallery.localCount > 0 && (
+          <button
+            type="button"
+            disabled={busy || atLimit}
+            onClick={() => confirm({ kind: "share" })}
+          >
+            <Upload size={16} aria-hidden="true" />
+            {t(
+              "Del lokale bilder i fellesbiblioteket",
+              "Share local photos to the library",
+            )}
+          </button>
+        )}
+        <div className="screensaver-gallery-status" role="status">
+          {gallery.busy === "add" && (
+            <p>{t("Lagrer bilder …", "Saving photos …")}</p>
+          )}
+          {gallery.busy === "remove" && (
+            <p>{t("Sletter bilde …", "Deleting photo …")}</p>
+          )}
+          {gallery.busy === "share" && (
+            <p>{t("Deler bilder …", "Sharing photos …")}</p>
+          )}
+          {!!gallery.result?.rejected && (
+            <p>
+              {t(
+                "Ett eller flere bilder kunne ikke legges til.",
+                "One or more photos could not be added.",
+              )}
+            </p>
+          )}
+          {(atLimit || gallery.result?.limitReached) && (
+            <p>
+              {t(
+                `Fellesbiblioteket har plass til ${SCREENSAVER_GALLERY_LIMIT} bilder.`,
+                `The shared library holds ${SCREENSAVER_GALLERY_LIMIT} photos.`,
+              )}
+            </p>
+          )}
+        </div>
+      </div>
+    </details>
+  );
+}
+
 export function ScreensaverGallerySettings({
   gallery,
   showGallery,
   onChangeVisibility,
+  selectedIds,
+  onChangeSelection,
+  onShareLocal,
   seconds,
   onChangeSeconds,
   lang,
 }: {
-  gallery: ReturnType<typeof useScreensaverPhotoGallery>;
+  gallery: ScreensaverGallery;
   showGallery: boolean;
   onChangeVisibility: (show: boolean) => void;
+  selectedIds: readonly string[] | null;
+  onChangeSelection: (ids: string[] | null) => void;
+  onShareLocal: () => void;
   seconds: string;
   onChangeSeconds: (seconds: string) => void;
   lang: string;
 }) {
-  const input = useRef<HTMLInputElement>(null);
-  const t = (nb: string, en: string) => (lang === "en" ? en : nb);
-  const atLimit = gallery.photos.length >= SCREENSAVER_GALLERY_LIMIT;
-  const addLabel = t("Legg til bilder", "Add photos");
-  const disabled = gallery.loading || gallery.unavailable || !!gallery.busy;
+  const [confirmation, confirm] = useState<GalleryAction | null>(null);
+  const t: Translate = (nb, en) => (lang === "en" ? en : nb);
+  const selected = gallery.photos
+    .filter((photo) => selectedIds === null || selectedIds.includes(photo.id))
+    .map((photo) => photo.id);
+
   return (
     <section
       className="screensaver-gallery"
       aria-label={t("Bildegalleri", "Photo gallery")}
     >
       <header>
-        <div>
-          <h3>{t("Bildegalleri", "Photo gallery")}</h3>
-          <p>
-            {t(
-              "Bildene lagres på denne enheten.",
-              "Photos are stored on this device.",
-            )}
-          </p>
-        </div>
-        <input
-          ref={input}
-          type="file"
-          multiple
-          accept={SCREENSAVER_IMAGE_ACCEPT}
-          aria-label={addLabel}
-          disabled={disabled || atLimit}
-          hidden
-          onChange={(event) => {
-            gallery.add(Array.from(event.target.files || []));
-            event.target.value = "";
-          }}
-        />
-        <button
-          type="button"
-          disabled={disabled || atLimit}
-          onClick={() => input.current?.click()}
-        >
-          <ImagePlus size={18} aria-hidden="true" /> {addLabel}
-        </button>
-      </header>
-      {gallery.photos.length > 0 ? (
-        <ul className="screensaver-photo-list">
-          {gallery.photos.map((photo) => (
-            <li key={photo.id}>
-              <div className="screensaver-photo-thumb">
-                <PhotoThumbnail photo={photo} />
-                <button
-                  type="button"
-                  aria-label={`${t("Fjern bilde", "Remove photo")} ${photo.name}`}
-                  disabled={disabled}
-                  onClick={() => gallery.remove(photo.id)}
-                >
-                  <X size={18} aria-hidden="true" />
-                </button>
-              </div>
-              <span title={photo.name}>{photo.name}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        !gallery.loading &&
-        !gallery.unavailable && (
-          <p className="screensaver-gallery-empty">
-            {t(
-              "Velg bildene du vil vise på skjermspareren.",
-              "Choose photos to display in the screensaver.",
-            )}
-          </p>
-        )
-      )}
-      {gallery.photos.length > 0 && (
-        <div className="screensaver-photo-controls">
-          <label className="screensaver-gallery-toggle">
-            <input
-              type="checkbox"
-              role="switch"
-              checked={showGallery}
-              onChange={(event) => onChangeVisibility(event.target.checked)}
-            />
-            {t("Vis bildegalleri", "Show photo gallery")}
-          </label>
-          {gallery.photos.length > 1 && (
-            <label className="screensaver-photo-duration">
-              {t("Tid per bilde", "Time per photo")}
-              <select
-                value={seconds}
-                onChange={(event) => onChangeSeconds(event.target.value)}
-              >
-                {photoIntervals.map((value) => (
-                  <option key={value} value={value}>
-                    {value} {t("sek", "sec")}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <h3>{t("Bildegalleri", "Photo gallery")}</h3>
+        <p>
+          {t(
+            "Velg hvilke bilder som skal vises på denne skjermen.",
+            "Choose which photos to show on this screen.",
           )}
-        </div>
-      )}
+        </p>
+      </header>
+      <div className="screensaver-photo-controls">
+        <label className="screensaver-gallery-toggle">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={showGallery}
+            onChange={(event) => onChangeVisibility(event.target.checked)}
+          />
+          {t("Vis bildegalleri", "Show photo gallery")}
+        </label>
+        {selected.length > 1 && (
+          <label className="screensaver-photo-duration">
+            {t("Tid per bilde", "Time per photo")}
+            <select
+              value={seconds}
+              onChange={(event) => onChangeSeconds(event.target.value)}
+            >
+              {photoIntervals.map((value) => (
+                <option key={value} value={value}>
+                  {value} {t("sek", "sec")}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
       <div className="screensaver-gallery-status" role="status">
         {gallery.loading && <p>{t("Laster bilder …", "Loading photos …")}</p>}
         {gallery.unavailable && (
           <p>
             {t(
-              "Bildegalleriet er utilgjengelig i denne nettleseren.",
-              "The photo gallery is unavailable in this browser.",
+              "Kunne ikke hente fellesbiblioteket.",
+              "Could not load the shared library.",
             )}
           </p>
         )}
-        {gallery.busy && (
-          <p>
-            {gallery.busy === "add"
-              ? t("Lagrer bilder …", "Saving photos …")
-              : t("Fjerner bilde …", "Removing photo …")}
-          </p>
+        {gallery.busy === "remove-local" && (
+          <p>{t("Sletter lokalt bilde …", "Deleting local photo …")}</p>
         )}
         {gallery.failed && (
           <p>
@@ -221,24 +246,176 @@ export function ScreensaverGallerySettings({
             )}
           </p>
         )}
-        {!!gallery.result?.rejected && (
+        {showGallery && gallery.photos.length > 0 && selected.length === 0 && (
           <p>
             {t(
-              "Ett eller flere bilder kunne ikke åpnes.",
-              "One or more images could not be opened.",
-            )}
-          </p>
-        )}
-        {(atLimit || gallery.result?.limitReached) && (
-          <p>
-            {t(
-              `Det er plass til ${SCREENSAVER_GALLERY_LIMIT} bilder.`,
-              `The gallery holds ${SCREENSAVER_GALLERY_LIMIT} photos.`,
+              "Velg minst ett bilde for å vise galleriet.",
+              "Select at least one photo to display the gallery.",
             )}
           </p>
         )}
       </div>
+      {gallery.photos.length > 0 ? (
+        <>
+          <div className="screensaver-gallery-selection">
+            <span role="status">
+              {t(
+                `${selected.length} av ${gallery.photos.length} valgt`,
+                `${selected.length} of ${gallery.photos.length} selected`,
+              )}
+            </span>
+            <div>
+              <button
+                type="button"
+                onClick={() => onChangeSelection(null)}
+                disabled={selectedIds === null}
+              >
+                {t("Velg alle", "Select all")}
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeSelection([])}
+                disabled={!selected.length}
+              >
+                {t("Velg ingen", "Select none")}
+              </button>
+            </div>
+          </div>
+          <ul className="screensaver-photo-list" role="list">
+            {gallery.photos.map((photo) => (
+              <li key={photo.id}>
+                <label className="screensaver-photo-choice">
+                  <span className="screensaver-photo-thumb">
+                    <PhotoThumbnail photo={photo} />
+                  </span>
+                  <input
+                    type="checkbox"
+                    aria-label={photo.name}
+                    aria-describedby={
+                      photo.local ? `screensaver-local-${photo.id}` : undefined
+                    }
+                    checked={selected.includes(photo.id)}
+                    onChange={(event) =>
+                      onChangeSelection(
+                        event.target.checked
+                          ? [...selected, photo.id]
+                          : selected.filter((id) => id !== photo.id),
+                      )
+                    }
+                  />
+                  <span className="screensaver-photo-name" title={photo.name}>
+                    {photo.name}
+                  </span>
+                  {photo.local && (
+                    <small
+                      className="screensaver-photo-local"
+                      id={`screensaver-local-${photo.id}`}
+                    >
+                      {t("Kun på denne skjermen", "On this screen only")}
+                    </small>
+                  )}
+                </label>
+                {photo.local && (
+                  <button
+                    type="button"
+                    className="screensaver-local-photo-delete"
+                    aria-label={t(
+                      `Slett lokalt bilde ${photo.name}`,
+                      `Delete local photo ${photo.name}`,
+                    )}
+                    disabled={!!gallery.busy}
+                    onClick={() => confirm({ kind: "remove-local", photo })}
+                  >
+                    <Trash2 size={16} aria-hidden="true" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        !gallery.loading &&
+        !gallery.unavailable && (
+          <p className="screensaver-gallery-empty">
+            {t("Fellesbiblioteket er tomt.", "The shared library is empty.")}
+          </p>
+        )
+      )}
+      {gallery.canManage && (
+        <SharedLibraryManager gallery={gallery} confirm={confirm} t={t} />
+      )}
+      {confirmation && (
+        <GalleryConfirmation
+          action={confirmation}
+          lang={lang}
+          t={t}
+          close={() => confirm(null)}
+          accept={() => {
+            if (confirmation.kind === "share") onShareLocal();
+            else if (confirmation.kind === "remove")
+              gallery.remove(confirmation.photo.id);
+            else gallery.removeLocal(confirmation.photo.id);
+            confirm(null);
+          }}
+        />
+      )}
     </section>
+  );
+}
+
+function GalleryConfirmation({
+  action,
+  lang,
+  t,
+  close,
+  accept,
+}: {
+  action: GalleryAction;
+  lang: string;
+  t: Translate;
+  close: () => void;
+  accept: () => void;
+}) {
+  const shared = action.kind === "remove";
+  const title =
+    action.kind === "share"
+      ? t("Del lokale bilder?", "Share local photos?")
+      : shared
+        ? t("Slett fra fellesbiblioteket?", "Delete from the shared library?")
+        : t("Slett lokalt bilde?", "Delete local photo?");
+  return (
+    <SettingsDialog title={title} lang={lang} compact onClose={close}>
+      <p>
+        {action.kind === "share"
+          ? t(
+              "Alle med tilgang til hjemmet vil kunne bruke bildene.",
+              "Anyone with access to the home will be able to use the photos.",
+            )
+          : shared
+            ? t(
+                `«${action.photo.name}» forsvinner fra alle skjermene som bruker det.`,
+                `“${action.photo.name}” will be removed from every screen that uses it.`,
+              )
+            : t(
+                `«${action.photo.name}» fjernes fra denne skjermen.`,
+                `“${action.photo.name}” will be removed from this screen.`,
+              )}
+      </p>
+      <div className="screensaver-confirm-actions">
+        <button type="button" onClick={close}>
+          {t("Avbryt", "Cancel")}
+        </button>
+        <button
+          type="button"
+          className={action.kind === "share" ? "primary" : "danger"}
+          onClick={accept}
+        >
+          {action.kind === "share"
+            ? t("Del bilder", "Share photos")
+            : t("Slett bilde", "Delete photo")}
+        </button>
+      </div>
+    </SettingsDialog>
   );
 }
 

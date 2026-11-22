@@ -1,3 +1,7 @@
+## 1.36.156
+- Skjermspareren har et felles bildebibliotek på huben. Hver skjerm velger selv om galleriet skal vises og hvilke bilder den vil bruke.
+- Administratorer kan legge til fellesbilder og velge å dele bilder som var lagret lokalt på en skjerm.
+
 ## 1.36.155
 - Skjermspareren kan vise opptil 24 egne bilder med automatisk bildebytte og valg av visningstid. Bildene lagres lokalt på enheten.
 - Nye apparatbilder for vaskemaskin, tørketrommel, oppvaskmaskin og kjøl/frys vises på enhetskort og i energilisten når apparattypen gjenkjennes.

@@ -42,6 +42,7 @@ from .power_guard import PowerGuard, power_guard_router
 from .power_guard_history import power_guard_history_router
 from .remote_access import remote_router
 from .scenes import scenes_router
+from .screensaver_gallery import PHOTO_PATH, screensaver_gallery_router
 from .session_policy import SESSION_COOKIE_SECONDS
 from .setup import DeviceSetup
 from .sky import sky_router
@@ -371,7 +372,10 @@ def create_app(
                     {"detail": "origin_rejected"}, status_code=403, headers={"Cache-Control": "no-store"}
                 )
         response = await call_next(request)
-        response.headers["Cache-Control"] = "no-store" if request.url.path.startswith("/api") else "no-cache"
+        if not (request.url.path.startswith(PHOTO_PATH + "/") and response.headers.get("ETag")):
+            response.headers["Cache-Control"] = (
+                "no-store" if request.url.path.startswith("/api") else "no-cache"
+            )
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "same-origin"
         response.headers["Content-Security-Policy"] = (
@@ -449,6 +453,7 @@ def create_app(
     app.include_router(home_router(store, user, ha, settings))
     app.include_router(sky_router(store, user, ha, settings))
     app.include_router(extras_router(store, user, ha, settings))
+    app.include_router(screensaver_gallery_router(store, user, admin, resetting))
     app.include_router(history_router(ha, user, settings))
     app.include_router(calendar_router(store, user, ha, settings))
     app.include_router(vehicle_router(store, user, ha))

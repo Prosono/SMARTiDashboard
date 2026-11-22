@@ -167,6 +167,10 @@ def route_access(request, current, ha):
         return
     if path == "home/activity":
         return
+    if path == "home/screensaver/photos" or path.startswith("home/screensaver/photos/"):
+        if not read:
+            raise HTTPException(403, "admin_required")
+        return
     if path in {"home/experience", "home/language"} or (read and path == "home/sky"):
         return
     if path.startswith(("home/preferences", "home/room-view/", "home/room-image/", "home/layout/")):

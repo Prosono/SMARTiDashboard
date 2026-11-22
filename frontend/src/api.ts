@@ -17,6 +17,7 @@ const errorCodes = new Set([
   "invalid_timezone",
   "invalid_credentials",
   "rate_limited",
+  "screensaver_gallery_full",
 ]);
 const formFields = new Set([
   "name",
