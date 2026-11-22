@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
   ChevronDown,
+  ChevronRight,
   Plug,
   RefreshCw,
   SlidersHorizontal,
@@ -15,6 +16,7 @@ import {
   type DeviceEnergyMeter,
 } from "./DeviceEnergyPicker";
 import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
+import { SettingsDialog } from "./SettingsDialog";
 import {
   hasAirConditionerHint,
   hasWaterHeaterHint,
@@ -396,21 +398,61 @@ function DeviceRow({
   );
 }
 
-export function DeviceEnergyConsumption({
-  lang,
-  offline,
-  controls,
-}: {
+type DeviceEnergyProps = {
   lang: string;
   offline: boolean;
   controls?: readonly Control[];
-}) {
+};
+
+export const deviceEnergyTitle = (lang: string) =>
+  lang === "en" ? "Usage by device" : "Forbruk per enhet";
+
+export function DeviceEnergyTile(props: DeviceEnergyProps) {
+  const [open, setOpen] = useState(false);
+  const title = deviceEnergyTitle(props.lang);
+  return (
+    <>
+      <button
+        type="button"
+        className="device-energy-tile"
+        aria-label={title}
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+      >
+        <span className="device-energy-tile-icon" aria-hidden="true">
+          <BarChart3 size={21} />
+        </span>
+        <span>
+          <strong>{title}</strong>
+          <small>
+            {props.lang === "en" ? "kWh and cost" : "kWh og kostnad"}
+          </small>
+        </span>
+        <ChevronRight size={18} aria-hidden="true" />
+      </button>
+      {open && (
+        <SettingsDialog
+          title={title}
+          lang={props.lang}
+          onClose={() => setOpen(false)}
+        >
+          <DeviceEnergyConsumption {...props} />
+        </SettingsDialog>
+      )}
+    </>
+  );
+}
+
+function DeviceEnergyConsumption({
+  lang,
+  offline,
+  controls,
+}: DeviceEnergyProps) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [period, setPeriod] = useState<Period>("24h");
   const [active, setActive] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [picking, setPicking] = useState(false);
-  const id = useId();
   const cache = useQueryClient();
   const artworkControls = useMemo(
     () => indexArtworkControls(controls),
@@ -504,30 +546,9 @@ export function DeviceEnergyConsumption({
   return (
     <section
       className="device-energy"
-      aria-labelledby={id}
+      aria-label={deviceEnergyTitle(lang)}
       aria-busy={history.isLoading}
     >
-      <header className="device-energy-heading">
-        <div>
-          <BarChart3 size={22} aria-hidden="true" />
-          <h3 id={id}>{t("Forbruk per enhet", "Usage by device")}</h3>
-        </div>
-        {canEdit && (
-          <button
-            className="device-energy-choose"
-            type="button"
-            aria-haspopup="dialog"
-            disabled={offline || save.isPending}
-            onClick={() => {
-              save.reset();
-              setPicking(true);
-            }}
-          >
-            <SlidersHorizontal size={17} aria-hidden="true" />
-            {t("Velg enheter", "Choose devices")}
-          </button>
-        )}
-      </header>
       <div className="device-energy-toolbar">
         <div
           className="device-energy-period"
@@ -545,8 +566,23 @@ export function DeviceEnergyConsumption({
             </button>
           ))}
         </div>
-        {range && <span className="device-energy-range">{range}</span>}
+        {canEdit && (
+          <button
+            className="device-energy-choose"
+            type="button"
+            aria-haspopup="dialog"
+            disabled={offline || save.isPending}
+            onClick={() => {
+              save.reset();
+              setPicking(true);
+            }}
+          >
+            <SlidersHorizontal size={17} aria-hidden="true" />
+            {t("Velg enheter", "Choose devices")}
+          </button>
+        )}
       </div>
+      {range && <span className="device-energy-range">{range}</span>}
       {cached && (
         <p className="device-energy-notice" role="status">
           {offline

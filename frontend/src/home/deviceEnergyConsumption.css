@@ -1,3 +1,65 @@
+.energy-control .device-energy-tile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-height: 44px;
+  padding: 9px clamp(10px, 2vw, 16px);
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  text-align: start;
+}
+
+.energy-control .device-energy-tile:hover {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.energy-control .device-energy-tile:focus-visible {
+  outline-offset: -4px;
+}
+
+.device-energy-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+
+.device-energy-tile strong,
+.device-energy-tile small {
+  display: block;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.device-energy-tile strong {
+  font-size: 1rem;
+}
+
+.energy-control .device-energy-tile small {
+  margin-top: 4px;
+  font-size: 0.78rem;
+}
+
+.device-energy-standalone {
+  width: min(100%, 350px);
+  min-height: 90px;
+  margin-block: 14px;
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(
+    112deg,
+    var(--card-color, var(--surface)),
+    var(--card-depth, var(--surface))
+  );
+}
+
 .device-energy {
   --device-energy-track: color-mix(in srgb, var(--accent) 10%, var(--surface));
   --device-energy-paper: color-mix(in srgb, var(--surface) 85%, var(--soft));
@@ -8,15 +70,9 @@
   display: grid;
   align-content: start;
   gap: 13px;
-  padding: clamp(12px, 1.8vw, 20px);
-  margin-block: 14px;
-  border: 1px solid var(--line);
-  border-radius: 17px;
-  background: var(--surface);
   color: var(--text);
 }
 
-.device-energy-heading,
 .device-energy-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -25,20 +81,6 @@
   gap: 8px 14px;
 }
 
-.device-energy-heading > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.device-energy-heading h3 {
-  margin: 0;
-  font-size: clamp(1.05rem, 2.4cqi, 1.23rem);
-  line-height: 1.16;
-}
-
-.device-energy-heading svg,
 .device-energy-empty > svg {
   color: var(--accent);
   flex: none;

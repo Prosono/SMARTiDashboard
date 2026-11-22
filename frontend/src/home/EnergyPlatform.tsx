@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { api } from "../api";
 import {
-  DeviceEnergyConsumption,
+  DeviceEnergyTile,
+  deviceEnergyTitle,
   deviceEnergyConsumptionQueryKey,
   deviceEnergySourcesQueryKey,
 } from "./DeviceEnergyConsumption";
@@ -211,6 +212,9 @@ export function EnergyPlatform({
 }) {
   const cache = useQueryClient();
   const [editing, setEditing] = useState<boolean | "meters" | null>(null);
+  const deviceUsage = (
+    <DeviceEnergyTile lang={lang} offline={offline} controls={home?.controls} />
+  );
   const setup = useQuery({
     queryKey: ["energy-platform-setup"],
     queryFn: () => api<Setup>("home/energy/platform/setup"),
@@ -1063,6 +1067,17 @@ export function EnergyPlatform({
                 : "ep-consumption-chart",
             )}
           </EnergyModule>
+          <EnergyModule
+            id="energy:consumers"
+            title={deviceEnergyTitle(lang)}
+            h={1}
+            required
+            bare
+            phoneSize={{ w: 2, h: 1, order: 3 }}
+            phoneContent={() => deviceUsage}
+          >
+            {deviceUsage}
+          </EnergyModule>
           {(setup.data.config.equipment?.solar ||
             setup.data.config.meters.some((m) => m.role === "solar")) && (
             <EnergyModule
@@ -1171,11 +1186,6 @@ export function EnergyPlatform({
             loading={todayDashboard.isLoading}
             lang={lang}
           />
-          <DeviceEnergyConsumption
-            lang={lang}
-            offline={offline}
-            controls={home?.controls}
-          />
           <PowerGuard
             admin={admin}
             lang={lang}
@@ -1254,17 +1264,18 @@ export function EnergyPlatform({
               <p>En administrator må sette opp energien først.</p>
             )}
           </div>
-          <DeviceEnergyConsumption
-            lang={lang}
-            offline={offline}
-            controls={home?.controls}
-          />
           <PowerGuard
             admin={admin}
             lang={lang}
             offline={offline}
             onSetup={() => setEditing(true)}
           />
+          <div
+            className="device-energy-standalone"
+            data-energy-tone="energy-use"
+          >
+            {deviceUsage}
+          </div>
         </>
       )}
       {(editing ?? (admin && !setup.data?.config)) && setup.data && (

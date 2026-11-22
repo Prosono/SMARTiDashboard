@@ -385,16 +385,18 @@ export function MobileLayoutEditor({
               <ArrowDown size={19} />
               {t("Flytt ned", "Move down")}
             </button>
-            <button
-              disabled={busy}
-              onClick={() => {
-                onRemove(chosen.id);
-                select(null);
-              }}
-            >
-              <Trash2 size={19} />
-              {t("Fjern kort", "Remove card")}
-            </button>
+            {!catalog.get(chosen.id)?.required && (
+              <button
+                disabled={busy}
+                onClick={() => {
+                  onRemove(chosen.id);
+                  select(null);
+                }}
+              >
+                <Trash2 size={19} />
+                {t("Fjern kort", "Remove card")}
+              </button>
+            )}
           </div>
         </SettingsDialog>
       )}

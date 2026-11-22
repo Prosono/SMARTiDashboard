@@ -152,7 +152,7 @@ export function PowerGuard({
   const id = useId();
   const cache = useQueryClient();
   const [view, setView] = useState(preferredView);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [focusLoad, setFocusLoad] = useState<string | null>(null);
   const newLoadField = useRef<HTMLInputElement>(null);

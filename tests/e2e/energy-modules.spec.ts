@@ -358,7 +358,7 @@ test("one energy canvas contains 3D, monthly capacity, tariff, hourly extremes a
   await expect(
     page.getByRole("tab", { name: "Historikk og strømpriser", exact: true }),
   ).toHaveCount(0);
-  await expect(grid.locator(".home-canvas-cell")).toHaveCount(8);
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(9);
   const flow = grid.locator('[data-card="energy:flow"]');
   await expect(flow).toHaveCSS("grid-column-end", "span 2");
   await expect(flow.locator(".energy-scene")).toBeVisible({ timeout: 20000 });
@@ -484,11 +484,11 @@ test("today's usage and cost remain visible with a customized mobile layout", as
     "0 kWh",
     /[−-]4,20\s*kr/,
   ]);
-  await expect(
-    page.getByRole("heading", { name: "Forbruk per enhet", exact: true }),
-  ).toBeVisible();
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
-  await expect(grid.locator(".home-canvas-cell")).toHaveCount(1);
+  await expect(
+    grid.getByRole("button", { name: "Forbruk per enhet", exact: true }),
+  ).toBeVisible();
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(2);
 
   Object.assign(state.dashboard.totals.today, {
     available_kwh: null,
@@ -531,6 +531,8 @@ test("device energy tracks selected equipment independently of the canvas and Po
   let selected = [meters[0].id];
   const writes: string[][] = [];
   let powerGuardWrites = 0;
+  let historyReads = 0;
+  let sourceReads = 0;
   await page.route("**/api/home/energy/power-guard", (route) => {
     if (route.request().method() === "PUT") powerGuardWrites++;
     return route.continue();
@@ -539,7 +541,7 @@ test("device energy tracks selected equipment independently of the canvas and Po
     if (route.request().method() === "PUT") {
       selected = route.request().postDataJSON().selected_ids;
       writes.push(selected);
-    }
+    } else sourceReads++;
     return route.fulfill({
       json: {
         sources: meters,
@@ -552,6 +554,7 @@ test("device energy tracks selected equipment independently of the canvas and Po
   await page.route(
     "**/api/home/energy/device-consumption/history?*",
     (route) => {
+      historyReads++;
       const period = new URL(route.request().url()).searchParams.get("period");
       const start = "2026-11-01T12:00:00Z";
       const end = "2026-11-02T12:00:00Z";
@@ -589,7 +592,36 @@ test("device energy tracks selected equipment independently of the canvas and Po
   };
   await page.reload();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
-  const deviceUsage = page.getByRole("region", {
+  const powerGuard = page.getByRole("region", {
+    name: "PowerGuard",
+    exact: true,
+  });
+  const showPowerGuard = powerGuard.getByRole("button", {
+    name: "Vis PowerGuard",
+    exact: true,
+  });
+  await expect(showPowerGuard).toHaveAttribute("aria-expanded", "false");
+  await showPowerGuard.click();
+  await expect(powerGuard.locator(".power-guard-body")).toBeVisible();
+  await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
+  await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  await expect(showPowerGuard).toHaveAttribute("aria-expanded", "false");
+
+  const tile = page.locator('[data-card="energy:consumers"]');
+  const openUsage = tile.getByRole("button", {
+    name: "Forbruk per enhet",
+    exact: true,
+  });
+  await expect(openUsage).toBeVisible();
+  await expect(tile).toHaveCSS("grid-row-end", "span 1");
+  expect(sourceReads).toBe(0);
+  expect(historyReads).toBe(0);
+  await openUsage.click();
+  const detail = page.getByRole("dialog", {
+    name: "Forbruk per enhet",
+    exact: true,
+  });
+  const deviceUsage = detail.getByRole("region", {
     name: "Forbruk per enhet",
     exact: true,
   });
@@ -617,8 +649,13 @@ test("device energy tracks selected equipment independently of the canvas and Po
   await expect(
     deviceUsage.getByRole("group", { name: "Kostnad for Kjøleskap" }),
   ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(detail).toHaveCount(0);
+  await expect(openUsage).toBeFocused();
   await page.reload();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
+  await expect(showPowerGuard).toHaveAttribute("aria-expanded", "false");
+  await openUsage.click();
   await expect(fridge).toBeVisible();
   expect(state.layouts.energy_control.items?.map(({ id }) => id)).toEqual([
     "energy:history",
@@ -718,7 +755,10 @@ test("device energy rows show physical device artwork and a meter fallback", asy
     },
   );
   await setup(page, false, false, undefined, controls);
-  const usage = page.getByRole("region", { name: "Forbruk per enhet" });
+  await page
+    .getByRole("button", { name: "Forbruk per enhet", exact: true })
+    .click();
+  const usage = page.getByRole("dialog", { name: "Forbruk per enhet" });
   await usage.getByRole("button", { name: "Vis alle 7 enheter" }).click();
   for (const [name, asset] of [
     ["Varmtvannstank", "water-heater"],
@@ -753,7 +793,7 @@ test("the unified layout saves sizes, removals and additions without changing en
   await page.setViewportSize({ width: 1440, height: 1000 });
   const state = await setup(page);
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
-  await expect(grid.locator(".home-canvas-cell")).toHaveCount(8);
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(9);
   await edit(page);
   const flow = grid.locator('[data-card="energy:flow"]');
   await flow.getByRole("combobox", { name: /bredde/ }).selectOption("3");
@@ -843,7 +883,18 @@ test("compact phone tiles show KPIs and only mount the opened house or graph", a
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page, true);
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
-  await expect(grid.locator(".home-canvas-cell")).toHaveCount(5);
+  await expect(grid.locator(".home-canvas-cell")).toHaveCount(6);
+  const deviceTile = grid.locator('[data-card="energy:consumers"]');
+  await expect(deviceTile).toHaveCSS("grid-row-end", "span 1");
+  const tariffTop = (await grid
+    .locator('[data-card="energy:tariff"]')
+    .boundingBox())!.y;
+  const usageTop = (await deviceTile.boundingBox())!.y;
+  const historyTop = (await grid
+    .locator('[data-card="energy:history"]')
+    .boundingBox())!.y;
+  expect(usageTop).toBeGreaterThan(tariffTop);
+  expect(usageTop).toBeLessThan(historyTop);
   await expect(grid.locator(".phone-energy-power")).toBeVisible();
   await expect(
     grid.locator(".phone-power-history .measured-chart svg"),

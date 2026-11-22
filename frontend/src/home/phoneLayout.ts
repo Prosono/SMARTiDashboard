@@ -17,6 +17,7 @@ export const phoneEnergyPrimary = new Set([
   "energy:flow",
   "energy:spot",
   "energy:tariff",
+  "energy:consumers",
   "energy:history",
   "energy:capacity",
 ]);

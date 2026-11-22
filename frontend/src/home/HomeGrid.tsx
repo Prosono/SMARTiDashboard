@@ -96,6 +96,8 @@ export type HomeGridCard = {
   w?: number;
   h?: number;
   hidden?: boolean;
+  /** Keep access to this card when a saved layout predates it. */
+  required?: boolean;
   defaultHidden?: boolean;
   entityId?: string;
   summary?: MobileSummary;
@@ -183,7 +185,20 @@ export function HomeGrid({
   const grouped =
     canGroup &&
     (draft !== null ? draftGrouped : (saved.data?.group_by_room ?? true));
-  const rawLayout = draft ?? saved.data?.items ?? defaults;
+  const storedLayout = saved.data?.items;
+  const rawLayout =
+    draft ??
+    (storedLayout
+      ? cards.reduce(
+          (items, card) =>
+            card.required &&
+            items.length < 300 &&
+            !items.some((item) => item.id === card.id)
+              ? addGridCard(items, card)
+              : items,
+          storedLayout,
+        )
+      : defaults);
   const catalog = new Map(cards.map((card) => [card.id, card]));
   for (const item of rawLayout) {
     if (!catalog.has(item.id) && item.config)
@@ -1104,21 +1119,23 @@ export function HomeGrid({
                       >
                         <Pencil size={16} />
                       </button>
-                      <button
-                        aria-label={`${t("Fjern", "Remove")} ${cardTitle}`}
-                        disabled={busy}
-                        onClick={() =>
-                          setDraft(
-                            (current) =>
-                              current &&
-                              (grouped
-                                ? removeRoomCard(current, card.id, roomOf)
-                                : removeGridCard(current, card.id)),
-                          )
-                        }
-                      >
-                        <X size={17} />
-                      </button>
+                      {!card.required && (
+                        <button
+                          aria-label={`${t("Fjern", "Remove")} ${cardTitle}`}
+                          disabled={busy}
+                          onClick={() =>
+                            setDraft(
+                              (current) =>
+                                current &&
+                                (grouped
+                                  ? removeRoomCard(current, card.id, roomOf)
+                                  : removeGridCard(current, card.id)),
+                            )
+                          }
+                        >
+                          <X size={17} />
+                        </button>
+                      )}
                     </div>
                   )}
                   <div

@@ -40,6 +40,8 @@ type ModuleProps = {
   children: ReactNode;
   w?: number;
   h?: number;
+  required?: boolean;
+  bare?: boolean;
   defaultHidden?: boolean;
   summary?: MobileSummary;
   phoneSize?: PhoneSize;
@@ -91,6 +93,7 @@ export function EnergyModules({
           id,
           title,
           children: content,
+          bare,
           ...options
         } = child.props as ModuleProps;
         if (cards.some((card) => card.id === id)) return;
@@ -98,7 +101,9 @@ export function EnergyModules({
           id,
           title,
           ...options,
-          content: (
+          content: bare ? (
+            content
+          ) : (
             <section
               className="energy-module"
               data-energy-module={id}

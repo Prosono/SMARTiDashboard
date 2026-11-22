@@ -1,3 +1,7 @@
+## 1.36.159
+- PowerGuard starter sammenfoldet når Energi åpnes. Aktiv status og bryter vises i toppen.
+- Forbruk per enhet er et kompakt energikort. Åpne kortet for å velge enheter og se forbruk, kostnad og historikk.
+
 ## 1.36.158
 - Innstillinger følger den samme sidebredden som resten av SMARTi. Temavelgeren og de øvrige kortene bruker plassen innenfor samme ramme.
 
