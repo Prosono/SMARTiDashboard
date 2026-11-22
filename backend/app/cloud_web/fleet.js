@@ -2,7 +2,9 @@
 window.fleet = (() => {
  let apiRequest=null;
  let hubs=[], report=null, filter='all', query='', order='newest';
- let map=null,markers=null,mapItems=[],mapLoading=null,firstMap=true;
+ let map=null,markers=null,mapItems=[],mapLibrary=null,mapLand=null,mapSignature=null;
+ let showingWorld=true,fittingWorld=false;
+ const worldBounds=[[-90,-180],[90,180]];
  const $=id=>document.getElementById(id);
  const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const bytes=value=>{if(value==null)return '—';const units=['B','kB','MB','GB','TB'];let i=0;while(value>=1000&&i<4){value/=1000;i++;}return new Intl.NumberFormat('nb-NO',{maximumFractionDigits:1}).format(value)+' '+units[i];};
@@ -34,6 +36,11 @@ window.fleet = (() => {
    label.append(checkbox,node('span',title));
    group.append(label,status);
   }
+  const comments=node('button','Bestillingskommentarer','hub-order-comments-link');
+  comments.type='button';
+  comments.setAttribute('aria-label','Bestillingskommentarer for '+h.serial);
+  comments.onclick=()=>openDetails(h.id,true);
+  group.append(comments);
   return group;
  }
  async function labelImage(path){
@@ -212,25 +219,146 @@ window.fleet = (() => {
   return details;
  }
 
- function validLocation(h){return h.location&&Number.isFinite(h.location.latitude)&&Number.isFinite(h.location.longitude);}
- async function openMap(){
-  if(!window.L){
-   if(!mapLoading)mapLoading=new Promise((resolve,reject)=>{const css=node('link');css.rel='stylesheet';css.href='/assets/leaflet/leaflet.css';document.head.append(css);const script=node('script');script.src='/assets/leaflet/leaflet.js';script.onload=resolve;script.onerror=()=>{mapLoading=null;script.remove();reject(Error('Kartet kunne ikke lastes. Prøv igjen.'));};document.head.append(script);});
-   await mapLoading;
-  }
-  if(!map){map=L.map('fleet-map',{scrollWheelZoom:false}).setView([64,12],4);markers=L.featureGroup().addTo(map);
-   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,referrerPolicy:'origin',attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).on('tileerror',()=>{$('map-message').textContent='Kartbakgrunnen er utilgjengelig. Hublisten fungerer fortsatt.';}).addTo(map);
-  }
-  map.invalidateSize();drawMap();if(firstMap){fitMap();firstMap=false;}
+ function validLocation(h){
+  const {latitude,longitude}=h.location||{};
+  return Number.isFinite(latitude)&&Math.abs(latitude)<=90&&Number.isFinite(longitude)&&Math.abs(longitude)<=180;
  }
- function fitMap(){if(map&&markers.getLayers().length)map.fitBounds(markers.getBounds(),{padding:[40,40],maxZoom:12});}
- function drawMap(){
-  const located=mapItems.filter(validLocation);$('map-coverage').textContent=located.length+' av '+mapItems.length+' huber i utvalget har registrert plassering.';
-  if(!map||$('fleet-map-panel').hidden)return;
-  markers.clearLayers();$('map-message').textContent=located.length?'':'Ingen huber i utvalget har plassering ennå. Plassering blir tilgjengelig etter fullført oppsett.';
-  for(const h of located){const popup=node('div');popup.append(node('strong',h.serial),node('p',h.location.name||h.model),node('p',h.online?'På nett':'Frakoblet'));const action=node('button','Se hubdetaljer');action.type='button';action.onclick=()=>openDetails(h.id);popup.append(action);
-   L.circleMarker([h.location.latitude,h.location.longitude],{radius:9,weight:3,color:'#fff',fillColor:category(h)==='ready'?'#ff7900':h.online?'#119b66':'#686868',fillOpacity:1}).bindPopup(popup).addTo(markers);
+ function loadMapLibrary(){
+  if(window.L)return Promise.resolve();
+  if(!mapLibrary){
+   const css=node('link');css.rel='stylesheet';css.href='/assets/leaflet/leaflet.css';document.head.append(css);
+   mapLibrary=new Promise((resolve,reject)=>{
+    const script=node('script');script.src='/assets/leaflet/leaflet.js';
+    script.onload=resolve;
+    script.onerror=()=>{mapLibrary=null;css.remove();script.remove();reject(Error('Kartet kunne ikke lastes.'));};
+    document.head.append(script);
+   });
   }
+  return mapLibrary;
+ }
+ function loadMapLand(){
+  if(!mapLand){
+   mapLand=fetch('/assets/world-land.geojson').then(async response=>{
+    if(!response.ok)throw Error('Kartbakgrunnen kunne ikke lastes.');
+    // Natural Earth 1:110m land polygons, public domain.
+    L.geoJSON(await response.json(),{interactive:false,className:'fleet-map-land'}).addTo(map);
+   }).catch(error=>{mapLand=null;throw error;});
+  }
+  return mapLand;
+ }
+ function resizeWorld(){
+  showingWorld=true;
+  fittingWorld=true;
+  map.fitBounds(worldBounds,{padding:[12,12],animate:false});
+  fittingWorld=false;
+ }
+ function fitWorld(){
+  if(!map)return;
+  map.closePopup();
+  resizeWorld();
+ }
+ function fitMap(){
+  if(!map||!markers.getLayers().length)return;
+  showingWorld=false;
+  map.closePopup();
+  map.fitBounds(markers.getBounds(),{padding:[32,32],maxZoom:6,animate:false});
+ }
+ async function openMap(){
+  if($('fleet-map-panel').hidden)return;
+  $('map-retry').hidden=true;
+  try{
+   await loadMapLibrary();
+   if($('fleet-map-panel').hidden)return;
+   const initialize=!map;
+   if(initialize){
+    map=L.map('fleet-map',{crs:L.CRS.EPSG4326,minZoom:-2,maxZoom:8,zoomSnap:.25,zoomDelta:.75,scrollWheelZoom:false,zoomControl:false,attributionControl:false});
+    L.control.zoom({zoomInTitle:'Zoom inn',zoomOutTitle:'Zoom ut'}).addTo(map);
+    map.on('zoomstart',()=>{if(!fittingWorld)showingWorld=false;});
+    map.on('dragstart autopanstart',()=>{showingWorld=false;});
+    map.on('resize',event=>{if(showingWorld&&event.newSize.x&&event.newSize.y)resizeWorld();});
+    const canvas=map.getContainer();
+    canvas.addEventListener('keydown',event=>{
+     if(event.target===canvas&&event.key.startsWith('Arrow'))showingWorld=false;
+    });
+    markers=L.featureGroup().addTo(map);
+    for(let longitude=-180;longitude<=180;longitude+=30){
+     L.polyline([[-90,longitude],[90,longitude]],{interactive:false,className:'fleet-map-grid'}).addTo(map);
+    }
+    for(let latitude=-90;latitude<=90;latitude+=30){
+     L.polyline([[latitude,-180],[latitude,180]],{interactive:false,className:'fleet-map-grid'}).addTo(map);
+    }
+   }
+   drawMap();
+   if(initialize)fitWorld();
+   else map.invalidateSize();
+   await loadMapLand();
+   $('map-error').textContent='';
+  }catch{
+   $('map-error').textContent=map?'Kartbakgrunnen kunne ikke lastes. Hubplasseringene vises fortsatt.':'Kartet kunne ikke lastes.';
+   $('map-retry').hidden=false;
+  }
+ }
+ const mapStatus={active:'På nett',inactive:'Frakoblet',ready:'Klargjøring'};
+ function markerPopup(group){
+  const popup=node('div',undefined,'fleet-map-popup');
+  for(const h of group){
+   const item=node('div');
+   const action=node('button',group.length===1?'Se hubdetaljer':'Se detaljer for '+h.serial);
+   action.type='button';action.onclick=()=>openDetails(h.id);
+   item.append(node('strong',h.serial),node('p',h.location.name||'Registrert plassering'),node('p',mapStatus[category(h)]),action);
+   popup.append(item);
+  }
+  return popup;
+ }
+ function drawMap(){
+  const located=mapItems.filter(validLocation);
+  const coverage=located.length+' av '+mapItems.length+' huber i utvalget har registrert plassering.';
+  if($('map-coverage').textContent!==coverage)$('map-coverage').textContent=coverage;
+  if(!map||$('fleet-map-panel').hidden)return;
+  const signature=JSON.stringify(located.map(h=>[h.id,h.serial,h.location.latitude,h.location.longitude,h.location.name,category(h)]));
+  if(signature===mapSignature)return;
+  mapSignature=signature;
+  $('map-message').textContent=located.length?'':'Ingen huber i utvalget har registrert plassering.';
+  $('fit-hubs').disabled=!located.length;
+  $('map-world').disabled=false;
+  $('map-hub-sidebar').hidden=!located.length;
+  const list=$('map-hub-list');
+  const focusedHub=document.activeElement?.dataset.mapHub;
+  const scrollTop=list.scrollTop;
+  list.replaceChildren();
+  markers.clearLayers();
+  const groups=new Map(),markersByHub=new Map();
+  for(const h of located){
+   const key=h.location.latitude+','+h.location.longitude;
+   const group=groups.get(key)||[];
+   group.push(h);
+   groups.set(key,group);
+  }
+  for(const group of groups.values()){
+   const h=group[0];
+   const multiple=group.length>1;
+   const size=multiple?28:17;
+   const icon=L.divIcon({className:'fleet-map-marker '+(multiple?'cluster':category(h)),iconSize:[size,size],html:multiple?String(group.length):''});
+   const marker=L.marker([h.location.latitude,h.location.longitude],{icon,title:multiple?group.length+' huber på samme sted':h.serial+' · '+mapStatus[category(h)]});
+   marker.bindPopup(markerPopup(group),{className:'fleet-map-popup-wrap',maxHeight:190,minWidth:152,maxWidth:236}).addTo(markers);
+   for(const hub of group)markersByHub.set(hub.id,marker);
+  }
+  for(const h of located){
+   const item=node('li'),button=node('button'),copy=node('span',undefined,'fleet-map-hub-name');
+   button.type='button';button.dataset.mapHub=h.id;
+   copy.append(node('strong',h.serial),node('small',h.location.name||'Registrert plassering'),node('span',mapStatus[category(h)],'sr-only'));
+   button.append(node('span',undefined,'map-dot '+category(h)),copy);
+   button.onclick=()=>{
+    const marker=markersByHub.get(h.id);
+    showingWorld=false;
+    map.setView(marker.getLatLng(),Math.max(4,map.getZoom()),{animate:false});
+    marker.openPopup();
+   };
+   item.append(button);list.append(item);
+   if(focusedHub===h.id)button.focus({preventScroll:true});
+  }
+  list.scrollTop=scrollTop;
+  map.invalidateSize();
  }
  function versions(h){
   const section=node('section',undefined,'hub-versions');
@@ -244,7 +372,99 @@ window.fleet = (() => {
   }
   section.append(list);return section;
  }
- function openDetails(id){
+ function orderComments(h){
+  const section=node('section',undefined,'hub-order-comments');
+  section.setAttribute('aria-labelledby','hub-order-comments-title');
+  const title=node('h3','Bestillingskommentarer');
+  title.id='hub-order-comments-title';
+  title.tabIndex=-1;
+  const description=node('p','Kun synlig for administratorer.','hub-comments-muted');
+  const form=node('form',undefined,'hub-comments-form');
+  const label=node('label','Ny kommentar');
+  label.htmlFor='hub-order-comment-text';
+  const field=node('textarea');
+  field.id=label.htmlFor;
+  field.rows=3;
+  field.maxLength=2000;
+  field.required=true;
+  const save=node('button','Legg til kommentar','primary');
+  save.type='submit';
+  const feedback=node('p',undefined,'hub-comments-muted hub-comments-feedback');
+  feedback.setAttribute('role','status');
+  form.append(label,field,save,feedback);
+  const list=node('ol',undefined,'hub-comments-list');
+  list.setAttribute('aria-label','Tidligere kommentarer, nyeste først');
+  const listStatus=node('p',undefined,'hub-comments-muted');
+  listStatus.setAttribute('role','status');
+  const retry=node('button','Last inn kommentarer på nytt');
+  retry.type='button';
+  retry.hidden=true;
+  section.append(title,description,form,listStatus,retry,list);
+
+  const endpoint='admin/hubs/'+encodeURIComponent(h.id)+'/order-comments';
+  const dateFormat=new Intl.DateTimeFormat('nb-NO',{dateStyle:'medium',timeStyle:'short'});
+  let pendingComment;
+  let loading=false;
+  let saving=false;
+  function updateSave(){save.disabled=loading||saving||!field.value.trim();}
+  function commentItem(comment){
+   const item=node('li'),meta=node('div',undefined,'hub-comment-meta');
+   const date=new Date(comment.created*1000),time=node('time',dateFormat.format(date));
+   time.dateTime=date.toISOString();
+   meta.append(node('strong',comment.author),time);
+   item.append(meta,node('p',comment.text));
+   item.dataset.commentId=comment.id;
+   return item;
+  }
+  async function load(){
+   loading=true;
+   updateSave();
+   listStatus.textContent='Laster kommentarer …';
+   retry.hidden=true;
+   try{
+    const comments=await apiRequest(endpoint);
+    list.replaceChildren(...comments.map(commentItem));
+    listStatus.textContent=comments.length?'':'Ingen kommentarer ennå.';
+   }catch{
+    listStatus.textContent='Kommentarene kunne ikke lastes.';
+    retry.hidden=false;
+   }finally{
+    loading=false;
+    updateSave();
+   }
+  }
+  retry.onclick=load;
+  field.oninput=updateSave;
+  form.onsubmit=async event=>{
+   event.preventDefault();
+   const text=field.value.trim();
+   if(!text||loading||saving)return;
+   if(pendingComment?.text!==text)pendingComment={text,request_id:crypto.randomUUID()};
+   saving=true;
+   field.readOnly=true;
+   retry.disabled=true;
+   updateSave();
+   feedback.textContent='Lagrer …';
+   try{
+    const comment=await apiRequest(endpoint,'POST',pendingComment);
+    if(!list.querySelector('[data-comment-id="'+comment.id+'"]'))list.prepend(commentItem(comment));
+    if(retry.hidden)listStatus.textContent='';
+    field.value='';
+    pendingComment=undefined;
+    feedback.textContent='Kommentar lagt til.';
+   }catch{
+    feedback.textContent='Lagring kunne ikke bekreftes. Prøv igjen.';
+   }finally{
+    saving=false;
+    field.readOnly=false;
+    retry.disabled=false;
+    updateSave();
+   }
+  };
+  load();
+  return section;
+ }
+ function openDetails(id,focusComments=false){
   const h=hubs.find(h=>h.id===id);if(!h)return;
   document.getElementById('hub-detail')?.remove();
   const dialog=node('dialog',undefined,'hub-detail');dialog.id='hub-detail';dialog.setAttribute('aria-labelledby','hub-detail-title');
@@ -264,6 +484,7 @@ window.fleet = (() => {
   if(h.setup_status)fields.push(['Oppsett',({completed:'Fullført',pending:'Venter',running:'Pågår',failed:'Trenger hjelp'})[h.setup_status]||h.setup_status]);
   if(h.reset&&h.reset.phase!=='completed')fields.push(['Tilbakestilling',h.reset.qr_required?(h.reset.qr_verified?'QR-koden er bekreftet':'Venter på ny QR-skanning'):'Tilbakestilling pågår']);
   for(const [key,value]of fields){dl.append(node('dt',key),node('dd',String(value)));}info.append(dl,node('h3','Installerte versjoner'),versions(h));
+  const comments=orderComments(h);info.append(comments);
   const traffic=node('section',undefined,'hub-detail-traffic');traffic.append(node('h3','Fjerntrafikk · siste '+$('traffic-period').value+' dager'));
   const r=report?.hubs?.[h.id];if(report?.available){traffic.append(node('strong',bytes(r?total(r):0)),node('p','Til hub: '+bytes(r?.to_hub||0)+' · Fra hub: '+bytes(r?.from_hub||0)));if(r?.daily?.length)traffic.append(chart(r.daily),dailyHistory(r.daily));traffic.append(node('small',(report.stale?'Målingen er forsinket. ':'')+'Gjelder trafikk gjennom SMARTis relé, ikke all trafikk på hjemmenettverket.'));}else traffic.append(node('p','Trafikkmålingen er ikke tilgjengelig ennå.'));
   info.append(traffic);
@@ -280,6 +501,7 @@ window.fleet = (() => {
   production.append(node('p','Åpner RESTORE WIPE på denne huben i 30 minutter. Bruk bare en produksjonsmaster uten kundedata. Selve resetten må fortsatt bekreftes lokalt.'));
   const allow=node('button','Aktiver produksjonstilgang i 30 minutter'),notice=node('p');notice.setAttribute('role','status');allow.type='button';
   allow.onclick=async()=>{if(!confirm('Gi denne huben engangstilgang til produksjonsreset i 30 minutter? Dette klargjør for SSD-kloning og fjerner hubidentiteten når resetten utføres.'))return;allow.disabled=true;try{await apiRequest('admin/hubs/'+encodeURIComponent(h.id)+'/production-access','POST');notice.textContent='Tilgang aktivert. Velg «Klargjør for ny eier» i hubens reset-dialog og skriv RESTORE WIPE.';}catch(e){notice.textContent='Tilgang kunne ikke aktiveres. Huben må ha en eier og du må være portaladministrator.';allow.disabled=false;}};production.append(allow,notice);info.append(production);body.append(qrSection,info);dialog.append(header,body);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();
+  if(focusComments)comments.querySelector('h3').focus();
  }
  function updateSummary(){
   const days=Number($('traffic-period').value), list=report?.daily||[], sum=list.reduce((s,r)=>s+total(r),0), measured=report?.available;
@@ -292,10 +514,25 @@ window.fleet = (() => {
   for(const b of document.querySelectorAll('[data-fleet-filter]')){const key=b.dataset.fleetFilter;b.setAttribute('aria-pressed',String(key===filter));b.querySelector('span').textContent=key==='all'?hubs.length:hubs.filter(h=>category(h)===key).length;}
  }
  return {bytes,chart,openDetails,versions,fulfillment,printButton,
-  mapItems(items){mapItems=items;drawMap();},
+  mapItems(items){mapItems=items;drawMap();if(!mapLibrary&&!map&&!$('map-error').textContent)openMap();},
   async load(api,items){apiRequest=api;hubs=items;try{report=await api('admin/traffic?days='+$('traffic-period').value);}catch{report=null;}updateSummary();},
   select(items){return items.filter(h=>(filter==='all'||category(h)===filter)&&[h.serial,h.model,h.hardware].join(' ').toLocaleLowerCase('nb').includes(query)).sort((a,b)=>order==='serial'?a.serial.localeCompare(b.serial,'nb',{numeric:true}):(order==='oldest'?1:-1)*((a.created||0)-(b.created||0)));},
   metric(h){const n=node('div',undefined,'hub-traffic'),r=report?.hubs?.[h.id];n.append(node('small','Fjerntrafikk · '+$('traffic-period').value+' dager'),node('strong',report?.available?bytes(r?total(r):0):'—'));if(r)n.append(chart(r.daily,true));n.append(node('small',report?.available?'↑ '+bytes(r?.to_hub||0)+' til · ↓ '+bytes(r?.from_hub||0)+' fra':'Venter på måling'));return n;},
-  init(render){$('toggle-map').onclick=async()=>{const show=$('fleet-map-panel').hidden;$('fleet-map-panel').hidden=!show;$('toggle-map').setAttribute('aria-expanded',String(show));$('toggle-map').textContent=show?'Skjul kart':'Vis huber på kart';if(show){try{await openMap();}catch(e){$('map-message').textContent=e.message;}}};$('fit-hubs').onclick=fitMap;$('hub-query').oninput=e=>{query=e.target.value.trim().toLocaleLowerCase('nb');render();};$('hub-sort').onchange=e=>{order=e.target.value;render();};document.querySelectorAll('[data-fleet-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.fleetFilter;updateSummary();render();});},
+  init(render){
+   const toggle=$('toggle-map'),panel=$('fleet-map-panel');
+   toggle.onclick=()=>{
+    const show=panel.hidden;
+    panel.hidden=!show;
+    toggle.setAttribute('aria-expanded',String(show));
+    toggle.textContent=show?'Skjul kart':'Vis kart';
+    if(show)openMap();
+   };
+   $('fit-hubs').onclick=fitMap;
+   $('map-world').onclick=fitWorld;
+   $('map-retry').onclick=openMap;
+   $('hub-query').oninput=e=>{query=e.target.value.trim().toLocaleLowerCase('nb');render();};
+   $('hub-sort').onchange=e=>{order=e.target.value;render();};
+   document.querySelectorAll('[data-fleet-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.fleetFilter;updateSummary();render();});
+  },
  };
 })();

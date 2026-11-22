@@ -20,9 +20,10 @@ import qrcode
 import qrcode.image.svg
 from fastapi import BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel, Field, StrictBool, model_validator
+from pydantic import BaseModel, Field, StrictBool, ValidationError, model_validator
 
 from .cloud_enrollment import install_enrollment
+from .hub_location import HubLocation
 
 IOS_STORE_URL = "https://apps.apple.com/app/id6824492352"
 
@@ -49,6 +50,11 @@ class FulfillmentUpdate(BaseModel):
     checked: StrictBool
 
 
+class OrderComment(BaseModel):
+    request_id: uuid.UUID
+    text: str = Field(min_length=1, max_length=2000)
+
+
 class Heartbeat(BaseModel):
     boot_id: str = Field(max_length=80)
     fingerprint: str = Field(min_length=32, max_length=128)
@@ -56,6 +62,7 @@ class Heartbeat(BaseModel):
     users: int = Field(ge=0)
     ha_connected: bool
     remote_ready: bool
+    location: HubLocation | None = None
 
 
 class Activation(BaseModel):
@@ -131,12 +138,21 @@ def install_onboarding(
           hardware TEXT NOT NULL, label_nonce TEXT NOT NULL, pin TEXT NOT NULL, phase TEXT NOT NULL,
           fingerprint TEXT, heartbeat TEXT, seen REAL, inspection TEXT, created REAL NOT NULL);
         CREATE INDEX IF NOT EXISTS factory_hubs_serial_fold ON factory_hubs(serial COLLATE NOCASE);
+        CREATE TABLE IF NOT EXISTS factory_order_comments(
+          id INTEGER PRIMARY KEY, home TEXT NOT NULL REFERENCES factory_hubs(home) ON DELETE CASCADE,
+          request_id TEXT NOT NULL, author TEXT REFERENCES accounts(id) ON DELETE SET NULL,
+          text TEXT NOT NULL, created REAL NOT NULL, UNIQUE(home,request_id));
+        CREATE INDEX IF NOT EXISTS factory_order_comments_home ON factory_order_comments(home,id);
         CREATE TABLE IF NOT EXISTS factory_serial_sequence(
           year INTEGER PRIMARY KEY, next_number INTEGER NOT NULL CHECK(next_number > 0));
         CREATE TABLE IF NOT EXISTS onboarding_plans(
           home TEXT PRIMARY KEY REFERENCES homes(id), id TEXT UNIQUE NOT NULL, owner TEXT NOT NULL,
           payload TEXT NOT NULL, status TEXT NOT NULL, step TEXT NOT NULL, error TEXT NOT NULL DEFAULT '',
           created REAL NOT NULL, updated REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS hub_map_locations(
+          home TEXT PRIMARY KEY REFERENCES factory_hubs(home) ON DELETE CASCADE,
+          owner TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+          location TEXT NOT NULL);
         """)
         c.execute("BEGIN IMMEDIATE")
         columns = {row["name"] for row in c.execute("PRAGMA table_info(factory_hubs)")}
@@ -334,26 +350,34 @@ def install_onboarding(
                 ).fetchone()
                 item["reset"] = dict(reset) if reset else None
                 plan = c.execute(
-                    "SELECT status,payload FROM onboarding_plans WHERE home=?", (row["home"],)
+                    "SELECT owner,status,payload FROM onboarding_plans WHERE home=?", (row["home"],)
                 ).fetchone()
                 item["setup_status"] = plan["status"] if plan else None
-                # Never expose the full plan: it also contains credential material.
                 item["location"] = None
-                if plan and plan["status"] == "completed" and not (reset and reset["phase"] != "completed"):
-                    payload = json.loads(plan["payload"])
-                    lat, lon = payload.get("latitude"), payload.get("longitude")
-                    if (
-                        type(lat) in (int, float)
-                        and type(lon) in (int, float)
-                        and -90 <= lat <= 90
-                        and -180 <= lon <= 180
-                    ):
-                        item["location"] = {
-                            "latitude": lat,
-                            "longitude": lon,
-                            "name": payload.get("name", ""),
-                            "source": "onboarding",
-                        }
+                if (
+                    owner
+                    and (not reset or reset["phase"] == "completed")
+                    and (not plan or (plan["owner"] == owner and plan["status"] == "completed"))
+                ):
+                    saved = c.execute(
+                        "SELECT location FROM hub_map_locations WHERE home=? AND owner=?",
+                        (row["home"], owner),
+                    ).fetchone()
+                    if saved:
+                        location = json.loads(saved["location"])
+                        if location is not None:
+                            item["location"] = location | {"source": "configured"}
+                    elif plan:
+                        # Older hubs only have the onboarding location. Existing setups
+                        # never apply the location from their onboarding draft.
+                        payload = json.loads(plan["payload"])
+                        if payload.get("mode") in {"new", "reset"}:
+                            try:
+                                location = HubLocation.model_validate(payload)
+                            except ValidationError:
+                                pass
+                            else:
+                                item["location"] = location.model_dump() | {"source": "onboarding"}
 
                 result.append(item)
             return result
@@ -380,6 +404,51 @@ def install_onboarding(
                 }[step, body.checked]
                 audit(c, s["account"], action, home)
         return {"checked": body.checked}
+
+    @app.get("/api/admin/hubs/{home}/order-comments")
+    def order_comments(home: str, s=Depends(admin)):
+        with db() as c:
+            c.execute("BEGIN")
+            if c.execute("SELECT 1 FROM factory_hubs WHERE home=?", (home,)).fetchone() is None:
+                raise HTTPException(404, "hub_not_found")
+            return [
+                dict(row)
+                for row in c.execute(
+                    "SELECT n.id,n.text,n.created,COALESCE(a.username,'Slettet konto') AS author "
+                    "FROM factory_order_comments n LEFT JOIN accounts a ON a.id=n.author "
+                    "WHERE n.home=? ORDER BY n.id DESC",
+                    (home,),
+                )
+            ]
+
+    @app.post("/api/admin/hubs/{home}/order-comments")
+    def add_order_comment(home: str, body: OrderComment, s=Depends(admin)):
+        text = body.text.strip()
+        if not text:
+            raise HTTPException(422, "empty_comment")
+        with db() as c:
+            c.execute("BEGIN IMMEDIATE")
+            if c.execute("SELECT 1 FROM factory_hubs WHERE home=?", (home,)).fetchone() is None:
+                raise HTTPException(404, "hub_not_found")
+            author = c.execute("SELECT username FROM accounts WHERE id=?", (s["account"],)).fetchone()
+            if author is None:
+                raise HTTPException(401, "authentication_required")
+            row = c.execute(
+                "SELECT id,author,text,created FROM factory_order_comments WHERE home=? AND request_id=?",
+                (home, str(body.request_id)),
+            ).fetchone()
+            if row is not None:
+                if row["author"] != s["account"] or row["text"] != text:
+                    raise HTTPException(409, "comment_already_exists")
+                comment_id, created = row["id"], row["created"]
+            else:
+                created = time.time()
+                comment_id = c.execute(
+                    "INSERT INTO factory_order_comments(home,request_id,author,text,created) VALUES(?,?,?,?,?)",
+                    (home, str(body.request_id), s["account"], text, created),
+                ).lastrowid
+                audit(c, s["account"], "factory_order_comment_added", home)
+        return {"id": comment_id, "text": text, "created": created, "author": author["username"]}
 
     @app.post("/api/admin/hubs/serial")
     def generate_serial(s=Depends(admin)):
@@ -520,13 +589,11 @@ def install_onboarding(
                 raise HTTPException(409, "hardware_identity_mismatch")
             c.execute(
                 "UPDATE factory_hubs SET fingerprint=?,heartbeat=?,seen=? WHERE home=?",
-                (body.fingerprint, body.model_dump_json(), time.time(), home),
+                (body.fingerprint, body.model_dump_json(exclude={"location"}), time.time(), home),
             )
             # A validated heartbeat acknowledges durable receipt of the new identity.
             c.execute("UPDATE hub_enrollments SET delivery=NULL WHERE home=?", (home,))
-            job = c.execute(
-                "SELECT * FROM onboarding_plans WHERE home=? AND status IN ('queued','working')", (home,)
-            ).fetchone()
+            plan = c.execute("SELECT * FROM onboarding_plans WHERE home=?", (home,)).fetchone()
             result = {"managed": True}
             owner = c.execute("SELECT owner FROM homes WHERE id=?", (home,)).fetchone()[0]
             if row["phase"] == "ready" and not owner and body.users == 0:
@@ -544,6 +611,23 @@ def install_onboarding(
             resetting = c.execute(
                 "SELECT phase FROM hub_resets WHERE home=? AND phase!='completed'", (home,)
             ).fetchone()
+            if (
+                owner
+                and body.users
+                and body.ha_connected
+                and not resetting
+                and (not plan or (plan["owner"] == owner and plan["status"] == "completed"))
+                and "location" in body.model_fields_set
+            ):
+                # An omitted field is a legacy heartbeat or a temporary HA failure.
+                # An explicit null from a connected hub clears an earlier location.
+                location = body.location.model_dump_json() if body.location is not None else "null"
+                c.execute(
+                    """INSERT INTO hub_map_locations(home,owner,location) VALUES(?,?,?)
+                    ON CONFLICT(home) DO UPDATE SET owner=excluded.owner,location=excluded.location
+                    WHERE owner IS NOT excluded.owner OR location IS NOT excluded.location""",
+                    (home, owner, location),
+                )
             if resetting and resetting["phase"] == "awaiting_owner" and body.users == 0:
                 result["discovery"] = {
                     "id": home,
@@ -551,8 +635,8 @@ def install_onboarding(
                     "serial": row["serial"],
                     "state": "unconfigured",
                 }
-            if job:
-                result["plan"] = json.loads(job["payload"]) | {"id": job["id"]}
+            if plan and plan["status"] in {"queued", "working"}:
+                result["plan"] = json.loads(plan["payload"]) | {"id": plan["id"]}
         return result
 
     def activation_proof(row, code):
@@ -776,6 +860,7 @@ def install_onboarding(
                 "INSERT OR REPLACE INTO onboarding_plans VALUES(?,?,?,?,?,?,?,?,?)",
                 (home, job, s["account"], json.dumps(payload), "queued", "checking", "", now, now),
             )
+            c.execute("DELETE FROM hub_map_locations WHERE home=?", (home,))
             if not reset:
                 c.execute("UPDATE homes SET remote_enabled=1 WHERE id=?", (home,))
             if body.mode != "existing":

@@ -433,6 +433,7 @@ def test_admin_map_only_exposes_completed_location_and_no_credentials(tmp_path):
     assert staff.get("/api/admin/hubs").json()[0]["location"] is None
     assert owner.get("/api/admin/hubs").status_code == 403
     assert TestClient(app, base_url=ORIGIN).get("/api/admin/hubs").status_code == 401
+    ready_and_claim(staff, owner, hub, home, activation)
     payload = {**PLAN, "password_hash": "private-hash", "ha_credentials": "private-credentials"}
     with sqlite3.connect(path) as db:
         owner_id = db.execute("SELECT id FROM accounts WHERE username=?", ("customer",)).fetchone()[0]

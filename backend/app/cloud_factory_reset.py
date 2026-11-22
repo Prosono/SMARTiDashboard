@@ -138,6 +138,7 @@ def install_factory_reset(app, db, home_auth, session, is_admin):
                 "customer_tokens",
                 "home_members",
                 "onboarding_plans",
+                "hub_map_locations",
                 "hub_credential_changes",
             ):
                 c.execute("DELETE FROM " + table + " WHERE home=?", (home,))

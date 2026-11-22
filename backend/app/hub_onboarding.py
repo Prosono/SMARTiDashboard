@@ -10,6 +10,8 @@ import uuid
 
 import httpx
 from fastapi import HTTPException
+from pydantic import ValidationError
+from websockets.exceptions import ConnectionClosed
 
 from .certificate_hook import read_identity
 from .device_energy_sources import DEVICE_ENERGY_SOURCES_KEY
@@ -18,6 +20,7 @@ from .factory_reset import archive_previous_reset
 from .full_reset import FullReset
 from .ha import HAError
 from .ha_auth_reset import AuthResetError
+from .hub_location import HubLocation
 from .power_guard import STORE_KEY as POWER_GUARD_SETTINGS
 from .power_guard_history import clear_power_guard_history
 from .remote_access import CLOUD_ORIGIN
@@ -387,6 +390,31 @@ class HubOnboarding:
                     success = True
         await self.call("credentials-result", {"id": change["id"], "success": success})
 
+    async def location_report(self):
+        try:
+            config = await self.ha.request("get_config", _timeout=2)
+        except (HAError, OSError, TimeoutError, ConnectionClosed):
+            return {}
+        source = config.get("config_source") if isinstance(config, dict) else None
+        if source in ("default", "discovered"):
+            return {"location": None}
+        if source not in ("storage", "yaml"):
+            return {}
+
+        name = config.get("location_name")
+        try:
+            location = HubLocation(
+                latitude=config.get("latitude"),
+                longitude=config.get("longitude"),
+                name=name[:80] if isinstance(name, str) else "",
+            )
+        except ValidationError:
+            return {}
+        # HA can persist other settings while its home coordinates are left at 0, 0.
+        if location.latitude == location.longitude == 0:
+            return {"location": None}
+        return {"location": location.model_dump()}
+
     async def tick(self):
         full = FullReset(self.settings, self.store)
         await full.resume_reboot()
@@ -402,18 +430,19 @@ class HubOnboarding:
             await full.cloud("ready", {"id": reset_state["id"], "report": reset_state.get("report", [])})
         with self.store.connect() as c:
             users = c.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-        result = await self.call(
-            "heartbeat",
-            {
-                "boot_id": self.boot,
-                "fingerprint": self.fingerprint,
-                "version": "1.35.51",
-                "users": users,
-                "ha_connected": bool(self.ha.connected),
-                "remote_ready": bool(self.remote.get("ready")),
-            },
-        )
-        if not reset_state or reset_state["phase"] == "completed":
+        reset_ready = not reset_state or reset_state["phase"] == "completed"
+        heartbeat = {
+            "boot_id": self.boot,
+            "fingerprint": self.fingerprint,
+            "version": "1.35.51",
+            "users": users,
+            "ha_connected": bool(self.ha.connected),
+            "remote_ready": bool(self.remote.get("ready")),
+        }
+        if reset_ready and users and self.ha.connected:
+            heartbeat.update(await self.location_report())
+        result = await self.call("heartbeat", heartbeat)
+        if reset_ready:
             await self.update_credentials()
         discovery = result.get("discovery")
         if reset_state and reset_state["phase"] == "awaiting_owner":

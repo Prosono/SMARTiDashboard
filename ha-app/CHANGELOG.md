@@ -1,3 +1,7 @@
+## 1.36.151
+- Huben rapporterer den konfigurerte hjemmeposisjonen til hubkartet i SMARTi-administrasjonen.
+- Administratorer kan føre bestillingskommentarer på hver hub i portalen.
+
 ## 1.36.150
 - Forbruk per enhet har fast plass under Energi. Kortet finner målere automatisk og lar deg velge og lagre enhetene du vil følge.
 - Se forbruk i kWh og estimert kostnad i kroner for 24 timer, 7 dager eller 30 dager. Kostnaden følger historisk strømavtale og variabel nettleie, før støtte og faste beløp.
