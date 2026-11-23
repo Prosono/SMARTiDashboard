@@ -149,7 +149,11 @@ export function EnergyFlow({
     queryKey: ["flow-history", config.data, historyPeriod],
     queryFn: () =>
       api<FlowHistoryData>(`home/energy-flow/history?period=${historyPeriod}`),
-    enabled: !!config.data && anyConfigured && !offline,
+    enabled:
+      !!config.data &&
+      anyConfigured &&
+      !offline &&
+      (!harmoni || (selected !== null && flows[selected].visible && !draft)),
     refetchInterval: 60000,
     retry: false,
   });
@@ -727,7 +731,11 @@ export function EnergyFlow({
             <Scene
               flows={flows}
               animate={
-                !!config.data?.animation && !paused && !offline && !live.isError
+                !!config.data?.animation &&
+                !paused &&
+                !offline &&
+                !live.isError &&
+                (!harmoni || (!draft && selected === null))
               }
               lang={lang}
               readings={readings}

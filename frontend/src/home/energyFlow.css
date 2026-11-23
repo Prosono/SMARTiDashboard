@@ -1820,7 +1820,7 @@
     --part-fade: 1%;
   }
 
-  :is(.energy-picture-leader, .energy-picture-route, .energy-picture-pulse) {
+  :is(.energy-picture-leader, .energy-picture-route) {
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
@@ -1837,14 +1837,14 @@
   }
 
   .energy-picture-pulse {
-    stroke-width: 2.8;
-    stroke: color-mix(in srgb, currentColor 48%, #fff9ef);
-    stroke-dasharray: 8 92;
-    animation: energy-picture-flow 2.8s linear infinite;
-  }
-
-  .energy-picture-pulse[data-reverse] {
-    animation-direction: reverse;
+    position: absolute;
+    inset: -3px auto auto -3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff9ef;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .energy-hotspot-anchor {
@@ -2013,15 +2013,6 @@
       var(--flow-color, var(--flow-panel-home)) 8%,
       transparent
     );
-  }
-}
-
-@keyframes energy-picture-flow {
-  from {
-    stroke-dashoffset: 100;
-  }
-  to {
-    stroke-dashoffset: 0;
   }
 }
 

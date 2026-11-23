@@ -1,3 +1,7 @@
+## 1.36.164
+- Energiflyt bruker korte pulser ved nye målinger. Animasjonen stopper når kortet er ute av syne eller fanen er skjult.
+- Historikken for Energiflyt lastes når du åpner den.
+
 ## 1.36.163
 - PowerGuard heter nå Effektro. Oversikten viser forventet timesnitt, grense og målt effekt siste time.
 - Enhetene vises med produktbilder og prioritetsnummer i et rutenett tilpasset mobil og nettbrett. Åpne historikk og innstillinger direkte fra kortet.

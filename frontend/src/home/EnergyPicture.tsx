@@ -1,4 +1,11 @@
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import {
   BatteryCharging,
   CarFront,
@@ -24,6 +31,7 @@ const icons = {
   home: House,
 };
 type ConnectionRole = (typeof connectionRoles)[number];
+type RoutePaths = Partial<Record<ConnectionRole, SVGPathElement | null>>;
 type Reading = { label: string; value: string; detail: string };
 type Point = readonly [number, number];
 type PictureLayout = {
@@ -64,6 +72,47 @@ function roundedPath(points: Point[], radius = 14) {
   return path.join(" ");
 }
 
+function FlowPulse({
+  paths,
+  role,
+  route,
+  reverse,
+  measuredAt,
+  watts,
+}: {
+  paths: RefObject<RoutePaths>;
+  role: ConnectionRole;
+  route: string;
+  reverse: boolean;
+  measuredAt: string | null;
+  watts: number;
+}) {
+  const dot = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const path = paths.current[role];
+    const element = dot.current;
+    if (!path || !element?.animate) return;
+    const length = path.getTotalLength();
+    if (!(length > 0)) return;
+    const segments = Math.min(25, Math.max(4, Math.ceil(length / 12)));
+    const frames = Array.from({ length: segments + 1 }, (_, index) => {
+      const offset = index / segments;
+      const { x, y } = path.getPointAtLength(
+        length * (reverse ? 1 - offset : offset),
+      );
+      return {
+        offset,
+        transform: `translate3d(${x}px, ${y}px, 0)`,
+        opacity: index === 0 || index === segments ? 0 : 1,
+      };
+    });
+    // Keep the route itself static. Only this small dot moves once per reading.
+    const animation = element.animate(frames, { duration: 850 });
+    return () => animation.cancel();
+  }, [paths, role, route, reverse, measuredAt, watts]);
+  return <span ref={dot} className="energy-picture-pulse" aria-hidden="true" />;
+}
+
 export function EnergyPicture({
   flows,
   animate,
@@ -82,10 +131,12 @@ export function EnergyPicture({
   const id = useId();
   const stage = useRef<HTMLDivElement>(null);
   const picture = useRef<HTMLImageElement>(null);
+  const paths = useRef<RoutePaths>({});
   const buttons = useRef<Partial<Record<FlowRole, HTMLButtonElement | null>>>(
     {},
   );
   const [layout, setLayout] = useState<PictureLayout | null>(null);
+  const [motionVisible, setMotionVisible] = useState(false);
   const visible = hotspotOrder.filter((role) => flows[role].visible);
   const visibleKey = visible.join(",");
   const charging = isEvCharging(flows.ev);
@@ -96,6 +147,31 @@ export function EnergyPicture({
     flows.ev.visible && (charging ? "car" : "charger"),
   ];
   const en = lang === "en";
+
+  useEffect(() => {
+    const image = picture.current;
+    if (!image) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let inView = false;
+    function syncVisibility() {
+      setMotionVisible(inView && !document.hidden && !reducedMotion.matches);
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting && entry.intersectionRatio >= 0.1;
+        syncVisibility();
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(image);
+    document.addEventListener("visibilitychange", syncVisibility);
+    reducedMotion.addEventListener("change", syncVisibility);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", syncVisibility);
+      reducedMotion.removeEventListener("change", syncVisibility);
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const container = stage.current;
@@ -169,6 +245,23 @@ export function EnergyPicture({
     };
   }, [visibleKey]);
 
+  const connections = layout?.connections.map((connection) => {
+    const { role } = connection;
+    const flow = flows[role];
+    const watts = flow.watts ?? 0;
+    return {
+      ...connection,
+      watts,
+      measuredAt: flow.measured_at,
+      active:
+        flow.visible &&
+        (role === "ev"
+          ? charging
+          : flow.status === "ok" && Math.abs(watts) > 0.5),
+      reverse: role === "battery" ? watts > 0 : watts < 0,
+    };
+  });
+
   return (
     <div className="energy-scene-wrap">
       <div ref={stage} className="energy-scene-stage">
@@ -213,81 +306,85 @@ export function EnergyPicture({
             viewBox={`0 0 ${layout.width} ${layout.height}`}
             aria-hidden="true"
           >
-            {layout.connections.map(({ role, x, y, leader, route }) => {
-              const flow = flows[role];
-              const watts = flow.watts ?? 0;
-              const active =
-                role === "ev"
-                  ? charging
-                  : flow.status === "ok" && Math.abs(watts) > 0.5;
-              const reverse = role === "battery" ? watts > 0 : watts < 0;
-              const arrow = `${id}-${role}`;
-              const marker = `url(#${arrow})`;
-              return (
-                <g
-                  key={role}
-                  className="energy-picture-connection energy-hotspot-anchor"
-                  data-role={role}
-                >
-                  {active && (
-                    <defs>
-                      <marker
-                        id={arrow}
-                        viewBox="0 0 8 8"
-                        markerWidth="8"
-                        markerHeight="8"
-                        refX="12"
-                        refY="4"
-                        markerUnits="userSpaceOnUse"
-                        orient="auto-start-reverse"
-                      >
-                        <path
-                          d="M 2 1 L 6 4 L 2 7"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                        />
-                      </marker>
-                    </defs>
-                  )}
-                  {leader && (!active || role !== "grid") && (
-                    <path className="energy-picture-leader" d={leader} />
-                  )}
-                  {active && (
-                    <>
+            {connections?.map(
+              ({ role, x, y, leader, route, active, reverse }) => {
+                const arrow = `${id}-${role}`;
+                const marker = `url(#${arrow})`;
+                return (
+                  <g
+                    key={role}
+                    className="energy-picture-connection energy-hotspot-anchor"
+                    data-role={role}
+                  >
+                    {active && (
+                      <defs>
+                        <marker
+                          id={arrow}
+                          viewBox="0 0 8 8"
+                          markerWidth="8"
+                          markerHeight="8"
+                          refX="12"
+                          refY="4"
+                          markerUnits="userSpaceOnUse"
+                          orient="auto-start-reverse"
+                        >
+                          <path
+                            d="M 2 1 L 6 4 L 2 7"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                          />
+                        </marker>
+                      </defs>
+                    )}
+                    {leader && (!active || role !== "grid") && (
+                      <path className="energy-picture-leader" d={leader} />
+                    )}
+                    {active && (
                       <path
+                        ref={(node) => {
+                          paths.current[role] = node;
+                        }}
                         className="energy-picture-route"
                         d={route}
                         markerStart={reverse ? marker : undefined}
                         markerEnd={reverse ? undefined : marker}
                       />
-                      {animate && (
-                        <path
-                          className="energy-picture-pulse"
-                          d={route}
-                          pathLength={100}
-                          data-reverse={reverse || undefined}
-                        />
-                      )}
-                    </>
-                  )}
-                  <circle
-                    className="energy-anchor-ring"
-                    cx={x}
-                    cy={y}
-                    r="5.5"
-                  />
-                  <circle
-                    className="energy-anchor-core"
-                    cx={x}
-                    cy={y}
-                    r="2.5"
-                  />
-                </g>
-              );
-            })}
+                    )}
+                    <circle
+                      className="energy-anchor-ring"
+                      cx={x}
+                      cy={y}
+                      r="5.5"
+                    />
+                    <circle
+                      className="energy-anchor-core"
+                      cx={x}
+                      cy={y}
+                      r="2.5"
+                    />
+                  </g>
+                );
+              },
+            )}
           </svg>
         )}
+        {animate &&
+          motionVisible &&
+          connections?.map(
+            ({ role, active, reverse, route, measuredAt, watts }) =>
+              active && (
+                <FlowPulse
+                  key={role}
+                  paths={paths}
+                  role={role}
+                  route={route}
+                  reverse={reverse}
+                  measuredAt={measuredAt}
+                  watts={watts}
+                />
+              ),
+          )}
         <div className="energy-hotspots">
           {visible.map((role) => {
             const Icon = icons[role];
