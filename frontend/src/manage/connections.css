@@ -35,6 +35,29 @@
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+.updates-tabs > button {
+  position: relative;
+}
+.update-tab-count {
+  position: absolute;
+  inset-block-start: -4px;
+  inset-inline-end: 0;
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-inline-size: 20px;
+  block-size: 20px;
+  padding-inline: 4px;
+  border: 1px solid var(--surface);
+  border-radius: 999px;
+  background: #c9343f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  pointer-events: none;
+}
 .connections-app-actions {
   display: flex;
   gap: 8px;

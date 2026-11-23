@@ -36,8 +36,28 @@
     font-size: 13px;
   }
 }
-.energy-control-legacy-grid > div > .energy-control-toolbar {
+.ep .energy-control-settings-shortcut {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  justify-content: flex-start;
+  gap: 8px;
+  border-radius: 14px;
+  text-align: start;
+  > span {
+    flex: 1;
+  }
+  > svg:last-child {
+    color: var(--muted);
+  }
+}
+.energy-control-legacy-grid
+  > div
+  > :is(.energy-control-toolbar, .energy-control-settings-shortcut) {
   margin-top: 14px;
+}
+.ep .energy-control-legacy-grid > div > .energy-control-settings-shortcut {
+  display: none;
 }
 .energy-control-note {
   display: flex;
@@ -317,32 +337,11 @@
   }
 }
 @media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
-  .ep .energy-control-toolbar {
-    gap: 6px;
-    .energy-control-period {
-      flex-basis: 100%;
-      > button {
-        flex: 1;
-      }
-    }
-    button,
-    input {
-      min-height: 44px;
-    }
-    input[type="date"] {
-      box-sizing: border-box;
-      width: 122px;
-    }
-    .energy-control-refresh {
-      width: 44px;
-    }
-    .energy-control-compact-label {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-    }
+  .ep .energy-control-legacy-grid > div > .energy-control-toolbar {
+    display: none;
+  }
+  .ep .energy-control-legacy-grid > div > .energy-control-settings-shortcut {
+    display: inline-flex;
   }
 }
 @media (max-width: 650px) {

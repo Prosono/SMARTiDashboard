@@ -1,3 +1,8 @@
+## 1.36.167
+- Oppdateringsfanene viser røde tellere for tilgjengelige SMARTi-, utvidelses- og appoppdateringer.
+- Bekreftelsen for SMARTi-oppdatering viser versjonene side om side, med et kompakt valg for sikkerhetskopi.
+- På mobil viser Energiflyt snarveien Avtale og målere. Dato og periode velges i forbruksgrafen.
+
 ## 1.36.166
 - Ved fjernaksess komprimeres enhetsoversikten, og hyppige sensorendringer samles før ny henting. Automatiske hentinger fra liveoppdateringer venter når fanen er skjult.
 - Kamerakort i fjernvisningen starter livevideo når du trykker på kortet eller åpner kameraet.

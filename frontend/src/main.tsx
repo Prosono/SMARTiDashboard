@@ -136,7 +136,8 @@ import { api, ApiError, setSession } from "./api";
 import { nb, en, type Text } from "./i18n";
 import type { Control, Home, Session } from "./types";
 import { HouseInsights } from "./HouseInsights";
-import { useUpdateCount } from "./manage/useUpdateCount";
+import { useUpdateCounts } from "./manage/useUpdateCount";
+import type { UpdateCounts } from "./manage/updateModel";
 import { ProtocolDevices } from "./ProtocolDevices";
 import { DeviceSetup } from "./DeviceSetup";
 import { readPreference, writePreference } from "./preferences";
@@ -226,10 +227,11 @@ function App() {
     refetchInterval: 30000,
   });
   const mode = experience.data?.mode || "advanced";
-  const availableUpdates = useUpdateCount(
+  const updates = useUpdateCounts(
     session?.role === "admin",
     experience.data?.mode === "advanced",
   );
+  const availableUpdates = updates.smarti + updates.extensions + updates.apps;
   const sidebarKey = `smarti-sidebar:${session?.name || "guest"}`;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   useLayoutEffect(() => {
@@ -562,6 +564,7 @@ function App() {
             lang={lang}
             language={language}
             logout={logout}
+            updates={updates}
           />
         </div>
       </div>
@@ -831,6 +834,7 @@ function Dashboard({
   lang,
   language,
   logout,
+  updates,
 }: {
   home: UseQueryResult<Home, Error>;
   palette: string;
@@ -846,6 +850,7 @@ function Dashboard({
   lang: string;
   language: (s: string) => void;
   logout: () => void;
+  updates: UpdateCounts;
 }) {
   const mode = useExperience();
   const queryClient = useQueryClient();
@@ -1413,7 +1418,7 @@ function Dashboard({
         ) : page === "integrations" && session.role === "admin" ? (
           <Connections lang={lang} />
         ) : page === "updates" && session.role === "admin" ? (
-          <Updates lang={lang} />
+          <Updates lang={lang} counts={updates} />
         ) : (
           <SettingsPage
             section={settingsSection}

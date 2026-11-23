@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Check,
   ChevronLeft,
+  ChevronRight,
   BarChart3,
   Coins,
   Leaf,
@@ -1110,7 +1111,7 @@ export function EnergyPlatform({
   }
   const en = lang === "en";
   const t = (nb: string, english: string) => (en ? english : nb);
-  const flowControls = (
+  const flowToolbar = (
     <div
       className="energy-control-toolbar"
       role="group"
@@ -1143,9 +1144,7 @@ export function EnergyPlatform({
         ))}
       </div>
       <label>
-        <span className="energy-control-compact-label">
-          {t("Dato", "Date")}
-        </span>
+        {t("Dato", "Date")}
         <input
           type="date"
           value={day}
@@ -1159,7 +1158,6 @@ export function EnergyPlatform({
       {admin && (
         <>
           <button
-            className="energy-control-refresh"
             disabled={busy}
             onClick={() => void refresh()}
           >
@@ -1168,9 +1166,7 @@ export function EnergyPlatform({
               aria-hidden="true"
               className={busy ? "ep-spin" : ""}
             />
-            <span className="energy-control-compact-label">
-              {busy ? t("Henter…", "Loading…") : t("Oppdater", "Refresh")}
-            </span>
+            {busy ? t("Henter…", "Loading…") : t("Oppdater", "Refresh")}
           </button>
           <button
             aria-label={t("Energiinnstillinger", "Energy settings")}
@@ -1183,6 +1179,17 @@ export function EnergyPlatform({
       )}
     </div>
   );
+  const phoneSettings = admin ? (
+    <button
+      type="button"
+      className="energy-control-settings-shortcut"
+      onClick={() => setEditing(true)}
+    >
+      <Settings2 size={18} aria-hidden="true" />
+      <span>{t("Avtale og målere", "Agreement and meters")}</span>
+      <ChevronRight size={17} aria-hidden="true" />
+    </button>
+  ) : null;
   if (setup.isLoading)
     return (
       <section className="ep" aria-busy="true">
@@ -1227,7 +1234,7 @@ export function EnergyPlatform({
             home={home}
             offline={offline}
             lang={lang}
-            flowControls={flowControls}
+            flowControls={{ content: flowToolbar, phoneContent: phoneSettings }}
           >
             {overviewCards()}
             {historyCards()}

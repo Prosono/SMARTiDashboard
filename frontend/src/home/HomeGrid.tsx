@@ -120,7 +120,7 @@ export function HomeGrid({
   title?: string;
   home: Home;
   offline: boolean;
-  afterCard?: { id: string; content: ReactNode };
+  afterCard?: { id: string; content: ReactNode; phoneContent?: ReactNode };
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
@@ -334,8 +334,12 @@ export function HomeGrid({
       : responsiveGrid(displayLayout, displayColumns));
   // Insert the companion row only in the displayed grid. Editing keeps the
   // original coordinates so the companion never becomes part of a saved layout.
+  const companionContent =
+    phone && afterCard?.phoneContent !== undefined
+      ? afterCard.phoneContent
+      : afterCard?.content;
   const companion =
-    !editing && !roomView && afterCard
+    !editing && !roomView && afterCard && companionContent
       ? shown.find((item) => item.id === afterCard.id)
       : undefined;
   const companionRow = companion && companion.y + companion.h;
@@ -953,9 +957,9 @@ export function HomeGrid({
           )}
         </div>
       )}
-      {!editing && !companion && afterCard && (
+      {!editing && !companion && companionContent && (
         <div className="home-canvas-companion-fallback">
-          {afterCard.content}
+          {companionContent}
         </div>
       )}
       <div
@@ -1291,7 +1295,7 @@ export function HomeGrid({
                     </div>
                   )}
                 </div>,
-                item === companion && afterCard && (
+                item === companion && (
                   <div
                     key={`after:${item.id}`}
                     style={{
@@ -1300,7 +1304,7 @@ export function HomeGrid({
                       minWidth: 0,
                     }}
                   >
-                    {afterCard.content}
+                    {companionContent}
                   </div>
                 ),
               ];

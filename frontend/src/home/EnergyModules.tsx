@@ -81,7 +81,7 @@ export function EnergyModules({
   offline: boolean;
   lang: string;
   page: "energy" | "energy_history" | "energy_control";
-  flowControls?: ReactNode;
+  flowControls?: { content: ReactNode; phoneContent: ReactNode };
 }) {
   if (!home && page !== "energy_control") return <>{children}</>;
   const cards: HomeGridCard[] = [];
@@ -166,7 +166,12 @@ export function EnergyModules({
             }}
           >
             {card.content}
-            {card.id === "energy:flow" && flowControls}
+            {card.id === "energy:flow" && flowControls && (
+              <>
+                {flowControls.content}
+                {flowControls.phoneContent}
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -190,7 +195,7 @@ export function EnergyModules({
       lang={lang}
       cards={cards}
       afterCard={
-        flowControls ? { id: "energy:flow", content: flowControls } : undefined
+        flowControls ? { id: "energy:flow", ...flowControls } : undefined
       }
     />
   );

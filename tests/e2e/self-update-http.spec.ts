@@ -76,10 +76,23 @@ test("local HTTP update confirmation sends one valid request and reaches the upd
     exact: true,
   });
   await expect(confirm).toBeVisible();
+  expect((await confirm.boundingBox())!.width).toBeLessThanOrEqual(500);
+  const versions = confirm.locator(".smarti-update-versions");
+  await expect(versions).toContainText("1.36.114");
+  await expect(versions).toContainText("1.36.115");
+  const backup = confirm.getByRole("checkbox", {
+    name: "Ta sikkerhetskopi først",
+    exact: true,
+  });
+  await expect(backup).toBeChecked();
+  await expect(backup).toHaveCSS("width", "20px");
+  await expect(backup).toHaveCSS("height", "20px");
+  await confirm.getByRole("button", { name: "Avbryt", exact: true }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(data.update).toBeFocused();
   expect(data.requests).toHaveLength(0);
-  await confirm
-    .getByRole("checkbox", { name: "Ta sikkerhetskopi først", exact: true })
-    .uncheck();
+  await data.update.click();
+  await backup.uncheck();
   await confirm
     .getByRole("button", { name: "Bekreft oppdatering", exact: true })
     .click();

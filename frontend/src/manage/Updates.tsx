@@ -4,26 +4,26 @@ import { useExperience } from "../Experience";
 import { Apps } from "./Apps";
 import { SelfUpdate } from "./SelfUpdate";
 import { UpdateList } from "./System";
+import type { UpdateCounts } from "./updateModel";
 import "./connections.css";
 
-export function Updates({ lang }: { lang: string }) {
+export function Updates({ lang, counts }: { lang: string; counts: UpdateCounts }) {
   const advanced = useExperience() === "advanced";
   const en = lang === "en";
-  const [tab, setTab] = useState("smarti");
+  const [tab, setTab] = useState<keyof UpdateCounts>("smarti");
   const [appsVisited, setAppsVisited] = useState(false);
   const id = useId();
   const tabs = useRef<HTMLElement>(null);
-  const options = [
+  const allOptions = [
     { key: "smarti", label: "SMARTi", Icon: DownloadCloud },
     {
       key: "extensions",
       label: en ? "Extensions" : "Utvidelser",
       Icon: Blocks,
     },
-    ...(advanced
-      ? [{ key: "apps", label: en ? "Apps" : "Apper", Icon: AppWindow }]
-      : []),
-  ];
+    { key: "apps", label: en ? "Apps" : "Apper", Icon: AppWindow },
+  ] as const;
+  const options = advanced ? allOptions : allOptions.slice(0, 2);
   const active = tab === "apps" && !advanced ? "smarti" : tab;
   useEffect(() => {
     if (!advanced) {
@@ -31,7 +31,7 @@ export function Updates({ lang }: { lang: string }) {
       setAppsVisited(false);
     }
   }, [advanced]);
-  function choose(key: string) {
+  function choose(key: keyof UpdateCounts) {
     setTab(key);
     if (key === "apps") setAppsVisited(true);
   }
@@ -69,22 +69,39 @@ export function Updates({ lang }: { lang: string }) {
             ?.focus();
         }}
       >
-        {options.map(({ key, label, Icon }) => (
-          <button
-            type="button"
-            role="tab"
-            key={key}
-            data-update-view={key}
-            id={`${id}-${key}-tab`}
-            aria-controls={`${id}-${key}-panel`}
-            aria-selected={active === key}
-            tabIndex={active === key ? 0 : -1}
-            onClick={() => choose(key)}
-          >
-            <Icon size={20} aria-hidden="true" />
-            {label}
-          </button>
-        ))}
+        {options.map(({ key, label, Icon }) => {
+          const count = counts[key];
+          const description = `${id}-${key}-count`;
+          return (
+            <button
+              type="button"
+              role="tab"
+              key={key}
+              data-update-view={key}
+              id={`${id}-${key}-tab`}
+              aria-controls={`${id}-${key}-panel`}
+              aria-describedby={count ? description : undefined}
+              aria-selected={active === key}
+              tabIndex={active === key ? 0 : -1}
+              onClick={() => choose(key)}
+            >
+              <Icon size={20} aria-hidden="true" />
+              {label}
+              {count > 0 && (
+                <>
+                  <span className="update-tab-count" aria-hidden="true">
+                    {count}
+                  </span>
+                  <span id={description} hidden>
+                    {en
+                      ? `${count} ${count === 1 ? "update" : "updates"} available`
+                      : `${count} ${count === 1 ? "oppdatering" : "oppdateringer"} tilgjengelig`}
+                  </span>
+                </>
+              )}
+            </button>
+          );
+        })}
       </nav>
       {options.map(({ key }) => (
         <div

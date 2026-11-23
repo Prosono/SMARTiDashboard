@@ -25,16 +25,17 @@ async function fixture(page: Page, initialMode = "normal") {
       mode = route.request().postDataJSON().mode;
     return route.fulfill({ json: { mode } });
   });
-  await page.route("**/api/manage/apps/self-update/check", (route) =>
-    route.fulfill({
-      json: {
-        slug: "abc_smarti",
-        version: "1.36.117",
-        version_latest: "1.36.118",
-        update_available: true,
-      },
-    }),
-  );
+  for (const statusPath of ["self-update", "self-update/check"])
+    await page.route(`**/api/manage/apps/${statusPath}`, (route) =>
+      route.fulfill({
+        json: {
+          slug: "abc_smarti",
+          version: "1.36.117",
+          version_latest: "1.36.118",
+          update_available: true,
+        },
+      }),
+    );
   const update = (id: string, name: string, category: string) => ({
     entity_id: id,
     name,
@@ -130,6 +131,24 @@ test("updates have dedicated SMARTi, extension and advanced-only app tabs and ar
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Oppdateringer",
   );
+  const smartiTab = page.getByRole("tab", { name: "SMARTi", exact: true });
+  const extensionsTab = page.getByRole("tab", {
+    name: "Utvidelser",
+    exact: true,
+  });
+  const sidebarUpdates = data.nav.getByRole("button", {
+    name: "Oppdateringer",
+    exact: true,
+  });
+  await expect(smartiTab.locator(".update-tab-count")).toHaveText("2");
+  await expect(smartiTab).toHaveAccessibleDescription(
+    "2 oppdateringer tilgjengelig",
+  );
+  await expect(extensionsTab.locator(".update-tab-count")).toHaveText("1");
+  await expect(extensionsTab).toHaveAccessibleDescription(
+    "1 oppdatering tilgjengelig",
+  );
+  await expect(sidebarUpdates.locator(".nav-discovery-count")).toHaveText("3");
   const smarti = page.getByRole("tabpanel", { name: "SMARTi", exact: true });
   await expect(
     smarti.getByRole("button", { name: "Oppdater SMARTi", exact: true }),
@@ -141,7 +160,7 @@ test("updates have dedicated SMARTi, extension and advanced-only app tabs and ar
     page.getByRole("tab", { name: "Apper", exact: true }),
   ).toHaveCount(0);
   expect(data.appReads()).toBe(0);
-  await page.getByRole("tab", { name: "Utvidelser", exact: true }).click();
+  await extensionsTab.click();
   const extensions = page.getByRole("tabpanel", {
     name: "Utvidelser",
     exact: true,
@@ -185,6 +204,8 @@ test("updates have dedicated SMARTi, extension and advanced-only app tabs and ar
   await data.open();
   const appsTab = page.getByRole("tab", { name: "Apper", exact: true });
   await expect(appsTab).toBeVisible();
+  await expect(appsTab.locator(".update-tab-count")).toHaveText("1");
+  await expect(sidebarUpdates.locator(".nav-discovery-count")).toHaveText("4");
   // Advanced mode checks the shared app inventory for the menu's update count.
   await expect.poll(data.appReads).toBeGreaterThan(0);
   await page.getByRole("tab", { name: "SMARTi", exact: true }).focus();
@@ -233,7 +254,9 @@ test("app updates use the protected app action once after confirmation and show 
 }) => {
   const data = await fixture(page, "advanced");
   await data.open();
-  await page.getByRole("tab", { name: "Apper", exact: true }).click();
+  const appsTab = page.getByRole("tab", { name: "Apper", exact: true });
+  await expect(appsTab.locator(".update-tab-count")).toHaveText("1");
+  await appsTab.click();
   const apps = page.getByRole("tabpanel", { name: "Apper", exact: true });
   await apps.locator(".app-card").click();
   const dialog = page.getByRole("dialog");
@@ -250,6 +273,7 @@ test("app updates use the protected app action once after confirmation and show 
   );
   await expect(apps.locator(".app-activity")).not.toContainText("Omstart");
   await expect(apps.locator(".app-card")).toHaveCount(0);
+  await expect(appsTab.locator(".update-tab-count")).toHaveCount(0);
   expect(data.writes).toEqual([
     {
       action: "update",

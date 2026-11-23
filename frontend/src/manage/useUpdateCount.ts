@@ -1,9 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
-import { updateCount, type AppUpdate, type Update } from "./updateModel";
+import {
+  updateCounts,
+  type AppOperation,
+  type AppUpdate,
+  type Update,
+  type UpdateCounts,
+} from "./updateModel";
 
 /** Read-only checks; app inventory is never requested outside advanced admin mode. */
-export function useUpdateCount(admin: boolean, advanced: boolean) {
+export function useUpdateCounts(admin: boolean, advanced: boolean): UpdateCounts {
   const updates = useQuery({
     queryKey: ["manage", "updates"],
     queryFn: () => api<Update[]>("manage/updates"),
@@ -28,11 +34,17 @@ export function useUpdateCount(admin: boolean, advanced: boolean) {
     staleTime: 30000,
     refetchInterval: admin && advanced ? 60000 : false,
   });
+  // The Apps view already fetches activity. Subscribe without starting a poll.
+  const operations = useQuery<AppOperation[]>({
+    queryKey: ["app-operations"],
+    enabled: false,
+  });
   return admin
-    ? updateCount(
+    ? updateCounts(
         updates.isError ? [] : updates.data || [],
         self.isError ? undefined : self.data,
         advanced && !apps.isError ? apps.data || [] : [],
+        operations.isError ? [] : operations.data,
       )
-    : 0;
+    : { smarti: 0, extensions: 0, apps: 0 };
 }

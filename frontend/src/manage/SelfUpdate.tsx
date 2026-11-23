@@ -1,10 +1,12 @@
 import { UpdateProgress } from "./UpdateProgress";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, CloudDownload, Power, ShieldCheck } from "lucide-react";
 import { api, ApiError } from "../api";
 import { words } from "./shared";
 import { SettingsDialog } from "../home/SettingsDialog";
 import { operationId } from "./operationId";
+import "./selfUpdate.css";
 
 type Version = {
   slug: string;
@@ -23,6 +25,8 @@ export function SelfUpdate({
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const qc = useQueryClient();
+  const backupLabel = useId();
+  const backupDescription = useId();
   const q = useQuery({
     queryKey: ["manage", "self-update"],
     queryFn: () => api<Version>("manage/apps/self-update/check", "POST", {}),
@@ -209,32 +213,78 @@ export function SelfUpdate({
       {confirm && (
         <SettingsDialog
           lang={lang}
+          compact
           title={t("Oppdater SMARTi?", "Update SMARTi?")}
           busy={busy}
           onClose={() => setConfirm(false)}
         >
-          <p>
-            {t(
-              "SMARTi starter på nytt under oppdateringen. Forbindelsen til appen blir midlertidig brutt. Ikke koble fra strømmen.",
-              "SMARTi restarts during the update. The app connection is temporarily interrupted. Keep power connected.",
-            )}
-          </p>
-          <label>
-            <input
-              type="checkbox"
-              checked={backup}
-              disabled={busy}
-              onChange={(e) => setBackup(e.target.checked)}
-            />
-            {t("Ta sikkerhetskopi først", "Back up first")}
-          </label>
-          <button
-            className="primary compact"
-            disabled={busy}
-            onClick={() => void install()}
-          >
-            {t("Bekreft oppdatering", "Confirm update")}
-          </button>
+          <div className="smarti-update-confirmation">
+            <dl className="smarti-update-versions">
+              <div>
+                <dt>{t("Installert", "Installed")}</dt>
+                <dd>{q.data?.version || "—"}</dd>
+              </div>
+              <div>
+                <dt>{t("Ny versjon", "New version")}</dt>
+                <dd>
+                  <ArrowRight size={16} aria-hidden="true" />
+                  {q.data?.version_latest || "—"}
+                </dd>
+              </div>
+            </dl>
+            <div className="smarti-update-restart">
+              <Power size={20} aria-hidden="true" />
+              <div>
+                <strong>{t("Kort avbrudd", "Brief interruption")}</strong>
+                <p>
+                  {t(
+                    "SMARTi starter på nytt. La huben stå tilkoblet strøm under oppdateringen.",
+                    "SMARTi will restart. Keep the hub connected to power during the update.",
+                  )}
+                </p>
+              </div>
+            </div>
+            <label className="smarti-update-backup">
+              <ShieldCheck size={22} aria-hidden="true" />
+              <span>
+                <strong id={backupLabel}>
+                  {t("Ta sikkerhetskopi først", "Back up first")}
+                </strong>
+                <small id={backupDescription}>
+                  {t(
+                    "Gir deg et gjenopprettingspunkt.",
+                    "Gives you a restore point.",
+                  )}
+                </small>
+              </span>
+              <input
+                type="checkbox"
+                aria-labelledby={backupLabel}
+                aria-describedby={backupDescription}
+                checked={backup}
+                disabled={busy}
+                onChange={(event) => setBackup(event.target.checked)}
+              />
+            </label>
+            <div className="smarti-update-actions">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setConfirm(false)}
+              >
+                {t("Avbryt", "Cancel")}
+              </button>
+              <button
+                type="button"
+                className="primary compact"
+                disabled={busy || !q.data?.update_available}
+                onClick={() => void install()}
+              >
+                <CloudDownload size={18} aria-hidden="true" />
+                {t("Bekreft oppdatering", "Confirm update")}
+              </button>
+            </div>
+          </div>
         </SettingsDialog>
       )}
     </article>

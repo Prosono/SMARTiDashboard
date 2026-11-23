@@ -3,7 +3,7 @@ import {
   availableUpdate,
   canStartUpdate,
   runUpdateBatch,
-  updateCount,
+  updateCounts,
   type Update,
   type InstallStatus,
   type InstallAttempt,
@@ -76,16 +76,29 @@ it("counts actionable updates without duplicate entities, own-app mirrors, runni
     update_available: true,
     installed: true,
   };
-  expect(updateCount(rows, self)).toBe(3);
+  expect(updateCounts(rows, self)).toEqual({ smarti: 2, extensions: 1, apps: 0 });
   expect(
-    updateCount(rows, self, [
-      app,
-      app,
-      { ...app, slug: "own" },
-      { ...app, slug: "new", installed: false },
-    ]),
-  ).toBe(4);
-  expect(updateCount([], { ...self, update_available: false }, [])).toBe(0);
+    updateCounts(
+      rows,
+      self,
+      [
+        app,
+        app,
+        { ...app, slug: "own" },
+        { ...app, slug: "legacy_smarti" },
+        { ...app, slug: "new", installed: false },
+        { ...app, slug: "blocked", available: false },
+        { ...app, slug: "update-running" },
+        { ...app, slug: "same-version", version_latest: "1" },
+      ],
+      [{ slug: "update-running", status: "accepted" }],
+    ),
+  ).toEqual({ smarti: 2, extensions: 1, apps: 1 });
+  expect(updateCounts([], { ...self, update_available: false }, [])).toEqual({
+    smarti: 0,
+    extensions: 0,
+    apps: 0,
+  });
   expect(availableUpdate(update("x", { installed_version: "2" }))).toBe(false);
   expect(availableUpdate(update("x", { latest_version: null }))).toBe(false);
   expect(

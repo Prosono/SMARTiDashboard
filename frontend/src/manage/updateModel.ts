@@ -23,10 +23,13 @@ export type InstallAttempt = {
 export type AppUpdate = {
   slug: string;
   installed?: boolean;
+  available?: boolean | null;
   update_available: boolean;
-  version: string;
-  version_latest: string;
+  version: string | null;
+  version_latest: string | null;
 };
+export type AppOperation = { slug: string; status: string };
+export type UpdateCounts = { smarti: number; extensions: number; apps: number };
 export const updateCategory = (u: Update) =>
   u.category || (u.smarti ? "smarti" : "extensions");
 export const availableUpdate = (u: Update) =>
@@ -47,37 +50,53 @@ export function canStartUpdate(u: Update, attempt?: InstallAttempt) {
     )
   );
 }
-export function updateCount(
+const appUpdateAvailable = (app: AppUpdate) =>
+  app.update_available &&
+  app.available !== false &&
+  !!app.version_latest &&
+  app.version !== app.version_latest;
+
+export function updateCounts(
   updates: readonly Update[],
   self?: AppUpdate,
   apps: readonly AppUpdate[] = [],
-) {
-  const ids = new Set(
-    updates
-      .filter((u) => updateCategory(u) !== "apps" && availableUpdate(u))
-      .map((u) => u.entity_id),
+  operations: readonly AppOperation[] = [],
+): UpdateCounts {
+  const counts = { smarti: 0, extensions: 0, apps: 0 };
+  const ids = new Set<string>();
+  for (const update of updates) {
+    const category = updateCategory(update);
+    if (
+      category === "apps" ||
+      ids.has(update.entity_id) ||
+      !availableUpdate(update)
+    )
+      continue;
+    counts[category]++;
+    ids.add(update.entity_id);
+  }
+  const running = new Set(
+    operations.filter((o) => o.status === "accepted").map((o) => o.slug),
   );
   const slugs = new Set(
     apps
-      .filter(
-        (a) =>
-          a.installed &&
-          a.slug !== self?.slug &&
-          a.update_available &&
-          a.version_latest &&
-          a.version !== a.version_latest,
-      )
-      .map((a) => a.slug),
+      .filter((app) => {
+        const slug = app.slug.toLowerCase();
+        return (
+          app.installed &&
+          slug !== self?.slug.toLowerCase() &&
+          !["self", "smarti"].includes(slug) &&
+          !slug.endsWith("_smarti") &&
+          !running.has(app.slug) &&
+          appUpdateAvailable(app)
+        );
+      })
+      .map((app) => app.slug),
   );
-  return (
-    ids.size +
-    slugs.size +
-    (self?.update_available &&
-    self.version_latest &&
-    self.version !== self.version_latest
-      ? 1
-      : 0)
-  );
+  counts.apps = slugs.size;
+  if (self && !running.has(self.slug) && appUpdateAvailable(self))
+    counts.smarti++;
+  return counts;
 }
 const completed = (u: Update | undefined, version: string) =>
   !!u &&
