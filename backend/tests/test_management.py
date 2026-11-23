@@ -514,12 +514,17 @@ def test_automation_icon_saved_without_changing_config(client):
 
 
 def test_notification_recipients_use_registered_ha_services(tmp_path):
+    import time
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
 
     from app.management import management_router
+    from app.storage import Store
     from fastapi import FastAPI
 
+    cloud_action = "notify.mobile_app_smarti_" + "a" * 32
+    second_action = "notify.mobile_app_smarti_" + "b" * 32
+    unnamed_action = "notify.mobile_app_smarti_" + "c" * 32
     rest = AsyncMock(
         return_value=[
             {"domain": "light", "services": {"turn_on": {}}},
@@ -528,32 +533,56 @@ def test_notification_recipients_use_registered_ha_services(tmp_path):
                 "services": {
                     "mobile_app_new_iphone": {"name": "New iPhone"},
                     "mobile_app_annas_phone": {},
+                    cloud_action.split(".")[1]: {},
+                    second_action.split(".")[1]: {},
+                    unnamed_action.split(".")[1]: {},
                     "persistent_notification": {},
                     "send_message": {},
                 },
             },
         ]
     )
-    import time
-
-    from app.storage import Store
-
     store = Store(tmp_path / "recipients.sqlite")
+    now = time.time()
+    active = [
+        ("phone", 1, "iPhone", None, "notify.mobile_app_annas_phone"),
+        ("work", 2, "iPhone", " Beates jobbtelefon ", cloud_action),
+        ("tablet", 2, " Beates nettbrett ", " IPad ", second_action),
+        ("unnamed", 3, "iPhone", None, unnamed_action),
+        ("unregistered", 1, "Other", "Annas andre telefon", "notify.mobile_app_missing"),
+    ]
     with store.connect() as db:
-        db.execute("INSERT INTO users(id,name,password,role) VALUES(1,'Anna','unused','admin')")
-        for id, revoked in [("phone", 0), ("old", 1)]:
+        db.executemany(
+            "INSERT INTO users(id,name,password,role) VALUES(?,?,'unused','admin')",
+            [(1, "Anna"), (2, "cloud_" + "d" * 32), (3, "cloud_" + "e" * 32)],
+        )
+        for id, user_id, phone, _, _ in active:
             db.execute(
-                "INSERT INTO mobile_devices(id,user_id,name,created,expires,revoked) VALUES(?,1,'iPhone',?,?,?)",
-                (id, time.time(), time.time() + 3600, revoked),
+                "INSERT INTO mobile_devices(id,user_id,name,created,expires,revoked) VALUES(?,?,?,?,?,0)",
+                (id, user_id, phone, now, now + 3600),
             )
-            store_value = {"push_token": "private", "notify_service": "notify.mobile_app_annas_phone"}
-    store.set("companion:phone", json.dumps(store_value))
-    store.set("companion:old", json.dumps(store_value))
+        db.execute(
+            "INSERT INTO mobile_devices(id,user_id,name,created,expires,revoked) VALUES('old',1,'Old',?,?,1)",
+            (now, now + 3600),
+        )
+    store.set("account:2", json.dumps({"display_name": " Beate "}))
+    for id, _, _, registration_name, action in active:
+        record = {"push_token": "private", "notify_service": action}
+        if registration_name:
+            record["registration"] = {"device_name": registration_name}
+        store.set("companion:" + id, json.dumps(record))
+    store.set(
+        "companion:old",
+        json.dumps({"push_token": "private", "notify_service": "notify.mobile_app_annas_phone"}),
+    )
     app = FastAPI()
     app.include_router(management_router(SimpleNamespace(demo=False, rest=rest, store=store), lambda: True))
     with TestClient(app) as client:
         assert client.get("/api/manage/notification-recipients").json() == [
+            {"action": unnamed_action, "name": "", "phone": "iPhone"},
             {"action": "notify.mobile_app_annas_phone", "name": "Anna", "phone": "iPhone"},
+            {"action": cloud_action, "name": "Beate", "phone": "Beates jobbtelefon"},
+            {"action": second_action, "name": "Beate", "phone": "Beates nettbrett"},
         ]
         rest.assert_awaited_once_with("GET", "services")
 

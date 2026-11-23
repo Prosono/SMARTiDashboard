@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test("discovered devices have readable names and a separate setup row on phones", async ({
@@ -50,7 +51,9 @@ test("discovered devices have readable names and a separate setup row on phones"
     .getByRole("navigation", { name: "Hovedmeny" })
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
+  await selectDeviceCategory(page, "discovered");
   const panel = page.getByRole("region", { name: "Oppdagede enheter" });
+  await expect(panel.locator("article")).toHaveCount(devices.length);
   for (const width of [320, 390, 430, 600, 834, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const theme of ["light", "dark"]) {

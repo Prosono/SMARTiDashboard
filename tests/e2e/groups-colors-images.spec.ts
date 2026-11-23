@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 test("room image library, color controls and shared groups", async ({
   page,
 }) => {
@@ -35,7 +36,7 @@ test("room image library, color controls and shared groups", async ({
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.getByRole("button", { name: "Grupper", exact: true }).click();
+  await selectDeviceCategory(page, "groups");
   await page.getByRole("button", { name: "Lag gruppe", exact: true }).click();
   await dialog.getByLabel("Gruppenavn").fill("Testgruppe");
   await dialog.getByRole("checkbox", { name: /Pendellampe/ }).check();
@@ -78,7 +79,7 @@ test("hub groups show members without local edit or delete", async ({
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.getByRole("button", { name: "Grupper", exact: true }).click();
+  await selectDeviceCategory(page, "groups");
   await page.getByRole("button", { name: /Eksisterende lysgruppe/ }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.locator(".group-members")).toContainText("Pendellampe");

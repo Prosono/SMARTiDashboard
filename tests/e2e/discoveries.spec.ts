@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 test("discovered device opens existing setup and remains available after closing", async ({ page }) => {
   let claims = 0;
   await page.route("**/api/manage/integration-setup/discoveries", r => r.fulfill({json:[{id:"found", domain:"reolink", name:"Inngangskamera", source:"zeroconf"}]}));
@@ -9,8 +10,12 @@ test("discovered device opens existing setup and remains available after closing
   await page.getByLabel("Brukernavn",{exact:true}).fill("tester");
   await page.getByLabel("Passord",{exact:true}).fill("test-password-not-for-live");
   await page.getByRole("button",{name:"Logg inn",exact:true}).click();
-  await page.getByRole("navigation",{name:"Hovedmeny"}).getByRole("button",{name:"Enheter",exact:true}).click();
-  await expect(page.locator(".nav-discovery-count")).toHaveText("1");
+  const devices = page
+    .getByRole("navigation", { name: "Hovedmeny" })
+    .getByRole("button", { name: "Enheter", exact: true });
+  await devices.click();
+  await expect(devices.locator(".nav-discovery-count")).toHaveText("1");
+  await selectDeviceCategory(page, "discovered");
   const panel=page.getByRole("region",{name:"Oppdagede enheter"});
   await expect(panel).toContainText("Inngangskamera");
   await panel.getByRole("button",{name:"Sett opp",exact:true}).click();

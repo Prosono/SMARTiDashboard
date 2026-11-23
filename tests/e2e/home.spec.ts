@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { deviceRow, deviceSearch, deviceWorkspace } from "./deviceNavigation";
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
@@ -33,11 +34,11 @@ test("daily journey, persisted favorite, command and room filter", async ({
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.getByLabel("Søk etter enhet eller rom").fill("Stikkontakt");
-  await expect(page.locator("article")).toHaveCount(1);
+  await deviceSearch(page).fill("Stikkontakt");
   await expect(
-    page.getByRole("heading", { name: "Stikkontakt", exact: true }),
-  ).toBeVisible();
+    deviceWorkspace(page).locator(".devices-control-row"),
+  ).toHaveCount(1);
+  await expect(deviceRow(page, "Stikkontakt")).toBeVisible();
   await page
     .getByRole("navigation")
     .getByRole("button", { name: "Rom", exact: true })

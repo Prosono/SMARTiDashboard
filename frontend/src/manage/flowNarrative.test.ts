@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { flowNarrative, type NarrativeKey } from "./flowNarrative";
+import {
+  flowNarrative,
+  flowUsesPhoneNotifications,
+  type NarrativeKey,
+} from "./flowNarrative";
 import type { Home, Control } from "../types";
 const control = (
   entity_id: string,
@@ -27,6 +31,43 @@ const home = {
 const describeRow = (row: any, key: NarrativeKey = "triggers", lang = "nb") =>
   flowNarrative(row, key, home, lang);
 describe("HA flow narratives preserve meaning", () => {
+  it("shows the phone recipient in saved actions without exposing the service ID", () => {
+    const action = "notify.mobile_app_smarti_0123456789abcdef";
+    const labels = new Map([[action, "iPhone · Anna"]]);
+    const row = { action, data: { message: "Døren er åpnet" } };
+    const narrative = flowNarrative(row, "actions", home, "nb", labels);
+    expect(narrative.title).toBe("Send et varsel · iPhone · Anna");
+    expect(narrative.detail).toContain("Døren er åpnet");
+    expect(narrative.title + narrative.detail).not.toContain(action);
+    const legacy = flowNarrative(
+      { service: action, alias: "Dørvarsel" },
+      "actions",
+      home,
+      "nb",
+      labels,
+    );
+    expect(legacy.title).toBe("Dørvarsel");
+    expect(legacy.detail).toContain("iPhone · Anna");
+    const unavailable = flowNarrative(row, "actions", home, "en");
+    expect(unavailable.title).toBe("Send a notification · Phone unavailable");
+    expect(unavailable.title + unavailable.detail).not.toContain(action);
+    expect(row.action).toBe(action);
+  });
+
+  it("requests recipient names only for nested phone notification steps", () => {
+    const action = { service: "notify.mobile_app_smarti_phone" };
+    expect(
+      flowUsesPhoneNotifications({ parallel: [{ sequence: [action] }] }),
+    ).toBe(true);
+    expect(
+      flowUsesPhoneNotifications([
+        { action: "light.turn_on", data: action },
+        { action: "notify.reload" },
+        { action: "notify.mobile_app_{{ recipient }}" },
+      ]),
+    ).toBe(false);
+  });
+
   it("uses device class words for state changes and keeps from/to/for", () => {
     const s = describeRow({
       trigger: "state",

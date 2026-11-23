@@ -25,7 +25,11 @@ import { api } from "../api";
 import type { Home } from "../types";
 import { SettingsDialog } from "../home/SettingsDialog";
 import { Feedback, useWork, words } from "./shared";
-import { flowSummary } from "./AutomationFlow";
+import {
+  flowNarrative as flowSummary,
+  flowUsesPhoneNotifications,
+} from "./flowNarrative";
+import { useNotificationRecipients } from "./notificationRecipients";
 
 const icons = [
   ["auto", Workflow, "Rutine", "Routine"],
@@ -183,6 +187,12 @@ export function AutomationTrigger({
     retry: false,
   });
   const config = q.data?.config;
+  const actions = config?.actions ?? config?.action;
+  const firstAction = Array.isArray(actions) ? actions[0] : actions;
+  const { labels: recipientLabels } = useNotificationRecipients(
+    lang,
+    visible && flowUsesPhoneNotifications(firstAction),
+  );
   const rows = config ? triggerItems(config) : [];
   const first = rows[0];
   const summary = first ? flowSummary(first, "triggers", home, lang) : null;
@@ -235,7 +245,7 @@ export function AutomationTrigger({
               [];
             const steps = Array.isArray(value) ? value : [value];
             const info = steps.length
-              ? flowSummary(steps[0], kind, home, lang)
+              ? flowSummary(steps[0], kind, home, lang, recipientLabels)
               : null;
             return (
               <div key={kind} className={`preview-${kind}`}>

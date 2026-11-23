@@ -3,7 +3,7 @@ import { DeviceDetailOverview } from "./DeviceDetailOverview";
 import { MetricDeviceRenderer } from "./home/MetricDetails";
 import { MediaCard } from "./home/Multimedia";
 import { useAvailabilityGrace } from "./useAvailabilityGrace";
-import { HideControl, HiddenControls } from "./ControlVisibility";
+import { HideControl } from "./ControlVisibility";
 import { LightAppearance } from "./LightAppearance";
 import {
   Settings2,
@@ -17,10 +17,8 @@ import {
   Info,
 } from "lucide-react";
 import { Screensaver, useScreensaver } from "./home/Screensaver";
-import { Scenes } from "./home/Scenes";
-import { PagedControls } from "./PagedControls";
 import { SensorValue } from "./SensorValue";
-import { DiscoveredDevices, useDiscoveries } from "./manage/DiscoveredDevices";
+import { useDiscoveries } from "./manage/DiscoveredDevices";
 import { SettingsDialog, InSettingsDialog } from "./home/SettingsDialog";
 import { ControlHistory } from "./ControlHistory";
 import "./controlDetail.css";
@@ -44,13 +42,8 @@ import {
 } from "./startupSession";
 import { remoteHome } from "./remoteConsole";
 import { RoomsOverview } from "./rooms/RoomsOverview";
-import { ClimateOverview } from "./home/ClimateOverview";
-import { LightOverview } from "./home/LightOverview";
-import { Groups } from "./Groups";
 import { LightColor } from "./LightColor";
 import { controlState } from "./controlState";
-import { ProtocolLogo } from "./ProtocolLogo";
-import { RadioAdvanced } from "./RadioAdvanced";
 import { Connections } from "./manage/Connections";
 import { AccountAvatar } from "./manage/Accounts";
 import { SettingsPage, type SettingsSection } from "./manage/SettingsPage";
@@ -73,8 +66,6 @@ import {
 import {
   ScrollText,
   LifeBuoy,
-  Layers,
-  Clapperboard,
   House,
   Menu,
   LayoutGrid,
@@ -82,8 +73,6 @@ import {
   Waypoints,
   Blocks,
   DownloadCloud,
-  Plus,
-  Search,
   ArrowUpRight,
   ArrowLeft,
   Star,
@@ -138,8 +127,8 @@ import type { Control, Home, Session } from "./types";
 import { HouseInsights } from "./HouseInsights";
 import { useUpdateCounts } from "./manage/useUpdateCount";
 import type { UpdateCounts } from "./manage/updateModel";
-import { ProtocolDevices } from "./ProtocolDevices";
 import { DeviceSetup } from "./DeviceSetup";
+import { DevicesPage } from "./DevicesPage";
 import { readPreference, writePreference } from "./preferences";
 import { Atmosphere, AtmosphereProvider } from "./Atmosphere";
 const client = new QueryClient({
@@ -878,8 +867,6 @@ function Dashboard({
     session.role === "admin" && !session.support,
     page === "more" && settingsSection === "screensaver",
   );
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
   const [protocol, setProtocol] = useState("all");
   useEffect(() => {
     let homeRevision: number | undefined;
@@ -983,40 +970,14 @@ function Dashboard({
   const roomName = (id: string | null) =>
     h.areas.find((a) => a.area_id === id)?.name || t.unassigned;
   function cards(controls: Control[]) {
-    if (["home", "rooms"].includes(page))
-      return (
-        <HarmonyDevices
-          controls={controls}
-          home={h}
-          lang={lang}
-          offline={offline}
-          roomSurface={page === "rooms"}
-        />
-      );
     return (
-      <div className="controls-grid">
-        {controls.map((c) =>
-          c.domain === "vacuum" ? (
-            <VacuumCard
-              key={c.id}
-              c={c}
-              home={h}
-              lang={lang}
-              offline={offline}
-            />
-          ) : (
-            <Device
-              key={c.id}
-              c={c}
-              t={t}
-              h={h}
-              offline={offline}
-              roomName={roomName(c.area_id)}
-              admin={session.role === "admin"}
-            />
-          ),
-        )}
-      </div>
+      <HarmonyDevices
+        controls={controls}
+        home={h}
+        lang={lang}
+        offline={offline}
+        roomSurface={page === "rooms"}
+      />
     );
   }
   const rooms = [
@@ -1025,17 +986,6 @@ function Dashboard({
       ? [{ area_id: "", name: t.unassigned }]
       : []),
   ];
-  const selected = regular.filter(
-    (c) =>
-      (room === null || c.area_id === (room || null)) &&
-      `${c.name} ${roomName(c.area_id)}`
-        .toLowerCase()
-        .includes(search.toLowerCase()) &&
-      (filter === "all" ||
-        (filter === "sensors"
-          ? ["sensor", "binary_sensor"].includes(c.domain)
-          : c.domain === filter)),
-  );
   return (
     <MetricDeviceRenderer.Provider
       value={(c) =>
@@ -1152,7 +1102,6 @@ function Dashboard({
               setAdding(false);
               setPage("devices");
               setProtocol(device.provider);
-              setSearch("");
               setRoom(null);
             }}
           />
@@ -1164,15 +1113,11 @@ function Dashboard({
             admin={session.role === "admin"}
             renderControls={cards}
             openRooms={(id) => {
-              setSearch("");
-              setFilter("all");
               setRoom(id ?? null);
               setPage("rooms");
             }}
             openDevices={() => {
               setRoom(null);
-              setSearch("");
-              setFilter("all");
               setProtocol("all");
               setPage("devices");
             }}
@@ -1200,189 +1145,17 @@ function Dashboard({
               session.role === "admin" ? () => setRoomEditing(true) : undefined
             }
           />
-        ) : page === "devices" || page === "rooms" ? (
-          <>
-            {!(
-              page === "devices" &&
-              protocol === "all" &&
-              ["light", "climate"].includes(filter)
-            ) && (
-              <div className="page-heading">
-                <span className="eyebrow">{t.overview}</span>
-                <div className="heading-row">
-                  <h1>
-                    {page === "rooms"
-                      ? room === null
-                        ? t.rooms
-                        : roomName(room)
-                      : t.devices}
-                  </h1>
-                  {session.role === "admin" && (
-                    <button
-                      className="primary compact"
-                      onClick={() =>
-                        page === "rooms"
-                          ? setRoomEditing(true)
-                          : setAdding(true)
-                      }
-                    >
-                      <Plus size={18} />
-                      {page === "devices"
-                        ? lang === "nb"
-                          ? "Legg til ny enhet"
-                          : "Add new device"
-                        : lang === "en"
-                          ? "Manage rooms"
-                          : "Administrer rom"}
-                    </button>
-                  )}
-                </div>
-                <p>
-                  {page === "rooms"
-                    ? t.roomHint
-                    : protocol !== "all"
-                      ? lang === "nb"
-                        ? "Enheter gruppert etter protokoll"
-                        : "Devices grouped by protocol"
-                      : `${regular.length} ${t.controls} · ${h.areas.length} ${t.rooms.toLowerCase()}`}
-                </p>
-              </div>
-            )}
-            {page === "devices" && session.role === "admin" && (
-              <DiscoveredDevices lang={lang} />
-            )}
-            {page === "devices" && session.role === "admin" && (
-              <HiddenControls lang={lang} />
-            )}
-            {page === "devices" && (
-              <div
-                className="connections-tabs protocol-navigation"
-                data-protocol={protocol}
-                aria-label={lang === "nb" ? "Protokoller" : "Protocols"}
-              >
-                {[
-                  ["all", lang === "nb" ? "Alle kontroller" : "All controls"],
-                  ["groups", lang === "nb" ? "Grupper" : "Groups"],
-                  ["scenes", lang === "nb" ? "Scener" : "Scenes"],
-                  ["zigbee2mqtt", "Zigbee"],
-                  ["zwave_js", "Z-Wave"],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    aria-pressed={protocol === id}
-                    className={protocol === id ? "selected" : ""}
-                    onClick={() => setProtocol(id)}
-                  >
-                    {id === "groups" ? (
-                      <Layers size={20} />
-                    ) : id === "scenes" ? (
-                      <Clapperboard size={20} />
-                    ) : id === "all" ? (
-                      <LayoutGrid size={20} />
-                    ) : (
-                      <ProtocolLogo
-                        provider={id}
-                        className="protocol-tab-logo"
-                        label=""
-                      />
-                    )}
-                    {label}
-                  </button>
-                ))}
-                {protocol !== "all" &&
-                  protocol !== "groups" &&
-                  protocol !== "scenes" &&
-                  session.role === "admin" && (
-                    <RadioAdvanced
-                      provider={protocol}
-                      lang={lang === "en" ? "en" : "nb"}
-                    />
-                  )}
-              </div>
-            )}
-            {page === "devices" && protocol === "scenes" ? (
-              <Scenes
-                home={h}
-                lang={lang}
-                admin={session.role === "admin"}
-                offline={!h.connected}
-                manage
-              />
-            ) : page === "devices" && protocol === "groups" ? (
-              <Groups home={h} lang={lang} admin={session.role === "admin"} />
-            ) : page === "devices" && protocol !== "all" ? (
-              <ProtocolDevices
-                key={protocol}
-                provider={protocol}
-                controls={h.controls}
-                pairedDevice={
-                  pairedDevice?.provider === protocol ? pairedDevice : null
-                }
-                lang={lang === "en" ? "en" : "nb"}
-                admin={session.role === "admin"}
-              />
-            ) : (
-              <>
-                <div className="device-toolbar">
-                  {!["light", "climate"].includes(filter) && (
-                    <label className="search">
-                      <Search size={19} />
-                      <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder={t.search}
-                        aria-label={t.search}
-                      />
-                    </label>
-                  )}
-                  <select
-                    aria-label={t.devices}
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                  >
-                    {[
-                      ["all", t.all],
-                      ["light", t.lights],
-                      ["climate", t.climate],
-                      ["switch", t.switches],
-                      ["sensors", t.sensors],
-                    ].map(([v, label]) => (
-                      <option key={v} value={v}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {filter !== "light" ? null : (
-                  <LightOverview home={h} offline={offline} lang={lang} />
-                )}
-                {filter === "climate" && (
-                  <ClimateOverview home={h} offline={offline} lang={lang} />
-                )}
-                {!["light", "climate"].includes(filter) &&
-                  (regular.length ? (
-                    selected.length ? (
-                      <PagedControls
-                        key={JSON.stringify([
-                          page,
-                          room,
-                          filter,
-                          search,
-                          protocol,
-                        ])}
-                        controls={selected}
-                        render={cards}
-                        lang={lang}
-                      />
-                    ) : (
-                      <p className="empty">{t.noResults}</p>
-                    )
-                  ) : (
-                    <Empty t={t} add={() => setAdding(true)} />
-                  ))}
-              </>
-            )}
-          </>
+        ) : page === "devices" ? (
+          <DevicesPage
+            home={h}
+            lang={lang}
+            admin={session.role === "admin"}
+            offline={offline}
+            protocol={protocol}
+            selectProtocol={setProtocol}
+            pairedDevice={pairedDevice}
+            add={() => setAdding(true)}
+          />
         ) : page === "logbook" ? (
           <HouseInsights home={h} lang={lang} />
         ) : page === "support" ? (
@@ -1453,19 +1226,6 @@ function Dashboard({
         />
       )}
     </MetricDeviceRenderer.Provider>
-  );
-}
-function Empty({ t, add }: { t: Text; add: () => void }) {
-  return (
-    <div className="empty">
-      <House size={48} strokeWidth={1} />
-      <h2>{t.empty}</h2>
-      <p>{t.emptyHint}</p>
-      <button className="primary" onClick={add}>
-        <Plus size={18} />
-        {t.add}
-      </button>
-    </div>
   );
 }
 const deviceActions = {

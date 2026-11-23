@@ -3,6 +3,7 @@ import {
   expect,
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test.afterEach(async ({ page }) => page.unrouteAll({ behavior: "wait" }));
@@ -335,7 +336,7 @@ test("regular scene creation keeps its name, device and review steps", async ({
     .getByRole("navigation", { name: "Hovedmeny", exact: true })
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.getByRole("button", { name: "Scener", exact: true }).click();
+  await selectDeviceCategory(page, "scenes");
   const seen = writes(page);
   await page.getByRole("button", { name: "Lag scene", exact: true }).click();
   const scene = page.getByRole("dialog", {

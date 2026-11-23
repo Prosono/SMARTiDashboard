@@ -1,0 +1,299 @@
+.device-workspace-detail {
+  min-inline-size: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: clamp(13px, 1.7vw, 22px);
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 93%, transparent);
+}
+
+.device-workspace-detail-empty {
+  align-content: start;
+  padding-block: 20px;
+}
+
+.device-workspace-detail-empty h2,
+.device-workspace-detail-empty p {
+  margin: 0;
+}
+
+.device-workspace-detail-empty h2 {
+  font-size: 1rem;
+}
+
+.device-workspace-detail-empty p {
+  margin-block-start: 5px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.device-workspace-detail-content,
+.device-workspace-detail-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  gap: 16px;
+}
+
+.device-workspace-detail-hero {
+  gap: 6px;
+}
+
+.device-workspace-detail-art {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  min-inline-size: 0;
+  aspect-ratio: 1.52;
+  max-block-size: 200px;
+  margin-block: 2px;
+  background: radial-gradient(
+    ellipse closest-side,
+    color-mix(in srgb, var(--soft) 66%, transparent),
+    transparent
+  );
+}
+
+.device-workspace-detail-art > .device-product-art {
+  inline-size: 100%;
+  min-inline-size: 0;
+  block-size: 100%;
+  max-block-size: inherit;
+}
+
+.device-workspace-detail-art .device-product-art > svg {
+  inline-size: clamp(34px, 4vw, 58px);
+  block-size: auto;
+  color: var(--accent);
+}
+
+.device-workspace-detail-text {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 3px 7px;
+  min-inline-size: 0;
+}
+
+.device-workspace-detail-text h2 {
+  grid-area: 1 / 1;
+  margin: 0;
+  font-size: clamp(19px, 2vw, 28px);
+  line-height: 1.12;
+  font-weight: 680;
+  overflow-wrap: anywhere;
+}
+
+.device-workspace-detail-room {
+  grid-area: 2 / 1;
+  color: var(--muted);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.device-workspace-detail-text .device-workspace-detail-status {
+  grid-area: 1 / 2 / 3;
+  align-self: center;
+  max-inline-size: 8rem;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.device-workspace-detail-content .device-workspace-detail-open {
+  inline-size: 100%;
+  justify-content: space-between;
+  border-radius: 11px;
+}
+
+.device-workspace-detail-actions {
+  padding-inline: 10px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+}
+
+.device-workspace-detail-action + .device-workspace-detail-action {
+  border-block-start: 1px solid var(--line);
+}
+
+.device-workspace-detail-action > button {
+  display: grid;
+  inline-size: 100%;
+  min-block-size: 46px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+}
+
+.device-workspace-detail-action > button:hover:enabled,
+.device-workspace-detail-action > button[aria-expanded="true"] {
+  color: var(--accent);
+}
+
+.device-workspace-detail-action
+  > button[aria-expanded="true"]
+  > svg:last-child {
+  transform: rotate(90deg);
+}
+
+.device-workspace-detail-editor,
+.device-workspace-detail-editor label {
+  display: grid;
+  gap: 6px;
+}
+
+.device-workspace-detail-editor {
+  padding: 0 4px 10px;
+}
+
+.device-workspace-detail-editor :is(p, label > span) {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.device-workspace-detail-editor :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding-inline: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.device-workspace-detail-editor-buttons {
+  display: flex;
+  justify-content: end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.device-workspace-detail-editor-buttons button {
+  min-height: 44px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.81rem;
+}
+
+.device-workspace-detail-editor-buttons button:not(.primary) {
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.device-workspace-detail-feedback {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.device-workspace-detail-feedback[role="alert"] {
+  color: var(--accent);
+}
+
+.devices-page[data-mobile="true"] .device-workspace-detail {
+  display: none;
+}
+
+html
+  .dashboard-settings-dialog[data-presentation="device"][open]:has(
+    .device-workspace-detail-content
+  ) {
+  inset: auto 0 0;
+  margin: 0 auto;
+  width: min(100%, 640px);
+  max-height: min(87dvh, 680px);
+  border-radius: 25px 25px 0 0;
+}
+
+html
+  .dashboard-settings-dialog[data-presentation="device"][open]:has(
+    .device-workspace-detail-content
+  )::backdrop {
+  background: rgb(12 18 24 / 0.27);
+  backdrop-filter: none;
+}
+
+.dashboard-settings-dialog[data-presentation="device"]:has(
+    .device-workspace-detail-content
+  )
+  > .dashboard-settings-heading {
+  justify-content: end;
+  min-height: 43px;
+  padding: 0 12px;
+  border: 0;
+}
+
+.dashboard-settings-dialog:has(.device-workspace-detail-content)
+  > .dashboard-settings-heading
+  > div {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dashboard-settings-dialog:has(.device-workspace-detail-content)
+  > .dashboard-settings-heading::before {
+  content: "";
+  position: absolute;
+  inset: 9px auto auto 50%;
+  inline-size: 38px;
+  block-size: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 46%, transparent);
+}
+
+.dashboard-settings-dialog:has(.device-workspace-detail-content)
+  > .dashboard-settings-heading
+  > button {
+  border: 0;
+  background: transparent;
+}
+
+.dashboard-settings-dialog[data-presentation="device"]:has(
+    .device-workspace-detail-content
+  )
+  > .dashboard-settings-content {
+  padding: 0 14px max(14px, env(safe-area-inset-bottom));
+}
+
+.dashboard-settings-dialog .device-workspace-detail-content {
+  gap: 12px;
+}
+
+.dashboard-settings-dialog .device-workspace-detail-hero {
+  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-settings-dialog .device-workspace-detail-art {
+  max-block-size: 125px;
+}
+
+.dashboard-settings-dialog .device-workspace-detail-text {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+}
+
+.dashboard-settings-dialog .device-workspace-detail-text h2 {
+  font-size: clamp(18px, 5vw, 24px);
+}
+
+.dashboard-settings-dialog
+  .device-workspace-detail-text
+  .device-workspace-detail-status {
+  grid-area: 3 / 1;
+  justify-self: start;
+  margin-block-start: 2px;
+}

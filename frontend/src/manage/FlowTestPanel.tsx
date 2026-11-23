@@ -56,9 +56,11 @@ const elapsed = (ms: number) => {
 export function FlowTestPanel({
   sim,
   lang,
+  recipientLabels,
 }: {
   sim: FlowSimulation;
   lang: string;
+  recipientLabels?: ReadonlyMap<string, string>;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [tab, setTab] = useState<"scenario" | "trace">("scenario");
@@ -123,6 +125,7 @@ export function FlowTestPanel({
       event.kind,
       sim.home,
       lang,
+      recipientLabels,
     ).title;
   };
   const StatusIcon =

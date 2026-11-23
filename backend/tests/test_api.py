@@ -359,6 +359,13 @@ def test_light_appearance_is_persisted_and_admin_only(client, app):
         c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == original["entity_id"]
     )
     assert tracked["attributes"]["smarti_icon"] == "track"
+    assert client.patch(route, json={"name": " Nytt navn "}).status_code == 200
+    renamed = next(
+        c for c in client.get("/api/home").json()["controls"] if c["entity_id"] == original["entity_id"]
+    )
+    assert renamed["name"] == "Nytt navn"
+    assert renamed["id"] == original["id"]
+    assert renamed["attributes"]["smarti_icon"] == "track"
     assert client.put(route, json={"name": "Bad", "icon": "<svg>"}).status_code == 422
     assert client.put(route, json={"name": "", "icon": "auto"}).status_code == 200
     restored = next(
@@ -371,6 +378,18 @@ def test_light_appearance_is_persisted_and_admin_only(client, app):
     r = client.post("/api/login", json={"name": "resident", "password": "another strong password"})
     client.headers["x-csrf-token"] = r.json()["csrf"]
     assert client.put(route, json={"name": "No", "icon": "bulb"}).status_code == 403
+    assert client.patch(route, json={"name": "No"}).status_code == 403
+
+
+def test_control_name_can_be_set_and_restored_without_appearance_options(client):
+    login(client)
+    original = next(c for c in client.get("/api/home").json()["controls"] if c["domain"] == "climate")
+    route = "/api/controls/" + original["entity_id"] + "/appearance"
+    assert client.patch(route, json={}).status_code == 422
+    for name, expected in [("Kjøling", "Kjøling"), ("", original["name"])]:
+        assert client.patch(route, json={"name": name}).status_code == 200
+        control = next(c for c in client.get("/api/home").json()["controls"] if c["id"] == original["id"])
+        assert control["name"] == expected
 
 
 def test_visibility_filters_every_control_domain_and_restores(client):

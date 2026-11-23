@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 test("radio overview counts real states, searches manufacturers and sorts devices", async ({
   page,
 }) => {
@@ -54,7 +55,7 @@ test("radio overview counts real states, searches manufacturers and sorts device
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.getByRole("button", { name: "Zigbee", exact: true }).click();
+  await selectDeviceCategory(page, "zigbee2mqtt");
   await expect(page.locator(".protocol-wordmark img")).toHaveAttribute(
     "src",
     /brand\/zigbee-logo.jpg$/,
@@ -102,7 +103,7 @@ test("radio overview counts real states, searches manufacturers and sorts device
     fullPage: true,
     animations: "disabled",
   });
-  await page.getByRole("button", { name: "Z-Wave", exact: true }).click();
+  await selectDeviceCategory(page, "zwave_js");
   await expect(page.locator(".protocol-devices")).toHaveAttribute(
     "data-protocol",
     "zwave_js",

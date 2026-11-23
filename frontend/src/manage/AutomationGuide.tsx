@@ -1,7 +1,11 @@
 import { NotificationRecipient } from "./NotificationRecipient";
+import {
+  notificationActionPrefix,
+  useNotificationRecipients,
+} from "./notificationRecipients";
 import { controlState } from "../controlState";
 import { EntityPicker } from "./EntityPicker";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Clock,
   Sunset,
@@ -96,7 +100,7 @@ export function guideValid(c: Config, home: Home): boolean {
       home.controls.some(
         (x) => x.entity_id === r.entity_id,
       )) &&
-    (a.action.startsWith("notify.mobile_app_") || home.controls.some(
+    (a.action.startsWith(notificationActionPrefix) || home.controls.some(
       (x) =>
         x.entity_id === a.target.entity_id &&
         a.action.startsWith(x.domain + ".") &&
@@ -121,8 +125,6 @@ export function AutomationGuide({
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const [step, setStep] = useState(0);
-  const [recipientValid, setRecipientValid] = useState(false);
-  const reportRecipient = useCallback((_id: string, value: boolean) => setRecipientValid(value), []);
   const title = useRef<HTMLHeadingElement>(null);
   const r = c.triggers[0],
     a = c.actions[0];
@@ -151,11 +153,19 @@ export function AutomationGuide({
         : sensor
           ? `${sensor.name} ${stateText(r.to)}`
           : t("en enhet endrer tilstand", "a device changes state");
-  const isNotification = a?.action?.startsWith("notify.mobile_app_");
-  const then = isNotification ? t("send varsel: ", "send notification: ") + (a.data?.message || t("skriv en beskjed", "write a message")) : target
-    ? `${a.action.endsWith("turn_off") ? t("slå av", "turn off") : t("slå på", "turn on")} ${target.name}`
-    : t("velg hva som skal skje", "choose what happens");
-  const valid = guideValid(c, home) && (!isNotification || recipientValid);
+  const isNotification = a?.action?.startsWith(notificationActionPrefix);
+  const { labels, status } = useNotificationRecipients(lang, !!isNotification);
+  const recipient = isNotification ? labels.get(a.action) : undefined;
+  const notificationMessage = a?.data?.message || t("skriv en beskjed", "write a message");
+  const notificationSummary = `${t("send varsel", "send a notification")} «${notificationMessage}»`;
+  const then = isNotification
+    ? recipient
+      ? t(`send varsel til ${recipient}`, `send a notification to ${recipient}`) + ` «${notificationMessage}»`
+      : notificationSummary
+    : target
+      ? `${a.action.endsWith("turn_off") ? t("slå av", "turn off") : t("slå på", "turn on")} ${target.name}`
+      : t("velg hva som skal skje", "choose what happens");
+  const valid = guideValid(c, home) && (!isNotification || (status === "ready" && !!recipient));
   useEffect(() => {
     onReady(step === 2 && valid);
   }, [step, valid, onReady]);
@@ -361,14 +371,14 @@ export function AutomationGuide({
             <>
               <label className="routine-field">{t("Hva skal skje?", "What should happen?")}
                 <select value={isNotification ? "notify" : "power"} onChange={(e) => patch({ actions: [e.target.value === "notify"
-                  ? { action: "notify.mobile_app_", data: { title: "SMARTi", message: "" } }
+                  ? { action: notificationActionPrefix, data: { title: "SMARTi", message: "" } }
                   : { action: "light.turn_on", target: { entity_id: "" } }] })}>
                   <option value="power">{t("Styr lys eller stikkontakt", "Control a light or socket")}</option>
                   <option value="notify">{t("Send notifikasjon til SMARTi-appen", "Send a notification to the SMARTi app")}</option>
                 </select>
               </label>
               {isNotification ? <>
-                <NotificationRecipient value={a.action} lang={lang} report={reportRecipient}
+                <NotificationRecipient value={a.action} lang={lang}
                   onChange={(value) => patch({ actions: [{ ...a, action: value }] })} />
                 <label className="routine-field">{t("Tittel", "Title")}<input value={a.data?.title || ""} maxLength={200}
                   onChange={(e) => patch({ actions: [{ ...a, data: { ...a.data, title: e.target.value } }] })} /></label>
@@ -483,7 +493,7 @@ export function AutomationGuide({
                 onClick={() => {
                   if (step === 1 && !c.alias)
                     patch({
-                      alias: `${when.charAt(0).toUpperCase() + when.slice(1)} → ${then}`,
+                      alias: `${when.charAt(0).toUpperCase() + when.slice(1)} → ${isNotification ? notificationSummary : then}`,
                     });
                   go(step + 1);
                 }}

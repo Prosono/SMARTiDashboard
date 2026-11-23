@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 
 test("advanced radio panel embeds the discovered ingress UI and closes back to devices", async ({
   page,
@@ -38,7 +39,7 @@ test("advanced radio panel embeds the discovered ingress UI and closes back to d
   await page.evaluate(() =>
     history.replaceState(null, "", "/api/hassio_ingress/smarti/"),
   );
-  await page.getByRole("button", { name: "Zigbee", exact: true }).click();
+  await selectDeviceCategory(page, "zigbee2mqtt");
   await page
     .getByRole("button", { name: "Avansert modus", exact: true })
     .click();

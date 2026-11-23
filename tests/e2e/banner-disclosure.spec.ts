@@ -3,6 +3,7 @@ import {
   expect,
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
+import { openDeviceOverview } from "./deviceNavigation";
 
 async function login(page: Page, mode = "advanced") {
   await page.route("**/api/home/experience", (route) =>
@@ -280,7 +281,7 @@ test("device management retains its own heading and collapsible toolbar", async 
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.locator(".device-toolbar select").selectOption("light");
+  await openDeviceOverview(page, "light");
   const lights = page.locator(".light-overview");
   await expect(lights.locator(".category-heading")).toBeVisible();
   await expect(lights.locator("[data-collapsible-toolbar]")).toBeHidden();

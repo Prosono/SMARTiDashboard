@@ -11,6 +11,7 @@ export function FlowTree({
   kind,
   home,
   lang,
+  recipientLabels,
   onSelect,
   onAppend,
   depth = 0,
@@ -21,6 +22,7 @@ export function FlowTree({
   kind: FlowKey;
   home: Home;
   lang: string;
+  recipientLabels?: ReadonlyMap<string, string>;
   onSelect: (p: FlowPath) => void;
   onAppend: (p: FlowPath, kind: FlowKey) => void;
   depth?: number;
@@ -28,7 +30,7 @@ export function FlowTree({
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const [open, setOpen] = useState(depth < 3);
-  const summary = flowNarrative(row, kind, home, lang);
+  const summary = flowNarrative(row, kind, home, lang, recipientLabels);
   const groups = flowGroups(row, path, lang);
   const extras = [
     "for",
@@ -137,6 +139,7 @@ export function FlowTree({
                       kind={g.kind}
                       home={home}
                       lang={lang}
+                      recipientLabels={recipientLabels}
                       onSelect={onSelect}
                       onAppend={onAppend}
                       depth={depth + 1}
@@ -160,6 +163,7 @@ export function FlowTree({
                   kind={g.kind}
                   home={home}
                   lang={lang}
+                  recipientLabels={recipientLabels}
                   onSelect={onSelect}
                   onAppend={onAppend}
                   depth={depth + 1}

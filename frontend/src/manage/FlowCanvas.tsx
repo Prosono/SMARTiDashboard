@@ -45,6 +45,7 @@ export function FlowCanvas({
   config,
   home,
   lang,
+  recipientLabels,
   onSelect,
   onAdd,
   onAddRow,
@@ -57,6 +58,7 @@ export function FlowCanvas({
   config: Record<string, any>;
   home: Home;
   lang: string;
+  recipientLabels?: ReadonlyMap<string, string>;
   onSelect: (p: FlowPath) => void;
   onAdd: (k: FlowKey, preset?: string) => void;
   canAdd?: boolean;
@@ -229,7 +231,10 @@ export function FlowCanvas({
     const n = graph.nodes.find((n) => n.id === id);
     if (!n?.path) return n?.label || t("Start", "Start");
     const row = readFlowPath(config, n.path);
-    return row?.alias || flowSummary(row, n.kind as FlowKey, home, lang).title;
+    return (
+      row?.alias ||
+      flowSummary(row, n.kind as FlowKey, home, lang, recipientLabels).title
+    );
   }
   const suppressClick = useRef(false);
   const pan = useRef<{
@@ -368,13 +373,19 @@ export function FlowCanvas({
               summary:
                 n.kind === "gate"
                   ? { title: n.label!, detail: "" }
-                  : flowSummary(row, n.kind as FlowKey, home, lang),
+                  : flowSummary(
+                      row,
+                      n.kind as FlowKey,
+                      home,
+                      lang,
+                      recipientLabels,
+                    ),
               branches: n.path ? flowGroups(row, n.path, lang) : [],
             },
           ];
         }),
       ),
-    [graph, config, home, lang],
+    [graph, config, home, lang, recipientLabels],
   );
   const width = Math.max(1800, ...nodes.map((n) => n.x + 340)),
     height = Math.max(900, ...nodes.map((n) => n.y + 200));
@@ -690,7 +701,13 @@ export function FlowCanvas({
           ))}
       </div>
 
-      {testMode && <FlowTestPanel sim={simulation} lang={lang} />}
+      {testMode && (
+        <FlowTestPanel
+          sim={simulation}
+          lang={lang}
+          recipientLabels={recipientLabels}
+        />
+      )}
       <div className="canvas-toolbar">
         {testMode ? (
           <span className="canvas-test-label">

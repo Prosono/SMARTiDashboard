@@ -332,16 +332,38 @@ def management_router(service, admin):
         recipients = []
         with m.store.connect() as db:
             devices = db.execute(
-                "SELECT d.id,d.name,u.name AS user_name FROM mobile_devices d "
-                "JOIN users u ON u.id=d.user_id WHERE d.revoked=0 AND d.expires>?",
+                "SELECT d.name,u.name AS user_name,a.value AS account,c.value AS companion "
+                "FROM mobile_devices d JOIN users u ON u.id=d.user_id "
+                "LEFT JOIN settings a ON a.key='account:' || u.id "
+                "LEFT JOIN settings c ON c.key='companion:' || d.id "
+                "WHERE d.revoked=0 AND d.expires>?",
                 (time.time(),),
             ).fetchall()
+        generic_phone_names = {"iphone", "ipad", "ipod touch", "phone", "telefon"}
         for device in devices:
-            record = json.loads(m.store.get("companion:" + device["id"], "{}"))
+            record = json.loads(device["companion"] or "{}")
             action = record.get("notify_service")
-            if record.get("push_token") and action in available:
-                recipients.append({"action": action, "name": device["user_name"], "phone": device["name"]})
-        return sorted(recipients, key=lambda item: (item["name"].casefold(), item["phone"].casefold()))
+            if not record.get("push_token") or action not in available:
+                continue
+            account = json.loads(device["account"] or "{}")
+            name = (account.get("display_name") or "").strip()
+            if not name and not device["user_name"].startswith("cloud_"):
+                name = device["user_name"]
+            registration = record.get("registration") or {}
+            registered_name = (registration.get("device_name") or "").strip()
+            paired_name = device["name"].strip()
+            phone = next(
+                (
+                    candidate
+                    for candidate in (registered_name, paired_name)
+                    if candidate and candidate.casefold() not in generic_phone_names
+                ),
+                registered_name or paired_name,
+            )
+            recipients.append({"action": action, "name": name, "phone": phone})
+        return sorted(
+            recipients, key=lambda item: (item["name"].casefold(), item["phone"].casefold(), item["action"])
+        )
 
     @router.get("/rooms")
     async def rooms():

@@ -1,4 +1,5 @@
 import {test, expect} from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 test("group icon persists and members are visible before opening", async ({page}) => {
   const name = `Kveldslys ${test.info().project.name} ${Date.now()}`;
   await page.goto("/");
@@ -6,7 +7,7 @@ test("group icon persists and members are visible before opening", async ({page}
   await page.getByLabel("Passord",{exact:true}).fill("test-password-not-for-live");
   await page.getByRole("button",{name:"Logg inn",exact:true}).click();
   await page.getByRole("navigation",{name:"Hovedmeny"}).getByRole("button",{name:"Enheter",exact:true}).click();
-  await page.getByRole("button",{name:"Grupper",exact:true}).click();
+  await selectDeviceCategory(page, "groups");
   await page.getByRole("button",{name:"Lag gruppe",exact:true}).click();
   const d=page.getByRole("dialog");
   await d.getByLabel("Gruppenavn").fill(name);

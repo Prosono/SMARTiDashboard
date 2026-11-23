@@ -1,4 +1,5 @@
 import { NotificationRecipient } from "./NotificationRecipient";
+import { notificationActionPrefix } from "./notificationRecipients";
 import {
   useCallback,
   useEffect,
@@ -572,6 +573,8 @@ export function FlowInspector({
   const type = trigger || condition;
   const isTrigger = kind === "triggers" || !!trigger;
   const action = typeof row.action === "string" ? row.action : row.service;
+  const isMobileNotification =
+    typeof action === "string" && action.startsWith(notificationActionPrefix);
   const targetPath = serviceTargetPath(row);
   const dataKey = has(row, "data")
     ? "data"
@@ -1092,10 +1095,12 @@ export function FlowInspector({
 
       {typeof action === "string" && (
         <Section title={t("Hva skal skje?", "What should happen?")}>
-          <div className="flow-service-name">
-            <Check size={17} />
-            <span>{actionName}</span>
-          </div>
+          {!isMobileNotification && (
+            <div className="flow-service-name">
+              <Check size={17} />
+              <span>{actionName}</span>
+            </div>
+          )}
           {canSwitchPowerAction && (
             <label className="flow-form-field">
               <span>{t("Handling", "Action")}</span>
@@ -1116,7 +1121,7 @@ export function FlowInspector({
               </select>
             </label>
           )}
-          {action.startsWith("notify.mobile_app_") && (
+          {isMobileNotification && (
             <NotificationRecipient
               value={action}
               lang={lang}
@@ -1127,7 +1132,7 @@ export function FlowInspector({
             />
           )}
           {(() => {
-            if (action.startsWith("notify.mobile_app_")) return null;
+            if (isMobileNotification) return null;
             const domain = action.split(".")[0],
               path = targetPath;
             const target = readFlowPath(row, path);

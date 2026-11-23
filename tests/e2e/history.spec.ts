@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { openDeviceOverview } from "./deviceNavigation";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/home/experience", (route) =>
@@ -56,7 +57,7 @@ test("device history reads the full selected period up to thirty days", async ({
     .getByRole("navigation", { name: "Hovedmeny" })
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.locator(".device-toolbar select").selectOption("climate");
+  await openDeviceOverview(page, "climate");
   await page
     .getByRole("button", { name: "Snittemperatur", exact: true })
     .click();

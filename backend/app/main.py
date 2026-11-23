@@ -73,8 +73,12 @@ class ControlVisibility(BaseModel):
     hidden: bool
 
 
-class ControlAppearance(BaseModel):
+class ControlName(BaseModel):
     model_config = {"extra": "forbid"}
+    name: str = Field(max_length=80)
+
+
+class ControlAppearance(ControlName):
     name: str = Field(default="", max_length=80)
     image: (
         Literal[
@@ -756,6 +760,16 @@ def create_app(
         if not control:
             raise HTTPException(404, "entity_not_found")
         store.set("hidden_control:" + control.id, "true" if body.hidden else "false")
+        return {"saved": True}
+
+    @app.patch("/api/controls/{entity_id}/appearance")
+    async def control_name(entity_id: str, body: ControlName, current=Depends(admin)):
+        control = next((c for c in ha.controls() if c.entity_id == entity_id), None)
+        if not control:
+            raise HTTPException(404, "entity_not_found")
+        key = "control_appearance:" + control.id
+        appearance = json.loads(store.get(key, "{}"))
+        store.set(key, json.dumps({**appearance, "name": body.name.strip()}))
         return {"saved": True}
 
     @app.put("/api/controls/{entity_id}/appearance")

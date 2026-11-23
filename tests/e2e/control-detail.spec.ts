@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { openDeviceControl } from "./deviceNavigation";
 test("device dialog uses full width and exposes interactive state history", async ({ page }, info) => {
   const end = new Date().toISOString();
   const start = new Date(Date.now() - 86400000).toISOString();
@@ -106,9 +107,7 @@ test("lock commands ask for confirmation in the device window", async ({ page })
   await page.getByLabel("Passord", { exact: true }).fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   await page.getByRole("navigation").getByRole("button", { name: "Enheter", exact: true }).click();
-  await page.locator(".device-toolbar input").fill("Testlås");
-  await page.getByRole("button", { name: "Åpne Testlås", exact: true }).click();
-  const device = page.getByRole("dialog", { name: "Testlås", exact: true });
+  const device = await openDeviceControl(page, "Testlås");
   await device.getByRole("button", { name: "Lås opp", exact: true }).click();
   await expect(device.getByRole("button", { name: "Bekreft", exact: true })).toBeVisible();
   expect(commands).toEqual([]);

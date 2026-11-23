@@ -4,6 +4,12 @@ import {
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
 import type { Control } from "../../frontend/src/types";
+import {
+  deviceRow,
+  deviceSearch,
+  openDeviceControl,
+  selectDeviceCategory,
+} from "./deviceNavigation";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test.afterEach(async ({ page }) => {
@@ -203,9 +209,20 @@ async function setup(page: Page) {
   return mutations;
 }
 
+async function inventoryRow(page: Page, entitySuffix: string) {
+  const fixture = controls.find(({ entity_id }) =>
+    entity_id.endsWith(`.${entitySuffix}`),
+  )!;
+  await deviceSearch(page).fill(fixture.name);
+  const row = deviceRow(page, fixture.name);
+  await row.scrollIntoViewIfNeeded();
+  return row;
+}
+
 test("all-device visuals reuse shared artwork and semantic icons at phone, tablet and desktop widths", async ({
   page,
 }) => {
+  test.setTimeout(60000);
   const mutations = await setup(page);
   for (const width of [320, 390, 834, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -246,9 +263,8 @@ test("all-device visuals reuse shared artwork and semantic icons at phone, table
         ["people", "presence"],
         ["generic", "data"],
       ]) {
-        const card = page.locator(`.controls-grid > [data-entity$=".${id}"]`);
+        const card = await inventoryRow(page, id);
         const image = card.locator(".device-product-art img");
-        await card.scrollIntoViewIfNeeded();
         await expect(image).toHaveAttribute(
           "src",
           new RegExp(`/${file}\\.webp$`),
@@ -261,7 +277,7 @@ test("all-device visuals reuse shared artwork and semantic icons at phone, table
         expect(
           await image.evaluate((img) => {
             const a = img.getBoundingClientRect(),
-              b = img.closest("article")!.getBoundingClientRect();
+              b = img.closest(".devices-control-row")!.getBoundingClientRect();
             return (
               a.width >= 32 &&
               a.height >= 32 &&
@@ -273,16 +289,17 @@ test("all-device visuals reuse shared artwork and semantic icons at phone, table
         ).toBe(true);
       }
       await expect(
-        page.locator(
-          '[data-entity="binary_sensor.unknown-window"] .device-product-art img',
+        (await inventoryRow(page, "unknown-window")).locator(
+          ".device-product-art img",
         ),
       ).toHaveCount(0);
-      for (const [entity, icon] of [["camera.camera", "camera"]])
-        await expect(
-          page.locator(`[data-entity="${entity}"] .device-product-art svg`),
-        ).toHaveClass(new RegExp(`lucide-${icon}`));
       await expect(
-        page.locator('[data-entity="climate.AC"] .art-air-conditioner'),
+        (await inventoryRow(page, "camera")).locator(
+          ".device-product-art svg",
+        ),
+      ).toHaveClass(/lucide-camera/);
+      await expect(
+        (await inventoryRow(page, "AC")).locator(".art-air-conditioner"),
       ).toBeVisible();
       expect(
         await page.evaluate(
@@ -292,11 +309,9 @@ test("all-device visuals reuse shared artwork and semantic icons at phone, table
     }
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await page
-    .locator('[data-entity="binary_sensor.smoke"] button.device-open-detail')
-    .click();
+  const smoke = await openDeviceControl(page, "smoke");
   await expect(
-    page.getByRole("dialog").locator('img[src$="/smoke.webp"]'),
+    smoke.locator('img[src$="/smoke.webp"]'),
   ).toBeVisible();
   await page.screenshot({
     path: "/private/tmp/smarti-device-detail.png",
@@ -360,8 +375,8 @@ test("protocol rows and details use registry-matched shared visuals while preser
     });
   }
   const mutations = await setup(page);
-  for (const tab of ["Zigbee", "Z-Wave"]) {
-    await page.getByRole("button", { name: tab, exact: true }).click();
+  for (const tab of ["zigbee2mqtt", "zwave_js"] as const) {
+    await selectDeviceCategory(page, tab);
     const row = (name: string) =>
       page.locator(".protocol-row").filter({
         has: page.getByRole("button", { name: new RegExp(`^${name}`) }),
@@ -387,7 +402,7 @@ test("protocol rows and details use registry-matched shared visuals while preser
       page.getByRole("dialog").locator(".device-dialog-picture img"),
     ).toHaveAttribute("src", /\/track.webp$/);
     await page
-      .getByRole("button", { name: "Lukk detaljer", exact: true })
+      .getByRole("button", { name: "Lukk enhetsdetaljer", exact: true })
       .click();
   }
   expect(mutations).toEqual([]);
@@ -401,11 +416,9 @@ test("missing shared images fall back to the same semantic artwork and configure
     r.abort(),
   );
   const mutations = await setup(page);
-  const light = page.locator('[data-entity="light.chosen-light"]');
-  await light.scrollIntoViewIfNeeded();
+  const light = await inventoryRow(page, "chosen-light");
   await expect(light.locator(".equipment-art svg")).toBeVisible();
-  const media = page.locator('[data-entity="media_player.media"]');
-  await media.scrollIntoViewIfNeeded();
+  const media = await inventoryRow(page, "media");
   await expect(
     media.locator(".device-product-art .lucide-speaker"),
   ).toBeVisible();
@@ -418,7 +431,7 @@ test("missing shared images fall back to the same semantic artwork and configure
   expect(mutations).toEqual([]);
 });
 
-test("compact portraits never extend into room labels, titles or favorite buttons in Harmoni", async ({
+test("compact portraits stay clear of device labels and light controls remain available in the detail panel", async ({
   page,
 }) => {
   test.setTimeout(60000);
@@ -438,11 +451,7 @@ test("compact portraits never extend into room labels, titles or favorite button
         "spot",
         "outdoor",
       ]) {
-        const card = page.locator(`[data-entity="light.${kind}"]`);
-        await card.scrollIntoViewIfNeeded();
-        await expect(
-          card.locator(".light-color-control > button"),
-        ).toBeVisible();
+        const card = await inventoryRow(page, kind);
         const image = card.locator(".device-product-art img");
         await expect
           .poll(() =>
@@ -455,8 +464,7 @@ test("compact portraits never extend into room labels, titles or favorite button
           const art = bounds(".equipment-art"),
             image = bounds(".equipment-art img"),
             box = bounds(".device-product-art"),
-            title = bounds(".device-title"),
-            star = bounds(".star");
+            title = bounds(".devices-row-name");
           return {
             fits: [art, image].every(
               (r) =>
@@ -465,8 +473,7 @@ test("compact portraits never extend into room labels, titles or favorite button
                 r.left >= box.left - 0.5 &&
                 r.right <= box.right + 0.5,
             ),
-            clearOfText: art.bottom <= title.top,
-            clearOfStar: art.right <= star.left,
+            clearOfText: art.right <= title.left,
             glow: getComputedStyle(
               card.querySelector(".equipment-art")!,
               "::before",
@@ -481,10 +488,6 @@ test("compact portraits never extend into room labels, titles or favorite button
           geometry.clearOfText,
           `${width}/${theme}/${kind}: room/title overlap`,
         ).toBe(true);
-        expect(
-          geometry.clearOfStar,
-          `${width}/${theme}/${kind}: favorite overlap`,
-        ).toBe(true);
         expect(geometry.glow).toBe("none");
       }
     }
@@ -493,7 +496,20 @@ test("compact portraits never extend into room labels, titles or favorite button
   await page.evaluate(
     () => (document.documentElement.dataset.homeStyle = "harmony"),
   );
-  await page.locator('[data-entity="light.pendant"]').scrollIntoViewIfNeeded();
+  const detail = await openDeviceControl(page, "Lys Spisebord ved vinduet");
+  await expect(detail.locator(".light-color-control > button")).toBeVisible();
+  await expect(detail.locator(".device-detail-favorite")).toBeVisible();
+  expect(
+    await detail.evaluate((node) => {
+      const art = node
+        .querySelector(".device-detail-portrait")!
+        .getBoundingClientRect();
+      const favorite = node
+        .querySelector(".device-detail-favorite")!
+        .getBoundingClientRect();
+      return art.right <= favorite.left || art.bottom <= favorite.top;
+    }),
+  ).toBe(true);
   await page.screenshot({
     path: `/private/tmp/smarti-120-spacing-${test.info().project.name}.png`,
     animations: "disabled",
@@ -501,28 +517,26 @@ test("compact portraits never extend into room labels, titles or favorite button
   expect(mutations).toEqual([]);
 });
 
-test("sensor cards show readable values and timestamps while retaining exact raw data in details", async ({
+test("sensor rows show readable values and timestamps while retaining exact raw data in details", async ({
   page,
 }, info) => {
   const mutations = await setup(page);
   for (const width of [320, 390, 834, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
-    const energy = page.locator('[data-entity="sensor.consumption"]');
-    await expect(energy.locator(".sensor-value")).toContainText("1 783,807");
-    await expect(energy.locator(".sensor-value")).toHaveAttribute(
-      "title",
-      "1783.80692 kWh",
+    const energy = await inventoryRow(page, "consumption");
+    await expect(energy.locator(".devices-row-status")).toContainText(
+      "1 783,807",
     );
     await expect(
-      page.locator('[data-entity="sensor.cost"] .sensor-value'),
+      (await inventoryRow(page, "cost")).locator(".devices-row-status"),
     ).toContainText("166,18");
-    const backup = page.locator('[data-entity="sensor.backup_next"]');
-    await expect(backup.locator("time")).toHaveAttribute(
-      "datetime",
-      "2026-11-08T04:14:23+00:00",
+    const backup = await inventoryRow(page, "backup_next");
+    await expect(backup.locator(".devices-row-status")).toContainText(
+      "08.11.2026",
     );
-    await expect(backup.locator("time")).toContainText("08.11.2026");
-    await expect(backup.locator("time")).not.toContainText("T04:14:");
+    await expect(backup.locator(".devices-row-status")).not.toContainText(
+      "T04:14:",
+    );
     if (width === 390) {
       await backup.scrollIntoViewIfNeeded();
       await expect
@@ -543,7 +557,22 @@ test("sensor cards show readable values and timestamps while retaining exact raw
       ),
     ).toBe(true);
   }
-  const backup = page.locator('[data-entity="sensor.backup_next"]');
+  const energy = await openDeviceControl(page, "consumption");
+  await expect(energy.locator(".sensor-value")).toHaveAttribute(
+    "title",
+    "1783.80692 kWh",
+  );
+  await energy
+    .getByRole("button", { name: "Lukk enhetsdetaljer", exact: true })
+    .click();
+  const backup = await openDeviceControl(
+    page,
+    "Backup Next scheduled automatic backup",
+  );
+  await expect(backup.locator("time")).toHaveAttribute(
+    "datetime",
+    "2026-11-08T04:14:23+00:00",
+  );
   await backup
     .getByRole("button", { name: "Tekniske detaljer", exact: true })
     .click();

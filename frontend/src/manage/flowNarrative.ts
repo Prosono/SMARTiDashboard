@@ -1,6 +1,10 @@
 import type { Home } from "../types";
 import { entityState } from "./entityWords";
-import { has } from "./flowStructure";
+import { flowGroups, has } from "./flowStructure";
+import {
+  notificationActionPrefix,
+  notificationRecipientLabel,
+} from "./notificationRecipients";
 
 export type NarrativeKey = "triggers" | "conditions" | "actions";
 export type FlowNarrative = { title: string; detail: string };
@@ -14,6 +18,27 @@ const join = (...values: (string | false | undefined)[]) =>
   values.filter(Boolean).join(" · ");
 const template = (v: any) => typeof v === "string" && /{{|{%/.test(v);
 const humanize = (v: any) => text(v).replace(/_/g, " ");
+const isPhoneNotification = (action: unknown): action is string =>
+  typeof action === "string" &&
+  action.startsWith(notificationActionPrefix) &&
+  !template(action);
+
+/** Only look up recipients in flows that contain an actionable notification field. */
+export function flowUsesPhoneNotifications(actions: unknown): boolean {
+  const remaining = [actions];
+  while (remaining.length) {
+    const row = remaining.pop();
+    if (Array.isArray(row)) {
+      for (const step of row) remaining.push(step);
+    } else if (record(row)) {
+      if (isPhoneNotification(row.action ?? row.service)) return true;
+      for (const group of flowGroups(row, [], "en")) {
+        if (group.kind === "actions") remaining.push(group.value);
+      }
+    }
+  }
+  return false;
+}
 
 /** Read-only descriptions of HA configuration. Templates remain expressions, never evaluated. */
 export function flowNarrative(
@@ -21,6 +46,7 @@ export function flowNarrative(
   key: NarrativeKey,
   home: Home,
   lang: string,
+  recipientLabels?: ReadonlyMap<string, string>,
 ): FlowNarrative {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const name = (id: any): string => {
@@ -697,11 +723,14 @@ export function flowNarrative(
       trigger: ["Kjør automasjonen", "Run the automation"],
     };
     const [domain, verb] = kind.split(".");
+    const recipient = isPhoneNotification(kind)
+      ? notificationRecipientLabel(kind, lang, recipientLabels)
+      : undefined;
     const title = template(kind)
       ? t("Handling valgt av et uttrykk", "Action chosen by an expression")
       : (domain === "notify" && verb !== "reload") ||
           kind === "persistent_notification.create"
-        ? t("Send et varsel", "Send a notification")
+        ? join(t("Send et varsel", "Send a notification"), recipient)
         : domain === "scene" && verb === "turn_on"
           ? t("Aktiver en scene", "Activate a scene")
           : verbs[verb]

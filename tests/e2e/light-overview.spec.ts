@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { openDeviceOverview } from "./deviceNavigation";
 test("room lighting overview filters and controls lights", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
@@ -10,7 +11,7 @@ test("room lighting overview filters and controls lights", async ({ page }) => {
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.locator(".device-toolbar select").selectOption("light");
+  await openDeviceOverview(page, "light");
   const lights = page.locator(".light-overview");
   await expect(
     lights.getByRole("heading", { name: "Lys", exact: true }),
@@ -95,7 +96,7 @@ test("room lighting overview filters and controls lights", async ({ page }) => {
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.locator(".device-toolbar select").selectOption("light");
+  await openDeviceOverview(page, "light");
   await expect(
     lights.getByRole("button", { name: "Åpne Spisebord test", exact: true }),
   ).toBeVisible();

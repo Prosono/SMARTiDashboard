@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { openDeviceOverview } from "./deviceNavigation";
 
 test("category counters open the matching devices", async ({ page }) => {
   await page.goto("/");
@@ -11,7 +12,7 @@ test("category counters open the matching devices", async ({ page }) => {
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.locator(".device-toolbar select").selectOption("light");
+  await openDeviceOverview(page, "light");
   const metrics = page.locator(".category-metric-button");
   await expect(metrics).toHaveCount(3);
   for (let i = 0; i < 3; i++) {
@@ -33,6 +34,7 @@ test("category counters open the matching devices", async ({ page }) => {
       const name = await row.locator("strong").innerText();
       await row.click();
       const detail = page.getByRole("dialog", { name, exact: true });
+      await detail.getByText("Enhetsinnstillinger", { exact: true }).click();
       await expect(
         detail.getByRole("button", { name: "Skjul enhet", exact: true }),
       ).toBeVisible();
@@ -56,7 +58,7 @@ test("category counters open the matching devices", async ({ page }) => {
         path: `/tmp/metric-device-${test.info().project.name}.png`,
       });
       await detail
-        .getByRole("button", { name: "Lukk innstillinger", exact: true })
+        .getByRole("button", { name: "Lukk enhetsdetaljer", exact: true })
         .click();
       await expect(detail).toHaveCount(0);
     }
@@ -70,7 +72,10 @@ test("category counters open the matching devices", async ({ page }) => {
     await expect(dialog).toHaveCount(0);
     await expect(button).toBeFocused();
   }
-  await page.locator(".device-toolbar select").selectOption("climate");
+  await page
+    .getByRole("button", { name: "Tilbake til enhetslisten", exact: true })
+    .click();
+  await openDeviceOverview(page, "climate");
   await metrics.first().click();
   const climate = page.getByRole("dialog", {
     name: "Snittemperatur",
@@ -97,7 +102,7 @@ test("category counters open the matching devices", async ({ page }) => {
     page.getByRole("region", { name: "Enhetshistorikk", exact: true }),
   ).toBeVisible();
   await sensor
-    .getByRole("button", { name: "Lukk innstillinger", exact: true })
+    .getByRole("button", { name: "Lukk enhetsdetaljer", exact: true })
     .click();
   await humidity
     .getByRole("button", { name: "Lukk innstillinger", exact: true })

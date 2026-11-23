@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 test("radio events refresh visible device status without waiting for the five-second poll", async ({
   page,
 }) => {
@@ -45,7 +46,7 @@ test("radio events refresh visible device status without waiting for the five-se
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.getByRole("button", { name: "Zigbee", exact: true }).click();
+  await selectDeviceCategory(page, "zigbee2mqtt");
   await expect(page.locator(".protocol-health")).toContainText("Utilgjengelig");
   const before = reads;
   online = true;

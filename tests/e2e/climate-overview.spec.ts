@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { openDeviceOverview } from "./deviceNavigation";
 test("climate overview filters and opens real room controls", async ({
   page,
 }) => {
@@ -12,7 +13,7 @@ test("climate overview filters and opens real room controls", async ({
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.locator(".device-toolbar select").selectOption("climate");
+  await openDeviceOverview(page, "climate");
   const climate = page.locator(".climate-overview");
   await expect(
     climate.getByRole("heading", { name: "Klima", exact: true }),
@@ -91,7 +92,7 @@ for (const step of [0.1, 0.5, 1]) {
     await page.getByLabel("Brukernavn", { exact: true }).fill("tester");
     await page.getByLabel("Passord", { exact: true }).fill("test-password-not-for-live");
     await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-    await expect(page.locator(".home-welcome")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Hovedmeny" })).toBeVisible();
     await page.route("**/api/home", async (route) => {
       const response = await route.fetch();
       const home = await response.json();
@@ -113,7 +114,7 @@ for (const step of [0.1, 0.5, 1]) {
     });
     await page.reload();
     await page.getByRole("navigation").getByRole("button", { name: "Enheter", exact: true }).click();
-    await page.locator(".device-toolbar select").selectOption("climate");
+    await openDeviceOverview(page, "climate");
     const climate = page.locator(".climate-overview");
     await climate.getByRole("button", { name: "Øk temperatur Gulvvarme", exact: true }).click();
     await expect.poll(() => values).toEqual([21 + step]);
@@ -130,7 +131,7 @@ test("thermostat modes use device options and send the selected mode", async ({ 
   await page.getByLabel("Passord", { exact: true }).fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
   await page.getByRole("navigation").getByRole("button", { name: "Enheter", exact: true }).click();
-  await page.locator(".device-toolbar select").selectOption("climate");
+  await openDeviceOverview(page, "climate");
   await page.getByRole("button", { name: "Åpne klima for Stue", exact: true }).click();
   const select = page.getByRole("dialog").getByRole("combobox", { name: "Gulvvarme: Modus" });
   await expect(select.locator("option")).toHaveText(["Av", "Varme", "Auto"]);

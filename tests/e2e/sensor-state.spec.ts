@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 
 test("Zigbee contact detail displays semantic open/closed and unknown states", async ({
   page,
@@ -62,7 +63,7 @@ test("Zigbee contact detail displays semantic open/closed and unknown states", a
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.getByRole("button", { name: "Zigbee", exact: true }).click();
+  await selectDeviceCategory(page, "zigbee2mqtt");
   await page.locator(".protocol-row").getByRole("button").first().click();
   const status = page.locator(".device-detail-control");
   await expect(status).toContainText("Lukket");

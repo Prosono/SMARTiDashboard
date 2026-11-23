@@ -3,6 +3,7 @@ import {
   expect,
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
+import { openDeviceOverview } from "./deviceNavigation";
 
 async function login(page: Page) {
   await page.goto("/");
@@ -614,7 +615,7 @@ test("header backgrounds can be chosen, uploaded, reloaded and removed without c
   await expect(page.locator(".home-header-photo")).toHaveCount(0);
   async function devices() {
     await navigate(page, "Enheter");
-    await page.locator(".device-toolbar select").selectOption("light");
+    await openDeviceOverview(page, "light");
   }
   await devices();
   await expect(

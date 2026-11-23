@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 
 test("pairing wizard handles security, PIN and stop on mobile and desktop", async ({
   page,
@@ -98,8 +99,11 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
   );
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Legg til enhet", exact: true })
-    .first()
+    .getByRole("navigation", { name: "Hovedmeny" })
+    .getByRole("button", { name: "Enheter", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Legg til ny enhet", exact: true })
     .click();
   const zwave = page.locator("article").filter({
     has: page.getByRole("heading", { name: "Z-Wave", exact: true }),
@@ -154,7 +158,7 @@ test("pairing wizard handles security, PIN and stop on mobile and desktop", asyn
     .getByRole("navigation")
     .getByRole("button", { name: "Enheter", exact: true })
     .click();
-  await page.getByRole("button", { name: "Z-Wave", exact: true }).click();
+  await selectDeviceCategory(page, "zwave_js");
   await page.getByRole("button", { name: "Sjekk kontrollerstatus" }).click();
   await page
     .getByRole("button", { name: "Stopp aktiv nettverksoperasjon" })

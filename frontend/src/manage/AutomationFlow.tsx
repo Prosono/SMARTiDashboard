@@ -3,7 +3,7 @@ import { flowLibraryIcon } from "./flowLibraryIcon";
 import { FlowArtwork } from "./FlowArtwork";
 import { FlowStepPanel } from "./FlowStepPanel";
 import { flowCategories } from "./flowPresets";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Maximize2,
   Minimize2,
@@ -26,7 +26,8 @@ import {
 import { FlowCanvas } from "./FlowCanvas";
 import { FlowTree } from "./FlowTree";
 import { FlowInspector } from "./FlowInspector";
-import { flowNarrative } from "./flowNarrative";
+import { flowNarrative, flowUsesPhoneNotifications } from "./flowNarrative";
+import { useNotificationRecipients } from "./notificationRecipients";
 import {
   flowGroups,
   readFlowPath,
@@ -64,6 +65,15 @@ export function AutomationFlow({
   startInCanvas?: boolean;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const actions = c.actions ?? c.action;
+  const usesPhoneNotifications = useMemo(
+    () => flowUsesPhoneNotifications(actions),
+    [actions],
+  );
+  const { labels: recipientLabels } = useNotificationRecipients(
+    lang,
+    usesPhoneNotifications,
+  );
   const [expanded, setExpanded] = useState(
     () => startInCanvas || window.innerWidth >= 1000,
   );
@@ -164,7 +174,9 @@ export function AutomationFlow({
   }
   const row = selected ? readFlowPath(c, selected) : null;
   const kind = selected ? kindAtPath(selected) : "actions";
-  const info = selected ? flowNarrative(row, kind, home, lang) : null;
+  const info = selected
+    ? flowNarrative(row, kind, home, lang, recipientLabels)
+    : null;
   const parent = selected ? readFlowPath(c, selected.slice(0, -1)) : null;
   const index = selected?.at(-1);
   function move(direction: number) {
@@ -344,6 +356,7 @@ export function AutomationFlow({
             config={c}
             home={home}
             lang={lang}
+            recipientLabels={recipientLabels}
             onSelect={(path) => {
               if (!selected || valid) select(path);
             }}
@@ -415,6 +428,7 @@ export function AutomationFlow({
                       kind={key}
                       home={home}
                       lang={lang}
+                      recipientLabels={recipientLabels}
                       onSelect={(path) => {
                         if (!selected || valid) select(path);
                       }}
@@ -639,6 +653,7 @@ export function AutomationFlow({
                           kind={group.kind}
                           home={home}
                           lang={lang}
+                          recipientLabels={recipientLabels}
                           onSelect={(path) => {
                             if (valid) select(path, [...trail, selected]);
                           }}

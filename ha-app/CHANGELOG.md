@@ -1,3 +1,8 @@
+## 1.36.168
+- Enheter har en søkbar liste med enhetsbilder, status og filtre for rom og type. Detaljene vises ved siden av listen på større skjermer og i et bunnpanel på mobil.
+- Åpne kontrollen fra detaljpanelet. Administratorer kan også endre rom og navn eller skjule kontrollen fra oversikten.
+- Automasjoner viser telefonnavn i mottakerlisten og flyten. Kontonavn skiller mellom telefoner med samme eller generisk navn når det er tilgjengelig.
+
 ## 1.36.167
 - Oppdateringsfanene viser røde tellere for tilgjengelige SMARTi-, utvidelses- og appoppdateringer.
 - Bekreftelsen for SMARTi-oppdatering viser versjonene side om side, med et kompakt valg for sikkerhetskopi.

@@ -1,4 +1,5 @@
 import { test, expect } from "../../frontend/node_modules/@playwright/test";
+import { selectDeviceCategory } from "./deviceNavigation";
 
 test("protocol inventory, confirmed removal and add wizard", async ({
   page,
@@ -149,7 +150,7 @@ test("protocol inventory, confirmed removal and add wizard", async ({
   });
   await page.goto("/");
   await page.getByRole("button", { name: "Enheter", exact: true }).click();
-  await page.getByRole("button", { name: "Zigbee", exact: true }).click();
+  await selectDeviceCategory(page, "zigbee2mqtt");
   await expect(page.getByText("LQI 185/255", { exact: false })).toBeVisible();
   await page.getByText("Zigbee-forbindelse · Tilkoblet", { exact: true }).click();
   await expect(page.getByText("Direkte til Zigbee2MQTT-serveren", { exact: true })).toBeVisible();
@@ -198,7 +199,7 @@ test("protocol inventory, confirmed removal and add wizard", async ({
     page.getByText("Enheten er fjernet fra nettverket."),
   ).toBeVisible();
   expect(calls).toBe(1);
-  await page.getByRole("button", { name: "Z-Wave", exact: true }).click();
+  await selectDeviceCategory(page, "zwave_js");
   await expect(
     page.getByText("Sover · normalt for batterienheter"),
   ).toBeVisible();

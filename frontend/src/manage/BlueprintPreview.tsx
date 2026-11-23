@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Eye, Info } from "lucide-react";
 import { api } from "../api";
 import { FlowTree } from "./FlowTree";
-import { flowNarrative } from "./flowNarrative";
+import { flowNarrative, flowUsesPhoneNotifications } from "./flowNarrative";
+import { useNotificationRecipients } from "./notificationRecipients";
 import { kindAtPath } from "./flowPresentation";
 import { readFlowPath, type FlowPath } from "./flowStructure";
 import { SettingsDialog } from "../home/SettingsDialog";
@@ -37,10 +38,14 @@ export function BlueprintPreview({
     retry: false,
   });
   const value = q.data?.config;
+  const { labels: recipientLabels } = useNotificationRecipients(
+    lang,
+    show && flowUsesPhoneNotifications(value?.actions ?? value?.action),
+  );
   const row = value && selected ? readFlowPath(value, selected) : null;
   const summary =
     selected && value
-      ? flowNarrative(row, kindAtPath(selected), home, lang)
+      ? flowNarrative(row, kindAtPath(selected), home, lang, recipientLabels)
       : null;
   function input(key: string, next: unknown) {
     onChange({
@@ -164,6 +169,7 @@ export function BlueprintPreview({
                       kind={kind}
                       home={home}
                       lang={lang}
+                      recipientLabels={recipientLabels}
                       readOnly
                       onSelect={setSelected}
                       onAppend={() => {}}
