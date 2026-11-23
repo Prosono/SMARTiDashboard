@@ -6,8 +6,13 @@ import {
   Sun,
   UtilityPole,
 } from "lucide-react";
-import house from "../assets/energy-house-harmoni.webp";
-import type { FlowRole, FlowSnapshot } from "./energyFlowModel";
+import house from "../assets/energy-house-bare.webp";
+import equipmentArt from "../assets/energy-house-harmoni.webp";
+import {
+  isEvCharging,
+  type FlowRole,
+  type FlowSnapshot,
+} from "./energyFlowModel";
 
 const hotspotOrder = ["grid", "solar", "ev", "battery", "home"] as const;
 const connectionRoles = ["grid", "solar", "ev", "battery"] as const;
@@ -83,6 +88,13 @@ export function EnergyPicture({
   const [layout, setLayout] = useState<PictureLayout | null>(null);
   const visible = hotspotOrder.filter((role) => flows[role].visible);
   const visibleKey = visible.join(",");
+  const charging = isEvCharging(flows.ev);
+  const equipment = [
+    flows.grid.visible && "grid",
+    flows.solar.visible && "solar",
+    flows.battery.visible && "battery",
+    flows.ev.visible && (charging ? "car" : "charger"),
+  ];
   const en = lang === "en";
 
   useLayoutEffect(() => {
@@ -161,20 +173,39 @@ export function EnergyPicture({
     <div className="energy-scene-wrap">
       <div ref={stage} className="energy-scene-stage">
         <div className="energy-scene">
-          <img
-            ref={picture}
-            className="energy-scene-picture"
-            src={house}
-            width={1774}
-            height={887}
-            alt={
-              en
-                ? "Illustration of a house with solar panels, an EV and a battery"
-                : "Illustrasjon av et hus med solceller, elbil og batteri"
-            }
-            decoding="async"
-            draggable={false}
-          />
+          <div className="energy-picture-art">
+            <img
+              ref={picture}
+              className="energy-scene-picture"
+              src={house}
+              width={1774}
+              height={887}
+              alt={
+                en
+                  ? "Illustration of the energy home"
+                  : "Illustrasjon av energihuset"
+              }
+              decoding="async"
+              draggable={false}
+            />
+            {equipment.map(
+              (part) =>
+                part && (
+                  <img
+                    key={part}
+                    className="energy-picture-equipment"
+                    data-picture-equipment={part}
+                    src={equipmentArt}
+                    width={1774}
+                    height={887}
+                    alt=""
+                    aria-hidden="true"
+                    decoding="async"
+                    draggable={false}
+                  />
+                ),
+            )}
+          </div>
         </div>
         {layout && (
           <svg
@@ -185,7 +216,10 @@ export function EnergyPicture({
             {layout.connections.map(({ role, x, y, leader, route }) => {
               const flow = flows[role];
               const watts = flow.watts ?? 0;
-              const active = flow.status === "ok" && Math.abs(watts) > 0.5;
+              const active =
+                role === "ev"
+                  ? charging
+                  : flow.status === "ok" && Math.abs(watts) > 0.5;
               const reverse = role === "battery" ? watts > 0 : watts < 0;
               const arrow = `${id}-${role}`;
               const marker = `url(#${arrow})`;

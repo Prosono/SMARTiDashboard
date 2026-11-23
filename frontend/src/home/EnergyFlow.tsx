@@ -29,6 +29,7 @@ import { api } from "../api";
 import type { Home } from "../types";
 import {
   flowRoles,
+  isEvCharging,
   noFlows,
   type FlowRole,
   type FlowPreferences,
@@ -81,7 +82,7 @@ export function EnergyFlow({
     queryFn: () => api<FlowPreferences>("home/energy-flow/preferences"),
   });
   const live = useQuery({
-    queryKey: ["energy-flow-live"],
+    queryKey: ["energy-flow-live", config.data],
     queryFn: () => api<Live>("home/energy-flow/live"),
     enabled: !offline && !!config.data,
     refetchInterval: 5000,
@@ -161,6 +162,10 @@ export function EnergyFlow({
   function direction(role: FlowRole) {
     const f = flows[role];
     if (f.status !== "ok") return statuses[f.status];
+    if (harmoni && role === "ev")
+      return isEvCharging(f)
+        ? t("Lader", "Charging")
+        : t("Ingen lading", "Not charging");
     if (Math.abs(f.watts || 0) <= 0.5) return t("Ingen flyt", "No flow");
     if (role === "grid")
       return f.watts! > 0
@@ -496,8 +501,8 @@ export function EnergyFlow({
                 <p>
                   {harmoni
                     ? t(
-                        "Velg hvilket utstyr som skal ha målekort og flytlinjer ved husillustrasjonen.",
-                        "Choose which equipment has a reading and a flow line alongside the house illustration.",
+                        "Velg utstyret du har hjemme. Det vises på husbildet, og bilen vises når den lader.",
+                        "Choose the equipment you have at home. It appears in the illustration, and the car appears while charging.",
                       )
                     : t(
                         "Fjern avhukingen for utstyr du ikke har. Det fjernes fra modellen, målekortene og lysflyten når du lagrer. «Hjemmet» styrer bare visningen av husets forbruk.",

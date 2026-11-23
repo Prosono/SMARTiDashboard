@@ -1737,19 +1737,87 @@
     touch-action: auto;
   }
 
-  .energy-scene-picture {
-    display: block;
+  .energy-picture-art {
     position: absolute;
     inset: 4px 0 auto;
     width: min(
       94%,
       calc((var(--flow-scene-height) - var(--flow-picture-clearance)) * 2)
     );
-    height: auto;
-    aspect-ratio: auto 2 / 1;
     margin-inline: auto;
-    object-fit: contain;
+    pointer-events: none;
     user-select: none;
+  }
+
+  :is(.energy-scene-picture, .energy-picture-equipment) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .energy-picture-equipment {
+    position: absolute;
+    inset: 0;
+    clip-path: inset(
+      var(--part-top) calc(100% - var(--part-right))
+        calc(100% - var(--part-bottom)) var(--part-left)
+    );
+    mask-image:
+      linear-gradient(
+        to right,
+        transparent var(--part-left),
+        #000 calc(var(--part-left) + var(--part-fade)),
+        #000 calc(var(--part-right) - var(--part-fade)),
+        transparent var(--part-right)
+      ),
+      linear-gradient(
+        to bottom,
+        transparent var(--part-top),
+        #000 calc(var(--part-top) + var(--part-fade)),
+        #000 calc(var(--part-bottom) - var(--part-fade)),
+        transparent var(--part-bottom)
+      );
+    mask-composite: intersect;
+  }
+
+  .energy-picture-equipment[data-picture-equipment="grid"] {
+    --part-top: 57%;
+    --part-right: 66.2%;
+    --part-bottom: 66%;
+    --part-left: 62.2%;
+    --part-fade: 0.4%;
+  }
+
+  .energy-picture-equipment[data-picture-equipment="solar"] {
+    --part-top: 11.5%;
+    --part-right: 76.8%;
+    --part-bottom: 40.2%;
+    --part-left: 42.2%;
+    --part-fade: 0.9%;
+  }
+
+  .energy-picture-equipment[data-picture-equipment="battery"] {
+    --part-top: 62.1%;
+    --part-right: 84%;
+    --part-bottom: 84%;
+    --part-left: 75.8%;
+    --part-fade: 0.8%;
+  }
+
+  .energy-picture-equipment[data-picture-equipment="charger"] {
+    --part-top: 56%;
+    --part-right: 29.7%;
+    --part-bottom: 75.7%;
+    --part-left: 26.1%;
+    --part-fade: 0.35%;
+  }
+
+  .energy-picture-equipment[data-picture-equipment="car"] {
+    --part-top: 55.7%;
+    --part-right: 30.4%;
+    --part-bottom: 81.5%;
+    --part-left: 5.2%;
+    --part-fade: 1%;
   }
 
   :is(.energy-picture-leader, .energy-picture-route, .energy-picture-pulse) {
@@ -2016,7 +2084,7 @@
   .energy-scene-stage[data-layout="compact"] {
   --flow-scene-height: auto;
 
-  .energy-scene-picture {
+  .energy-picture-art {
     position: static;
     width: 100%;
   }
@@ -2074,7 +2142,7 @@
     height: auto;
   }
 
-  .energy-scene-stage[data-layout="compact"] .energy-scene-picture {
+  .energy-scene-stage[data-layout="compact"] .energy-picture-art {
     max-width: 440px;
   }
 }

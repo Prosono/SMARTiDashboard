@@ -7,6 +7,12 @@ export type Flow = {
   visible: boolean;
 };
 export type FlowSnapshot = Record<FlowRole, Flow>;
+
+export function isEvCharging(flow: Flow) {
+  // A powered wallbox may draw a little power while the car is idle.
+  return flow.visible && flow.status === "ok" && (flow.watts ?? 0) >= 100;
+}
+
 export type FlowBinding = {
   visible: boolean;
   source: string | null;

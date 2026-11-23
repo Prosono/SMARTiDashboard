@@ -452,7 +452,7 @@ test("history filters do not change today's summaries or remount the energy hous
   await page.setViewportSize({ width: 1440, height: 1000 });
   const state = await setup(page);
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
-  const house = grid.locator(".energy-scene :is(img, canvas)");
+  const house = grid.locator(".energy-scene :is(.energy-scene-picture, canvas)");
   await expect(house).toBeVisible({ timeout: 20000 });
   await house.evaluate((node) => (node.dataset.retained = "yes"));
   await page.getByRole("button", { name: "Uke", exact: true }).click();

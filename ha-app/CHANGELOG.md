@@ -1,3 +1,7 @@
+## 1.36.162
+- Husbildet i Energiflyt viser utstyret som er valgt i energiinnstillingene.
+- Elbilen vises ved en fersk lademåling på minst 100 W. Laderen blir stående når bilen ikke lader.
+
 ## 1.36.161
 - Energiflyt bruker en husillustrasjon med live målinger og rette, fargede flytlinjer med avrundede hjørner. Trykk på et målekort for å åpne historikken.
 
