@@ -345,7 +345,7 @@ test.afterEach(async ({ page }) => {
   await page.unrouteAll({ behavior: "wait" });
 });
 
-test("one energy canvas contains 3D, monthly capacity, tariff, hourly extremes and detailed graphs", async ({
+test("one energy canvas contains the energy house, monthly capacity, tariff, hourly extremes and detailed graphs", async ({
   page,
 }, info) => {
   test.setTimeout(60000);
@@ -362,7 +362,19 @@ test("one energy canvas contains 3D, monthly capacity, tariff, hourly extremes a
   const flow = grid.locator('[data-card="energy:flow"]');
   await expect(flow).toHaveCSS("grid-column-end", "span 2");
   await expect(flow.locator(".energy-scene")).toBeVisible({ timeout: 20000 });
-  await expect(flow.locator(".energy-scene")).toHaveCSS("height", "390px");
+  const classic =
+    (await flow.locator(".energy-flow").getAttribute("data-scene-design")) ===
+    "classic";
+  if (!classic) {
+    await expect(flow.locator(".energy-scene-picture")).toHaveJSProperty(
+      "naturalWidth",
+      1774,
+    );
+    await expect(flow.locator(".energy-scene canvas")).toHaveCount(0);
+    const leader = flow.locator(".energy-picture-leader").first();
+    await expect(leader).toHaveAttribute("d", /\bL .*\bQ /);
+    await expect(leader).not.toHaveAttribute("d", /\bC /);
+  }
   await expect(flow.locator(".home-canvas-viewport")).toHaveAttribute(
     "data-overflow",
     "false",
@@ -397,10 +409,15 @@ test("one energy canvas contains 3D, monthly capacity, tariff, hourly extremes a
   ).toBeVisible();
   await expect(grid.locator('[data-card="energy:prices"]')).toBeVisible();
   await flow.getByRole("button", { name: "Pause", exact: true }).click();
-  await flow
-    .getByRole("button", { name: "Drei huset mot venstre", exact: true })
-    .click();
-  await expectUnobstructedSceneControls(page);
+  await expect(
+    flow.getByRole("button", { name: "Vis flyt", exact: true }),
+  ).toBeVisible();
+  if (classic) {
+    await flow
+      .getByRole("button", { name: "Drei huset mot venstre", exact: true })
+      .click();
+    await expectUnobstructedSceneControls(page);
+  }
   await page.screenshot({
     path: `/private/tmp/smarti-100-energy-dark-${info.project.name}.png`,
     fullPage: true,
@@ -435,9 +452,9 @@ test("history filters do not change today's summaries or remount the energy hous
   await page.setViewportSize({ width: 1440, height: 1000 });
   const state = await setup(page);
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
-  const canvas = grid.locator("canvas");
-  await expect(canvas).toBeVisible({ timeout: 20000 });
-  await canvas.evaluate((node) => (node.dataset.retained = "yes"));
+  const house = grid.locator(".energy-scene :is(img, canvas)");
+  await expect(house).toBeVisible({ timeout: 20000 });
+  await house.evaluate((node) => (node.dataset.retained = "yes"));
   await page.getByRole("button", { name: "Uke", exact: true }).click();
   await expect(grid.locator('[data-card="energy:consumption"]')).toHaveCount(0);
   await expect(grid.locator('[data-card="energy:history"]')).toContainText(
@@ -453,11 +470,11 @@ test("history filters do not change today's summaries or remount the energy hous
   await expect(grid.locator('[data-card="energy:capacity"]')).toContainText(
     "2–5 kW",
   );
-  await expect(canvas).toHaveAttribute("data-retained", "yes");
+  await expect(house).toHaveAttribute("data-retained", "yes");
   await expect(
     page.getByRole("button", { name: "Uke", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(canvas).toHaveAttribute("data-retained", "yes");
+  await expect(house).toHaveAttribute("data-retained", "yes");
   expect(state.configWrites()).toBe(0);
   await page
     .getByRole("button", { name: "Energiinnstillinger", exact: true })

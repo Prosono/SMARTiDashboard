@@ -6,6 +6,10 @@ import {
 } from "../../frontend/node_modules/@playwright/test";
 
 // This suite exercises the existing 3D view after the separate setup wizard.
+test.skip(
+  process.env.VITE_ENERGY_SCENE_DESIGN !== "classic",
+  "Run the WebGL suite with a classic EnergyFlow build.",
+);
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/home/energy/platform/setup", (route) =>
     route.fulfill({

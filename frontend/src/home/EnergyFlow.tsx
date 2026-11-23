@@ -36,8 +36,11 @@ import {
 } from "./energyFlowModel";
 import { FlowHistory, type FlowHistoryData } from "./FlowHistory";
 import { EnergyWelcome } from "./EnergyWelcome";
+import { EnergyPicture } from "./EnergyPicture";
+import { energySceneDesign } from "./energySceneDesign";
 import "./energyFlow.css";
-const Scene = lazy(() => import("./EnergyScene"));
+const harmoni = energySceneDesign === "harmoni";
+const Scene = harmoni ? EnergyPicture : lazy(() => import("./EnergyScene"));
 class SceneBoundary extends Component<
   { children: ReactNode; fallback: ReactNode },
   { failed: boolean }
@@ -186,7 +189,10 @@ export function EnergyFlow({
     flowRoles.map((role) => [
       role,
       {
-        label: labels[role],
+        label:
+          harmoni && role === "home"
+            ? t("Forbruk i huset", "Home use")
+            : labels[role],
         value: format(flows[role].watts),
         detail: `${direction(role)}${role === "battery" && batteryLevel ? ` · ${batteryLevel}` : ""}`,
       },
@@ -261,21 +267,153 @@ export function EnergyFlow({
       />
     );
   }
+  const visualControls = (
+    <div className="flow-visual-top">
+      <span className={anyLive ? "flow-live" : "flow-waiting"}>
+        {harmoni ? (
+          <i className="flow-live-dot" aria-hidden="true" />
+        ) : (
+          <Radio size={14} />
+        )}
+        {offline || live.isError || live.data?.connected === false
+          ? t("Frakoblet", "Offline")
+          : anyLive
+            ? harmoni
+              ? t("Direkte", "Live")
+              : t("Målinger fra hjemmet", "Readings from home")
+            : t("Venter på målinger", "Waiting for readings")}
+      </span>
+      <button aria-pressed={paused} onClick={() => pause(!paused)}>
+        {paused ? <Play size={15} /> : <Pause size={15} />}{" "}
+        {paused ? t("Vis flyt", "Show flow") : t("Pause", "Pause")}
+      </button>
+    </div>
+  );
+  const equipmentLabel = harmoni
+    ? t("Velg utstyr", "Choose equipment")
+    : t("Rediger 3D-modell", "Edit 3D model");
+  function renderReadingHistory(role: FlowRole) {
+    return (
+      <>
+        <section
+          id="flow-history-panel"
+          className="flow-history-panel"
+          data-role={role}
+          aria-label={t("Effekthistorikk", "Power history")}
+        >
+          <header>
+            <div>
+              {!harmoni && (
+                <span className="eyebrow">
+                  <ChartNoAxesCombined size={14} aria-hidden="true" />
+                  {t("Effekthistorikk", "Power history")}
+                </span>
+              )}
+              <h3>{labels[role]}</h3>
+            </div>
+            <div className="flow-history-periods">
+              {[
+                ["24h", t("Siste døgn", "24 hours")],
+                ["7d", t("Siste uke", "7 days")],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  aria-pressed={historyPeriod === value}
+                  onClick={() => setHistoryPeriod(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </header>
+          {offline ? (
+            <p>
+              {t(
+                "Historikken er utilgjengelig når du er frakoblet.",
+                "History is unavailable while offline.",
+              )}
+            </p>
+          ) : history.isError ? (
+            <p role="alert">
+              {t("Kunne ikke hente historikken.", "Could not load history.")}{" "}
+              <button onClick={() => history.refetch()}>
+                {t("Prøv igjen", "Retry")}
+              </button>
+            </p>
+          ) : history.isFetching && !history.data ? (
+            <p>{t("Henter historikk…", "Loading history…")}</p>
+          ) : (
+            <FlowHistory
+              key={`${role}-${historyPeriod}`}
+              lang={lang}
+              points={history.data?.series[role] || []}
+            />
+          )}
+          {["grid", "battery"].includes(role) && (
+            <p className="flow-chart-sign">
+              {role === "grid"
+                ? t(
+                    "Pluss: fra nettet · Minus: til nettet",
+                    "Positive: import · Negative: export",
+                  )
+                : t(
+                    "Pluss: batteriet leverer · Minus: batteriet lader",
+                    "Positive: discharging · Negative: charging",
+                  )}
+            </p>
+          )}
+        </section>
+        <div className="flow-reading-detail">
+          <strong>{labels[role]}</strong>
+          <span>
+            {home.controls.find(
+              (c) => c.entity_id === config.data?.[role].source,
+            )?.name || t("Ingen måler valgt", "No sensor selected")}
+          </span>
+          <span>
+            {t("Sist målt", "Last measured")}:{" "}
+            {flows[role].measured_at
+              ? new Date(flows[role].measured_at!).toLocaleString(
+                  en ? "en-GB" : "nb-NO",
+                )
+              : "—"}
+          </span>
+          <small>
+            {t("Retning", "Direction")}: {direction(role)}
+          </small>
+          <button
+            disabled={!config.data || busy}
+            onClick={() => {
+              if (harmoni) select(null);
+              configure(role);
+            }}
+          >
+            <Settings2 size={15} aria-hidden="true" />
+            {config.data?.[role].source
+              ? t("Endre måler", "Change sensor")
+              : t("Legg til måling", "Add a reading")}
+          </button>
+        </div>
+      </>
+    );
+  }
   return (
     <section
       className="energy-flow energy-flow-cinematic"
+      data-scene-design={energySceneDesign}
       aria-label={t("Energiflyt", "Energy flow")}
     >
       <header className="flow-heading">
         {!embedded && (
           <EnergyWelcome home={home} offline={offline} lang={lang} />
         )}
+        {harmoni && visualControls}
         <div className="flow-heading-actions">
           {!managedEquipment && (
             <button
               className="flow-configure"
-              aria-label={t("Rediger 3D-modell", "Edit 3D model")}
-              title={t("Rediger 3D-modell", "Edit 3D model")}
+              aria-label={equipmentLabel}
+              title={equipmentLabel}
               disabled={!config.data || busy}
               onClick={() => {
                 edit(structuredClone(config.data!));
@@ -336,8 +474,8 @@ export function EnergyFlow({
               {editingRole
                 ? t("Velg effektmåler", "Choose power sensor")
                 : t(
-                    "Koble modellen til hjemmet ditt",
-                    "Connect the model to your home",
+                    "Velg målinger for energiflyt",
+                    "Choose readings for energy flow",
                   )}
             </legend>
             <p>
@@ -356,10 +494,15 @@ export function EnergyFlow({
                   {t("Dette finnes i hjemmet mitt", "Equipment in my home")}
                 </h3>
                 <p>
-                  {t(
-                    "Fjern avhukingen for utstyr du ikke har. Det fjernes fra modellen, målekortene og lysflyten når du lagrer. «Hjemmet» styrer bare visningen av husets forbruk.",
-                    "Uncheck equipment you do not have. Saving removes it from the model, readings and light paths. “Home” only controls the consumption display.",
-                  )}
+                  {harmoni
+                    ? t(
+                        "Velg hvilket utstyr som skal ha målekort og flytlinjer ved husillustrasjonen.",
+                        "Choose which equipment has a reading and a flow line alongside the house illustration.",
+                      )
+                    : t(
+                        "Fjern avhukingen for utstyr du ikke har. Det fjernes fra modellen, målekortene og lysflyten når du lagrer. «Hjemmet» styrer bare visningen av husets forbruk.",
+                        "Uncheck equipment you do not have. Saving removes it from the model, readings and light paths. “Home” only controls the consumption display.",
+                      )}
                 </p>
                 <div className="flow-model-toggles">
                   {flowRoles.map((role) => {
@@ -558,26 +701,13 @@ export function EnergyFlow({
         </SettingsDialog>
       )}
       <div className="flow-visual">
-        <div className="flow-visual-top">
-          <span className={anyLive ? "flow-live" : "flow-waiting"}>
-            <Radio size={14} />
-            {offline || live.isError || live.data?.connected === false
-              ? t("Frakoblet", "Offline")
-              : anyLive
-                ? t("Målinger fra hjemmet", "Readings from home")
-                : t("Venter på målinger", "Waiting for readings")}
-          </span>
-          <button aria-pressed={paused} onClick={() => pause(!paused)}>
-            {paused ? <Play size={15} /> : <Pause size={15} />}{" "}
-            {paused ? t("Vis flyt", "Show flow") : t("Pause", "Pause")}
-          </button>
-        </div>
+        {!harmoni && visualControls}
         <SceneBoundary
           fallback={
             <p>
               {t(
-                "3D-modellen kunne ikke lastes. Målingene vises under.",
-                "Could not load 3D model. Readings are shown below.",
+                "Energihuset kunne ikke lastes. Målingene vises under.",
+                "Could not load the energy house. Readings are shown below.",
               )}
             </p>
           }
@@ -601,178 +731,97 @@ export function EnergyFlow({
                 if (!config.data?.[role].source) configure(role);
                 else {
                   select(role);
-                  requestAnimationFrame(() =>
-                    document
-                      .getElementById("flow-history-panel")
-                      ?.scrollIntoView({ block: "center" }),
-                  );
+                  if (!harmoni)
+                    requestAnimationFrame(() =>
+                      document
+                        .getElementById("flow-history-panel")
+                        ?.scrollIntoView({ block: "center" }),
+                    );
                 }
               }}
               canConfigure={!!config.data && !busy}
             />
           </Suspense>
         </SceneBoundary>
-        <nav
-          className="flow-navigation"
-          aria-label={t("Energioversikt", "Energy overview")}
-        >
-          <div className="flow-measurements">
-            <button
-              className="flow-nav-overview"
-              aria-pressed={selected === null}
-              onClick={() => select(null)}
-            >
-              <Zap size={23} aria-hidden="true" />
-              <span>{t("Energiflyt", "Energy flow")}</span>
-            </button>
-            {(["home", "solar", "battery", "ev", "grid"] as FlowRole[])
-              .filter((role) => flows[role].visible)
-              .map((role) => {
-                const Icon =
-                  role === "home" ? ChartNoAxesCombined : icons[role];
-                return (
-                  <button
-                    key={role}
-                    className="flow-measurement"
-                    data-role={role}
-                    data-status={flows[role].status}
-                    aria-expanded={selected === role}
-                    onClick={() =>
-                      flows[role].status === "unconfigured"
-                        ? configure(role)
-                        : select(selected === role ? null : role)
-                    }
-                  >
-                    <span className="flow-measurement-label">
-                      <Icon size={22} aria-hidden="true" />
-                      {role === "home"
-                        ? t("Forbruk", "Consumption")
-                        : labels[role]}
-                    </span>
-                    <strong>{format(flows[role].watts)}</strong>
-                    <small>
-                      {direction(role)}
-                      {role === "battery" && batteryLevel && (
-                        <em> · {batteryLevel}</em>
-                      )}
-                    </small>
-                  </button>
-                );
-              })}
-          </div>
-          <label className="flow-nav-period">
-            <CalendarDays size={18} aria-hidden="true" />
-            <select
-              aria-label={t("Historikkperiode", "History period")}
-              value={historyPeriod}
-              onChange={(e) => setHistoryPeriod(e.target.value)}
-            >
-              <option value="24h">{t("Siste døgn", "24 hours")}</option>
-              <option value="7d">{t("Siste uke", "7 days")}</option>
-            </select>
-          </label>
-        </nav>
-        {selected && flows[selected].visible && (
-          <>
-            <section
-              id="flow-history-panel"
-              className="flow-history-panel"
-              data-role={selected}
-              aria-label={t("Effekthistorikk", "Power history")}
-            >
-              <header>
-                <div>
-                  <span className="eyebrow">
-                    <ChartNoAxesCombined size={14} aria-hidden="true" />
-                    {t("Effekthistorikk", "Power history")}
-                  </span>
-                  <h3>{labels[selected]}</h3>
-                </div>
-                <div className="flow-history-periods">
-                  {[
-                    ["24h", t("Siste døgn", "24 hours")],
-                    ["7d", t("Siste uke", "7 days")],
-                  ].map(([value, label]) => (
-                    <button
-                      key={value}
-                      aria-pressed={historyPeriod === value}
-                      onClick={() => setHistoryPeriod(value)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </header>
-              {offline ? (
-                <p>
-                  {t(
-                    "Historikken er utilgjengelig når du er frakoblet.",
-                    "History is unavailable while offline.",
-                  )}
-                </p>
-              ) : history.isError ? (
-                <p role="alert">
-                  {t(
-                    "Kunne ikke hente historikken.",
-                    "Could not load history.",
-                  )}{" "}
-                  <button onClick={() => history.refetch()}>
-                    {t("Prøv igjen", "Retry")}
-                  </button>
-                </p>
-              ) : history.isFetching && !history.data ? (
-                <p>{t("Henter historikk…", "Loading history…")}</p>
-              ) : (
-                <FlowHistory
-                  key={`${selected}-${historyPeriod}`}
-                  lang={lang}
-                  points={history.data?.series[selected] || []}
-                />
-              )}
-              {["grid", "battery"].includes(selected) && (
-                <p className="flow-chart-sign">
-                  {selected === "grid"
-                    ? t(
-                        "Pluss: fra nettet · Minus: til nettet",
-                        "Positive: import · Negative: export",
-                      )
-                    : t(
-                        "Pluss: batteriet leverer · Minus: batteriet lader",
-                        "Positive: discharging · Negative: charging",
-                      )}
-                </p>
-              )}
-            </section>
-            <div className="flow-reading-detail">
-              <strong>{labels[selected]}</strong>
-              <span>
-                {home.controls.find(
-                  (c) => c.entity_id === config.data?.[selected].source,
-                )?.name || t("Ingen måler valgt", "No sensor selected")}
-              </span>
-              <span>
-                {t("Sist målt", "Last measured")}:{" "}
-                {flows[selected].measured_at
-                  ? new Date(flows[selected].measured_at!).toLocaleString(
-                      en ? "en-GB" : "nb-NO",
-                    )
-                  : "—"}
-              </span>
-              <small>
-                {t("Retning", "Direction")}: {direction(selected)}
-              </small>
+        {!harmoni && (
+          <nav
+            className="flow-navigation"
+            aria-label={t("Energioversikt", "Energy overview")}
+          >
+            <div className="flow-measurements">
               <button
-                disabled={!config.data || busy}
-                onClick={() => configure(selected)}
+                className="flow-nav-overview"
+                aria-pressed={selected === null}
+                onClick={() => select(null)}
               >
-                <Settings2 size={15} aria-hidden="true" />
-                {config.data?.[selected].source
-                  ? t("Endre måler", "Change sensor")
-                  : t("Legg til måling", "Add a reading")}
+                <Zap size={23} aria-hidden="true" />
+                <span>{t("Energiflyt", "Energy flow")}</span>
               </button>
+              {(["home", "solar", "battery", "ev", "grid"] as FlowRole[])
+                .filter((role) => flows[role].visible)
+                .map((role) => {
+                  const Icon =
+                    role === "home" ? ChartNoAxesCombined : icons[role];
+                  return (
+                    <button
+                      key={role}
+                      className="flow-measurement"
+                      data-role={role}
+                      data-status={flows[role].status}
+                      aria-expanded={selected === role}
+                      onClick={() =>
+                        flows[role].status === "unconfigured"
+                          ? configure(role)
+                          : select(selected === role ? null : role)
+                      }
+                    >
+                      <span className="flow-measurement-label">
+                        <Icon size={22} aria-hidden="true" />
+                        {role === "home"
+                          ? t("Forbruk", "Consumption")
+                          : labels[role]}
+                      </span>
+                      <strong>{format(flows[role].watts)}</strong>
+                      <small>
+                        {direction(role)}
+                        {role === "battery" && batteryLevel && (
+                          <em> · {batteryLevel}</em>
+                        )}
+                      </small>
+                    </button>
+                  );
+                })}
             </div>
-          </>
+            <label className="flow-nav-period">
+              <CalendarDays size={18} aria-hidden="true" />
+              <select
+                aria-label={t("Historikkperiode", "History period")}
+                value={historyPeriod}
+                onChange={(e) => setHistoryPeriod(e.target.value)}
+              >
+                <option value="24h">{t("Siste døgn", "24 hours")}</option>
+                <option value="7d">{t("Siste uke", "7 days")}</option>
+              </select>
+            </label>
+          </nav>
         )}
+        {selected &&
+          flows[selected].visible &&
+          (harmoni
+            ? !draft && (
+                <SettingsDialog
+                  title={
+                    t("Effekthistorikk", "Power history") +
+                    " · " +
+                    labels[selected]
+                  }
+                  lang={lang}
+                  onClose={() => select(null)}
+                >
+                  {renderReadingHistory(selected)}
+                </SettingsDialog>
+              )
+            : renderReadingHistory(selected))}
         {!anyConfigured && config.data && (
           <p className="flow-start">
             {t(
@@ -792,12 +841,14 @@ export function EnergyFlow({
             </button>
           </p>
         )}
-        <p className="flow-note">
-          {t(
-            "Effekt akkurat nå · W / kW. Flyt stopper ved manglende eller gamle målinger.",
-            "Power now · W / kW. Flow stops for missing or stale readings.",
-          )}
-        </p>
+        {!harmoni && (
+          <p className="flow-note">
+            {t(
+              "Effekt akkurat nå · W / kW. Flyt stopper ved manglende eller gamle målinger.",
+              "Power now · W / kW. Flow stops for missing or stale readings.",
+            )}
+          </p>
+        )}
       </div>
     </section>
   );

@@ -1,3 +1,6 @@
+## 1.36.161
+- Energiflyt bruker en husillustrasjon med live målinger og rette, fargede flytlinjer med avrundede hjørner. Trykk på et målekort for å åpne historikken.
+
 ## 1.36.160
 - Skjermsparerens bildegalleri har myke bildeoverganger med rolig panorering og lett zoom. Visningen følger skjermens innstilling for redusert bevegelse.
 
