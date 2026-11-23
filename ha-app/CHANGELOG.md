@@ -1,3 +1,7 @@
+## 1.36.163
+- PowerGuard heter nå Effektro. Oversikten viser forventet timesnitt, grense og målt effekt siste time.
+- Enhetene vises med produktbilder og prioritetsnummer i et rutenett tilpasset mobil og nettbrett. Åpne historikk og innstillinger direkte fra kortet.
+
 ## 1.36.162
 - Husbildet i Energiflyt viser utstyret som er valgt i energiinnstillingene.
 - Elbilen vises ved en fersk lademåling på minst 100 W. Laderen blir stående når bilen ikke lader.

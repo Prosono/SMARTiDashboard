@@ -9,6 +9,11 @@ import {
   Thermometer,
 } from "lucide-react";
 import { SettingsDialog } from "./SettingsDialog";
+import {
+  hasAirConditionerHint,
+  hasWaterHeaterHint,
+  householdApplianceArt,
+} from "./equipmentModel";
 
 export type PowerGuardMeter = { id: string; name: string };
 
@@ -31,6 +36,22 @@ export function powerGuardDeviceIcon(device: PowerGuardDevice | undefined) {
     return CarFront;
   if (/(bereder|water heater|hot water)/.test(name)) return Droplet;
   return device?.kind === "climate" ? Thermometer : Plug;
+}
+
+export function powerGuardDevicePortrait(device: PowerGuardDevice | undefined) {
+  if (!device) return null;
+  const identity = { name: device.name, entity_id: device.id, attributes: {} };
+  if (hasWaterHeaterHint(identity)) return "water-heater";
+  if (hasAirConditionerHint(identity)) return "air-conditioner";
+  if (
+    /\b(?:panelovn|varmeovn|ovn|radiator|panel heater|space heater)\b/i.test(
+      device.name,
+    )
+  )
+    return "panel-heater";
+  if (powerGuardDeviceIcon(device) === CarFront) return "charger";
+  if (device.kind === "climate") return "thermostat";
+  return householdApplianceArt(identity) ?? "plug";
 }
 
 type DeviceFilter = "all" | PowerGuardDevice["kind"];
@@ -102,8 +123,8 @@ export function PowerGuardDevicePicker({
         <div className="power-guard-picker-tools">
           <p>
             {t(
-              "Velg enhetene PowerGuard kan sette på pause. Du kan velge effektmåler eller oppgi effekten selv.",
-              "Choose the devices PowerGuard can pause. You can select a power meter or enter the power yourself.",
+              "Velg enhetene Effektro kan sette på pause. Du kan velge effektmåler eller oppgi effekten selv.",
+              "Choose the devices Effektro can pause. You can select a power meter or enter the power yourself.",
             )}
           </p>
           <label className="power-guard-picker-search">

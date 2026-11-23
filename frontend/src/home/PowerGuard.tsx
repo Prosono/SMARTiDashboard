@@ -1,17 +1,11 @@
-import {
-  type CSSProperties,
-  type FormEvent,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUp,
   Check,
   ChevronDown,
+  ChevronRight,
   CircleAlert,
   GripVertical,
   Plug,
@@ -24,13 +18,16 @@ import { ApiError, api } from "../api";
 import {
   PowerGuardDevicePicker,
   powerGuardDeviceIcon,
+  powerGuardDevicePortrait,
   type PowerGuardDevice,
 } from "./PowerGuardDevicePicker";
 import {
   PowerGuardHistory,
   PowerGuardLoadTrend,
+  PowerGuardPreview,
   usePowerGuardHistoryHour,
 } from "./PowerGuardHistory";
+import { SettingsDialog } from "./SettingsDialog";
 import "./powerGuard.css";
 
 type Load = { id: string; watts: number | null; power_entity?: string | null };
@@ -154,6 +151,10 @@ export function PowerGuard({
   const [view, setView] = useState(preferredView);
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [ordering, setOrdering] = useState(false);
+  const [selectedLoad, selectLoad] = useState<string | null>(null);
   const [focusLoad, setFocusLoad] = useState<string | null>(null);
   const newLoadField = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState<{ from: string; over: string } | null>(null);
@@ -182,6 +183,10 @@ export function PowerGuard({
     onMutate: async () => cache.cancelQueries({ queryKey: powerGuardQueryKey }),
     onSuccess: (data, { toggle }) => {
       cache.setQueryData(powerGuardQueryKey, data);
+      if (!toggle) {
+        setSettingsOpen(false);
+        setOrdering(false);
+      }
       setEditing((current) =>
         toggle && current
           ? {
@@ -201,7 +206,7 @@ export function PowerGuard({
   const config = data?.config;
   const advanced = view === "advanced";
   const hour = usePowerGuardHistoryHour(
-    offline || !advanced || !open || !config,
+    offline || !open || !config,
     config?.enabled,
   );
   const draft = editing?.draft ?? config;
@@ -221,10 +226,6 @@ export function PowerGuard({
         ? "active"
         : "neutral";
   const locale = english ? "en-GB" : "nb-NO";
-  const percent = new Intl.NumberFormat(locale, {
-    style: "percent",
-    maximumFractionDigits: 1,
-  });
   const number = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 1,
     maximumFractionDigits: 2,
@@ -255,6 +256,13 @@ export function PowerGuard({
   const canToggle = !!config && (config.enabled || (!dirty && canEnable));
   const canEdit = mayConfigure && online && !save.isPending && !conflict;
   const needsLoad = !!(config?.enabled && !draft?.devices.length);
+  const invalidLoad = draft?.devices.some((load) =>
+    load.watts == null
+      ? !linkedMeter(load, devices.get(load.id))
+      : !Number.isInteger(load.watts) ||
+        load.watts < 1 ||
+        load.watts > maxWatts,
+  );
   const selectable = (data?.devices ?? []).filter(
     (item) => !draft?.devices.some(({ id }) => id === item.id),
   );
@@ -305,16 +313,7 @@ export function PowerGuard({
   }
   function savePolicy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!draft || !config || !dirty || !canEdit || needsLoad) return;
-    if (
-      draft.devices.some((load) =>
-        load.watts == null
-          ? !linkedMeter(load, devices.get(load.id))
-          : !Number.isInteger(load.watts) ||
-            load.watts < 1 ||
-            load.watts > maxWatts,
-      )
-    )
+    if (!draft || !config || !dirty || !canEdit || needsLoad || invalidLoad)
       return;
     save.mutate({
       policy: {
@@ -335,10 +334,11 @@ export function PowerGuard({
           : stateLabel;
   const enabledLabel = config?.enabled ? t("Aktiv", "Active") : t("Av", "Off");
   const marginLabel =
-    over && margin !== 0
-      ? t("Over grensen", "Over limit")
-      : t("Margin", "Headroom");
-  const marginValue = kw(margin == null ? null : Math.abs(margin));
+    margin == null
+      ? null
+      : margin === 0
+        ? t("Grensen nådd", "Limit reached")
+        : `${kw(Math.abs(margin))} ${over ? t("over grensen", "above the limit") : t("under grensen", "below the limit")}`;
   const powerNow = kw(online ? status?.power_kw : null);
   const impact = (
     <span
@@ -353,6 +353,56 @@ export function PowerGuard({
       ) : null}
       {impactText}
     </span>
+  );
+
+  const draftActions = mayConfigure && (
+    <div className="power-guard-actions">
+      {dirty && (
+        <button
+          type="button"
+          disabled={save.isPending}
+          onClick={() => {
+            setEditing(null);
+            setAdding(false);
+            save.reset();
+          }}
+        >
+          {conflict
+            ? t("Vis gjeldende oppsett", "Load current settings")
+            : t("Forkast", "Discard")}
+        </button>
+      )}
+      <button
+        className="power-guard-save"
+        type="submit"
+        disabled={!dirty || !canEdit || needsLoad || invalidLoad}
+      >
+        {save.isPending
+          ? t("Lagrer…", "Saving…")
+          : t("Lagre innstillinger", "Save settings")}
+      </button>
+    </div>
+  );
+  const saveError = save.isError && (
+    <p role="alert">
+      {save.error instanceof ApiError && [409, 422].includes(save.error.status)
+        ? t(
+            "Kontroller hovedmåler, kapasitetstrinn og at hver enhet har egen måler eller oppgitt effekt.",
+            "Check the main meter, capacity tier and whether each device has its own meter or an entered power value.",
+          )
+        : t(
+            "Kunne ikke lagre Effektro. Prøv igjen.",
+            "Couldn’t save Effektro. Try again.",
+          )}
+    </p>
+  );
+  const missingEffect = dirty && invalidLoad && (
+    <p role="status">
+      {t(
+        "Velg en effektmåler eller oppgi gyldig effekt for hver enhet.",
+        "Choose a power meter or enter a valid power value for each device.",
+      )}
+    </p>
   );
 
   function chooseView(next: View) {
@@ -376,46 +426,24 @@ export function PowerGuard({
             <Shield size={27} />
           </span>
           <div className="power-guard-name">
-            <h3 id={`${id}-heading`}>PowerGuard</h3>
+            <h3 id={`${id}-heading`}>Effektro</h3>
             <p>{t("Automatisk lastbalansering", "Automatic load balancing")}</p>
           </div>
         </div>
-        {open && data && (
-          <div
-            className="power-guard-view"
-            role="group"
-            aria-label={t("PowerGuard-visning", "PowerGuard view")}
-          >
-            <button
-              type="button"
-              aria-pressed={!advanced}
-              onClick={() => chooseView("simple")}
-            >
-              {t("Enkel", "Simple")}
-            </button>
-            <button
-              type="button"
-              aria-pressed={advanced}
-              onClick={() => chooseView("advanced")}
-            >
-              {t("Avansert", "Advanced")}
-            </button>
-          </div>
-        )}
         <div className="power-guard-header-actions">
-          {online && config?.enabled && formattedTime && (
-            <small className="power-guard-updated">
-              {t("Oppdatert", "Updated")} {formattedTime}
-            </small>
-          )}
           {mayConfigure && config ? (
             <button
               type="button"
               role="switch"
-              aria-label={t("Aktiver PowerGuard", "Enable PowerGuard")}
+              aria-label={t("Aktiver Effektro", "Enable Effektro")}
               aria-checked={config.enabled}
               className="power-guard-switch"
               disabled={!online || save.isPending || !canToggle}
+              title={
+                formattedTime
+                  ? `${t("Oppdatert", "Updated")} ${formattedTime}`
+                  : undefined
+              }
               onClick={() =>
                 save.mutate({
                   policy: { ...config, enabled: !config.enabled },
@@ -423,8 +451,8 @@ export function PowerGuard({
                 })
               }
             >
+              {config.enabled && <Check size={16} aria-hidden="true" />}
               <span>{enabledLabel}</span>
-              <i aria-hidden="true" />
             </button>
           ) : (
             config && (
@@ -432,17 +460,32 @@ export function PowerGuard({
                 className="power-guard-header-status"
                 data-enabled={config.enabled}
               >
+                {config.enabled && <Check size={16} aria-hidden="true" />}
                 {enabledLabel}
               </span>
             )
+          )}
+          {config && (
+            <button
+              type="button"
+              className="power-guard-settings-button"
+              aria-label={t("Effektro-innstillinger", "Effektro settings")}
+              aria-haspopup="dialog"
+              onClick={() => {
+                setOpen(true);
+                setSettingsOpen(true);
+              }}
+            >
+              <SlidersHorizontal size={18} aria-hidden="true" />
+            </button>
           )}
           <button
             type="button"
             className="power-guard-collapse"
             aria-label={
               open
-                ? t("Skjul PowerGuard", "Collapse PowerGuard")
-                : t("Vis PowerGuard", "Expand PowerGuard")
+                ? t("Skjul Effektro", "Collapse Effektro")
+                : t("Vis Effektro", "Expand Effektro")
             }
             aria-expanded={open}
             aria-controls={`${id}-body`}
@@ -459,15 +502,12 @@ export function PowerGuard({
             <p role={query.isError ? "alert" : "status"}>
               {offline
                 ? t(
-                    "Koble til hjemmet for å se PowerGuard.",
-                    "Connect to your home to see PowerGuard.",
+                    "Koble til hjemmet for å se Effektro.",
+                    "Connect to your home to see Effektro.",
                   )
                 : query.isError
-                  ? t(
-                      "Kunne ikke hente PowerGuard.",
-                      "Couldn’t load PowerGuard.",
-                    )
-                  : t("Henter PowerGuard…", "Loading PowerGuard…")}
+                  ? t("Kunne ikke hente Effektro.", "Couldn’t load Effektro.")
+                  : t("Henter Effektro…", "Loading Effektro…")}
             </p>
             {query.isError && !offline && (
               <button
@@ -483,102 +523,62 @@ export function PowerGuard({
           <form className="power-guard-form" onSubmit={savePolicy}>
             <div className="power-guard-content">
               <div className="power-guard-overview">
-                {advanced ? (
-                  <div className="power-guard-monitor">
+                <div className="power-guard-monitor">
+                  <div className="power-guard-forecast">
                     <div className="power-guard-reading">
                       <span>
-                        {t("Anslått timesnitt", "Estimated hourly average")}
+                        {t("Forventet timesnitt", "Expected hourly average")}
                       </span>
-                      <strong>
-                        {projected == null ? "—" : number.format(projected)}{" "}
-                        {projected != null && <small>kW</small>}
-                      </strong>
+                      <div className="power-guard-reading-value">
+                        <strong>{kw(projected)}</strong>
+                        {impact}
+                      </div>
                     </div>
-                    <dl className="power-guard-stats">
-                      <div>
-                        <dt>{t("Effekt nå", "Power now")}</dt>
-                        <dd>{powerNow}</dd>
-                      </div>
-                      <div>
-                        <dt>{t("Grense", "Limit")}</dt>
-                        <dd>{kw(target)}</dd>
-                      </div>
-                      <div>
-                        <dt>{marginLabel}</dt>
-                        <dd>{marginValue}</dd>
-                      </div>
-                    </dl>
-                    <div className="power-guard-progress">
-                      <span
-                        className="power-guard-progress-track"
-                        aria-hidden="true"
-                        data-over={over}
-                      >
-                        <span style={{ width: `${fill * 100}%` }} />
-                      </span>
-                      {portion != null && (
-                        <small>
-                          {percent.format(portion)}{" "}
-                          {t("av timesmålet", "of the hourly target")}
-                        </small>
-                      )}
-                      {impact}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="power-guard-monitor power-guard-simple">
-                    <div
-                      className="power-guard-gauge"
-                      data-filled={fill > 0}
-                      data-over={over}
-                      style={
-                        {
-                          "--power-guard-angle": `${fill * 270}deg`,
-                        } as CSSProperties
-                      }
-                    >
-                      <div
-                        className="power-guard-gauge-arc"
-                        aria-hidden="true"
-                      />
-                      <div className="power-guard-gauge-reading">
-                        <strong>
-                          {projected == null ? "—" : number.format(projected)}
-                        </strong>
-                        <span>
-                          {t(
-                            "kW anslått timesnitt",
-                            "kW estimated hourly average",
-                          )}
+                    {target != null && (
+                      <div className="power-guard-progress">
+                        <span
+                          className="power-guard-progress-track"
+                          aria-hidden="true"
+                          data-over={over}
+                        >
+                          <span style={{ width: `${fill * 100}%` }} />
                         </span>
-                        {target != null && (
-                          <small>
-                            {t("av", "of")} {kw(target)}
-                          </small>
-                        )}
+                        <small>
+                          {t("Grense", "Limit")} {target.toLocaleString(locale)}{" "}
+                          kW
+                        </small>
                       </div>
+                    )}
+                    {marginLabel && (
+                      <p className="power-guard-margin">{marginLabel}</p>
+                    )}
+                    <div className="power-guard-power-now">
+                      <span>{t("Effekt nå", "Power now")}</span>
+                      <strong>{powerNow}</strong>
                     </div>
-                    {impact}
-                    <dl className="power-guard-stats">
-                      <div>
-                        <dt>{t("Effekt nå", "Power now")}</dt>
-                        <dd>{powerNow}</dd>
-                      </div>
-                      <div>
-                        <dt>{marginLabel}</dt>
-                        <dd>{marginValue}</dd>
-                      </div>
-                    </dl>
                   </div>
-                )}
-                {open && advanced && (
-                  <PowerGuardHistory
-                    lang={lang}
-                    offline={offline}
-                    enabled={!!config?.enabled}
-                    hour={hour}
-                  />
-                )}
+                  <div className="power-guard-preview">
+                    <div className="power-guard-preview-header">
+                      <h4>
+                        {t("Effekt siste time", "Power in the last hour")}
+                      </h4>
+                      <button
+                        type="button"
+                        className="power-guard-history-link"
+                        aria-haspopup="dialog"
+                        onClick={() => setHistoryOpen(true)}
+                      >
+                        {t("Historikk", "History")}{" "}
+                        <ChevronRight size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                    <PowerGuardPreview
+                      history={online && !hour.isError ? hour.data : undefined}
+                      loading={hour.isLoading}
+                      lang={lang}
+                    />
+                  </div>
+                </div>
               </div>
 
               <section
@@ -586,9 +586,7 @@ export function PowerGuard({
                 aria-labelledby={`${id}-loads`}
               >
                 <div className="power-guard-load-heading">
-                  <h4 id={`${id}-loads`}>
-                    {t("Enheter og prioritet", "Devices and priority")}
-                  </h4>
+                  <h4 id={`${id}-loads`}>{t("Enheter", "Devices")}</h4>
                   {draft.devices.length > 0 && (
                     <div className="power-guard-counts">
                       <span
@@ -597,28 +595,49 @@ export function PowerGuard({
                       >
                         {onCount} {t("på", "on")}
                       </span>
-                      <span
-                        className="power-guard-device-state"
-                        data-state="paused"
-                      >
-                        {
-                          draft.devices.filter(({ id }) => paused.has(id))
-                            .length
-                        }{" "}
-                        {t("pauset", "paused")}
-                      </span>
+                      {paused.size > 0 && (
+                        <span
+                          className="power-guard-device-state"
+                          data-state="paused"
+                        >
+                          {
+                            draft.devices.filter(({ id }) => paused.has(id))
+                              .length
+                          }{" "}
+                          {t("pauset", "paused")}
+                        </span>
+                      )}
                     </div>
+                  )}
+                  {mayConfigure && draft.devices.length > 1 && (
+                    <button
+                      type="button"
+                      className="power-guard-priority-toggle"
+                      aria-pressed={ordering}
+                      disabled={!canEdit}
+                      onClick={() => setOrdering(!ordering)}
+                    >
+                      {ordering
+                        ? t("Ferdig", "Done")
+                        : t("Endre prioritet", "Change priority")}
+                    </button>
                   )}
                 </div>
                 {draft.devices.length > 0 ? (
                   <>
-                    <p className="power-guard-note">
-                      {t(
-                        "1 har høyest prioritet. Laveste prioritet pauses først.",
-                        "1 is the highest priority. The lowest priority pauses first.",
-                      )}
-                    </p>
-                    <ol className="power-guard-list" role="list">
+                    {draft.devices.length > 1 && (
+                      <p className="power-guard-note">
+                        {t(
+                          `1 beholdes lengst · ${draft.devices.length} pauses først`,
+                          `1 stays on longest · ${draft.devices.length} pauses first`,
+                        )}
+                      </p>
+                    )}
+                    <ol
+                      className="power-guard-list"
+                      role="list"
+                      data-editing={ordering}
+                    >
                       {draft.devices.map((load, index) => {
                         const device = devices.get(load.id);
                         const name = device?.name ?? load.id;
@@ -658,28 +677,32 @@ export function PowerGuard({
                         const firstToPause =
                           draft.devices.length > 1 &&
                           index === draft.devices.length - 1;
-                        const rank =
-                          index === 0
-                            ? t("Høyeste prioritet", "Highest priority")
-                            : firstToPause
-                              ? t("Laveste prioritet", "Lowest priority")
-                              : null;
-                        const details = [rank, device?.room]
-                          .filter(Boolean)
-                          .join(" · ");
+                        const requiredDetails =
+                          advanced ||
+                          (mayConfigure && load.watts == null && !meter);
+                        const detailsOpen =
+                          requiredDetails || selectedLoad === load.id;
                         const Icon = powerGuardDeviceIcon(device);
+                        const portrait = powerGuardDevicePortrait(device);
                         return (
                           <li
                             key={load.id}
                             className="power-guard-load"
                             data-paused={powerState === "paused"}
+                            data-editing={ordering}
+                            data-detailed={detailsOpen}
                             data-drop={
                               !!(
                                 drag?.over === load.id && drag.from !== load.id
                               )
                             }
                             onDragOver={(event) => {
-                              if (!canEdit || !drag || drag.from === load.id)
+                              if (
+                                !ordering ||
+                                !canEdit ||
+                                !drag ||
+                                drag.from === load.id
+                              )
                                 return;
                               event.preventDefault();
                               event.dataTransfer.dropEffect = "move";
@@ -687,7 +710,7 @@ export function PowerGuard({
                                 setDrag({ ...drag, over: load.id });
                             }}
                             onDrop={(event) => {
-                              if (!canEdit || !drag) return;
+                              if (!ordering || !canEdit || !drag) return;
                               event.preventDefault();
                               move(
                                 draft.devices.findIndex(
@@ -702,27 +725,29 @@ export function PowerGuard({
                               className="power-guard-position"
                               aria-hidden="true"
                             >
-                              {canEdit && draft.devices.length > 1 && (
-                                <span
-                                  className="power-guard-grip"
-                                  draggable
-                                  title={t(
-                                    "Dra for å endre prioritet",
-                                    "Drag to change priority",
-                                  )}
-                                  onDragStart={(event) => {
-                                    event.dataTransfer.setData(
-                                      "text/plain",
-                                      load.id,
-                                    );
-                                    event.dataTransfer.effectAllowed = "move";
-                                    setDrag({ from: load.id, over: load.id });
-                                  }}
-                                  onDragEnd={() => setDrag(null)}
-                                >
-                                  <GripVertical size={19} />
-                                </span>
-                              )}
+                              {ordering &&
+                                canEdit &&
+                                draft.devices.length > 1 && (
+                                  <span
+                                    className="power-guard-grip"
+                                    draggable
+                                    title={t(
+                                      "Dra for å endre prioritet",
+                                      "Drag to change priority",
+                                    )}
+                                    onDragStart={(event) => {
+                                      event.dataTransfer.setData(
+                                        "text/plain",
+                                        load.id,
+                                      );
+                                      event.dataTransfer.effectAllowed = "move";
+                                      setDrag({ from: load.id, over: load.id });
+                                    }}
+                                    onDragEnd={() => setDrag(null)}
+                                  >
+                                    <GripVertical size={19} />
+                                  </span>
+                                )}
                               <span className="power-guard-priority">
                                 {index + 1}
                               </span>
@@ -731,11 +756,44 @@ export function PowerGuard({
                               className="power-guard-load-icon"
                               aria-hidden="true"
                             >
-                              <Icon size={22} />
+                              {portrait ? (
+                                <img
+                                  src={
+                                    new URL(
+                                      `home/equipment/${portrait}.webp`,
+                                      document.baseURI,
+                                    ).href
+                                  }
+                                  alt=""
+                                  loading="lazy"
+                                  decoding="async"
+                                  draggable={false}
+                                />
+                              ) : (
+                                <Icon size={24} />
+                              )}
                             </span>
                             <div className="power-guard-device">
-                              <strong>{name}</strong>
-                              {details && <small>{details}</small>}
+                              {requiredDetails ? (
+                                <strong>{name}</strong>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="power-guard-device-name"
+                                  aria-expanded={detailsOpen}
+                                  onClick={() =>
+                                    selectLoad(detailsOpen ? null : load.id)
+                                  }
+                                >
+                                  {name}
+                                </button>
+                              )}
+                              {device?.room && detailsOpen && (
+                                <small>{device.room}</small>
+                              )}
+                              {!detailsOpen && measured != null && (
+                                <small>{kw(measured / 1000)}</small>
+                              )}
                               {firstToPause && (
                                 <span className="power-guard-pause-first">
                                   {t("Pauses først", "Pauses first")}
@@ -748,139 +806,148 @@ export function PowerGuard({
                             >
                               {loadState}
                             </span>
-                            <div className="power-guard-load-meta">
-                              {(meter || beforePause != null) && (
-                                <div className="power-guard-load-reading">
-                                  {advanced &&
-                                    meter &&
-                                    matchedMeter &&
-                                    online && (
-                                      <PowerGuardLoadTrend
-                                        id={load.id}
-                                        history={hour.data}
-                                      />
+                            {detailsOpen && (
+                              <div className="power-guard-load-meta">
+                                {(meter || beforePause != null) && (
+                                  <div className="power-guard-load-reading">
+                                    {advanced &&
+                                      meter &&
+                                      matchedMeter &&
+                                      online && (
+                                        <PowerGuardLoadTrend
+                                          id={load.id}
+                                          history={hour.data}
+                                        />
+                                      )}
+                                    {meter && (
+                                      <span>
+                                        <small>
+                                          {t("Målt nå", "Measured now")}
+                                        </small>
+                                        <strong>
+                                          {measured == null
+                                            ? "—"
+                                            : kw(measured / 1000)}
+                                        </strong>
+                                      </span>
                                     )}
-                                  {meter && (
-                                    <span>
-                                      <small>
-                                        {t("Målt nå", "Measured now")}
-                                      </small>
-                                      <strong>
-                                        {measured == null
-                                          ? "—"
-                                          : kw(measured / 1000)}
-                                      </strong>
-                                    </span>
-                                  )}
-                                  {beforePause != null && (
-                                    <span>
-                                      <small>
-                                        {t("Før pause", "Before pause")}
-                                      </small>
-                                      <strong>{kw(beforePause / 1000)}</strong>
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                              {chooseMeter ? (
-                                <label className="power-guard-load-meter">
-                                  <span>{t("Effektmåler", "Power meter")}</span>
-                                  <select
-                                    aria-label={`${t("Effektmåler for", "Power meter for")} ${name}`}
-                                    value={load.power_entity ?? ""}
-                                    disabled={!canEdit}
-                                    onChange={({ target }) =>
-                                      editLoad(load.id, {
-                                        power_entity: target.value || null,
-                                      })
-                                    }
-                                  >
-                                    <option value="">
-                                      {device?.automatic_power_meter_id
-                                        ? t("Automatisk", "Automatic")
-                                        : t(
-                                            "Manuelt anslag",
-                                            "Manual estimate",
-                                          )}
-                                    </option>
-                                    {missingMeter && (
-                                      <option
-                                        value={load.power_entity ?? ""}
-                                        disabled
-                                      >
-                                        {t(
-                                          "Tidligere måler utilgjengelig",
-                                          "Previous meter unavailable",
-                                        )}
-                                      </option>
+                                    {beforePause != null && (
+                                      <span>
+                                        <small>
+                                          {t("Før pause", "Before pause")}
+                                        </small>
+                                        <strong>
+                                          {kw(beforePause / 1000)}
+                                        </strong>
+                                      </span>
                                     )}
-                                    {meterOptions.map((option) => (
-                                      <option key={option.id} value={option.id}>
-                                        {option.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </label>
-                              ) : (
-                                meter && (
-                                  <div className="power-guard-load-meter">
+                                  </div>
+                                )}
+                                {chooseMeter ? (
+                                  <label className="power-guard-load-meter">
                                     <span>
                                       {t("Effektmåler", "Power meter")}
                                     </span>
-                                    <strong>{meter.name}</strong>
-                                  </div>
-                                )
-                              )}
-                              {mayConfigure ? (
-                                <label className="power-guard-watts">
-                                  <span>{wattsLabel}</span>
-                                  <span className="power-guard-watts-field">
-                                    <input
-                                      ref={
-                                        focusLoad === load.id
-                                          ? newLoadField
-                                          : undefined
-                                      }
-                                      type="number"
-                                      inputMode="decimal"
-                                      lang={locale}
-                                      min={0.001}
-                                      max={maxWatts / 1000}
-                                      step={0.001}
-                                      required={!meter}
+                                    <select
+                                      aria-label={`${t("Effektmåler for", "Power meter for")} ${name}`}
+                                      value={load.power_entity ?? ""}
                                       disabled={!canEdit}
-                                      value={
-                                        load.watts == null
-                                          ? ""
-                                          : load.watts / 1000
-                                      }
-                                      placeholder={meter ? "—" : undefined}
-                                      aria-label={`${wattsLabel} ${t("i kilowatt for", "in kilowatts for")} ${name}`}
                                       onChange={({ target }) =>
                                         editLoad(load.id, {
-                                          watts: Number.isFinite(
-                                            target.valueAsNumber,
-                                          )
-                                            ? Math.round(
-                                                target.valueAsNumber * 1000,
-                                              )
-                                            : null,
+                                          power_entity: target.value || null,
                                         })
                                       }
-                                    />
-                                    <small aria-hidden="true">kW</small>
-                                  </span>
-                                </label>
-                              ) : (
-                                load.watts != null && (
-                                  <div className="power-guard-watts">
+                                    >
+                                      <option value="">
+                                        {device?.automatic_power_meter_id
+                                          ? t("Automatisk", "Automatic")
+                                          : t(
+                                              "Manuelt anslag",
+                                              "Manual estimate",
+                                            )}
+                                      </option>
+                                      {missingMeter && (
+                                        <option
+                                          value={load.power_entity ?? ""}
+                                          disabled
+                                        >
+                                          {t(
+                                            "Tidligere måler utilgjengelig",
+                                            "Previous meter unavailable",
+                                          )}
+                                        </option>
+                                      )}
+                                      {meterOptions.map((option) => (
+                                        <option
+                                          key={option.id}
+                                          value={option.id}
+                                        >
+                                          {option.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                ) : (
+                                  meter && (
+                                    <div className="power-guard-load-meter">
+                                      <span>
+                                        {t("Effektmåler", "Power meter")}
+                                      </span>
+                                      <strong>{meter.name}</strong>
+                                    </div>
+                                  )
+                                )}
+                                {mayConfigure ? (
+                                  <label className="power-guard-watts">
                                     <span>{wattsLabel}</span>
-                                    <strong>{kw(load.watts / 1000)}</strong>
-                                  </div>
-                                )
-                              )}
-                            </div>
-                            {mayConfigure && (
+                                    <span className="power-guard-watts-field">
+                                      <input
+                                        ref={
+                                          focusLoad === load.id
+                                            ? newLoadField
+                                            : undefined
+                                        }
+                                        type="number"
+                                        inputMode="decimal"
+                                        lang={locale}
+                                        min={0.001}
+                                        max={maxWatts / 1000}
+                                        step={0.001}
+                                        required={!meter}
+                                        disabled={!canEdit}
+                                        value={
+                                          load.watts == null
+                                            ? ""
+                                            : load.watts / 1000
+                                        }
+                                        placeholder={meter ? "—" : undefined}
+                                        aria-label={`${wattsLabel} ${t("i kilowatt for", "in kilowatts for")} ${name}`}
+                                        onChange={({ target }) =>
+                                          editLoad(load.id, {
+                                            watts: Number.isFinite(
+                                              target.valueAsNumber,
+                                            )
+                                              ? Math.round(
+                                                  target.valueAsNumber * 1000,
+                                                )
+                                              : null,
+                                          })
+                                        }
+                                      />
+                                      <small aria-hidden="true">kW</small>
+                                    </span>
+                                  </label>
+                                ) : (
+                                  load.watts != null && (
+                                    <div className="power-guard-watts">
+                                      <span>{wattsLabel}</span>
+                                      <strong>{kw(load.watts / 1000)}</strong>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                            {mayConfigure && (ordering || detailsOpen) && (
                               <div className="power-guard-order">
                                 <button
                                   type="button"
@@ -928,8 +995,8 @@ export function PowerGuard({
                     <p>
                       {mayConfigure
                         ? t(
-                            "Legg til en bryter eller termostat som PowerGuard kan sette på pause.",
-                            "Add a switch or thermostat that PowerGuard can pause.",
+                            "Legg til en bryter eller termostat som Effektro kan sette på pause.",
+                            "Add a switch or thermostat that Effektro can pause.",
                           )
                         : t(
                             "Ingen enheter er lagt til ennå.",
@@ -938,20 +1005,31 @@ export function PowerGuard({
                     </p>
                   </div>
                 )}
-                {mayConfigure &&
-                  selectable.length > 0 &&
-                  draft.devices.length < maxLoads && (
-                    <button
-                      type="button"
-                      className="power-guard-add-button"
-                      aria-haspopup="dialog"
-                      disabled={!canEdit}
-                      onClick={() => setAdding(true)}
-                    >
-                      <Plus size={20} aria-hidden="true" />
-                      {t("Legg til enhet", "Add a device")}
-                    </button>
-                  )}
+                <div className="power-guard-device-actions">
+                  {mayConfigure &&
+                    selectable.length > 0 &&
+                    draft.devices.length < maxLoads && (
+                      <button
+                        type="button"
+                        className="power-guard-add-button"
+                        aria-haspopup="dialog"
+                        disabled={!canEdit}
+                        onClick={() => setAdding(true)}
+                      >
+                        <Plus size={20} aria-hidden="true" />
+                        {t("Legg til enhet", "Add a device")}
+                      </button>
+                    )}
+                  <button
+                    type="button"
+                    className="power-guard-history-link"
+                    aria-haspopup="dialog"
+                    onClick={() => setHistoryOpen(true)}
+                  >
+                    {t("Vis historikk", "View history")}{" "}
+                    <ChevronRight size={18} aria-hidden="true" />
+                  </button>
+                </div>
                 {mayConfigure && !data.devices.length && (
                   <p className="power-guard-note">
                     {t(
@@ -1005,8 +1083,8 @@ export function PowerGuard({
               {state === "settings_changed" && mayConfigure && (
                 <p>
                   {t(
-                    "Måleren eller nettleieoppsettet er endret. Kontroller oppsettet før du aktiverer PowerGuard på nytt.",
-                    "The meter or grid settings changed. Check them before enabling PowerGuard again.",
+                    "Måleren eller nettleieoppsettet er endret. Kontroller oppsettet før du aktiverer Effektro på nytt.",
+                    "The meter or grid settings changed. Check them before enabling Effektro again.",
                   )}
                 </p>
               )}
@@ -1014,7 +1092,7 @@ export function PowerGuard({
                 <p>
                   {t(
                     "Ved deaktivering kan du selv slå på enhetene som er pauset.",
-                    "After switching PowerGuard off, you can turn paused devices back on manually.",
+                    "After switching Effektro off, you can turn paused devices back on manually.",
                   )}
                 </p>
               )}
@@ -1031,8 +1109,8 @@ export function PowerGuard({
               {needsLoad && (
                 <p role="status">
                   {t(
-                    "Slå av PowerGuard før du fjerner den siste enheten.",
-                    "Switch PowerGuard off before removing the last device.",
+                    "Slå av Effektro før du fjerner den siste enheten.",
+                    "Switch Effektro off before removing the last device.",
                   )}
                 </p>
               )}
@@ -1044,135 +1122,151 @@ export function PowerGuard({
                   )}
                 </p>
               )}
-              {save.isError && (
-                <p role="alert">
-                  {save.error instanceof ApiError &&
-                  [409, 422].includes(save.error.status)
-                    ? t(
-                        "Kontroller hovedmåler, kapasitetstrinn og at hver enhet har egen måler eller oppgitt effekt.",
-                        "Check the main meter, capacity tier and whether each device has its own meter or an entered power value.",
-                      )
-                    : t(
-                        "Kunne ikke lagre PowerGuard. Prøv igjen.",
-                        "Couldn’t save PowerGuard. Try again.",
-                      )}
-                </p>
-              )}
+              {!settingsOpen && saveError}
+              {!settingsOpen && missingEffect}
             </div>
 
-            <footer className="power-guard-settings">
-              <div className="power-guard-settings-title">
-                <h4>{t("Måler og grense", "Meter and limit")}</h4>
-                {data.company && <small>{data.company}</small>}
-              </div>
-              <div className="power-guard-meter">
-                <span id={`${id}-meter-label`}>
-                  {t("Hovedmåler", "Main meter")}
-                </span>
-                {mayConfigure ? (
-                  <button
-                    type="button"
-                    className="power-guard-meter-button"
-                    aria-labelledby={`${id}-meter-label ${id}-meter-value`}
-                    aria-haspopup="dialog"
-                    disabled={!online}
-                    onClick={() => onSetup("meter")}
+            {!settingsOpen && dirty && draftActions}
+            {settingsOpen && (
+              <SettingsDialog
+                title={t("Effektro-innstillinger", "Effektro settings")}
+                lang={lang}
+                busy={save.isPending}
+                onClose={() => setSettingsOpen(false)}
+              >
+                <div className="power-guard-settings-dialog">
+                  <div
+                    className="power-guard-view"
+                    role="group"
+                    aria-label={t("Effektro-visning", "Effektro view")}
                   >
-                    <span id={`${id}-meter-value`}>
-                      {data.meter?.name ??
-                        t("Velg hovedmåler", "Select the main meter")}
-                    </span>
-                    <SlidersHorizontal size={16} aria-hidden="true" />
-                  </button>
-                ) : (
-                  <span className="power-guard-meter-value">
-                    {data.meter?.name ?? "—"}
-                  </span>
-                )}
-              </div>
-              <div className="power-guard-target">
-                <span>{t("Kapasitetstrinn", "Capacity tier")}</span>
-                {mayConfigure && data.tiers.length > 0 ? (
-                  <select
-                    aria-label={t(
-                      "Velg kapasitetstrinn",
-                      "Choose a capacity tier",
-                    )}
-                    disabled={!canEdit}
-                    required={config?.enabled}
-                    value={draft.limit_kw ?? ""}
-                    onChange={(event) =>
-                      edit({
-                        limit_kw: event.target.value
-                          ? Number(event.target.value)
-                          : null,
-                      })
-                    }
-                  >
-                    <option value="">
-                      {t("Velg et trinn", "Select a tier")}
-                    </option>
-                    {draft.limit_kw != null && !tierExists(draft.limit_kw) && (
-                      <option value={draft.limit_kw} disabled>
-                        {t("Tidligere grense", "Previous limit")} ·{" "}
-                        {kw(draft.limit_kw)}
-                      </option>
-                    )}
-                    {data.tiers.map((tier) => (
-                      <option key={tier.limit_kw} value={tier.limit_kw}>
-                        {tier.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : !data.tiers.length && mayConfigure ? (
-                  <button
-                    type="button"
-                    className="power-guard-meter-button"
-                    disabled={!online}
-                    onClick={() => onSetup("tariff")}
-                  >
-                    <span>
-                      {t("Åpne nettleieoppsettet", "Open grid settings")}
-                    </span>
-                    <SlidersHorizontal size={16} aria-hidden="true" />
-                  </button>
-                ) : (
-                  <span className="power-guard-meter-value">
-                    {data.tiers.find(
-                      ({ limit_kw }) => limit_kw === draft.limit_kw,
-                    )?.label ?? kw(draft.limit_kw)}
-                  </span>
-                )}
-              </div>
-              {mayConfigure && (
-                <div className="power-guard-actions">
-                  {dirty && (
                     <button
                       type="button"
-                      disabled={save.isPending}
-                      onClick={() => {
-                        setEditing(null);
-                        setAdding(false);
-                        save.reset();
-                      }}
+                      aria-pressed={!advanced}
+                      onClick={() => chooseView("simple")}
                     >
-                      {conflict
-                        ? t("Vis gjeldende oppsett", "Load current settings")
-                        : t("Forkast", "Discard")}
+                      {t("Enkel", "Simple")}
                     </button>
-                  )}
-                  <button
-                    className="power-guard-save"
-                    type="submit"
-                    disabled={!dirty || !canEdit || needsLoad}
-                  >
-                    {save.isPending
-                      ? t("Lagrer…", "Saving…")
-                      : t("Lagre innstillinger", "Save settings")}
-                  </button>
+                    <button
+                      type="button"
+                      aria-pressed={advanced}
+                      onClick={() => chooseView("advanced")}
+                    >
+                      {t("Avansert", "Advanced")}
+                    </button>
+                  </div>
+                  <div className="power-guard-settings">
+                    <div className="power-guard-settings-title">
+                      <h4>{t("Måler og grense", "Meter and limit")}</h4>
+                      {data.company && <small>{data.company}</small>}
+                    </div>
+                    <div className="power-guard-meter">
+                      <span id={`${id}-meter-label`}>
+                        {t("Hovedmåler", "Main meter")}
+                      </span>
+                      {mayConfigure ? (
+                        <button
+                          type="button"
+                          className="power-guard-meter-button"
+                          aria-labelledby={`${id}-meter-label ${id}-meter-value`}
+                          aria-haspopup="dialog"
+                          disabled={!online}
+                          onClick={() => {
+                            setSettingsOpen(false);
+                            onSetup("meter");
+                          }}
+                        >
+                          <span id={`${id}-meter-value`}>
+                            {data.meter?.name ??
+                              t("Velg hovedmåler", "Select the main meter")}
+                          </span>
+                          <SlidersHorizontal size={16} aria-hidden="true" />
+                        </button>
+                      ) : (
+                        <span className="power-guard-meter-value">
+                          {data.meter?.name ?? "—"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="power-guard-target">
+                      <span>{t("Kapasitetstrinn", "Capacity tier")}</span>
+                      {mayConfigure && data.tiers.length > 0 ? (
+                        <select
+                          aria-label={t(
+                            "Velg kapasitetstrinn",
+                            "Choose a capacity tier",
+                          )}
+                          disabled={!canEdit}
+                          required={config?.enabled}
+                          value={draft.limit_kw ?? ""}
+                          onChange={(event) =>
+                            edit({
+                              limit_kw: event.target.value
+                                ? Number(event.target.value)
+                                : null,
+                            })
+                          }
+                        >
+                          <option value="">
+                            {t("Velg et trinn", "Select a tier")}
+                          </option>
+                          {draft.limit_kw != null &&
+                            !tierExists(draft.limit_kw) && (
+                              <option value={draft.limit_kw} disabled>
+                                {t("Tidligere grense", "Previous limit")} ·{" "}
+                                {kw(draft.limit_kw)}
+                              </option>
+                            )}
+                          {data.tiers.map((tier) => (
+                            <option key={tier.limit_kw} value={tier.limit_kw}>
+                              {tier.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : !data.tiers.length && mayConfigure ? (
+                        <button
+                          type="button"
+                          className="power-guard-meter-button"
+                          disabled={!online}
+                          onClick={() => {
+                            setSettingsOpen(false);
+                            onSetup("tariff");
+                          }}
+                        >
+                          <span>
+                            {t("Åpne nettleieoppsettet", "Open grid settings")}
+                          </span>
+                          <SlidersHorizontal size={16} aria-hidden="true" />
+                        </button>
+                      ) : (
+                        <span className="power-guard-meter-value">
+                          {data.tiers.find(
+                            ({ limit_kw }) => limit_kw === draft.limit_kw,
+                          )?.label ?? kw(draft.limit_kw)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {draftActions}
+                  {saveError}
+                  {missingEffect}
                 </div>
-              )}
-            </footer>
+              </SettingsDialog>
+            )}
+            {historyOpen && (
+              <SettingsDialog
+                title={t("Effektro-historikk", "Effektro history")}
+                lang={lang}
+                onClose={() => setHistoryOpen(false)}
+              >
+                <PowerGuardHistory
+                  lang={lang}
+                  offline={offline}
+                  enabled={!!config?.enabled}
+                  hour={hour}
+                />
+              </SettingsDialog>
+            )}
           </form>
         )}
       </div>
@@ -1193,10 +1287,11 @@ export function PowerGuard({
               ],
             });
             setAdding(false);
-            setFocusLoad(
+            const manualLoad =
               ids.find((id) => !devices.get(id)?.automatic_power_meter_id) ??
-                null,
-            );
+              null;
+            selectLoad(manualLoad);
+            setFocusLoad(manualLoad);
           }}
         />
       )}

@@ -610,11 +610,11 @@ test("device energy tracks selected equipment independently of the canvas and Po
   await page.reload();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
   const powerGuard = page.getByRole("region", {
-    name: "PowerGuard",
+    name: "Effektro",
     exact: true,
   });
   const showPowerGuard = powerGuard.getByRole("button", {
-    name: "Vis PowerGuard",
+    name: "Vis Effektro",
     exact: true,
   });
   await expect(showPowerGuard).toHaveAttribute("aria-expanded", "false");

@@ -141,6 +141,108 @@ function lineFor(
   );
 }
 
+export function PowerGuardPreview({
+  history,
+  loading,
+  lang,
+}: {
+  history?: HistoryData;
+  loading: boolean;
+  lang: string;
+}) {
+  const id = useId();
+  const { t } = historyLabels(lang);
+  const start = Date.parse(history?.start ?? "");
+  const end = Date.parse(history?.end ?? "");
+  const points = (history?.points ?? [])
+    .map(({ at, power_kw }) => ({ at: Date.parse(at), power_kw }))
+    .filter(({ at }) => at >= start && at <= end)
+    .sort((a, b) => a.at - b.at);
+  const groups = segments(
+    points,
+    ({ at }) => at,
+    ({ power_kw }) => power_kw,
+    (history?.step_seconds ?? 60) * 2000,
+  );
+  const values = groups.flat().map(({ value }) => value);
+  if (!values.length || !(end > start)) {
+    return (
+      <p className="power-guard-preview-empty">
+        {loading
+          ? t("Henter historikk …", "Loading history…")
+          : t("Venter på målinger", "Waiting for readings")}
+      </p>
+    );
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(1, max - min);
+  const left = 4,
+    right = 396,
+    top = 9,
+    bottom = 116;
+  const x = (at: number) =>
+    left + ((at - start) / (end - start)) * (right - left);
+  const y = (value: number) =>
+    bottom - ((value - min + range * 0.24) / (range * 1.5)) * (bottom - top);
+  const last = groups.at(-1)!.at(-1)!;
+  return (
+    <>
+      <svg
+        className="power-guard-preview-chart"
+        viewBox="0 0 400 120"
+        role="img"
+        aria-label={t(
+          "Målt effekt siste time",
+          "Measured power in the last hour",
+        )}
+      >
+        <defs>
+          <linearGradient id={`${id}-preview`} x2="0" y2="1">
+            <stop stopColor="currentColor" stopOpacity=".38" />
+            <stop offset="1" stopColor="currentColor" stopOpacity=".03" />
+          </linearGradient>
+        </defs>
+        {[12, 38, 64, 90, bottom].map((line) => (
+          <line
+            className="power-guard-preview-grid"
+            key={line}
+            x1={left}
+            x2={right}
+            y1={line}
+            y2={line}
+          />
+        ))}
+        {groups
+          .filter((group) => group.length > 1)
+          .map((group) => {
+            const line = lineFor(group, x, y);
+            return (
+              <g key={group[0].at}>
+                <path
+                  className="power-guard-preview-area"
+                  fill={`url(#${id}-preview)`}
+                  d={`${line}V${bottom}H${x(group[0].at)}Z`}
+                />
+                <path className="power-guard-preview-line" d={line} />
+              </g>
+            );
+          })}
+        <circle
+          className="power-guard-preview-dot"
+          cx={x(last.at)}
+          cy={y(last.value)}
+          r="5"
+        />
+      </svg>
+      <div className="power-guard-preview-axis">
+        <span>−60 min</span>
+        <span>{t("Nå", "Now")}</span>
+      </div>
+    </>
+  );
+}
+
 function axisValues(points: TimedPoint[]) {
   const readings = points.flatMap((point) =>
     chartSeries.map(({ field }) => point[field]).filter(validReading),
@@ -650,12 +752,12 @@ export function PowerGuardHistory({
                   ? t("Kunne ikke hente historikk.", "Couldn’t load history.")
                   : enabled
                     ? t(
-                        "Målinger vises etter hvert som PowerGuard samler data.",
-                        "Readings appear as PowerGuard collects data.",
+                        "Målinger vises etter hvert som Effektro samler data.",
+                        "Readings appear as Effektro collects data.",
                       )
                     : t(
-                        "Aktiver PowerGuard for å samle effekthistorikk.",
-                        "Enable PowerGuard to collect power history.",
+                        "Aktiver Effektro for å samle effekthistorikk.",
+                        "Enable Effektro to collect power history.",
                       )}
           </p>
           {query.isError && !offline && (
