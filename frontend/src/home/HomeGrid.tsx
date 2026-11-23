@@ -112,6 +112,7 @@ export function HomeGrid({
   title,
   home,
   offline,
+  afterCard,
 }: {
   page: HomeGridPage;
   cards: HomeGridCard[];
@@ -119,6 +120,7 @@ export function HomeGrid({
   title?: string;
   home: Home;
   offline: boolean;
+  afterCard?: { id: string; content: ReactNode };
 }) {
   const en = lang === "en",
     t = (nb: string, english: string) => (en ? english : nb);
@@ -330,8 +332,15 @@ export function HomeGrid({
           displayColumns,
         )
       : responsiveGrid(displayLayout, displayColumns));
+  // Insert the companion row only in the displayed grid. Editing keeps the
+  // original coordinates so the companion never becomes part of a saved layout.
+  const companion =
+    !editing && !roomView && afterCard
+      ? shown.find((item) => item.id === afterCard.id)
+      : undefined;
+  const companionRow = companion && companion.y + companion.h;
   const layoutKey =
-    `${layoutSurface}|${roomView?.template ?? "flat"}|` +
+    `${layoutSurface}|${roomView?.template ?? "flat"}|${companionRow ?? ""}|` +
     shown.map(({ id, x, y, w, h }) => `${id}:${x},${y},${w},${h}`).join("|");
   useGridMotion(surface, layoutKey, editing, active);
   useGridWiggle(surface, editing);
@@ -944,6 +953,11 @@ export function HomeGrid({
           )}
         </div>
       )}
+      {!editing && !companion && afterCard && (
+        <div className="home-canvas-companion-fallback">
+          {afterCard.content}
+        </div>
+      )}
       <div
         ref={surface}
         className="home-canvas-grid"
@@ -952,7 +966,11 @@ export function HomeGrid({
             "--canvas-columns": displayColumns,
             ...(roomView?.template
               ? { gridTemplateRows: roomView.template }
-              : {}),
+              : companionRow !== undefined
+                ? {
+                    gridTemplateRows: `repeat(${companionRow}, var(--canvas-row-height)) auto`,
+                  }
+                : {}),
           } as CSSProperties
         }
       >
@@ -1013,6 +1031,13 @@ export function HomeGrid({
                 (sum, c) => sum + c.charCodeAt(0),
                 0,
               );
+              const row = roomView?.displayRows.get(item.id) ?? item.y + 1;
+              const startsAfter =
+                companionRow !== undefined && row > companionRow;
+              const spansCompanion =
+                companionRow !== undefined &&
+                !startsAfter &&
+                row + item.h - 1 > companionRow;
               return [
                 group && (
                   <h2
@@ -1049,7 +1074,7 @@ export function HomeGrid({
                       : `${item.x + 1} / span ${item.w}`,
                     gridRow: flowingPhone
                       ? undefined
-                      : `${roomView?.displayRows.get(item.id) ?? item.y + 1} / span ${item.h}`,
+                      : `${row + Number(startsAfter)} / span ${item.h + Number(spansCompanion)}`,
                   }}
                 >
                   {editing && (
@@ -1266,6 +1291,18 @@ export function HomeGrid({
                     </div>
                   )}
                 </div>,
+                item === companion && afterCard && (
+                  <div
+                    key={`after:${item.id}`}
+                    style={{
+                      gridColumn: `${item.x + 1} / span ${item.w}`,
+                      gridRow: item.y + item.h + 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    {afterCard.content}
+                  </div>
+                ),
               ];
             })}
           </PhoneBoard>

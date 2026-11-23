@@ -341,6 +341,31 @@ async function expectUnobstructedSceneControls(page: Page) {
   );
 }
 
+const energyToolbar = (page: Page) =>
+  page.getByRole("group", { name: "Energifiltre og innstillinger" });
+
+async function expectToolbarBelowFlow(page: Page) {
+  const flow = page.locator('[data-card="energy:flow"]');
+  const toolbar = energyToolbar(page);
+  await expect(toolbar).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Forbruk og kostnad i dag" }),
+  ).toHaveCount(0);
+  await expect(async () => {
+    const [card, controls] = await Promise.all([
+      flow.boundingBox(),
+      toolbar.boundingBox(),
+    ]);
+    expect(card).not.toBeNull();
+    expect(controls).not.toBeNull();
+    const gap = controls!.y - (card!.y + card!.height);
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThanOrEqual(16);
+    expect(controls!.x).toBeCloseTo(card!.x, 0);
+    expect(controls!.width).toBeCloseTo(card!.width, 0);
+  }).toPass({ timeout: 5000 });
+}
+
 test.afterEach(async ({ page }) => {
   await page.unrouteAll({ behavior: "wait" });
 });
@@ -362,6 +387,7 @@ test("one energy canvas contains the energy house, monthly capacity, tariff, hou
   const flow = grid.locator('[data-card="energy:flow"]');
   await expect(flow).toHaveCSS("grid-column-end", "span 2");
   await expect(flow.locator(".energy-scene")).toBeVisible({ timeout: 20000 });
+  await expectToolbarBelowFlow(page);
   const classic =
     (await flow.locator(".energy-flow").getAttribute("data-scene-design")) ===
     "classic";
@@ -432,6 +458,7 @@ test("one energy canvas contains the energy house, monthly capacity, tariff, hou
     animations: "disabled",
   });
   await page.setViewportSize({ width: 834, height: 1100 });
+  await expectToolbarBelowFlow(page);
   await expect(flow.locator(".home-canvas-viewport")).toHaveAttribute(
     "data-overflow",
     "false",
@@ -445,26 +472,24 @@ test("one energy canvas contains the energy house, monthly capacity, tariff, hou
   ).toBeLessThanOrEqual(1);
 });
 
-test("history filters do not change today's summaries or remount the energy house", async ({
+test("history filters keep live KPIs and the energy house in place", async ({
   page,
 }) => {
   test.setTimeout(60000);
   await page.setViewportSize({ width: 1440, height: 1000 });
   const state = await setup(page);
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
-  const house = grid.locator(".energy-scene :is(.energy-scene-picture, canvas)");
+  const house = grid.locator(
+    ".energy-scene :is(.energy-scene-picture, canvas)",
+  );
   await expect(house).toBeVisible({ timeout: 20000 });
   await house.evaluate((node) => (node.dataset.retained = "yes"));
-  await page.getByRole("button", { name: "Uke", exact: true }).click();
+  const toolbar = energyToolbar(page);
+  await toolbar.getByRole("button", { name: "Uke", exact: true }).click();
   await expect(grid.locator('[data-card="energy:consumption"]')).toHaveCount(0);
   await expect(grid.locator('[data-card="energy:history"]')).toContainText(
     "42,3 kWh",
   );
-  const summary = page.getByRole("region", {
-    name: "Forbruk og kostnad i dag",
-  });
-  await expect(summary).toContainText("18,4 kWh");
-  await expect(summary).toContainText(/24,60\s*kr/);
   await expect(grid.locator('[data-card="energy:today"]')).toHaveCount(0);
   await expect(grid.locator('[data-card="energy:today-cost"]')).toHaveCount(0);
   await expect(grid.locator('[data-card="energy:capacity"]')).toContainText(
@@ -472,17 +497,17 @@ test("history filters do not change today's summaries or remount the energy hous
   );
   await expect(house).toHaveAttribute("data-retained", "yes");
   await expect(
-    page.getByRole("button", { name: "Uke", exact: true }),
+    toolbar.getByRole("button", { name: "Uke", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(house).toHaveAttribute("data-retained", "yes");
   expect(state.configWrites()).toBe(0);
-  await page
+  await toolbar
     .getByRole("button", { name: "Energiinnstillinger", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toBeVisible();
 });
 
-test("today's usage and cost remain visible with a customized mobile layout", async ({
+test("energy filters stay available on mobile when the flow card is removed", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 860 });
@@ -491,33 +516,28 @@ test("today's usage and cost remain visible with a customized mobile layout", as
     revision: 1,
     items: [{ id: "energy:history", x: 0, y: 0, w: 2, h: 3 }],
   };
-  Object.assign(state.dashboard.totals.today, { available_kwh: 0, cost: -4.2 });
   await page.reload();
   await page.getByRole("tab", { name: "Energi", exact: true }).click();
-  const summary = page.getByRole("region", {
-    name: "Forbruk og kostnad i dag",
-  });
-  await expect(summary.locator("dd strong")).toHaveText([
-    "0 kWh",
-    /[−-]4,20\s*kr/,
-  ]);
+  const toolbar = energyToolbar(page);
   const grid = page.locator('.home-canvas[data-page="energy_control"]');
+  await expect(toolbar).toBeVisible();
+  await expect(grid.locator('[data-card="energy:flow"]')).toHaveCount(0);
   await expect(
     grid.getByRole("button", { name: "Forbruk per enhet", exact: true }),
   ).toBeVisible();
   await expect(grid.locator(".home-canvas-cell")).toHaveCount(2);
-
-  Object.assign(state.dashboard.totals.today, {
-    available_kwh: null,
-    cost: null,
-  });
-  await page.reload();
-  await page.getByRole("tab", { name: "Energi", exact: true }).click();
-  await expect(summary.locator("dd strong")).toHaveText(["—", "—"]);
-  await expect(summary).toContainText("Venter på målinger og priser");
+  const changed = page.waitForResponse(
+    "**/api/home/energy/platform/dashboard?start=2026-11-01&end=2026-11-02",
+  );
+  await toolbar.getByLabel("Dato", { exact: true }).fill("2026-11-01");
+  await changed;
   expect(
-    await summary.evaluate((node) => node.scrollWidth - node.clientWidth),
+    await toolbar.evaluate((node) => node.scrollWidth - node.clientWidth),
   ).toBeLessThanOrEqual(1);
+  await toolbar.getByRole("button", { name: "Energiinnstillinger" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Energiinnstillinger" }),
+  ).toBeVisible();
 });
 
 test("device energy tracks selected equipment independently of the canvas and PowerGuard", async ({
@@ -913,6 +933,7 @@ test("compact phone tiles show KPIs and only mount the opened house or graph", a
   expect(usageTop).toBeGreaterThan(tariffTop);
   expect(usageTop).toBeLessThan(historyTop);
   await expect(grid.locator(".phone-energy-power")).toBeVisible();
+  await expectToolbarBelowFlow(page);
   await expect(
     grid.locator(".phone-power-history .measured-chart svg"),
   ).toBeVisible();
@@ -931,6 +952,9 @@ test("compact phone tiles show KPIs and only mount the opened house or graph", a
   await expect(page.locator(".ep-chart")).toHaveCount(0);
   await grid.getByRole("button", { name: "Energiflyt", exact: true }).click();
   await expect(page.locator(".energy-scene")).toBeVisible({ timeout: 20000 });
+  await expect(
+    page.getByRole("dialog").locator(".energy-control-toolbar"),
+  ).toHaveCount(0);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Lukk innstillinger", exact: true })

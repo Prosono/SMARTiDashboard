@@ -26,7 +26,6 @@ import { PowerGuard, powerGuardQueryKey } from "./PowerGuard";
 import "./energyPlatform.css";
 import { EnergyPriceChart } from "./EnergyPriceChart";
 import { EnergySensorPicker } from "./EnergySensorPicker";
-import { EnergyTodayOverview } from "./EnergyTodayOverview";
 
 import { EnergyHistoryChart, type HistoryBucket } from "./EnergyHistoryChart";
 import type { Home } from "../types";
@@ -1109,6 +1108,81 @@ export function EnergyPlatform({
       </EnergyModuleGroup>
     );
   }
+  const en = lang === "en";
+  const t = (nb: string, english: string) => (en ? english : nb);
+  const flowControls = (
+    <div
+      className="energy-control-toolbar"
+      role="group"
+      aria-label={t(
+        "Energifiltre og innstillinger",
+        "Energy filters and settings",
+      )}
+    >
+      <div
+        className="energy-control-period"
+        role="group"
+        aria-label={t("Periode", "Period")}
+      >
+        {[
+          ["day", t("Døgn", "Day")],
+          ["week", t("Uke", "Week")],
+          ["month", t("Måned", "Month")],
+          ["year", t("År", "Year")],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            aria-pressed={period === id}
+            onClick={() => {
+              setPeriod(id);
+              setSelected(null);
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <label>
+        <span className="energy-control-compact-label">
+          {t("Dato", "Date")}
+        </span>
+        <input
+          type="date"
+          value={day}
+          max={dayString(new Date())}
+          onChange={(event) => {
+            setDay(event.target.value || dayString(new Date()));
+            setSelected(null);
+          }}
+        />
+      </label>
+      {admin && (
+        <>
+          <button
+            className="energy-control-refresh"
+            disabled={busy}
+            onClick={() => void refresh()}
+          >
+            <RefreshCw
+              size={16}
+              aria-hidden="true"
+              className={busy ? "ep-spin" : ""}
+            />
+            <span className="energy-control-compact-label">
+              {busy ? t("Henter…", "Loading…") : t("Oppdater", "Refresh")}
+            </span>
+          </button>
+          <button
+            aria-label={t("Energiinnstillinger", "Energy settings")}
+            onClick={() => setEditing(true)}
+          >
+            <Settings2 size={18} aria-hidden="true" />
+            {t("Avtale og målere", "Agreement and meters")}
+          </button>
+        </>
+      )}
+    </div>
+  );
   if (setup.isLoading)
     return (
       <section className="ep" aria-busy="true">
@@ -1129,63 +1203,6 @@ export function EnergyPlatform({
     >
       {setup.data?.config ? (
         <>
-          <header className="energy-control-toolbar">
-            <div className="ep-toolbar">
-              <div role="group" aria-label="Periode">
-                {[
-                  ["day", "Døgn"],
-                  ["week", "Uke"],
-                  ["month", "Måned"],
-                  ["year", "År"],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    aria-pressed={period === id}
-                    onClick={() => {
-                      setPeriod(id);
-                      setSelected(null);
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <label>
-                Dato
-                <input
-                  type="date"
-                  value={day}
-                  max={dayString(new Date())}
-                  onChange={(e) => {
-                    setDay(e.target.value || dayString(new Date()));
-                    setSelected(null);
-                  }}
-                />
-              </label>
-              {admin && (
-                <button disabled={busy} onClick={() => void refresh()}>
-                  <RefreshCw size={16} className={busy ? "ep-spin" : ""} />{" "}
-                  {busy ? "Henter…" : "Oppdater"}
-                </button>
-              )}
-            </div>
-            {admin && (
-              <button
-                className="energy-control-settings"
-                aria-label="Energiinnstillinger"
-                onClick={() => setEditing(true)}
-              >
-                <Settings2 size={18} /> Avtale og målere
-              </button>
-            )}
-          </header>
-          <EnergyTodayOverview
-            today={liveData?.totals?.today}
-            estimated={!!liveData?.history_estimated}
-            stale={offline || todayDashboard.isError}
-            loading={todayDashboard.isLoading}
-            lang={lang}
-          />
           <PowerGuard
             admin={admin}
             lang={lang}
@@ -1210,21 +1227,12 @@ export function EnergyPlatform({
             home={home}
             offline={offline}
             lang={lang}
+            flowControls={flowControls}
           >
             {overviewCards()}
             {historyCards()}
             {energyKpiModules(liveData, setup.data, lang)}
           </EnergyModules>
-          {admin && (
-            <button
-              className="phone-energy-settings"
-              onClick={() => setEditing(true)}
-            >
-              <Settings2 size={21} />
-              {lang === "en" ? "Agreement and meters" : "Avtale og målere"}
-              <ArrowRight size={19} />
-            </button>
-          )}
           <p className="ep-source">
             Priser fra{" "}
             <a

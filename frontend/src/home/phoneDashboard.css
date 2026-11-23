@@ -1,8 +1,7 @@
 .phone-home-mark,
 .phone-page-heading,
 .phone-alert-bell,
-.phone-security-all,
-.phone-energy-settings {
+.phone-security-all {
   display: none;
 }
 
@@ -152,7 +151,7 @@
       --phone-line: #dce3eb;
       --phone-shadow: 0 5px 15px #1d355b0d, 0 1px 2px #1d355b08;
       .home-canvas-grid {
-        grid-auto-rows: 90px;
+        --canvas-row-height: 90px;
         gap: 12px;
       }
       .home-canvas-cell,
@@ -580,10 +579,6 @@
       box-shadow: var(--phone-shadow);
     }
 
-    .energy-control:has([data-reference-phone="true"])
-      > .energy-control-toolbar {
-      display: none;
-    }
     .phone-energy-power {
       display: flex;
       flex-direction: column;
@@ -853,25 +848,6 @@
     }
     .phone-energy-consumption .energy-summary [data-part] {
       fill: #17a79b;
-    }
-    .ep .phone-energy-settings {
-      display: flex;
-      width: 100%;
-      min-height: 44px;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 12px;
-      padding: 10px 16px;
-      margin-top: 12px;
-      border-radius: 16px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      color: var(--text);
-      font-size: 14px;
-      box-shadow: var(--home-card-shadow);
-    }
-    .phone-energy-settings svg:last-child {
-      margin-left: auto;
     }
   }
   html[data-home-style="harmony"][data-theme="dark"] {

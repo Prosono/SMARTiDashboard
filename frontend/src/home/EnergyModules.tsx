@@ -74,12 +74,14 @@ export function EnergyModules({
   offline,
   lang,
   page,
+  flowControls,
 }: {
   children: ReactNode;
   home?: Home;
   offline: boolean;
   lang: string;
   page: "energy" | "energy_history" | "energy_control";
+  flowControls?: ReactNode;
 }) {
   if (!home && page !== "energy_control") return <>{children}</>;
   const cards: HomeGridCard[] = [];
@@ -164,6 +166,7 @@ export function EnergyModules({
             }}
           >
             {card.content}
+            {card.id === "energy:flow" && flowControls}
           </div>
         ))}
       </div>
@@ -186,6 +189,9 @@ export function EnergyModules({
       offline={offline}
       lang={lang}
       cards={cards}
+      afterCard={
+        flowControls ? { id: "energy:flow", content: flowControls } : undefined
+      }
     />
   );
 }
