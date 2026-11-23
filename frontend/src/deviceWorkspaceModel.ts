@@ -5,6 +5,35 @@ import type { Control, Home } from "./types";
 const roomNames = new WeakMap<Home["areas"], Map<string, string>>();
 const deviceRooms = new WeakMap<Home["devices"], Map<string, string | null>>();
 
+// These integrations reach devices over the local network. HA's integration
+// metadata does not distinguish the device's Wi-Fi and Ethernet links.
+const networkProviders = new Map([
+  ["shelly", "Shelly"],
+  ["esphome", "ESPHome"],
+  ["tplink", "TP-Link Smart Home"],
+  ["wled", "WLED"],
+]);
+
+export function deviceWorkspaceNetworkProviders(
+  controls: readonly Pick<Control, "id" | "device_id" | "integration">[],
+) {
+  const byDevice = new Map<string, string>();
+  const byControl = new Map<string, string>();
+  for (const control of controls) {
+    const provider = networkProviders.get(control.integration ?? "");
+    if (!provider) continue;
+    byControl.set(control.id, provider);
+    if (control.device_id) byDevice.set(control.device_id, provider);
+  }
+  // Other entities attached to the same device can use a proxy integration.
+  for (const control of controls) {
+    const provider = control.device_id && byDevice.get(control.device_id);
+    if (provider && !byControl.has(control.id))
+      byControl.set(control.id, provider);
+  }
+  return byControl;
+}
+
 export function deviceWorkspaceRoomId(control: Control, home: Home) {
   let names = roomNames.get(home.areas);
   if (!names) {

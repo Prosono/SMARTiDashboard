@@ -1,3 +1,7 @@
+## 1.36.169
+- Under Enheter viser Wi-Fi og LAN registrerte kontroller fra Shelly, ESPHome, TP-Link og WLED. Administratorer kan legge til integrasjoner fra samme visning.
+- Enhetssøket finner både kontrollnavn, registrert enhetsnavn, integrasjon og rom.
+
 ## 1.36.168
 - Enheter har en søkbar liste med enhetsbilder, status og filtre for rom og type. Detaljene vises ved siden av listen på større skjermer og i et bunnpanel på mobil.
 - Åpne kontrollen fra detaljpanelet. Administratorer kan også endre rom og navn eller skjule kontrollen fra oversikten.

@@ -11,6 +11,7 @@ import {
   Plus,
   Radar,
   Search,
+  Wifi,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { HiddenControls } from "./ControlVisibility";
@@ -19,9 +20,11 @@ import {
   deviceWorkspaceRoom,
   deviceWorkspaceRoomId,
   deviceWorkspaceStatus,
+  deviceWorkspaceNetworkProviders,
 } from "./deviceWorkspaceModel";
 import { ClimateOverview } from "./home/ClimateOverview";
 import { DeviceArtwork } from "./home/DeviceArtwork";
+import { deviceName } from "./home/deviceMetadata";
 import { LightOverview } from "./home/LightOverview";
 import { MetricDeviceRenderer } from "./home/MetricDetails";
 import { Scenes } from "./home/Scenes";
@@ -119,7 +122,7 @@ export function DevicesPage({
   const [selectedId, select] = useState<string | null>(null);
   const [mobileOpen, openMobile] = useState(false);
   const [commandId, setCommand] = useState<string | null>(null);
-  const [setup, setSetup] = useState<Discovery | null>(null);
+  const [setup, setSetup] = useState<Discovery | "network" | null>(null);
   const list = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -142,9 +145,23 @@ export function DevicesPage({
       ),
     [home.controls],
   );
+  const availableProtocol =
+    !admin && ["discovered", "hidden"].includes(protocol) ? "all" : protocol;
+  const networkView = availableProtocol === "network";
+  const networkProviders = useMemo(
+    () => deviceWorkspaceNetworkProviders(home.controls),
+    [home.controls],
+  );
+  const categoryControls = useMemo(
+    () =>
+      networkView
+        ? controls.filter((control) => networkProviders.has(control.id))
+        : controls,
+    [controls, networkProviders, networkView],
+  );
   const domains = useMemo(
-    () => new Set(controls.map(({ domain }) => domain)),
-    [controls],
+    () => new Set(categoryControls.map(({ domain }) => domain)),
+    [categoryControls],
   );
   const filtered = useMemo(() => {
     const terms = search
@@ -153,34 +170,47 @@ export function DevicesPage({
       .split(/\s+/)
       .filter(Boolean);
     const kind = deviceTypes.find(({ id }) => id === type)?.domains;
-    return controls.filter((control) => {
+    return categoryControls.filter((control) => {
       if (kind && !(kind as readonly string[]).includes(control.domain))
         return false;
       if (room !== "*" && deviceWorkspaceRoomId(control, home) !== room)
         return false;
       if (!terms.length) return true;
-      const name =
-        `${control.name} ${control.device_name ?? ""} ${deviceWorkspaceRoom(control, home, lang)}`.toLocaleLowerCase(
-          l10n,
-        );
+      const name = [
+        control.name,
+        deviceName(control, home),
+        deviceWorkspaceRoom(control, home, lang),
+        networkProviders.get(control.id),
+        control.integration && integrationName(control.integration),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase(l10n);
       return terms.every((term) => name.includes(term));
     });
-  }, [controls, home, l10n, lang, room, search, type]);
+  }, [
+    categoryControls,
+    home,
+    l10n,
+    lang,
+    networkProviders,
+    room,
+    search,
+    type,
+  ]);
   const pageSize = mobile ? phonePageSize : CONTROL_PAGE_SIZE;
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const page = Math.min(requestedPage, pages - 1);
   const start = page * pageSize;
   const visible = filtered.slice(start, start + pageSize);
-  const selectedControl = controls.find(({ id }) => id === selectedId);
+  const selectedControl = categoryControls.find(({ id }) => id === selectedId);
   const selected = selectedControl || (!mobile ? visible[0] : null) || null;
   const command = controls.find(({ id }) => id === commandId);
   const discovered =
     admin && !discoveries.isError ? discoveries.data || [] : [];
   const discovery = discovered[0];
-  const availableProtocol =
-    !admin && ["discovered", "hidden"].includes(protocol) ? "all" : protocol;
   const radio = ["zigbee2mqtt", "zwave_js"].includes(availableProtocol);
-  const split = availableProtocol === "all" && !overview;
+  const split = (availableProtocol === "all" || networkView) && !overview;
 
   useEffect(() => {
     if (selectedId === null || selectedControl) return;
@@ -212,6 +242,11 @@ export function DevicesPage({
       label: "Z-Wave",
       icon: <ProtocolLogo provider="zwave_js" label="" />,
     },
+    {
+      id: "network",
+      label: t("Wi-Fi og LAN", "Wi-Fi and LAN"),
+      icon: <Wifi size={19} />,
+    },
   ];
   const management = admin
     ? [
@@ -239,6 +274,12 @@ export function DevicesPage({
   }
 
   function changeProtocol(value: string) {
+    if (networkView || value === "network") {
+      setSearch("");
+      setRoom("*");
+      setType("all");
+      resetPosition();
+    }
     selectProtocol(value);
     setOverview(false);
     openMobile(false);
@@ -278,15 +319,18 @@ export function DevicesPage({
     );
   }
 
+  const addLabel = networkView
+    ? t("Legg til integrasjon", "Add integration")
+    : t("Legg til ny enhet", "Add new device");
   const addButton = admin && (
     <button
       type="button"
       className="primary compact devices-add"
-      onClick={add}
-      aria-label={t("Legg til ny enhet", "Add new device")}
+      onClick={networkView ? () => setSetup("network") : add}
+      aria-label={addLabel}
     >
       <Plus size={19} aria-hidden="true" />{" "}
-      <span>{t("Legg til enhet", "Add device")}</span>
+      <span>{networkView ? addLabel : t("Legg til enhet", "Add device")}</span>
     </button>
   );
 
@@ -473,7 +517,7 @@ export function DevicesPage({
                       {name}
                     </option>
                   ))}
-                  {controls.some(
+                  {categoryControls.some(
                     (control) => !deviceWorkspaceRoomId(control, home),
                   ) && <option value="">{words.unassigned}</option>}
                 </select>
@@ -500,7 +544,7 @@ export function DevicesPage({
                     ))}
                 </select>
               </div>
-              {["light", "climate"].includes(type) && (
+              {!networkView && ["light", "climate"].includes(type) && (
                 <button
                   type="button"
                   className="compact devices-overview-toggle"
@@ -528,6 +572,14 @@ export function DevicesPage({
                       );
                       const active =
                         selected?.id === control.id && (!mobile || mobileOpen);
+                      const physicalName = networkView
+                        ? deviceName(control, home)
+                        : "";
+                      const networkLabel =
+                        networkView &&
+                        (physicalName && physicalName !== control.name
+                          ? physicalName
+                          : networkProviders.get(control.id));
                       return (
                         <li key={control.id}>
                           <button
@@ -551,7 +603,12 @@ export function DevicesPage({
                             <span className="devices-row-name">
                               <strong>{control.name}</strong>
                               <small>
-                                {deviceWorkspaceRoom(control, home, lang)}
+                                {[
+                                  deviceWorkspaceRoom(control, home, lang),
+                                  networkLabel,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
                               </small>
                             </span>
                             <span
@@ -598,8 +655,26 @@ export function DevicesPage({
                 </>
               ) : (
                 <div className="devices-empty">
-                  <Search size={23} aria-hidden="true" />
-                  <p>{controls.length ? words.noResults : words.emptyHint}</p>
+                  {networkView && !categoryControls.length ? (
+                    <>
+                      <Wifi size={23} aria-hidden="true" />
+                      <p>
+                        {t(
+                          "Ingen nettverksenheter med synlige kontroller ennå.",
+                          "No network devices with visible controls yet.",
+                        )}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Search size={23} aria-hidden="true" />
+                      <p>
+                        {categoryControls.length
+                          ? words.noResults
+                          : words.emptyHint}
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </>
@@ -633,7 +708,7 @@ export function DevicesPage({
       {setup && admin && (
         <IntegrationSetup
           lang={lang}
-          discovery={setup}
+          discovery={setup === "network" ? undefined : setup}
           close={() => {
             setSetup(null);
             void discoveries.refetch();
