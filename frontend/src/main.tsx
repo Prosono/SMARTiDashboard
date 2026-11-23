@@ -35,7 +35,7 @@ import { HarmonyDevices } from "./home/HarmonyDevices";
 import { CardDeviceMetadata } from "./home/CardDeviceMetadata";
 import { deviceBattery } from "./home/deviceMetadata";
 import { DeviceArtwork } from "./home/DeviceArtwork";
-import { liveConnection } from "./liveConnection";
+import { liveConnection, scheduleRemoteHomeRefresh } from "./liveConnection";
 import { StartupScreen } from "./StartupScreen";
 import {
   accountLaunchLanguage,
@@ -879,6 +879,30 @@ function Dashboard({
   useEffect(() => {
     let homeRevision: number | undefined;
     let radioRevision: number | undefined;
+    const refreshDevices = () => {
+      for (const key of [
+        "protocol-devices",
+        "device-detail",
+        "paired-device",
+      ]) {
+        void queryClient.invalidateQueries(
+          { queryKey: [key] },
+          { cancelRefetch: false },
+        );
+      }
+    };
+    const refreshHome = () =>
+      queryClient.invalidateQueries(
+        { queryKey: ["home"] },
+        { cancelRefetch: false },
+      );
+    const scheduled = remoteHome()
+      ? scheduleRemoteHomeRefresh(() => {
+          refreshDevices();
+          return refreshHome();
+        })
+      : undefined;
+    const requestHomeRefresh = scheduled?.request ?? refreshHome;
     const onMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
@@ -890,23 +914,13 @@ function Dashboard({
         homeRevision = data.revision;
         radioRevision = data.radio_revision;
         // Let an in-flight fetch finish rather than cancelling it on busy networks.
-        if (homeChanged)
-          void queryClient.invalidateQueries(
-            { queryKey: ["home"] },
-            { cancelRefetch: false },
-          );
-        if (homeChanged || radioChanged) {
-          for (const key of [
-            "protocol-devices",
-            "device-detail",
-            "paired-device",
-          ]) {
-            void queryClient.invalidateQueries(
-              { queryKey: [key] },
-              { cancelRefetch: false },
-            );
-          }
-        }
+        if (
+          homeChanged &&
+          (!scheduled ||
+            data.revision !== queryClient.getQueryData<Home>(["home"])?.revision)
+        )
+          void requestHomeRefresh();
+        if (radioChanged || (homeChanged && !scheduled)) refreshDevices();
         if (radioChanged)
           void queryClient.invalidateQueries(
             { queryKey: ["zigbee-connection"] },
@@ -916,17 +930,18 @@ function Dashboard({
         /* Ignore incomplete event frames; polling remains a fallback. */
       }
     };
-    return liveConnection(
+    const disconnect = liveConnection(
       streamStatus,
       onMessage,
       () => {
-        void queryClient.invalidateQueries(
-          { queryKey: ["home"] },
-          { cancelRefetch: false },
-        );
+        void requestHomeRefresh();
       },
       () => window.dispatchEvent(new Event("smarti-check-session")),
     );
+    return () => {
+      disconnect();
+      scheduled?.stop();
+    };
   }, [queryClient]);
   useEffect(() => {
     setAdding(false);

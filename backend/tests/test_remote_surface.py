@@ -1,3 +1,4 @@
+import gzip
 import uuid
 
 from fastapi.testclient import TestClient
@@ -67,6 +68,65 @@ def test_remote_browser_requires_local_login_exact_host_origin_and_csrf(tmp_path
     remote.cookies.set("smarti_session", browser.cookies.get("smarti_session"))
     remote.cookies.set("__Host-smarti_cloud", "not-a-hub-session")
     assert remote.get("/api/session").status_code == 401
+
+
+def test_remote_home_snapshot_only_is_gzipped_when_accepted(tmp_path):
+    origin = f"https://{uuid.uuid4()}.home.smarti.dev"
+    settings = Settings(
+        _env_file=None,
+        mode="demo",
+        data_dir=tmp_path,
+        origin=origin,
+        auto_local_origins=False,
+        bootstrap_secret="bootstrap-test-secret-123456",
+    )
+    ha = Demo()
+    local = TestClient(create_app(settings, ha), base_url=origin, headers={"Origin": origin})
+    credentials = {"name": "owner", "password": "test-remote-password"}
+    assert local.post("/api/bootstrap", json=credentials | {"secret": settings.bootstrap_secret}).is_success
+    assert local.post("/api/login", json=credentials).is_success
+
+    remote = TestClient(
+        create_app(settings, ha, remote_surface=True),
+        base_url=origin,
+        headers={"Origin": origin, "Accept-Encoding": "gzip"},
+    )
+    unauthorized = remote.get("/api/home")
+    assert unauthorized.status_code == 401
+    assert "content-encoding" not in unauthorized.headers
+    assert remote.post("/api/login", json=credentials).is_success
+
+    plain = remote.get("/api/home", headers={"Accept-Encoding": "identity"})
+    assert plain.status_code == 200
+    assert plain.headers["vary"] == "Accept-Encoding"
+    assert "content-encoding" not in plain.headers
+    assert "controls" in plain.json()
+    assert "csrf" not in plain.json()
+
+    with remote.stream("GET", "/api/home", headers={"Accept-Encoding": "br, GZip; q=0.5"}) as encoded:
+        assert encoded.status_code == 200
+        assert encoded.headers["content-encoding"] == "gzip"
+        assert encoded.headers["vary"] == "Accept-Encoding"
+        for name in ("cache-control", "content-type", "content-security-policy", "x-content-type-options"):
+            assert encoded.headers[name] == plain.headers[name]
+        compressed = b"".join(encoded.iter_raw())
+        assert len(compressed) == int(encoded.headers["content-length"])
+        assert len(compressed) < len(plain.content)
+        assert gzip.decompress(compressed) == plain.content
+
+    for accept_encoding in ("", "br", "fakegzip", "gzip;q=0, *;q=1", "gzip;q=0.5, identity;q=1"):
+        result = remote.get("/api/home", headers={"Accept-Encoding": accept_encoding})
+        assert result.content == plain.content
+        assert "content-encoding" not in result.headers
+
+    rejected = remote.get("/api/home", headers={"Host": "wrong.home.smarti.dev"})
+    assert rejected.status_code == 403
+    assert "content-encoding" not in rejected.headers
+    assert "content-encoding" not in remote.get("/api/session").headers
+    assert "content-encoding" not in remote.get("/api/events?poll=true").headers
+    local_snapshot = local.get("/api/home", headers={"Accept-Encoding": "gzip"})
+    assert local_snapshot.status_code == 200
+    assert "content-encoding" not in local_snapshot.headers
 
 
 def test_provisioning_requires_local_admin_and_csrf(tmp_path):

@@ -1,9 +1,11 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { Camera, Maximize, Play, Square, RefreshCw } from "lucide-react";
 import type { Control, Home } from "../types";
+import { remoteHome } from "../remoteConsole";
 import { usable } from "./homeModel";
 import { CardIcon, CardTitle } from "./CardPresentation";
 import { CardDeviceMetadata } from "./CardDeviceMetadata";
+import { InSettingsDialog } from "./SettingsDialog";
 import "./homeMedia.css";
 import { CardLivePreview } from "./CardLivePreview";
 import {
@@ -26,13 +28,15 @@ export function CameraCard({
   compact?: boolean;
 }) {
   const previewEnabled = useContext(CardLivePreview);
+  const inDialog = useContext(InSettingsDialog);
   const [issue, setIssue] = useState<CameraIssue>("unavailable");
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const container = useRef<HTMLElement>(null),
     video = useRef<HTMLVideoElement>(null);
   const [visible, setVisible] = useState(false),
     [foreground, setForeground] = useState(!document.hidden);
-  const [paused, setPaused] = useState(false),
+  const remote = remoteHome();
+  const [paused, setPaused] = useState(remote && !inDialog),
     [attempt, retry] = useState(0);
   const [status, setStatus] = useState<CameraState>("idle");
   const available = !offline && usable(c),
@@ -120,6 +124,12 @@ export function CameraCard({
                         : "The camera did not respond. Check the connection and retry.",
                 )}
               </small>
+            )}
+            {remote && paused && available && previewEnabled && (
+              <button onClick={() => setPaused(false)}>
+                <Play size={16} />
+                {t("Start livevideo", "Start live video")}
+              </button>
             )}
             {status === "blocked" && (
               <button

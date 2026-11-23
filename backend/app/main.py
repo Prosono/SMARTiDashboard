@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import contextlib
+import gzip
 import json
 import math
 import secrets
@@ -9,9 +10,11 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from .access import access_router, controllable, feature, policy, require, route_access, visible
 from .accounts import accounts_router
@@ -166,6 +169,29 @@ class PairingAnswer(BaseModel):
 class ConsoleTarget(BaseModel):
     model_config = {"extra": "forbid"}
     slug: str | None = Field(default=None, pattern=r"^[a-zA-Z0-9_-]{1,100}$")
+
+
+def accepts_gzip(values: list[str]) -> bool:
+    weights: dict[str, float] = {}
+    for value in values:
+        for entry in value.lower().split(","):
+            coding, *parameters = entry.split(";")
+            coding = coding.strip()
+            if coding not in {"gzip", "identity", "*"}:
+                continue
+            quality = 1.0
+            for parameter in parameters:
+                key, _, weight = parameter.partition("=")
+                if key.strip() == "q":
+                    try:
+                        quality = float(weight)
+                    except ValueError:
+                        quality = 0
+            if not 0 <= quality <= 1:
+                quality = 0
+            weights[coding] = min(weights.get(coding, 1), quality)
+    gzip_weight = weights.get("gzip", weights.get("*", 0))
+    return gzip_weight > 0 and gzip_weight >= weights.get("identity", 0)
 
 
 def create_app(
@@ -706,8 +732,19 @@ def create_app(
         raise HTTPException(410, "dashboard_builder_removed")
 
     @app.get("/api/home")
-    async def home(current=Depends(user)):
-        return snapshot(current)
+    async def home(request: Request, current=Depends(user)):
+        data = snapshot(current)
+        if not remote_surface:
+            return data
+        # This snapshot never echoes request values or includes session or CSRF credentials.
+        response = JSONResponse(jsonable_encoder(data), headers={"Vary": "Accept-Encoding"})
+        if len(response.body) >= 1024 and accepts_gzip(request.headers.getlist("accept-encoding")):
+            compressed = await run_in_threadpool(gzip.compress, response.body, compresslevel=3, mtime=0)
+            if len(compressed) < len(response.body):
+                response.body = compressed
+                response.headers["Content-Encoding"] = "gzip"
+                response.headers["Content-Length"] = str(len(compressed))
+        return response
 
     @app.get("/api/control-visibility")
     async def control_visibility_list(current=Depends(admin)):

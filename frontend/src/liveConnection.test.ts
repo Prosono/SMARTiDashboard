@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { liveConnection } from "./liveConnection";
+import { liveConnection, scheduleRemoteHomeRefresh } from "./liveConnection";
 class Stream extends EventTarget {
   static instances: Stream[] = [];
   onopen?: () => void;
@@ -146,4 +146,55 @@ it("does not mark failed polling as connected and recovers on the next poll", as
   expect(status).toHaveBeenLastCalledWith(false);
   await vi.advanceTimersByTimeAsync(5000);
   expect(status).toHaveBeenLastCalledWith(true);
+});
+
+it("coalesces remote state changes and delivers the final update", async () => {
+  const refresh = vi.fn(async () => {});
+  const scheduled = scheduleRemoteHomeRefresh(refresh);
+  stop = scheduled.stop;
+  for (let event = 0; event < 20; event++) {
+    scheduled.request();
+    await vi.advanceTimersByTimeAsync(500);
+  }
+  expect(refresh).toHaveBeenCalledTimes(4);
+  await vi.advanceTimersByTimeAsync(2000);
+  expect(refresh).toHaveBeenCalledTimes(5);
+  scheduled.request();
+  scheduled.stop();
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(refresh).toHaveBeenCalledTimes(5);
+});
+
+it("waits for an in-flight remote snapshot before refreshing again", async () => {
+  let complete!: () => void;
+  const refresh = vi
+    .fn(async () => {})
+    .mockImplementationOnce(
+      () => new Promise<void>((resolve) => (complete = resolve)),
+    );
+  const scheduled = scheduleRemoteHomeRefresh(refresh);
+  stop = scheduled.stop;
+  scheduled.request();
+  scheduled.request();
+  await vi.advanceTimersByTimeAsync(10000);
+  expect(refresh).toHaveBeenCalledOnce();
+  complete();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(refresh).toHaveBeenCalledTimes(2);
+});
+
+it("defers remote snapshots while hidden and refreshes on return", async () => {
+  const refresh = vi.fn(async () => {});
+  const scheduled = scheduleRemoteHomeRefresh(refresh);
+  stop = scheduled.stop;
+  scheduled.request();
+  scheduled.request();
+  Object.assign(document, { visibilityState: "hidden" });
+  await vi.advanceTimersByTimeAsync(10000);
+  expect(refresh).toHaveBeenCalledOnce();
+  scheduled.request();
+  expect(refresh).toHaveBeenCalledOnce();
+  Object.assign(document, { visibilityState: "visible" });
+  scheduled.request();
+  expect(refresh).toHaveBeenCalledTimes(2);
 });

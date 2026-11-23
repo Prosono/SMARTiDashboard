@@ -1,3 +1,52 @@
+const remoteSnapshotInterval = 3000;
+
+/** Coalesce remote snapshots, retaining a refresh for changes during a fetch. */
+export function scheduleRemoteHomeRefresh(refresh: () => Promise<void>) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let nextAllowed = 0;
+  let pending = false;
+  let running = false;
+  let stopped = false;
+
+  function run() {
+    if (
+      stopped ||
+      !pending ||
+      running ||
+      timer !== undefined ||
+      document.visibilityState === "hidden"
+    )
+      return;
+    const now = performance.now();
+    if (now < nextAllowed) {
+      timer = setTimeout(() => {
+        timer = undefined;
+        run();
+      }, nextAllowed - now);
+      return;
+    }
+    pending = false;
+    running = true;
+    nextAllowed = now + remoteSnapshotInterval;
+    const settled = () => {
+      running = false;
+      run();
+    };
+    void refresh().then(settled, settled);
+  }
+
+  return {
+    request() {
+      pending = true;
+      run();
+    },
+    stop() {
+      stopped = true;
+      clearTimeout(timer);
+    },
+  };
+}
+
 // Own reconnection explicitly: ingress/proxies can leave EventSource silently stalled.
 export function liveConnection(
   status: (connected: boolean) => void,

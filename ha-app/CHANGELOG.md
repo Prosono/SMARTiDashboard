@@ -1,3 +1,7 @@
+## 1.36.166
+- Ved fjernaksess komprimeres enhetsoversikten, og hyppige sensorendringer samles før ny henting. Automatiske hentinger fra liveoppdateringer venter når fanen er skjult.
+- Kamerakort i fjernvisningen starter livevideo når du trykker på kortet eller åpner kameraet.
+
 ## 1.36.165
 - Energi åpner uten den øverste oversikten for dagens forbruk og kostnad.
 - Dato, periode, oppdatering og Avtale og målere ligger nå rett under Energiflyt.
