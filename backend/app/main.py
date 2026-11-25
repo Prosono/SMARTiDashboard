@@ -43,7 +43,7 @@ from .models import Command
 from .origins import OriginPolicy
 from .power_guard import PowerGuard, power_guard_router
 from .power_guard_history import power_guard_history_router
-from .remote_access import remote_router
+from .remote_access import CLOUD_ORIGIN, remote_router
 from .scenes import scenes_router
 from .screensaver_gallery import PHOTO_PATH, screensaver_gallery_router
 from .session_policy import SESSION_COOKIE_SECONDS
@@ -411,9 +411,14 @@ def create_app(
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; img-src 'self' data: blob: https://www.zigbee2mqtt.io https://brands.home-assistant.io https://tile.openstreetmap.org; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
         )
+        frame_sources = ["'self'"]
+        if customer:
+            frame_sources.append(f"{CLOUD_ORIGIN}/home-switcher")
         console = getattr(app.state, "console", None)
         if console is not None:
-            response.headers["Content-Security-Policy"] += f"; frame-src 'self' {console.origin}"
+            frame_sources.append(console.origin)
+        if len(frame_sources) > 1:
+            response.headers["Content-Security-Policy"] += "; frame-src " + " ".join(frame_sources)
         return response
 
     async def user(request: Request):

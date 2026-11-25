@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type Dispatch,
+  type ReactNode,
   type RefObject,
   type SetStateAction,
 } from "react";
@@ -45,10 +46,14 @@ export function HomePageToolButtons({
   tools,
   lang,
   fallback,
+  alert,
+  openSearch,
 }: {
   tools: ReturnType<typeof useHomePageTools>;
   lang: string;
   fallback?: () => void;
+  alert?: ReactNode;
+  openSearch?: () => void;
 }) {
   const { editor, search, context } = tools;
   const returnFocus = useRef<string | null>(null);
@@ -78,7 +83,7 @@ export function HomePageToolButtons({
       : "Tilpass Hjem";
   return (
     <>
-      {search && (
+      {search ? (
         <button
           className="home-toolbar-tool home-search-tool"
           ref={context.searchButton}
@@ -90,7 +95,20 @@ export function HomePageToolButtons({
         >
           <Search size={20} aria-hidden="true" />
         </button>
+      ) : (
+        openSearch && (
+          <button
+            type="button"
+            className="home-toolbar-tool home-search-tool phone-overview-search"
+            aria-label={en ? "Search devices" : "Søk etter enheter"}
+            data-home-grid-leave
+            onClick={openSearch}
+          >
+            <Search size={20} aria-hidden="true" />
+          </button>
+        )
       )}
+      {alert}
       {(editor || fallback) && (
         <button
           className="home-toolbar-tool home-customize home-customize-icon"

@@ -1,4 +1,11 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -95,6 +102,7 @@ export function DevicesPage({
   selectProtocol,
   pairedDevice,
   add,
+  focusSearch = false,
 }: {
   home: Home;
   lang: string;
@@ -104,6 +112,7 @@ export function DevicesPage({
   selectProtocol: (value: string) => void;
   pairedDevice: PairedDevice | null;
   add: () => void;
+  focusSearch?: boolean;
 }) {
   const english = lang === "en";
   const t = (norwegian: string, englishText: string) =>
@@ -124,6 +133,11 @@ export function DevicesPage({
   const [commandId, setCommand] = useState<string | null>(null);
   const [setup, setSetup] = useState<Discovery | "network" | null>(null);
   const list = useRef<HTMLUListElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+
+  useLayoutEffect(() => {
+    if (focusSearch) searchInput.current?.focus();
+  }, [focusSearch]);
 
   useEffect(() => {
     const screen = matchMedia(mobileQuery);
@@ -487,6 +501,7 @@ export function DevicesPage({
                 <label className="devices-search">
                   <Search size={18} aria-hidden="true" />
                   <input
+                    ref={searchInput}
                     type="search"
                     value={search}
                     onChange={(event) => {

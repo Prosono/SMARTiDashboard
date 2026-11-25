@@ -17,7 +17,7 @@ from pathlib import Path
 import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pwdlib import PasswordHash
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -52,6 +52,7 @@ class HomePhoto(BaseModel):
 
 
 TERMS_VERSION = "2026-10-22"
+HUB_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 
 class Registration(Credentials):
@@ -162,9 +163,10 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
         response.headers["Cache-Control"] = "no-store"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["X-Content-Type-Options"] = "nosniff"
+        ancestor = getattr(request.state, "home_switcher_ancestor", "'none'")
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; script-src 'self'; style-src 'self'; "
-            "img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+            f"img-src 'self' data: blob:; frame-ancestors {ancestor}; base-uri 'none'; form-action 'self'"
         )
         return response
 
@@ -572,6 +574,31 @@ def create_cloud(database, provision_secret, origin="https://home.smarti.dev", r
     @app.get("/")
     def index():
         return FileResponse(static / "index.html")
+
+    @app.get("/home-switcher")
+    def home_switcher(request: Request):
+        current = request.query_params.getlist("current")
+        target = request.query_params.getlist("open")
+        lang = request.query_params.getlist("lang")
+        theme = request.query_params.getlist("theme")
+        valid_appearance = lang in ([], ["nb"], ["en"]) and theme in ([], ["light"], ["dark"])
+        page = static / "home-switcher.html"
+        if valid_appearance and not target and len(current) == 1 and HUB_ID.fullmatch(current[0]):
+            request.state.home_switcher_ancestor = f"https://{current[0]}.home.smarti.dev"
+        # Only auto-open on a user-activated link from the portal's own frame.
+        # A direct or cross-site visit must start the exchange with a button press.
+        if (
+            valid_appearance
+            and not current
+            and len(target) == 1
+            and HUB_ID.fullmatch(target[0])
+            and request.headers.getlist("sec-fetch-site") == ["same-origin"]
+            and request.headers.getlist("sec-fetch-user") == ["?1"]
+        ):
+            return HTMLResponse(
+                page.read_text(encoding="utf-8").replace('data-auto-open="false"', 'data-auto-open="true"')
+            )
+        return FileResponse(page)
 
     @app.get("/privacy")
     def privacy_policy():

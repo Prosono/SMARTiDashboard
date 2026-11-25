@@ -1,0 +1,77 @@
+.mobile-home-switcher {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+}
+
+.mobile-home-switcher:focus-visible,
+.mobile-home-picker > a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mobile-home-switcher img {
+  display: block;
+  width: 29px;
+  height: 29px;
+  object-fit: contain;
+}
+
+.mobile-home-picker {
+  display: grid;
+  gap: 12px;
+}
+
+.mobile-home-picker iframe {
+  display: block;
+  width: 100%;
+  height: min(320px, 50dvh);
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.mobile-home-current,
+.mobile-home-picker > a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.mobile-home-current {
+  background: var(--soft);
+}
+
+.mobile-home-current svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.mobile-home-current span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.mobile-home-current small {
+  color: var(--muted);
+}
+
+.mobile-home-picker > a {
+  min-height: 44px;
+  justify-content: space-between;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}

@@ -1,8 +1,8 @@
 import { api } from "./api";
 
-export function remoteHome() {
+export function remoteHome(hostname = window.location.hostname) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.home\.smarti\.dev$/.test(
-    window.location.hostname,
+    hostname,
   );
 }
 export async function openRemoteConsole(slug?: string) {

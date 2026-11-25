@@ -1,0 +1,122 @@
+.phone-home-switcher-slot,
+.phone-page-heading,
+.phone-alert-bell,
+[data-home-banners="off"] .home-toolbar .phone-overview-search,
+[data-home-banners="off"] .home-toolbar-alert[data-empty="true"] {
+  display: none;
+}
+
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  html[data-home-style="harmony"]
+    .workspace:has([data-phone-section] > .home-toolbar) {
+    > .topbar {
+      display: none;
+    }
+
+    > main {
+      padding-top: max(8px, env(safe-area-inset-top, 0px));
+    }
+  }
+
+  html[data-home-style="harmony"]
+    [data-home-banners="off"][data-phone-section]
+    > .home-toolbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: clamp(5px, 1.5vw, 10px);
+    min-height: 54px;
+    box-sizing: border-box;
+    margin: 0 -12px 10px;
+    padding: 4px 8px;
+    border: 1px solid var(--harmony-border);
+    border-radius: 17px;
+    background: var(--surface);
+    box-shadow: var(--harmony-shadow);
+    color: var(--text);
+
+    .home-location,
+    .home-toolbar-alert > svg:first-child,
+    .home-toolbar-alert::before {
+      display: none;
+    }
+
+    .phone-home-switcher-slot {
+      position: relative;
+      display: flex;
+      padding-inline-end: 7px;
+    }
+
+    .phone-home-switcher-slot::after {
+      position: absolute;
+      inset-block: 8px;
+      inset-inline-end: 0;
+      width: 1px;
+      background: var(--line);
+      content: "";
+    }
+
+    .phone-page-heading {
+      display: block;
+      justify-self: stretch;
+      min-width: 0;
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: start;
+      font-size: clamp(18px, 5.6vw, 26px);
+      line-height: 1.15;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+    }
+
+    .home-toolbar-actions {
+      gap: clamp(3px, 1.2vw, 8px);
+    }
+
+    .home-toolbar-alert {
+      display: grid;
+      border-color: var(--line);
+      color: var(--text);
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--text) 7%, transparent);
+    }
+
+    .home-toolbar-alert > span {
+      inset-block-start: -4px;
+      inset-inline-end: -3px;
+    }
+
+    .phone-alert-bell {
+      display: block;
+    }
+
+    .phone-overview-search {
+      display: grid;
+    }
+  }
+
+  html[data-home-style="harmony"]
+    .simple-home-dashboard[data-phone-section]
+    > .home-toolbar {
+    padding-block: 2px;
+  }
+
+  html[data-home-style="harmony"][data-theme="dark"]
+    [data-home-banners="off"][data-phone-section]
+    > .home-toolbar {
+    --surface: var(--phone-paper, #253039);
+    --text: var(--phone-ink, #edf4f6);
+    --line: var(--phone-line, #43515e);
+    border-color: var(--line);
+
+    .home-toolbar-actions
+      > button:where(:not([aria-expanded="true"], [aria-pressed="true"])) {
+      background: color-mix(in srgb, var(--text) 8%, var(--surface));
+    }
+  }
+
+  html[data-home-style="harmony"] [data-phone-section] .home-page-title {
+    display: none;
+  }
+}

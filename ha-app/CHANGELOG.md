@@ -1,3 +1,7 @@
+## 1.36.171
+- Mobilens toppfelt samler sidetittel, søk, varsler og innstillinger på én linje.
+- Trykk på SMARTi-logoen for å åpne Mine hjem og bytte mellom hjem med fjernaksess.
+
 ## 1.36.170
 - Lys i hjemmet viser lys som er på først, med egen bryter for hvert lys og samlet styring i samme dialog.
 - Fra Oversikt åpner Klima og Multimedia enhetslister med individuell styring. Låser og rullgardiner får egne kort når de finnes i hjemmet.

@@ -8,7 +8,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   House,
-  TriangleAlert,
   Moon,
   Briefcase,
   Plane,
@@ -21,9 +20,7 @@ import {
   Bath,
   Trees,
   Car,
-  MapPin,
   Play,
-  Bell,
 } from "lucide-react";
 import { api } from "../api";
 import type { Home, Control } from "../types";
@@ -47,11 +44,8 @@ import { equipmentSummaryCards } from "./EquipmentSummaryCards";
 import { RoomSummaryCard } from "./RoomSummaryCard";
 import { CardIcon, CardTitle } from "./CardPresentation";
 import { HomeGridGuard } from "./HomeGridGuard";
-import {
-  HomePageTools,
-  HomePageToolButtons,
-  useHomePageTools,
-} from "./HomePageTools";
+import { HomePageTools, useHomePageTools } from "./HomePageTools";
+import { HomeToolbar } from "./HomeToolbar";
 import { deviceGridCards } from "./HomeDeviceGrid";
 import "./homeHighlights.css";
 import "./overviewDashboard.css";
@@ -95,6 +89,7 @@ export function HomeOverview({
   renderControls,
   openRooms,
   openDevices,
+  openSearch,
 }: {
   home: Home;
   offline: boolean;
@@ -103,6 +98,7 @@ export function HomeOverview({
   renderControls: (c: Control[]) => ReactNode;
   openRooms: (id?: string) => void;
   openDevices: () => void;
+  openSearch?: () => void;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const mode = useExperience();
@@ -319,6 +315,12 @@ export function HomeOverview({
       })}
     </nav>
   );
+  const activeTitle =
+    tab === "misc" && lang !== "en"
+      ? "Mer"
+      : homeTabs.find((item) => item.id === tab)?.[
+          lang === "en" ? "en" : "nb"
+        ] ?? t("Oversikt", "Overview");
   return (
     <HomeGridGuard.Provider value={leaveGrid}>
       <HomePageTools.Provider value={tools.context}>
@@ -329,51 +331,16 @@ export function HomeOverview({
             data-phone-section={true}
             data-overview-detail={mode === "advanced"}
           >
-            <div className="home-toolbar">
-              <div className="home-location">
-                <img
-                  className="phone-home-mark"
-                  src={new URL("brand/smarti-logo.png", document.baseURI).href}
-                  alt="SMARTi"
-                />
-                <MapPin size={15} />
-                <span>{h.home_name}</span>
-                <span className="home-date">
-                  {clock.toLocaleDateString(lang === "en" ? "en-GB" : "nb-NO", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </span>
-              </div>
-              <div className="home-toolbar-actions">
-                {!!model.alerts.length && (
-                  <button
-                    className="home-toolbar-alert"
-                    aria-label={`${t("Trenger din oppmerksomhet", "Needs your attention")}: ${model.alerts.length}`}
-                    title={t("Vis varsler", "Show alerts")}
-                    aria-haspopup="dialog"
-                    onClick={() => setShowAlerts(true)}
-                  >
-                    <TriangleAlert size={23} aria-hidden="true" />
-                    <Bell
-                      className="phone-alert-bell"
-                      size={22}
-                      aria-hidden="true"
-                    />
-                    <span aria-hidden="true">{model.alerts.length}</span>
-                  </button>
-                )}
-                <HomePageToolButtons tools={tools} lang={lang} />
-              </div>
-            </div>
-            <div className="phone-page-heading" role="heading" aria-level={1}>
-              {tab === "misc" && lang !== "en"
-                ? "Mer"
-                : homeTabs.find((item) => item.id === tab)?.[
-                    lang === "en" ? "en" : "nb"
-                  ]}
-            </div>
+            <HomeToolbar
+              home={h}
+              lang={lang}
+              title={activeTitle}
+              date={clock}
+              alerts={model.alerts.length}
+              tools={tools}
+              openAlerts={() => setShowAlerts(true)}
+              openSearch={tab === "overview" ? openSearch : undefined}
+            />
             <HomeTabs
               tab={tab}
               change={changeTab}

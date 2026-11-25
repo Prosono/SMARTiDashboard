@@ -1,11 +1,29 @@
 import gzip
 import uuid
 
-from fastapi.testclient import TestClient
-
 from app.config import Settings
 from app.demo import Demo
 from app.main import create_app
+from fastapi.testclient import TestClient
+
+
+def test_only_provisioned_remote_dashboard_allows_the_portal_home_picker(tmp_path):
+    origin = f"https://{uuid.uuid4()}.home.smarti.dev"
+    settings = Settings(
+        _env_file=None, mode="demo", data_dir=tmp_path, origin=origin, auto_local_origins=False
+    )
+    identity = tmp_path / "identity.json"
+    for remote_surface, support_identity, allows_picker in (
+        (False, identity, False),
+        (True, None, False),
+        (True, identity, True),
+    ):
+        app = create_app(settings, Demo(), remote_surface=remote_surface, support_identity=support_identity)
+        response = TestClient(app, base_url=origin).get("/api/bootstrap")
+        policy = response.headers["content-security-policy"].split("; ")
+        assert ("frame-src 'self' https://home.smarti.dev/home-switcher" in policy) is allows_picker
+        assert "connect-src 'self'" in policy
+        assert "frame-ancestors 'self'" in policy
 
 
 def test_remote_browser_requires_local_login_exact_host_origin_and_csrf(tmp_path):

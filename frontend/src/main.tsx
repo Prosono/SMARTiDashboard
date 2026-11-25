@@ -29,6 +29,7 @@ import {
   useExperiencePreference,
 } from "./Experience";
 import { SimpleHome } from "./home/SimpleHome";
+import { MobileHomeSwitcher } from "./home/MobileHomeSwitcher";
 import { HarmonyDevices } from "./home/HarmonyDevices";
 import { CardDeviceMetadata } from "./home/CardDeviceMetadata";
 import { deviceBattery } from "./home/deviceMetadata";
@@ -868,6 +869,16 @@ function Dashboard({
     page === "more" && settingsSection === "screensaver",
   );
   const [protocol, setProtocol] = useState("all");
+  const [focusDeviceSearch, setFocusDeviceSearch] = useState(false);
+  useEffect(() => {
+    if (page !== "devices") setFocusDeviceSearch(false);
+  }, [page]);
+  function openDeviceWorkspace(focusSearch = false) {
+    setRoom(null);
+    setProtocol("all");
+    setFocusDeviceSearch(focusSearch);
+    setPage("devices");
+  }
   useEffect(() => {
     let homeRevision: number | undefined;
     let radioRevision: number | undefined;
@@ -1021,15 +1032,13 @@ function Dashboard({
     >
       <header className="topbar">
         <div className="breadcrumb">
-          <img
-            className="mobile-logo"
-            src="./brand/smarti-logo.png"
-            alt="SMARTi"
-          />
+          <div className="mobile-breadcrumb-home">
+            <MobileHomeSwitcher home={h} lang={lang} />
+          </div>
           <House size={17} />
-          <span>{h.home_name}</span>
+          <span className="breadcrumb-home-name">{h.home_name}</span>
           <span className="separator">/</span>
-          <span>{t[page]}</span>
+          <span className="breadcrumb-page">{t[page]}</span>
         </div>
         <div className="top-actions">
           <span
@@ -1116,11 +1125,8 @@ function Dashboard({
               setRoom(id ?? null);
               setPage("rooms");
             }}
-            openDevices={() => {
-              setRoom(null);
-              setProtocol("all");
-              setPage("devices");
-            }}
+            openDevices={() => openDeviceWorkspace()}
+            openSearch={() => openDeviceWorkspace(true)}
           />
         ) : page === "rooms" && room !== null ? (
           <RoomView
@@ -1154,6 +1160,7 @@ function Dashboard({
             protocol={protocol}
             selectProtocol={setProtocol}
             pairedDevice={pairedDevice}
+            focusSearch={focusDeviceSearch}
             add={() => setAdding(true)}
           />
         ) : page === "logbook" ? (

@@ -152,9 +152,6 @@ html[data-home-style="harmony"] {
       cursor: pointer;
     }
   }
-  .home-overview:has(#home-page-overview) > .home-toolbar {
-    display: flex;
-  }
   .home-overview .home-welcome .home-customize.home-customize-mobile {
     display: inline-flex;
     position: absolute;

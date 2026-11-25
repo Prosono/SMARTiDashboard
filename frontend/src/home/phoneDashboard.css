@@ -1,86 +1,16 @@
-.phone-home-mark,
-.phone-page-heading,
-.phone-alert-bell,
 .phone-security-all {
   display: none;
 }
 
 @media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
   html[data-home-style="harmony"][data-theme] {
-    &:has(.home-overview[data-phone-section]) .topbar {
-      display: none;
-    }
     .home-overview[data-phone-section] {
       position: relative;
-      --phone-top-space: max(16px, env(safe-area-inset-top, 0px));
-      padding-top: var(--phone-top-space);
       --phone-paper: #fbfdff;
       --phone-ink: #172632;
       --phone-muted: #596572;
       --phone-line: #dce3eb;
       --phone-shadow: 0 5px 15px #1d355b0d, 0 1px 2px #1d355b08;
-      .home-toolbar {
-        margin: 0 0 16px;
-        min-height: 48px;
-      }
-      .home-location {
-        display: flex;
-        gap: 10px;
-        font-size: 17px;
-        font-weight: 600;
-        min-width: 0;
-      }
-      .home-location > svg,
-      .home-location .home-date {
-        display: none;
-      }
-      .home-location > span:first-of-type {
-        display: block;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: 180px;
-      }
-      .phone-home-mark {
-        display: block;
-        width: 25px;
-        height: 25px;
-        object-fit: cover;
-        object-position: left;
-        flex: none;
-      }
-      .home-toolbar-actions {
-        gap: 9px;
-      }
-      .home-toolbar-alert {
-        border-color: transparent;
-        color: var(--text);
-        box-shadow: var(--phone-shadow);
-      }
-      .home-toolbar-alert > svg:first-child,
-      .home-toolbar-alert::before {
-        display: none;
-      }
-      .phone-alert-bell {
-        display: block;
-      }
-      .home-search-tool {
-        position: absolute;
-        right: 0;
-        top: calc(64px + var(--phone-top-space));
-        z-index: 2;
-      }
-      .phone-page-heading {
-        display: block;
-        padding-right: 54px;
-        min-height: 48px;
-        margin-bottom: 14px;
-        font-size: 31px;
-        font-weight: 600;
-        letter-spacing: -0.04em;
-        line-height: 1.35;
-      }
       .home-tabs {
         display: flex;
         overflow-x: auto;
@@ -116,9 +46,6 @@
       }
       .home-tab-panel {
         padding-top: 14px;
-      }
-      .home-page-title {
-        display: none;
       }
       .security-overview {
         display: flex;

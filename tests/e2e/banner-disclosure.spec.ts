@@ -228,14 +228,16 @@ test("red alert stays accessible above tabs and respects reduced motion", async 
 
 test("simple Home omits banners but keeps search on its category destinations", async ({
   page,
-}) => {
+}, info) => {
   await page.addInitScript(() =>
     localStorage.setItem("smarti-home-style", "classic"),
   );
   await login(page, "simple");
   const simple = page.locator(".simple-home-dashboard");
   await expect(simple.locator(banners)).toHaveCount(0);
-  await expect(simple.locator(".home-toolbar .home-date")).toBeVisible();
+  const date = simple.locator(".home-toolbar .home-date");
+  if (info.project.name === "mobile") await expect(date).toBeHidden();
+  else await expect(date).toBeVisible();
   for (const [button, search] of [
     ["Diverse", "Søk i diverse"],
     ["Musikk og TV", "Søk i multimedia"],
