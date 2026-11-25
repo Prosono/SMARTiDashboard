@@ -61,6 +61,11 @@
   width: 100%;
   min-height: 56px;
 }
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  .simple-filters input {
+    font-size: max(1rem, 16px);
+  }
+}
 .simple-help {
   display: flex;
   gap: 10px;

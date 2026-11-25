@@ -5,9 +5,9 @@ import {
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
 
-async function openHome(page: Page) {
+async function openHome(page: Page, mode: "advanced" | "simple" = "advanced") {
   await page.route("**/api/home/experience", (route) =>
-    route.fulfill({ json: { mode: "advanced" } }),
+    route.fulfill({ json: { mode } }),
   );
   await page.route("**/api/home", async (route) => {
     const response = await route.fetch();
@@ -23,7 +23,22 @@ async function openHome(page: Page) {
     .getByLabel("Passord", { exact: true })
     .fill("test-password-not-for-live");
   await page.getByRole("button", { name: "Logg inn", exact: true }).click();
-  await expect(page.locator(".home-overview")).toBeVisible();
+  await expect(
+    page.locator(
+      mode === "simple" ? ".simple-home-dashboard" : ".home-overview",
+    ),
+  ).toBeVisible();
+}
+
+async function expectFocusedPhoneSearch(input: Locator) {
+  await expect(input).toBeFocused();
+  await expect
+    .poll(() =>
+      input.evaluate((element) =>
+        parseFloat(getComputedStyle(element).fontSize),
+      ),
+    )
+    .toBeGreaterThanOrEqual(16);
 }
 
 async function expectSingleRow(
@@ -31,6 +46,8 @@ async function expectSingleRow(
   title: string,
   search: string,
 ) {
+  await expect(toolbar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(toolbar).toHaveCSS("box-shadow", "none");
   const items = [
     toolbar.locator(".mobile-home-switcher"),
     toolbar.getByRole("heading", { level: 1, name: title, exact: true }),
@@ -70,8 +87,15 @@ test("the compact home header fits in one row and keeps category search", async 
   await openHome(page);
   const toolbar = page.locator(".home-overview .home-toolbar");
 
-  for (const width of [393, 320]) {
+  for (const [width, theme] of [
+    [393, "light"],
+    [320, "dark"],
+  ] as const) {
     await page.setViewportSize({ width, height: 844 });
+    await page.evaluate(
+      (value) => (document.documentElement.dataset.theme = value),
+      theme,
+    );
     await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
     await expectSingleRow(toolbar, "Oversikt", "Søk etter enheter");
     await page.getByRole("tab", { name: "Lys", exact: true }).click();
@@ -83,7 +107,7 @@ test("the compact home header fits in one row and keeps category search", async 
       name: "Søk etter rom eller lys",
       exact: true,
     });
-    await expect(input).toBeFocused();
+    await expectFocusedPhoneSearch(input);
     await input.press("Escape");
     await expect(input).toBeHidden();
   }
@@ -98,12 +122,31 @@ test("the compact home header fits in one row and keeps category search", async 
   await toolbar
     .getByRole("button", { name: "Søk etter enheter", exact: true })
     .click();
-  await expect(
+  await expectFocusedPhoneSearch(
     page.getByRole("searchbox", {
       name: "Søk etter kontroll eller rom",
       exact: true,
     }),
-  ).toBeFocused();
+  );
+});
+
+test("the compact header opens readable phone search in simple mode", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 393, height: 844 });
+  await openHome(page, "simple");
+  const search = page.getByRole("button", {
+    name: "Søk etter enheter",
+    exact: true,
+  });
+  await search.click();
+  const dialog = page.getByRole("dialog", {
+    name: "Søk etter enheter",
+    exact: true,
+  });
+  await expectFocusedPhoneSearch(
+    dialog.getByRole("textbox", { name: "Finn en enhet", exact: true }),
+  );
 });
 
 test("the SMARTi logo opens My homes, with the current home and the portal fallback", async ({

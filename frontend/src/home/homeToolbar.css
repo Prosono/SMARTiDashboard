@@ -29,10 +29,6 @@
     box-sizing: border-box;
     margin: 0 -12px 10px;
     padding: 4px 8px;
-    border: 1px solid var(--harmony-border);
-    border-radius: 17px;
-    background: var(--surface);
-    box-shadow: var(--harmony-shadow);
     color: var(--text);
 
     .home-location,
@@ -108,7 +104,6 @@
     --surface: var(--phone-paper, #253039);
     --text: var(--phone-ink, #edf4f6);
     --line: var(--phone-line, #43515e);
-    border-color: var(--line);
 
     .home-toolbar-actions
       > button:where(:not([aria-expanded="true"], [aria-pressed="true"])) {

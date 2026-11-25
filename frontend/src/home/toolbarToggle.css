@@ -37,3 +37,12 @@
     transform: none;
   }
 }
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  /* iOS can zoom the page when it focuses text smaller than 16px. */
+  [data-home-banners="off"]
+    [data-collapsible-toolbar]
+    :is(.lighting-search, .cleaning-search)
+    input {
+    font-size: max(1rem, 16px);
+  }
+}

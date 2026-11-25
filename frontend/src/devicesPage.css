@@ -524,6 +524,10 @@
   grid-column: 1 / -1;
 }
 
+.devices-page[data-mobile="true"] .devices-search input {
+  font-size: max(1rem, 16px);
+}
+
 .devices-page[data-mobile="true"] .devices-control-list {
   max-height: none;
   overflow: visible;

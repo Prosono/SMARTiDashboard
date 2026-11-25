@@ -1,3 +1,7 @@
+## 1.36.172
+- Mobilens toppfelt går i ett med bakgrunnen i appen.
+- Trykk på søkeikonet åpner søkefeltet uten automatisk innzooming på iPhone.
+
 ## 1.36.171
 - Mobilens toppfelt samler sidetittel, søk, varsler og innstillinger på én linje.
 - Trykk på SMARTi-logoen for å åpne Mine hjem og bytte mellom hjem med fjernaksess.
