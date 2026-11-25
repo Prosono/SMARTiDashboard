@@ -30,6 +30,12 @@ export type AppUpdate = {
 };
 export type AppOperation = { slug: string; status: string };
 export type UpdateCounts = { smarti: number; extensions: number; apps: number };
+export function matchesUpdateSearch(
+  query: string,
+  ...fields: (string | null | undefined)[]
+): boolean {
+  return fields.join(" ").toLowerCase().includes(query.trim().toLowerCase());
+}
 export const updateCategory = (u: Update) =>
   u.category || (u.smarti ? "smarti" : "extensions");
 export const availableUpdate = (u: Update) =>

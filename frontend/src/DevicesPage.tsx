@@ -1,4 +1,11 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,6 +23,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { HiddenControls } from "./ControlVisibility";
 import { DeviceWorkspaceDetail } from "./DeviceWorkspaceDetail";
+import { usePageSearch } from "./PageSearch";
+import { allViews } from "./access";
 import {
   deviceWorkspaceRoom,
   deviceWorkspaceRoomId,
@@ -117,6 +126,7 @@ export function DevicesPage({
   const discoveries = useDiscoveries(admin);
   const [mobile, setMobile] = useState(() => matchMedia(mobileQuery).matches);
   const [search, setSearch] = useState("");
+  const [sectionSearch, setSectionSearch] = useState<string | null>(null);
   const [room, setRoom] = useState("*");
   const [type, setType] = useState("all");
   const [overview, setOverview] = useState(false);
@@ -126,6 +136,13 @@ export function DevicesPage({
   const [commandId, setCommand] = useState<string | null>(null);
   const [setup, setSetup] = useState<Discovery | "network" | null>(null);
   const list = useRef<HTMLUListElement>(null);
+  const inventorySearch = useRef<HTMLInputElement>(null);
+  const sectionSearchInput = useRef<HTMLInputElement>(null);
+  const searchOpener = useRef<HTMLElement>(null);
+  const sectionSearchOpen = sectionSearch !== null;
+  useLayoutEffect(() => {
+    if (sectionSearchOpen) sectionSearchInput.current?.focus();
+  }, [sectionSearchOpen]);
 
   useEffect(() => {
     const screen = matchMedia(mobileQuery);
@@ -183,6 +200,38 @@ export function DevicesPage({
   const discovery = discovered[0];
   const radio = ["zigbee2mqtt", "zwave_js"].includes(availableProtocol);
   const split = (availableProtocol === "all" || networkView) && !overview;
+  const inventorySearchLabel = t(
+    "Søk etter kontroll eller rom",
+    "Search for a control or room",
+  );
+  const sectionSearchLabel =
+    availableProtocol === "groups" && allViews(home)
+      ? t("Søk i grupper", "Search groups")
+      : availableProtocol === "scenes" && allViews(home)
+        ? t("Søk i scener", "Search scenes")
+        : availableProtocol === "discovered"
+          ? t("Søk i oppdagede enheter", "Search discovered devices")
+          : null;
+  usePageSearch(
+    split
+      ? {
+          label: inventorySearchLabel,
+          open: () => inventorySearch.current?.focus(),
+        }
+      : sectionSearchLabel
+        ? {
+            label: sectionSearchLabel,
+            open: () => {
+              if (sectionSearchOpen) sectionSearchInput.current?.focus();
+              else {
+                if (document.activeElement instanceof HTMLElement)
+                  searchOpener.current = document.activeElement;
+                setSectionSearch("");
+              }
+            },
+          }
+        : null,
+  );
 
   useEffect(() => {
     if (selectedId === null || selectedControl) return;
@@ -253,6 +302,7 @@ export function DevicesPage({
       resetPosition();
     }
     selectProtocol(value);
+    setSectionSearch(null);
     setOverview(false);
     openMobile(false);
   }
@@ -315,7 +365,9 @@ export function DevicesPage({
       <header className="devices-page-heading">
         <div>
           <span className="eyebrow">{words.overview}</span>
-          <h1 id="devices-page-title">{words.devices}</h1>
+          <h1 id="devices-page-title" data-phone-page-title>
+            {words.devices}
+          </h1>
           <p>
             {controls.length.toLocaleString(l10n)} {words.controls} ·{" "}
             {home.areas.length} {t("rom", "rooms")}
@@ -400,6 +452,24 @@ export function DevicesPage({
         </aside>
 
         <div className="devices-workspace-main">
+          {sectionSearchOpen && sectionSearchLabel && (
+            <label className="devices-search devices-section-search">
+              <Search size={18} aria-hidden="true" />
+              <input
+                ref={sectionSearchInput}
+                type="search"
+                value={sectionSearch}
+                aria-label={sectionSearchLabel}
+                placeholder={sectionSearchLabel}
+                onChange={(event) => setSectionSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape") return;
+                  setSectionSearch(null);
+                  searchOpener.current?.focus({ preventScroll: true });
+                }}
+              />
+            </label>
+          )}
           {availableProtocol === "scenes" ? (
             <Scenes
               home={home}
@@ -407,11 +477,17 @@ export function DevicesPage({
               admin={admin}
               offline={offline}
               manage
+              listSearch={sectionSearch ?? ""}
             />
           ) : availableProtocol === "groups" ? (
-            <Groups home={home} lang={lang} admin={admin} />
+            <Groups
+              home={home}
+              lang={lang}
+              admin={admin}
+              listSearch={sectionSearch ?? ""}
+            />
           ) : availableProtocol === "discovered" && admin ? (
-            <DiscoveredDevices lang={lang} />
+            <DiscoveredDevices lang={lang} listSearch={sectionSearch ?? ""} />
           ) : availableProtocol === "hidden" && admin ? (
             <HiddenControls lang={lang} />
           ) : radio ? (
@@ -448,9 +524,19 @@ export function DevicesPage({
                 {t("Tilbake til enhetslisten", "Back to device list")}
               </button>
               {type === "light" ? (
-                <LightOverview home={home} offline={offline} lang={lang} />
+                <LightOverview
+                  home={home}
+                  offline={offline}
+                  lang={lang}
+                  pageSearch
+                />
               ) : (
-                <ClimateOverview home={home} offline={offline} lang={lang} />
+                <ClimateOverview
+                  home={home}
+                  offline={offline}
+                  lang={lang}
+                  pageSearch
+                />
               )}
             </>
           ) : (
@@ -459,20 +545,15 @@ export function DevicesPage({
                 <label className="devices-search">
                   <Search size={18} aria-hidden="true" />
                   <input
+                    ref={inventorySearch}
                     type="search"
                     value={search}
                     onChange={(event) => {
                       setSearch(event.target.value);
                       resetPosition();
                     }}
-                    aria-label={t(
-                      "Søk etter kontroll eller rom",
-                      "Search for a control or room",
-                    )}
-                    placeholder={t(
-                      "Søk etter kontroll eller rom",
-                      "Search for a control or room",
-                    )}
+                    aria-label={inventorySearchLabel}
+                    placeholder={inventorySearchLabel}
                   />
                 </label>
                 <select

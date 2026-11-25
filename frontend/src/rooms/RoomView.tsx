@@ -1,7 +1,15 @@
 import { RoomArtwork } from "./RoomArtwork";
 import { RoomSettings } from "./RoomSettings";
-import { useId, useRef, useState, useEffect, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { RoomPageHeader } from "./RoomPageHeader";
+import { usePageSearch } from "../PageSearch";
 import { lightCardStyle } from "../home/lightCardModel";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -62,7 +70,14 @@ export function RoomView({
   const [searchOpen, setSearchOpen] = useState(false);
   const searchButton = useRef<HTMLButtonElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
-  useEffect(() => {
+  const opener = useRef<HTMLElement>(null);
+  function toggleSearch() {
+    if (searchOpen) setSearch("");
+    else if (document.activeElement instanceof HTMLElement)
+      opener.current = document.activeElement;
+    setSearchOpen(!searchOpen);
+  }
+  useLayoutEffect(() => {
     if (searchOpen) searchInput.current?.focus();
   }, [searchOpen]);
   const searchId = `${id}-room-search`;
@@ -179,6 +194,16 @@ export function RoomView({
       items: controls.filter((c) => !used.has(c.id)),
     },
   ].filter((g) => g.items.length);
+  usePageSearch(
+    groups.length > 0
+      ? {
+          label: t("Søk i rommet", "Search this room"),
+          controls: searchId,
+          expanded: searchOpen,
+          open: toggleSearch,
+        }
+      : null,
+  );
   const filtered = groups
     .filter((g) => category === "all" || category === g.id)
     .map((g) => ({
@@ -254,10 +279,7 @@ export function RoomView({
         searchOpen={searchOpen}
         searchId={searchId}
         searchButton={searchButton}
-        toggleSearch={() => {
-          setSearchOpen(!searchOpen);
-          if (searchOpen) setSearch("");
-        }}
+        toggleSearch={toggleSearch}
       />
       <div
         className="room-at-a-glance"
@@ -394,7 +416,9 @@ export function RoomView({
                 if (e.key === "Escape") {
                   setSearch("");
                   setSearchOpen(false);
-                  searchButton.current?.focus();
+                  (opener.current || searchButton.current)?.focus({
+                    preventScroll: true,
+                  });
                 }
               }}
               onChange={(e) => setSearch(e.target.value)}

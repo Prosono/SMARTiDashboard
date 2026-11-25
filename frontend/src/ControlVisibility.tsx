@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
 import { api } from "./api";
+import { usePageSearch } from "./PageSearch";
 import type { Control } from "./types";
 import "./controlVisibility.css";
 async function changeVisibility(c: Control, hidden: boolean) {
@@ -63,6 +64,11 @@ export function HiddenControls({ lang }: { lang: string }) {
     [error, setError] = useState("");
   const en = lang === "en",
     qc = useQueryClient();
+  const searchInput = useRef<HTMLInputElement>(null);
+  usePageSearch({
+    label: en ? "Search hidden devices" : "Søk i skjulte enheter",
+    open: () => searchInput.current?.focus(),
+  });
   const data = useQuery({
     queryKey: ["control-visibility"],
     queryFn: () => api<Control[]>("control-visibility"),
@@ -86,6 +92,7 @@ export function HiddenControls({ lang }: { lang: string }) {
             : "Skjulte enheter utelates fra sidene og enhetsstatistikken for alle i hjemmet. Automasjoner påvirkes ikke."}
         </p>
         <input
+          ref={searchInput}
           aria-label={en ? "Search devices" : "Søk etter enheter"}
           placeholder={en ? "Search devices…" : "Søk etter enheter…"}
           value={search}

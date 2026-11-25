@@ -248,7 +248,7 @@ export function DeviceSetup({
           alt=""
         />
         <span className="eyebrow">SMARTi</span>
-        <h1>{t.title}</h1>
+        <h1 data-phone-page-title>{t.title}</h1>
         <p>{t.intro}</p>
       </div>
       {(session.isError || providers.isError) && (

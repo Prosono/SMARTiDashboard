@@ -258,7 +258,11 @@ test("simple Home omits banners but keeps search on its category destinations", 
     const browse = surface.locator(".simple-dashboard-browse");
     if ((await browse.getAttribute("open")) === null)
       await browse.locator("summary").first().click();
-    await surface.getByRole("button", { name: button, exact: true }).click();
+    const destination = surface.getByRole("button", { name: button, exact: true });
+    await destination.evaluate((element) =>
+      element.scrollIntoView({ block: "center" }),
+    );
+    await destination.click();
     await expect(simple.locator(banners)).toHaveCount(0);
     await expect(
       simple.getByRole("textbox", { name: search, exact: true }),

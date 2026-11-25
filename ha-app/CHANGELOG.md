@@ -1,3 +1,7 @@
+## 1.36.175
+- Hovedsidene bruker samme kompakte toppfelt på mobil, med hjemvelger, sidetittel og varsler.
+- Søkeikonet åpner søk på aktiv side eller fane, blant annet for rom, enheter, automasjoner, utvidelser og oppdateringer.
+
 ## 1.36.174
 - Søke- og varselvinduene ligger under statuslinjen på mobil. Tittel og lukkeknapp forblir synlige mens innholdet ruller.
 

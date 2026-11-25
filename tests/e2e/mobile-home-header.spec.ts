@@ -220,6 +220,105 @@ test("the SMARTi logo opens My homes, with the current home and the portal fallb
   await expect(logo).toBeFocused();
 });
 
+test("workspace pages share a compact mobile top bar and keep search on the open page", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await openHome(page);
+  const menu = page.getByRole("navigation", { name: "Hovedmeny" });
+  const bar = page.locator(".workspace-phone-topbar");
+  const logo = bar.getByRole("button", { name: /Mine hjem/ });
+  const search = bar.locator(".page-topbar-search");
+  const alert = bar.getByRole("button", {
+    name: /Vis varsler|Trenger din oppmerksomhet/,
+  });
+  for (const [destination, title] of [
+    ["Rom", "Rom"],
+    ["Enheter", "Enheter"],
+    ["Automasjoner", "Automasjoner"],
+    ["Utvidelser", "Utvidelser"],
+    ["Oppdateringer", "Oppdateringer"],
+    ["Rapporter og innsikt", "Rapporter"],
+    ["Support", "Support"],
+    ["Innstillinger", "Innstillinger"],
+  ]) {
+    await menu.getByRole("button", { name: destination, exact: true }).click();
+    await expect(page.locator(".phone-topbar:visible")).toHaveCount(1);
+    await expect(logo).toBeVisible();
+    const label = bar.locator(".phone-page-heading");
+    await expect(label).toHaveText(title);
+    await expect
+      .poll(() =>
+        label.evaluate((element) => element.scrollWidth <= element.clientWidth),
+      )
+      .toBe(true);
+    await expect(alert).toBeVisible();
+    await expect(bar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(bar).toHaveCSS("box-shadow", "none");
+    if (destination === "Support") await expect(search).toHaveCount(0);
+  }
+
+  await menu
+    .getByRole("button", { name: "Rapporter og innsikt", exact: true })
+    .click();
+  await page.getByRole("tab", { name: /Grafer og historikk/ }).click();
+  await expect(search).toHaveAccessibleName("Søk i historikken");
+  await search.click();
+  await expectFocusedPhoneSearch(
+    page.getByRole("textbox", { name: "Søk etter enhet" }),
+  );
+  await menu
+    .getByRole("button", { name: "Innstillinger", exact: true })
+    .click();
+
+  await expect(search).toHaveAccessibleName("Søk i innstillinger");
+  await search.click();
+  const searchDialog = page.getByRole("dialog", {
+    name: "Søk i innstillinger",
+  });
+  const searchInput = searchDialog.getByRole("searchbox");
+  await expectFocusedPhoneSearch(searchInput);
+  await searchInput.fill("skjerm");
+  await expect(
+    searchDialog.getByRole("button", { name: "Nettverk" }),
+  ).toHaveCount(0);
+  await searchDialog.getByRole("button", { name: "Skjermsparer" }).click();
+  await expect(searchDialog).toBeHidden();
+  await expect(
+    menu.getByRole("button", { name: "Innstillinger", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+
+  await menu.getByRole("button", { name: "Enheter", exact: true }).click();
+  await expect(search).toHaveAccessibleName("Søk etter kontroll eller rom");
+  await search.click();
+  const devices = page.locator(".devices-page");
+  const deviceSearch = devices.getByRole("searchbox", {
+    name: "Søk etter kontroll eller rom",
+  });
+  await expectFocusedPhoneSearch(deviceSearch);
+  await deviceSearch.fill("Pendellampe");
+  const results = devices.locator(".devices-control-list");
+  await expect(results).toContainText("Pendellampe");
+  await expect(results).not.toContainText("Kjøkkenbenk");
+
+  await expect(alert).toBeVisible();
+  await alert.click();
+  const alerts = page.getByRole("dialog", {
+    name: "Trenger din oppmerksomhet",
+  });
+  await expect(alerts).toBeVisible();
+  await alerts.getByRole("button", { name: "Lukk innstillinger" }).click();
+  await expect(alerts).toBeHidden();
+
+  await bar
+    .getByRole("button", { name: "Åpne innstillinger", exact: true })
+    .click();
+  await expect(bar.locator(".phone-page-heading")).toHaveText("Innstillinger");
+  await page.setViewportSize({ width: 834, height: 1112 });
+  await expect(bar).toBeHidden();
+  await expect(page.locator(".workspace > .topbar")).toBeVisible();
+});
+
 test("search and alert headers stay within the safe area on a short phone screen", async ({
   page,
   browserName,

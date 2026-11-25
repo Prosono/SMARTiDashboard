@@ -152,6 +152,18 @@ test("protocol inventory, confirmed removal and add wizard", async ({
   await page.getByRole("button", { name: "Enheter", exact: true }).click();
   await selectDeviceCategory(page, "zigbee2mqtt");
   await expect(page.getByText("LQI 185/255", { exact: false })).toBeVisible();
+  if (test.info().project.name === "mobile") {
+    const topbar = page.locator(".workspace-phone-topbar");
+    await topbar.getByRole("button", { name: "Søk i nettverket" }).click();
+    const search = page.getByRole("textbox", { name: "Søk i nettverket" });
+    await expect(search).toBeFocused();
+    await search.fill("finnesikke");
+    const lamp = page.getByRole("button", { name: "Stuelampe Se detaljer" });
+    await expect(lamp).toHaveCount(0);
+    await search.fill("Dimbar");
+    await expect(lamp).toBeVisible();
+    await search.fill("");
+  }
   await page.getByText("Zigbee-forbindelse · Tilkoblet", { exact: true }).click();
   await expect(page.getByText("Direkte til Zigbee2MQTT-serveren", { exact: true })).toBeVisible();
   const beforeCheck = diagnosticsCalls;

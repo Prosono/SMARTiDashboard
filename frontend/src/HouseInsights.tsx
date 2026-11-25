@@ -217,7 +217,9 @@ export function HouseInsights({ home, lang }: { home: Home; lang: string }) {
           <span className="report-kicker">
             {home.home_name || t("MITT HJEM", "MY HOME")}
           </span>
-          <h1>{t("Rapporter og innsikt", "Reports and insights")}</h1>
+          <h1 data-phone-page-title>
+            {t("Rapporter og innsikt", "Reports and insights")}
+          </h1>
           <p>
             {t(
               "Se mønstrene. Forstå hjemmet ditt.",

@@ -46,13 +46,17 @@ export function ClimateOverview({
   home,
   offline,
   lang,
+  pageSearch = false,
 }: {
   home: Home;
   offline: boolean;
   lang: string;
+  pageSearch?: boolean;
 }) {
-  const toolbar = useToolbarDisclosure();
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const toolbar = useToolbarDisclosure(
+    pageSearch ? t("Søk i klimastyring", "Search climate controls") : undefined,
+  );
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState("all");
   const [room, setRoom] = useState("all");

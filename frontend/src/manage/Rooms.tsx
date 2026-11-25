@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, ArrowLeft, Trash2, DoorOpen } from "lucide-react";
 import { api } from "../api";
+import { usePageSearch } from "../PageSearch";
 import { Feedback, LoadError, useWork, words } from "./shared";
 type Rooms = {
   areas: { area_id: string; name: string }[];
@@ -33,9 +34,35 @@ export function RoomManager({
   const [selected, select] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [search, setSearch] = useState("");
+  const [roomSearch, setRoomSearch] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const w = useWork(lang);
   const room = q.data?.areas.find((a) => a.area_id === selected);
+  const roomSearchInput = useRef<HTMLInputElement>(null);
+  const deviceSearchInput = useRef<HTMLInputElement>(null);
+  const searchOpener = useRef<HTMLElement>(null);
+  const roomSearchOpen = roomSearch !== null;
+  useLayoutEffect(() => {
+    if (roomSearchOpen) roomSearchInput.current?.focus();
+  }, [roomSearchOpen]);
+  usePageSearch(
+    q.data
+      ? {
+          label: room
+            ? t("Søk etter enhet", "Search devices")
+            : t("Søk i rom", "Search rooms"),
+          open: () => {
+            if (room) deviceSearchInput.current?.focus();
+            else if (roomSearchOpen) roomSearchInput.current?.focus();
+            else {
+              if (document.activeElement instanceof HTMLElement)
+                searchOpener.current = document.activeElement;
+              setRoomSearch("");
+            }
+          },
+        }
+      : null,
+  );
   function choose(id: string | null) {
     select(id);
     setName(q.data?.areas.find((a) => a.area_id === id)?.name || "");
@@ -49,7 +76,7 @@ export function RoomManager({
     );
   }
   return (
-    <section className="management-page">
+    <section className="management-page room-management-page">
       <button className="text-button" onClick={back}>
         <ArrowLeft size={18} />
         {t("Tilbake til rom", "Back to rooms")}
@@ -77,19 +104,43 @@ export function RoomManager({
             className="management-index"
             aria-label={t("Velg rom", "Choose room")}
           >
-            {q.data.areas.map((a) => (
-              <button
-                key={a.area_id}
-                className={selected === a.area_id ? "chosen" : ""}
-                onClick={() => choose(a.area_id)}
-              >
-                <DoorOpen size={19} />
-                <span>{a.name}</span>
-                <small>
-                  {q.data.devices.filter((d) => d.area_id === a.area_id).length}
-                </small>
-              </button>
-            ))}
+            {roomSearchOpen && (
+              <input
+                ref={roomSearchInput}
+                type="search"
+                aria-label={t("Søk etter rom", "Search rooms")}
+                placeholder={t("Finn et rom…", "Find a room…")}
+                value={roomSearch}
+                onChange={(event) => setRoomSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape") return;
+                  setRoomSearch(null);
+                  searchOpener.current?.focus({ preventScroll: true });
+                }}
+              />
+            )}
+            {q.data.areas
+              .filter((a) =>
+                a.name
+                  .toLocaleLowerCase()
+                  .includes(roomSearch?.trim().toLocaleLowerCase() ?? ""),
+              )
+              .map((a) => (
+                <button
+                  key={a.area_id}
+                  className={selected === a.area_id ? "chosen" : ""}
+                  onClick={() => choose(a.area_id)}
+                >
+                  <DoorOpen size={19} />
+                  <span>{a.name}</span>
+                  <small>
+                    {
+                      q.data.devices.filter((d) => d.area_id === a.area_id)
+                        .length
+                    }
+                  </small>
+                </button>
+              ))}
             <button
               className={!selected ? "chosen" : ""}
               onClick={() => choose(null)}
@@ -150,6 +201,7 @@ export function RoomManager({
                   )}
                 </p>
                 <input
+                  ref={deviceSearchInput}
                   className="wide-input"
                   aria-label={t("Søk etter enhet", "Search devices")}
                   placeholder={t("Søk etter enhet …", "Search devices …")}

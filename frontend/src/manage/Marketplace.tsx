@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Check, Plug, Search } from "lucide-react";
 import { api, ApiError } from "../api";
+import { usePageSearch } from "../PageSearch";
 import { IntegrationLogo } from "./IntegrationLogo";
 import { LoadError, words } from "./shared";
 import "./marketplace.css";
@@ -24,6 +25,12 @@ const searchText = (value: string) => value.normalize("NFKC").toLowerCase();
 export function Marketplace({ lang }: { lang: string }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const [search, setSearch] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchLabel = t("Søk i markedsplassen", "Search the marketplace");
+  usePageSearch({
+    label: searchLabel,
+    open: () => searchInput.current?.focus(),
+  });
   const [limit, setLimit] = useState(pageSize);
   const catalog = useQuery({
     queryKey: ["manage", "marketplace"],
@@ -67,8 +74,9 @@ export function Marketplace({ lang }: { lang: string }) {
       <label className="marketplace-search">
         <Search size={21} aria-hidden="true" />
         <input
+          ref={searchInput}
           type="search"
-          aria-label={t("Søk i markedsplassen", "Search the marketplace")}
+          aria-label={searchLabel}
           placeholder={t(
             "Søk etter navn, merke eller tjeneste …",
             "Search by name, brand or service …",

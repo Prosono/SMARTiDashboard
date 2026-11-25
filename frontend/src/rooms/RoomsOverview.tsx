@@ -1,7 +1,8 @@
 import { RoomArtwork } from "./RoomArtwork";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { RoomPageHeader } from "./RoomPageHeader";
 import { useQuery } from "@tanstack/react-query";
+import { usePageSearch } from "../PageSearch";
 import {
   Search,
   Lightbulb,
@@ -10,6 +11,7 @@ import {
   ChevronRight,
   DoorOpen,
   LayoutGrid,
+  Settings2,
 } from "lucide-react";
 import { api } from "../api";
 import type { Home } from "../types";
@@ -38,10 +40,23 @@ export function RoomsOverview({
   const [searchOpen, setSearchOpen] = useState(false);
   const searchButton = useRef<HTMLButtonElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
-  useEffect(() => {
+  const opener = useRef<HTMLElement>(null);
+  const searchId = useId();
+  function toggleSearch() {
+    if (searchOpen) setSearch("");
+    else if (document.activeElement instanceof HTMLElement)
+      opener.current = document.activeElement;
+    setSearchOpen(!searchOpen);
+  }
+  usePageSearch({
+    label: t("Søk i rom", "Search rooms"),
+    controls: searchId,
+    expanded: searchOpen,
+    open: toggleSearch,
+  });
+  useLayoutEffect(() => {
     if (searchOpen) searchInput.current?.focus();
   }, [searchOpen]);
-  const searchId = useId();
   const [sort, setSort] = useState("name");
   const [failed, setFailed] = useState<string[]>([]);
   const prefs = useQuery({
@@ -114,13 +129,11 @@ export function RoomsOverview({
         homeName={home.home_name}
         lang={lang}
         manage={manage}
+        pageTitle
         searchOpen={searchOpen}
         searchId={searchId}
         searchButton={searchButton}
-        toggleSearch={() => {
-          setSearchOpen(!searchOpen);
-          if (searchOpen) setSearch("");
-        }}
+        toggleSearch={toggleSearch}
       />
       <div className="rooms-overview-toolbar">
         <label id={searchId} hidden={!searchOpen} className="room-search-field">
@@ -135,7 +148,9 @@ export function RoomsOverview({
               if (e.key === "Escape") {
                 setSearch("");
                 setSearchOpen(false);
-                searchButton.current?.focus();
+                (opener.current || searchButton.current)?.focus({
+                  preventScroll: true,
+                });
               }
             }}
           />
@@ -155,6 +170,16 @@ export function RoomsOverview({
           <option value="name">{t("Navn A–Å", "Name A–Z")}</option>
           <option value="lights">{t("Flest lys på", "Most lights on")}</option>
         </select>
+        {manage && (
+          <button
+            type="button"
+            className="room-circle room-phone-manage"
+            aria-label={t("Administrer rom", "Manage rooms")}
+            onClick={manage}
+          >
+            <Settings2 size={20} aria-hidden="true" />
+          </button>
+        )}
       </div>
       <div className="rooms-overview-grid">
         {shown.map((a) => {

@@ -1,17 +1,28 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { AppWindow, Blocks, DownloadCloud } from "lucide-react";
+import { flushSync } from "react-dom";
+import { AppWindow, Blocks, DownloadCloud, Search } from "lucide-react";
 import { useExperience } from "../Experience";
+import { usePageSearch } from "../PageSearch";
 import { Apps } from "./Apps";
 import { SelfUpdate } from "./SelfUpdate";
 import { UpdateList } from "./System";
 import type { UpdateCounts } from "./updateModel";
 import "./connections.css";
 
-export function Updates({ lang, counts }: { lang: string; counts: UpdateCounts }) {
+export function Updates({
+  lang,
+  counts,
+}: {
+  lang: string;
+  counts: UpdateCounts;
+}) {
   const advanced = useExperience() === "advanced";
   const en = lang === "en";
   const [tab, setTab] = useState<keyof UpdateCounts>("smarti");
   const [appsVisited, setAppsVisited] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searches, setSearches] = useState({ smarti: "", extensions: "" });
+  const searchInput = useRef<HTMLInputElement>(null);
   const id = useId();
   const tabs = useRef<HTMLElement>(null);
   const allOptions = [
@@ -25,6 +36,15 @@ export function Updates({ lang, counts }: { lang: string; counts: UpdateCounts }
   ] as const;
   const options = advanced ? allOptions : allOptions.slice(0, 2);
   const active = tab === "apps" && !advanced ? "smarti" : tab;
+  const searchLabel = en ? "Search updates" : "Søk i oppdateringer";
+  usePageSearch({
+    label: searchLabel,
+    active: active !== "apps",
+    open: () => {
+      if (!showSearch) flushSync(() => setShowSearch(true));
+      searchInput.current?.focus();
+    },
+  });
   useEffect(() => {
     if (!advanced) {
       setTab((previous) => (previous === "apps" ? "smarti" : previous));
@@ -39,7 +59,7 @@ export function Updates({ lang, counts }: { lang: string; counts: UpdateCounts }
     <section className="updates-page">
       <header className="page-heading">
         <span className="eyebrow">SMARTi</span>
-        <h1>{en ? "Updates" : "Oppdateringer"}</h1>
+        <h1 data-phone-page-title>{en ? "Updates" : "Oppdateringer"}</h1>
         <p>{en ? "Keep your home up to date." : "Hold hjemmet oppdatert."}</p>
       </header>
       <nav
@@ -103,6 +123,21 @@ export function Updates({ lang, counts }: { lang: string; counts: UpdateCounts }
           );
         })}
       </nav>
+      {showSearch && active !== "apps" && (
+        <label className="apps-search">
+          <Search size={19} aria-hidden="true" />
+          <input
+            ref={searchInput}
+            type="search"
+            aria-label={searchLabel}
+            placeholder={searchLabel}
+            value={searches[active]}
+            onChange={(event) =>
+              setSearches({ ...searches, [active]: event.target.value })
+            }
+          />
+        </label>
+      )}
       {options.map(({ key }) => (
         <div
           key={key}
@@ -113,11 +148,16 @@ export function Updates({ lang, counts }: { lang: string; counts: UpdateCounts }
         >
           {key === "smarti" ? (
             <>
-              <SelfUpdate lang={lang} active={active === key} />
+              <SelfUpdate
+                lang={lang}
+                active={active === key}
+                search={searches.smarti}
+              />
               <UpdateList
                 lang={lang}
                 category="smarti"
                 active={active === key}
+                search={searches.smarti}
               />
             </>
           ) : key === "extensions" ? (
@@ -125,6 +165,7 @@ export function Updates({ lang, counts }: { lang: string; counts: UpdateCounts }
               lang={lang}
               category="extensions"
               active={active === key}
+              search={searches.extensions}
             />
           ) : appsVisited && advanced ? (
             <Apps lang={lang} embedded updatesOnly active={active === key} />

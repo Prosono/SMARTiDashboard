@@ -2,7 +2,7 @@ import { ControllerStatus } from "./ControllerStatus";
 import { ProtocolLogo } from "./ProtocolLogo";
 import "./protocolOverview.css";
 import { ZigbeeStatus } from "./ZigbeeStatus";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Radio,
@@ -23,6 +23,7 @@ import { api } from "./api";
 import { DeviceDetails, DevicePicture } from "./DeviceDetails";
 import type { Control } from "./types";
 import { primaryDeviceControl } from "./home/deviceAppearance";
+import { usePageSearch } from "./PageSearch";
 
 type Device = {
   image_url?: string;
@@ -63,6 +64,12 @@ export function ProtocolDevices({
 }) {
   const no = lang === "nb";
   const [search, setSearch] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchLabel = no ? "Søk i nettverket" : "Search network";
+  usePageSearch({
+    label: searchLabel,
+    open: () => searchInput.current?.focus(),
+  });
   const [sort, setSort] = useState("name");
   const [selected, setSelected] = useState<Device | null>(null);
   const [confirm, setConfirm] = useState<Device | null>(null);
@@ -312,7 +319,8 @@ export function ProtocolDevices({
         <label className="protocol-search">
           <Search size={19} />
           <input
-            aria-label={no ? "Søk i nettverket" : "Search network"}
+            ref={searchInput}
+            aria-label={searchLabel}
             placeholder={
               no
                 ? "Søk etter navn, modell eller produsent …"

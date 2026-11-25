@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft,
@@ -11,6 +11,7 @@ import {
   Download,
 } from "lucide-react";
 import { api } from "./api";
+import { usePageSearch } from "./PageSearch";
 import { HistoryChart, type HistoryData } from "./ControlHistory";
 import { HouseLogTimeline } from "./HouseLogTimeline";
 import type { HouseLogEntry } from "./houseLogModel";
@@ -46,6 +47,28 @@ export function HistoryExplorer({
   const [sources, showSources] = useState(
     () => !activity && window.innerWidth > 900,
   );
+  const searchField = useRef<HTMLInputElement>(null);
+  const focusWhenOpen = useRef(false);
+  usePageSearch({
+    label: activity
+      ? t("Søk i husloggen", "Search the activity log")
+      : t("Søk i historikken", "Search history"),
+    expanded: sources,
+    controls: sources ? "history-sources" : undefined,
+    open: () => {
+      if (sources) searchField.current?.focus();
+      else {
+        focusWhenOpen.current = true;
+        showSources(true);
+      }
+    },
+  });
+  useLayoutEffect(() => {
+    if (sources && focusWhenOpen.current) {
+      focusWhenOpen.current = false;
+      searchField.current?.focus();
+    }
+  }, [sources]);
   const [range, setRange] = useState(() => ({
     start: initial?.start || new Date(Date.now() - 86400000).toISOString(),
     end: initial?.end || new Date().toISOString(),
@@ -301,6 +324,7 @@ export function HistoryExplorer({
             <label className="history-search">
               <Search size={18} />
               <input
+                ref={searchField}
                 placeholder={t("Søk etter enhet …", "Search entities …")}
                 aria-label={t("Søk etter enhet", "Search entities")}
                 value={search}

@@ -17,10 +17,12 @@ import {
 } from "lucide-react";
 import { smartiName, integrationName } from "../branding";
 import { api, ApiError } from "../api";
+import { usePageSearch } from "../PageSearch";
 import { Feedback, LoadError, useWork, words } from "./shared";
 import { SettingsDialog } from "../home/SettingsDialog";
 import {
   canStartUpdate,
+  matchesUpdateSearch,
   runUpdateBatch,
   updateCategory,
   type Update,
@@ -80,6 +82,12 @@ export function Integrations({
   const [adding, setAdding] = useState(false);
   const [selectedDevice, selectDevice] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchLabel = t("Søk i integrasjoner", "Search integrations");
+  usePageSearch({
+    label: searchLabel,
+    open: () => searchInput.current?.focus(),
+  });
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [edit, setEdit] = useState<Integration | null>(null);
   const [name, setName] = useState("");
@@ -181,13 +189,14 @@ export function Integrations({
       )}
       <DiscoveredDevices lang={lang} attention />
       <Feedback message={w.message} />
-      <div className="device-toolbar">
+      <div className="device-toolbar integrations-toolbar">
         <button className="primary compact" onClick={() => setAdding(true)}>
           <Plug size={18} />
           {t("Legg til integrasjon", "Add integration")}
         </button>
         <input
-          aria-label={t("Søk i integrasjoner", "Search integrations")}
+          ref={searchInput}
+          aria-label={searchLabel}
           placeholder={t("Søk i integrasjoner …", "Search integrations …")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -425,10 +434,12 @@ export function UpdateList({
   lang,
   category,
   active = true,
+  search = "",
 }: {
   lang: string;
   category: "smarti" | "extensions";
   active?: boolean;
+  search?: string;
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const q = useQuery({
@@ -537,6 +548,15 @@ export function UpdateList({
     (u) =>
       updateCategory(u) === category &&
       ((u.state === "on" && u.can_install) || u.in_progress || u.pending),
+  );
+  const matches = available?.filter((update) =>
+    matchesUpdateSearch(
+      search,
+      smartiName(update.name),
+      update.name,
+      update.installed_version,
+      update.latest_version,
+    ),
   );
   const ready =
     available?.filter((u) => canStartUpdate(u, attempts[u.entity_id])) || [];
@@ -724,7 +744,7 @@ export function UpdateList({
       {q.isError && <LoadError lang={lang} retry={() => void q.refetch()} />}
       {q.isPending && <p>{t("Henter oppdateringer …", "Loading updates …")}</p>}
       <div className="management-rows">
-        {available?.map((u) => (
+        {matches?.map((u) => (
           <article className="system-row" key={u.entity_id}>
             {u.smarti || smartiName(u.name) !== u.name ? (
               <img
@@ -822,6 +842,14 @@ export function UpdateList({
           </article>
         ))}
       </div>
+      {!!available?.length && matches?.length === 0 && (
+        <p role="status" className="empty">
+          {t(
+            "Ingen oppdateringer passer søket.",
+            "No updates match your search.",
+          )}
+        </p>
+      )}
       {available?.length === 0 && (
         <p className="empty">
           {t(

@@ -6,6 +6,7 @@ import { api, ApiError } from "../api";
 import { words } from "./shared";
 import { SettingsDialog } from "../home/SettingsDialog";
 import { operationId } from "./operationId";
+import { matchesUpdateSearch } from "./updateModel";
 import "./selfUpdate.css";
 
 type Version = {
@@ -19,9 +20,11 @@ type Version = {
 export function SelfUpdate({
   lang,
   active = true,
+  search = "",
 }: {
   lang: string;
   active?: boolean;
+  search?: string;
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const qc = useQueryClient();
@@ -146,9 +149,17 @@ export function SelfUpdate({
       setBusy(false);
     }
   }
+  const title = t("SMARTi-appen", "SMARTi app");
+  if (
+    !busy &&
+    !confirm &&
+    !progress &&
+    !matchesUpdateSearch(search, title, q.data?.version, q.data?.version_latest)
+  )
+    return null;
   return (
     <article className="panel">
-      <h2>{t("SMARTi-appen", "SMARTi app")}</h2>
+      <h2>{title}</h2>
       {q.data ? (
         <p>
           {t("Installert", "Installed")}: {q.data.version} ·{" "}

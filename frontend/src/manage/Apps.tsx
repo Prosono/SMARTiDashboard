@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { api, ApiError } from "../api";
 import { smartiName } from "../branding";
+import { usePageSearch } from "../PageSearch";
 import { SettingsDialog } from "../home/SettingsDialog";
 import { operationId } from "./operationId";
 import "./apps.css";
@@ -137,6 +138,15 @@ export function Apps({
   } | null>(null);
   const remoteInterface = useRemoteAppInterface();
   const returnFocus = useRef<string | null>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchLabel = updatesOnly
+    ? t("Søk i appoppdateringer", "Search app updates")
+    : t("Søk etter apper", "Search apps");
+  usePageSearch({
+    label: searchLabel,
+    active: active && !interfaceView,
+    open: () => searchInput.current?.focus(),
+  });
   useEffect(() => {
     if (interfaceView || !returnFocus.current) return;
     document
@@ -347,8 +357,9 @@ export function Apps({
       <label className="apps-search">
         <Search size={19} />
         <input
-          aria-label={t("Søk etter apper", "Search apps")}
-          placeholder={t("Søk etter apper …", "Search apps …")}
+          ref={searchInput}
+          aria-label={searchLabel}
+          placeholder={`${searchLabel} …`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

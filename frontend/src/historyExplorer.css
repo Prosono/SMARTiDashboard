@@ -113,6 +113,11 @@
   min-width: 0;
   width: 100%;
 }
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  .history-search input {
+    font-size: max(1rem, 16px);
+  }
+}
 .history-selection {
   display: flex;
   align-items: center;

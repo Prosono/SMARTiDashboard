@@ -1463,19 +1463,6 @@ footer span:last-child {
     transition: none !important;
   }
 }
-.mobile-breadcrumb-home {
-  display: none;
-}
-@media (max-width: 760px) {
-  .mobile-breadcrumb-home {
-    display: flex;
-    flex: none;
-  }
-  .breadcrumb > svg {
-    display: none;
-  }
-}
-
 .device-setup { max-width: 920px; }
 .pairing-provider { display: grid; grid-template-columns: 28px 1fr auto; gap: 20px; align-items: center; padding: 28px 0; border-bottom: 1px solid var(--line); }
 .pairing-provider h2 { margin: 0; font-size: 24px; }
@@ -1663,37 +1650,6 @@ html .device-product-art[aria-hidden] .equipment-art > :is(img,svg) { display: b
   .sidebar nav { scrollbar-width: none; }
   .sidebar nav::-webkit-scrollbar { display: none; }
 }
-@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
-  .topbar {
-    height: calc(54px + env(safe-area-inset-top));
-    padding-left: max(10px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-  }
-  .breadcrumb .mobile-breadcrumb-home {
-    display: flex;
-    align-items: center;
-  }
-  .mobile-breadcrumb-home::after {
-    content: "";
-    width: 1px;
-    height: 24px;
-    margin-inline: 4px 2px;
-    background: var(--line);
-  }
-  .breadcrumb > :is(svg, .breadcrumb-home-name, .separator) {
-    display: none;
-  }
-  .breadcrumb span.breadcrumb-page {
-    flex-shrink: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: clamp(17px, 5vw, 22px);
-    font-weight: 700;
-  }
-}
-
 .support-home { max-width: 720px; margin: 30px auto; padding: 32px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; }
 .support-home > svg { color: var(--accent); }
 .support-home h1 { margin: 18px 0; }

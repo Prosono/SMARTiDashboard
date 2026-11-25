@@ -12,6 +12,7 @@ export function RoomPageHeader({
   selectRoom,
   back,
   manage,
+  pageTitle = false,
   searchOpen,
   searchId,
   toggleSearch,
@@ -26,6 +27,7 @@ export function RoomPageHeader({
   selectRoom?: (room: string) => void;
   back?: () => void;
   manage?: () => void;
+  pageTitle?: boolean;
   searchOpen: boolean;
   searchId: string;
   toggleSearch: () => void;
@@ -62,7 +64,7 @@ export function RoomPageHeader({
           className="harmoni-room-title"
           data-selectable={!!selectRoom || undefined}
         >
-          <h1>{title}</h1>
+          <h1 data-phone-page-title={pageTitle || undefined}>{title}</h1>
           {rooms && selectRoom && (
             <>
               <ChevronDown size={22} aria-hidden="true" />

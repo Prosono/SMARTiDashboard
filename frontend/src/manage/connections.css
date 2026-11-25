@@ -72,6 +72,18 @@
 .connections-page .apps-toolbar {
   gap: 12px;
 }
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  .integrations-toolbar {
+    flex-wrap: wrap;
+  }
+  .integrations-toolbar > input {
+    flex: 1 0 100%;
+    order: 1;
+  }
+  :is(.integrations-toolbar, .apps-search, .marketplace-search) > input {
+    font-size: max(1rem, 16px);
+  }
+}
 @media (max-width: 650px) {
   .updates-page .updates-tabs button {
     flex: 1 1 0;

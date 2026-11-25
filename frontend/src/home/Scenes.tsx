@@ -144,12 +144,14 @@ export function Scenes({
   admin,
   lang,
   manage = false,
+  listSearch = "",
 }: {
   home: Home;
   offline: boolean;
   admin: boolean;
   lang: string;
   manage?: boolean;
+  listSearch?: string;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb),
     qc = useQueryClient();
@@ -166,8 +168,11 @@ export function Scenes({
     [all, setAll] = useState(manage),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
-  const rows = scenes.data || [],
-    favorites = rows.filter((s) => home.favorites.includes(s.entity_id));
+  const query = listSearch.trim().toLocaleLowerCase();
+  const rows = (scenes.data ?? []).filter((scene) =>
+    scene.name.toLocaleLowerCase().includes(query),
+  );
+  const favorites = rows.filter((s) => home.favorites.includes(s.entity_id));
   async function activate(s: Scene) {
     if (busy || offline || !s.available || !allControls(home)) return;
     setBusy(true);
@@ -266,7 +271,7 @@ export function Scenes({
       )}
       {scenes.isLoading ? (
         <p>{t("Henter scener…", "Loading scenes…")}</p>
-      ) : rows.length === 0 ? (
+      ) : !scenes.data?.length ? (
         <div className="scene-empty">
           <Sofa size={26} />
           <div>
@@ -281,6 +286,10 @@ export function Scenes({
             </p>
           </div>
         </div>
+      ) : rows.length === 0 ? (
+        <p role="status">
+          {t("Ingen scener passer søket.", "No scenes match your search.")}
+        </p>
       ) : (
         <div className="scene-strip">
           {(all ? rows : (favorites.length ? favorites : rows).slice(0, 6)).map(

@@ -3,6 +3,7 @@ import { test, expect } from "../../frontend/node_modules/@playwright/test";
 test("integrations and apps share one responsive destination, with apps only in advanced mode", async ({
   page,
 }, info) => {
+  const mobile = info.project.name === "mobile";
   let mode = "advanced",
     appReads = 0;
   const ingressPath = "/api/hassio_ingress/app-test/panel/";
@@ -119,6 +120,17 @@ test("integrations and apps share one responsive destination, with apps only in 
   });
   await expect(integrationTab).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".integration-card")).toContainText("Philips Hue");
+  if (mobile) {
+    const search = page.getByRole("textbox", { name: "Søk i integrasjoner" });
+    await page
+      .getByRole("button", { name: "Søk i integrasjoner", exact: true })
+      .click();
+    await expect(search).toBeFocused();
+    await search.fill("MQTT");
+    await expect(page.locator(".integration-card")).toHaveCount(0);
+    await search.clear();
+    await expect(page.locator(".integration-card")).toHaveCount(1);
+  }
   // The advanced administrator menu checks the shared inventory for updates.
   await expect.poll(() => appReads).toBeGreaterThan(0);
   await integrationTab.focus();
@@ -129,6 +141,12 @@ test("integrations and apps share one responsive destination, with apps only in 
     page.getByRole("link", { name: "Air Sensors på GitHub" }),
   ).toHaveAttribute("href", "https://github.com/vendor/air-sensors");
   const search = page.getByRole("searchbox", { name: "Søk i markedsplassen" });
+  if (mobile) {
+    await page
+      .getByRole("button", { name: "Søk i markedsplassen", exact: true })
+      .click();
+    await expect(search).toBeFocused();
+  }
   await search.fill("co2 inneklima");
   await expect(
     page.getByRole("link", { name: "Air Sensors på GitHub" }),
@@ -148,6 +166,17 @@ test("integrations and apps share one responsive destination, with apps only in 
   await expect(appsTab).toBeFocused();
   await expect(appsTab).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".app-card")).toContainText("MQTT broker");
+  if (mobile) {
+    const appSearch = page.getByRole("textbox", { name: "Søk etter apper" });
+    await page
+      .getByRole("button", { name: "Søk etter apper", exact: true })
+      .click();
+    await expect(appSearch).toBeFocused();
+    await appSearch.fill("Philips");
+    await expect(page.locator(".app-card")).toHaveCount(0);
+    await appSearch.clear();
+    await expect(page.locator(".app-card")).toHaveCount(1);
+  }
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Utvidelser",
   );
@@ -182,7 +211,6 @@ test("integrations and apps share one responsive destination, with apps only in 
     document.head.prepend(base);
     history.replaceState(null, "", "/api/hassio_ingress/test/");
   });
-  const mobile = info.project.name === "mobile";
   await page.setViewportSize(
     mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 },
   );

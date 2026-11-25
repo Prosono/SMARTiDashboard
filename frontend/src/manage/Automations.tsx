@@ -5,7 +5,14 @@ import { AutomationIcon, AutomationTrigger } from "./AutomationDetails";
 import "./automations.css";
 import { homeAsset } from "../home/HomeOverview";
 import { AutomationFlow } from "./AutomationFlow";
-import { useEffect, useId, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Workflow,
@@ -29,6 +36,7 @@ import {
 } from "lucide-react";
 import { AutomationGuide } from "./AutomationGuide";
 import { SettingsDialog } from "../home/SettingsDialog";
+import { usePageSearch } from "../PageSearch";
 import { api } from "../api";
 import type { Home, Control } from "../types";
 import { Feedback, LoadError, useWork, words } from "./shared";
@@ -131,6 +139,15 @@ export function Automations({
   const [raw, setRaw] = useState("");
   const [formValidity, setFormValidity] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchLabel = t("Søk i automasjoner", "Search automations");
+  const openSearch = useCallback(() => {
+    const input = searchInput.current;
+    if (!input) return;
+    input.scrollIntoView({ block: "center" });
+    input.focus({ preventScroll: true });
+  }, []);
+  usePageSearch({ label: searchLabel, open: openSearch, active: !editing });
   const [statusFilter, setStatusFilter] = useState("all");
   const [sort, setSort] = useState("name");
   const [layout, setLayout] = useState("list");
@@ -674,7 +691,7 @@ export function Automations({
           <div className="automation-title">
             <Workflow size={36} />
             <div>
-              <h1>{t("Automasjoner", "Automations")}</h1>
+              <h1 data-phone-page-title>{t("Automasjoner", "Automations")}</h1>
               <p>
                 {t(
                   "Gjør hjemmet smartere med automatiske rutiner.",
@@ -830,10 +847,12 @@ export function Automations({
         </div>
         <div className="automation-tools">
           <label className="automation-search">
-            <Search size={19} />
+            <Search size={19} aria-hidden="true" />
             <input
+              ref={searchInput}
+              type="search"
               placeholder={t("Søk i automasjoner …", "Search automations …")}
-              aria-label={t("Søk i automasjoner", "Search automations")}
+              aria-label={searchLabel}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />

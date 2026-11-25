@@ -27,14 +27,22 @@ export function useDiscoveries(enabled = true, attention = false) {
 export function DiscoveredDevices({
   lang,
   attention = false,
+  listSearch = "",
 }: {
   lang: string;
   attention?: boolean;
+  listSearch?: string;
 }) {
   const en = lang === "en";
   const qc = useQueryClient();
   const [selected, select] = useState<Discovery | null>(null);
   const q = useDiscoveries(true, attention);
+  const query = listSearch.trim().toLocaleLowerCase();
+  const shown = q.data?.filter((device) =>
+    `${device.name} ${integrationName(device.domain)}`
+      .toLocaleLowerCase()
+      .includes(query),
+  );
   const title = attention
     ? en
       ? "Needs attention"
@@ -105,8 +113,15 @@ export function DiscoveredDevices({
               : "Ingen nye enheter funnet. Du kan fortsatt legge til en integrasjon manuelt under Integrasjoner."}
         </p>
       )}
+      {!q.isError && !!q.data?.length && shown?.length === 0 && (
+        <p className="discovery-empty" role="status">
+          {en
+            ? "No discovered devices match your search."
+            : "Ingen oppdagede enheter passer søket."}
+        </p>
+      )}
       <div className="discovery-grid">
-        {q.data?.map((d) => (
+        {shown?.map((d) => (
           <article key={d.id}>
             <div className="discovery-logo">
               <IntegrationLogo domain={d.domain} />

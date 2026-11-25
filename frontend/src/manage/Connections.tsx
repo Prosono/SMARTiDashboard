@@ -36,7 +36,7 @@ export function Connections({ lang }: { lang: string }) {
     <section className="connections-page">
       <header className="page-heading">
         <span className="eyebrow">SMARTi</span>
-        <h1>{en ? "Extensions" : "Utvidelser"}</h1>
+        <h1 data-phone-page-title>{en ? "Extensions" : "Utvidelser"}</h1>
         <p>
           {advanced
             ? en

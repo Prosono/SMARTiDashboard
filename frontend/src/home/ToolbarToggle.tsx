@@ -5,24 +5,41 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
+import { usePageSearch } from "../PageSearch";
 import { HomeBannerless } from "./CategoryIntro";
 import { HomePageTools } from "./HomePageTools";
 import "./toolbarToggle.css";
 
-export function useToolbarDisclosure() {
+export function useToolbarDisclosure(pageSearchLabel?: string) {
   const tools = useContext(HomePageTools);
   const [expanded, setExpanded] = useState(false);
   const id = useId();
+  const pageSearchOpener = useRef<HTMLElement>(null);
   const toggle = useCallback(() => setExpanded((value) => !value), []);
+  usePageSearch(
+    !tools && pageSearchLabel
+      ? {
+          label: pageSearchLabel,
+          controls: id,
+          expanded,
+          open: () => {
+            if (document.activeElement instanceof HTMLElement)
+              pageSearchOpener.current = document.activeElement;
+            toggle();
+          },
+        }
+      : null,
+  );
   useLayoutEffect(() => {
     if (!tools) return;
     tools.setSearch({ id, expanded, toggle });
     return () => tools.setSearch(null);
   }, [tools, id, expanded, toggle]);
   useEffect(() => {
-    if (!tools || !expanded) return;
+    if ((!tools && !pageSearchLabel) || !expanded) return;
     const toolbar = document.getElementById(id);
     toolbar
       ?.querySelector<HTMLInputElement>(
@@ -34,11 +51,11 @@ export function useToolbarDisclosure() {
       event.preventDefault();
       event.stopPropagation();
       setExpanded(false);
-      tools.searchButton.current?.focus();
+      (tools?.searchButton.current || pageSearchOpener.current)?.focus();
     };
     toolbar?.addEventListener("keydown", close);
     return () => toolbar?.removeEventListener("keydown", close);
-  }, [tools, expanded, id]);
+  }, [tools, expanded, id, pageSearchLabel]);
   return {
     expanded,
     id,

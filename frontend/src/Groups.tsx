@@ -36,10 +36,12 @@ export function Groups({
   home,
   lang,
   admin,
+  listSearch = "",
 }: {
   home: Home;
   lang: string;
   admin: boolean;
+  listSearch?: string;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb),
     qc = useQueryClient();
@@ -49,6 +51,10 @@ export function Groups({
     queryFn: () => api<Group[]>("groups"),
     refetchInterval: 15000,
   });
+  const query = listSearch.trim().toLocaleLowerCase();
+  const shown = q.data?.filter((group) =>
+    group.name.toLocaleLowerCase().includes(query),
+  );
   const [nativeEditor, editNative] = useState<string | null>(null);
   function openEditor(g: Group) {
     setOpened(null);
@@ -321,8 +327,13 @@ export function Groups({
           </p>
         </div>
       )}
+      {!!q.data?.length && shown?.length === 0 && (
+        <p role="status">
+          {t("Ingen grupper passer søket.", "No groups match your search.")}
+        </p>
+      )}
       <div className="groups-grid">
-        {q.data?.map((g) => {
+        {shown?.map((g) => {
           const Icon =
             collectionIcons[g.icon as keyof typeof collectionIcons] || Layers;
           return (

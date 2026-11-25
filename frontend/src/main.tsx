@@ -29,7 +29,8 @@ import {
   useExperiencePreference,
 } from "./Experience";
 import { SimpleHome } from "./home/SimpleHome";
-import { MobileHomeSwitcher } from "./home/MobileHomeSwitcher";
+import { PageSearchMain, usePageSearchControl } from "./PageSearch";
+import { WorkspacePhoneTopbar } from "./PhoneTopbar";
 import { HarmonyDevices } from "./home/HarmonyDevices";
 import { CardDeviceMetadata } from "./home/CardDeviceMetadata";
 import { deviceBattery } from "./home/deviceMetadata";
@@ -844,6 +845,7 @@ function Dashboard({
 }) {
   const mode = useExperience();
   const queryClient = useQueryClient();
+  const pageSearch = usePageSearchControl();
   const [streamConnected, streamStatus] = useState(true);
   const [room, setRoom] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -992,6 +994,13 @@ function Dashboard({
       ? [{ area_id: "", name: t.unassigned }]
       : []),
   ];
+  const usesHomeToolbar =
+    page === "home" || (mode === "simple" && page === "rooms");
+  let phoneTitle = t[page];
+  if (adding) phoneTitle = lang === "en" ? "Add device" : "Legg til enhet";
+  else if (roomEditing && page === "rooms")
+    phoneTitle = lang === "en" ? "Manage rooms" : "Administrer rom";
+  else if (page === "logbook") phoneTitle = lang === "en" ? "Reports" : "Rapporter";
   return (
     <MetricDeviceRenderer.Provider
       value={(c) =>
@@ -1027,9 +1036,6 @@ function Dashboard({
     >
       <header className="topbar">
         <div className="breadcrumb">
-          <div className="mobile-breadcrumb-home">
-            <MobileHomeSwitcher home={h} lang={lang} />
-          </div>
           <House size={17} />
           <span className="breadcrumb-home-name">{h.home_name}</span>
           <span className="separator">/</span>
@@ -1057,7 +1063,18 @@ function Dashboard({
           </span>
         </div>
       </header>
-      <main>
+      {!usesHomeToolbar && (
+        <WorkspacePhoneTopbar
+          key={page}
+          home={h}
+          lang={lang}
+          title={phoneTitle}
+          offline={offline}
+          search={pageSearch.search}
+          onSettings={page !== "more" ? () => setPage("more") : undefined}
+        />
+      )}
+      <PageSearchMain register={pageSearch.register}>
         {session.support && (
           <div className="support-session-banner" role="status">
             Godkjent fjernhjelp · Tilgang utløper{" "}
@@ -1161,7 +1178,7 @@ function Dashboard({
         ) : page === "support" ? (
           <section className="support-home">
             <LifeBuoy size={34} aria-hidden="true" />
-            <h1>{lang === "en" ? "Support" : "Support"}</h1>
+            <h1 data-phone-page-title>Support</h1>
             <p>
               {lang === "en"
                 ? "Create a case, follow progress and approve remote assistance when needed."
@@ -1212,7 +1229,7 @@ function Dashboard({
             t={t}
           />
         )}
-      </main>
+      </PageSearchMain>
       <footer>
         SMARTi <span>SMART LIVING, SIMPLIFIED.</span>
         <span>{h.mode === "demo" ? t.demo : t.live}</span>

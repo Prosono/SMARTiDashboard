@@ -478,6 +478,11 @@
     grid-column: 1/-1;
   }
 }
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  .automation-search input {
+    font-size: max(1rem, 16px);
+  }
+}
 .automation-overview {
   min-width: 0;
   grid-template-columns: minmax(0, 1fr);

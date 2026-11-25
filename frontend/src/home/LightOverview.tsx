@@ -16,14 +16,18 @@ export function LightOverview({
   offline,
   lang,
   scenes,
+  pageSearch = false,
 }: {
   home: Home;
   offline: boolean;
   lang: string;
   scenes?: () => void;
+  pageSearch?: boolean;
 }) {
-  const toolbar = useToolbarDisclosure();
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
+  const toolbar = useToolbarDisclosure(
+    pageSearch ? t("Søk i lysstyring", "Search lighting controls") : undefined,
+  );
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");

@@ -156,6 +156,17 @@ test("updates have dedicated SMARTi, extension and advanced-only app tabs and ar
   await expect(smarti).toContainText("SMARTi Core");
   await expect(smarti).not.toContainText("SMARTi duplikat");
   await expect(smarti).not.toContainText("SMARTi Voice firmware");
+  if (info.project.name === "mobile") {
+    const searchLabel = "Søk i oppdateringer";
+    const search = page.getByRole("searchbox", { name: searchLabel });
+    await page.getByRole("button", { name: searchLabel, exact: true }).click();
+    await expect(search).toBeFocused();
+    await search.fill("1.36.118");
+    await expect(smarti).toContainText("SMARTi-appen");
+    await expect(smarti).not.toContainText("SMARTi Core");
+    await search.clear();
+    await expect(smarti).toContainText("SMARTi Core");
+  }
   await expect(
     page.getByRole("tab", { name: "Apper", exact: true }),
   ).toHaveCount(0);
@@ -168,6 +179,16 @@ test("updates have dedicated SMARTi, extension and advanced-only app tabs and ar
   await expect(extensions).toContainText("SMARTi Voice firmware");
   await expect(extensions).not.toContainText("SMARTi Core");
   await expect(extensions).not.toContainText("MQTT");
+  if (info.project.name === "mobile") {
+    const searchLabel = "Søk i oppdateringer";
+    const search = page.getByRole("searchbox", { name: searchLabel });
+    await page.getByRole("button", { name: searchLabel, exact: true }).click();
+    await expect(search).toBeFocused();
+    await search.fill("SMARTi Core");
+    await expect(extensions).not.toContainText("SMARTi Voice firmware");
+    await search.clear();
+    await expect(extensions).toContainText("SMARTi Voice firmware");
+  }
   await data.settings();
   await expect(
     page.getByRole("navigation", { name: "Innstillingskategorier" }),
@@ -216,6 +237,16 @@ test("updates have dedicated SMARTi, extension and advanced-only app tabs and ar
   await expect(apps).toContainText("MQTT broker");
   await expect(apps).not.toContainText("Allerede oppdatert");
   await expect(apps).not.toContainText("SMARTi duplikat");
+  if (info.project.name === "mobile") {
+    const searchLabel = "Søk i appoppdateringer";
+    const search = apps.getByRole("textbox", { name: searchLabel });
+    await page.getByRole("button", { name: searchLabel, exact: true }).click();
+    await expect(search).toBeFocused();
+    await search.fill("SMARTi");
+    await expect(apps.locator(".app-card")).toHaveCount(0);
+    await search.clear();
+    await expect(apps.locator(".app-card")).toHaveCount(1);
+  }
   await expect(
     apps.getByRole("button", { name: "Appbibliotek", exact: true }),
   ).toHaveCount(0);

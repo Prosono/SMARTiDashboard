@@ -8,14 +8,18 @@ import {
   Monitor,
   Network,
   Palette,
+  Search,
   Server,
 } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { BackgroundMotionSetting } from "../Atmosphere";
 import { ExperiencePicker, UserLanguagePicker } from "../Experience";
 import { PalettePicker } from "../PalettePicker";
+import { usePageSearch } from "../PageSearch";
 import { PhoneSettings } from "../PhoneSettings";
 import { HomeBackgroundSettings } from "../home/HomeAppearance";
 import { ScreensaverSettings, type useScreensaver } from "../home/Screensaver";
+import { SettingsDialog } from "../home/SettingsDialog";
 import type { Text } from "../i18n";
 import type { Home } from "../types";
 import { Debugging } from "./Debugging";
@@ -102,14 +106,37 @@ export function SettingsPage({
   t: Text;
 }) {
   const language = lang === "en" ? "en" : "nb";
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const searchField = useRef<HTMLInputElement>(null);
+  const searchLabel =
+    language === "en" ? "Search settings" : "Søk i innstillinger";
+  usePageSearch({
+    label: searchLabel,
+    popup: "dialog",
+    open: () => {
+      setQuery("");
+      setSearchOpen(true);
+    },
+  });
+  useLayoutEffect(() => {
+    if (searchOpen) searchField.current?.focus({ preventScroll: true });
+  }, [searchOpen]);
   const items = categories.filter(
     ({ access }) =>
       access === "all" || (canManage && (access === "manage" || advanced)),
   );
+  const matching = items.filter((item) =>
+    item[language]
+      .toLocaleLowerCase()
+      .includes(query.trim().toLocaleLowerCase()),
+  );
   return (
     <section className="settings-overview" aria-labelledby="settings-title">
       <header className="settings-title">
-        <h1 id="settings-title">{t.settings}</h1>
+        <h1 id="settings-title" data-phone-page-title>
+          {t.settings}
+        </h1>
         <PhoneSettings lang={lang} />
       </header>
       <nav
@@ -131,6 +158,56 @@ export function SettingsPage({
           </button>
         ))}
       </nav>
+      {searchOpen && (
+        <SettingsDialog
+          title={searchLabel}
+          lang={lang}
+          compact
+          phoneSafeArea
+          presentation="search"
+          onClose={() => setSearchOpen(false)}
+        >
+          <label className="settings-search">
+            <Search size={19} aria-hidden="true" />
+            <input
+              ref={searchField}
+              type="search"
+              aria-label={searchLabel}
+              placeholder={
+                language === "en" ? "Find a section" : "Finn en kategori"
+              }
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+          {matching.length ? (
+            <nav
+              className="settings-sections settings-search-results"
+              aria-label={searchLabel}
+            >
+              {matching.map(({ id, icon: Icon, ...labels }) => (
+                <button
+                  type="button"
+                  key={id}
+                  onClick={() => {
+                    selectSection(id);
+                    setSearchOpen(false);
+                  }}
+                >
+                  <Icon size={18} aria-hidden="true" />
+                  {labels[language]}
+                </button>
+              ))}
+            </nav>
+          ) : (
+            <p className="settings-search-results" role="status">
+              {language === "en"
+                ? "No settings sections found."
+                : "Fant ingen innstillingskategorier."}
+            </p>
+          )}
+        </SettingsDialog>
+      )}
       {section === "screensaver" ? (
         <ScreensaverSettings state={screensaver} lang={lang} />
       ) : section === "debugging" ? (

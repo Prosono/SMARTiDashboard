@@ -291,20 +291,42 @@ test("room search, room selector, direct controls, confirmations and saved visib
 }) => {
   await page.setViewportSize({ width: 390, height: 1000 });
   const data = await setup(page);
-  await page.getByRole("button", { name: "Søk i rom", exact: true }).click();
+  const topbar = page.locator(".workspace-phone-topbar");
+  const roomSearch = topbar.getByRole("button", {
+    name: "Søk i rom",
+    exact: true,
+  });
+  await roomSearch.click();
   const search = page.getByRole("textbox", {
     name: "Søk etter rom",
     exact: true,
   });
+  await expect(search).toBeFocused();
   await search.fill("finnesikke");
   await expect(page.locator(".room-summary-card")).toHaveCount(0);
   await search.press("Escape");
   await expect(page.locator(".room-summary-card")).toHaveCount(4);
-  await expect(
-    page.getByRole("button", { name: "Søk i rom", exact: true }),
-  ).toBeFocused();
+  await expect(roomSearch).toBeFocused();
   await openLiving(page);
   const room = page.locator(".room-detail");
+  const deviceSearch = topbar.getByRole("button", {
+    name: "Søk i rommet",
+    exact: true,
+  });
+  await deviceSearch.click();
+  const roomDevice = room.getByRole("textbox", {
+    name: "Søk i rommet",
+    exact: true,
+  });
+  await expect(roomDevice).toBeFocused();
+  await roomDevice.fill("Pendellampe");
+  await expect(
+    room.getByRole("button", { name: "Åpne Pendellampe" }),
+  ).toBeVisible();
+  await expect(room.locator(".room-section-climate")).toHaveCount(0);
+  await roomDevice.press("Escape");
+  await expect(deviceSearch).toBeFocused();
+  await expect(room.locator(".room-section-climate")).toBeVisible();
   const light = room.locator(".harmony-device").filter({
     has: page.getByRole("button", { name: "Åpne Pendellampe", exact: true }),
   });

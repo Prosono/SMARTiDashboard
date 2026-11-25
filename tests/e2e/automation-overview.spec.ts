@@ -41,9 +41,25 @@ test("automation overview filters, layouts and editor", async ({ page }) => {
   );
   await root.getByRole("button", { name: "Kort", exact: true }).click();
   await expect(root.locator(".automation-results")).toHaveClass(/grid/);
-  await root
-    .getByLabel("Søk i automasjoner", { exact: true })
-    .fill("no-match-xyz");
+  const search = root.getByRole("searchbox", {
+    name: "Søk i automasjoner",
+    exact: true,
+  });
+  const phone = await page.evaluate(
+    () =>
+      window.matchMedia(
+        "(max-width: 650px), (max-height: 500px) and (pointer: coarse)",
+      ).matches,
+  );
+  const toolbarSearch = page.getByRole("button", {
+    name: "Søk i automasjoner",
+    exact: true,
+  });
+  if (phone) {
+    await toolbarSearch.click();
+    await expect(search).toBeFocused();
+  }
+  await search.fill("no-match-xyz");
   await expect(root.locator(".automation-item")).toHaveCount(0);
   await root.getByRole("button", { name: "Nullstill filtre" }).click();
   await root.getByRole("button", { name: "Liste", exact: true }).click();
@@ -74,4 +90,5 @@ test("automation overview filters, layouts and editor", async ({ page }) => {
     .getByRole("button", { name: "Rediger", exact: true })
     .click();
   await expect(root).toHaveCount(0);
+  if (phone) await expect(toolbarSearch).toBeHidden();
 });

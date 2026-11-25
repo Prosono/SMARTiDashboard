@@ -97,6 +97,9 @@ html[data-home-style="harmony"] {
     color: var(--accent);
     background: var(--tint);
   }
+  .room-circle.room-phone-manage {
+    display: none;
+  }
   .harmoni-room-thumbnail {
     width: 58px;
     height: 58px;
@@ -382,38 +385,23 @@ html[data-home-style="harmony"] {
     }
   }
   @media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
-    &:has([data-harmoni-rooms]) .topbar {
+    .harmoni-room-home,
+    .harmoni-room-actions .room-search-toggle,
+    .rooms-overview[data-harmoni-rooms] .harmoni-room-actions {
       display: none;
     }
-    [data-harmoni-rooms] {
-      padding-top: max(16px, env(safe-area-inset-top, 0px));
+    .rooms-overview[data-harmoni-rooms]
+      :is(.harmoni-room-header, .harmoni-room-heading, .harmoni-room-title) {
+      display: contents;
     }
-    .harmoni-room-header {
-      gap: 21px 12px;
-    }
-    .harmoni-room-home {
-      min-height: 46px;
-      color: var(--text);
-      font-size: 17px;
-      font-weight: 600;
-      gap: 10px;
-    }
-    .harmoni-room-home img {
-      width: 25px;
-      height: 25px;
+    .room-circle.room-phone-manage {
+      display: grid;
     }
     .harmoni-room-actions {
       grid-row: 1;
     }
-    .harmoni-room-actions .room-search-toggle {
-      position: absolute;
-      right: 0;
-      bottom: 0;
-    }
     .harmoni-room-heading {
-      grid-column: 1 / -1;
       gap: 10px;
-      padding-right: 54px;
       min-height: 46px;
     }
     .harmoni-room-title h1 {
@@ -433,6 +421,13 @@ html[data-home-style="harmony"] {
       box-shadow: none;
       border-color: transparent;
       background: transparent;
+    }
+    :is(.room-search-field, .room-detail-search) input {
+      font-size: max(1rem, 16px);
+    }
+    .room-management-page :is(.management-index input, .wide-input) {
+      min-width: 0;
+      font-size: max(1rem, 16px);
     }
     .rooms-overview[data-harmoni-rooms] .rooms-overview-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
