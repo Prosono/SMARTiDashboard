@@ -18,7 +18,7 @@ export function GridLightingCard({
   home: Home;
   lang: string;
   offline: boolean;
-  open: () => void;
+  open?: () => void;
   areaId?: string;
   compact?: boolean;
 }) {
@@ -104,17 +104,24 @@ export function GridLightingCard({
   }
   return (
     <section className="grid-lighting-card" data-compact={compact}>
-      <button className="grid-card-heading" onClick={open}>
-        <CardIcon fallback={Lightbulb} size={23} />
-        <strong>
-          <CardTitle>
-            {areaId === undefined
-              ? t("Lys i hjemmet", "Home lighting")
-              : t("Lys i rommet", "Room lighting")}
-          </CardTitle>
-        </strong>
-        <ChevronRight size={18} />
-      </button>
+      {open && (
+        <button
+          type="button"
+          className="grid-card-heading"
+          aria-haspopup="dialog"
+          onClick={open}
+        >
+          <CardIcon fallback={Lightbulb} size={23} />
+          <strong>
+            <CardTitle>
+              {areaId === undefined
+                ? t("Lys i hjemmet", "Home lighting")
+                : t("Lys i rommet", "Room lighting")}
+            </CardTitle>
+          </strong>
+          <ChevronRight size={18} />
+        </button>
+      )}
       {!compact && (
         <div className="equipment-group-art" aria-hidden="true">
           {lights.slice(0, 3).map((c) => (

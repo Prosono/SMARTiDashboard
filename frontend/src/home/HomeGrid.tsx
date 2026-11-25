@@ -103,6 +103,7 @@ export type HomeGridCard = {
   summary?: MobileSummary;
   phoneSize?: PhoneSize;
   phoneContent?: (open: () => void) => ReactNode;
+  openDetails?: () => void;
 };
 
 export function HomeGrid({
@@ -1186,6 +1187,17 @@ export function HomeGrid({
                       config={original.config}
                       tone={tone}
                       lightStyle={lightStyle}
+                      openDetails={
+                        !original.config ||
+                        (original.config.type === "auto" &&
+                          (!original.config.sources.length ||
+                            (original.config.sources.length === 1 &&
+                              original.config.sources[0] === card.entityId)) &&
+                          (compactMobile ||
+                            !photoImages.has(original.config.image)))
+                          ? card.openDetails
+                          : undefined
+                      }
                       mobile={
                         compactMobile || referencePhone
                           ? {

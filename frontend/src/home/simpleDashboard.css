@@ -140,30 +140,64 @@ button.simple-dashboard-tile {
 .simple-dashboard-weather .weather-days > :nth-child(2) {
   display: none;
 }
-.simple-dashboard-light-list section + section {
-  margin-top: 24px;
-}
-.simple-dashboard-light-list button {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+.overview-category-card {
+  display: grid;
+  align-content: start;
+  gap: clamp(12px, 2vw, 22px);
   width: 100%;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  margin: 8px 0;
-  background: var(--surface);
+  min-height: 100%;
+  padding: clamp(14px, 2vw, 22px);
+  border: 0;
+  background: transparent;
   color: var(--text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.simple-dashboard-light-list button strong {
-  flex: 1;
+.overview-category-card .simple-dashboard-card-heading > span {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
-.simple-dashboard-light-list button span {
-  color: var(--muted);
+.overview-category-card .simple-dashboard-card-heading > svg {
+  flex-shrink: 0;
+}
+.overview-category-count {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+.overview-category-count strong {
+  font-size: clamp(26px, 3vw, 38px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.overview-lighting-bulk {
+  margin-bottom: 18px;
+}
+html[data-home-style="harmony"] .overview-lighting-bulk .grid-lighting-card {
+  min-height: 0;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+.overview-lighting-bulk .grid-lighting-card::after {
+  display: none;
+}
+html[data-home-style="harmony"] .overview-lighting-bulk .harmony-power {
+  --device-tone: var(--accent);
+}
+html[data-home-style="harmony"] .overview-lighting-bulk .harmony-power > i {
+  width: 44px;
+  height: 26px;
+}
+html[data-home-style="harmony"] .overview-lighting-bulk .grid-lighting-reading strong {
+  font-size: 28px;
+}
+html[data-home-style="harmony"] .overview-lighting-bulk .grid-lighting-reading small {
+  flex-basis: auto;
 }
 .simple-dashboard-browse {
   margin-top: 26px;

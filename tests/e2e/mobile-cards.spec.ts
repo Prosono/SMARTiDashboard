@@ -319,7 +319,7 @@ test("fresh phones show square tiles with real readings, weather and no hidden c
     fullPage: true,
   });
 });
-test("opening a tile mounts controls, restores focus and preserves command limits", async ({
+test("opening a climate tile lists devices, mounts their controls and restores focus", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -327,7 +327,16 @@ test("opening a tile mounts controls, restores focus and preserves command limit
     tile = page.locator('[data-card="climate"] .mobile-card-tile');
   await tile.click();
   expect(data.commands).toHaveLength(0);
-  const dialog = page.getByRole("dialog");
+  const group = page.getByRole("dialog", { name: "Klima", exact: true });
+  const thermostat = group.getByRole("button", {
+    name: "Åpne Termostat med et langt navn",
+    exact: true,
+  });
+  await thermostat.click();
+  const dialog = page.getByRole("dialog", {
+    name: "Termostat med et langt navn",
+    exact: true,
+  });
   await expect(dialog.getByRole("combobox", { name: /Modus/ })).toBeVisible();
   const plus = dialog.getByRole("button", { name: /Ønsket temperatur \+/ });
   await plus.click();
@@ -338,6 +347,9 @@ test("opening a tile mounts controls, restores focus and preserves command limit
   });
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
+  await expect(thermostat).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(group).toHaveCount(0);
   await expect(tile).toBeFocused();
   await page.locator('[data-card="metric:energy"] .mobile-card-tile').click();
   await expect.poll(() => data.history()).toBeGreaterThan(0);

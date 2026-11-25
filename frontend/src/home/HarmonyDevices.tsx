@@ -168,6 +168,7 @@ function HarmonyDevice({
   lang,
   offline,
   open,
+  overviewTitle,
   roomSurface = false,
 }: {
   c: Control;
@@ -175,6 +176,7 @@ function HarmonyDevice({
   lang: string;
   offline: boolean;
   open: () => void;
+  overviewTitle?: string;
   roomSurface?: boolean;
 }) {
   const en = lang === "en",
@@ -486,14 +488,20 @@ function HarmonyDevice({
         <button
           className="harmony-device-open"
           onClick={open}
-          aria-label={`${t("Åpne", "Open")} ${c.name}`}
+          aria-label={overviewTitle || `${t("Åpne", "Open")} ${c.name}`}
           aria-haspopup="dialog"
         >
           <span>
             <strong>
-              <CardTitle>{c.name}</CardTitle>
+              <CardTitle>{overviewTitle || c.name}</CardTitle>
             </strong>
-            <CardDeviceMetadata control={c} home={home} lang={lang} available={available} />
+            <CardDeviceMetadata
+              control={c}
+              home={home}
+              lang={lang}
+              available={available}
+              visibleTitle={overviewTitle}
+            />
             <small>
               {c.domain === "climate" ? t("Termostat", "Thermostat") : room}
             </small>
@@ -742,12 +750,14 @@ export function HarmonyDevices({
   lang,
   offline,
   roomSurface = false,
+  overview,
 }: {
   controls: Control[];
   home: Home;
   lang: string;
   offline: boolean;
   roomSurface?: boolean;
+  overview?: { title: string; open: () => void };
 }) {
   const render = useContext(MetricDeviceRenderer);
   const inDialog = useContext(InSettingsDialog);
@@ -772,7 +782,8 @@ export function HarmonyDevices({
             lang={lang}
             offline={offline}
             roomSurface={roomSurface}
-            open={() => select(c.id)}
+            open={overview?.open || (() => select(c.id))}
+            overviewTitle={overview?.title}
           />
         ))}
       </div>

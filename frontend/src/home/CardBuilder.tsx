@@ -17,6 +17,9 @@ import {
   Battery,
   Activity,
   CalendarDays,
+  Blinds,
+  LockKeyhole,
+  Speaker,
   Users,
   CloudSun,
   Network,
@@ -146,7 +149,11 @@ function widgetIcon(id: string) {
   if (id.includes("batteries")) return Battery;
   if (id.includes("alerts")) return TriangleAlert;
   if (id.includes("connection")) return Network;
-  if (id.includes("temperature")) return Thermometer;
+  if (id === "locks") return LockKeyhole;
+  if (id === "covers") return Blinds;
+  if (id === "media") return Speaker;
+  if (id === "climate" || id === "readings" || id.includes("temperature"))
+    return Thermometer;
   if (id.includes("humidity")) return Droplets;
   if (id.includes("energy")) return Zap;
   if (id.includes("lighting")) return Lightbulb;

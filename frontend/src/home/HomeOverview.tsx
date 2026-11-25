@@ -690,7 +690,7 @@ export function HomeOverview({
                   home={h}
                   lang={lang}
                   offline={offline}
-                  renderCards={(dashboardCards) => (
+                  renderCards={(dashboardCards, openReadings) => (
                     <HomeMetrics
                       home={h}
                       selectedEnergy={pref?.energy || null}
@@ -698,7 +698,7 @@ export function HomeOverview({
                       offline={offline}
                       lang={lang}
                       openEnergy={() => changeTab("energy")}
-                      openClimate={() => changeTab("climate")}
+                      openClimate={openReadings}
                       renderCards={(metricCards) => (
                         <HomeGrid
                           page="overview"
@@ -755,7 +755,18 @@ export function HomeOverview({
                             ...dashboardCards.filter(
                               (card) => card.id !== "weather",
                             ),
-                            ...metricCards,
+                            ...metricCards.map((card) =>
+                              card.id === "metric:temperature" ||
+                              card.id === "metric:humidity"
+                                ? {
+                                    ...card,
+                                    openDetails: openReadings,
+                                    defaultHidden: dashboardCards.some(
+                                      (widget) => widget.id === "readings",
+                                    ),
+                                  }
+                                : card,
+                            ),
                             ...deviceGridCards({
                               controls: model.controls.filter((c) =>
                                 [

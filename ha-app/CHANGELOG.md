@@ -1,3 +1,8 @@
+## 1.36.170
+- Lys i hjemmet viser lys som er på først, med egen bryter for hvert lys og samlet styring i samme dialog.
+- Fra Oversikt åpner Klima og Multimedia enhetslister med individuell styring. Låser og rullgardiner får egne kort når de finnes i hjemmet.
+- Temperatur og fuktighet samler målingene etter rom i ett kort.
+
 ## 1.36.169
 - Under Enheter viser Wi-Fi og LAN registrerte kontroller fra Shelly, ESPHome, TP-Link og WLED. Administratorer kan legge til integrasjoner fra samme visning.
 - Enhetssøket finner både kontrollnavn, registrert enhetsnavn, integrasjon og rom.

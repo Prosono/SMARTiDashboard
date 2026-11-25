@@ -1,7 +1,13 @@
-import { Children, useContext, useState, type ReactNode } from "react";
+import { useContext, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronRight, Lightbulb } from "lucide-react";
-import type { Home } from "../types";
+import {
+  Blinds,
+  CalendarDays,
+  ChevronRight,
+  LockKeyhole,
+  Thermometer,
+} from "lucide-react";
+import type { Control, Home } from "../types";
 import { api } from "../api";
 import { Weather } from "./Weather";
 import { Calendar } from "./Calendar";
@@ -15,6 +21,10 @@ import { HarmonyDevices } from "./HarmonyDevices";
 import { GridLightingCard } from "./GridLightingCard";
 import { CardIcon, CardTitle } from "./CardPresentation";
 import { CalendarArtwork } from "./CalendarArtwork";
+import {
+  OverviewDeviceList,
+  type OverviewDeviceKind,
+} from "./OverviewDeviceList";
 import "./simpleDashboard.css";
 
 export function SimpleAgenda({
@@ -125,6 +135,30 @@ export function SimpleAgenda({
   );
 }
 
+const shadeClasses = new Set([
+  "",
+  "awning",
+  "blind",
+  "curtain",
+  "shade",
+  "shutter",
+]);
+const temperatureUnits = new Set(["°C", "°F", "K"]);
+
+function isRoomReading({ domain, attributes }: Control) {
+  if (["climate", "humidifier"].includes(domain)) {
+    return [attributes.current_temperature, attributes.current_humidity].some(
+      (value) => typeof value === "number" && Number.isFinite(value),
+    );
+  }
+  return (
+    domain === "sensor" &&
+    (["temperature", "humidity"].includes(String(attributes.device_class)) ||
+      (!attributes.device_class &&
+        temperatureUnits.has(String(attributes.unit_of_measurement))))
+  );
+}
+
 export function SimpleDashboard({
   home,
   lang,
@@ -136,17 +170,21 @@ export function SimpleDashboard({
   lang: string;
   offline: boolean;
   showWeather?: boolean;
-  renderCards: (cards: HomeGridCard[]) => ReactNode;
+  renderCards: (cards: HomeGridCard[], openReadings: () => void) => ReactNode;
 }) {
-  const en = lang === "en",
-    t = (nb: string, eng: string) => (en ? eng : nb);
+  const en = lang === "en";
+  const t = (nb: string, eng: string) => (en ? eng : nb);
   const render = useContext(MetricDeviceRenderer);
-  const [panel, setPanel] = useState<"lights" | "calendar" | null>(null),
-    [selected, setSelected] = useState<string | null>(null);
+  const [panel, setPanel] = useState<OverviewDeviceKind | "calendar" | null>(
+    null,
+  );
+  const [selected, setSelected] = useState<string | null>(null);
   const controls = home.controls.filter((c) => !c.diagnostic);
-  const preferred = (domain: string) =>
-    controls
-      .filter((c) => c.domain === domain)
+  const canView = (feature: string) =>
+    !home.permissions || home.permissions.includes(`${feature}.view`);
+  const preferred = (items: Control[]) =>
+    items
+      .slice()
       .sort(
         (a, b) =>
           Number(home.favorites.includes(b.entity_id)) -
@@ -155,16 +193,66 @@ export function SimpleDashboard({
             Number(a.availability === "available") ||
           Number(b.state === "playing") - Number(a.state === "playing"),
       )[0];
-  const climate = preferred("climate"),
-    media = preferred("media_player"),
-    vacuum = preferred("vacuum"),
-    weather = preferred("weather");
-  const lights = controls.filter((c) => c.domain === "light");
-  const active = controls.find((c) => c.id === selected);
-  const now = new Date();
-  const tiles = (
-    <>
-      {showWeather && weather && (
+  const groups: Record<OverviewDeviceKind, Control[]> = {
+    lighting: canView("lights")
+      ? controls.filter((c) => c.domain === "light")
+      : [],
+    climate: canView("climate")
+      ? controls.filter((c) =>
+          ["climate", "fan", "humidifier"].includes(c.domain),
+        )
+      : [],
+    media: canView("media")
+      ? controls.filter((c) => c.domain === "media_player")
+      : [],
+    locks: canView("security")
+      ? controls.filter((c) => c.domain === "lock")
+      : [],
+    covers: canView("security")
+      ? controls.filter(
+          (c) =>
+            c.domain === "cover" &&
+            shadeClasses.has(String(c.attributes.device_class || "")),
+        )
+      : [],
+    readings: canView("climate") ? controls.filter(isRoomReading) : [],
+  };
+  const titles: Record<OverviewDeviceKind | "calendar", string> = {
+    lighting: t("Lys i hjemmet", "Home lighting"),
+    climate: t("Klima", "Climate"),
+    media: t("Multimedia", "Media"),
+    locks: t("Låser", "Locks"),
+    covers: t("Rullgardiner", "Blinds"),
+    readings: t("Temperatur og fuktighet", "Temperature and humidity"),
+    calendar: t("Kalender", "Calendar"),
+  };
+  const climate = preferred(
+    groups.climate.filter((c) => c.domain === "climate"),
+  );
+  const media = preferred(groups.media);
+  const vacuum = preferred(controls.filter((c) => c.domain === "vacuum"));
+  const weather = preferred(controls.filter((c) => c.domain === "weather"));
+  const openPanel = (kind: Exclude<typeof panel, null>) => () => {
+    setSelected(null);
+    setPanel(kind);
+  };
+  const openReadings = openPanel("readings");
+  const closePanel = () => {
+    setSelected(null);
+    setPanel(null);
+  };
+  const device =
+    panel && panel !== "calendar"
+      ? groups[panel].find((c) => c.id === selected)
+      : undefined;
+  const cards: HomeGridCard[] = [];
+
+  if (showWeather && weather) {
+    cards.push({
+      id: "weather",
+      entityId: weather.entity_id,
+      title: t("Været nå", "Weather now"),
+      content: (
         <div className="simple-dashboard-weather">
           <Weather
             c={
@@ -178,20 +266,28 @@ export function SimpleDashboard({
             }
             lang={lang}
             compact
-            polished={true}
+            polished
           />
         </div>
-      )}
-      {(!home.permissions || home.permissions.includes("calendar.view")) && (
+      ),
+    });
+  }
+  if (canView("calendar")) {
+    const now = new Date();
+    cards.push({
+      id: "calendar",
+      title: titles.calendar,
+      content: (
         <button
+          type="button"
           className="simple-dashboard-date simple-dashboard-tile"
-          onClick={() => setPanel("calendar")}
+          onClick={openPanel("calendar")}
           aria-haspopup="dialog"
         >
           <div className="simple-dashboard-card-heading">
             <CardIcon fallback={CalendarDays} size={23} />
             <span>
-              <CardTitle>{t("Kalender", "Calendar")}</CardTitle>
+              <CardTitle>{titles.calendar}</CardTitle>
             </span>
             <ChevronRight size={18} />
           </div>
@@ -200,7 +296,6 @@ export function SimpleDashboard({
               <CalendarArtwork day={now.getDate()} />
               <span>
                 {now.toLocaleDateString(en ? "en-GB" : "nb-NO", {
-                  ...{},
                   month: "long",
                 })}
               </span>
@@ -212,16 +307,33 @@ export function SimpleDashboard({
             <ChevronRight size={16} />
           </small>
         </button>
-      )}
-      {lights.length > 0 && (
+      ),
+    });
+  }
+  if (groups.lighting.length) {
+    const open = openPanel("lighting");
+    cards.push({
+      id: "lighting",
+      title: titles.lighting,
+      openDetails: open,
+      content: (
         <GridLightingCard
           home={home}
           lang={lang}
           offline={offline}
-          open={() => setPanel("lights")}
+          open={open}
         />
-      )}
-      {media && (
+      ),
+    });
+  }
+  if (media) {
+    const open = openPanel("media");
+    cards.push({
+      id: "media",
+      entityId: media.entity_id,
+      title: titles.media,
+      openDetails: open,
+      content: (
         <div className="simple-dashboard-media">
           <MediaCard
             c={media}
@@ -229,19 +341,37 @@ export function SimpleDashboard({
             lang={lang}
             offline={offline}
             photo={homeAsset("home-multimedia")}
-            overview={true}
+            overview
+            openOverview={open}
           />
         </div>
-      )}
-      {climate && (
+      ),
+    });
+  }
+  if (climate) {
+    const open = openPanel("climate");
+    cards.push({
+      id: "climate",
+      entityId: climate.entity_id,
+      title: titles.climate,
+      openDetails: open,
+      content: (
         <HarmonyDevices
           controls={[climate]}
           home={home}
           lang={lang}
           offline={offline}
+          overview={{ title: titles.climate, open }}
         />
-      )}
-      {vacuum && (
+      ),
+    });
+  }
+  if (vacuum) {
+    cards.push({
+      id: "vacuum",
+      entityId: vacuum.entity_id,
+      title: vacuum.name,
+      content: (
         <div className="simple-dashboard-vacuum">
           <VacuumCard
             c={vacuum}
@@ -251,105 +381,94 @@ export function SimpleDashboard({
             simple
           />
         </div>
-      )}
-    </>
-  );
-  const titles = [
-    t("Været nå", "Weather now"),
-    t("Kalender", "Calendar"),
-    t("Lys i hjemmet", "Home lighting"),
-    media?.name || "",
-    climate?.name || "",
-    vacuum?.name || "",
-  ];
-  const ids = ["weather", "calendar", "lighting", "media", "climate", "vacuum"];
-  const enabled = [
-    showWeather && weather,
-    !home.permissions || home.permissions.includes("calendar.view"),
-    lights.length > 0,
-    media,
-    climate,
-    vacuum,
-  ];
-  const indices = enabled.flatMap((value, index) => (value ? [index] : []));
-  const cards = Children.toArray(tiles.props.children).map(
-    (content, index) => ({
-      id: ids[indices[index]],
-      entityId: [weather, undefined, undefined, media, climate, vacuum][
-        indices[index]
-      ]?.entity_id,
-      title: titles[indices[index]],
-      content,
-    }),
-  );
+      ),
+    });
+  }
+  for (const [kind, Icon, icon] of [
+    ["climate", Thermometer, "climate"],
+    ["locks", LockKeyhole, "lock"],
+    ["covers", Blinds, "cover"],
+    ["readings", Thermometer, "temperature"],
+  ] as const) {
+    if (!groups[kind].length || (kind === "climate" && climate)) continue;
+    const count = groups[kind].length;
+    const noun = t(
+      count === 1 ? "enhet" : "enheter",
+      count === 1 ? "device" : "devices",
+    );
+    const open = openPanel(kind);
+    cards.push({
+      id: kind,
+      title: titles[kind],
+      openDetails: open,
+      summary: { reading: `${count} ${noun}`, detail: "", icon },
+      content: (
+        <button
+          type="button"
+          className="overview-category-card"
+          aria-label={titles[kind]}
+          aria-haspopup="dialog"
+          onClick={open}
+        >
+          <span className="simple-dashboard-card-heading">
+            <CardIcon fallback={Icon} size={23} />
+            <span>
+              <CardTitle>{titles[kind]}</CardTitle>
+            </span>
+            <ChevronRight size={18} aria-hidden="true" />
+          </span>
+          <span className="overview-category-count">
+            <strong>{count}</strong> {noun}
+          </span>
+        </button>
+      ),
+    });
+  }
+
   return (
     <>
-      {renderCards(cards)}
+      {renderCards(cards, openReadings)}
       {panel && (
         <SettingsDialog
-          title={
-            panel === "calendar"
-              ? t("Kalender", "Calendar")
-              : t("Lys i hjemmet", "Home lighting")
-          }
+          title={titles[panel]}
           lang={lang}
-          onClose={() => setPanel(null)}
+          compact={panel !== "calendar"}
+          onClose={closePanel}
         >
           {panel === "calendar" ? (
             <Calendar lang={lang} offline={offline} />
           ) : (
-            <div className="simple-dashboard-light-list">
-              {home.areas
-                .concat({ area_id: "", name: t("Uten rom", "No room") })
-                .map((a) => {
-                  const items = lights.filter(
-                    (c) =>
-                      (home.areas.some((r) => r.area_id === c.area_id)
-                        ? c.area_id
-                        : "") === a.area_id,
-                  );
-                  return items.length ? (
-                    <section key={a.area_id}>
-                      <h3>{a.name}</h3>
-                      {items.map((c) => (
-                        <button key={c.id} onClick={() => setSelected(c.id)}>
-                          <Lightbulb size={20} />
-                          <strong>{c.name}</strong>
-                          <span>
-                            {offline || c.availability !== "available"
-                              ? t("Utilgjengelig", "Unavailable")
-                              : c.state === "on"
-                                ? t("På", "On")
-                                : t("Av", "Off")}
-                          </span>
-                          <ChevronRight size={18} />
-                        </button>
-                      ))}
-                    </section>
-                  ) : null;
-                })}
-            </div>
+            <>
+              {panel === "lighting" && (
+                <div className="overview-lighting-bulk">
+                  <GridLightingCard
+                    home={home}
+                    lang={lang}
+                    offline={offline || !home.connected}
+                    compact
+                  />
+                </div>
+              )}
+              <OverviewDeviceList
+                kind={panel}
+                controls={groups[panel]}
+                home={home}
+                lang={lang}
+                offline={offline}
+                onSelect={(c) => setSelected(c.id)}
+              />
+            </>
           )}
-          {active && render && (
+          {device && render && (
             <SettingsDialog
-              title={active.name}
+              title={device.name}
               presentation="device"
               lang={lang}
               onClose={() => setSelected(null)}
             >
-              {render(active)}
+              {render(device)}
             </SettingsDialog>
           )}
-        </SettingsDialog>
-      )}
-      {!panel && active && render && (
-        <SettingsDialog
-          title={active.name}
-          presentation="device"
-          lang={lang}
-          onClose={() => setSelected(null)}
-        >
-          {render(active)}
         </SettingsDialog>
       )}
     </>

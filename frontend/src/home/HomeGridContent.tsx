@@ -31,6 +31,7 @@ export function HomeGridContent({
   lightStyle,
   mobile,
   phoneContent,
+  openDetails,
 }: {
   children: ReactNode;
   title: string;
@@ -41,6 +42,7 @@ export function HomeGridContent({
   lightStyle?: CSSProperties;
   mobile?: MobileCardProps;
   phoneContent?: (open: () => void) => ReactNode;
+  openDetails?: () => void;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -90,13 +92,14 @@ export function HomeGridContent({
     };
   }, [children, editing, !!mobile]);
   useEffect(() => expand(false), [!!mobile]);
+  const open = openDetails || (() => expand(true));
 
   return (
     <>
       {mobile && phoneContent ? (
-        phoneContent(() => expand(true))
+        phoneContent(open)
       ) : mobile ? (
-        <MobileCardTile {...mobile} onOpen={() => expand(true)} />
+        <MobileCardTile {...mobile} onOpen={open} />
       ) : (
         <div
           ref={viewport}
@@ -127,7 +130,7 @@ export function HomeGridContent({
             <button
               className="home-canvas-expand"
               aria-label={`${lang === "en" ? "Show full card" : "Vis hele kortet"}: ${title}`}
-              onClick={() => expand(true)}
+              onClick={open}
             >
               <span>
                 <Maximize2 size={15} aria-hidden="true" />

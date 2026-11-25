@@ -44,6 +44,7 @@ export function MediaCard({
   lang,
   offline,
   overview = false,
+  openOverview,
 }: {
   c: Control;
   home: Home;
@@ -51,6 +52,7 @@ export function MediaCard({
   offline: boolean;
   photo: string;
   overview?: boolean;
+  openOverview?: () => void;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const qc = useQueryClient();
@@ -161,12 +163,16 @@ export function MediaCard({
         )}
         <div className="media-art">
           <div>
-            {!inDialog && renderDevice ? (
+            {openOverview || (!inDialog && renderDevice) ? (
               <button
                 className="media-open-device"
-                aria-label={`${t("Åpne", "Open")} ${c.name}`}
+                aria-label={
+                  openOverview
+                    ? t("Multimedia", "Media")
+                    : `${t("Åpne", "Open")} ${c.name}`
+                }
                 aria-haspopup="dialog"
-                onClick={() => setOpened(true)}
+                onClick={openOverview || (() => setOpened(true))}
               >
                 <CardTitle>
                   {overview ? t("Multimedia", "Media") : c.name}

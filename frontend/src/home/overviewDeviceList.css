@@ -1,0 +1,208 @@
+.overview-device-list {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-device-list-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.overview-device-list-heading {
+  margin: 10px 3px 1px;
+}
+
+.overview-device-list-heading:first-child {
+  margin-top: 0;
+}
+
+.overview-device-list-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.overview-device-list-heading[data-section="true"] {
+  margin: 15px 0 0;
+  padding: 13px 3px 0;
+  border-top: 1px solid var(--line);
+}
+
+.overview-device-list-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.overview-device-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 75%, var(--soft));
+}
+
+.overview-device-list-row[data-active="true"] {
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+.overview-device-list-row .overview-device-list-open,
+.overview-device-list-row .overview-device-list-power {
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+}
+
+.overview-device-list-row .overview-device-list-open {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto 14px;
+  align-items: center;
+  gap: clamp(5px, 1.6vw, 10px);
+  min-width: 0;
+  min-height: 51px;
+  margin: 0;
+  padding: 4px 8px;
+  text-align: start;
+}
+
+.overview-device-list-open strong {
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.23;
+  overflow-wrap: anywhere;
+}
+
+.overview-device-list-open > svg:last-child {
+  color: var(--muted);
+}
+
+.overview-device-list-status {
+  justify-self: end;
+  max-width: clamp(76px, 28vw, 180px);
+  color: var(--muted);
+  font-size: 0.81rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+.overview-device-list-status[data-tone="positive"] {
+  color: light-dark(#20663c, #9fe3b7);
+}
+
+.overview-device-list-status[data-tone="warning"] {
+  color: light-dark(#875100, #ffd28f);
+}
+
+.overview-device-list-status[data-tone="negative"] {
+  color: light-dark(#a3312c, #ffaeaa);
+}
+
+.overview-device-list-row .overview-device-list-power {
+  display: grid;
+  place-items: center;
+  min-width: 47px;
+  min-height: 44px;
+  margin: 0 3px 0 0;
+  padding: 0;
+}
+
+.overview-device-list-power > span {
+  display: flex;
+  box-sizing: border-box;
+  width: 37px;
+  height: 22px;
+  padding: 3px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--muted) 31%, var(--line));
+  border-radius: 999px;
+  background: var(--soft);
+}
+
+.overview-device-list-power > span::before {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--muted);
+  content: "";
+}
+
+.overview-device-list-power[aria-checked="true"] > span {
+  justify-content: end;
+  border-color: transparent;
+  background: var(--accent);
+}
+
+.overview-device-list-power[aria-checked="true"] > span::before {
+  background: light-dark(#fff7f1, #45220e);
+}
+
+.overview-device-list-power:disabled {
+  opacity: 0.56;
+}
+
+.overview-device-list-feedback {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0 10px 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.overview-device-list-feedback[role="alert"] {
+  color: light-dark(#a3312c, #ffaeaa);
+}
+
+@media (hover: hover) {
+  .overview-device-list-row
+    :is(.overview-device-list-open, .overview-device-list-power):hover:not(
+      :disabled
+    ) {
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+}
+
+@media (max-width: 400px) {
+  .overview-device-list-row .overview-device-list-open {
+    grid-template-columns: 38px minmax(0, 1fr) 14px;
+    grid-template-areas: "art name arrow" "art status arrow";
+    gap: 2px 6px;
+    padding-inline: 5px;
+  }
+
+  .overview-device-list-open .device-product-art {
+    grid-area: art;
+  }
+
+  .overview-device-list-open strong {
+    grid-area: name;
+    align-self: end;
+  }
+
+  .overview-device-list-status {
+    grid-area: status;
+    align-self: start;
+    justify-self: start;
+    max-width: none;
+    font-size: 0.75rem;
+    text-align: start;
+  }
+
+  .overview-device-list-open > svg:last-child {
+    grid-area: arrow;
+  }
+}
