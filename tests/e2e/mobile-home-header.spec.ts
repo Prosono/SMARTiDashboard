@@ -4,10 +4,12 @@ import {
   type Locator,
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
+import type { Control } from "../../frontend/src/types";
 
 async function openHome(
   page: Page,
   mode: "advanced" | "normal" | "simple" = "advanced",
+  additionalControls: Control[] = [],
 ) {
   await page.route("**/api/home/experience", (route) =>
     route.fulfill({ json: { mode } }),
@@ -17,7 +19,11 @@ async function openHome(
     const home = await response.json();
     await route.fulfill({
       response,
-      json: { ...home, home_name: "Testboligen" },
+      json: {
+        ...home,
+        home_name: "Testboligen",
+        controls: [...home.controls, ...additionalControls],
+      },
     });
   });
   await page.goto("/");
@@ -212,4 +218,86 @@ test("the SMARTi logo opens My homes, with the current home and the portal fallb
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(logo).toBeFocused();
+});
+
+test("search and alert headers stay within the safe area on a short phone screen", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== "chromium",
+    "Safe area emulation requires Chromium.",
+  );
+  await page.setViewportSize({ width: 393, height: 844 });
+  const alerts: Control[] = Array.from({ length: 12 }, (_, index) => {
+    const id = `binary_sensor.phone_alert_${index}`;
+    return {
+      id,
+      entity_id: id,
+      device_id: null,
+      area_id: "living",
+      name: `Røykvarsler ${index + 1}`,
+      domain: "binary_sensor",
+      state: "on",
+      attributes: { device_class: "smoke" },
+      capabilities: [],
+      availability: "available",
+      updated_at: null,
+      integration: null,
+      diagnostic: false,
+    };
+  });
+  await openHome(page, "advanced", alerts);
+  const cdp = await page.context().newCDPSession(page);
+  const height = 420;
+  for (const { width, top, bottom } of [
+    { width: 320, top: 0, bottom: 0 },
+    { width: 393, top: 59, bottom: 34 },
+  ]) {
+    await page.setViewportSize({ width, height });
+    await cdp.send("Emulation.setSafeAreaInsetsOverride", {
+      insets: { top, bottom },
+    });
+
+    for (const { trigger, title, closeLabel } of [
+      {
+        trigger: "Søk etter enheter",
+        title: "Søk etter enheter",
+        closeLabel: "Lukk søk",
+      },
+      {
+        trigger: /^Trenger din oppmerksomhet:/,
+        title: "Trenger din oppmerksomhet",
+        closeLabel: "Lukk innstillinger",
+      },
+    ]) {
+      await page.getByRole("button", { name: trigger }).click();
+      const dialog = page.getByRole("dialog", { name: title, exact: true });
+      const heading = dialog.getByRole("heading", { name: title, exact: true });
+      const close = dialog.getByRole("button", {
+        name: closeLabel,
+        exact: true,
+      });
+      await expect(dialog).toBeVisible();
+
+      const bounds = (await dialog.boundingBox())!;
+      expect(bounds.y).toBeGreaterThanOrEqual(Math.max(32, top + 12) - 1);
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(
+        height - bottom - 11,
+      );
+
+      const scrollTop = await dialog
+        .locator(".dashboard-settings-content")
+        .evaluate((content) => {
+          content.scrollTop = content.scrollHeight;
+          return content.scrollTop;
+        });
+      expect(scrollTop).toBeGreaterThan(0);
+      await expect(heading).toBeInViewport({ ratio: 1 });
+      await expect(close).toBeInViewport({ ratio: 1 });
+      await close.click();
+      await expect(dialog).toBeHidden();
+    }
+  }
+  await cdp.detach();
 });

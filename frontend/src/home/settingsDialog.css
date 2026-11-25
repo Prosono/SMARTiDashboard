@@ -111,6 +111,17 @@
   }
 }
 
+@media (max-width: 650px), (max-height: 500px) and (pointer: coarse) {
+  .dashboard-settings-dialog[data-phone-safe-area][open] {
+    --phone-dialog-top: max(32px, calc(env(safe-area-inset-top, 0px) + 12px));
+    --phone-dialog-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    inset-block: var(--phone-dialog-top) var(--phone-dialog-bottom);
+    max-height: calc(
+      100dvh - var(--phone-dialog-top) - var(--phone-dialog-bottom)
+    );
+  }
+}
+
 .dashboard-settings-dialog[data-compact] {
   width: min(600px, calc(100vw - 24px));
 }

@@ -17,6 +17,7 @@ export function SettingsDialog({
   lang,
   busy = false,
   compact = false,
+  phoneSafeArea = false,
   presentation = "settings",
   onClose,
   children,
@@ -25,6 +26,7 @@ export function SettingsDialog({
   lang: string;
   busy?: boolean;
   compact?: boolean;
+  phoneSafeArea?: boolean;
   presentation?: "settings" | "device" | "search";
   onClose: () => void;
   children: ReactNode;
@@ -52,6 +54,7 @@ export function SettingsDialog({
       ref={ref}
       className="dashboard-settings-dialog"
       data-compact={compact || undefined}
+      data-phone-safe-area={phoneSafeArea || undefined}
       data-presentation={presentation === "settings" ? undefined : presentation}
       aria-labelledby={heading}
       aria-busy={busy}

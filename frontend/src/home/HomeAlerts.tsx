@@ -51,6 +51,7 @@ export function HomeAlertsDialog({
       title={t("Trenger din oppmerksomhet", "Needs your attention")}
       lang={lang}
       compact
+      phoneSafeArea
       onClose={onClose}
     >
       {offline && (

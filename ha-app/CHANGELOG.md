@@ -1,3 +1,6 @@
+## 1.36.174
+- Søke- og varselvinduene ligger under statuslinjen på mobil. Tittel og lukkeknapp forblir synlige mens innholdet ruller.
+
 ## 1.36.173
 - Søk på mobil finner enheter etter navn eller rom direkte fra Oversikt i Enkel, Normal og Avansert modus.
 - Åpne enhetskontrollen fra trefflisten. Søk og treff beholdes når kontrollen lukkes.

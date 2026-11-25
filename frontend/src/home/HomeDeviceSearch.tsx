@@ -50,6 +50,7 @@ export function HomeDeviceSearch({
       title={en ? "Search devices" : "Søk etter enheter"}
       lang={lang}
       compact
+      phoneSafeArea
       presentation="search"
       onClose={onClose}
     >
