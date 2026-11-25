@@ -869,14 +869,9 @@ function Dashboard({
     page === "more" && settingsSection === "screensaver",
   );
   const [protocol, setProtocol] = useState("all");
-  const [focusDeviceSearch, setFocusDeviceSearch] = useState(false);
-  useEffect(() => {
-    if (page !== "devices") setFocusDeviceSearch(false);
-  }, [page]);
-  function openDeviceWorkspace(focusSearch = false) {
+  function openDeviceWorkspace() {
     setRoom(null);
     setProtocol("all");
-    setFocusDeviceSearch(focusSearch);
     setPage("devices");
   }
   useEffect(() => {
@@ -1125,8 +1120,7 @@ function Dashboard({
               setRoom(id ?? null);
               setPage("rooms");
             }}
-            openDevices={() => openDeviceWorkspace()}
-            openSearch={() => openDeviceWorkspace(true)}
+            openDevices={openDeviceWorkspace}
           />
         ) : page === "rooms" && room !== null ? (
           <RoomView
@@ -1160,7 +1154,6 @@ function Dashboard({
             protocol={protocol}
             selectProtocol={setProtocol}
             pairedDevice={pairedDevice}
-            focusSearch={focusDeviceSearch}
             add={() => setAdding(true)}
           />
         ) : page === "logbook" ? (

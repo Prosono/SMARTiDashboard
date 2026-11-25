@@ -101,8 +101,11 @@ export function HomePageToolButtons({
             type="button"
             className="home-toolbar-tool home-search-tool phone-overview-search"
             aria-label={en ? "Search devices" : "Søk etter enheter"}
-            data-home-grid-leave
-            onClick={openSearch}
+            aria-haspopup="dialog"
+            onClick={(event) => {
+              event.currentTarget.focus({ preventScroll: true });
+              openSearch();
+            }}
           >
             <Search size={20} aria-hidden="true" />
           </button>

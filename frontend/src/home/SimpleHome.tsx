@@ -9,11 +9,10 @@ import { batteryAlerts } from "./homeModel";
 import { HomeBannerless } from "./CategoryIntro";
 import { HomePageTools, useHomePageTools } from "./HomePageTools";
 import { HomeToolbar } from "./HomeToolbar";
-import { SettingsDialog } from "./SettingsDialog";
 import { homeAsset, roomMood } from "./HomeOverview";
 import { Multimedia } from "./Multimedia";
 import { SecurityOverview } from "./SecurityOverview";
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { House, Search, Star } from "lucide-react";
 import type { Home, Control } from "../types";
 export function SimpleHome({
@@ -34,15 +33,10 @@ export function SimpleHome({
     [search, setSearch] = useState(""),
     [limit, setLimit] = useState(4);
   const [showAlerts, setShowAlerts] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const searchInput = useRef<HTMLInputElement>(null);
   const [view, setView] = useState<"devices" | "misc" | "media" | "security">(
     "devices",
   );
   const tools = useHomePageTools();
-  useLayoutEffect(() => {
-    if (showSearch) searchInput.current?.focus();
-  }, [showSearch]);
   const controls = home.controls.filter(
     (c) =>
       !c.diagnostic &&
@@ -93,7 +87,6 @@ export function SimpleHome({
     security: en ? "Security" : "Sikkerhet",
   };
   function openSubview(next: typeof view) {
-    setShowSearch(false);
     setView(next);
   }
   const toolbar = (
@@ -104,16 +97,9 @@ export function SimpleHome({
       date={new Date()}
       alerts={alerts.length}
       tools={tools}
+      offline={offline}
       openAlerts={() => setShowAlerts(true)}
-      openSearch={
-        view === "devices"
-          ? () => {
-              setRoom("all");
-              setLimit(8);
-              setShowSearch(true);
-            }
-          : undefined
-      }
+      searchDevices={view === "devices"}
       LocationIcon={House}
     />
   );
@@ -161,7 +147,7 @@ export function SimpleHome({
         </HomeBannerless.Provider>
       </HomePageTools.Provider>
     );
-  const browse = (focusSearch = false) => (
+  const browse = () => (
     <details className="simple-dashboard-browse" open={true}>
       <summary>{en ? "Rooms and all devices" : "Rom og alle enheter"}</summary>
       {room === "welcome" && !search && (
@@ -241,7 +227,6 @@ export function SimpleHome({
           <Search size={19} />
           {en ? "Find a device" : "Finn en enhet"}
           <input
-            ref={focusSearch ? searchInput : undefined}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -309,15 +294,6 @@ export function SimpleHome({
             </p>
           )}
           {alertDialog}
-          {showSearch && (
-            <SettingsDialog
-              title={en ? "Search devices" : "Søk etter enheter"}
-              lang={lang}
-              onClose={() => setShowSearch(false)}
-            >
-              {browse(true)}
-            </SettingsDialog>
-          )}
 
           <SimpleDashboard
             home={home}

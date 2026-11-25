@@ -9,6 +9,7 @@ import {
 } from "../deviceWorkspaceModel";
 import type { Control, Home } from "../types";
 import { DeviceArtwork } from "./DeviceArtwork";
+import { deviceName } from "./deviceMetadata";
 import { finiteReading, lightPercentage } from "./equipmentModel";
 import { usable } from "./homeModel";
 import "./overviewDeviceList.css";
@@ -20,7 +21,7 @@ type ListProps = {
   home: Home;
   lang: string;
   offline: boolean;
-  kind: OverviewDeviceKind;
+  kind: OverviewDeviceKind | "search";
   controls: readonly Control[];
   onSelect: (control: Control) => void;
 };
@@ -141,6 +142,9 @@ export function OverviewDeviceList({
             control={entry.control}
             lang={lang}
             offline={disconnected}
+            deviceLabel={
+              kind === "search" ? deviceName(entry.control, home) : undefined
+            }
             adjustable={lighting && entry.control.domain === "light"}
             permitted={permitted}
             onSelect={onSelect}
@@ -168,11 +172,13 @@ function OverviewDeviceRow({
   control,
   lang,
   offline,
+  deviceLabel,
   adjustable,
   permitted,
   onSelect,
 }: Omit<ListProps, "controls" | "kind" | "home"> & {
   control: Control;
+  deviceLabel?: string;
   adjustable: boolean;
   permitted: boolean;
 }) {
@@ -230,14 +236,24 @@ function OverviewDeviceRow({
         aria-label={`${t("Åpne", "Open")} ${control.name}`}
         aria-describedby={`${id}-status`}
         aria-haspopup="dialog"
-        onClick={() => onSelect(control)}
+        onClick={(event) => {
+          event.currentTarget.focus({ preventScroll: true });
+          onSelect(control);
+        }}
       >
         <DeviceArtwork
           c={control}
           available={!offline && usable(control)}
           size={38}
         />
-        <strong>{control.name}</strong>
+        {deviceLabel && deviceLabel !== control.name ? (
+          <span className="overview-device-list-name">
+            <strong>{control.name}</strong>
+            <small>{deviceLabel}</small>
+          </span>
+        ) : (
+          <strong>{control.name}</strong>
+        )}
         <span
           id={`${id}-status`}
           className="overview-device-list-status"

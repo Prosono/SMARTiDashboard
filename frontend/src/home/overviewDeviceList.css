@@ -83,6 +83,18 @@
   overflow-wrap: anywhere;
 }
 
+.overview-device-list-name {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.overview-device-list-name small {
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
 .overview-device-list-open > svg:last-child {
   color: var(--muted);
 }
@@ -188,7 +200,7 @@
     grid-area: art;
   }
 
-  .overview-device-list-open strong {
+  .overview-device-list-open > :is(strong, .overview-device-list-name) {
     grid-area: name;
     align-self: end;
   }

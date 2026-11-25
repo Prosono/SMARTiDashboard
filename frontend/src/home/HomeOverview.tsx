@@ -89,7 +89,6 @@ export function HomeOverview({
   renderControls,
   openRooms,
   openDevices,
-  openSearch,
 }: {
   home: Home;
   offline: boolean;
@@ -98,7 +97,6 @@ export function HomeOverview({
   renderControls: (c: Control[]) => ReactNode;
   openRooms: (id?: string) => void;
   openDevices: () => void;
-  openSearch?: () => void;
 }) {
   const t = (nb: string, en: string) => (lang === "en" ? en : nb);
   const mode = useExperience();
@@ -338,8 +336,9 @@ export function HomeOverview({
               date={clock}
               alerts={model.alerts.length}
               tools={tools}
+              offline={offline}
               openAlerts={() => setShowAlerts(true)}
-              openSearch={tab === "overview" ? openSearch : undefined}
+              searchDevices={tab === "overview"}
             />
             <HomeTabs
               tab={tab}

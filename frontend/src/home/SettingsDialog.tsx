@@ -25,12 +25,18 @@ export function SettingsDialog({
   lang: string;
   busy?: boolean;
   compact?: boolean;
-  presentation?: "settings" | "device";
+  presentation?: "settings" | "device" | "search";
   onClose: () => void;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const heading = useId();
+  const en = lang === "en";
+  const closeLabel = {
+    settings: en ? "Close settings" : "Lukk innstillinger",
+    device: en ? "Close device details" : "Lukk enhetsdetaljer",
+    search: en ? "Close search" : "Lukk søk",
+  }[presentation];
   useLayoutEffect(() => {
     const dialog = ref.current!;
     const overflow = document.body.style.overflow;
@@ -46,7 +52,7 @@ export function SettingsDialog({
       ref={ref}
       className="dashboard-settings-dialog"
       data-compact={compact || undefined}
-      data-presentation={presentation === "device" ? presentation : undefined}
+      data-presentation={presentation === "settings" ? undefined : presentation}
       aria-labelledby={heading}
       aria-busy={busy}
       tabIndex={-1}
@@ -103,15 +109,7 @@ export function SettingsDialog({
           type="button"
           disabled={busy}
           onClick={onClose}
-          aria-label={
-            presentation === "device"
-              ? lang === "en"
-                ? "Close device details"
-                : "Lukk enhetsdetaljer"
-              : lang === "en"
-                ? "Close settings"
-                : "Lukk innstillinger"
-          }
+          aria-label={closeLabel}
         >
           <X size={21} aria-hidden="true" />
         </button>
@@ -123,7 +121,7 @@ export function SettingsDialog({
       </div>
     </dialog>
   );
-  return presentation === "device"
-    ? createPortal(dialog, document.body)
-    : dialog;
+  return presentation === "settings"
+    ? dialog
+    : createPortal(dialog, document.body);
 }

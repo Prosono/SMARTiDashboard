@@ -1,5 +1,7 @@
 import { Bell, MapPin, TriangleAlert, type LucideIcon } from "lucide-react";
+import { useState } from "react";
 import type { Home } from "../types";
+import { HomeDeviceSearch } from "./HomeDeviceSearch";
 import { HomePageToolButtons, type useHomePageTools } from "./HomePageTools";
 import { MobileHomeSwitcher } from "./MobileHomeSwitcher";
 import "./homeToolbar.css";
@@ -11,8 +13,9 @@ export function HomeToolbar({
   date,
   alerts,
   tools,
+  offline,
   openAlerts,
-  openSearch,
+  searchDevices,
   LocationIcon = MapPin,
 }: {
   home: Home;
@@ -21,12 +24,14 @@ export function HomeToolbar({
   date: Date;
   alerts: number;
   tools: ReturnType<typeof useHomePageTools>;
+  offline: boolean;
   openAlerts: () => void;
-  openSearch?: () => void;
+  searchDevices: boolean;
   LocationIcon?: LucideIcon;
 }) {
   const en = lang === "en";
   const alertLabel = en ? "Show alerts" : "Vis varsler";
+  const [searchOpen, setSearchOpen] = useState(false);
   return (
     <header className="home-toolbar">
       <div className="home-location">
@@ -48,7 +53,7 @@ export function HomeToolbar({
         <HomePageToolButtons
           tools={tools}
           lang={lang}
-          openSearch={openSearch}
+          openSearch={searchDevices ? () => setSearchOpen(true) : undefined}
           alert={
             <button
               type="button"
@@ -70,6 +75,14 @@ export function HomeToolbar({
           }
         />
       </div>
+      {searchDevices && searchOpen && (
+        <HomeDeviceSearch
+          home={home}
+          lang={lang}
+          offline={offline}
+          onClose={() => setSearchOpen(false)}
+        />
+      )}
     </header>
   );
 }

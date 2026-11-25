@@ -5,7 +5,10 @@ import {
   type Page,
 } from "../../frontend/node_modules/@playwright/test";
 
-async function openHome(page: Page, mode: "advanced" | "simple" = "advanced") {
+async function openHome(
+  page: Page,
+  mode: "advanced" | "normal" | "simple" = "advanced",
+) {
   await page.route("**/api/home/experience", (route) =>
     route.fulfill({ json: { mode } }),
   );
@@ -116,38 +119,77 @@ test("the compact home header fits in one row and keeps category search", async 
   await expect(toolbar.locator(".mobile-home-switcher")).toBeHidden();
   await expect(toolbar.locator(".home-date")).toBeVisible();
   await expect(toolbar.getByText("Testboligen", { exact: true })).toBeVisible();
+});
 
-  await page.setViewportSize({ width: 393, height: 844 });
-  await page.getByRole("tab", { name: "Oversikt", exact: true }).click();
-  await toolbar
-    .getByRole("button", { name: "Søk etter enheter", exact: true })
-    .click();
-  await expectFocusedPhoneSearch(
-    page.getByRole("searchbox", {
-      name: "Søk etter kontroll eller rom",
+for (const mode of ["advanced", "normal", "simple"] as const) {
+  test(`the compact header finds and opens devices from the overview in ${mode} mode`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 393, height: 844 });
+    await openHome(page, mode);
+    const overview = page.locator(
+      mode === "simple" ? ".simple-home-dashboard" : ".home-overview",
+    );
+    const search = overview.getByRole("button", {
+      name: "Søk etter enheter",
       exact: true,
-    }),
-  );
-});
+    });
 
-test("the compact header opens readable phone search in simple mode", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 393, height: 844 });
-  await openHome(page, "simple");
-  const search = page.getByRole("button", {
-    name: "Søk etter enheter",
-    exact: true,
+    await search.click();
+    const dialog = page.getByRole("dialog", {
+      name: "Søk etter enheter",
+      exact: true,
+    });
+    const input = dialog.getByRole("searchbox", {
+      name: "Finn en enhet",
+      exact: true,
+    });
+    const result = dialog.getByRole("button", {
+      name: "Åpne Pendellampe",
+      exact: true,
+    });
+    await expectFocusedPhoneSearch(input);
+
+    await input.fill("Stue");
+    await expect(result).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Åpne Kjøkkenbenk", exact: true }),
+    ).toHaveCount(0);
+    await input.fill("pendellampe");
+    await expect(result).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Åpne Gulvlampe", exact: true }),
+    ).toHaveCount(0);
+    await result.click();
+
+    const device = page.getByRole("dialog", {
+      name: "Pendellampe",
+      exact: true,
+    });
+    await expect(device).toBeVisible();
+    await expect(page.locator(".devices-page")).toHaveCount(0);
+    await device
+      .getByRole("button", { name: "Lukk enhetsdetaljer", exact: true })
+      .click();
+    await expect(device).toBeHidden();
+    await expect(dialog).toBeVisible();
+    await expect(input).toHaveValue("pendellampe");
+    await expect(result).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(search).toBeFocused();
+    if (mode === "simple") {
+      await expect(
+        overview.getByRole("heading", { name: "Oversikt", exact: true }),
+      ).toBeVisible();
+    } else {
+      await expect(
+        overview.getByRole("tab", { name: "Oversikt", exact: true }),
+      ).toHaveAttribute("aria-selected", "true");
+    }
   });
-  await search.click();
-  const dialog = page.getByRole("dialog", {
-    name: "Søk etter enheter",
-    exact: true,
-  });
-  await expectFocusedPhoneSearch(
-    dialog.getByRole("textbox", { name: "Finn en enhet", exact: true }),
-  );
-});
+}
 
 test("the SMARTi logo opens My homes, with the current home and the portal fallback", async ({
   page,

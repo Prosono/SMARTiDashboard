@@ -1,11 +1,4 @@
-import {
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -28,6 +21,8 @@ import {
   deviceWorkspaceRoomId,
   deviceWorkspaceStatus,
   deviceWorkspaceNetworkProviders,
+  deviceWorkspaceSearch,
+  isDeviceWorkspaceControl,
 } from "./deviceWorkspaceModel";
 import { ClimateOverview } from "./home/ClimateOverview";
 import { DeviceArtwork } from "./home/DeviceArtwork";
@@ -102,7 +97,6 @@ export function DevicesPage({
   selectProtocol,
   pairedDevice,
   add,
-  focusSearch = false,
 }: {
   home: Home;
   lang: string;
@@ -112,7 +106,6 @@ export function DevicesPage({
   selectProtocol: (value: string) => void;
   pairedDevice: PairedDevice | null;
   add: () => void;
-  focusSearch?: boolean;
 }) {
   const english = lang === "en";
   const t = (norwegian: string, englishText: string) =>
@@ -133,11 +126,6 @@ export function DevicesPage({
   const [commandId, setCommand] = useState<string | null>(null);
   const [setup, setSetup] = useState<Discovery | "network" | null>(null);
   const list = useRef<HTMLUListElement>(null);
-  const searchInput = useRef<HTMLInputElement>(null);
-
-  useLayoutEffect(() => {
-    if (focusSearch) searchInput.current?.focus();
-  }, [focusSearch]);
 
   useEffect(() => {
     const screen = matchMedia(mobileQuery);
@@ -150,13 +138,7 @@ export function DevicesPage({
   }, []);
 
   const controls = useMemo(
-    () =>
-      home.controls.filter(
-        (control) =>
-          !control.diagnostic &&
-          control.domain !== "automation" &&
-          !control.attributes.smarti_hidden,
-      ),
+    () => home.controls.filter(isDeviceWorkspaceControl),
     [home.controls],
   );
   const availableProtocol =
@@ -178,40 +160,16 @@ export function DevicesPage({
     [categoryControls],
   );
   const filtered = useMemo(() => {
-    const terms = search
-      .trim()
-      .toLocaleLowerCase(l10n)
-      .split(/\s+/)
-      .filter(Boolean);
+    const matches = deviceWorkspaceSearch(home, lang, search, networkProviders);
     const kind = deviceTypes.find(({ id }) => id === type)?.domains;
     return categoryControls.filter((control) => {
       if (kind && !(kind as readonly string[]).includes(control.domain))
         return false;
       if (room !== "*" && deviceWorkspaceRoomId(control, home) !== room)
         return false;
-      if (!terms.length) return true;
-      const name = [
-        control.name,
-        deviceName(control, home),
-        deviceWorkspaceRoom(control, home, lang),
-        networkProviders.get(control.id),
-        control.integration && integrationName(control.integration),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLocaleLowerCase(l10n);
-      return terms.every((term) => name.includes(term));
+      return matches(control);
     });
-  }, [
-    categoryControls,
-    home,
-    l10n,
-    lang,
-    networkProviders,
-    room,
-    search,
-    type,
-  ]);
+  }, [categoryControls, home, lang, networkProviders, room, search, type]);
   const pageSize = mobile ? phonePageSize : CONTROL_PAGE_SIZE;
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const page = Math.min(requestedPage, pages - 1);
@@ -501,7 +459,6 @@ export function DevicesPage({
                 <label className="devices-search">
                   <Search size={18} aria-hidden="true" />
                   <input
-                    ref={searchInput}
                     type="search"
                     value={search}
                     onChange={(event) => {

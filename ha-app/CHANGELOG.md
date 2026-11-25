@@ -1,3 +1,7 @@
+## 1.36.173
+- Søk på mobil finner enheter etter navn eller rom direkte fra Oversikt i Enkel, Normal og Avansert modus.
+- Åpne enhetskontrollen fra trefflisten. Søk og treff beholdes når kontrollen lukkes.
+
 ## 1.36.172
 - Mobilens toppfelt går i ett med bakgrunnen i appen.
 - Trykk på søkeikonet åpner søkefeltet uten automatisk innzooming på iPhone.

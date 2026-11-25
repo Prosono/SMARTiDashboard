@@ -1,9 +1,19 @@
+import { integrationName } from "./branding";
 import { controlState } from "./controlState";
+import { deviceName } from "./home/deviceMetadata";
 import { sensorDisplayValue } from "./sensorValueModel";
 import type { Control, Home } from "./types";
 
 const roomNames = new WeakMap<Home["areas"], Map<string, string>>();
 const deviceRooms = new WeakMap<Home["devices"], Map<string, string | null>>();
+
+export function isDeviceWorkspaceControl(control: Control) {
+  return (
+    !control.diagnostic &&
+    control.domain !== "automation" &&
+    !control.attributes.smarti_hidden
+  );
+}
 
 // These integrations reach devices over the local network. HA's integration
 // metadata does not distinguish the device's Wi-Fi and Ethernet links.
@@ -63,6 +73,34 @@ export function deviceWorkspaceRoom(
     roomNames.get(home.areas)?.get(id) ||
     (lang === "en" ? "Unassigned" : "Ufordelt")
   );
+}
+
+export function deviceWorkspaceSearch(
+  home: Home,
+  lang: string,
+  query: string,
+  providers: ReadonlyMap<string, string>,
+) {
+  const locale = lang === "en" ? "en-GB" : "nb-NO";
+  const terms = query
+    .trim()
+    .toLocaleLowerCase(locale)
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!terms.length) return () => true;
+  return (control: Control) => {
+    const text = [
+      control.name,
+      deviceName(control, home),
+      deviceWorkspaceRoom(control, home, lang),
+      providers.get(control.id),
+      control.integration && integrationName(control.integration),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLocaleLowerCase(locale);
+    return terms.every((term) => text.includes(term));
+  };
 }
 
 type Tone = "positive" | "negative" | "neutral" | "warning";
