@@ -396,7 +396,6 @@
   margin-top: 5px;
   overflow-wrap: anywhere;
 }
-.flow-edit-footer,
 .flow-edit-arrange {
   display: flex;
   align-items: center;
@@ -404,7 +403,6 @@
   gap: 10px;
   margin-top: 20px;
 }
-.flow-edit-footer button,
 .flow-edit-arrange button {
   display: inline-flex;
   align-items: center;
@@ -422,6 +420,52 @@
   margin-right: auto;
   color: var(--muted);
   font-size: 12px;
+}
+.flow-designer .dashboard-settings-dialog[data-presentation="flow-step"] {
+  width: min(640px, calc(100vw - 16px));
+}
+.flow-designer .dashboard-settings-dialog[data-presentation="flow-step"]::backdrop {
+  background: #07101580;
+  backdrop-filter: none;
+}
+.flow-designer [data-presentation="flow-step"] .dashboard-settings-heading h2 {
+  margin: 0;
+}
+[data-presentation="flow-step"] .flow-edit-summary {
+  border-radius: 12px;
+}
+.dashboard-settings-dialog[data-presentation="flow-step"] .flow-form-section {
+  padding: 0 0 20px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+[data-presentation="flow-step"] .flow-inspector .flow-form-section:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+[data-presentation="flow-step"] .dashboard-settings-footer {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 26px;
+  border-top: 1px solid var(--line);
+}
+[data-presentation="flow-step"] .dashboard-settings-footer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+[data-presentation="flow-step"] .dashboard-settings-footer svg {
+  flex-shrink: 0;
 }
 .flow-library-intro {
   display: grid;
@@ -575,9 +619,12 @@
   .dashboard-settings-dialog .flow-card-library {
     grid-template-columns: 1fr;
   }
-  .flow-edit-footer button {
+  [data-presentation="flow-step"] .dashboard-settings-footer {
+    padding-inline: 18px;
+  }
+  [data-presentation="flow-step"] .dashboard-settings-footer button {
     flex: 1;
-    justify-content: center;
+    min-width: 0;
   }
 }
 .blueprint-preview {
@@ -1008,7 +1055,6 @@
     flex-shrink: 0;
   }
 }
-/* A focused editing workspace, with a native non-modal desktop inspector. */
 .flow-editor-shell {
   min-width: 0;
 }
@@ -1029,53 +1075,6 @@
   outline-color: var(--node-color);
 }
 @media (min-width: 1200px) {
-  .flow-editor-shell {
-    position: relative;
-  }
-  .flow-editor-shell.has-step-panel {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: 0;
-    align-items: start;
-  }
-  .flow-editor-shell > .flow-workspace {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .flow-editor-shell > .flow-board {
-    grid-column: 1/-1;
-  }
-  .flow-editor-shell > .flow-step-panel {
-    position: relative;
-    inset: auto;
-    display: block;
-    grid-column: 2;
-    grid-row: 1;
-    width: 100%;
-    max-width: none;
-    max-height: 850px;
-    margin: 0;
-    border: 1px solid var(--line);
-    border-radius: 0 14px 14px 0;
-    box-shadow: none;
-    overflow: auto;
-  }
-  .flow-step-panel .dashboard-settings-heading {
-    padding: 18px;
-  }
-  .flow-step-panel .dashboard-settings-content {
-    padding: 18px;
-  }
-  .flow-step-panel .flow-edit-summary {
-    padding: 12px;
-    gap: 10px;
-  }
-  .flow-step-panel .flow-edit-summary strong {
-    font-size: 16px;
-  }
-  .flow-step-panel .form-grid {
-    grid-template-columns: 1fr;
-  }
   .flow-designer .flow-intro {
     grid-template-columns: minmax(220px, 1fr) 1fr;
   }
@@ -1529,13 +1528,6 @@
   .flow-designer.canvas-expanded .canvas-viewport {
     min-height: 0;
     height: 100%;
-  }
-  .flow-designer.canvas-expanded .flow-step-panel {
-    height: 100%;
-    max-height: 100%;
-  }
-  .flow-designer.canvas-expanded .flow-editor-shell.has-step-panel {
-    align-items: stretch;
   }
 }
 @media (max-width: 999px) {

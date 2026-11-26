@@ -1,3 +1,7 @@
+## 1.36.176
+- Trykk på en hendelse, et vilkår eller en handling i Flow for å åpne steginnstillingene i en popup på mobil, nettbrett og desktop.
+- Fullfør eller forkast endringer i steget fra knappene nederst i vinduet.
+
 ## 1.36.175
 - Hovedsidene bruker samme kompakte toppfelt på mobil, med hjemvelger, sidetittel og varsler.
 - Søkeikonet åpner søk på aktiv side eller fane, blant annet for rom, enheter, automasjoner, utvidelser og oppdateringer.

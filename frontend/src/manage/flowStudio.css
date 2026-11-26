@@ -538,26 +538,6 @@
   color: var(--surface);
   border-color: var(--accent);
 }
-.flow-designer .flow-step-panel .flow-edit-summary {
-  border-radius: 10px;
-  background: var(--soft);
-  box-shadow: none;
-}
-.flow-designer .flow-step-panel .flow-form-section {
-  padding: 0 0 20px;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  background: transparent;
-}
-.flow-designer .flow-step-panel .flow-form-section:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
-}
-.flow-designer .flow-step-panel .flow-form-explanation {
-  padding: 12px;
-  border-radius: 9px;
-}
 .flow-designer.canvas-expanded .flow-studio {
   grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
   border-radius: 0;

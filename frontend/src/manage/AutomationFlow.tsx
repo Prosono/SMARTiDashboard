@@ -1,7 +1,6 @@
 import { Feedback } from "./shared";
 import { flowLibraryIcon } from "./flowLibraryIcon";
 import { FlowArtwork } from "./FlowArtwork";
-import { FlowStepPanel } from "./FlowStepPanel";
 import { flowCategories } from "./flowPresets";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -346,9 +345,7 @@ export function AutomationFlow({
         )}
       </div>
       {view === "canvas" && expanded && <Feedback message={saveMessage} />}
-      <div
-        className={`flow-editor-shell ${view === "canvas" && selected ? "has-step-panel" : ""}`}
-      >
+      <div className="flow-editor-shell">
         {view === "canvas" && (
           <FlowCanvas
             testMode={testMode}
@@ -584,11 +581,40 @@ export function AutomationFlow({
           </SettingsDialog>
         )}
         {selected && row !== undefined && (
-          <FlowStepPanel
-            docked={view === "canvas"}
+          <SettingsDialog
+            presentation="flow-step"
+            phoneSafeArea
             title={t("Tilpass steget", "Customize step")}
             lang={lang}
             onClose={close}
+            footer={
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (stepNew && Array.isArray(parent))
+                      replace(
+                        selected.slice(0, -1),
+                        parent.filter((_: any, i: number) => i !== index),
+                      );
+                    else replace(selected, stepOriginal);
+                    setSelected(null);
+                    setValid(true);
+                  }}
+                >
+                  {t("Forkast endringer i steget", "Discard step changes")}
+                </button>
+                <button
+                  type="button"
+                  className="primary compact"
+                  disabled={!valid}
+                  onClick={close}
+                >
+                  <Check size={17} aria-hidden="true" />
+                  {t("Ferdig med steget", "Done with step")}
+                </button>
+              </>
+            }
           >
             {trail.length > 0 && (
               <button
@@ -692,32 +718,6 @@ export function AutomationFlow({
                 )}
               </p>
             )}
-            <div className="flow-edit-footer">
-              <button
-                type="button"
-                className="primary compact"
-                disabled={!valid}
-                onClick={close}
-              >
-                <Check size={17} />
-                {t("Ferdig med steget", "Done with step")}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (stepNew && Array.isArray(parent))
-                    replace(
-                      selected.slice(0, -1),
-                      parent.filter((_: any, i: number) => i !== index),
-                    );
-                  else replace(selected, stepOriginal);
-                  setSelected(null);
-                  setValid(true);
-                }}
-              >
-                {t("Forkast endringer i steget", "Discard step changes")}
-              </button>
-            </div>
             {Array.isArray(parent) && typeof index === "number" && (
               <div className="flow-edit-arrange">
                 <span>
@@ -774,7 +774,7 @@ export function AutomationFlow({
                 </button>
               </div>
             )}
-          </FlowStepPanel>
+          </SettingsDialog>
         )}
       </div>
       <details className="flow-settings">

@@ -144,7 +144,10 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
       exact: true,
     })
     .click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("dialog", {
+    name: "Tilpass steget",
+    exact: true,
+  });
   await expect(dialog).toBeVisible();
   await expect(
     dialog.locator(
@@ -181,6 +184,8 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   await expect(
     dialog.getByRole("button", { name: "Ferdig med steget", exact: true }),
   ).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
   await brightness.fill("65");
   await expect(
     dialog.getByRole("button", { name: "Ferdig med steget", exact: true }),
@@ -251,37 +256,58 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
   await page.evaluate(() => {
     document.documentElement.dataset.theme = "light";
   });
-  await page.locator(".canvas-actions .canvas-node-content").first().click();
+  const canvas = page.locator(".canvas-viewport");
+  const canvasCard = page
+    .locator(".canvas-actions .canvas-node-content")
+    .first();
+  const canvasLayout = () =>
+    canvas.evaluate((element) => ({
+      width: element.clientWidth,
+      left: element.scrollLeft,
+      top: element.scrollTop,
+    }));
+  await canvasCard.scrollIntoViewIfNeeded();
+  await canvasCard.focus();
+  const layoutBeforeStep = await canvasLayout();
+  await canvasCard.press("Enter");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute("data-presentation", "flow-step");
+  await expect(
+    dialog.getByRole("button", { name: "Lukk steginnstillinger", exact: true }),
+  ).toBeVisible();
+  expect(await dialog.evaluate((element) => element.matches(":modal"))).toBe(
+    true,
+  );
+  const dialogBounds = (await dialog.boundingBox())!;
+  expect(dialogBounds.width).toBeLessThanOrEqual(640);
+  expect(
+    Math.abs(dialogBounds.x * 2 + dialogBounds.width - page.viewportSize()!.width),
+  ).toBeLessThan(2);
+  if (test.info().project.name === "mobile")
+    expect(dialogBounds.y).toBeGreaterThanOrEqual(32);
+  await expect(flow.locator(".flow-editor-shell.has-step-panel")).toHaveCount(
+    0,
+  );
+  expect(await canvasLayout()).toEqual(layoutBeforeStep);
   if (test.info().project.name === "desktop") {
-    await expect(page.locator(".flow-step-panel")).toBeVisible();
-    await page
-      .locator(".flow-editor-shell")
-      .screenshot({ path: "/tmp/smarti-docked-flow.png" });
+    await dialog.screenshot({ path: "/tmp/smarti-flow-step-modal.png" });
   }
 
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await page
-    .getByRole("dialog")
+  await dialog
     .getByRole("button", {
       name: "Rediger steg: Demp pendellampen",
       exact: true,
     })
     .click();
-  await expect(
-    page
-      .getByRole("dialog")
-      .getByLabel(/Lysstyrke/)
-      .first(),
-  ).toHaveValue("65");
-  await page
-    .getByRole("dialog")
+  await expect(dialog.getByLabel(/Lysstyrke/).first()).toHaveValue("65");
+  await dialog
     .getByRole("button", { name: "Tilbake til forrige steg", exact: true })
     .click();
-  await expect(page.getByRole("dialog")).toContainText("Stegene inni");
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Ferdig med steget", exact: true })
-    .click();
+  await expect(dialog).toContainText("Stegene inni");
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+  await expect(canvasCard).toBeFocused();
+  expect(await canvasLayout()).toEqual(layoutBeforeStep);
   await expect(
     page.getByRole("region", { name: "Arbeidsflate for automasjon" }),
   ).toBeVisible();
@@ -370,17 +396,18 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
       .getByRole("button", { name: "Vent litt", exact: true });
     await waitCard.scrollIntoViewIfNeeded();
     const source = await waitCard.boundingBox();
-    const canvas = await page.locator(".canvas-viewport").boundingBox();
+    const canvasBounds = await canvas.boundingBox();
     await page.mouse.move(source!.x + 20, source!.y + 20);
     await page.mouse.down();
-    await page.mouse.move(canvas!.x + 200, canvas!.y + 250, { steps: 20 });
+    await page.mouse.move(canvasBounds!.x + 200, canvasBounds!.y + 250, {
+      steps: 20,
+    });
     await page.mouse.up();
     await expect(
       page.getByRole("dialog", { name: "Hva vil du legge til?" }),
     ).toHaveCount(0);
-    await expect(page.locator(".flow-step-panel")).toBeVisible();
-    await page
-      .getByRole("dialog")
+    await expect(dialog).toBeVisible();
+    await dialog
       .getByRole("button", { name: "Ferdig med steget", exact: true })
       .click();
     await expect(page.locator(".canvas-actions")).toHaveCount(4);
@@ -410,17 +437,15 @@ test("nested flows edit one field, preserve HA logic, validate and discard draft
       .poll(() => moving.evaluate((el) => (el as HTMLElement).style.transform))
       .toBe(releasedLeft);
     await moving.locator(".canvas-node-content").click();
-    await expect(page.locator(".flow-step-panel")).toBeVisible();
-    await page
-      .getByRole("dialog")
+    await expect(dialog).toBeVisible();
+    await dialog
       .getByRole("button", { name: "Ferdig med steget", exact: true })
       .click();
     const countBefore = await page.locator(".canvas-actions").count();
     await waitCard.click();
-    await expect(page.locator(".flow-step-panel")).toBeVisible();
+    await expect(dialog).toBeVisible();
     await expect(page.locator(".canvas-actions")).toHaveCount(countBefore + 1);
-    await page
-      .getByRole("dialog")
+    await dialog
       .getByRole("button", { name: "Ferdig med steget", exact: true })
       .click();
     const focus = await page.locator(".canvas-expanded").boundingBox();

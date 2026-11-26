@@ -21,15 +21,17 @@ export function SettingsDialog({
   presentation = "settings",
   onClose,
   children,
+  footer,
 }: {
   title: string;
   lang: string;
   busy?: boolean;
   compact?: boolean;
   phoneSafeArea?: boolean;
-  presentation?: "settings" | "device" | "search";
+  presentation?: "settings" | "device" | "search" | "flow-step";
   onClose: () => void;
   children: ReactNode;
+  footer?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const heading = useId();
@@ -38,6 +40,7 @@ export function SettingsDialog({
     settings: en ? "Close settings" : "Lukk innstillinger",
     device: en ? "Close device details" : "Lukk enhetsdetaljer",
     search: en ? "Close search" : "Lukk søk",
+    "flow-step": en ? "Close step settings" : "Lukk steginnstillinger",
   }[presentation];
   useLayoutEffect(() => {
     const dialog = ref.current!;
@@ -122,9 +125,10 @@ export function SettingsDialog({
           {children}
         </InSettingsDialog.Provider>
       </div>
+      {footer && <div className="dashboard-settings-footer">{footer}</div>}
     </dialog>
   );
-  return presentation === "settings"
-    ? dialog
-    : createPortal(dialog, document.body);
+  return presentation === "device" || presentation === "search"
+    ? createPortal(dialog, document.body)
+    : dialog;
 }
