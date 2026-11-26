@@ -1,10 +1,11 @@
 import { flowPresets, categoryForFlowCard } from "./flowPresets";
+import { withFlowEntityScope } from "./flowEntityScope";
 import type { FlowKind } from "./flowPresentation";
 export function newFlowStep(kind: FlowKind, type: string): Record<string, any> {
   if (type.startsWith("preset:")) {
     const preset = flowPresets(kind, "nb").find((p) => p.id === type);
     if (!preset) throw new Error("Unknown flow preset");
-    return structuredClone(preset.step);
+    return withFlowEntityScope(structuredClone(preset.step), type);
   }
   if (kind === "triggers") {
     if (type === "time") return { trigger: "time", at: "20:00:00" };

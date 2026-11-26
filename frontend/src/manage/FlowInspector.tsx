@@ -21,6 +21,11 @@ import {
 } from "lucide-react";
 import { EntityPicker } from "./EntityPicker";
 import { entityState } from "./entityWords";
+import {
+  flowEntityScope,
+  withFlowEntityScope,
+  type FlowEntityScope,
+} from "./flowEntityScope";
 import { has, readFlowPath, structureSummary } from "./flowStructure";
 import {
   changeConditionOperator,
@@ -224,6 +229,7 @@ function Entities({
   lang,
   label,
   domain,
+  scope,
   t,
   multiple = true,
   required = true,
@@ -235,6 +241,7 @@ function Entities({
   lang: string;
   label: string;
   domain?: string;
+  scope?: FlowEntityScope;
   t: Translate;
   multiple?: boolean;
   required?: boolean;
@@ -247,8 +254,14 @@ function Entities({
     report(id, valid);
     return () => report(id, true);
   }, [id, valid, report]);
+  const pickerLabel = scope ? t(...scope.label) : undefined;
+  const emptyTitle = scope
+    ? t("Ingen enheter av denne typen", "No devices of this type")
+    : undefined;
   const choices = home.controls.filter(
-    (c) => !domain || domain === "homeassistant" || c.domain === domain,
+    (c) =>
+      (!domain || domain === "homeassistant" || c.domain === domain) &&
+      (!scope || scope.matches(c)),
   );
   const values = Array.isArray(value)
     ? value
@@ -290,7 +303,13 @@ function Entities({
             choices={choices}
             home={home}
             lang={lang}
-            label={values.length > 1 ? `${label} ${index + 1}` : label}
+            label={
+              values.length > 1
+                ? `${pickerLabel ?? label} ${index + 1}`
+                : (pickerLabel ?? label)
+            }
+            placeholder={pickerLabel}
+            emptyTitle={emptyTitle}
           />
           {Array.isArray(value) && value.length > 1 && (
             <button
@@ -320,7 +339,9 @@ function Entities({
           choices={choices.filter((c) => !values.includes(c.entity_id))}
           home={home}
           lang={lang}
-          label={t("Velg enhet", "Choose device")}
+          label={pickerLabel ?? t("Velg enhet", "Choose device")}
+          placeholder={pickerLabel}
+          emptyTitle={emptyTitle}
         />
       ) : multiple && values.every(Boolean) ? (
         <button
@@ -422,7 +443,7 @@ export function FlowInspector({
   row,
   home,
   lang,
-  onChange,
+  onChange: update,
   onAdvanced,
   kind,
   onValidityChange,
@@ -436,6 +457,9 @@ export function FlowInspector({
   onValidityChange?: (valid: boolean) => void;
 }) {
   const t: Translate = (nb, en) => (lang === "en" ? en : nb);
+  const scope = flowEntityScope(row);
+  const onChange = (value: unknown) =>
+    update(withFlowEntityScope(value, scope));
   const invalid = useRef(new Set<string>());
   const validityCallback = useRef(onValidityChange);
   validityCallback.current = onValidityChange;
@@ -778,6 +802,7 @@ export function FlowInspector({
             home={home}
             lang={lang}
             label={t("Enheter og sensorer", "Devices and sensors")}
+            scope={scope}
             t={t}
             report={report}
           />

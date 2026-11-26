@@ -566,6 +566,10 @@
     display: flex;
     flex-direction: column;
   }
+  .flow-designer.canvas-expanded .flow-studio {
+    height: auto;
+    min-height: 100%;
+  }
   .flow-designer .flow-studio .canvas-toolbar {
     order: 0;
     padding: 10px;
@@ -621,6 +625,7 @@
   }
   .flow-designer.canvas-expanded > .flow-view-bar {
     padding: 10px;
+    flex-direction: row;
     flex-wrap: wrap;
   }
   .studio-footer > span {

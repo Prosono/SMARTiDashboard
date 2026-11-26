@@ -23,6 +23,8 @@ export function EntityPicker({
   home,
   lang,
   label,
+  placeholder,
+  emptyTitle,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -30,6 +32,8 @@ export function EntityPicker({
   home: Home;
   lang: string;
   label: string;
+  placeholder?: string;
+  emptyTitle?: string;
 }) {
   const t = (nb: string, en: string) => words(lang, nb, en);
   const dialog = useRef<HTMLDialogElement>(null),
@@ -94,7 +98,10 @@ export function EntityPicker({
         )}
         <span>
           <strong>
-            {selected?.name || value || t("Velg enhet", "Choose device")}
+            {selected?.name ||
+              value ||
+              placeholder ||
+              t("Velg enhet", "Choose device")}
           </strong>
           <small>
             {value
@@ -237,26 +244,35 @@ export function EntityPicker({
                 </div>
               </section>
             ))}
-          {!visible.length && (
+          {!choices.length && emptyTitle ? (
             <div className="entity-empty">
-              <Search size={28} />
-              <h3>{t("Ingen treff her", "No matches here")}</h3>
-              <p>
-                {t(
-                  "Prøv et annet navn eller velg alle rom.",
-                  "Try another name or choose all rooms.",
-                )}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch("");
-                  setArea("*");
-                }}
-              >
-                {t("Vis alle enheter", "Show all devices")}
-              </button>
+              <Search size={28} aria-hidden="true" />
+              <h3>{emptyTitle}</h3>
             </div>
+          ) : (
+            !visible.length && (
+              <div className="entity-empty">
+                <Search size={28} />
+                <h3>{t("Ingen treff her", "No matches here")}</h3>
+                <p>
+                  {t(
+                    "Prøv et annet navn eller velg alle rom.",
+                    "Try another name or choose all rooms.",
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setArea("*");
+                  }}
+                >
+                  {emptyTitle
+                    ? t("Nullstill filtre", "Reset filters")
+                    : t("Vis alle enheter", "Show all devices")}
+                </button>
+              </div>
+            )
           )}
         </div>
       </dialog>

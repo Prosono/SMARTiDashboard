@@ -1,3 +1,7 @@
+## 1.36.177
+- Forhåndskort i Flow viser relevante enheter, blant annet lekkasjesensorer for vannlekkasje og personer eller sporingsenheter for hjemkomst.
+- Kortbiblioteket og lagreknappen er tilgjengelige i fullskjerm på smale telefoner.
+
 ## 1.36.176
 - Trykk på en hendelse, et vilkår eller en handling i Flow for å åpne steginnstillingene i en popup på mobil, nettbrett og desktop.
 - Fullfør eller forkast endringer i steget fra knappene nederst i vinduet.

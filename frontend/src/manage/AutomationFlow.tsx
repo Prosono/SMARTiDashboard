@@ -35,6 +35,7 @@ import {
 } from "./flowStructure";
 import { kindAtPath, type FlowKind } from "./flowPresentation";
 import { flowLibrary, newFlowStep } from "./flowLibrary";
+import { flowEntityScope, withFlowEntityScope } from "./flowEntityScope";
 import { SettingsDialog } from "../home/SettingsDialog";
 import type { Home } from "../types";
 import "./flowDesign.css";
@@ -137,7 +138,10 @@ export function AutomationFlow({
   function select(path: FlowPath, parents: FlowPath[] = []) {
     setTrail(parents);
     setStepNew(false);
-    setStepOriginal(structuredClone(readFlowPath(c, path)));
+    const row = readFlowPath(c, path);
+    setStepOriginal(
+      withFlowEntityScope(structuredClone(row), flowEntityScope(row)),
+    );
     setSelected(path);
     setValid(true);
     setRemoving(false);
